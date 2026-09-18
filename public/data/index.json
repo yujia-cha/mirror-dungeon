@@ -1,0 +1,15 @@
+{
+  "default": 7,
+  "seasons": [
+    {
+      "dataVersion": "7.9682b798",
+      "id": 7,
+      "lastFloor": 15,
+      "name": {
+        "en": "Mirror of Names and Spiders - F",
+        "ko": "이름과 거미의 거울"
+      },
+      "provisional": false
+    }
+  ]
+}

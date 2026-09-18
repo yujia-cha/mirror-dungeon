@@ -1,0 +1,63 @@
+{
+  "name": "mirror-dungeon-router",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Limbus Company Mirror Dungeon deck-based E.G.O Gift route planner",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "data:fetch": "tsx scripts/fetch-sources.ts",
+    "data:import": "tsx scripts/import-static.ts",
+    "data:build": "tsx scripts/build-data.ts",
+    "data:validate": "tsx scripts/validate-data.ts",
+    "data:diff": "tsx scripts/diff-data.ts",
+    "data:changelog": "tsx scripts/changelog-entry.ts",
+    "data:update": "tsx scripts/fetch-sources.ts --update && tsx scripts/build-data.ts && tsx scripts/validate-data.ts",
+    "route": "tsx scripts/route-cli.ts",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run data:validate"
+  },
+  "dependencies": {
+    "limbus-formation-deck": "^1.0.1",
+    "lucide-react": "^0.460.0",
+    "lz-string": "^1.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.5",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,248 @@
+{
+  "$comment": "Pinned upstream game-data sources. Run `npm run data:fetch` to restore data/raw exactly, or `npm run data:fetch -- --update` to move to the latest upstream commit. See docs/research/data-sources.md for what each source is and how alive it is.",
+  "sources": {
+    "openLethe": {
+      "repo": "LEAGUE-OF-NINE/OpenLethe",
+      "ref": "main",
+      "sha": "823129adccea571ab0b04e9e4a077d407aaaefaa",
+      "fetchedAt": "2026-09-11",
+      "note": "Game client StaticData. No license file upstream; data is Project Moon's. Vendored because the repo may disappear.",
+      "remotePrefix": "src/OpenLethe.Resources/StaticData/static-data",
+      "localPrefix": "data/raw/static",
+      "files": [
+        "mirrordungeon-theme-floor/mirrordungeon-theme-floor-t1.json",
+        "mirrordungeon-theme-floor/mirrordungeon-theme-floor-t2.json",
+        "mirrordungeon-theme-floor/mirrordungeon-theme-floor-t3.json",
+        "mirrordungeon-theme-floor/mirrordungeon-theme-floor-t4.json",
+        "mirrordungeon-theme-floor/mirrordungeon-theme-floor-t5.json",
+        "mirrordungeon-theme-floor/mirrordungeon-theme-floor-t6.json",
+        "mirror-dungeon-common-data/mirror-dungeon-common-data-md7.json",
+        "mirrordungeon-egogift-droppool/mirrordungeon-egogift-droppool-7.json",
+        "mirrordungeon/mirrordungeon-07.json",
+        "mirrordungeon/mirrordungeon-07-hard.json",
+        "mirrordungeon/mirrordungeon-07-infinite.json",
+        "mirrordungeon/mirrordungeon-07-extreme.json",
+        "mirrordungeon-start-buffs/mirrordungeon-start-buffs-07.json",
+        "battle-mirrordungeon/mirrordungeon-abbattle6-extreme.json",
+        "battle-mirrordungeon/mirrordungeon-abbattle7-extreme.json",
+        "battle-mirrordungeon/mirrordungeon-battle6-extreme.json",
+        "battle-mirrordungeon/mirrordungeon-battle7-extreme.json",
+        "battle-mirrordungeon/mirrordungeon-abbattle6-hidden.json",
+        "battle-mirrordungeon/mirrordungeon-abbattle7-hidden.json",
+        "mirror-dungeon-egogift-observation-data/mirror-dungeon-egogift-observation-data-md7.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon2.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon3.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon4.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon5.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon5_2.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon5_3.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon6.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon6-hb.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon7.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon7-hb.json",
+        "ego-gift-mirrordungeon/ego-gift-mirrordungeon-extreme.json",
+        "ego-gift-mirrordungeon/hidden-ego-gift-mirrordungeon.json",
+        "ego-gift-mirrordungeon/hidden-ego-gift-mirrordungeon-md6-extreme.json",
+        "ego-gift-mirrordungeon/hidden-ego-gift-mirrordungeon-md7-extreme.json",
+        "ego-gift-mirrordungeon/ego-gift-story-5-5-1.json",
+        "ego-gift-mirrordungeon/ego-gift-story-7-5-1.json",
+        "ego-gift-mirrordungeon/ego-gift-story-7-5-1-BokGak.json",
+        "ego-gift-mirrordungeon/ego-gift-story-7-5-2-BokGak.json",
+        "ego-gift-mirrordungeon/ego-gift-story-cultivation.json",
+        "ego-gift-mirrordungeon/ego-gift-story-exme.json",
+        "ego-gift-mirrordungeon/ego-gift-story-pilgrimage.json",
+        "ego-gift-mirrordungeon/ego-gift-story-tkt.json",
+        "ego-gift-mirrordungeon/ego-gift-story-twth.json",
+        "ego-gift-mirrordungeon/ego-gift-story-ycgd.json",
+        "ego-gift-mirrordungeon/ego-gift-story-ycgd-BokGak.json",
+        "ego-gift-mirrordungeon/ego-gift-walpu4.json",
+        "ego-gift-mirrordungeon/ego-gift-walpu5.json",
+        "ego-gift-mirrordungeon/ego-gift-walpu6.json",
+        "ego-gift-mirrordungeon/ego-gift-walpu8.json",
+        "personality/personality-01.json",
+        "personality/personality-02.json",
+        "personality/personality-03.json",
+        "personality/personality-04.json",
+        "personality/personality-05.json",
+        "personality/personality-06.json",
+        "personality/personality-07.json",
+        "personality/personality-08.json",
+        "personality/personality-09.json",
+        "personality/personality-10.json",
+        "personality/personality-11.json",
+        "personality/personality-12.json",
+        "personality/personality-a1c8p1.json",
+        "personality/personality-a1c8p2.json",
+        "personality/personality-a1c9p1.json",
+        "personality/personality-a1c9p2.json",
+        "skill/personality-skill-01.json",
+        "skill/personality-skill-02.json",
+        "skill/personality-skill-03.json",
+        "skill/personality-skill-04.json",
+        "skill/personality-skill-05.json",
+        "skill/personality-skill-06.json",
+        "skill/personality-skill-07.json",
+        "skill/personality-skill-08.json",
+        "skill/personality-skill-09.json",
+        "skill/personality-skill-10.json",
+        "skill/personality-skill-11.json",
+        "skill/personality-skill-12.json",
+        "skill/personality-skill-a1c8p1.json",
+        "skill/personality-skill-a1c8p2.json",
+        "skill/personality-skill-a1c9p1.json",
+        "skill/personality-skill-a1c9p2.json"
+      ]
+    },
+    "localize": {
+      "repo": "x1bViolet/Limbus-Localization-Files",
+      "languages": {
+        "KR": {
+          "ref": "Korean",
+          "sha": "ac56ea8297616d1a7200c89514b0ed8999eac125"
+        },
+        "EN": {
+          "ref": "English",
+          "sha": "c06798276fb70109f940f6724e7d2e76795c7bd7"
+        }
+      },
+      "fetchedAt": "2026-09-15",
+      "note": "Game Localize folder, mirrored verbatim (source text is Project Moon's). Languages are branches here, not folders. Chosen over LocalizeLimbusCompany because that mirror's auto-update stopped on 2026-07-23 and newer identities never arrived; this one tracks the weekly patch. The KR-only Skills_personality-* files are the evidence for identities the static data does not ship.",
+      "remotePrefix": "",
+      "localPrefix": "data/raw/localize",
+      "files": [
+        "EGOgift_MirrorDungeon.json",
+        "EGOgift_MirrorDungeon_2.json",
+        "EGOgift_MirrorDungeon_6.json",
+        "EGOgift_MirrorDungeon_7.json",
+        "EGOgift_MirrorDungeon-StoryTheme.json",
+        "EGOgift_MirrorDungeon-StoryTheme_2.json",
+        "EGOgift_MirrorDungeon-EventTheme.json",
+        "EGOgift_MirrorDungeon-EventTheme_2.json",
+        "EGOgift_MirrorDungeon-mowe.json",
+        "EGOgift_MirrorDungeon-mowe-re.json",
+        "EGOgift_MirrorDungeon-ycgd.json",
+        "EGOgift_TwiningThreads.json",
+        "EGOgift_cultivation.json",
+        "EGOgift_pilgrimage.json",
+        "EGOgift_lcbcheckup-re.json",
+        "EGOgift_night-clean-up-re.json",
+        "EGOgift_tktRe.json",
+        "EGOgift_a1c8p2.json",
+        "EGOgift_walpu4.json",
+        "EGOgift_walpu6.json",
+        "EGOgift_walpu8.json",
+        "MirrorDungeonTheme-1.json",
+        "Personalities.json",
+        {
+          "path": "Skills_personality-01.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-02.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-03.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-04.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-05.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-06.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-07.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-08.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-09.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-10.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-11.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        {
+          "path": "Skills_personality-12.json",
+          "languages": [
+            "KR"
+          ]
+        },
+        "UnitKeyword.json",
+        "UnitKeyword-a1c7p1.json",
+        "UnitKeyword-a1c7p2.json",
+        "UnitKeyword-a1c7p3.json",
+        "UnitKeyword-a1c8p2.json",
+        "UnitKeyword-a1c8p3.json",
+        "UnitKeyword-a1c9p1.json",
+        "UnitKeyword-a1c9p2.json",
+        "UnitKeyword-a1c9p3.json",
+        "UnitKeyword-exem.json",
+        "UnitKeyword-pilgrimage.json",
+        "UnitKeyword-x1p1c1.json",
+        "FormationNameEtcFilter.json",
+        "EgoGiftCategory.json",
+        "BattleKeywords.json",
+        "MirrorDungeonEgoGiftLockedDesc.json",
+        "DungeonStartBuffs_MD7.json",
+        "MirrorDungeonUI_7.json",
+        "TutorialMirrorDungeon.json"
+      ]
+    },
+    "eldritchtools": {
+      "repo": "eldritchtools/limbus-assets",
+      "ref": "main",
+      "sha": "ec2b3efd4de0e36964c6c6d1ee9be14bc6ab6211",
+      "fetchedAt": "2026-09-15",
+      "note": "Derived, English-only data behind the limbus.tools sites, updated near-daily. Two jobs: it backfills identities the static data has not shipped, and it cross-checks the Mirror Dungeon data OpenLethe froze — packs, floors, fusion recipes, start pools. It is the only living MD source, but it has no per-pack general gift pool, no prices, no observation list and no dungeon constants, so it can supplement the static data and not replace it.",
+      "remotePrefix": "",
+      "localPrefix": "data/raw/derived/eldritchtools",
+      "files": [
+        "meta.json",
+        "data/identities.json",
+        "data/md_theme_packs.json",
+        "data/md_floor_packs.json",
+        "data/gifts.json",
+        "data/md/details.json"
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "_comment": "Free-form notes shown in the UI next to a gift or pack. They never affect route planning.",
+  "gifts": {},
+  "packs": {
+    "1122": {
+      "ko": "스토리 던전 전용 팩이라 거울 던전에서는 선택할 수 없다.",
+      "en": "Story-dungeon only; it cannot be selected in Mirror Dungeon."
+    }
+  }
+}

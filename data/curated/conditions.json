@@ -1,0 +1,18 @@
+{
+  "_comment": "Corrections to conditional-gift activation clauses parsed from the Korean effect text. Keys are gift ids. Set `conditions` to [] when the parser invented a condition that does not exist. See the add-curated-override skill for the shape of each condition type.",
+  "_example": {
+    "9211": {
+      "conditions": [
+        {
+          "type": "keywordSkillCount",
+          "keyword": "Sinking",
+          "min": 6,
+          "scope": "deployed",
+          "includesSpecial": false,
+          "tiers": [{ "min": 10, "label": "10인 이상" }]
+        }
+      ],
+      "_source": "desc 원문 확인"
+    }
+  }
+}

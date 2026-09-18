@@ -1,0 +1,726 @@
+{
+  "factions": [
+    {
+      "deprecated": false,
+      "id": "ATL",
+      "name": {
+        "en": "Technology Liberation Alliance",
+        "ko": "기술해방연합"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BACKSTREET_COOK",
+      "name": {
+        "en": "R.B.",
+        "ko": "료.고.파"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BLACK_BEAST_CHICKEN",
+      "name": {
+        "en": "Heishou Pack - You Branch",
+        "ko": "흑수 - 유"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BLACK_BEAST_HORSE",
+      "name": {
+        "en": "Heishou Pack - Wu Branch",
+        "ko": "흑수 - 오"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BLACK_BEAST_RABBIT",
+      "name": {
+        "en": "Heishou Pack - Mao Branch",
+        "ko": "흑수 - 묘"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BLACK_BEAST_SHEEP",
+      "name": {
+        "en": "Heishou Pack - Wei Branch",
+        "ko": "흑수 - 미"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BLACK_BEAST_SNAKE",
+      "name": {
+        "en": "Heishou Pack - Si Branch",
+        "ko": "흑수 - 사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BLACK_CLOUD",
+      "name": {
+        "en": "Kurokumo Clan",
+        "ko": "흑운회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "BLADE_LINEAGE",
+      "name": {
+        "en": "Blade Lineage",
+        "ko": "검계"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "CINQ",
+      "name": {
+        "en": "Cinq Association",
+        "ko": "섕크 협회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "DAWN",
+      "name": {
+        "en": "Dawn Office",
+        "ko": "새벽 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "DEAD_RABBITS",
+      "name": {
+        "en": "The Dead Rabbits",
+        "ko": "데드레빗츠"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "DEVYAT",
+      "name": {
+        "en": "Devyat' Association",
+        "ko": "제뱌찌 협회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "DIECI",
+      "name": {
+        "en": "Dieci Association",
+        "ko": "디에치 협회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "DUAL_HOOK_PIRATE",
+      "name": {
+        "en": "Twinhook Pirates",
+        "ko": "쌍갈고리 해적단"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "FAMILY_GA",
+      "name": {
+        "en": "Jia Family",
+        "ko": "가씨 가문"
+      }
+    },
+    {
+      "deprecated": true,
+      "id": "FAMILY_GA_CANCELED",
+      "name": {
+        "en": "Jia Family",
+        "ko": "가씨 가문"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "FANG_HUNT",
+      "name": {
+        "en": "Fanghunt Office",
+        "ko": "송곳니 사냥 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "FIREPUNCH_OFFICE",
+      "name": {
+        "en": "Firefist Office",
+        "ko": "불주먹 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "FULL_STOP",
+      "name": {
+        "en": "Full-Stop Office",
+        "ko": "마침표 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "G_CORP",
+      "name": {
+        "en": "G Corp.",
+        "ko": "G사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "H_CORP",
+      "name": {
+        "en": "H Corp.",
+        "ko": "H사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "HOOK_OFFICE",
+      "name": {
+        "en": "Hook Office",
+        "ko": "갈고리 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "INDEX_FINGER",
+      "name": {
+        "en": "The Index",
+        "ko": "검지"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "JEONG_OFFICE",
+      "name": {
+        "en": "Jeong's Office",
+        "ko": "정사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "K_CORP",
+      "name": {
+        "en": "K Corp.",
+        "ko": "K사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "KONG_KONG",
+      "name": {
+        "en": "Tingtang Gang",
+        "ko": "콩콩이파"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "L_CORP",
+      "name": {
+        "en": "Lobotomy Corp. HQ",
+        "ko": "로보토미 본사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LA_MANCHA_LAND",
+      "name": {
+        "en": "La Manchaland",
+        "ko": "라만차랜드"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LIMBUS_COMPANY",
+      "name": {
+        "en": "Limbus Company",
+        "ko": "림버스 컴퍼니"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LIMBUS_COMPANY_LCA",
+      "name": {
+        "en": "LCA",
+        "ko": "LCA"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LIMBUS_COMPANY_LCB",
+      "name": {
+        "en": "LCB",
+        "ko": "LCB"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LIMBUS_COMPANY_LCC",
+      "name": {
+        "en": "LCC",
+        "ko": "LCC"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LIMBUS_COMPANY_LCD",
+      "name": {
+        "en": "LCD",
+        "ko": "LCD"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LIMBUS_COMPANY_LCE",
+      "name": {
+        "en": "LCE",
+        "ko": "LCE"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LINTON",
+      "name": {
+        "en": "Edgar Family",
+        "ko": "에드가 가문"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LITTLE_FINGER",
+      "name": {
+        "en": "The Pinky",
+        "ko": "소지"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LIU",
+      "name": {
+        "en": "Liu Association",
+        "ko": "리우 협회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "MARIACHI",
+      "name": {
+        "en": "Los Mariachis",
+        "ko": "마리아치"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "MIDDLE_FINGER",
+      "name": {
+        "en": "The Middle",
+        "ko": "중지"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "MOLAR",
+      "name": {
+        "en": "Molar Office",
+        "ko": "어금니 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "MULTI_CRACK",
+      "name": {
+        "en": "MultiCrack Office",
+        "ko": "멀티크랙 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "N_CORP",
+      "name": {
+        "en": "N Corp.",
+        "ko": "N사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "N_CORP_FNATIC",
+      "name": {
+        "en": "N Corp. Fanatic",
+        "ko": "N사 광신도"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "NIGHTSTILETTO",
+      "name": {
+        "en": "Night Awls",
+        "ko": "밤의 송곳"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "OUFI",
+      "name": {
+        "en": "Öufi Association",
+        "ko": "외우피 협회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "OUFI_COOP",
+      "name": {
+        "en": "Associate Office - Öufi",
+        "ko": "협력 사무소 - 외우피"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "PEQUOD_CREW",
+      "name": {
+        "en": "The Pequod",
+        "ko": "피쿼드호"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "R_CORP",
+      "name": {
+        "en": "R Corp.",
+        "ko": "R사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "RING_FINGER",
+      "name": {
+        "en": "The Ring",
+        "ko": "약지"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "RING_FINGER_FAUVISM",
+      "name": {
+        "en": "School of Fauvism",
+        "ko": "야수파"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "RING_FINGER_PHYSICAL",
+      "name": {
+        "en": "School of Corporism",
+        "ko": "신체파"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "RING_FINGER_POINTILLISM",
+      "name": {
+        "en": "School of Pointillism",
+        "ko": "점묘파"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "S_CORP",
+      "name": {
+        "en": "S Corp.",
+        "ko": "S사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "SEVEN",
+      "name": {
+        "en": "Seven Association",
+        "ko": "세븐 협회"
+      }
+    },
+    {
+      "deprecated": true,
+      "id": "SEVENFAMILIES_CANCELED",
+      "name": {
+        "en": "Le Sette Famiglie",
+        "ko": "7대 패밀리"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "SHI",
+      "name": {
+        "en": "Shi Association",
+        "ko": "시 협회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "SPIDER_HOUSE",
+      "name": {
+        "en": "The House of Spiders",
+        "ko": "거미집"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "T_CORP",
+      "name": {
+        "en": "T Corp.",
+        "ko": "T사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "THUMB_FINGER",
+      "name": {
+        "en": "The Thumb",
+        "ko": "엄지"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "TROUBLE_SHOOTER",
+      "name": {
+        "en": "Rosespanner Workshop",
+        "ko": "장미스패너 공방"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "W_CORP",
+      "name": {
+        "en": "W Corp.",
+        "ko": "W사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "WILD_HUNT",
+      "name": {
+        "en": "The Wild Hunt",
+        "ko": "와일드헌트"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "WUTHERING_HEIGHTS",
+      "name": {
+        "en": "Wuthering Heights",
+        "ko": "워더링하이츠"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "YURODIVY",
+      "name": {
+        "en": "Yurodiviye",
+        "ko": "유로지비"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "ZWEI",
+      "name": {
+        "en": "Zwei Association",
+        "ko": "츠바이 협회"
+      }
+    }
+  ],
+  "identityOnlyKeywords": [
+    {
+      "id": "Bullet",
+      "name": {
+        "en": "Ammo",
+        "ko": "탄환"
+      }
+    }
+  ],
+  "keywords": [
+    {
+      "id": "Combustion",
+      "name": {
+        "en": "Burn",
+        "ko": "화상"
+      },
+      "status": true
+    },
+    {
+      "id": "Laceration",
+      "name": {
+        "en": "Bleed",
+        "ko": "출혈"
+      },
+      "status": true
+    },
+    {
+      "id": "Vibration",
+      "name": {
+        "en": "Tremor",
+        "ko": "진동"
+      },
+      "status": true
+    },
+    {
+      "id": "Burst",
+      "name": {
+        "en": "Rupture",
+        "ko": "파열"
+      },
+      "status": true
+    },
+    {
+      "id": "Sinking",
+      "name": {
+        "en": "Sinking",
+        "ko": "침잠"
+      },
+      "status": true
+    },
+    {
+      "id": "Breath",
+      "name": {
+        "en": "Poise",
+        "ko": "호흡"
+      },
+      "status": true
+    },
+    {
+      "id": "Charge",
+      "name": {
+        "en": "Charge",
+        "ko": "충전"
+      },
+      "status": true
+    },
+    {
+      "id": "Slash",
+      "name": {
+        "en": "Slash",
+        "ko": "참격"
+      },
+      "status": false
+    },
+    {
+      "id": "Penetrate",
+      "name": {
+        "en": "Pierce",
+        "ko": "관통"
+      },
+      "status": false
+    },
+    {
+      "id": "Hit",
+      "name": {
+        "en": "Blunt",
+        "ko": "타격"
+      },
+      "status": false
+    },
+    {
+      "id": "None",
+      "name": {
+        "en": "Keywordless",
+        "ko": "범용"
+      },
+      "status": false
+    }
+  ],
+  "sinners": [
+    {
+      "id": 1,
+      "name": {
+        "en": "Yi Sang",
+        "ko": "이상"
+      }
+    },
+    {
+      "id": 2,
+      "name": {
+        "en": "Faust",
+        "ko": "파우스트"
+      }
+    },
+    {
+      "id": 3,
+      "name": {
+        "en": "Don Quixote",
+        "ko": "돈키호테"
+      }
+    },
+    {
+      "id": 4,
+      "name": {
+        "en": "Ryōshū",
+        "ko": "료슈"
+      }
+    },
+    {
+      "id": 5,
+      "name": {
+        "en": "Meursault",
+        "ko": "뫼르소"
+      }
+    },
+    {
+      "id": 6,
+      "name": {
+        "en": "Hong Lu",
+        "ko": "홍루"
+      }
+    },
+    {
+      "id": 7,
+      "name": {
+        "en": "Heathcliff",
+        "ko": "히스클리프"
+      }
+    },
+    {
+      "id": 8,
+      "name": {
+        "en": "Ishmael",
+        "ko": "이스마엘"
+      }
+    },
+    {
+      "id": 9,
+      "name": {
+        "en": "Rodion",
+        "ko": "로쟈"
+      }
+    },
+    {
+      "id": 10,
+      "name": {
+        "en": "Sinclair",
+        "ko": "싱클레어"
+      }
+    },
+    {
+      "id": 11,
+      "name": {
+        "en": "Outis",
+        "ko": "오티스"
+      }
+    },
+    {
+      "id": 12,
+      "name": {
+        "en": "Gregor",
+        "ko": "그레고르"
+      }
+    }
+  ],
+  "sins": [
+    "WRATH",
+    "LUST",
+    "SLOTH",
+    "GLUTTONY",
+    "GLOOM",
+    "PRIDE",
+    "ENVY"
+  ]
+}

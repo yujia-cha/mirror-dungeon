@@ -1,0 +1,354 @@
+/**
+ * Assertions against the real generated data in public/data.
+ *
+ * These are the facts the planner and the UI rely on. When the game changes they will fail, which
+ * is the point: a change here should be read and understood, not auto-updated.
+ */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import {
+  enumsSchema,
+  giftsFileSchema,
+  identitiesFileSchema,
+  metaSchema,
+  packsFileSchema,
+  rulesSchema,
+  seasonIndexSchema,
+} from '../src/core/schema.ts';
+
+const DATA = resolve(process.cwd(), 'public/data');
+const index = seasonIndexSchema.parse(JSON.parse(readFileSync(resolve(DATA, 'index.json'), 'utf8')));
+/** The season `index.json` opens: the one the vendored raw data describes. */
+const season = index.default;
+/** Season-owned files live in the season's directory; `enums` and `identities` are shared. */
+const read = (name: string): unknown =>
+  JSON.parse(
+    readFileSync(
+      ['meta.json', 'rules.json', 'gifts.json', 'packs.json'].includes(name)
+        ? resolve(DATA, `md${season}`, name)
+        : resolve(DATA, name),
+      'utf8',
+    ),
+  );
+
+const meta = metaSchema.parse(read('meta.json'));
+const enums = enumsSchema.parse(read('enums.json'));
+const rules = rulesSchema.parse(read('rules.json'));
+const gifts = giftsFileSchema.parse(read('gifts.json'));
+const packs = packsFileSchema.parse(read('packs.json'));
+const identities = identitiesFileSchema.parse(read('identities.json'));
+
+const giftById = new Map(gifts.map((g) => [g.id, g]));
+const packById = new Map(packs.map((p) => [p.id, p]));
+const identityById = new Map(identities.map((i) => [i.id, i]));
+
+describe('meta', () => {
+  it('describes Mirror Dungeon 7', () => {
+    expect(meta.dungeon.id).toBe(7);
+    expect(meta.dungeon.name.ko).toBe('이름과 거미의 거울');
+    expect(rules.dungeonId).toBe(7);
+  });
+
+  it('records which upstream commits the data came from, per language where they differ', () => {
+    expect(meta.sources.openLethe?.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(meta.sources.eldritchtools?.sha).toMatch(/^[0-9a-f]{40}$/);
+    // The localization mirror keeps each language on its own branch, so it has no single revision.
+    expect(meta.sources.localize?.languages?.KR).toMatch(/^[0-9a-f]{40}$/);
+    expect(meta.sources.localize?.languages?.EN).toMatch(/^[0-9a-f]{40}$/);
+  });
+});
+
+describe('theme packs', () => {
+  it('has the full Mirror Dungeon 7 pack list', () => {
+    expect(packs).toHaveLength(116);
+    expect(packs.filter((p) => p.selectable)).toHaveLength(115);
+  });
+
+  it('marks 선의의 순례 unselectable because it is story-dungeon only', () => {
+    const pack = packById.get(1122)!;
+    expect(pack.name.ko).toBe('선의의 순례');
+    expect(pack.selectable).toBe(false);
+  });
+
+  it('places 잊혀진 자들 on floor 1 of both Normal and Hard', () => {
+    const pack = packById.get(1001)!;
+    expect(pack.name.ko).toBe('잊혀진 자들');
+    expect(pack.availability.normal).toEqual([1]);
+    expect(pack.availability.hard).toEqual([1]);
+  });
+
+  it('places 교본 on Hard floor 5 and in 평행중첩, never on Normal', () => {
+    const pack = packById.get(1025)!;
+    expect(pack.name.ko).toBe('교본');
+    expect(pack.availability.normal).toEqual([]);
+    expect(pack.availability.hard).toEqual([5]);
+    expect(pack.availability.parallel).toEqual([6, 7, 8, 9, 10]);
+  });
+
+  it('keeps every keyword pack off Normal difficulty', () => {
+    const keywordPacks = packs.filter((p) => p.group === 'keyword' && p.selectable);
+    expect(keywordPacks).toHaveLength(14);
+    for (const pack of keywordPacks) {
+      expect(pack.availability.normal, `${pack.id} ${pack.name.ko}`).toEqual([]);
+      expect(pack.keywordAffinity).not.toBeNull();
+    }
+  });
+
+  it('restricts long-battle packs to EXTREME floors 11-15', () => {
+    const longBattle = packs.filter((p) => p.group === 'longBattle');
+    expect(longBattle).toHaveLength(20);
+    for (const pack of longBattle) {
+      expect(pack.availability.extreme).toEqual([11, 12, 13, 14, 15]);
+      expect([...pack.availability.normal, ...pack.availability.hard, ...pack.availability.parallel]).toEqual(
+        [],
+      );
+    }
+  });
+
+  it('gives every reachable floor at least as many packs as the selection screen shows', () => {
+    for (const mode of ['normal', 'hard', 'parallel', 'extreme'] as const) {
+      for (const floor of rules.floors[mode]) {
+        const count = packs.filter((p) => p.selectable && p.availability[mode].includes(floor)).length;
+        expect(count, `${mode} floor ${floor}`).toBeGreaterThanOrEqual(rules.themePacksOfferedPerFloor);
+      }
+    }
+  });
+});
+
+describe('gifts', () => {
+  it('covers every gift the season references', () => {
+    expect(gifts).toHaveLength(446);
+  });
+
+  it('splits acquisition the way the game does', () => {
+    const byKind = new Map<string, number>();
+    for (const gift of gifts) byKind.set(gift.acquisition.kind, (byKind.get(gift.acquisition.kind) ?? 0) + 1);
+    expect(byKind.get('general')).toBe(187);
+    expect(byKind.get('packLimited')).toBe(171);
+    expect(byKind.get('fusionOnly')).toBe(59);
+  });
+
+  it('keeps the general set identical to an EXTREME pack pool, which has no exclusives', () => {
+    const general = new Set(gifts.filter((g) => g.acquisition.kind === 'general').map((g) => g.id));
+    const extreme = packs.find((p) => p.group === 'longBattle' && p.exclusiveGifts.length === 0)!;
+    expect(new Set(extreme.giftPool)).toEqual(general);
+  });
+
+  it('never lists a fusion-only gift in a pack pool', () => {
+    const pooled = new Set(packs.filter((p) => p.selectable).flatMap((p) => p.giftPool));
+    for (const gift of gifts.filter((g) => g.acquisition.kind === 'fusionOnly')) {
+      expect(pooled.has(gift.id), `${gift.id} ${gift.name.ko}`).toBe(false);
+    }
+  });
+
+  it('reads 진혼 as a tier 4 Burn fusion result with its real ingredients', () => {
+    const gift = giftById.get(9088)!;
+    expect(gift.name.ko).toBe('진혼');
+    expect(gift.keyword).toBe('Combustion');
+    expect(gift.tier).toBe(4);
+    expect(gift.acquisition.kind).toBe('fusionOnly');
+    expect(gift.fusion?.recipes.map((r) => r.ingredients)).toEqual([
+      [9003, 9053, 9157],
+      [9003, 9053, 9101, 9155],
+    ]);
+  });
+
+  it('reads 본국검보 as a fusion with a Blade Lineage condition', () => {
+    const gift = giftById.get(9280)!;
+    expect(gift.name.ko).toBe('본국검보[本國劍譜]');
+    expect(gift.acquisition.kind).toBe('fusionOnly');
+    expect(gift.fusion?.recipes.map((r) => r.ingredients)).toEqual([[9193, 9279, 9716]]);
+    expect(gift.conditions).toEqual([
+      expect.objectContaining({ type: 'factionCount', factions: ['BLADE_LINEAGE'], min: 3 }),
+    ]);
+  });
+
+  it('reads 상납된 시가 as exclusive to 교본, which only appears on Hard floor 5 and above', () => {
+    const gift = giftById.get(9283)!;
+    expect(gift.acquisition.kind).toBe('packLimited');
+    expect(gift.acquisition.exclusiveTo).toEqual([1025]);
+    expect(gift.conditions).toEqual([
+      expect.objectContaining({ type: 'factionCount', factions: ['THUMB_FINGER'], min: 3 }),
+    ]);
+    const pack = packById.get(1025)!;
+    expect(pack.availability.normal).toEqual([]);
+    expect(pack.availability.hard).toEqual([5]);
+  });
+
+  it('shares 붉게 얽힌 거미집 across the four Canto 9 packs that list it', () => {
+    const gift = giftById.get(9273)!;
+    expect(gift.acquisition.exclusiveTo).toEqual([1024, 1025, 1026, 1027]);
+  });
+
+  it('models the one cross-keyword recipe as 2-of-7 plus 3-of-3', () => {
+    const gift = giftById.get(9083)!;
+    expect(gift.fusion?.mixed).toEqual({
+      aPool: [9105, 9110, 9116, 9121, 9126, 9131, 9136],
+      aCount: 2,
+      bPool: [9142, 9147, 9152],
+      bCount: 3,
+    });
+    // Its ingredients come from Hard-only keyword packs, so the gift itself is Hard-only.
+    expect(gift.hardOnly).toBe(true);
+  });
+
+  it('marks the 잔영 series as fusion material', () => {
+    for (const id of [9991, 9992, 9993, 9994, 9995]) {
+      expect(giftById.get(id)?.acquisition.kind, String(id)).toBe('material');
+    }
+  });
+
+  it('parses the expected number of machine-evaluable conditions', () => {
+    const counts = { keywordSkillCount: 0, factionCount: 0, fullResonance: 0, unparsed: 0 };
+    for (const gift of gifts) for (const c of gift.conditions) counts[c.type] += 1;
+    expect(counts).toEqual({ keywordSkillCount: 39, factionCount: 19, fullResonance: 1, unparsed: 1 });
+  });
+
+  it('resolves every faction named by a condition to a known faction id', () => {
+    const known = new Set(enums.factions.map((f) => f.id));
+    for (const gift of gifts) {
+      for (const c of gift.conditions) {
+        if (c.type !== 'factionCount') continue;
+        for (const faction of c.factions) expect(known.has(faction), `${gift.id} ${faction}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe('identities', () => {
+  it('covers the 183 the static data ships plus the ones backfilled from the other sources', () => {
+    expect(identities).toHaveLength(185);
+    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(2);
+  });
+
+  it.each([
+    [10116, 'LCE E.G.O:: 차원찢개', 1, ['Burst', 'Charge'], ['LIMBUS_COMPANY', 'LIMBUS_COMPANY_LCE']],
+    [10616, '동부 섕크 협회 3과', 6, ['Breath', 'Combustion'], ['CINQ']],
+  ])(
+    'backfills %i 「%s」, which the static data has not shipped',
+    (id, title, sinnerId, keywords, factions) => {
+      const identity = identityById.get(id as number)!;
+      expect(identity.title.ko).toBe(title);
+      expect(identity.sinnerId).toBe(sinnerId);
+      // Keywords come from the Korean skill text — see tests/text-derivation.test.ts.
+      expect(Object.keys(identity.keywords).sort()).toEqual(keywords);
+      expect(identity.keywordSource).toBe('backfilled');
+      // Associations, sins and attack types come from the derived mirror, so unlike a hand-written
+      // stub these are filled in and the faction conditions count the identity properly.
+      expect(identity.factions).toEqual(factions);
+      expect(identity.sins.length).toBeGreaterThan(0);
+      expect(identity.attackTypes.length).toBeGreaterThan(0);
+    },
+  );
+
+  it('derives keywords from skills for all but a handful of identities', () => {
+    const withoutKeywords = identities.filter((i) => i.keywordSource === 'none');
+    expect(withoutKeywords.length).toBeLessThanOrEqual(10);
+  });
+
+  it.each([
+    [10101, 'Sinking'],
+    [10102, 'Burst'],
+    [10403, 'Laceration'],
+  ])('identity %i inflicts %s', (id, keyword) => {
+    expect(Object.keys(identityById.get(id)!.keywords)).toContain(keyword);
+  });
+
+  it.each([
+    [10215, 'Charge', '거미집 약지 제자 — 생체 재료'],
+    [10614, 'Charge', '거미집 약지 아비 — 생체 재료'],
+    [10504, 'Laceration', 'N사 큰 망치 — 못'],
+  ])('identity %i inflicts the 특수 variant of %s (%s)', (id, keyword) => {
+    const info = identityById.get(id)!.keywords[keyword as 'Charge'];
+    expect(info?.specialSkills).toBeGreaterThan(0);
+  });
+
+  it.each([
+    [10611, { skills: 5, specialSkills: 0 }, '마침표 사무소 대표 — 탄환'],
+    [10414, { skills: 0, specialSkills: 2 }, '잔향・외로움 — 탄환 - 고독뿐'],
+    [10711, { skills: 3, specialSkills: 1 }, '마침표 해결사 — 탄환 + 로직 아틀리에'],
+  ])('identity %i spends ammo (%o, %s)', (id, counts) => {
+    expect(identityById.get(id)!.keywords.Bullet).toEqual(counts);
+  });
+
+  it('keeps 탄환 out of the gift keywords, since no gift, pack or start pool has it', () => {
+    expect(enums.keywords.map((k) => k.id)).not.toContain('Bullet');
+    expect(enums.identityOnlyKeywords).toEqual([{ id: 'Bullet', name: { ko: '탄환', en: 'Ammo' } }]);
+    expect(gifts.some((g) => (g.keyword as string) === 'Bullet')).toBe(false);
+    expect(packs.some((p) => (p.keywordAffinity as string | null) === 'Bullet')).toBe(false);
+    expect(Object.keys(rules.startGift.poolsByKeyword)).not.toContain('Bullet');
+  });
+
+  it('keeps a 특수-only inflictor apart from the base keyword', () => {
+    expect(identityById.get(10504)!.keywords.Laceration).toEqual({ skills: 0, specialSkills: 2 });
+    expect(identityById.get(10614)!.keywords.Charge!.skills).toBeGreaterThan(0);
+  });
+
+  it('reads 흑운회 와카슈 료슈 as Kurokumo Clan', () => {
+    const identity = identityById.get(10403)!;
+    expect(identity.sinner.ko).toBe('료슈');
+    expect(identity.factions).toContain('BLACK_CLOUD');
+  });
+
+  it('keeps sin and attack type per identity', () => {
+    const identity = identityById.get(10101)!;
+    expect(identity.sins.sort()).toEqual(['ENVY', 'GLOOM', 'SLOTH'].sort());
+    expect(identity.attackTypes.sort()).toEqual(['Penetrate', 'Slash']);
+  });
+});
+
+describe('rules', () => {
+  it('keeps the floor layout of the four run modes', () => {
+    expect(rules.floors).toEqual({
+      normal: [1, 2, 3, 4, 5],
+      hard: [1, 2, 3, 4, 5],
+      parallel: [6, 7, 8, 9, 10],
+      extreme: [11, 12, 13, 14, 15],
+    });
+  });
+
+  it('keeps the difficulty constraints the planner enforces', () => {
+    expect(rules.difficulty).toEqual({
+      hardIsSticky: true,
+      parallelRequiresAllHard: true,
+      extremeAllowsObservation: false,
+    });
+  });
+
+  it('records the deployment limits the UI enforces', () => {
+    expect(rules.deployment).toEqual({ max: 7, default: 6, verified: false });
+  });
+
+  it('reads theme pack observation costs from the game data', () => {
+    expect(rules.themePacksOfferedPerFloor).toBe(3);
+    expect(rules.themeObservation).toEqual({ base: 20, step: 10, unvisitedMultiplier: 1.5 });
+  });
+
+  it('offers three starting gifts per keyword for all ten keywords', () => {
+    const pools = Object.entries(rules.startGift.poolsByKeyword);
+    expect(pools).toHaveLength(10);
+    for (const [keyword, ids] of pools) expect(ids, keyword).toHaveLength(3);
+  });
+
+  it('reads the gift observation cost table and pool from the season data', () => {
+    expect(rules.giftObservation).toMatchObject({ max: 3, costTable: [70, 160, 270], verified: true });
+    expect(gifts.filter((g) => g.observable).length).toBe(312);
+  });
+
+  it('derives EXTREME clear rewards and hidden-battle gifts from the stage files', () => {
+    const byKind = (kind: string) => gifts.filter((g) => g.acquisition.kind === kind).map((g) => g.id);
+    expect(byKind('clearReward')).toEqual([9250, 9251, 9252, 9253, 9254, 9255, 9827, 9828, 9829, 9830]);
+    expect(byKind('hiddenBattle')).toEqual([9256, 9257, 9258, 9259]);
+    expect(byKind('event')).toHaveLength(10);
+    expect(giftById.get(9828)!.acquisition.clearRewardOf).toBe(1519);
+    expect(rules.hiddenBattle).toEqual({ gifts: [9256, 9257, 9258, 9259], floors: [11, 12, 13, 14, 15], probabilityPerFloor: 0.1 });
+  });
+
+  it('carries an icon key per gift and a sprite key per pack', () => {
+    expect(giftById.get(9403)!.icon).toBe(1005);
+    expect(giftById.get(9088)!.icon).toBe(9088);
+    expect(packs.every((p) => p.sprite.length > 0)).toBe(true);
+    expect(packs.find((p) => p.id === 1501)!.sprite).toBe('CorpN_Extreme');
+  });
+});

@@ -1,0 +1,13 @@
+# Cloudflare Pages response headers. Hashed build assets can be cached forever; the data files
+# and index.html keep short caches so a data refresh reaches users within minutes.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/data/*
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+# Season directories (/data/md7/...). `*` matching across path segments is not something this
+# repo can verify, so the nested rule is written out rather than assumed.
+/data/*/*
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

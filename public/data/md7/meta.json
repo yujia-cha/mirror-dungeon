@@ -1,0 +1,39 @@
+{
+  "counts": {
+    "fusionRecipes": 68,
+    "gifts": 446,
+    "identities": 185,
+    "packs": 116
+  },
+  "dataVersion": "7.9682b798",
+  "dungeon": {
+    "id": 7,
+    "name": {
+      "en": "Mirror of Names and Spiders - F",
+      "ko": "이름과 거미의 거울"
+    }
+  },
+  "provisional": false,
+  "schemaVersion": 1,
+  "sources": {
+    "eldritchtools": {
+      "fetchedAt": "2026-09-15",
+      "repo": "eldritchtools/limbus-assets",
+      "sha": "ec2b3efd4de0e36964c6c6d1ee9be14bc6ab6211"
+    },
+    "localize": {
+      "fetchedAt": "2026-09-15",
+      "languages": {
+        "EN": "c06798276fb70109f940f6724e7d2e76795c7bd7",
+        "KR": "ac56ea8297616d1a7200c89514b0ed8999eac125"
+      },
+      "repo": "x1bViolet/Limbus-Localization-Files"
+    },
+    "openLethe": {
+      "fetchedAt": "2026-09-11",
+      "repo": "LEAGUE-OF-NINE/OpenLethe",
+      "sha": "823129adccea571ab0b04e9e4a077d407aaaefaa"
+    }
+  },
+  "staticDataPresent": true
+}

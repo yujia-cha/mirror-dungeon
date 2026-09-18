@@ -1,0 +1,462 @@
+{
+    "grace": [
+        {
+            "index": 1,
+            "id": "star-of-the-beginning",
+            "name": "Star of the Beginning",
+            "cost": 10,
+            "descs": [
+                [
+                    "Starting Cost +150",
+                    "Theme Pack Selection +1",
+                    "Shop E.G.O Gift Selection +1",
+                    "One Free Normal Refresh for Shops"
+                ],
+                [
+                    "Starting Cost +250",
+                    "Theme Pack Selection +1",
+                    "Shop E.G.O Gift Selection +1",
+                    "One Free Normal Refresh for Shops"
+                ],
+                [
+                    "Starting Cost +250",
+                    "Theme Pack Selection +1",
+                    "Shop E.G.O Gift Selection +1",
+                    "Two Free Normal Refresh for Shops"
+                ]
+            ]
+        },
+        {
+            "index": 2,
+            "id": "cumulating-starcloud",
+            "name": "Cumulating Starcloud",
+            "cost": 10,
+            "descs": [
+                [
+                    "When moving to the next Floor, increase current Cost balance by 10% (max 100)",
+                    "Increase E.G.O Gift sale price by 50% (once per Shop)"
+                ],
+                [
+                    "When moving to the next Floor, increase current Cost balance by 20% (max 125)",
+                    "Increase E.G.O Gift sale price by 75% (once per Shop)"
+                ],
+                [
+                    "When moving to the next Floor, increase current Cost balance by 30% (max 150)",
+                    "Increase E.G.O Gift sale price by 100% (once per Shop)"
+                ]
+            ]
+        },
+        {
+            "index": 3,
+            "id": "interstellar-travel",
+            "name": "Interstellar Travel",
+            "cost": 20,
+            "descs": [
+                [
+                    "Theme Pack Selection +1",
+                    "Theme Pack Refresh Chance +2",
+                    "When choosing a new Theme Pack for the first time, all Identities gain +3 Level(s) (max 9)"
+                ],
+                [
+                    "Theme Pack Selection +1",
+                    "Theme Pack Refresh Chance +3",
+                    "When choosing a new Theme Pack for the first time, all Identities gain +3 Level(s) (max 9)",
+                    "If 45+ Theme Packs are unlocked in the Theme Pack Compendium, gain 1 Clash Power"
+                ],
+                [
+                    "Theme Pack Selection +1",
+                    "Theme Pack Refresh Chance +4",
+                    "When choosing a new Theme Pack for the first time, all Identities gain +3 Level(s) (max 9)",
+                    "If 45+ Theme Packs are unlocked in the Theme Pack Compendium, gain 2 Clash Power"
+                ]
+            ]
+        },
+        {
+            "index": 4,
+            "id": "star-shower",
+            "name": "Star-shower",
+            "cost": 20,
+            "descs": [
+                [
+                    "Starting Cost +400",
+                    "Starting E.G.O Gift Choice +1"
+                ],
+                [
+                    "Starting Cost +500",
+                    "Starting E.G.O Gift Choice +1",
+                    "When Choosing Starlight from Encounter Reward Cards, Cost +75"
+                ],
+                [
+                    "Starting Cost +700",
+                    "Starting E.G.O Gift Choice +1",
+                    "When Choosing Starlight from Encounter Reward Cards, Cost +150"
+                ]
+            ]
+        },
+        {
+            "index": 5,
+            "id": "binary-star-shop",
+            "name": "Binary Star-shop",
+            "cost": 30,
+            "descs": [
+                [
+                    "Shop E.G.O Gift Selection +1",
+                    "Encounter Reward Cost +20%",
+                    "Greater chance for high Tier E.G.O Gifts to appear in Shops"
+                ],
+                [
+                    "Shop E.G.O Gift Selection +1",
+                    "Encounter Reward Cost +30%",
+                    "Greater chance for high Tier E.G.O Gifts to appear in Shops",
+                    "Upon entering a Shop, add up all the Tier numbers of currently owned E.G.O Gifts and gain it as Cost (max 75)"
+                ],
+                [
+                    "Shop E.G.O Gift Selection +1",
+                    "Encounter Reward Cost +40%",
+                    "Greater chance for high Tier E.G.O Gifts to appear in Shops",
+                    "Upon entering a Shop, add up all the Tier numbers of currently owned E.G.O Gifts and gain it as Cost (max 150)"
+                ]
+            ]
+        },
+        {
+            "index": 6,
+            "id": "moon-star-shop",
+            "name": "Moon Star-shop",
+            "cost": 30,
+            "descs": [
+                [
+                    "One Free Keyword Refresh for Shops",
+                    "Upon entering Floor 1, gain 1 random Tier 1 E.G.O Gift(s)"
+                ],
+                [
+                    "One Free Keyword Refresh for Shops",
+                    "Upon entering Floor 1, gain 2 random Tier 1 E.G.O Gift(s)",
+                    "+10% chance for super Shop to appear"
+                ],
+                [
+                    "Two Free Keyword Refresh for Shops",
+                    "Upon entering Floor 1, gain 3 random Tier 1 E.G.O Gift(s)",
+                    "+25% chance for super Shop to appear"
+                ]
+            ]
+        },
+        {
+            "index": 7,
+            "id": "favor-of-the-nebulae",
+            "name": "Favor of the Nebulae",
+            "cost": 40,
+            "descs": [
+                [
+                    "Upon entry, all Identities gain 3 Level(s)",
+                    "Upon Floor clear, all Identities gain 1 Level(s) (max 5)"
+                ],
+                [
+                    "Upon entry, all Identities gain 3 Level(s)",
+                    "Upon Floor clear, all Identities gain 1 Level(s) (max 9)"
+                ],
+                [
+                    "Upon entry, all Identities gain 3 Level(s)",
+                    "Upon entering Floor 6, all Identities gain 3 Level(s)",
+                    "Upon Floor clear, all Identities gain 1 Level(s) (max 9)"
+                ]
+            ]
+        },
+        {
+            "index": 8,
+            "id": "starlight-guidance",
+            "name": "Starlight Guidance",
+            "cost": 40,
+            "descs": [
+                [
+                    "Max Speed +2",
+                    "Gain 1 {status:ParryingResultUp}",
+                    "Gain 1 {status:AttackDmgUp}",
+                    "Gain 1 {status:Protection}"
+                ],
+                [
+                    "Max Speed +3",
+                    "Gain 2 {status:ParryingResultUp}",
+                    "Gain 1 {status:AttackDmgUp}",
+                    "Gain 1 {status:Protection}"
+                ],
+                [
+                    "Max Speed +3",
+                    "Gain 2 {status:ParryingResultUp}",
+                    "Gain 2 {status:AttackDmgUp}",
+                    "Gain 2 {status:Protection}"
+                ]
+            ]
+        },
+        {
+            "index": 9,
+            "id": "chance-comet",
+            "name": "Chance Comet",
+            "cost": 50,
+            "descs": [
+                [
+                    "Upon entering a Shop, gain 1 random Tier 3 or less For Fuse or Sale only E.G.O Gift(s)",
+                    "Upon entering Floor 3, gain 1 random Tier 3 E.G.O Gift(s)",
+                    "When fusing, gain a random additional E.G.O Gift 2 Tiers below the Fusion result(must be Tier 3 or higher) (once per Shop)"
+                ],
+                [
+                    "Upon entering a Shop, gain 1 'For Fuse or Sale only E.G.O Gift'",
+                    [
+                        "Floor 5 or lower: Tier 1~3",
+                        "Floor 6 or higher: Tier 2~3"
+                    ],
+                    "Upon entering Floor 3/Floor 5, gain 1 Tier 3 E.G.O Gift from the selected Keyword category",
+                    "When fusing, gain a random additional E.G.O Gift 2 Tiers below the Fusion result(must be Tier 3 or higher) (once per Shop)"
+                ],
+                [
+                    "Upon entering a Shop, gain 1 'For Fuse or Sale only E.G.O Gift'",
+                    [
+                        "Floor 5 or lower: Tier 2~3",
+                        "Floor 6 or higher: Tier 3~4"
+                    ],
+                    "Upon entering Floor 3/Floor 5/Floor 7, gain 1 random Tier 4 E.G.O Gift from the selected Keyword category",
+                    "When fusing, gain a random additional E.G.O Gift 1 Tier below the Fusion result(must be Tier 3 or higher) (once per Shop)"
+                ]
+            ]
+        },
+        {
+            "index": 10,
+            "id": "perfected-possibility",
+            "name": "Perfected Possibility",
+            "cost": 50,
+            "descs": [
+                [
+                    "Theme Pack Selection +1",
+                    "Starting E.G.O Gift Choice +1",
+                    "Upon entry, gain 1 Tier 3 E.G.O Gift(s) of your choice for the selected Keyword (if no remaining Gifts meet the conditions, a lower Tier one will appear instead)",
+                    "Upon entry, gain 1 {giftname:9991}"
+                ],
+                [
+                    "Theme Pack Selection +1",
+                    "Starting E.G.O Gift Choice +1",
+                    "Upon entry, gain 2 Tier 3 E.G.O Gift(s) of your choice for the selected Keyword (if no remaining Gifts meet the conditions, a lower Tier one will appear instead)",
+                    "Upon entry, gain 1 {giftname:9991} and 1 {giftname:9992} each"
+                ],
+                [
+                    "Theme Pack Selection +1",
+                    "Starting E.G.O Gift Choice +1",
+                    "Upon entry, gain 3 Tier 3 E.G.O Gift(s) of your choice for the selected Keyword (if no remaining Gifts meet the conditions, a lower Tier one will appear instead)",
+                    "Upon entry, gain 1 {giftname:9991}, 1 {giftname:9992}, and 1 {giftname:9993}"
+                ]
+            ]
+        }
+    ],
+    "startGiftPool": {
+        "Burn": [
+            9001,
+            9009,
+            9103
+        ],
+        "Bleed": [
+            9005,
+            9029,
+            9108
+        ],
+        "Tremor": [
+            9044,
+            9086,
+            9113
+        ],
+        "Rupture": [
+            9047,
+            9093,
+            9117
+        ],
+        "Sinking": [
+            9041,
+            9054,
+            9124
+        ],
+        "Poise": [
+            9046,
+            9051,
+            9129
+        ],
+        "Charge": [
+            9043,
+            9052,
+            9134
+        ],
+        "Slash": [
+            9032,
+            9194,
+            9140
+        ],
+        "Pierce": [
+            9030,
+            9198,
+            9145
+        ],
+        "Blunt": [
+            9012,
+            9202,
+            9150
+        ]
+    },
+    "adversity": {
+        "11": [
+            {
+                "name": "Level Boost",
+                "desc": "All Enemy Levels +3",
+                "value": 1
+            },
+            {
+                "name": "Frailness",
+                "desc": "-10% Max HP for all Allies",
+                "value": 1
+            },
+            {
+                "name": "Mark of Fire I",
+                "desc": "Turn End: all allies take 5 fixed HP damage. Fixed damage increases by 3 every turn. (max 20)",
+                "value": 2
+            },
+            {
+                "name": "Inflation I",
+                "desc": "Doubles the cost of every Shop function, except for selling E.G.O Gifts",
+                "value": 2
+            },
+            {
+                "name": "Ego Interference I",
+                "desc": "Doubles the amount of E.G.O Resources consumed when using E.G.O Skills\n(This Adversity does not interact with E.G.O Gift effects)",
+                "value": 2
+            },
+            {
+                "name": "Force Redistribution",
+                "desc": "When an enemy is killed, it applies 3 Offense Level Up to all of its allies at the next Turn Start (3 times per turn; start of a new wave counts as Turn Start as well)",
+                "value": 1
+            }
+        ],
+        "12": [
+            {
+                "name": "Level Boost",
+                "desc": "All Enemy Levels +3",
+                "value": 1
+            },
+            {
+                "name": "Frailness",
+                "desc": "-10% Max HP for all Allies",
+                "value": 1
+            },
+            {
+                "name": "Mental Psychosis I",
+                "desc": "Turn End: all allies lose 3 SP",
+                "value": 2
+            },
+            {
+                "name": "Nerve Acceleration I",
+                "desc": "Raise Min & Max Speed values by 1 for all enemies",
+                "value": 2
+            },
+            {
+                "name": "SP Fatigue I",
+                "desc": "In battles, allies cannot heal higher than 35 SP",
+                "value": 3
+            },
+            {
+                "name": "Psychological Elation",
+                "desc": "Turn Start: All enemies heal 20 SP",
+                "value": 2
+            }
+        ],
+        "13": [
+            {
+                "name": "Level Boost",
+                "desc": "All Enemy Levels +3",
+                "value": 1
+            },
+            {
+                "name": "Frailness",
+                "desc": "-10% Max HP for all Allies",
+                "value": 1
+            },
+            {
+                "name": "Tremor Barrier",
+                "desc": "Remove the first Stagger Threshold for all enemies",
+                "value": 2
+            },
+            {
+                "name": "Inflation II",
+                "desc": "Triples the cost of every Shop function, except for selling E.G.O Gifts\n\n※ If a lower tier Adversity already exists, overwrite that effect",
+                "value": 3
+            },
+            {
+                "name": "Ego Interference II",
+                "desc": "Triples the amount of E.G.O Resources consumed when using E.G.O Skills\n(Does not interact with E.G.O Gift effects)\n※ If a lower tier Adversity already exists, overwrite that effect",
+                "value": 3
+            },
+            {
+                "name": "Shield Generation",
+                "desc": "Apply 3000 Shield on all enemies\n(In Focused Encounters, applies to Core only; Shield gained by this effect does not expire at Turn End)",
+                "value": 3
+            }
+        ],
+        "14": [
+            {
+                "name": "Level Boost",
+                "desc": "All Enemy Levels +3",
+                "value": 1
+            },
+            {
+                "name": "Frailness",
+                "desc": "-10% Max HP for all Allies",
+                "value": 1
+            },
+            {
+                "name": "Vitality Boost",
+                "desc": "+30% to max HP for all enemies",
+                "value": 2
+            },
+            {
+                "name": "Brutality",
+                "desc": "Plus Coin Power +2, Minus Coin Power -2 for all enemies",
+                "value": 3
+            },
+            {
+                "name": "Mark of Fire II",
+                "desc": "Turn End: all allies take 10 fixed HP damage. Fixed damage increases by 5 every turn. (max 30)\n※ If a lower tier Adversity already exists, overwrite that effect",
+                "value": 3
+            },
+            {
+                "name": "Fracture Proliferation",
+                "desc": "Enemy Skills inflict x2 Burn, Bleed, Tremor, Rupture, and Sinking",
+                "value": 3
+            }
+        ],
+        "15": [
+            {
+                "name": "Level Boost",
+                "desc": "All Enemy Levels +3",
+                "value": 1
+            },
+            {
+                "name": "Frailness",
+                "desc": "-10% Max HP for all Allies",
+                "value": 1
+            },
+            {
+                "name": "Mental Psychosis II",
+                "desc": "Turn End: all allies lose 5 SP\n※ If a lower tier Adversity already exists, overwrite that effect",
+                "value": 3
+            },
+            {
+                "name": "Nerve Acceleration II",
+                "desc": "Raise Min & Max Speed values by 2 for all enemies",
+                "value": 3
+            },
+            {
+                "name": "SP Fatigue II",
+                "desc": "In battles, allies cannot heal higher than 30 SP\n※ If a lower tier Adversity already exists, overwrite that effect",
+                "value": 5
+            },
+            {
+                "name": "Status Infliction",
+                "desc": "Turn Start: Inflict 5 Potency of a random status, chosen from Burn, Bleed, Tremor, Rupture, and Sinking, on all allies(Identities)",
+                "value": 1
+            }
+        ]
+    }
+}

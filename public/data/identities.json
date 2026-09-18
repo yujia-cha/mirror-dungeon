@@ -1,0 +1,7214 @@
+[
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10101,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "SEVEN"
+    ],
+    "id": 10102,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Seven Assoc. South Section 6",
+      "ko": "남부 세븐 협회 6과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLADE_LINEAGE"
+    ],
+    "id": 10103,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "WRATH",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Blade Lineage Salsu",
+      "ko": "검계 살수"
+    },
+    "traits": [
+      "CLAN",
+      "SALSOO",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "ATL"
+    ],
+    "id": 10104,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 2,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Effloresced E.G.O::Spicebush",
+      "ko": "개화 E.G.O:: 동백"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "MOLAR"
+    ],
+    "id": 10105,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 2,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "Molar Office Fixer",
+      "ko": "어금니 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 10106,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "W Corp. L3 Cleanup Agent",
+      "ko": "W사 3등급 정리 요원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "PEQUOD_CREW"
+    ],
+    "id": 10107,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 3,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "GLUTTONY",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Pequod First Mate",
+      "ko": "피쿼드호 일등 항해사"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "DIECI"
+    ],
+    "id": 10108,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Dieci Assoc. South Section 4",
+      "ko": "남부 디에치 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "RING_FINGER",
+      "RING_FINGER_POINTILLISM"
+    ],
+    "id": 10109,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "The Ring Pointillist Student",
+      "ko": "약지 점묘파 스튜던트"
+    },
+    "traits": [
+      "FINGER",
+      "RING_FINGER_STUDENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10110,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9104,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O:: Solemn Lament",
+      "ko": "로보토미 E.G.O:: 엄숙한 애도"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCE"
+    ],
+    "id": 10111,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 5,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCE E.G.O:: Lantern",
+      "ko": "LCE E.G.O:: 초롱"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LIU"
+    ],
+    "id": 10112,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Liu Assoc. South Section 3",
+      "ko": "남부 리우 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "N_CORP"
+    ],
+    "id": 10113,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "N Corp. E.G.O:: Fell Bullet",
+      "ko": "N사 E.G.O:: 흉탄"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_HORSE",
+      "FAMILY_GA",
+      "H_CORP"
+    ],
+    "id": 10114,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Heishou Pack - Wu Branch Adept",
+      "ko": "흑수 - 오 필두"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "BLACK_BEAST_CHIEF",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "INDEX_FINGER",
+      "SPIDER_HOUSE"
+    ],
+    "id": 10115,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Index Nursefather",
+      "ko": "거미집 검지 아비"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL",
+      "SPIDER_HOUSE_FATHER",
+      "TRUST_AGENT"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCE"
+    ],
+    "id": 10116,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Yi Sang",
+      "ko": "이상"
+    },
+    "sinnerId": 1,
+    "sins": [
+      "GLUTTONY",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCE E.G.O:: Dimension Shredder",
+      "ko": "LCE E.G.O:: 차원찢개"
+    },
+    "traits": []
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10201,
+    "keywordSource": "none",
+    "keywords": {},
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 10202,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "W Corp. L2 Cleanup Agent",
+      "ko": "W사 2등급 정리 요원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10203,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Lobotomy Corp. Remnant",
+      "ko": "살아남은 로보토미 직원"
+    },
+    "traits": [
+      "FIXER",
+      "LOBOTOMY_BRANCH",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "N_CORP",
+      "N_CORP_FNATIC"
+    ],
+    "id": 10204,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 1,
+        "specialSkills": 3
+      }
+    },
+    "rank": 3,
+    "season": 1,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "LUST",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The One Who Grips",
+      "ko": "쥐는 자"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "ZWEI"
+    ],
+    "id": 10205,
+    "keywordSource": "none",
+    "keywords": {},
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Zwei Assoc. South Section 4",
+      "ko": "남부 츠바이 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "SEVEN"
+    ],
+    "id": 10206,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Seven Assoc. South Section 4",
+      "ko": "남부 세븐 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10207,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9101,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O::Regret",
+      "ko": "로보토미 E.G.O:: 후회"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "BLADE_LINEAGE"
+    ],
+    "id": 10208,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 0,
+        "specialSkills": 3
+      }
+    },
+    "rank": 3,
+    "season": 3,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Blade Lineage Salsu",
+      "ko": "검계 살수"
+    },
+    "traits": [
+      "CLAN",
+      "SALSOO",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "WUTHERING_HEIGHTS"
+    ],
+    "id": 10209,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 4,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Wuthering Heights Butler",
+      "ko": "워더링하이츠 버틀러"
+    },
+    "traits": [
+      "BUTLER",
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "MULTI_CRACK"
+    ],
+    "id": 10210,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 4,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "MultiCrack Office Rep",
+      "ko": "멀티크랙 사무소 대표"
+    },
+    "traits": [
+      "FIXER",
+      "MACHINE_BOUND_ORGANISM",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCE"
+    ],
+    "id": 10211,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCE E.G.O:: Ardor Blossom Star",
+      "ko": "LCE E.G.O:: 홍염살"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_RABBIT",
+      "H_CORP"
+    ],
+    "id": 10212,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Heishou Pack - Mao Branch Adept",
+      "ko": "흑수 - 묘 필두"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "BLACK_BEAST_CHIEF",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "SHI"
+    ],
+    "id": 10213,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Shi Assoc. East Section 3",
+      "ko": "동부 시 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "INDEX_FINGER"
+    ],
+    "id": 10214,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The Index Proselyte: 【Paper Slip】",
+      "ko": "검지 수행자: 【쪽지】"
+    },
+    "traits": [
+      "CAN_NOT_USING_INDEX_UNLOCK_PERSONALITY",
+      "FINGER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "RING_FINGER",
+      "RING_FINGER_PHYSICAL",
+      "SPIDER_HOUSE"
+    ],
+    "id": 10215,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 4,
+        "specialSkills": 6
+      },
+      "Laceration": {
+        "skills": 6,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Ring Apprentice",
+      "ko": "거미집 약지 제자"
+    },
+    "traits": [
+      "FINGER",
+      "MACHINE_BOUND_ORGANISM",
+      "SMALL",
+      "SPIDER_HOUSE_DISCIPLE"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "DAWN"
+    ],
+    "id": 10216,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 5,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9109,
+    "sinner": {
+      "en": "Faust",
+      "ko": "파우스트"
+    },
+    "sinnerId": 2,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Dawn Office Fixer",
+      "ko": "새벽 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10301,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 10302,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "W Corp. L3 Cleanup Agent",
+      "ko": "W사 3등급 정리 요원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "SHI"
+    ],
+    "id": 10303,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Shi Assoc. South Section 5 Director",
+      "ko": "남부 시 협회 5과 부장"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "N_CORP",
+      "N_CORP_FNATIC"
+    ],
+    "id": 10304,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 0,
+        "specialSkills": 3
+      },
+      "Vibration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "N Corp. Mittelhammer",
+      "ko": "N사 중간 망치"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "CINQ"
+    ],
+    "id": 10305,
+    "keywordSource": "none",
+    "keywords": {},
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Cinq Assoc. South Section 5 Director",
+      "ko": "남부 섕크 협회 5과 부장"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "MIDDLE_FINGER"
+    ],
+    "id": 10306,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 3,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "WRATH",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Middle Little Sister",
+      "ko": "중지 작은 아우"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10307,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 9102,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O::Lantern",
+      "ko": "로보토미 E.G.O:: 초롱"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "BLADE_LINEAGE"
+    ],
+    "id": 10308,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 3,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "SLOTH",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Blade Lineage Salsu",
+      "ko": "검계 살수"
+    },
+    "traits": [
+      "CLAN",
+      "SALSOO",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "T_CORP"
+    ],
+    "id": 10309,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "T Corp. Class 3 Collection Staff",
+      "ko": "T사 3등급 징수직 직원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "LA_MANCHA_LAND"
+    ],
+    "id": 10310,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 6,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "The Manager of La Manchaland",
+      "ko": "라만차랜드 실장"
+    },
+    "traits": [
+      "BLOODFIEND",
+      "SECOND_DEPENDENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "CINQ"
+    ],
+    "id": 10311,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Cinq Assoc. East Section 3",
+      "ko": "동부 섕크 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10312,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9106,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "WRATH",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O:: In the Name of Love and Hate",
+      "ko": "로보토미 E.G.O:: 사랑과 증오의 이름으로"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "BLACK_BEAST_SHEEP",
+      "H_CORP"
+    ],
+    "id": 10313,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Heishou Pack - Wei Branch",
+      "ko": "흑수 - 미"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "INDEX_FINGER",
+      "SPIDER_HOUSE"
+    ],
+    "id": 10314,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 6,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The Index Proxy - Effloresced E.G.O:: Procuration",
+      "ko": "검지 대행자 - 개화 E.G.O:: 대행"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL",
+      "SPIDER_HOUSE_DISCIPLE"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10401,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "SEVEN"
+    ],
+    "id": 10402,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 1,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Seven Assoc. South Section 6",
+      "ko": "남부 세븐 협회 6과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "BLACK_CLOUD"
+    ],
+    "id": 10403,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Kurokumo Clan Wakashu",
+      "ko": "흑운회 와카슈"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "BACKSTREET_COOK"
+    ],
+    "id": 10404,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 1,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "R.B. Chef de Cuisine",
+      "ko": "료. 고. 파. 주방장"
+    },
+    "traits": [
+      "BACK_STREET",
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 10405,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "LUST",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "W Corp. L3 Cleanup Agent",
+      "ko": "W사 3등급 정리 요원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCC"
+    ],
+    "id": 10406,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Bullet": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 1,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 3,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCCB Assistant Manager",
+      "ko": "LCCB 대리"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "LIU"
+    ],
+    "id": 10407,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Liu Assoc. South Section 4",
+      "ko": "남부 리우 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LINTON"
+    ],
+    "id": 10408,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 4,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Edgar Family Chief Butler",
+      "ko": "에드가 가문 치프 버틀러"
+    },
+    "traits": [
+      "BUTLER",
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "YURODIVY"
+    ],
+    "id": 10409,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 4,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "District 20 Yurodivy",
+      "ko": "20구 유로지비"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10410,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9104,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O:: Red Eyes & Penitence",
+      "ko": "로보토미 E.G.O:: 적안・참회"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_RABBIT",
+      "H_CORP"
+    ],
+    "id": 10411,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Heishou Pack - Mao Branch",
+      "ko": "흑수 - 묘"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "N_CORP"
+    ],
+    "id": 10412,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 5,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "N Corp. E.G.O:: Contempt, Awe",
+      "ko": "N사 E.G.O:: 경멸, 경외"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "H_CORP"
+    ],
+    "id": 10413,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Drifting Blade of Hongyuan",
+      "ko": "홍원 방랑무사"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10414,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 0,
+        "specialSkills": 2
+      },
+      "Sinking": {
+        "skills": 5,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9108,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O:: Faint Aroma & Solitude",
+      "ko": "로보토미 E.G.O:: 잔향・외로움"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LITTLE_FINGER",
+      "SPIDER_HOUSE"
+    ],
+    "id": 10415,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Blade of the House of Spiders",
+      "ko": "거미집의 검"
+    },
+    "traits": [
+      "DIHUI_STAR",
+      "FINGER",
+      "LITTLE_FINGER_FATHER_ENEMY",
+      "SMALL",
+      "SPIDER_HOUSE_FATHER"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10501,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "LIU"
+    ],
+    "id": 10502,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "Liu Assoc. South Section 6",
+      "ko": "남부 리우 협회 6과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 10503,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "GLOOM",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "W Corp. L2 Cleanup Agent",
+      "ko": "W사 2등급 정리 요원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "N_CORP",
+      "N_CORP_FNATIC"
+    ],
+    "id": 10504,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 0,
+        "specialSkills": 2
+      }
+    },
+    "rank": 3,
+    "season": 1,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "N Corp. Großhammer",
+      "ko": "N사 큰 망치"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "TROUBLE_SHOOTER"
+    ],
+    "id": 10505,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 2,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Rosespanner Workshop Fixer",
+      "ko": "장미스패너 공방 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "R_CORP"
+    ],
+    "id": 10506,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "R Corp. 4th Pack Rhino",
+      "ko": "R사 제 4무리 코뿔소팀"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "MIDDLE_FINGER"
+    ],
+    "id": 10507,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 3,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Middle Little Brother",
+      "ko": "중지 작은 아우"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLADE_LINEAGE"
+    ],
+    "id": 10508,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 3,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Blade Lineage Mentor",
+      "ko": "검계 우두머리"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "DEAD_RABBITS"
+    ],
+    "id": 10509,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 4,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Dead Rabbits Boss",
+      "ko": "데드레빗츠 보스"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "DIECI"
+    ],
+    "id": 10510,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Dieci Assoc. South Section 4 Director",
+      "ko": "남부 디에치 협회 4과 부장"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "CINQ"
+    ],
+    "id": 10511,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Cinq Assoc. West Section 3",
+      "ko": "서부 섕크 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "THUMB_FINGER"
+    ],
+    "id": 10512,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 0,
+        "specialSkills": 4
+      },
+      "Combustion": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "The Thumb East Capo IIII",
+      "ko": "동부 엄지 카포IIII"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL",
+      "THUMB_LEVEL_CAPO_FOUR"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LA_MANCHA_LAND"
+    ],
+    "id": 10513,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "LUST",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Prince of La Manchaland",
+      "ko": "라만차랜드 왕자"
+    },
+    "traits": [
+      "BLOODFIEND",
+      "SMALL",
+      "THIRD_DEPENDENT"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10514,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 0,
+        "specialSkills": 3
+      },
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9108,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "LUST"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O:: Hornet 【Alteration】",
+      "ko": "로보토미 E.G.O:: 호넷【변조】"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "RING_FINGER",
+      "RING_FINGER_FAUVISM"
+    ],
+    "id": 10515,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Meursault",
+      "ko": "뫼르소"
+    },
+    "sinnerId": 5,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The Ring Fauvist Student",
+      "ko": "약지 야수파 스튜던트"
+    },
+    "traits": [
+      "FINGER",
+      "RING_FINGER_STUDENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10601,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_CLOUD"
+    ],
+    "id": 10602,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Kurokumo Clan Wakashu",
+      "ko": "흑운회 와카슈"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "KONG_KONG"
+    ],
+    "id": 10603,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 1,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Tingtang Gang Gangleader",
+      "ko": "콩콩이파 두목"
+    },
+    "traits": [
+      "BACK_STREET",
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIU"
+    ],
+    "id": 10604,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Liu Assoc. South Section 5",
+      "ko": "남부 리우 협회 5과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "K_CORP"
+    ],
+    "id": 10605,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 2,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "K Corp. Class 3 Excision Staff",
+      "ko": "K사 3등급 적출직 직원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 10606,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "W Corp. L2 Cleanup Agent",
+      "ko": "W사 2등급 정리 요원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "HOOK_OFFICE"
+    ],
+    "id": 10607,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 9101,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Hook Office Fixer",
+      "ko": "갈고리 사무소 해결사"
+    },
+    "traits": [
+      "BACK_STREET",
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "DIECI"
+    ],
+    "id": 10608,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Dieci Assoc. South Section 4",
+      "ko": "남부 디에치 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "YURODIVY"
+    ],
+    "id": 10609,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 4,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "District 20 Yurodivy",
+      "ko": "20구 유로지비"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "FANG_HUNT"
+    ],
+    "id": 10610,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 5,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Fanghunt Office Fixer",
+      "ko": "송곳니 사냥 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "FULL_STOP"
+    ],
+    "id": 10611,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Bullet": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9105,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Full-Stop Office Rep",
+      "ko": "마침표 사무소 대표"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "R_CORP"
+    ],
+    "id": 10612,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "R Corp. 4th Pack Reindeer",
+      "ko": "R사 제 4무리 순록팀"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "FAMILY_GA_CANCELED",
+      "H_CORP"
+    ],
+    "id": 10613,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The Lord of Hongyuan",
+      "ko": "홍원 군주"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "RING_FINGER",
+      "RING_FINGER_PHYSICAL",
+      "SPIDER_HOUSE"
+    ],
+    "id": 10614,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 4,
+        "specialSkills": 6
+      },
+      "Combustion": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "LUST",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Ring Nursefather",
+      "ko": "거미집 약지 아비"
+    },
+    "traits": [
+      "FINGER",
+      "MACHINE_BOUND_ORGANISM",
+      "MAESTRO_FORMER",
+      "SMALL",
+      "SPIDER_HOUSE_FATHER"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "S_CORP"
+    ],
+    "id": 10615,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "S Corp. Ch'unokkun",
+      "ko": "S사 추노꾼"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "CINQ"
+    ],
+    "id": 10616,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Cinq Assoc. East Section 3",
+      "ko": "동부 섕크 협회 3과"
+    },
+    "traits": []
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10701,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "SHI"
+    ],
+    "id": 10702,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Shi Assoc. South Section 5",
+      "ko": "남부 시 협회 5과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "R_CORP"
+    ],
+    "id": 10703,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 1,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "R Corp. 4th Pack Rabbit",
+      "ko": "R사 제 4무리 토끼팀"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "N_CORP",
+      "N_CORP_FNATIC"
+    ],
+    "id": 10704,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 1,
+        "specialSkills": 1
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "N Corp. Kleinhammer",
+      "ko": "N사 작은 망치"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "ATL"
+    ],
+    "id": 10705,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 2,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O:: Sunshower",
+      "ko": "로보토미 E.G.O:: 여우비"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "SEVEN"
+    ],
+    "id": 10706,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Seven Assoc. South Section 4",
+      "ko": "남부 세븐 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "PEQUOD_CREW"
+    ],
+    "id": 10707,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 3,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Pequod Harpooneer",
+      "ko": "피쿼드호 작살잡이"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "OUFI"
+    ],
+    "id": 10708,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "GLOOM",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Öufi Assoc. South Section 3",
+      "ko": "남부 외우피 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "MULTI_CRACK"
+    ],
+    "id": 10709,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 4,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "MultiCrack Office Fixer",
+      "ko": "멀티크랙 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "MACHINE_BOUND_ORGANISM",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "WILD_HUNT",
+      "WUTHERING_HEIGHTS"
+    ],
+    "id": 10710,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 4,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Wild Hunt",
+      "ko": "와일드헌트"
+    },
+    "traits": [
+      "SMALL",
+      "WILD_HUNT_HEATH"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "FULL_STOP"
+    ],
+    "id": 10711,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Bullet": {
+        "skills": 3,
+        "specialSkills": 1
+      }
+    },
+    "rank": 3,
+    "season": 9105,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "GLOOM",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Full-Stop Office Fixer",
+      "ko": "마침표 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_CLOUD"
+    ],
+    "id": 10712,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Kurokumo Clan Wakashu",
+      "ko": "흑운회 와카슈"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 10713,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "W Corp. L4 Cleanup Agent - CCA",
+      "ko": "W사 4등급 정리 요원 - CCA"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_CHICKEN",
+      "H_CORP"
+    ],
+    "id": 10714,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Heishou Pack - You Branch Adept",
+      "ko": "흑수 - 유 필두"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "BLACK_BEAST_CHIEF",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "MIDDLE_FINGER"
+    ],
+    "id": 10715,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 1,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Middle Big Brother",
+      "ko": "중지 작은 형님"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "SPIDER_HOUSE",
+      "THUMB_FINGER"
+    ],
+    "id": 10716,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Thumb Apprentice",
+      "ko": "거미집 엄지 제자"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10801,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "R_CORP"
+    ],
+    "id": 10802,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "R Corp. 4th Pack Reindeer",
+      "ko": "R사 제 4무리 순록팀"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "SHI"
+    ],
+    "id": 10803,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Shi Assoc. South Section 5",
+      "ko": "남부 시 협회 5과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCC"
+    ],
+    "id": 10804,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCCB Assistant Manager",
+      "ko": "LCCB 대리"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "ATL"
+    ],
+    "id": 10805,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 2,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O::Sloshing",
+      "ko": "로보토미 E.G.O:: 출렁임"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIU"
+    ],
+    "id": 10806,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Liu Assoc. South Section 4",
+      "ko": "남부 리우 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "MOLAR"
+    ],
+    "id": 10807,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 2,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Molar Boatworks Fixer",
+      "ko": "어금니 보트 센터 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "PEQUOD_CREW"
+    ],
+    "id": 10808,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 3,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Pequod Captain",
+      "ko": "피쿼드호 선장"
+    },
+    "traits": [
+      "PEQUOD_CAPTAIN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "LINTON"
+    ],
+    "id": 10809,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 4,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Edgar Family Butler",
+      "ko": "에드가 가문 버틀러"
+    },
+    "traits": [
+      "BUTLER",
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "ZWEI"
+    ],
+    "id": 10810,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "GLUTTONY",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Zwei Assoc. West Section 3",
+      "ko": "서부 츠바이 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_CLOUD"
+    ],
+    "id": 10811,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "LUST",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Kurokumo Clan Captain",
+      "ko": "흑운회 부조장"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "FAMILY_GA",
+      "H_CORP"
+    ],
+    "id": 10812,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Family Hierarch Candidate",
+      "ko": "가주 후보"
+    },
+    "traits": [
+      "FAMILY_GA_CANDIDATE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "JEONG_OFFICE",
+      "OUFI_COOP"
+    ],
+    "id": 10813,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9107,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Jeong's Office Rep",
+      "ko": "정사무소 대표"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "MIDDLE_FINGER",
+      "SPIDER_HOUSE"
+    ],
+    "id": 10814,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Middle Apprentice",
+      "ko": "거미집 중지 제자"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL",
+      "SPIDER_HOUSE_DISCIPLE"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLADE_LINEAGE",
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCD"
+    ],
+    "id": 10815,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 5,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCD OSIR Team",
+      "ko": "LCD 현장추리팀"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 10901,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_CLOUD"
+    ],
+    "id": 10902,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Kurokumo Clan Wakashu",
+      "ko": "흑운회 와카슈"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCC"
+    ],
+    "id": 10903,
+    "keywordSource": "none",
+    "keywords": {},
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "GLUTTONY",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCCB Assistant Manager",
+      "ko": "LCCB 대리"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "N_CORP",
+      "N_CORP_FNATIC"
+    ],
+    "id": 10904,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 2,
+        "specialSkills": 2
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "N Corp. Mittelhammer",
+      "ko": "N사 중간 망치"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "TROUBLE_SHOOTER"
+    ],
+    "id": 10905,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 2,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "GLOOM",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Rosespanner Workshop Rep",
+      "ko": "장미스패너 공방 대표"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "ZWEI"
+    ],
+    "id": 10906,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Zwei Assoc. South Section 5",
+      "ko": "남부 츠바이 협회 5과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "DIECI"
+    ],
+    "id": 10907,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Dieci Assoc. South Section 4",
+      "ko": "남부 디에치 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "LIU"
+    ],
+    "id": 10908,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Liu Assoc. South Section 4 Director",
+      "ko": "남부 리우 협회 4과 부장"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "T_CORP"
+    ],
+    "id": 10909,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "ENVY"
+    ],
+    "title": {
+      "en": "T Corp. Class 2 Collection Staff",
+      "ko": "T사 2등급 징수직 직원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "DEVYAT"
+    ],
+    "id": 10910,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Devyat' Assoc. North Section 3",
+      "ko": "북부 제뱌찌 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "LA_MANCHA_LAND"
+    ],
+    "id": 10911,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "LUST",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Princess of La Manchaland",
+      "ko": "라만차랜드 공주"
+    },
+    "traits": [
+      "BLOODFIEND",
+      "SECOND_DEPENDENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_SNAKE",
+      "H_CORP"
+    ],
+    "id": 10912,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Heishou Pack - Si Branch",
+      "ko": "흑수 - 사"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 10913,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 6,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9106,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "GLOOM",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O:: The Sword Sharpened with Tears",
+      "ko": "로보토미 E.G.O:: 눈물로 벼려낸 검"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "R_CORP"
+    ],
+    "id": 10914,
+    "keywordSource": "derived",
+    "keywords": {
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "R Corp. 4th Pack Reindeer",
+      "ko": "R사 제 4무리 순록팀"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "RING_FINGER",
+      "RING_FINGER_FAUVISM"
+    ],
+    "id": 10915,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Ring Fauvist Docent",
+      "ko": "약지 야수파 도슨트"
+    },
+    "traits": [
+      "FINGER",
+      "RING_FINGER_DOCENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "SEVENFAMILIES_CANCELED",
+      "SPIDER_HOUSE",
+      "THUMB_FINGER"
+    ],
+    "id": 10916,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 5,
+        "specialSkills": 0
+      },
+      "Bullet": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 6,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 6,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Thumb Nursefather",
+      "ko": "거미집 엄지 아비"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL",
+      "SMOKE_WAR",
+      "SPIDER_HOUSE_FATHER",
+      "THUMB_LEVEL_MIDDLE_CAPO_UNDERBOSS",
+      "UNDERBOSS_FIRED",
+      "WAR_HERO"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 11001,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "BLADE_LINEAGE"
+    ],
+    "id": 11002,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 1,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Blade Lineage Salsu",
+      "ko": "검계 살수"
+    },
+    "traits": [
+      "CLAN",
+      "SALSOO",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "ZWEI"
+    ],
+    "id": 11003,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Zwei Assoc. South Section 6",
+      "ko": "남부 츠바이 협회 6과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "MARIACHI"
+    ],
+    "id": 11004,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Los Mariachis Jefe",
+      "ko": "마리아치 보스"
+    },
+    "traits": [
+      "BACK_STREET",
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "N_CORP",
+      "N_CORP_FNATIC"
+    ],
+    "id": 11005,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 1,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 1,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "The One Who Shall Grip",
+      "ko": "쥐어들 자"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "ATL"
+    ],
+    "id": 11006,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 2,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O::Red Sheet",
+      "ko": "로보토미 E.G.O:: 홍적"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "MOLAR"
+    ],
+    "id": 11007,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 2,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Molar Boatworks Fixer",
+      "ko": "어금니 보트 센터 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "CINQ"
+    ],
+    "id": 11008,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Cinq Assoc. South Section 4 Director",
+      "ko": "남부 섕크 협회 4과 부장"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "DAWN"
+    ],
+    "id": 11009,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9103,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Dawn Office Fixer",
+      "ko": "새벽 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "ZWEI"
+    ],
+    "id": 11010,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 5,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Zwei Assoc. West Section 3",
+      "ko": "서부 츠바이 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "DEVYAT"
+    ],
+    "id": 11011,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Devyat' Assoc. North Section 3",
+      "ko": "북부 제뱌찌 협회 3과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "MIDDLE_FINGER"
+    ],
+    "id": 11012,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The Middle Little Brother",
+      "ko": "중지 작은 아우"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "THUMB_FINGER"
+    ],
+    "id": 11013,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 0,
+        "specialSkills": 1
+      },
+      "Combustion": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "The Thumb East Soldato II",
+      "ko": "동부 엄지 솔다토II"
+    },
+    "traits": [
+      "FINGER",
+      "SMALL",
+      "THUMB_LEVEL_SOLDATO_TWO"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_CHICKEN",
+      "H_CORP"
+    ],
+    "id": 11014,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Heishou Pack - You Branch",
+      "ko": "흑수 - 유"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "SPIDER_HOUSE"
+    ],
+    "id": 11015,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Pinky Apprentice",
+      "ko": "거미집 소지 제자"
+    },
+    "traits": [
+      "SMALL",
+      "SPIDER_HOUSE_DISCIPLE"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 11101,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "BLADE_LINEAGE"
+    ],
+    "id": 11102,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Blade Lineage Salsu",
+      "ko": "검계 살수"
+    },
+    "traits": [
+      "CLAN",
+      "SALSOO",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "G_CORP"
+    ],
+    "id": 11103,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "G Corp. Head Manager",
+      "ko": "G사 부장"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "SEVEN"
+    ],
+    "id": 11104,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Seven Assoc. South Section 6 Director",
+      "ko": "남부 세븐 협회 6과 부장"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "MOLAR"
+    ],
+    "id": 11105,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 2,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "Molar Office Fixer",
+      "ko": "어금니 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "CINQ"
+    ],
+    "id": 11106,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Cinq Assoc. South Section 4",
+      "ko": "남부 섕크 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Penetrate"
+    ],
+    "factions": [
+      "L_CORP"
+    ],
+    "id": 11107,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 3
+      }
+    },
+    "rank": 3,
+    "season": 9102,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "WRATH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O::Magic Bullet",
+      "ko": "로보토미 E.G.O:: 마탄"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "LOBOTOMY_HEAD",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "WUTHERING_HEIGHTS"
+    ],
+    "id": 11108,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 4,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Wuthering Heights Chief Butler",
+      "ko": "워더링하이츠 치프 버틀러"
+    },
+    "traits": [
+      "BUTLER",
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "RING_FINGER",
+      "RING_FINGER_POINTILLISM"
+    ],
+    "id": 11109,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "The Ring Pointillist Student",
+      "ko": "약지 점묘파 스튜던트"
+    },
+    "traits": [
+      "FINGER",
+      "RING_FINGER_STUDENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "W_CORP"
+    ],
+    "id": 11110,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "GLOOM",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "W Corp. L3 Cleanup Captain",
+      "ko": "W사 3등급 정리 요원 팀장"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LA_MANCHA_LAND"
+    ],
+    "id": 11111,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "The Barber of La Manchaland",
+      "ko": "라만차랜드 이발사"
+    },
+    "traits": [
+      "BLOODFIEND",
+      "SMALL",
+      "THIRD_DEPENDENT"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_RABBIT",
+      "H_CORP"
+    ],
+    "id": 11112,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Heishou Pack - Mao Branch",
+      "ko": "흑수 - 묘"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "T_CORP"
+    ],
+    "id": 11113,
+    "keywordSource": "derived",
+    "keywords": {
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "T Corp. Class 3 VDCU Staff",
+      "ko": "T사 3등급 강력징수직 직원"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCA"
+    ],
+    "id": 11114,
+    "keywordSource": "derived",
+    "keywords": {
+      "Bullet": {
+        "skills": 0,
+        "specialSkills": 1
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 2
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "LCA Udjat Vanguard Team 3 Leader",
+      "ko": "LCA 우제트 선봉 3팀 팀장"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "MIDDLE_FINGER",
+      "SPIDER_HOUSE"
+    ],
+    "id": 11115,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 10,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 10,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "The House of Spiders: The Middle Nursefather",
+      "ko": "거미집 중지 아비"
+    },
+    "traits": [
+      "BIG_SISTER_PAST",
+      "FINGER",
+      "SMALL",
+      "SPIDER_HOUSE_FATHER"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCB"
+    ],
+    "id": 11201,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "LCB Sinner",
+      "ko": "LCB 수감자"
+    },
+    "traits": [
+      "BASE_APPEARANCE",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LIU"
+    ],
+    "id": 11202,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 0,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "SLOTH"
+    ],
+    "title": {
+      "en": "Liu Assoc. South Section 6",
+      "ko": "남부 리우 협회 6과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "G_CORP"
+    ],
+    "id": 11203,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 1,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "G Corp. Manager Corporal",
+      "ko": "G사 일등대리"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "BACKSTREET_COOK"
+    ],
+    "id": 11204,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 1,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "ENVY"
+    ],
+    "title": {
+      "en": "R.B. Sous-chef",
+      "ko": "료. 고. 파. 조수"
+    },
+    "traits": [
+      "BACK_STREET",
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "TROUBLE_SHOOTER"
+    ],
+    "id": 11205,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 2,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 2,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Rosespanner Workshop Fixer",
+      "ko": "장미스패너 공방 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "ZWEI"
+    ],
+    "id": 11206,
+    "keywordSource": "none",
+    "keywords": {},
+    "rank": 3,
+    "season": 0,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Zwei Assoc. South Section 4",
+      "ko": "남부 츠바이 협회 4과"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "DUAL_HOOK_PIRATE"
+    ],
+    "id": 11207,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Bullet": {
+        "skills": 1,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 3,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Twinhook Pirates First Mate",
+      "ko": "쌍갈고리 해적단 부선장"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit",
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_CLOUD"
+    ],
+    "id": 11208,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 2,
+    "season": 3,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "GLOOM"
+    ],
+    "title": {
+      "en": "Kurokumo Clan Captain",
+      "ko": "흑운회 부조장"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LINTON"
+    ],
+    "id": 11209,
+    "keywordSource": "derived",
+    "keywords": {
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 4,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "LUST",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Edgar Family Heir",
+      "ko": "에드가 가문 승계자"
+    },
+    "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "LA_MANCHA_LAND"
+    ],
+    "id": 11210,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "LUST",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "The Priest of La Manchaland",
+      "ko": "라만차랜드 신부"
+    },
+    "traits": [
+      "BLOODFIEND",
+      "SMALL",
+      "THIRD_DEPENDENT"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "factions": [
+      "FIREPUNCH_OFFICE"
+    ],
+    "id": 11211,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 5,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "WRATH",
+      "LUST"
+    ],
+    "title": {
+      "en": "Firefist Office Survivor",
+      "ko": "불주먹 사무소 생존자"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate",
+      "Slash"
+    ],
+    "factions": [
+      "BLACK_BEAST_SNAKE",
+      "H_CORP"
+    ],
+    "id": 11212,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Burst": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 6,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "GLUTTONY",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Heishou Pack - Si Branch",
+      "ko": "흑수 - 사"
+    },
+    "traits": [
+      "BLACK_BEAST",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "NIGHTSTILETTO"
+    ],
+    "id": 11213,
+    "keywordSource": "derived",
+    "keywords": {
+      "Laceration": {
+        "skills": 5,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9107,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Night Awls Capitano",
+      "ko": "밤의 송곳 카피타노"
+    },
+    "traits": [
+      "CLAN",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCE"
+    ],
+    "id": 11214,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Sinking": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "WRATH",
+      "GLOOM",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Lobotomy E.G.O::Lamp",
+      "ko": "로보토미 E.G.O:: 램프"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "LIMBUS_COMPANY",
+      "LIMBUS_COMPANY_LCE"
+    ],
+    "id": 11215,
+    "keywordSource": "derived",
+    "keywords": {
+      "Burst": {
+        "skills": 4,
+        "specialSkills": 0
+      },
+      "Charge": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 7,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "GLUTTONY",
+      "GLOOM",
+      "ENVY"
+    ],
+    "title": {
+      "en": "LCE E.G.O:: AEDD",
+      "ko": "LCE E.G.O:: AEDD"
+    },
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Slash"
+    ],
+    "factions": [
+      "DAWN"
+    ],
+    "id": 11216,
+    "keywordSource": "derived",
+    "keywords": {
+      "Combustion": {
+        "skills": 5,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9109,
+    "sinner": {
+      "en": "Gregor",
+      "ko": "그레고르"
+    },
+    "sinnerId": 12,
+    "sins": [
+      "WRATH",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "title": {
+      "en": "Dawn Office Rep",
+      "ko": "새벽 사무소 대표"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  }
+]

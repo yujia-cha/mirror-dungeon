@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+# 프로덕션 배포. 이 파일은 개발 저장소(yujia-cha/mirror)와 공개 저장소
+# (yujia-cha/mirror-dungeon) 양쪽에 있지만, 실제로 도는 곳은 공개 저장소뿐이다:
+# publish.yml이 PAT로 공개 저장소 main에 푸시하면 그 push 이벤트가 이 워크플로를 깨운다.
+# 개발 저장소에서는 아래 `if`가 잡을 건너뛴다(비공개 저장소라 Pages도 없다).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == 'yujia-cha/mirror-dungeon'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build
+        env:
+          # GitHub Pages는 https://<owner>.github.io/<repo>/ 하위 경로에서 서비스된다.
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    if: github.repository == 'yujia-cha/mirror-dungeon'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

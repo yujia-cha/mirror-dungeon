@@ -1,0 +1,12 @@
+{
+  "_comment": "Corrections to the identity keywords derived from skill data. Keys are identity ids (1SSNN). `skills` is how many base attack skills inflict the keyword — the unit conditional gifts count. `specialSkills` is how many inflict the 특수 variant (특수 충전 = 생체 재료 etc.), which only the '또는 특수 X' form of a condition counts. Identities listed here get keywordSource: \"curated\".",
+  "_example": {
+    "10716": {
+      "keywords": {
+        "Combustion": { "skills": 2, "specialSkills": 0 },
+        "Vibration": { "skills": 2, "specialSkills": 0 }
+      },
+      "_source": "인게임 확인 YYYY-MM-DD"
+    }
+  }
+}

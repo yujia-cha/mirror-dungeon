@@ -1,0 +1,8 @@
+{
+  "_comment": "Faction display names the localization files do not provide. Keys are associationList ids from the static personality data.",
+  "FIREPUNCH_OFFICE": {
+    "ko": "불주먹 사무소",
+    "en": "Firefist Office",
+    "_source": "인격 11211 '불주먹 사무소 생존자 그레고르' / 'Firefist Office Survivor Gregor'의 칭호에서 확인 (Personalities.json)."
+  }
+}

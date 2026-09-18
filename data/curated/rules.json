@@ -1,0 +1,28 @@
+{
+  "_comment": "Game rules the static data does not express, plus overrides for values it does. Merged last by scripts/build-data.ts, so everything here wins. Every entry carries a _source.",
+  "deployment": {
+    "max": 7,
+    "default": 6,
+    "verified": false,
+    "_source": "사용자 지정 (미검증). 출격 인원 상한 7은 사용자가 지정한 값이며 게임 내 근거는 아직 확인하지 못했다. default 6은 거울 던전의 기본 출격 인원. verified=false인 동안 UI가 '확인 필요'로 표시할 수 있다."
+  },
+  "_giftObservation": "MD7부터 mirror-dungeon-egogift-observation-data-md7.json이 비용표(70/160/270)와 관측 가능 기프트 목록을 제공하므로 build-data가 원본에서 읽는다(verified=true). 원본이 없는 시즌에만 여기에 {max, fusionResultsAllowed, costTable, verified, _source}를 다시 적는다.",
+  "generalGiftPackShare": 0.2,
+  "_generalGiftPackShare_source": "루트 탐색 제외 기준(하한). 전용 기프트가 아니면서 선택 가능한 팩의 20% 이상에 등장하는 기프트는 특정 팩을 강제해도 확정 획득이 아니므로 '일반 드랍'으로만 표시한다. 20% 미만(거울굴절철도처럼 풀이 18개뿐인 팩에만 있는 경우)은 희소하므로 루트로 노린다.",
+  "hiddenPack": {
+    "id": 3001,
+    "floors": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "probability": 0.0002,
+    "verified": false,
+    "_source": "히든 테마팩 「뽕.황」. mirrordungeon-theme-floor-hidden.json이 배포되지 않아 정적 데이터로 확인할 수 없다. 커뮤니티 보고(Hard 3층~평행중첩 10층, 0.02%)를 기록해 둔다. 관측으로 불러올 수 없으므로 루트 계획에는 쓰지 않는다."
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "deployment": {
+    "_source": "사용자 지정 (미검증). 출격 인원 상한 7은 사용자가 지정한 값이며 게임 내 근거는 아직 확인하지 못했다. default 6은 거울 던전의 기본 출격 인원. verified=false인 동안 UI가 '확인 필요'로 표시할 수 있다.",
+    "default": 6,
+    "max": 7,
+    "verified": false
+  },
+  "difficulty": {
+    "extremeAllowsObservation": false,
+    "hardIsSticky": true,
+    "parallelRequiresAllHard": true
+  },
+  "dungeonId": 7,
+  "floors": {
+    "extreme": [
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "hard": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "normal": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "parallel": [
+      6,
+      7,
+      8,
+      9,
+      10
+    ]
+  },
+  "fusion": {
+    "maxShopSlots": 3,
+    "resultTierByScore": [
+      {
+        "max": 10,
+        "min": 6,
+        "tier": 1
+      },
+      {
+        "max": 16,
+        "min": 11,
+        "tier": 2
+      },
+      {
+        "max": 24,
+        "min": 17,
+        "tier": 3
+      },
+      {
+        "max": 999,
+        "min": 25,
+        "tier": 4
+      }
+    ],
+    "successProbabilityByIngredients": {
+      "2": 0.6,
+      "3": 0.9,
+      "4": 0.99,
+      "5": 0.99
+    },
+    "successProbabilityWithStarlight": {
+      "2": 0.9,
+      "3": 0.99,
+      "4": 0.9999,
+      "5": 0.9999
+    },
+    "tierScores": {
+      "1": 3,
+      "2": 6,
+      "3": 10,
+      "4": 15,
+      "5": 30
+    }
+  },
+  "generalGiftPackShare": 0.2,
+  "giftObservation": {
+    "costTable": [
+      70,
+      160,
+      270
+    ],
+    "fusionResultsAllowed": false,
+    "max": 3,
+    "source": "mirror-dungeon-egogift-observation-data-md7.json observationEgoGiftCostDataList",
+    "verified": true
+  },
+  "hiddenBattle": {
+    "floors": [
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "gifts": [
+      9256,
+      9257,
+      9258,
+      9259
+    ],
+    "probabilityPerFloor": 0.1
+  },
+  "hiddenPack": {
+    "_source": "히든 테마팩 「뽕.황」. mirrordungeon-theme-floor-hidden.json이 배포되지 않아 정적 데이터로 확인할 수 없다. 커뮤니티 보고(Hard 3층~평행중첩 10층, 0.02%)를 기록해 둔다. 관측으로 불러올 수 없으므로 루트 계획에는 쓰지 않는다.",
+    "floors": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "id": 3001,
+    "probability": 0.0002,
+    "verified": false
+  },
+  "starlight": {
+    "hardClearMultiplier": 4,
+    "initial": 1200
+  },
+  "startGift": {
+    "newKeywordChipCost": 12,
+    "pickCount": 1,
+    "poolsByKeyword": {
+      "Breath": [
+        9046,
+        9051,
+        9129
+      ],
+      "Burst": [
+        9047,
+        9093,
+        9117
+      ],
+      "Charge": [
+        9043,
+        9052,
+        9134
+      ],
+      "Combustion": [
+        9001,
+        9009,
+        9103
+      ],
+      "Hit": [
+        9012,
+        9150,
+        9202
+      ],
+      "Laceration": [
+        9005,
+        9029,
+        9108
+      ],
+      "Penetrate": [
+        9030,
+        9145,
+        9198
+      ],
+      "Sinking": [
+        9041,
+        9054,
+        9124
+      ],
+      "Slash": [
+        9032,
+        9140,
+        9194
+      ],
+      "Vibration": [
+        9044,
+        9086,
+        9113
+      ]
+    },
+    "refreshStarlightCost": 10
+  },
+  "themeObservation": {
+    "base": 20,
+    "step": 10,
+    "unvisitedMultiplier": 1.5
+  },
+  "themePackRefreshCount": 1,
+  "themePacksOfferedPerFloor": 3,
+  "upgradeCostByTier": {
+    "1": [
+      50,
+      100
+    ],
+    "2": [
+      60,
+      120
+    ],
+    "3": [
+      75,
+      150
+    ],
+    "4": [
+      100,
+      200
+    ],
+    "5": [
+      120,
+      240
+    ]
+  }
+}

@@ -1,0 +1,2232 @@
+{
+  "1001": {
+    "bossEncounters": [
+      "md|canto-1-1"
+    ],
+    "category": [
+      "Canto",
+      "I"
+    ],
+    "image": "Canto_I",
+    "name": "The Forgotten",
+    "tags": [
+      "Canto",
+      "Canto I"
+    ]
+  },
+  "1002": {
+    "bossEncounters": [
+      "md|canto-1-2"
+    ],
+    "category": [
+      "Canto",
+      "I"
+    ],
+    "exclusive_gifts": [
+      "9403",
+      "9404"
+    ],
+    "image": "Canto_I_hard",
+    "name": "The Outcast",
+    "tags": [
+      "Canto",
+      "Canto I",
+      "Canto Name"
+    ]
+  },
+  "1003": {
+    "bossEncounters": [
+      "md|canto-2-1"
+    ],
+    "category": [
+      "Canto",
+      "II"
+    ],
+    "image": "Canto_II",
+    "name": "Flat-broke Gamblers",
+    "tags": [
+      "Canto",
+      "Canto II"
+    ]
+  },
+  "1004": {
+    "bossEncounters": [
+      "md|canto-2-2"
+    ],
+    "category": [
+      "Canto",
+      "II"
+    ],
+    "exclusive_gifts": [
+      "9407",
+      "9408",
+      "9410"
+    ],
+    "image": "Canto_II_mid",
+    "name": "Automated Factory",
+    "tags": [
+      "Canto",
+      "Canto II"
+    ]
+  },
+  "1005": {
+    "bossEncounters": [
+      "md|canto-2-3"
+    ],
+    "category": [
+      "Canto",
+      "II"
+    ],
+    "exclusive_gifts": [
+      "9409",
+      "9410"
+    ],
+    "image": "Canto_II_hard",
+    "name": "The Unloving",
+    "tags": [
+      "Canto",
+      "Canto II",
+      "Canto Name"
+    ]
+  },
+  "1006": {
+    "bossEncounters": [
+      "md|canto-3-1"
+    ],
+    "category": [
+      "Canto",
+      "III"
+    ],
+    "image": "Canto_III",
+    "name": "Nagel und Hammer",
+    "tags": [
+      "Canto",
+      "Canto III"
+    ]
+  },
+  "1007": {
+    "bossEncounters": [
+      "md|canto-3-2"
+    ],
+    "category": [
+      "Canto",
+      "III"
+    ],
+    "exclusive_gifts": [
+      "9413",
+      "9414",
+      "9416"
+    ],
+    "image": "Canto_III_mid",
+    "name": "Faith & Erosion",
+    "tags": [
+      "Canto",
+      "Canto III"
+    ]
+  },
+  "1008": {
+    "bossEncounters": [
+      "md|canto-3-3"
+    ],
+    "category": [
+      "Canto",
+      "III"
+    ],
+    "exclusive_gifts": [
+      "9415",
+      "9416"
+    ],
+    "image": "Canto_III_hard",
+    "name": "The Unconfronting",
+    "tags": [
+      "Canto",
+      "Canto III",
+      "Canto Name"
+    ]
+  },
+  "1009": {
+    "bossEncounters": [
+      "md|canto-4-1"
+    ],
+    "category": [
+      "Canto",
+      "IV"
+    ],
+    "image": "Canto_IV",
+    "name": "Nest, Workshop, and Technology",
+    "tags": [
+      "Canto",
+      "Canto IV"
+    ]
+  },
+  "1010": {
+    "bossEncounters": [
+      "md|canto-4-2"
+    ],
+    "category": [
+      "Canto",
+      "IV"
+    ],
+    "exclusive_gifts": [
+      "9419",
+      "9420",
+      "9248"
+    ],
+    "image": "Canto_IV_mid1",
+    "name": "Falling Flowers",
+    "tags": [
+      "Canto",
+      "Canto IV"
+    ]
+  },
+  "1011": {
+    "bossEncounters": [
+      "md|canto-4-3"
+    ],
+    "category": [
+      "Canto",
+      "IV"
+    ],
+    "image": "Canto_IV_mid2",
+    "name": "Tearful Things",
+    "tags": [
+      "Canto",
+      "Canto IV"
+    ]
+  },
+  "1012": {
+    "bossEncounters": [
+      "md|canto-4-4"
+    ],
+    "category": [
+      "Canto",
+      "IV"
+    ],
+    "exclusive_gifts": [
+      "9423",
+      "9424",
+      "9248"
+    ],
+    "image": "Canto_IV_hard",
+    "name": "The Unchanging",
+    "tags": [
+      "Canto",
+      "Canto IV",
+      "Canto Name"
+    ]
+  },
+  "1013": {
+    "bossEncounters": [
+      "md|canto-5-1"
+    ],
+    "category": [
+      "Canto",
+      "V"
+    ],
+    "image": "Canto_V",
+    "name": "Lake World",
+    "tags": [
+      "Canto",
+      "Canto V"
+    ]
+  },
+  "1014": {
+    "bossEncounters": [
+      "md|canto-5-2"
+    ],
+    "category": [
+      "Canto",
+      "V"
+    ],
+    "exclusive_gifts": [
+      "9427",
+      "9428",
+      "9212"
+    ],
+    "image": "Canto_V_mid",
+    "name": "Crawling Abyss",
+    "tags": [
+      "Canto",
+      "Canto V"
+    ]
+  },
+  "1015": {
+    "bossEncounters": [
+      "md|canto-5-3"
+    ],
+    "category": [
+      "Canto",
+      "V"
+    ],
+    "exclusive_gifts": [
+      "9429",
+      "9430"
+    ],
+    "image": "Canto_V_hard",
+    "name": "The Evil Defining",
+    "tags": [
+      "Canto",
+      "Canto V",
+      "Canto Name"
+    ]
+  },
+  "1016": {
+    "bossEncounters": [
+      "md|canto-6-1"
+    ],
+    "category": [
+      "Canto",
+      "VI"
+    ],
+    "exclusive_gifts": [
+      "9431",
+      "9432",
+      "9249"
+    ],
+    "image": "Canto_VI",
+    "name": "Dregs of the Manor",
+    "tags": [
+      "Canto",
+      "Canto VI"
+    ]
+  },
+  "1017": {
+    "bossEncounters": [
+      "md|canto-6-2"
+    ],
+    "category": [
+      "Canto",
+      "VI"
+    ],
+    "exclusive_gifts": [
+      "9433",
+      "9434"
+    ],
+    "image": "Canto_VI_mid",
+    "name": "A Certain World",
+    "tags": [
+      "Canto",
+      "Canto VI"
+    ]
+  },
+  "1018": {
+    "bossEncounters": [
+      "md|canto-6-3"
+    ],
+    "category": [
+      "Canto",
+      "VI"
+    ],
+    "exclusive_gifts": [
+      "9435",
+      "9436"
+    ],
+    "image": "Canto_VI_hard",
+    "name": "The Heartbreaking",
+    "tags": [
+      "Canto",
+      "Canto VI",
+      "Canto Name"
+    ]
+  },
+  "1019": {
+    "bossEncounters": [
+      "md|canto-7-1"
+    ],
+    "category": [
+      "Canto",
+      "VII"
+    ],
+    "exclusive_gifts": [
+      "9437",
+      "9438",
+      "9439",
+      "9440",
+      "9795",
+      "9213"
+    ],
+    "image": "Canto_VII",
+    "name": "La Manchaland Re-opening",
+    "tags": [
+      "Canto",
+      "Canto VII"
+    ]
+  },
+  "1020": {
+    "bossEncounters": [
+      "md|canto-7-2"
+    ],
+    "category": [
+      "Canto",
+      "VII"
+    ],
+    "exclusive_gifts": [
+      "9437",
+      "9438",
+      "9439",
+      "9440",
+      "9795",
+      "9213"
+    ],
+    "image": "Canto_VII_mid",
+    "name": "The Infinite Procession",
+    "tags": [
+      "Canto",
+      "Canto VII"
+    ]
+  },
+  "1021": {
+    "bossEncounters": [
+      "md|canto-7-3"
+    ],
+    "category": [
+      "Canto",
+      "VII"
+    ],
+    "exclusive_gifts": [
+      "9437",
+      "9438",
+      "9439",
+      "9440",
+      "9795",
+      "9213"
+    ],
+    "image": "Canto_VII_hard",
+    "name": "The Dream Ending",
+    "tags": [
+      "Canto",
+      "Canto VII",
+      "Canto Name"
+    ]
+  },
+  "1022": {
+    "bossEncounters": [
+      "md|canto-8-1"
+    ],
+    "category": [
+      "Canto",
+      "VIII"
+    ],
+    "exclusive_gifts": [
+      "9801",
+      "9802"
+    ],
+    "image": "Canto_VIII",
+    "name": "Four Houses and Greed",
+    "tags": [
+      "Canto",
+      "Canto VIII"
+    ]
+  },
+  "1023": {
+    "bossEncounters": [
+      "md|canto-8-2"
+    ],
+    "category": [
+      "Canto",
+      "VIII"
+    ],
+    "exclusive_gifts": [
+      "9803",
+      "9804"
+    ],
+    "image": "Canto_VIII_mid",
+    "name": "The Surrendered Witnessing",
+    "tags": [
+      "Canto",
+      "Canto VIII",
+      "Canto Name"
+    ]
+  },
+  "1024": {
+    "bossEncounters": [
+      "md|canto-9-1"
+    ],
+    "category": [
+      "Canto",
+      "IX"
+    ],
+    "exclusive_gifts": [
+      "9220",
+      "9221",
+      "9273"
+    ],
+    "image": "Canto_IX",
+    "name": "Charm, Wander, Doubt",
+    "tags": [
+      "Canto",
+      "Canto IX"
+    ]
+  },
+  "1025": {
+    "bossEncounters": [
+      "md|canto-9-2"
+    ],
+    "category": [
+      "Canto",
+      "IX"
+    ],
+    "exclusive_gifts": [
+      "9214",
+      "9215",
+      "9273",
+      "9283",
+      "9216"
+    ],
+    "image": "Canto_IX_mid",
+    "name": "Textbook",
+    "tags": [
+      "Canto",
+      "Canto IX"
+    ]
+  },
+  "1026": {
+    "bossEncounters": [
+      "md|canto-9-3"
+    ],
+    "category": [
+      "Canto",
+      "IX"
+    ],
+    "exclusive_gifts": [
+      "9222",
+      "9223",
+      "9225",
+      "9226",
+      "9273",
+      "9224"
+    ],
+    "image": "Canto_IX_mid2",
+    "name": "Blade and Artwork",
+    "tags": [
+      "Canto",
+      "Canto IX"
+    ]
+  },
+  "1027": {
+    "bossEncounters": [
+      "md|canto-9-4"
+    ],
+    "category": [
+      "Canto",
+      "IX"
+    ],
+    "exclusive_gifts": [
+      "9217",
+      "9218",
+      "9219",
+      "9273"
+    ],
+    "image": "Canto_IX_hard",
+    "name": "The Unsevering",
+    "tags": [
+      "Canto",
+      "Canto IX",
+      "Canto Name"
+    ]
+  },
+  "1101": {
+    "bossEncounters": [
+      "md|hells-chicken"
+    ],
+    "category": [
+      "Intervallo",
+      "Hell's Chicken"
+    ],
+    "eventPool": [
+      971001,
+      971003
+    ],
+    "exclusive_gifts": [
+      "9701",
+      "9702",
+      "9703",
+      "9704",
+      "9705"
+    ],
+    "image": "Canto_HellsChicken",
+    "name": "Hell's Chicken",
+    "tags": [
+      "Intervallo",
+      "Hell's Chicken"
+    ]
+  },
+  "1102": {
+    "bossEncounters": [
+      "md|sea"
+    ],
+    "category": [
+      "Intervallo",
+      "S.E.A."
+    ],
+    "exclusive_gifts": [
+      "9706",
+      "9707",
+      "9708",
+      "9249"
+    ],
+    "image": "Canto_SEA",
+    "name": "S.E.A.",
+    "tags": [
+      "Intervallo",
+      "S.E.A."
+    ]
+  },
+  "1103": {
+    "bossEncounters": [
+      "md|miracle-district-20"
+    ],
+    "category": [
+      "Intervallo",
+      "Miracle in District 20"
+    ],
+    "exclusive_gifts": [
+      "9709",
+      "9710",
+      "9711",
+      "9765"
+    ],
+    "image": "Canto_Miracle20",
+    "name": "Miracle in District 20",
+    "tags": [
+      "Intervallo",
+      "Miracle in District 20"
+    ]
+  },
+  "1104": {
+    "bossEncounters": [
+      "md|ymf-tctb"
+    ],
+    "category": [
+      "Intervallo",
+      "Yield My Flesh to Claim Their Bones"
+    ],
+    "eventPool": [
+      971012,
+      971013,
+      971014,
+      971016,
+      971017
+    ],
+    "exclusive_gifts": [
+      "9712",
+      "9713",
+      "9714",
+      "9715",
+      "9716",
+      "9719",
+      "9720",
+      "9717",
+      "9718",
+      "9783",
+      "9784",
+      "9280"
+    ],
+    "image": "Canto_YFCB",
+    "name": "Yield My Flesh to Claim Their Bones",
+    "tags": [
+      "Intervallo",
+      "Yield My Flesh to Claim Their Bones"
+    ]
+  },
+  "1105": {
+    "bossEncounters": [
+      "md|tkt"
+    ],
+    "category": [
+      "Intervallo",
+      "Timekilling Time"
+    ],
+    "eventPool": [
+      971021,
+      971022,
+      971023,
+      971024,
+      971025
+    ],
+    "exclusive_gifts": [
+      "9721",
+      "9722",
+      "9723",
+      "9724",
+      "9725",
+      "9726",
+      "9727",
+      "9728",
+      "9729",
+      "9730",
+      "9731"
+    ],
+    "image": "Canto_TimeKillingTime",
+    "name": "Timekilling Time",
+    "tags": [
+      "Intervallo",
+      "Timekilling Time"
+    ]
+  },
+  "1106": {
+    "bossEncounters": [
+      "md|motwe"
+    ],
+    "category": [
+      "Intervallo",
+      "Murder on the WARP Express"
+    ],
+    "eventPool": [
+      971027,
+      971028,
+      971029,
+      971030,
+      971031
+    ],
+    "exclusive_gifts": [
+      "9732",
+      "9733",
+      "9734",
+      "9735",
+      "9736",
+      "9737",
+      "9738",
+      "9739",
+      "9841",
+      "9740",
+      "9741",
+      "9742",
+      "9743"
+    ],
+    "image": "Canto_MOWE",
+    "name": "Murder on the WARP Express",
+    "tags": [
+      "Intervallo",
+      "Murder on the WARP Express"
+    ]
+  },
+  "1107": {
+    "bossEncounters": [
+      "md|walpu-4"
+    ],
+    "category": [
+      "Walpurgisnacht"
+    ],
+    "eventPool": [
+      971032,
+      971033,
+      971034,
+      971035
+    ],
+    "exclusive_gifts": [
+      "9744",
+      "9745",
+      "9746",
+      "9747",
+      "9748",
+      "9749",
+      "9750"
+    ],
+    "image": "Walpu4_NoonOfViolet",
+    "name": "The Noon of Violet",
+    "tags": [
+      "Walpurgisnacht"
+    ]
+  },
+  "1108": {
+    "bossEncounters": [
+      "md|railway-1"
+    ],
+    "category": [
+      "Refraction Railway"
+    ],
+    "exclusive_gifts": [
+      "9751",
+      "9752"
+    ],
+    "image": "RailwayDungeon_1",
+    "name": "Line 1",
+    "tags": [
+      "Refraction Railway"
+    ]
+  },
+  "1109": {
+    "bossEncounters": [
+      "md|railway-2"
+    ],
+    "category": [
+      "Refraction Railway"
+    ],
+    "exclusive_gifts": [
+      "9753",
+      "9754"
+    ],
+    "image": "RailwayDungeon_2",
+    "name": "Line 2",
+    "tags": [
+      "Refraction Railway"
+    ]
+  },
+  "1110": {
+    "bossEncounters": [
+      "md|railway-3"
+    ],
+    "category": [
+      "Refraction Railway"
+    ],
+    "exclusive_gifts": [
+      "9755",
+      "9756"
+    ],
+    "image": "RailwayDungeon_3",
+    "name": "Line 3",
+    "tags": [
+      "Refraction Railway"
+    ]
+  },
+  "1111": {
+    "bossEncounters": [
+      "md|railway-4-s3"
+    ],
+    "category": [
+      "Refraction Railway"
+    ],
+    "exclusive_gifts": [
+      "9757",
+      "9758"
+    ],
+    "image": "RailwayDungeon_4",
+    "name": "Line 4 - Section #3",
+    "tags": [
+      "Refraction Railway"
+    ]
+  },
+  "1112": {
+    "bossEncounters": [
+      "md|railway-4-s4"
+    ],
+    "category": [
+      "Refraction Railway"
+    ],
+    "exclusive_gifts": [
+      "9757",
+      "9758"
+    ],
+    "image": "RailwayDungeon_4_2",
+    "name": "Line 4 - Section #4",
+    "tags": [
+      "Refraction Railway"
+    ]
+  },
+  "1113": {
+    "bossEncounters": [
+      "md|miracle-district-20-bg"
+    ],
+    "category": [
+      "Intervallo",
+      "Miracle in District 20"
+    ],
+    "eventPool": [
+      971036,
+      971037
+    ],
+    "exclusive_gifts": [
+      "9709",
+      "9710",
+      "9711",
+      "9759",
+      "9760",
+      "9762",
+      "9763",
+      "9765",
+      "9761",
+      "9764"
+    ],
+    "image": "Canto_Miracle20_BokGak",
+    "name": "Miracle in District 20 BokGak",
+    "tags": [
+      "Intervallo",
+      "Miracle in District 20"
+    ]
+  },
+  "1114": {
+    "bossEncounters": [
+      "md|walpu-5"
+    ],
+    "category": [
+      "Walpurgisnacht"
+    ],
+    "eventPool": [
+      971038,
+      971039,
+      971040,
+      971041
+    ],
+    "exclusive_gifts": [
+      "9766",
+      "9767",
+      "9768",
+      "9769",
+      "9770",
+      "9771"
+    ],
+    "image": "Walpu5_ChurchOfGears",
+    "name": "Full-Stopped by a Bullet",
+    "tags": [
+      "Walpurgisnacht"
+    ]
+  },
+  "1115": {
+    "bossEncounters": [
+      "md|lcb-checkup"
+    ],
+    "category": [
+      "Intervallo",
+      "LCB Regular Check-up"
+    ],
+    "eventPool": [
+      971042,
+      971043,
+      971044,
+      971045,
+      971046,
+      971047
+    ],
+    "exclusive_gifts": [
+      "9772",
+      "9773",
+      "9774",
+      "9775",
+      "9776",
+      "9777",
+      "9778",
+      "9779",
+      "9780"
+    ],
+    "image": "Canto_LCBCheckUp",
+    "name": "LCB Regular Check-up",
+    "tags": [
+      "Intervallo",
+      "LCB Regular Check-up"
+    ]
+  },
+  "1116": {
+    "bossEncounters": [
+      "md|ymf-tctb-bg"
+    ],
+    "category": [
+      "Intervallo",
+      "Yield My Flesh to Claim Their Bones"
+    ],
+    "eventPool": [
+      971012,
+      971013,
+      971014,
+      971016,
+      971017,
+      971049,
+      971050
+    ],
+    "exclusive_gifts": [
+      "9712",
+      "9713",
+      "9714",
+      "9715",
+      "9716",
+      "9719",
+      "9720",
+      "9781",
+      "9782",
+      "9785",
+      "9717",
+      "9718",
+      "9783",
+      "9784",
+      "9280"
+    ],
+    "image": "Canto_YFCB_BokGak",
+    "name": "Yield My Flesh to Claim Their Bones BokGak",
+    "tags": [
+      "Intervallo",
+      "Yield My Flesh to Claim Their Bones"
+    ]
+  },
+  "1117": {
+    "bossEncounters": [
+      "md|nocturnal-sweeping"
+    ],
+    "category": [
+      "Intervallo",
+      "Nocturnal Sweeping"
+    ],
+    "eventPool": [
+      971051,
+      971052,
+      971053,
+      971054
+    ],
+    "exclusive_gifts": [
+      "9786",
+      "9787",
+      "9788",
+      "9789",
+      "9790",
+      "9791",
+      "9794",
+      "9792",
+      "9793",
+      "9272"
+    ],
+    "image": "Canto_NightSweep",
+    "name": "Nocturnal Sweeping",
+    "tags": [
+      "Intervallo",
+      "Nocturnal Sweeping"
+    ]
+  },
+  "1118": {
+    "bossEncounters": [
+      "md|railway-5"
+    ],
+    "category": [
+      "Refraction Railway"
+    ],
+    "exclusive_gifts": [
+      "9796",
+      "9797",
+      "9798"
+    ],
+    "image": "RailwayDungeon_5",
+    "name": "Line 5",
+    "tags": [
+      "Refraction Railway"
+    ]
+  },
+  "1119": {
+    "bossEncounters": [
+      "md|walpu-6"
+    ],
+    "category": [
+      "Walpurgisnacht"
+    ],
+    "eventPool": [
+      971060,
+      971061,
+      971062,
+      971063
+    ],
+    "exclusive_gifts": [
+      "9805",
+      "9806",
+      "9807",
+      "9808",
+      "9809",
+      "9810",
+      "9811"
+    ],
+    "image": "Walpu6_MagicalGirl",
+    "name": "Hatred and Despair",
+    "tags": [
+      "Walpurgisnacht"
+    ]
+  },
+  "1120": {
+    "bossEncounters": [
+      "md|tkt-bg"
+    ],
+    "category": [
+      "Intervallo",
+      "Timekilling Time"
+    ],
+    "eventPool": [
+      971021,
+      971022,
+      971023,
+      971024,
+      971025,
+      971064,
+      971065,
+      971066,
+      971067
+    ],
+    "exclusive_gifts": [
+      "9721",
+      "9722",
+      "9723",
+      "9724",
+      "9725",
+      "9726",
+      "9727",
+      "9812",
+      "9813",
+      "9814",
+      "9816",
+      "9728",
+      "9729",
+      "9730",
+      "9731"
+    ],
+    "image": "Canto_TimeKillingTime_BokGak",
+    "name": "Timekilling Time BokGak",
+    "tags": [
+      "Intervallo",
+      "Timekilling Time"
+    ]
+  },
+  "1121": {
+    "bossEncounters": [
+      "md|spring-cultivation"
+    ],
+    "category": [
+      "Intervallo",
+      "Spring Cultivation"
+    ],
+    "eventPool": [
+      971068,
+      971069,
+      971070,
+      971071,
+      971072,
+      971073
+    ],
+    "exclusive_gifts": [
+      "9819",
+      "9820",
+      "9821",
+      "9822",
+      "9823",
+      "9824",
+      "9826",
+      "9825"
+    ],
+    "image": "Canto_XiChunMaker",
+    "name": "Spring Cultivation",
+    "tags": [
+      "Intervallo",
+      "Spring Cultivation"
+    ]
+  },
+  "1122": {
+    "bossEncounters": [
+      "md|pilgrimage"
+    ],
+    "category": [
+      "Collab"
+    ],
+    "exclusive_gifts": [
+      "9831",
+      "9832",
+      "9833",
+      "9834",
+      "9835",
+      "9836",
+      "9837",
+      "9838",
+      "9839"
+    ],
+    "image": "Canto_Pilgrimage",
+    "name": "Pilgrimage of Compassion",
+    "tags": [
+      "Collab"
+    ]
+  },
+  "1123": {
+    "bossEncounters": [
+      "md|motwe-bg"
+    ],
+    "category": [
+      "Intervallo",
+      "Murder on the WARP Express"
+    ],
+    "eventPool": [
+      971027,
+      971028,
+      971029,
+      971030,
+      971031,
+      971080,
+      971081,
+      971083,
+      971084
+    ],
+    "exclusive_gifts": [
+      "9732",
+      "9733",
+      "9734",
+      "9735",
+      "9736",
+      "9737",
+      "9738",
+      "9739",
+      "9840",
+      "9842",
+      "9843",
+      "9818",
+      "9841",
+      "9740",
+      "9741",
+      "9742",
+      "9743"
+    ],
+    "image": "Canto_MOWE_BokGak",
+    "name": "Murder on the WARP Express BokGak",
+    "tags": [
+      "Intervallo",
+      "Murder on the WARP Express"
+    ]
+  },
+  "1124": {
+    "bossEncounters": [
+      "md|walpu-8"
+    ],
+    "category": [
+      "Walpurgisnacht"
+    ],
+    "eventPool": [
+      971090,
+      971091,
+      971092,
+      971093,
+      971096,
+      971097
+    ],
+    "exclusive_gifts": [
+      "9233",
+      "9234",
+      "9236",
+      "9237",
+      "9238",
+      "9240",
+      "9241",
+      "9235",
+      "9239"
+    ],
+    "image": "Walpu8_Amber",
+    "name": "The Dusk of Amber",
+    "tags": [
+      "Walpurgisnacht"
+    ]
+  },
+  "1125": {
+    "bossEncounters": [
+      "md|lcb-checkup-bg"
+    ],
+    "category": [
+      "Intervallo",
+      "LCB Regular Check-up"
+    ],
+    "eventPool": [
+      971042,
+      971043,
+      971044,
+      971045,
+      971046,
+      971047,
+      971100,
+      971101,
+      971102,
+      971103
+    ],
+    "exclusive_gifts": [
+      "9772",
+      "9773",
+      "9774",
+      "9775",
+      "9776",
+      "9777",
+      "9778",
+      "9779",
+      "9243",
+      "9244",
+      "9245",
+      "9246",
+      "9780"
+    ],
+    "image": "Canto_LCBCheckUp_BokGak",
+    "name": "LCB Regular Check-up BokGak",
+    "tags": [
+      "Intervallo",
+      "LCB Regular Check-up"
+    ]
+  },
+  "1126": {
+    "bossEncounters": [
+      "md|twining-threads"
+    ],
+    "category": [
+      "Intervallo",
+      "Twining Threads"
+    ],
+    "eventPool": [
+      971104,
+      971105,
+      971106,
+      971107
+    ],
+    "exclusive_gifts": [
+      "9260",
+      "9261",
+      "9262",
+      "9265",
+      "9266",
+      "9268",
+      "9263",
+      "9264"
+    ],
+    "image": "Canto_TwiningThread",
+    "name": "Twining Threads",
+    "tags": [
+      "Intervallo",
+      "Twining Threads"
+    ]
+  },
+  "1127": {
+    "bossEncounters": [
+      "md|nocturnal-sweeping-bg"
+    ],
+    "category": [
+      "Intervallo",
+      "Nocturnal Sweeping"
+    ],
+    "eventPool": [
+      971051,
+      971052,
+      971053,
+      971054,
+      971108,
+      971109
+    ],
+    "exclusive_gifts": [
+      "9786",
+      "9787",
+      "9788",
+      "9789",
+      "9790",
+      "9791",
+      "9794",
+      "9269",
+      "9271",
+      "9792",
+      "9793",
+      "9272",
+      "9270"
+    ],
+    "image": "Canto_NightSweep_BokGak",
+    "name": "Nocturnal Sweeping BokGak",
+    "tags": [
+      "Intervallo",
+      "Nocturnal Sweeping"
+    ]
+  },
+  "1128": {
+    "bossEncounters": [
+      "md|mnestic-experience"
+    ],
+    "category": [
+      "Intervallo",
+      "Mnestic Experience"
+    ],
+    "eventPool": [
+      971110,
+      971111,
+      971112
+    ],
+    "exclusive_gifts": [
+      "9274",
+      "9275",
+      "9276",
+      "9277",
+      "9278",
+      "9279",
+      "9280"
+    ],
+    "image": "Canto_RecordMemory",
+    "name": "Mnestic Experience",
+    "tags": [
+      "Intervallo",
+      "Mnestic Experience"
+    ]
+  },
+  "1201": {
+    "category": [
+      "Attack Type",
+      "Slash"
+    ],
+    "image": "AttackType_normal",
+    "name": "Slicers & Dicers",
+    "overlayImage": "AttackTypeSlash_hard_boss",
+    "tags": [
+      "Attack Type",
+      "Slash"
+    ]
+  },
+  "1202": {
+    "category": [
+      "Attack Type",
+      "Slash"
+    ],
+    "image": "AttackType_effective",
+    "name": "To be Cleaved",
+    "overlayImage": "AttackTypeSlash_effective_boss",
+    "tags": [
+      "Attack Type",
+      "Slash"
+    ]
+  },
+  "1203": {
+    "category": [
+      "Attack Type",
+      "Pierce"
+    ],
+    "image": "AttackType_normal",
+    "name": "Piercers & Penetrators",
+    "overlayImage": "AttackTypePierce_hard_boss",
+    "tags": [
+      "Attack Type",
+      "Pierce"
+    ]
+  },
+  "1204": {
+    "category": [
+      "Attack Type",
+      "Pierce"
+    ],
+    "image": "AttackType_effective",
+    "name": "To be Pierced",
+    "overlayImage": "AttackTypePierce_effective_boss",
+    "tags": [
+      "Attack Type",
+      "Pierce"
+    ]
+  },
+  "1205": {
+    "category": [
+      "Attack Type",
+      "Blunt"
+    ],
+    "image": "AttackType_normal",
+    "name": "Crushers & Breakers",
+    "overlayImage": "AttackTypeBlunt_hard_boss",
+    "tags": [
+      "Attack Type",
+      "Blunt"
+    ]
+  },
+  "1206": {
+    "category": [
+      "Attack Type",
+      "Blunt"
+    ],
+    "image": "AttackType_effective",
+    "name": "To be Crushed",
+    "overlayImage": "AttackTypeBlunt_effective_boss",
+    "tags": [
+      "Attack Type",
+      "Blunt"
+    ]
+  },
+  "1301": {
+    "category": [
+      "Affinity",
+      "Wrath"
+    ],
+    "image": "Crimson_normal",
+    "name": "Repressed Wrath",
+    "overlayImage": "Crimson_normal_boss",
+    "tags": [
+      "Affinity",
+      "Wrath"
+    ]
+  },
+  "1302": {
+    "category": [
+      "Affinity",
+      "Wrath"
+    ],
+    "exclusive_gifts": [
+      "9208",
+      "9267",
+      "9282"
+    ],
+    "image": "Crimson_hard",
+    "name": "Unbound Wrath",
+    "overlayImage": "Crimson_normal_boss",
+    "tags": [
+      "Affinity",
+      "Wrath"
+    ]
+  },
+  "1303": {
+    "category": [
+      "Affinity",
+      "Wrath"
+    ],
+    "image": "Crimson_effective",
+    "name": "Emotional Repression",
+    "overlayImage": "Crimson_effective_boss",
+    "tags": [
+      "Affinity",
+      "Wrath"
+    ]
+  },
+  "1304": {
+    "category": [
+      "Affinity",
+      "Lust"
+    ],
+    "image": "Scarlet_normal",
+    "name": "Addicting Lust",
+    "overlayImage": "Scarlet_normal_boss",
+    "tags": [
+      "Affinity",
+      "Lust"
+    ]
+  },
+  "1305": {
+    "category": [
+      "Affinity",
+      "Lust"
+    ],
+    "exclusive_gifts": [
+      "9208"
+    ],
+    "image": "Scarlet_hard",
+    "name": "Tangling Lust",
+    "overlayImage": "Scarlet_hard_boss",
+    "tags": [
+      "Affinity",
+      "Lust"
+    ]
+  },
+  "1306": {
+    "category": [
+      "Affinity",
+      "Lust"
+    ],
+    "image": "Scarlet_effective",
+    "name": "Emotional Seduction",
+    "overlayImage": "Scarlet_effective_boss",
+    "tags": [
+      "Affinity",
+      "Lust"
+    ]
+  },
+  "1307": {
+    "category": [
+      "Affinity",
+      "Sloth"
+    ],
+    "image": "Amber_normal",
+    "name": "Treadwheel Sloth",
+    "overlayImage": "Amber_normal_boss",
+    "tags": [
+      "Affinity",
+      "Sloth"
+    ]
+  },
+  "1308": {
+    "category": [
+      "Affinity",
+      "Sloth"
+    ],
+    "exclusive_gifts": [
+      "9208"
+    ],
+    "image": "Amber_hard",
+    "name": "Inert Sloth",
+    "overlayImage": "Amber_hard_boss",
+    "tags": [
+      "Affinity",
+      "Sloth"
+    ]
+  },
+  "1309": {
+    "category": [
+      "Affinity",
+      "Sloth"
+    ],
+    "image": "Amber_effective",
+    "name": "Emotional Indolence",
+    "overlayImage": "Amber_effective_boss",
+    "tags": [
+      "Affinity",
+      "Sloth"
+    ]
+  },
+  "1310": {
+    "category": [
+      "Affinity",
+      "Gluttony"
+    ],
+    "image": "Shamrock_normal",
+    "name": "Devoured Gluttony",
+    "overlayImage": "Shamrock_normal_boss",
+    "tags": [
+      "Affinity",
+      "Gluttony"
+    ]
+  },
+  "1311": {
+    "category": [
+      "Affinity",
+      "Gluttony"
+    ],
+    "exclusive_gifts": [
+      "9208"
+    ],
+    "image": "Shamrock_hard",
+    "name": "Excessive Gluttony",
+    "overlayImage": "Shamrock_hard_boss",
+    "tags": [
+      "Affinity",
+      "Gluttony"
+    ]
+  },
+  "1312": {
+    "category": [
+      "Affinity",
+      "Gluttony"
+    ],
+    "image": "Shamrock_effective",
+    "name": "Emotional Craving",
+    "overlayImage": "Shamrock_effective_boss",
+    "tags": [
+      "Affinity",
+      "Gluttony"
+    ]
+  },
+  "1313": {
+    "category": [
+      "Affinity",
+      "Gloom"
+    ],
+    "image": "Azure_normal",
+    "name": "Degraded Gloom",
+    "overlayImage": "Azure_normal_boss",
+    "tags": [
+      "Affinity",
+      "Gloom"
+    ]
+  },
+  "1314": {
+    "category": [
+      "Affinity",
+      "Gloom"
+    ],
+    "exclusive_gifts": [
+      "9211",
+      "9208"
+    ],
+    "image": "Azure_hard",
+    "name": "Sunk Gloom",
+    "overlayImage": "Azure_hard_boss",
+    "tags": [
+      "Affinity",
+      "Gloom"
+    ]
+  },
+  "1315": {
+    "category": [
+      "Affinity",
+      "Gloom"
+    ],
+    "image": "Azure_effective",
+    "name": "Emotional Flood",
+    "overlayImage": "Azure_effective_boss",
+    "tags": [
+      "Affinity",
+      "Gloom"
+    ]
+  },
+  "1316": {
+    "category": [
+      "Affinity",
+      "Pride"
+    ],
+    "exclusive_gifts": [
+      "9209"
+    ],
+    "image": "Indigo_normal",
+    "name": "Vain Pride",
+    "overlayImage": "Indigo_normal_boss",
+    "tags": [
+      "Affinity",
+      "Pride"
+    ]
+  },
+  "1317": {
+    "category": [
+      "Affinity",
+      "Pride"
+    ],
+    "exclusive_gifts": [
+      "9208"
+    ],
+    "image": "Indigo_hard",
+    "name": "Tyrannical Pride",
+    "overlayImage": "Indigo_hard_boss",
+    "tags": [
+      "Affinity",
+      "Pride"
+    ]
+  },
+  "1318": {
+    "category": [
+      "Affinity",
+      "Pride"
+    ],
+    "image": "Indigo_effective",
+    "name": "Emotional Subservience",
+    "overlayImage": "Indigo_effective_boss",
+    "tags": [
+      "Affinity",
+      "Pride"
+    ]
+  },
+  "1319": {
+    "category": [
+      "Affinity",
+      "Envy"
+    ],
+    "image": "Violet_normal",
+    "name": "Insignificant Envy",
+    "overlayImage": "Violet_normal_boss",
+    "tags": [
+      "Affinity",
+      "Envy"
+    ]
+  },
+  "1320": {
+    "category": [
+      "Affinity",
+      "Envy"
+    ],
+    "exclusive_gifts": [
+      "9208"
+    ],
+    "image": "Violet_hard",
+    "name": "Pitiful Envy",
+    "overlayImage": "Violet_hard_boss",
+    "tags": [
+      "Affinity",
+      "Envy"
+    ]
+  },
+  "1321": {
+    "category": [
+      "Affinity",
+      "Envy"
+    ],
+    "image": "Violet_effective",
+    "name": "Emotional Judgment",
+    "overlayImage": "Violet_effective_boss",
+    "tags": [
+      "Affinity",
+      "Envy"
+    ]
+  },
+  "1401": {
+    "category": [
+      "Keyword",
+      "Burn"
+    ],
+    "image": "Burn_normal",
+    "name": "Burning Haze",
+    "overlayImage": "Burn_normal_boss",
+    "tags": [
+      "Keyword",
+      "Burn"
+    ]
+  },
+  "1402": {
+    "category": [
+      "Keyword",
+      "Burn"
+    ],
+    "exclusive_gifts": [
+      "9267",
+      "9282"
+    ],
+    "image": "Burn_hard",
+    "name": "Season of the Flame",
+    "overlayImage": "Burn_hard_boss",
+    "tags": [
+      "Keyword",
+      "Burn"
+    ]
+  },
+  "1403": {
+    "category": [
+      "Keyword",
+      "Bleed"
+    ],
+    "image": "Bleed_normal",
+    "name": "Trickled Sanguine Blood",
+    "overlayImage": "Bleed_normal_boss",
+    "tags": [
+      "Keyword",
+      "Bleed"
+    ]
+  },
+  "1404": {
+    "category": [
+      "Keyword",
+      "Bleed"
+    ],
+    "image": "Bleed_hard",
+    "name": "Mountain of Corpses, Sea of Blood",
+    "overlayImage": "Bleed_hard_boss",
+    "tags": [
+      "Keyword",
+      "Bleed"
+    ]
+  },
+  "1405": {
+    "category": [
+      "Keyword",
+      "Tremor"
+    ],
+    "image": "Tremor_normal",
+    "name": "Dizzying Waves",
+    "overlayImage": "Tremor_normal_boss",
+    "tags": [
+      "Keyword",
+      "Tremor"
+    ]
+  },
+  "1406": {
+    "category": [
+      "Keyword",
+      "Tremor"
+    ],
+    "image": "Tremor_hard",
+    "name": "Abnormal Seismic Zone",
+    "overlayImage": "Tremor_hard_boss",
+    "tags": [
+      "Keyword",
+      "Tremor"
+    ]
+  },
+  "1407": {
+    "category": [
+      "Keyword",
+      "Rupture"
+    ],
+    "image": "Rupture_normal",
+    "name": "Crushing External Force",
+    "overlayImage": "Rupture_normal_boss",
+    "tags": [
+      "Keyword",
+      "Rupture"
+    ]
+  },
+  "1408": {
+    "category": [
+      "Keyword",
+      "Rupture"
+    ],
+    "image": "Rupture_hard",
+    "name": "Unrelenting Might",
+    "overlayImage": "Rupture_hard_boss",
+    "tags": [
+      "Keyword",
+      "Rupture"
+    ]
+  },
+  "1409": {
+    "category": [
+      "Keyword",
+      "Sinking"
+    ],
+    "image": "Sinking_normal",
+    "name": "Sinking Pang",
+    "overlayImage": "Sinking_normal_boss",
+    "tags": [
+      "Keyword",
+      "Sinking"
+    ]
+  },
+  "1410": {
+    "category": [
+      "Keyword",
+      "Sinking"
+    ],
+    "exclusive_gifts": [
+      "9211"
+    ],
+    "image": "Sinking_hard",
+    "name": "Sinking Deluge",
+    "overlayImage": "Sinking_hard_boss",
+    "tags": [
+      "Keyword",
+      "Sinking"
+    ]
+  },
+  "1411": {
+    "category": [
+      "Keyword",
+      "Poise"
+    ],
+    "image": "Poise_normal",
+    "name": "Deep Sigh",
+    "overlayImage": "Poise_normal_boss",
+    "tags": [
+      "Keyword",
+      "Poise"
+    ]
+  },
+  "1412": {
+    "category": [
+      "Keyword",
+      "Poise"
+    ],
+    "image": "Poise_hard",
+    "name": "Poised Breathing",
+    "overlayImage": "Poise_hard_boss",
+    "tags": [
+      "Keyword",
+      "Poise"
+    ]
+  },
+  "1413": {
+    "category": [
+      "Keyword",
+      "Charge"
+    ],
+    "image": "Charge_normal",
+    "name": "Rising Power Supply",
+    "overlayImage": "Charge_normal_boss",
+    "tags": [
+      "Keyword",
+      "Charge"
+    ]
+  },
+  "1414": {
+    "category": [
+      "Keyword",
+      "Charge"
+    ],
+    "image": "Charge_hard",
+    "name": "Thunder and Lightning",
+    "overlayImage": "Charge_hard_boss",
+    "tags": [
+      "Keyword",
+      "Charge"
+    ]
+  },
+  "1501": {
+    "bossEncounters": [
+      "md|extreme-ncorp"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "CorpN_Extreme",
+    "name": "N Corp. New League of Nine Littérateurs",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1502": {
+    "bossEncounters": [
+      "md|extreme-plant"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "Plant_Extreme",
+    "name": "Efflorescing Greenery",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1503": {
+    "bossEncounters": [
+      "md|extreme-railway3"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "RailwayDungeon3_Extreme",
+    "name": "Line 3 - Terminus",
+    "tags": [
+      "Extreme",
+      "Refraction Railway"
+    ]
+  },
+  "1504": {
+    "bossEncounters": [
+      "md|extreme-bridle"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9209"
+    ],
+    "image": "DealCut_Extreme",
+    "name": "Bridle of Infinity",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1505": {
+    "bossEncounters": [
+      "md|extreme-sea"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "Canto_SEA_Extreme",
+    "name": "S.E.A. C.R",
+    "tags": [
+      "Extreme",
+      "Intervallo",
+      "S.E.A."
+    ]
+  },
+  "1506": {
+    "bossEncounters": [
+      "md|extreme-canto6"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "Canto_VI_Extreme",
+    "name": "Impenetrable Path",
+    "tags": [
+      "Extreme",
+      "Canto",
+      "Canto VI"
+    ]
+  },
+  "1507": {
+    "bossEncounters": [
+      "md|extreme-bloodfiend"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "BloodFiend_Extreme",
+    "name": "Who Couldn't be Bloodfiends",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1508": {
+    "bossEncounters": [
+      "md|extreme-distortion"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "Distortion_Extreme",
+    "name": "A Beautiful Voice",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1509": {
+    "bossEncounters": [
+      "md|extreme-walpu2"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "Walpu2_Extreme",
+    "name": "The Dawn of Green",
+    "tags": [
+      "Extreme",
+      "Walpurgisnacht"
+    ]
+  },
+  "1510": {
+    "bossEncounters": [
+      "md|extreme-walpu3"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "image": "Walpu3_Extreme",
+    "name": "Into a Certain Library's Book",
+    "tags": [
+      "Extreme",
+      "Walpurgisnacht"
+    ]
+  },
+  "1511": {
+    "bossEncounters": [
+      "md|extreme-kcorp"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9250"
+    ],
+    "image": "KCorp_Extreme",
+    "name": "Code Purple",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1512": {
+    "bossEncounters": [
+      "md|extreme-weight"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9251"
+    ],
+    "image": "HeavyHeld_Extreme",
+    "name": "Bearers of Weight",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1513": {
+    "bossEncounters": [
+      "md|extreme-railway1"
+    ],
+    "category": [
+      "Extreme",
+      "Refraction Railway"
+    ],
+    "exclusive_gifts": [
+      "9252"
+    ],
+    "image": "RailwayDungeon1_Extreme",
+    "name": "Line 1 : MADNESS",
+    "tags": [
+      "Extreme",
+      "Refraction Railway"
+    ]
+  },
+  "1514": {
+    "bossEncounters": [
+      "md|extreme-lamancha"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9253"
+    ],
+    "image": "LamanchaParade_Extreme",
+    "name": "Blessed Carnival",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1515": {
+    "bossEncounters": [
+      "md|extreme-fairy"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9254"
+    ],
+    "image": "Fairy_Extreme",
+    "name": "Fairy Tale",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1516": {
+    "bossEncounters": [
+      "md|extreme-ichthys"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9255"
+    ],
+    "image": "HeadlessIchthys_Extreme",
+    "name": "Bloodtinged Ichthyic Odor",
+    "tags": [
+      "Extreme"
+    ]
+  },
+  "1517": {
+    "bossEncounters": [
+      "md|extreme-ricardo"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9829"
+    ],
+    "image": "Ricardo_Extreme",
+    "name": "Complete & Total Extermination",
+    "tags": [
+      "Extreme",
+      "Ex-hidden Boss"
+    ]
+  },
+  "1518": {
+    "bossEncounters": [
+      "md|extreme-quixote"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9827"
+    ],
+    "image": "LamanchaOwner_Extreme",
+    "name": "The Master of La Manchaland",
+    "tags": [
+      "Extreme",
+      "Ex-hidden Boss"
+    ]
+  },
+  "1519": {
+    "bossEncounters": [
+      "md|extreme-leiheng"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9828"
+    ],
+    "image": "LeiHeng_Extreme",
+    "name": "Chachihu",
+    "tags": [
+      "Extreme",
+      "Ex-hidden Boss"
+    ]
+  },
+  "1520": {
+    "bossEncounters": [
+      "md|extreme-af2"
+    ],
+    "category": [
+      "Extreme"
+    ],
+    "exclusive_gifts": [
+      "9830"
+    ],
+    "image": "AF2_Extreme",
+    "name": "A Midspring Night's Dream 2",
+    "tags": [
+      "Extreme",
+      "Ex-hidden Boss"
+    ]
+  },
+  "3001": {
+    "category": [
+      "Hidden"
+    ],
+    "exclusive_gifts": [
+      "9242"
+    ],
+    "image": "HiddenTheme",
+    "name": "The B.E.",
+    "tags": [
+      "Hidden"
+    ]
+  }
+}

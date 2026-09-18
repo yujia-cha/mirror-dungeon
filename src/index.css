@@ -1,0 +1,164 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Nunito (SIL OFL, src/assets/fonts/Nunito-OFL.txt) carries every number the app draws. Its round
+ * bowls stay readable at the 9-11px the tier chips and floor cells use, where a plain monospace
+ * face turns into a smudge. Latin only — Hangul falls back per glyph to the sans stack, so a
+ * chip like 「진동 3/5」 gets round digits without changing its Korean.
+ */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  /* Relative so Vite fingerprints it and the GitHub Pages sub-path build rewrites it too. */
+  src: url('./assets/fonts/nunito-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Grey palette (docs/design/ui-redesign.md). Acquisition certainty and past state are told apart
+ * by fill, dash and weight — never by hue. Hue appears in exactly two places: the gift icon's
+ * keyword badge and the judgement ring.
+ *
+ * `accent` says 「지금 할 일」 — today only the floor the stage stands on. It carries no hue of its
+ * own: black on the light ground, white on the dark one, the strongest mark the palette has.
+ * It never colours what already happened (an entered floor stays ink, a skipped one stays grey).
+ */
+@theme {
+  --color-*: initial;
+  --color-bg: #f7f6f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0eeeb;
+  --color-surface-3: #e8e5e1;
+  --color-line: #e3e0dc;
+  --color-line-strong: #c4beb7;
+  --color-fg: #1c1917;
+  --color-fg-2: #57534e;
+  --color-fg-3: #6f6963;
+  /* 확정 badge · primary button · fixed timetable block */
+  --color-ink: #292524;
+  --color-ink-fg: #ffffff;
+  /* Condition judgement, drawn as a ring around a gift icon (met / not met). */
+  --color-ok: #2f8f5b;
+  --color-bad: #c9403a;
+  /* 「지금 할 일」: pure black on the light ground — 19.44:1 on `bg`, and white on it is 21:1. */
+  --color-accent: #000000;
+  --color-accent-fg: #ffffff;
+  /*
+   * Gift keyword, drawn as the badge in the icon's bottom-right corner. The three attack types
+   * share `kw-attack` and are told apart by the badge's shape. `kw-outline` is the hairline that
+   * keeps a badge readable over artwork — 호흡 is white, so it needs one.
+   */
+  --color-kw-combustion: #ec6b12;
+  --color-kw-laceration: #e0335f;
+  --color-kw-vibration: #d9a400;
+  --color-kw-burst: #3f9a33;
+  --color-kw-sinking: #2f6fdb;
+  --color-kw-breath: #ffffff;
+  --color-kw-charge: #f0a020;
+  --color-kw-attack: #1c1917;
+  --color-kw-outline: rgb(28 25 23 / 0.35);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-sans: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  /* Every number in the app. Swap this one line to try another face. */
+  --font-num: 'Nunito', var(--font-mono);
+  --text-xs: 11px;
+  --text-xs--line-height: 1.4;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.45;
+  --text-base: 15px;
+  --text-base--line-height: 1.4;
+  --text-lg: 18px;
+  --text-lg--line-height: 1.3;
+  --text-xl: 22px;
+  --text-xl--line-height: 1.2;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 1px 2px rgb(28 25 23 / 0.06), 0 1px 1px rgb(28 25 23 / 0.04);
+  --shadow-pop: 0 8px 24px rgb(28 25 23 / 0.14), 0 1px 2px rgb(28 25 23 / 0.08);
+}
+
+.dark {
+  --color-bg: #131211;
+  --color-surface: #1c1a18;
+  --color-surface-2: #252220;
+  --color-surface-3: #2e2a27;
+  --color-line: #332f2b;
+  --color-line-strong: #544e48;
+  --color-fg: #ece8e3;
+  --color-fg-2: #b8b1a9;
+  --color-fg-3: #948d85;
+  --color-ink: #e7e2dc;
+  --color-ink-fg: #1c1917;
+  --color-ok: #4cc38a;
+  --color-bad: #f0665e;
+  /* Pure white on the dark ground — 18.71:1 on `bg`, and the near-black on it is 18.71:1. */
+  --color-accent: #ffffff;
+  --color-accent-fg: #131211;
+  --color-kw-combustion: #f9913f;
+  --color-kw-laceration: #f26a8d;
+  --color-kw-vibration: #e8c04a;
+  --color-kw-burst: #63c05a;
+  --color-kw-sinking: #6a9aee;
+  --color-kw-breath: #ffffff;
+  --color-kw-charge: #f5b95a;
+  /* 검정은 어두운 배경에서 사라지므로 중성 회색으로 뒤집는다. 모양이 셋을 가른다. */
+  --color-kw-attack: #a8a29e;
+  --color-kw-outline: rgb(0 0 0 / 0.5);
+  --shadow-card: none;
+  --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+
+/* EXTREME floors: observation is impossible there, drawn as hatching. */
+@utility bg-hatch {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--color-line) 6px 7px);
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  @apply bg-bg text-fg font-sans text-sm antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-fg-2);
+  outline-offset: 2px;
+}
+
+/*
+ * Reduced motion, said once. Tailwind's `motion-reduce:` variant is a class, so it loses to the
+ * inline `transition` a pulled card carries; this rule wins over both. (The pull hook reads the
+ * same media query for its own spring-back, since an inline style cannot be overridden from here
+ * without `!important` on every property.)
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Filter rows may scroll sideways; the page itself never does. */
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}

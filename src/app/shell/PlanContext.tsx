@@ -1,0 +1,306 @@
+/**
+ * One plan for the whole shell. The route is computed once from the store (goals, deck, options
+ * and the run record) and handed to the stage and both side panels, together with the pack
+ * context every pack surface takes and the run actions that settle gifts as floors are left.
+ */
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { evaluateConditions } from '../../core/index.ts';
+import type { GameData, Gift, Keyword } from '../../core/schema.ts';
+import { observable, planAlternatives, planRoute } from '../../core/index.ts';
+import type { DeckStats, GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
+import type { RouteVariant } from '../../core/index.ts';
+import { pick, type Lang } from '../i18n.ts';
+import { useApp } from '../store.ts';
+import { keywordName } from '../format.ts';
+import { conditionText } from '../condition-text.ts';
+import { judgementsByGift, type Judgement } from '../lib/judgement.ts';
+import { planInputFor, priorityOf } from '../lib/plan-input.ts';
+import { autoFailedFor, exclusivesIndex, lastFloorOf, stageModeFor, type StageMode } from '../lib/stage.ts';
+import { blockedGifts, entanglements, ingredientsOf } from '../lib/entangle.ts';
+import { carriedBy } from '../lib/goal-toggle.ts';
+import { upgradeChildren } from '../lib/upgrade-children.ts';
+import { useDesktop } from '../lib/useMediaQuery.ts';
+import { usePageHistory } from '../lib/usePageHistory.ts';
+import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
+import type { PackContext } from '../components/PackSheet.tsx';
+
+export interface PlanState {
+  data: GameData;
+  indexes: GameIndexes;
+  stats: DeckStats;
+  lang: Lang;
+  input: PlanInput;
+  /** The plan for the full goal list, or null without goals. */
+  plan: RoutePlan | null;
+  /** The plan on display: the selected alternative, or `plan`. */
+  shown: RoutePlan | null;
+  variants: RouteVariant[];
+  variantIndex: number;
+  setVariantIndex: (index: number) => void;
+  variant: RouteVariant | undefined;
+  /** Goal gifts the planner works for (given-up ones excluded). */
+  goals: ReadonlySet<number>;
+  /** The goals and everything a fusion goal consumes on the way: what the route is out to collect. */
+  needed: ReadonlySet<number>;
+  judgements: Map<number, Judgement | null>;
+  giftTitle: (id: number) => string | undefined;
+  giftName: (id: number) => string;
+  packName: (id: number) => string;
+  keywordLabel: (id: Keyword) => string;
+  ctx: PackContext;
+  exclusivesOf: (packId: number) => number[];
+  /** What the run starts with: the observed gifts and the starting gift, collected on leaving floor 1. */
+  startGifts: number[];
+  stageMode: StageMode;
+  /** Enter a pack on the stage floor. */
+  enter: (packId: number) => void;
+  /** Leave the stage floor: an undecided floor is skipped, an entered pack's unmarked goals are missed. */
+  next: () => void;
+  /**
+   * Show another floor. Looking back changes nothing; walking forward settles every floor left
+   * behind, so the floor strip and 「다음 층」 can never disagree about what was missed.
+   */
+  goTo: (floor: number) => void;
+  /**
+   * Go back from an entered pack: the entry and every status recorded for that pack's own drops
+   * are cleared; when that reopens floor 1, the start-of-run gifts recorded on leaving it go too.
+   */
+  leave: (packId: number) => void;
+  /** Open the gift detail sheet (the same one the items tab uses) from anywhere in the shell. */
+  openGift: (giftId: number) => void;
+}
+
+const PlanCtx = createContext<PlanState | null>(null);
+
+export function usePlan(): PlanState {
+  const value = useContext(PlanCtx);
+  if (!value) throw new Error('usePlan needs a PlanProvider');
+  return value;
+}
+
+export function PlanProvider({ data, indexes, stats, lang, children }: { data: GameData; indexes: GameIndexes; stats: DeckStats; lang: Lang; children: ReactNode }) {
+  const deck = useApp((s) => s.deck);
+  const deployed = useApp((s) => s.deployed);
+  const wanted = useApp((s) => s.wanted);
+  const priority = useApp((s) => s.priority);
+  const options = useApp((s) => s.options);
+  const fusionGoal = useApp((s) => s.fusionGoal);
+  const run = useApp((s) => s.run);
+  const preferPack = useApp((s) => s.preferPack);
+  const banPack = useApp((s) => s.banPack);
+  const restorePack = useApp((s) => s.restorePack);
+  const toggleObserved = useApp((s) => s.toggleObserved);
+  const toggleWanted = useApp((s) => s.toggleWanted);
+  const visitPack = useApp((s) => s.visitPack);
+  const unvisitPack = useApp((s) => s.unvisitPack);
+  const setGiftStatus = useApp((s) => s.setGiftStatus);
+  const nextFloor = useApp((s) => s.nextFloor);
+  const setStageFloor = useApp((s) => s.setStageFloor);
+  const [variantIndex, setVariantIndex] = useState(0);
+  const [detailGift, setDetailGift] = useState<number | null>(null);
+  const desktop = useDesktop();
+  const closeSheet = useCallback(() => setDetailGift(null), []);
+  // On a phone the sheet owns a history entry of its own, above the panel page's, so one back
+  // gesture closes the sheet and the next one the page.
+  usePageHistory(detailGift !== null, closeSheet, !desktop);
+
+  // How far the run goes is the season's, not the app's: `options.lastFloor` only bounds what a
+  // saved or shared plan may claim.
+  const lastFloor = useMemo(() => lastFloorOf(data), [data]);
+  const input = useMemo(
+    () => planInputFor({ deck, deployed, wanted, priority, options, fusionGoal, run }, { lastFloor }),
+    [deck, deployed, wanted, priority, options, fusionGoal, run, lastFloor],
+  );
+  const plan = useMemo(() => (input.wanted.length === 0 ? null : planRoute(input, data, indexes)), [input, data, indexes]);
+  const variants = useMemo(
+    () => (plan && plan.unresolved.some((u) => u.reason === 'pack-conflict') ? planAlternatives(input, data, indexes, plan) : []),
+    [plan, input, data, indexes],
+  );
+  useEffect(() => setVariantIndex(0), [input]);
+  const variant = variantIndex > 0 ? variants[variantIndex - 1] : undefined;
+  const shown = variant?.plan ?? plan;
+  const exclusivesOf = useMemo(() => exclusivesIndex(data, indexes), [data, indexes]);
+  const childrenOf = useMemo(() => upgradeChildren(data), [data]);
+  const entangled = useMemo(() => entanglements(wanted, indexes, data.rules.fusion.maxShopSlots), [wanted, indexes, data]);
+  const blocked = useMemo(() => blockedGifts(wanted, indexes, data.rules.fusion.maxShopSlots), [wanted, indexes, data]);
+  // One selection rule for every surface: see `lib/goal-toggle.ts`.
+  const carryIndex = useMemo(
+    () => ({ indexes, childrenOf, maxShopSlots: data.rules.fusion.maxShopSlots }),
+    [indexes, childrenOf, data],
+  );
+  const toggleGoal = useCallback((gift: Gift): void => toggleWanted(gift.id, carriedBy(gift, carryIndex)), [toggleWanted, carryIndex]);
+
+  const value = useMemo<PlanState>(() => {
+    const giftName = (id: number): string => pick(indexes.giftById.get(id)?.name, lang);
+    const packName = (id: number): string => pick(indexes.packById.get(id)?.name, lang);
+    const keywordLabel = (id: Keyword): string => keywordName(id, data.enums, lang);
+    const judgements = judgementsByGift(shown?.conditions ?? []);
+    const giftTitle = (id: number): string | undefined => {
+      const reports = (shown?.conditions ?? []).filter((c) => c.giftId === id);
+      return reports.length > 0 ? reports.map((r) => conditionText(r, data.enums, lang)).join(' / ') : undefined;
+    };
+    const goals = new Set(input.wanted.map((w) => w.giftId));
+    /*
+     * What the route is actually out to collect. A fusion goal is a promise about its ingredients
+     * too — the search chases them, and a pack that drops one is worth entering — so they wear the
+     * goal's ring wherever a pack lists its drops. A goal marked 「재료는 목표가 아님」
+     * (`ingredientsAsGoals: false`) keeps its ingredients out, exactly as it keeps them out of the plan.
+     */
+    const needed = new Set(goals);
+    for (const want of input.wanted) {
+      if (want.ingredientsAsGoals === false) continue;
+      const gift = indexes.giftById.get(want.giftId);
+      if (!gift?.fusion) continue;
+      for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots)) needed.add(id);
+    }
+    // The plan on screen decides, not the base one: entering a pack while an alternative route is
+    // selected must hand over that route's observations, never the ones it replaced.
+    const startGifts = shown ? [...shown.start.observed.map((o) => o.giftId), ...(shown.start.startGift ? [shown.start.startGift] : [])] : [];
+    // Leaving floor 1 for the first time is when the start-of-run gifts land in hand.
+    const startSettle = run.currentFloor === 1 ? startGifts : [];
+    /**
+     * What leaving `floor` records: the start-of-run gifts when floor 1 is behind for the first
+     * time, and the goal drops of a pack entered there that the player never marked. Every way off
+     * a floor settles the same — 「다음 층」 and a forward step on the floor strip alike.
+     */
+    const settleFor = (floor: number): { got: number[]; failed: number[] } => {
+      const entered = run.visits[floor];
+      return { got: startSettle, failed: entered !== undefined ? autoFailedFor(entered, goals, run.giftStatus, exclusivesOf) : [] };
+    };
+    const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: startSettle });
+    const next = (): void => nextFloor(settleFor(run.stageFloor));
+    /** Show `floor`; walking forward settles every floor left behind on the way. */
+    const goTo = (floor: number): void => {
+      const from = run.stageFloor;
+      if (floor <= from) return setStageFloor(floor);
+      const got = startSettle;
+      const failed = new Set<number>();
+      for (let f = from; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
+      return setStageFloor(floor, { got, failed: [...failed] });
+    };
+    const leave = (packId: number): void => unvisitPack(packId, { reset: exclusivesOf(packId) });
+    const canObserve = (id: number): boolean => {
+      const gift = indexes.giftById.get(id);
+      return gift ? observable(gift, data.rules) : false;
+    };
+    const ctx: PackContext = {
+      indexes,
+      judgements,
+      giftTitle,
+      giftName,
+      packName,
+      isMust: (id) => priorityOf(priority, id) === 'must',
+      observable: canObserve,
+      observed: new Set((shown?.start.observed ?? []).filter((o) => o.pinned).map((o) => o.giftId)),
+      wanted: goals,
+      needed,
+      preferred: new Set(options.preferredPacks),
+      banned: new Set(options.bannedPacks),
+      assignedAt: (packId) => shown?.floors.find((f) => f.packId === packId && f.reason !== 'free')?.floor ?? null,
+      onPrefer: variant ? undefined : preferPack,
+      onBan: variant ? undefined : banPack,
+      onRestore: variant ? undefined : restorePack,
+      onToggleObserved: variant ? undefined : (giftId) => toggleObserved(giftId, { max: data.rules.giftObservation.max, observable: canObserve }),
+      onToggleWanted: variant
+        ? undefined
+        : (giftId) => {
+            const gift = indexes.giftById.get(giftId);
+            if (gift) toggleGoal(gift);
+          },
+      run: {
+        currentFloor: run.currentFloor,
+        stageFloor: run.stageFloor,
+        enteredHere: run.visits[run.stageFloor] ?? null,
+        visitedAt: (packId) => {
+          const entry = Object.entries(run.visits).find(([, id]) => id === packId);
+          return entry ? Number(entry[0]) : null;
+        },
+        giftStatus: (giftId) => run.giftStatus[giftId] ?? null,
+        onEnter: variant ? undefined : enter,
+        // The sheet's 「입장 취소」 clears what the stage's 「돌아가기」 clears: one undo, one rule.
+        onUnvisit: leave,
+        onGiftStatus: setGiftStatus,
+      },
+      lang,
+    };
+    return {
+      data,
+      indexes,
+      stats,
+      lang,
+      input,
+      plan,
+      shown,
+      variants,
+      variantIndex,
+      setVariantIndex,
+      variant,
+      goals,
+      needed,
+      judgements,
+      giftTitle,
+      giftName,
+      packName,
+      keywordLabel,
+      ctx,
+      exclusivesOf,
+      startGifts,
+      stageMode: stageModeFor(run, run.stageFloor, lastFloor),
+      enter,
+      next,
+      goTo,
+      leave,
+      openGift: setDetailGift,
+    };
+  }, [
+    data,
+    indexes,
+    stats,
+    lang,
+    lastFloor,
+    input,
+    plan,
+    shown,
+    variants,
+    variantIndex,
+    variant,
+    priority,
+    options,
+    run,
+    exclusivesOf,
+    preferPack,
+    banPack,
+    restorePack,
+    toggleObserved,
+    toggleGoal,
+    visitPack,
+    unvisitPack,
+    setGiftStatus,
+    nextFloor,
+    setStageFloor,
+  ]);
+
+  // The sheet is hosted here and nowhere else, so a tile on the stage, in the tracker, in the
+  // route panel or in the items tab opens the same details — and the sheet outlives the surface
+  // that opened it. A sheet hosted inside a panel would die with the panel on a phone, where the
+  // panel is a full-screen page that unmounts when it closes.
+  const sheetGift = detailGift !== null ? indexes.giftById.get(detailGift) : undefined;
+  return (
+    <PlanCtx.Provider value={value}>
+      {children}
+      {sheetGift ? (
+        <GiftDetailSheet
+          gift={sheetGift}
+          reports={evaluateConditions([sheetGift.id], stats, indexes)}
+          entangled={entangled.get(sheetGift.id) ?? []}
+          data={data}
+          indexes={indexes}
+          lang={lang}
+          onToggleWanted={toggleGoal}
+          blocked={wanted.includes(sheetGift.id) ? undefined : blocked.get(sheetGift.id)}
+          onClose={closeSheet}
+        />
+      ) : null}
+    </PlanCtx.Provider>
+  );
+}
