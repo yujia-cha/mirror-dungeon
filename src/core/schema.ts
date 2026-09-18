@@ -440,6 +440,22 @@ export const seasonIndexSchema = z.object({
 });
 
 export type SeasonIndex = z.infer<typeof seasonIndexSchema>;
+
+/**
+ * Which hand-drawn art files exist, written by `npm run art` and read by the app.
+ *
+ * Not game data — it describes `public/art/`, whose contents are the repository owner's own
+ * drawings (game artwork is never committed). It lives here because the pipeline writes it and the
+ * app reads it, which is what this file is for.
+ *
+ * `gifts` holds `Gift.icon` values, not `Gift.id`: they differ for 31 of the 446 gifts. `packs`
+ * holds `ThemePack.sprite` values, of which 116 packs share 112.
+ */
+export const artManifestSchema = z.object({
+  gifts: z.array(z.number().int()),
+  packs: z.array(z.string()),
+});
+export type ArtManifest = z.infer<typeof artManifestSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];
 
 export const giftsFileSchema = z.array(giftSchema);

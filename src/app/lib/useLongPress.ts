@@ -11,6 +11,7 @@
  * the run had already left.
  */
 import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useLatest } from './useLatest.ts';
 
 /** How far the pointer may drift and still count as a hold; the gestures start moving at 8px. */
 const MOVE = 8;
@@ -26,8 +27,7 @@ export function useLongPress(onLongPress: (() => void) | undefined, ms = 1000): 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fired = useRef(false);
   const from = useRef<{ x: number; y: number } | null>(null);
-  const latest = useRef(onLongPress);
-  latest.current = onLongPress;
+  const latest = useLatest(onLongPress);
 
   const clear = useCallback((): void => {
     if (timer.current !== null) clearTimeout(timer.current);
@@ -61,7 +61,7 @@ export function useLongPress(onLongPress: (() => void) | undefined, ms = 1000): 
         latest.current?.();
       }, ms);
     },
-    [clear, ms],
+    [clear, ms, latest],
   );
 
   /** True once, right after a hold fired: the click that follows must not act. */

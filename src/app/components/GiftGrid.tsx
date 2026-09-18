@@ -111,9 +111,11 @@ export function GiftTileGrid({
               aria-pressed={marked}
               aria-label={[name, blockedBy ?? lockedBy].filter(Boolean).join(' · ')}
               title={blockedBy ?? lockedBy}
-              className={`inline-flex disabled:cursor-default ${held ? 'opacity-55' : ''}`}
+              className="inline-flex disabled:cursor-default"
             >
-              <GiftIcon gift={gift} size={32} judgement={judgementOf(entry.reports)} lang={lang} />
+              {/* The dim lives inside the icon: it is the only thing that knows whether it is
+                  dimming artwork or the name fallback (see `dimClass`). */}
+              <GiftIcon gift={gift} size={32} judgement={judgementOf(entry.reports)} dim={held} lang={lang} />
             </button>
             <button
               type="button"

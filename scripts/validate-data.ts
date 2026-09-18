@@ -9,8 +9,8 @@
  * describes exactly one season, so they run against that season. Every other season on disk is a
  * frozen build that nothing can change but a hand edit, so it gets the schema and index checks.
  *
- * Messages are prefixed [schema] / [ref] / [invariant] / [stale]; the validate-data skill explains
- * what each class usually means and how to fix it.
+ * Messages are prefixed [schema] / [ref] / [invariant] / [stale] / [art]; the validate-data skill
+ * explains what each class usually means and how to fix it.
  */
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -30,6 +30,7 @@ import {
 } from './lib/derived-md.ts';
 import {
   STATUS_KEYWORDS,
+  type ArtManifest,
   enumsSchema,
   giftsFileSchema,
   identitiesFileSchema,
@@ -125,6 +126,59 @@ if (meta && enums && rules && gifts && packs && identities) {
   checkCuratedIdentities(identities);
   checkDerivedMirrorDungeon(gifts, packs, rules);
   checkFreshness();
+  checkArt(gifts, packs);
+}
+
+/**
+ * The hand-drawn artwork under `public/art/` against the manifest and the season's keys.
+ *
+ * Missing drawings are a **warning**, never an error: the site has to build and ship with zero
+ * images (every tile draws its name fallback instead), and the 558 slots fill in one at a time.
+ * What is an error is an inconsistency that would make the app request a file that is not there,
+ * or a file nothing will ever read — both mean the manifest and the directory have drifted apart.
+ */
+function checkArt(gifts: Gift[], packs: ThemePack[]): void {
+  const root = repoPath('public/art');
+  const manifestPath = join(root, 'manifest.json');
+  const listed = (kind: 'gifts' | 'packs'): string[] => {
+    const dir = join(root, kind);
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir)
+      .filter((f) => f.toLowerCase().endsWith('.png'))
+      .map((f) => f.slice(0, -4))
+      .sort();
+  };
+  const onDisk = { gifts: listed('gifts'), packs: listed('packs') };
+  const manifest = readJsonIfExists<ArtManifest>(manifestPath);
+
+  if (!manifest) {
+    if (onDisk.gifts.length + onDisk.packs.length > 0) {
+      err('art', `public/art has ${onDisk.gifts.length + onDisk.packs.length} file(s) but no manifest.json, so the app will not request any of them. Run: npm run art -- --write`);
+    }
+    return;
+  }
+
+  const icons = new Set(gifts.map((g) => String(g.icon)));
+  const sprites = new Set(packs.map((p) => p.sprite));
+  for (const [kind, keys] of [
+    ['gifts', icons],
+    ['packs', sprites],
+  ] as const) {
+    const files = new Set(onDisk[kind]);
+    const claimed = new Set((kind === 'gifts' ? manifest.gifts.map(String) : manifest.packs) as string[]);
+    for (const key of claimed) {
+      if (!files.has(key)) err('art', `manifest lists ${kind}/${key} but public/art/${kind}/${key}.png is missing. Run: npm run art -- --write`);
+    }
+    for (const key of files) {
+      if (!claimed.has(key)) err('art', `public/art/${kind}/${key}.png is not in the manifest, so nothing will load it. Run: npm run art -- --write`);
+      if (!keys.has(key)) err('art', `public/art/${kind}/${key}.png is not a ${kind === 'gifts' ? 'gift icon' : 'pack sprite'} of this season, so nothing will ever read it.`);
+    }
+    // Only a *partly* drawn set is worth a line. Nothing drawn at all is the shipped design, not a
+    // gap — every tile falls back to its name — and saying so on every `npm run check` would just
+    // train the eye to skip warnings. `npm run art` is where the running count belongs.
+    const drawn = [...keys].filter((k) => files.has(k)).length;
+    if (drawn > 0 && drawn < keys.size) warn('art', `${keys.size - drawn} of ${keys.size} ${kind} have no artwork yet; those tiles draw their name instead.`);
+  }
 }
 
 function checkReferences(gifts: Gift[], packs: ThemePack[], identities: Identity[], enums: Enums): void {

@@ -162,6 +162,13 @@ export const STRINGS = {
   routeStartGift: { ko: '시작 기프트', en: 'Starting gift' },
   routeObserved: { ko: '관측', en: 'Observed' },
   routeObservedEmpty: { ko: '관측 빈 칸', en: 'Free observation slot' },
+  // The row used to carry 「관측」 only in an `aria-label`, so a row of three empty dashed eyes said
+  // nothing at all to a touch or no-hover reader. It gets a visible label, and a reason when empty.
+  routeObservedNone: { ko: '추천할 관측이 없습니다', en: 'Nothing worth observing' },
+  // Mid-run the observation decision is past, so the row stops being a recommendation and becomes
+  // the record of what the run actually started with (core clears `start.observed` once past floor 1).
+  routeStartHeld: { ko: '시작 시 보유', en: 'Held at start' },
+  routeStartHeldNone: { ko: '관측 없이 시작했습니다', en: 'Started with no observations' },
   routeObservedPinned: { ko: '지정', en: 'Pinned' },
   routeObservedRecommended: { ko: '추천', en: 'Suggested' },
   routeObservedFrees: { ko: '{pack} 안 가도 됨', en: 'No need to visit {pack}' },
@@ -199,14 +206,10 @@ export const STRINGS = {
   routeConditionsBasis: { ko: '출격 {n} 기준', en: 'for {n} deployed' },
   routeUnresolved: { ko: '미해결', en: 'Unresolved' },
   routeWarnings: { ko: '참고', en: 'Notes' },
-  // 범용 기프트는 「나올 수 있음」이지 확정이 아니다. 계획이 확보로 세는 몫에 범용이 섞여 있으면
-  // 화면이 그 차이를 말해야 한다 — 이 셋이 그 말을 나눠 맡는다(배지·절 제목·설명).
-  routeGeneralBadge: { ko: '범용 {n} 확정 아님', en: '{n} not guaranteed' },
-  routeGeneralTitle: { ko: '범용 드랍 (확정 아님)', en: 'General drops (not guaranteed)' },
-  routeGeneralHint: {
-    ko: '이 기프트는 어느 팩에서나 나올 수 있을 뿐, 그 팩에 들어가도 확정으로 얻는 것이 아닙니다. 상점과 새로고침을 함께 쓰세요.',
-    en: 'These can drop from any pack but entering it never guarantees them; use the shop and refreshes too.',
-  },
+  // 루트가 팩 방문으로 더 할 일이 없는 기프트들. 목록과 개수만 말하고 확정/비확정 판단은
+  // 아이템 탭의 획득 분류(`acqMaybe`)와 기프트 상세 시트가 맡는다.
+  routeGeneralBadge: { ko: '범용 {n}', en: '{n} general' },
+  routeGeneralTitle: { ko: '범용 드랍', en: 'General drops' },
   routeApproxHint: {
     ko: '목표가 많아 탐색을 끝까지 하지 못했습니다. 최선이 아닐 수 있고, 목표를 더 넣으면 이미 확보한 것이 빠질 수 있습니다.',
     en: 'Too many goals to search exhaustively. This may not be optimal, and adding goals can drop ones already secured.',

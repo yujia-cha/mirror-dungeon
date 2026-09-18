@@ -4,6 +4,7 @@
  * in the accessibility tree, so its value reads as the width it carries.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLatest } from '../lib/useLatest.ts';
 import { PANEL_WIDTH } from '../store.ts';
 import { t, type Lang } from '../i18n.ts';
 
@@ -12,8 +13,7 @@ const STEP = 16;
 export function PanelResizer({ side, width, onWidth, lang }: { side: 'left' | 'right'; width: number; onWidth: (width: number) => void; lang: Lang }) {
   const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; width: number } | null>(null);
-  const onWidthRef = useRef(onWidth);
-  onWidthRef.current = onWidth;
+  const onWidthRef = useLatest(onWidth);
 
   const clamp = (value: number): number => Math.min(PANEL_WIDTH.max, Math.max(PANEL_WIDTH.min, Math.round(value)));
 
@@ -38,7 +38,7 @@ export function PanelResizer({ side, width, onWidth, lang }: { side: 'left' | 'r
       window.removeEventListener('pointerup', stop);
       window.removeEventListener('pointercancel', stop);
     };
-  }, [dragging, side]);
+  }, [dragging, side, onWidthRef]);
 
   const onKey = useCallback(
     (event: React.KeyboardEvent): void => {

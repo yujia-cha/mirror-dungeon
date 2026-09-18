@@ -7,6 +7,7 @@
  * slots) and by the slots' own enter/leave callbacks otherwise.
  */
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useLatest } from './useLatest.ts';
 import { swallowNextClick } from './usePullGesture.ts';
 
 const START = 8;
@@ -42,8 +43,7 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
   const pending = useRef<{ giftId: number; x: number; y: number; pointerId: number } | null>(null);
   const active = useRef<number | null>(null);
   const over = useRef<number | null>(null);
-  const latest = useRef(onDrop);
-  latest.current = onDrop;
+  const latest = useLatest(onDrop);
 
   const setOver = useCallback((slot: number | null): void => {
     over.current = slot;
@@ -82,7 +82,7 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', finish);
     };
-  }, []);
+  }, [latest]);
 
   const handleFor = useCallback(
     (giftId: number) => ({

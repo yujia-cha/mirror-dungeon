@@ -11,7 +11,7 @@
     "url": "git+https://github.com/yujia-cha/mirror-dungeon.git"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "scripts": {
     "dev": "vite",
@@ -29,6 +29,7 @@
     "data:validate": "tsx scripts/validate-data.ts",
     "data:diff": "tsx scripts/diff-data.ts",
     "data:changelog": "tsx scripts/changelog-entry.ts",
+    "art": "tsx scripts/import-art.ts",
     "data:update": "tsx scripts/fetch-sources.ts --update && tsx scripts/build-data.ts && tsx scripts/validate-data.ts",
     "route": "tsx scripts/route-cli.ts",
     "check": "npm run lint && npm run typecheck && npm run test && npm run data:validate"
@@ -46,16 +47,16 @@
     "@eslint/js": "^9.17.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
-    "@types/node": "^22.10.2",
+    "@types/node": "^26.6.1",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^9.17.0",
-    "eslint-plugin-react-hooks": "^5.1.0",
-    "eslint-plugin-react-refresh": "^0.4.16",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^15.14.0",
     "jsdom": "^25.0.1",
     "prettier": "^3.4.2",
@@ -63,7 +64,7 @@
     "tsx": "^4.19.2",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.18.2",
-    "vite": "^6.0.5",
-    "vitest": "^3.2.7"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
   }
 }

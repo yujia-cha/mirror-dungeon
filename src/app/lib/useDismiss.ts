@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import { useLatest } from './useLatest.ts';
 
 /**
  * Layers that currently listen for a dismissing press or Escape, oldest first.
@@ -25,8 +26,7 @@ export function useDismiss(ref: RefObject<HTMLElement | null>, onDismiss: () => 
   // closure, so a dependency on it would re-run the effect on each render of the owning tree and
   // push this layer back on top of a sheet that opened above it — the very pile-up the stack is
   // here to prevent.
-  const latest = useRef(onDismiss);
-  latest.current = onDismiss;
+  const latest = useLatest(onDismiss);
   const token = useRef({});
   const { id } = options;
 
@@ -58,7 +58,7 @@ export function useDismiss(ref: RefObject<HTMLElement | null>, onDismiss: () => 
       document.removeEventListener('pointerdown', onPointer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [ref, active, id]);
+  }, [ref, active, id, latest]);
 }
 
 /** Arrow-key stepping over a list of `count` items; returns the next active index or null to keep. */

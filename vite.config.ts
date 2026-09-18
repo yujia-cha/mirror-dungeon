@@ -46,25 +46,37 @@ export default defineConfig({
      * with `--sourcemap` when a production stack trace needs reading.
      */
     sourcemap: false,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         /*
          * One 555 kB chunk sat over Vite's warning threshold, so a future warning that mattered
-         * would have been lost in this one. Zod is the clean seam: it changes far less often than
-         * the app, so an app change no longer re-downloads it.
+         * would have been lost in this one. These three are the stable vendors: they change far
+         * less often than the app, so an app change no longer re-downloads them, and splitting
+         * them keeps the app chunk under the threshold so the warning means something again.
          *
          * Zod cannot be dropped from production, though it is only used to validate: `index.json`
          * decides which season to open and is always parsed (`loadSeasonIndex`), because getting
          * the season wrong invalidates everything after it. Hand-writing that one check would
          * duplicate a schema this project deliberately keeps in a single file.
          *
-         * The other two are the remaining stable vendors, and together they bring the app chunk
-         * back under the threshold so the warning means something again.
+         * Vite 8 replaced Rollup with Rolldown, which dropped the object form of `manualChunks`
+         * for `codeSplitting.groups`. Two things the translation has to get right, both of which
+         * fail *silently* — the build stays green and the chunks quietly get worse:
+         *
+         * 1. `scheduler` is named explicitly. Rollup's object form pulled each listed module's
+         *    transitive dependencies in with it, so `react-dom`'s dependency on `scheduler` rode
+         *    along unnoticed. A regex takes only what it matches.
+         * 2. The `react` pattern is anchored with a trailing separator. `node_modules/react`
+         *    without it also matches `lucide-react`, which would swallow the icons chunk.
+         *
+         * `npm run build` output is the check: three vendor chunks, app chunk under 500 kB.
          */
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          zod: ['zod'],
-          icons: ['lucide-react'],
+        codeSplitting: {
+          groups: [
+            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+            { name: 'zod', test: /node_modules[\\/]zod[\\/]/ },
+            { name: 'icons', test: /node_modules[\\/]lucide-react[\\/]/ },
+          ],
         },
       },
     },

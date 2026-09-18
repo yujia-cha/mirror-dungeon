@@ -8,6 +8,13 @@
 # repo can verify, so the nested rule is written out rather than assumed.
 /data/*/*
   Cache-Control: public, max-age=600, stale-while-revalidate=86400
+# Hand-drawn artwork. A filename is stable content — a redrawn gift keeps its icon number — so the
+# cache has to be bust by the filename or a query string, never by waiting these out. Same nested
+# rule spelled out for the same reason as the season directories above.
+/art/*
+  Cache-Control: public, max-age=86400
+/art/*/*
+  Cache-Control: public, max-age=86400
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

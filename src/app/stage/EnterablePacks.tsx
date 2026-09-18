@@ -62,7 +62,9 @@ export function OtherEntryCard({ onSkip, lang }: { onSkip: () => void; lang: Lan
       data-past={pull.past ?? undefined}
     >
       <span className="inline-flex h-[180px] w-24 flex-none items-center justify-center rounded-sm border border-dashed border-line-strong bg-surface-3 text-fg-3" aria-hidden>
-        <DoorOpen size={40} strokeWidth={1.5} className="opacity-40" />
+        {/* Not a missing-artwork placeholder — this card has no pack. `opacity-40` put it at
+            1.65:1, so it is only the contrast that was wrong. */}
+        <DoorOpen size={40} strokeWidth={1.5} className="text-fg-2" />
       </span>
       <span className="text-center text-xs font-medium leading-tight text-fg">{t('stageOtherEntry', lang)}</span>
       <div className="min-h-5" />

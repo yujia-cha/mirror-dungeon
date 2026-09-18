@@ -1,4 +1,5 @@
 import {
+  artManifestSchema,
   enumsSchema,
   giftsFileSchema,
   identitiesFileSchema,
@@ -6,6 +7,7 @@ import {
   packsFileSchema,
   rulesSchema,
   seasonIndexSchema,
+  type ArtManifest,
   type GameData,
   type SeasonIndex,
 } from '../schema.ts';
@@ -14,6 +16,8 @@ import {
 const SEASON_FILES = ['meta', 'rules', 'gifts', 'packs'] as const;
 /** Files no season owns, at `data/`. Neither looks at the dungeon. */
 const SHARED_FILES = ['enums', 'identities'] as const;
+/** Written by `npm run art`; says which hand-drawn files exist so the app requests only those. */
+const ART_MANIFEST_PATH = 'art/manifest.json';
 
 function normaliseBase(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
@@ -67,6 +71,25 @@ async function fetchJson(url: string, label: string): Promise<unknown> {
 function assertShape(label: string, value: unknown, kind: 'array' | 'object'): void {
   const ok = kind === 'array' ? Array.isArray(value) : value !== null && typeof value === 'object' && !Array.isArray(value);
   if (!ok) throw new DataLoadError('malformed', label);
+}
+
+/**
+ * Which hand-drawn art files exist, or `null` when there is no manifest to read.
+ *
+ * Deliberately the one loader that never throws: art is decoration, and the planner works without
+ * a single image. A missing, half-written or hand-broken manifest must leave the app running with
+ * name fallbacks, not send it to the error card — which is why this does not use `fetchJson`.
+ */
+export async function loadArtManifest(baseUrl = '/'): Promise<ArtManifest | null> {
+  try {
+    const response = await fetch(`${normaliseBase(baseUrl)}${ART_MANIFEST_PATH}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    return artManifestSchema.parse(await response.json());
+  } catch {
+    return null;
+  }
 }
 
 /**

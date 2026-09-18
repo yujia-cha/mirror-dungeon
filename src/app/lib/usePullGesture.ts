@@ -15,6 +15,7 @@
  * never commits.
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useLatest } from './useLatest.ts';
 
 export type PullDirection = 'down' | 'up';
 
@@ -61,10 +62,8 @@ export function usePullGesture({
 }): PullState & { handlers: PullHandlers } {
   const [state, setState] = useState<PullState>({ offset: 0, pulling: false, past: null });
   const pending = useRef<{ pointerId: number; x: number; y: number; dragging: boolean; past: PullDirection | null } | null>(null);
-  const commitRef = useRef(onCommit);
-  commitRef.current = onCommit;
-  const directionsRef = useRef(directions);
-  directionsRef.current = directions;
+  const commitRef = useLatest(onCommit);
+  const directionsRef = useLatest(directions);
 
   const finish = useCallback((): void => {
     pending.current = null;
@@ -109,7 +108,7 @@ export function usePullGesture({
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
     };
-  }, [finish, resistance, start, threshold]);
+  }, [finish, resistance, start, threshold, commitRef, directionsRef]);
 
   const handlers: PullHandlers = {
     onPointerDown: (event) => {

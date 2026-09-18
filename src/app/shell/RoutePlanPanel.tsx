@@ -92,13 +92,8 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           <span className="font-num text-lg font-bold text-fg">{value}</span>
         </span>
       ))}
-      {/* 「확보 M/T」 counts a general gift as covered because the route has nothing left to do for
-          it — but the player still has to be lucky. The badge keeps the count honest. */}
-      {generalDrops.length > 0 ? (
-        <Badge tone="neutral" title={t('routeGeneralHint', lang)}>
-          {t('routeGeneralBadge', lang, { n: generalDrops.length })}
-        </Badge>
-      ) : null}
+      {/* How much of 「확보 M/T」 the route reaches by a general pool rather than a named pack. */}
+      {generalDrops.length > 0 ? <Badge tone="neutral">{t('routeGeneralBadge', lang, { n: generalDrops.length })}</Badge> : null}
       {failedCount > 0 ? <Badge tone="alert">{t('runFailedCount', lang, { n: failedCount })}</Badge> : null}
       {shown.unresolved.length > 0 ? <Badge tone="neutral">{t('routeUnresolvedCount', lang, { n: shown.unresolved.length })}</Badge> : null}
       {capped ? (
@@ -188,6 +183,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         fixedModeByFloor={indexes.fixedModeByFloor}
         run={{ currentFloor: run.currentFloor }}
         slots={data.rules.giftObservation.max}
+        startHeld={run.startGifts}
         variant="vertical"
         detailMode="sheet"
       />
@@ -207,9 +203,8 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         onSeeVariants={variants.length > 0 && !variant ? seeVariants : undefined}
         detailMode="sheet"
       />
-      {/* The planner counts these as covered because no pack visit can improve them — the route
-          has nothing left to do. Naming them is the only way the screen can say that 「확보」 here
-          means 「나올 수 있음」 and not 「확정」. */}
+      {/* The planner counts these as covered because no pack visit can improve them — the route has
+          nothing left to do for them. The list is the useful part: which goals no pack is fetching. */}
       {generalDrops.length > 0 ? (
         <Card className="p-3.5" testId="route-general-drops">
           <SectionTitle>{t('routeGeneralTitle', lang)}</SectionTitle>
@@ -224,7 +219,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
               );
             })}
           </ul>
-          <p className="mt-2 text-xs text-fg-3">{t('routeGeneralHint', lang)}</p>
         </Card>
       ) : null}
       {otherWarnings.length > 0 ? (

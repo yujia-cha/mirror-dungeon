@@ -42,6 +42,16 @@ export default tseslint.config(
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      /*
+       * v7 grew this preset from 2 rules to 16 by adding the React Compiler set. Fourteen of them
+       * this codebase already satisfied, and `refs` was fixed by `useLatest`. `set-state-in-effect`
+       * is the one still owed: nine sites, listed in docs/review/M34.md. They are not a config
+       * problem — they are real 「effect writes state」 patterns that need restructuring (deriving
+       * during render, or a `key`), and several sit in the data-loading and run-stage paths. That
+       * is its own piece of work, not a dependency bump, so it is off with a receipt rather than
+       * silently dropped.
+       */
+      'react-hooks/set-state-in-effect': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },

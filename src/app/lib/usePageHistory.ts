@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import { useLatest } from './useLatest.ts';
 
 interface Layer {
   /** The owning hook's token, cleared from here when a back gesture consumes the entry. */
@@ -60,8 +61,7 @@ function giveBack(): void {
  */
 export function usePageHistory(open: boolean, onClose: () => void, enabled: boolean): void {
   const token = useRef<symbol | null>(null);
-  const close = useRef(onClose);
-  close.current = onClose;
+  const close = useLatest(onClose);
 
   useEffect(() => {
     const release = (): void => {
@@ -80,5 +80,5 @@ export function usePageHistory(open: boolean, onClose: () => void, enabled: bool
     owners.push({ owner: token, close: () => close.current() });
     window.history.pushState({ layer: true }, '');
     return release;
-  }, [open, enabled]);
+  }, [open, enabled, close]);
 }

@@ -31,13 +31,24 @@ import { planToText } from '../lib/plan-text.ts';
 import { actionsFor } from '../lib/unresolved-actions.ts';
 import { keywordName } from '../format.ts';
 import { observable as observableGift, planRoute } from '../../core/index.ts';
+// Namespace import so the mock factory can spread the real module (the lint rule forbids an
+// inline `import()` type annotation).
+import type * as LoadModule from '../../core/data/load.ts';
 
-vi.mock('../../core/data/load.ts', async () => {
+
+// The real module fetches; tests read the generated files off disk instead. Spread the real module
+// so anything it exports but this factory does not name (`DataLoadError`, which `App` needs for
+// `instanceof`) still resolves — a partial mock of it used to be a latent crash.
+vi.mock('../../core/data/load.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof LoadModule>();
   const { loadGameDataFromDisk, readSeasonIndex } = await import('../../core/data/node.ts');
   return {
+    ...actual,
     loadGameData: async (_base?: string, options?: { season?: number }) =>
       loadGameDataFromDisk(undefined, options?.season),
     loadSeasonIndex: async () => readSeasonIndex(),
+    // No art is committed yet, and jsdom has no server to fetch one from.
+    loadArtManifest: async () => null,
   };
 });
 
@@ -261,8 +272,18 @@ describe('ErrorBoundary', () => {
 
   it('offers a way out of a crash instead of a white screen, and clearing the state is one of them', async () => {
     const user = userEvent.setup();
-    // React logs the caught error, and jsdom has no navigation for the reload that follows.
+    // React logs the caught error on purpose; let it.
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    // jsdom has no navigation, so the reload would print a 「Not implemented」 trace. `reload`
+    // itself is non-writable and non-configurable, but `window.location` is a configurable
+    // accessor, so the whole object is what gets swapped — and that also lets the assertion
+    // below prove the escape hatch really reloads.
+    const reload = vi.fn();
+    const realLocation = Object.getOwnPropertyDescriptor(window, 'location')!;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload },
+    });
     window.localStorage.setItem(PERSIST_KEY, '{"version":7,"state":{}}');
     try {
       render(
@@ -277,7 +298,9 @@ describe('ErrorBoundary', () => {
       // The header's 초기화 died with the tree, so the escape hatch has to live on this card.
       await user.click(screen.getByRole('button', { name: /Clear saved state|저장된 상태를 지우고/ }));
       expect(window.localStorage.getItem(PERSIST_KEY)).toBeNull();
+      expect(reload).toHaveBeenCalled();
     } finally {
+      Object.defineProperty(window, 'location', realLocation);
       quiet.mockRestore();
     }
   });
@@ -831,6 +854,39 @@ describe('GiftsStep', () => {
     expect(screen.queryAllByLabelText(/^미충족 · 인연 얽힘/)).toHaveLength(0);
   });
 
+  /*
+   * The old grey `Gem` measured 1.65:1 against its own tile, and 1.29:1 once a pending tile's
+   * `opacity-55` was applied on top — invisible, which is what the report said. The name's first
+   * character replaces it, and the dim has to treat a fallback differently from artwork or the
+   * letter drops back under 4.5:1.
+   */
+  it('draws the name initial when there is no artwork, tinted by keyword and left alone by 범용', () => {
+    const tinted = data.gifts.find((g) => g.keyword === 'Combustion')!;
+    const general = data.gifts.find((g) => g.keyword === 'None')!;
+    render(
+      <>
+        <GiftIcon gift={tinted} size={44} lang="ko" />
+        <GiftIcon gift={general} size={44} lang="ko" />
+      </>,
+    );
+    const icons = screen.getAllByTestId('gift-icon');
+    expect(icons[0]!).toHaveTextContent(tinted.name.ko.slice(0, 1));
+    expect(icons[1]!).toHaveTextContent(general.name.ko.slice(0, 1));
+    // 범용 gets no wash, the same way it gets no keyword badge.
+    expect(icons[0]!.querySelector('.bg-kw-combustion')).not.toBeNull();
+    expect(icons[1]!.querySelector('[class*="bg-kw-"]')).toBeNull();
+  });
+
+  it('dims a fallback with greyscale only — opacity on top would make the letter unreadable', () => {
+    const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
+    const { unmount } = render(<GiftIcon gift={gift} size={44} dim lang="ko" />);
+    expect(screen.getByTestId('gift-icon').className).toContain('grayscale');
+    expect(screen.getByTestId('gift-icon').className).not.toContain('opacity-55');
+    unmount();
+    render(<GiftIcon gift={gift} size={44} lang="ko" />);
+    expect(screen.getByTestId('gift-icon').className).not.toContain('grayscale');
+  });
+
   it('colours a gift icon by whether the deck meets its condition', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -1222,13 +1278,12 @@ describe('RoutePlanPanel', () => {
   });
 
   /*
-   * 「확보 4/4 · 필요 팩 0」 for four general gifts is true and reads as a promise: the planner
-   * counts them covered because no pack visit can improve them, but the player still has to be
-   * lucky. The warning that says so was filtered out of the panel and `plan.generalDrops` was
-   * never rendered anywhere, so nothing on screen carried the difference — against the domain
-   * rule that it must. 187 of 446 gifts are general, so this is the ordinary case.
+   * A general gift counts as covered because no pack visit can improve it — the route has nothing
+   * left to do for it. Naming those goals is the useful part (they are the ones no pack is
+   * fetching); the certain/uncertain judgement is the item tab's 「가능」 badge and the gift sheet,
+   * deliberately not repeated here. 187 of 446 gifts are general, so this is the ordinary case.
    */
-  it('names the general gifts the route cannot promise, and counts them next to 확보', () => {
+  it('names the general gifts no pack is fetching, and counts them next to 확보', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     const general = data.gifts.filter((gift) => gift.acquisition.kind === 'general').slice(0, 4);
     for (const gift of general) useApp.getState().toggleWanted(gift.id);
@@ -1238,14 +1293,13 @@ describe('RoutePlanPanel', () => {
     expect(summary).toHaveTextContent(`${general.length}/${general.length}`);
 
     // Not `general.length`: an observation or the starting gift can make one of them certain, and
-    // then it is not a general drop any more. The badge counts what the route leaves to luck.
+    // then it is not a general drop any more. The badge counts what the route leaves to the pool.
     const card = screen.getByTestId('route-general-drops');
     const named = general.filter((gift) => card.textContent?.includes(gift.name.ko));
     expect(named.length).toBeGreaterThan(0);
-    expect(summary).toHaveTextContent(`범용 ${named.length} 확정 아님`);
-    expect(card).toHaveTextContent('확정으로 얻는 것이 아닙니다');
-    // The dedicated card carries the caveat, so the 「참고」 list must not repeat it.
-    expect(screen.queryByText(/범용 기프트는 어느 팩에서나 나올 수 있을 뿐 확정 획득이/)).toBeNull();
+    expect(summary).toHaveTextContent(`범용 ${named.length}`);
+    // No 확정/비확정 wording anywhere in the route panel — neither in the card nor the 「참고」 list.
+    expect(screen.getByTestId('route-plan').textContent).not.toMatch(/확정/);
   });
 
   it('draws no general-drops card when every goal is a sure thing', () => {
@@ -1253,7 +1307,7 @@ describe('RoutePlanPanel', () => {
     useApp.getState().toggleWanted(9267);
     renderRoute();
     expect(screen.queryByTestId('route-general-drops')).toBeNull();
-    expect(screen.getByTestId('route-summary')).not.toHaveTextContent('확정 아님');
+    expect(screen.getByTestId('route-summary')).not.toHaveTextContent('범용');
   });
   const rows = () => screen.getByTestId('metro-rows');
   /** Spend all three observation slots on other gifts so observable fixtures get routed. */
@@ -1355,13 +1409,43 @@ describe('RoutePlanPanel', () => {
     const cell = within(rows()).getByTestId('start-cell');
     const start = within(cell).getByTestId('start-line');
     const observed = within(cell).getByTestId('observed-line');
-    // The word 「관측」 is gone from the line; the eye badge on each tile says it, and the row
-    // keeps the word as its accessible name.
-    expect(observed).toHaveAttribute('aria-label', '관측');
-    expect(observed.textContent).not.toMatch(/관측/);
+    // The row carries 「관측」 as visible text: it used to live in `aria-label` only, which left a
+    // row of dashed eyes saying nothing to a touch or no-hover reader.
+    expect(observed.textContent).toMatch(/관측/);
     expect(within(observed).getAllByTestId('observed-tile').length).toBeGreaterThan(0);
+    // Before the run it is a recommendation, not a record.
+    expect(observed).not.toHaveAttribute('data-history');
     // They are two decisions, so nothing from one line leaks into the other.
     expect(within(start).queryByTestId('observed-tile')).toBeNull();
+  });
+
+  /*
+   * Core stops proposing observations once the run is past floor 1 — the starlight is long spent,
+   * and recommending something you can no longer do would be a lie. But the row was derived from
+   * that same empty list, so a player on floor 3 saw three unexplained dashed eyes even though
+   * they had observed. `run.startGifts` is the only thing that still knows.
+   */
+  it('turns the observation row into the record of what the run started with, once it is under way', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267);
+    useApp.getState().toggleWanted(9423);
+    renderRoute();
+    const observed = () => within(rows()).getByTestId('observed-line');
+    const held = within(observed()).getAllByTestId('observed-tile')[0]!.textContent!;
+
+    // Leaving floor 1 is what records the start-of-run gifts (`moveFrontier`'s 1 → >1 branch).
+    act(() => {
+      useApp.getState().visitPack(1002, 1, { got: [9423] });
+      useApp.getState().visitPack(1101, 2);
+    });
+    expect(useApp.getState().run.currentFloor).toBeGreaterThan(1);
+    expect(useApp.getState().run.startGifts).toContain(9423);
+
+    expect(observed()).toHaveAttribute('data-history');
+    expect(observed().textContent).toMatch(/시작 시 보유/);
+    expect(within(observed()).getAllByTestId('observed-tile')[0]!.textContent).toBe(held);
+    // The decision is past, so unspent slots are no longer a decision left open.
+    expect(within(observed()).queryAllByTestId('observed-empty')).toHaveLength(0);
   });
 
   it('keeps every observation slot on screen, filled or not', () => {
@@ -1375,10 +1459,12 @@ describe('RoutePlanPanel', () => {
     expect(cells()).toBe(3);
     expect(within(line()).getAllByTestId('observed-tile')).toHaveLength(1);
     expect(within(line()).getAllByTestId('observed-empty')).toHaveLength(2);
-    // With nothing observed the row still stands: an unspent slot is a decision left open.
+    // With nothing observed the row still stands: an unspent slot is a decision left open. And it
+    // says why it is empty rather than leaving three unexplained dashed eyes.
     act(() => useApp.getState().removeWanted(9423));
     expect(cells()).toBe(3);
     expect(within(line()).queryAllByTestId('observed-tile')).toHaveLength(0);
+    expect(within(line()).getByTestId('observed-none')).toHaveTextContent('추천할 관측이 없습니다');
   });
 
   it('opens a pack in a sheet from its card, lists its gifts, and lets it be given up and restored', async () => {

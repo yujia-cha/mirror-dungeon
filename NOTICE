@@ -17,8 +17,17 @@ Limbus Company의 게임 데이터·텍스트·에셋에 대한 권리는 **Proj
 이 프로젝트는 **비상업 팬 프로젝트**이며 Project Moon과 제휴하거나 승인받지 않았습니다.
 
 `data/`와 `public/data/`에 담긴 게임 데이터는 플래너가 동작하는 데 필요한 범위에서만
-재배포합니다. **게임 이미지는 이 저장소에 담지 않습니다** — 아이콘과 팩 이미지는 회색
-플레이스홀더이고, `VITE_ASSET_BASE`가 설정된 배포에서만 외부에서 불러옵니다.
+재배포합니다. **게임 이미지는 이 저장소에 담지 않습니다** — 게임에서 추출한 아이콘이나 팩
+일러스트는 어떤 경로로도 커밋하지 않습니다.
+
+## 자작 아트
+
+`public/art/` 아래의 그림은 **이 저장소 소유자가 직접 그린 것**이며 권리도 소유자에게 있습니다.
+게임 에셋이 아니므로 이 저장소에 담을 수 있고, 그래서 담습니다. 아직 그리지 않은 자리는 기프트·팩
+이름의 첫 글자로 대신 그립니다.
+
+The drawings under `public/art/` are original work by this repository's owner, who holds their
+rights. They are not game assets, which is the only reason images ship here at all.
 
 Limbus Company game data, text and assets are the property of **Project Moon**. This is a
 **non-commercial fan project**, not affiliated with or endorsed by Project Moon. Game data is

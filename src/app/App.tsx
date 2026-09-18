@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, TriangleAlert, Hourglass } from 'lucide-react';
 import type { GameData, SeasonIndex } from '../core/schema.ts';
 import { analyseDeck, buildIndexes } from '../core/index.ts';
-import { DataLoadError, loadGameData, loadSeasonIndex } from '../core/data/load.ts';
+import { DataLoadError, loadArtManifest, loadGameData, loadSeasonIndex } from '../core/data/load.ts';
 import { t, type StringKey } from './i18n.ts';
 import { decodeShared, encodeShared, runInProgress, useApp } from './store.ts';
 import type { SharedState } from './store.ts';
 import { defaultDeck } from './lib/default-deck.ts';
+import { setArtManifest } from './lib/assets.ts';
 import { lastFloorOf } from './lib/stage.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
 import { ConfirmDialog } from './components/ConfirmDialog.tsx';
@@ -128,9 +129,17 @@ export function App() {
     let cancelled = false;
     setError(null);
     setData(null);
-    loadGameData(import.meta.env.BASE_URL, { validate: import.meta.env.DEV, season: openSeason })
-      .then((loaded) => {
+    // The art manifest rides along with the season's data. It has to be in place *before* the
+    // first render that draws tiles: `setArtManifest` is module state, so a late arrival would
+    // not re-render anything. It never rejects — no manifest just means every tile draws its
+    // name fallback — so it cannot make this load fail.
+    Promise.all([
+      loadGameData(import.meta.env.BASE_URL, { validate: import.meta.env.DEV, season: openSeason }),
+      loadArtManifest(import.meta.env.BASE_URL),
+    ])
+      .then(([loaded, manifest]) => {
         if (cancelled) return;
+        setArtManifest(manifest);
         // Goals this season never heard of cannot be drawn or planned, so they go — counted, not
         // quietly (the same rule the formation code follows for identities it does not know).
         const counts = adoptSeason({

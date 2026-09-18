@@ -10,12 +10,13 @@
  * judge). These are the only places the palette uses hue.
  */
 import { useState } from 'react';
-import { Check, Gem, Star, X } from 'lucide-react';
+import { Check, Star, X } from 'lucide-react';
 import type { Gift, Keyword } from '../../core/schema.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { giftIconUrl } from '../lib/assets.ts';
 import { tierLabel } from '../lib/labels.ts';
 import { useKeywordName } from '../lib/useEnums.ts';
+import { dimClass, initialFontSize, initialOf } from '../lib/art-fallback.ts';
 import type { Judgement } from '../lib/judgement.ts';
 
 export type GiftIconSize = 20 | 32 | 44;
@@ -53,6 +54,7 @@ export function GiftIcon({
   name = false,
   must = false,
   status = null,
+  dim = false,
   title,
   lang,
 }: {
@@ -67,12 +69,19 @@ export function GiftIcon({
   must?: boolean;
   /** Run progress: collected (check badge) or missed (dimmed, cross badge). */
   status?: 'got' | 'failed' | null;
+  /**
+   * This tile is inactive — not collected yet, or locked by another goal. The icon owns the dim
+   * because only it knows whether it is showing artwork or the name fallback, and the two need
+   * different treatment to stay legible (see `dimClass`).
+   */
+  dim?: boolean;
   lang: Lang;
 }) {
   const url = giftIconUrl(gift.icon);
   // Keyed by the url: a 404 must not follow the component to the next gift it is asked to draw.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const failed = failedUrl !== null && failedUrl === url;
+  const hasArt = url !== null && !failed;
   const label = pick(gift.name, lang);
   const judged = judgement ? t(JUDGEMENT_KEY[judgement], lang) : null;
   const statusText =
@@ -102,19 +111,38 @@ export function GiftIcon({
       data-judgement={judgement ?? 'none'}
       data-must={must || undefined}
       data-status={status ?? undefined}
-      className={`relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-line bg-surface-3 text-fg-3 ${ring} ${status === 'failed' ? 'opacity-50' : ''}`}
+      className={`relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-line bg-surface-3 text-fg-3 ${ring} ${dimClass(dim || status === 'failed', hasArt)}`}
       style={{ width: size, height: size }}
     >
-      {url && !failed ? (
+      {hasArt ? (
+        // `pixelated` because the artwork is pixel art: smooth scaling turns it to mush, and none
+        // of 20/32/44px is an integer divisor of the source, so the browser is always scaling.
         <img
           src={url}
           alt=""
           loading="lazy"
           onError={() => setFailedUrl(url)}
           className="h-full w-full object-cover"
+          style={{ imageRendering: 'pixelated' }}
         />
       ) : (
-        <Gem size={Math.round(size * 0.45)} aria-hidden className="opacity-40" />
+        /*
+         * No artwork: the name's first character over a wash of the gift's keyword colour. The
+         * wash is the keyword badge's own `bg-kw-*` at 25%, so this adds no new palette entry, and
+         * a 범용 gift gets no wash at all — the same way it gets no badge. The letter stays
+         * `text-fg`: 8.3:1 at worst in light, 5.2:1 at worst in dark over these grounds (computed),
+         * against the 1.29:1 the grey `Gem` managed inside a pending tile.
+         */
+        <>
+          {badge ? <span className={`absolute inset-0 ${badge.fill} opacity-25`} aria-hidden /> : null}
+          <span
+            className="relative font-num font-bold leading-none text-fg"
+            style={{ fontSize: initialFontSize(size) }}
+            aria-hidden
+          >
+            {initialOf(label)}
+          </span>
+        </>
       )}
       {must ? (
         <span className="absolute bottom-0 left-0 rounded-tr-sm bg-ink p-px text-ink-fg" aria-hidden>
