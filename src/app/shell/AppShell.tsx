@@ -130,7 +130,15 @@ export function AppShell({
               <MoreHorizontal size={15} />
             </IconButton>
             {menu ? (
-              <DetailSurface id="header-menu" mode="popover" label={t('moreActions', lang)} closeLabel={t('routeClose', lang)} onClose={() => setMenu(false)}>
+              <DetailSurface
+                id="header-menu"
+                mode="popover"
+                variant="menu"
+                placement={{ vertical: 'below', horizontal: 'end' }}
+                label={t('moreActions', lang)}
+                closeLabel={t('routeClose', lang)}
+                onClose={() => setMenu(false)}
+              >
                 <ul className="flex w-max min-w-[9rem] flex-col gap-0.5" data-testid="header-menu">
                   {(
                     [

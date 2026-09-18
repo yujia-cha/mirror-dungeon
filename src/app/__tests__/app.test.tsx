@@ -1552,6 +1552,13 @@ describe('AppShell', () => {
     };
     await openMenu();
     expect(within(screen.getByTestId('header-menu')).getAllByRole('button').map((b) => b.textContent)).toEqual(['초기화', '링크 복사', 'English', '화면 전환']);
+    // A menu, not a detail: no close row above the first item (it drew an empty band on a phone,
+    // where the fixed-width popover ran off the right edge and hid the ✕), and anchored to the
+    // header's right edge so it stays on screen.
+    const popover = screen.getByTestId('block-popover');
+    expect(within(popover).queryByRole('button', { name: '닫기' })).toBeNull();
+    expect(popover.style.right).toBe('0px');
+    expect(popover.className).not.toMatch(/w-\[320px\]/);
     await user.keyboard('{Escape}');
     expect(screen.queryByTestId('header-menu')).toBeNull();
     await reset();
@@ -1672,6 +1679,24 @@ describe('gestures that used to run into each other', () => {
     fireEvent.pointerMove(window, { ...pointer, clientY: pointer.clientY + 90 });
     fireEvent.pointerUp(window, { ...pointer, clientY: pointer.clientY + 90 });
     expect(useApp.getState().run.visits).toEqual({ 4: 1402 });
+  });
+
+  it('keeps every touch on a pulled element for the gesture, at rest and mid-pull', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267);
+    useApp.setState({ run: { ...emptyRun(), currentFloor: 4, stageFloor: 4 } });
+    renderPlanned(<RunStage onOpenGifts={() => undefined} />);
+    const card = screen.getByTestId('stage-pack');
+    // `pan-x` let a phone browser judge the direction first and take a vertical drag for a scroll —
+    // the pull got a `pointercancel` and the page a pull-to-refresh. Nothing on the stage scrolls
+    // sideways, so the element gives the browser nothing.
+    expect(card.style.touchAction).toBe('none');
+    fireEvent.pointerDown(card, pointer);
+    fireEvent.pointerMove(window, { ...pointer, clientY: pointer.clientY + 40 });
+    expect(card).toHaveAttribute('data-pulling');
+    expect(card.style.touchAction).toBe('none');
+    fireEvent.pointerUp(window, { ...pointer, clientY: pointer.clientY + 40 });
+    expect(useApp.getState().run.visits).toEqual({});
   });
 });
 

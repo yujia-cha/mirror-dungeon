@@ -2,7 +2,10 @@
  * Pull a card or panel vertically to commit an action: down to enter a pack or move on, up to go
  * back. Built on pointer events without a library: listeners go on `window` so the gesture
  * survives leaving the element, and only a mostly-vertical move past `start` begins a pull, so a
- * tap stays a click and a sideways swipe still scrolls the card row. A pull may start on a button
+ * tap stays a click. The element carries `touch-action: none` (`pullStyle`): every touch on it is
+ * the gesture's from the first move, never the browser's — with `pan-x` the browser judged the
+ * direction first and, on a phone, could take a vertical drag for a scroll and cancel the pull
+ * under us. Nothing on the stage scrolls sideways, so no pan is lost. A pull may start on a button
  * (the handles and the card's foot are buttons, and a tap on them still clicks), but never on a
  * link, an input or a `<details>` summary. The pointer is not captured, so a plain click reaches
  * its button; the click a browser fires after a committed pull is swallowed once, since the
@@ -135,9 +138,9 @@ export function pullStyle(state: PullState): CSSProperties {
   const springBack = reduceMotion() ? 'none' : 'transform 180ms ease-out';
   // No transform at rest: a transformed ancestor would turn a fixed-position sheet inside into an
   // absolutely positioned one.
-  if (!state.pulling && state.offset === 0) return { touchAction: 'pan-x', transition: springBack };
+  if (!state.pulling && state.offset === 0) return { touchAction: 'none', transition: springBack };
   return {
-    touchAction: 'pan-x',
+    touchAction: 'none',
     transform: `translateY(${state.offset}px)`,
     transition: state.pulling ? 'none' : springBack,
   };

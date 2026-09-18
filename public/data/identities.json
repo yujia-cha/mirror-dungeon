@@ -2383,6 +2383,41 @@
     "attackTypes": [
       "Hit"
     ],
+    "factions": [],
+    "id": 10416,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Charge": {
+        "skills": 0,
+        "specialSkills": 4
+      },
+      "Vibration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 8,
+    "sinner": {
+      "en": "Ryōshū",
+      "ko": "료슈"
+    },
+    "sinnerId": 4,
+    "sins": [
+      "SLOTH",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Haute Couture:: Le Noir Footwear Hall",
+      "ko": "오트쿠튀르:: 르누아르 신발관"
+    },
+    "traits": []
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
     "factions": [
       "LIMBUS_COMPANY",
       "LIMBUS_COMPANY_LCB"
@@ -4819,6 +4854,41 @@
       "CLAN",
       "SMALL"
     ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [],
+    "id": 10816,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Charge": {
+        "skills": 0,
+        "specialSkills": 3
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 8,
+    "sinner": {
+      "en": "Ishmael",
+      "ko": "이스마엘"
+    },
+    "sinnerId": 8,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Haute Couture:: Boutique du Rouge",
+      "ko": "오트쿠튀르:: 르루주 부티크"
+    },
+    "traits": []
   },
   {
     "attackTypes": [

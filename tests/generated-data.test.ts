@@ -218,13 +218,17 @@ describe('gifts', () => {
 
 describe('identities', () => {
   it('covers the 183 the static data ships plus the ones backfilled from the other sources', () => {
-    expect(identities).toHaveLength(185);
-    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(2);
+    expect(identities).toHaveLength(187);
+    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(4);
   });
 
   it.each([
     [10116, 'LCE E.G.O:: 차원찢개', 1, ['Burst', 'Charge'], ['LIMBUS_COMPANY', 'LIMBUS_COMPANY_LCE']],
     [10616, '동부 섕크 협회 3과', 6, ['Breath', 'Combustion'], ['CINQ']],
+    // Season 8's first two: the static data does not ship them, and their 충전 is the special
+    // variant only (counted under `specialSkills`), so the keyword set still names it.
+    [10416, '오트쿠튀르:: 르누아르 신발관', 4, ['Charge', 'Vibration'], []],
+    [10816, '오트쿠튀르:: 르루주 부티크', 8, ['Charge', 'Laceration'], []],
   ])(
     'backfills %i 「%s」, which the static data has not shipped',
     (id, title, sinnerId, keywords, factions) => {

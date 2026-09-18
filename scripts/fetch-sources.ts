@@ -7,9 +7,10 @@
  * Files that 404 are reported, not fatal: upstream renames files between seasons, and the
  * `update-game-data` skill explains how to fix the lock file when that happens.
  */
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { hasFlag, readJson, repoPath, writeJsonStable } from './lib/io.ts';
+import { hasFlag, readJson, repoPath } from './lib/io.ts';
 
 /** One language of a source, when the upstream splits languages across branches rather than folders. */
 interface LanguageEntry {
@@ -55,10 +56,7 @@ interface Lock {
 const RAW = 'https://raw.githubusercontent.com';
 const lockPath = repoPath('data/sources.lock.json');
 
-async function latestSha(repo: string, ref: string): Promise<string | null> {
-  // The GitHub API is often blocked in sandboxes; the raw host is not. A ref-pinned raw URL
-  // serves the tip of the branch, so we can detect movement by comparing file bytes instead.
-  // When the API is reachable it gives us the exact sha, which is what we prefer to record.
+async function shaFromApi(repo: string, ref: string): Promise<string | null> {
   try {
     const res = await fetch(`https://api.github.com/repos/${repo}/commits/${ref}`, {
       headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'mirror-dungeon-router' },
@@ -69,6 +67,35 @@ async function latestSha(repo: string, ref: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** The branch tip as git itself reports it: `git ls-remote` goes over plain HTTPS, no API token needed. */
+function shaFromGit(repo: string, ref: string): string | null {
+  try {
+    const out = execFileSync('git', ['ls-remote', `https://github.com/${repo}.git`, `refs/heads/${ref}`], {
+      encoding: 'utf8',
+      timeout: 30_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const sha = out.split(/\s+/)[0];
+    return sha && /^[0-9a-f]{40}$/.test(sha) ? sha : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The exact commit at the tip of `ref`, so the lock file records what was downloaded. The GitHub
+ * API is often blocked in sandboxes; `git ls-remote` usually still gets through, and the raw host
+ * always does. Only when both fail do we download from the ref and leave the recorded sha alone —
+ * and say so, because a lock that names one commit while the files come from another is the
+ * quiet kind of drift this pipeline exists to catch.
+ */
+async function latestSha(repo: string, ref: string): Promise<{ sha: string; via: 'api' | 'git' } | null> {
+  const api = await shaFromApi(repo, ref);
+  if (api) return { sha: api, via: 'api' };
+  const git = shaFromGit(repo, ref);
+  return git ? { sha: git, via: 'git' } : null;
 }
 
 async function download(url: string): Promise<string | null> {
@@ -88,14 +115,16 @@ async function revisionFor(
   update: boolean,
 ): Promise<string> {
   if (!update) return pin.sha;
-  const sha = await latestSha(entry.repo, pin.ref);
-  if (sha) {
-    if (sha !== pin.sha) console.log(`  ${label}: ${pin.sha.slice(0, 8)} -> ${sha.slice(0, 8)}`);
-    pin.sha = sha;
+  const tip = await latestSha(entry.repo, pin.ref);
+  if (tip) {
+    const moved = tip.sha !== pin.sha;
+    const via = tip.via === 'git' ? ' (GitHub API unreachable; sha from git ls-remote)' : '';
+    console.log(`  ${label}: ${moved ? `${pin.sha.slice(0, 8)} -> ${tip.sha.slice(0, 8)}` : `${pin.sha.slice(0, 8)} unchanged`}${via}`);
+    pin.sha = tip.sha;
     entry.fetchedAt = new Date().toISOString().slice(0, 10);
-    return sha;
+    return tip.sha;
   }
-  console.log(`  ${label}: GitHub API unreachable, downloading from ref "${pin.ref}" instead`);
+  console.log(`  ${label}: neither the GitHub API nor git ls-remote answered; downloading from ref "${pin.ref}" and leaving the recorded sha ${pin.sha.slice(0, 8)} as it is`);
   return pin.ref;
 }
 
@@ -158,7 +187,9 @@ async function main(): Promise<void> {
   }
 
   if (update) {
-    writeJsonStable(lockPath, lock);
+    // The lock is written by hand and read by people: keep its own key order (repo, ref, sha,
+    // fetchedAt, note …) rather than sorting it, so an update diffs as the few lines that moved.
+    writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
     console.log('data/sources.lock.json updated');
   }
 

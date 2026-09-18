@@ -1,7 +1,8 @@
 /**
  * The surface a detail opens in: a popover beside its anchor on desktop, a bottom sheet on a
- * phone. Escape and a press outside close it. Also the body for an observed gift from the start
- * row, which lets it be pinned or released.
+ * phone. Escape and a press outside close it. A popover in the `menu` variant is a short list of
+ * actions: no close row and no fixed width, so it hugs its items (the header's 「⋯」). Also the body
+ * for an observed gift from the start row, which lets it be pinned or released.
  */
 import { useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -25,6 +26,7 @@ export function DetailSurface({
   closeLabel,
   onClose,
   placement,
+  variant = 'detail',
   children,
 }: {
   /** The surface's DOM id, so a control with `aria-controls` can close what it opened. */
@@ -35,6 +37,9 @@ export function DetailSurface({
   onClose: () => void;
   /** Popover only: which side of the anchor it opens on. */
   placement?: Placement;
+  /** Popover only: `menu` drops the close row and the fixed width — Escape, a press outside and the
+   *  control that opened it (`aria-controls`) already close it. */
+  variant?: 'detail' | 'menu';
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -99,14 +104,16 @@ export function DetailSurface({
       aria-label={label}
       data-testid="block-popover"
       {...stop}
-      className="absolute z-30 w-[320px] rounded-md border border-line-strong bg-surface p-3 text-fg shadow-pop"
+      className={`absolute z-30 rounded-md border border-line-strong bg-surface text-fg shadow-pop ${variant === 'menu' ? 'w-max p-1.5' : 'w-[320px] p-3'}`}
       style={{ ...vertical, ...horizontal }}
     >
-      <div className="mb-1 flex justify-end">
-        <button type="button" onClick={onClose} aria-label={closeLabel} className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-2 hover:bg-surface-2">
-          <X size={13} aria-hidden />
-        </button>
-      </div>
+      {variant === 'menu' ? null : (
+        <div className="mb-1 flex justify-end">
+          <button type="button" onClick={onClose} aria-label={closeLabel} className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-2 hover:bg-surface-2">
+            <X size={13} aria-hidden />
+          </button>
+        </div>
+      )}
       {children}
     </div>
   );

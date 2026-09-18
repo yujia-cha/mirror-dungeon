@@ -6186,6 +6186,112 @@
       "The Pinky"
     ]
   },
+  "10416": {
+    "breakSection": [
+      60,
+      30
+    ],
+    "date": "2026-09-17",
+    "defCorrection": 2,
+    "defenseSkillTypes": [
+      {
+        "id": "1041604",
+        "type": {
+          "affinity": "sloth",
+          "atkType": "blunt",
+          "clashable": true,
+          "tier": 1,
+          "type": "counter"
+        }
+      }
+    ],
+    "hp": {
+      "base": 73,
+      "level": 3.21
+    },
+    "name": "Haute Couture:: Le Noir Footwear Hall",
+    "rank": 3,
+    "resists": {
+      "blunt": 2,
+      "pierce": 1,
+      "slash": 0.5
+    },
+    "season": 8,
+    "sinnerId": 4,
+    "skillKeywordList": [
+      "Charge",
+      "Tremor"
+    ],
+    "skillTypes": [
+      {
+        "id": "1041601",
+        "num": 3,
+        "type": {
+          "affinity": "envy",
+          "tier": 1,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1041602",
+        "num": 2,
+        "type": {
+          "affinity": "pride",
+          "tier": 2,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1041603",
+        "num": 1,
+        "type": {
+          "affinity": "sloth",
+          "tier": 3,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1041605",
+        "num": 0,
+        "type": {
+          "affinity": "sloth",
+          "tier": 3,
+          "type": "blunt"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        3,
+        7
+      ],
+      [
+        3,
+        7
+      ]
+    ],
+    "statuses": [
+      "Charge",
+      "ChargeNoirAlly",
+      "NoirSuitAlly",
+      "RealisationAlly",
+      "SuperCoin",
+      "Vibration",
+      "VibrationExplosion"
+    ],
+    "tags": [
+      "Le Noir",
+      "Sisyphe"
+    ]
+  },
   "10501": {
     "breakSection": [
       50,
@@ -12370,6 +12476,116 @@
       "LCD",
       "Limbus Company",
       "Syndicate"
+    ]
+  },
+  "10816": {
+    "breakSection": [
+      50
+    ],
+    "date": "2026-09-17",
+    "defCorrection": 0,
+    "defenseSkillTypes": [
+      {
+        "id": "1081604",
+        "type": {
+          "affinity": "lust",
+          "atkType": "pierce",
+          "clashable": true,
+          "tier": 1,
+          "type": "counter"
+        }
+      },
+      {
+        "id": "1081605",
+        "type": {
+          "affinity": "lust",
+          "affinityUptie": 4,
+          "clashable": true,
+          "tier": 1,
+          "type": "guard"
+        }
+      }
+    ],
+    "hp": {
+      "base": 85,
+      "level": 2.28
+    },
+    "name": "Haute Couture:: Boutique du Rouge",
+    "rank": 3,
+    "resists": {
+      "blunt": 2,
+      "pierce": 0.5,
+      "slash": 1
+    },
+    "season": 8,
+    "sinnerId": 8,
+    "skillKeywordList": [
+      "Bleed",
+      "Charge"
+    ],
+    "skillTypes": [
+      {
+        "id": "1081601",
+        "num": 3,
+        "type": {
+          "affinity": "wrath",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1081602",
+        "num": 2,
+        "type": {
+          "affinity": "envy",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1081603",
+        "num": 1,
+        "type": {
+          "affinity": "lust",
+          "tier": 3,
+          "type": "pierce"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        6
+      ]
+    ],
+    "statuses": [
+      "Aggro",
+      "AttackDmgUp",
+      "CanDuelGuard",
+      "Charge",
+      "ChargeRougeAlly",
+      "Laceration",
+      "ResultEnhancement",
+      "RougeIshmaelCocoon",
+      "RougeIshmaelEclose",
+      "ScarletTakeDamageUp",
+      "SuperCoin"
+    ],
+    "tags": [
+      "Le Rouge",
+      "Sisyphe"
     ]
   },
   "10901": {

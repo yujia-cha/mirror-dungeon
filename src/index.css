@@ -127,6 +127,17 @@ html {
   color-scheme: light dark;
 }
 
+/*
+ * The stage's pull gesture starts with the document at its top, which is exactly where a
+ * browser arms pull-to-refresh; the two would otherwise fight over the same 72px. Vertical only,
+ * so the swipe-back navigation on the edges stays. Both elements, since which one the viewport
+ * reads it from has moved between browser versions.
+ */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
 body {
   margin: 0;
   @apply bg-bg text-fg font-sans text-sm antialiased;
