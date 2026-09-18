@@ -1,13 +1,14 @@
 /**
  * A theme pack as the game shows it: a portrait card (8:15) with the name underneath. Artwork
- * comes from `public/art/packs/{sprite}.png` or an external asset host; with neither, the pack
- * name's first character stands in. With `onOpen` the card is a button that opens the gift list.
+ * comes from `public/art/packs/{sprite}.png` or an external asset host; with neither, the card is
+ * its own empty ground — nothing stands in for the missing picture, and which pack it is comes
+ * from the caption, the `title` and `aria-label`. With `onOpen` the card is a button that opens
+ * the gift list.
  */
 import { useState } from 'react';
 import type { ThemePack } from '../../core/schema.ts';
 import { pick, type Lang } from '../i18n.ts';
 import { packImageUrl } from '../lib/assets.ts';
-import { initialFontSize, initialOf } from '../lib/art-fallback.ts';
 
 export type PackCardSize = 20 | 28 | 48 | 64 | 96;
 
@@ -52,20 +53,7 @@ export function PackCard({
           className="h-full w-full object-cover"
           style={{ imageRendering: 'pixelated' }}
         />
-      ) : (
-        /*
-         * No artwork: the pack name's first character. Neutral ground, unlike a gift's — a pack has
-         * no one keyword to wash it with (`keywordAffinity` is a spread), and the grey `Image`
-         * glyph it replaces measured 1.65:1 in light / 1.84:1 in dark, effectively invisible.
-         */
-        <span
-          className="font-num font-bold leading-none text-fg"
-          style={{ fontSize: initialFontSize(size) }}
-          aria-hidden
-        >
-          {initialOf(name)}
-        </span>
-      )}
+      ) : null}
     </span>
   );
   const body = (

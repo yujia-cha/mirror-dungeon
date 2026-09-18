@@ -113,8 +113,8 @@ export function GiftTileGrid({
               title={blockedBy ?? lockedBy}
               className="inline-flex disabled:cursor-default"
             >
-              {/* The dim lives inside the icon: it is the only thing that knows whether it is
-                  dimming artwork or the name fallback (see `dimClass`). */}
+              {/* The dim lives inside the icon (`DIM`), so only the square goes grey — the name
+                  button below keeps full contrast. */}
               <GiftIcon gift={gift} size={32} judgement={judgementOf(entry.reports)} dim={held} lang={lang} />
             </button>
             <button

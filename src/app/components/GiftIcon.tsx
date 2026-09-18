@@ -1,6 +1,7 @@
 /**
- * An E.G.O gift as a square tile. Artwork loads from the asset host when one is configured and
- * otherwise a grey placeholder stands in.
+ * An E.G.O gift as a square tile. Artwork loads from the asset host or `public/art/` when there is
+ * any for this gift; with none, the tile keeps its own ground and a wash of the gift's keyword
+ * colour — nothing is drawn in place of the missing picture.
  *
  * The four corners each say one thing: the tier top-left, the run status top-right, 반드시
  * bottom-left, and the keyword bottom-right. The keyword badge is a small chip — the seven status
@@ -16,7 +17,6 @@ import { pick, t, type Lang } from '../i18n.ts';
 import { giftIconUrl } from '../lib/assets.ts';
 import { tierLabel } from '../lib/labels.ts';
 import { useKeywordName } from '../lib/useEnums.ts';
-import { dimClass, initialFontSize, initialOf } from '../lib/art-fallback.ts';
 import type { Judgement } from '../lib/judgement.ts';
 
 export type GiftIconSize = 20 | 32 | 44;
@@ -47,6 +47,13 @@ const RING: Record<Judgement, string> = {
 
 const JUDGEMENT_KEY = { met: 'condMet', unmet: 'condUnmet', unknown: 'giftUnjudgeable' } as const;
 
+/**
+ * How an inactive tile reads: greyscale drops the keyword hue, the opacity pushes it back. The
+ * icon applies this itself rather than letting a caller dim it from outside, so the name beside a
+ * tile keeps full contrast — small text taken down by `opacity` falls under 4.5:1.
+ */
+const DIM = 'grayscale opacity-55';
+
 export function GiftIcon({
   gift,
   size,
@@ -71,8 +78,7 @@ export function GiftIcon({
   status?: 'got' | 'failed' | null;
   /**
    * This tile is inactive — not collected yet, or locked by another goal. The icon owns the dim
-   * because only it knows whether it is showing artwork or the name fallback, and the two need
-   * different treatment to stay legible (see `dimClass`).
+   * (see `DIM`) so that only the picture goes grey; the name beside it stays at full contrast.
    */
   dim?: boolean;
   lang: Lang;
@@ -111,7 +117,7 @@ export function GiftIcon({
       data-judgement={judgement ?? 'none'}
       data-must={must || undefined}
       data-status={status ?? undefined}
-      className={`relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-line bg-surface-3 text-fg-3 ${ring} ${dimClass(dim || status === 'failed', hasArt)}`}
+      className={`relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-line bg-surface-3 text-fg-3 ${ring} ${dim || status === 'failed' ? DIM : ''}`}
       style={{ width: size, height: size }}
     >
       {hasArt ? (
@@ -125,25 +131,15 @@ export function GiftIcon({
           className="h-full w-full object-cover"
           style={{ imageRendering: 'pixelated' }}
         />
-      ) : (
+      ) : badge ? (
         /*
-         * No artwork: the name's first character over a wash of the gift's keyword colour. The
-         * wash is the keyword badge's own `bg-kw-*` at 25%, so this adds no new palette entry, and
-         * a 범용 gift gets no wash at all — the same way it gets no badge. The letter stays
-         * `text-fg`: 8.3:1 at worst in light, 5.2:1 at worst in dark over these grounds (computed),
-         * against the 1.29:1 the grey `Gem` managed inside a pending tile.
+         * No artwork: a wash of the gift's keyword colour and nothing else. The wash is the keyword
+         * badge's own `bg-kw-*` at 25%, so it adds no new palette entry, and a 범용 gift gets no wash
+         * at all — the same way it gets no badge. Which gift this is comes from the name beside the
+         * tile and from `aria-label`, never from inside the square.
          */
-        <>
-          {badge ? <span className={`absolute inset-0 ${badge.fill} opacity-25`} aria-hidden /> : null}
-          <span
-            className="relative font-num font-bold leading-none text-fg"
-            style={{ fontSize: initialFontSize(size) }}
-            aria-hidden
-          >
-            {initialOf(label)}
-          </span>
-        </>
-      )}
+        <span className={`absolute inset-0 ${badge.fill} opacity-25`} aria-hidden />
+      ) : null}
       {must ? (
         <span className="absolute bottom-0 left-0 rounded-tr-sm bg-ink p-px text-ink-fg" aria-hidden>
           <Star size={size >= 32 ? 9 : 7} fill="currentColor" />

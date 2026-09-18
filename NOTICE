@@ -50,12 +50,14 @@ redistributed only to the extent the planner needs it, and no game images are in
 
 ## 서체
 
-Nunito — SIL Open Font License 1.1. 라이선스 전문은 `src/assets/fonts/Nunito-OFL.txt`에
-있습니다. 빌드는 라틴 문자만 서브셋한 `.woff2`를 내보내므로, 이 고지가 그 사본을 따라가는
-OFL §2의 고지 역할을 합니다.
+Pretendard (© 2021 Kil Hyung-jin, Reserved Font Name Pretendard) — SIL Open Font License 1.1.
+라이선스 전문은 `src/assets/fonts/Pretendard-OFL.txt`에 있습니다. 저장소가 싣고 배포하는
+것은 배포판의 `woff2` 파일을 **고치지 않은 사본**(`src/assets/fonts/pretendard/`)이고, 이
+고지가 그 사본을 따라가는 OFL §2의 고지 역할을 합니다.
 
-Nunito is licensed under the SIL Open Font License 1.1; the full text is in
-`src/assets/fonts/Nunito-OFL.txt`.
+Pretendard is licensed under the SIL Open Font License 1.1; the full text is in
+`src/assets/fonts/Pretendard-OFL.txt`. The `woff2` files under `src/assets/fonts/pretendard/`
+are unmodified copies from the upstream distribution.
 
 ## 그 외 의존성
 

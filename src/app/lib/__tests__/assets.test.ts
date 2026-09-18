@@ -9,7 +9,7 @@ import { giftIconUrl, packImageUrl, setArtManifest } from '../assets.ts';
 afterEach(() => setArtManifest(null));
 
 describe('with no art and no asset host', () => {
-  it('returns nothing, so the caller draws the name fallback', () => {
+  it('returns nothing, so the tile is drawn without a picture', () => {
     setArtManifest(null);
     expect(giftIconUrl(9088)).toBeNull();
     expect(packImageUrl('Canto_I')).toBeNull();

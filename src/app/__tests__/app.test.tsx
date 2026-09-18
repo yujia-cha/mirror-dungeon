@@ -15,6 +15,7 @@ import { PERSIST_KEY, PERSIST_VERSION, appDefaultOptions, decodeShared, defaultU
 import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
+import { tierLabel } from '../lib/labels.ts';
 import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
@@ -855,33 +856,37 @@ describe('GiftsStep', () => {
   });
 
   /*
-   * The old grey `Gem` measured 1.65:1 against its own tile, and 1.29:1 once a pending tile's
-   * `opacity-55` was applied on top — invisible, which is what the report said. The name's first
-   * character replaces it, and the dim has to treat a fallback differently from artwork or the
-   * letter drops back under 4.5:1.
+   * Nothing is drawn in place of a missing picture — not the old grey `Gem` (1.65:1 against its
+   * own tile, 1.29:1 inside a pending one), and not the name's first character that replaced it.
+   * A gift keeps a wash of its keyword colour; 범용 keeps nothing, the same way it gets no badge.
+   * Which gift a tile is comes from the name beside it and from `aria-label`.
    */
-  it('draws the name initial when there is no artwork, tinted by keyword and left alone by 범용', () => {
+  it('draws no letter where the artwork is missing — a keyword wash, and nothing at all for 범용', () => {
     const tinted = data.gifts.find((g) => g.keyword === 'Combustion')!;
     const general = data.gifts.find((g) => g.keyword === 'None')!;
     render(
       <>
         <GiftIcon gift={tinted} size={44} lang="ko" />
         <GiftIcon gift={general} size={44} lang="ko" />
+        <GiftIcon gift={tinted} size={20} lang="ko" />
       </>,
     );
     const icons = screen.getAllByTestId('gift-icon');
-    expect(icons[0]!).toHaveTextContent(tinted.name.ko.slice(0, 1));
-    expect(icons[1]!).toHaveTextContent(general.name.ko.slice(0, 1));
-    // 범용 gets no wash, the same way it gets no keyword badge.
+    // The tier chip is the only text a tile may carry — and it is not drawn below 32px, so the
+    // small tile has to come out completely empty.
+    expect(icons[0]!.textContent).toBe(tierLabel(tinted.tier));
+    expect(icons[1]!.textContent).toBe(tierLabel(general.tier));
+    expect(icons[2]!.textContent).toBe('');
+    // The name still reaches a screen reader, so removing the letter costs nothing there.
+    expect(icons[0]!).toHaveAccessibleName(new RegExp(tinted.name.ko));
     expect(icons[0]!.querySelector('.bg-kw-combustion')).not.toBeNull();
     expect(icons[1]!.querySelector('[class*="bg-kw-"]')).toBeNull();
   });
 
-  it('dims a fallback with greyscale only — opacity on top would make the letter unreadable', () => {
+  it('dims the square and not the name, the same way with artwork or without', () => {
     const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
     const { unmount } = render(<GiftIcon gift={gift} size={44} dim lang="ko" />);
-    expect(screen.getByTestId('gift-icon').className).toContain('grayscale');
-    expect(screen.getByTestId('gift-icon').className).not.toContain('opacity-55');
+    expect(screen.getByTestId('gift-icon').className).toContain('grayscale opacity-55');
     unmount();
     render(<GiftIcon gift={gift} size={44} lang="ko" />);
     expect(screen.getByTestId('gift-icon').className).not.toContain('grayscale');

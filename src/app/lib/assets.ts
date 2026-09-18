@@ -6,7 +6,8 @@
  * 2. `public/art/…` — the owner's own drawings, committed to this repository. These are served by
  *    the app itself, so they MUST carry `import.meta.env.BASE_URL`; a bare `/art/…` would 404 on
  *    GitHub Pages, which serves the site from `/<repo>/`.
- * 3. Nothing — the caller draws the name fallback (`art-fallback.ts`).
+ * 3. Nothing — the tile keeps its own ground. A gift adds a wash of its keyword colour; a pack
+ *    and a 범용 gift add nothing. Which one it is comes from the name beside it, not from inside.
  *
  * **Game artwork is still never committed** (it belongs to Project Moon). What lives under
  * `public/art/` is original work by this repository's owner, which is why it can ship here at all.

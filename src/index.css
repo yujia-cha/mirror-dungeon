@@ -1,23 +1,13 @@
 @import 'tailwindcss';
+/*
+ * Pretendard, self-hosted. The app is Korean-first and carried no Hangul webfont at all: the
+ * families named in `--font-sans` were bare local lookups, so the text came out as Apple SD Gothic
+ * Neo on iOS/macOS, Malgun Gothic on Windows and Noto Sans CJK on Android — a different face on
+ * every device. This file is the fix; see its own header for why it is 92 files.
+ */
+@import './assets/fonts/pretendard.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
-
-/*
- * Nunito (SIL OFL, src/assets/fonts/Nunito-OFL.txt) carries every number the app draws. Its round
- * bowls stay readable at the 9-11px the tier chips and floor cells use, where a plain monospace
- * face turns into a smudge. Latin only — Hangul falls back per glyph to the sans stack, so a
- * chip like 「진동 3/5」 gets round digits without changing its Korean.
- */
-@font-face {
-  font-family: 'Nunito';
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  /* Relative so Vite fingerprints it and the GitHub Pages sub-path build rewrites it too. */
-  src: url('./assets/fonts/nunito-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
-    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
 
 /*
  * Grey palette (docs/design/ui-redesign.md). Acquisition certainty and past state are told apart
@@ -78,10 +68,28 @@
   --color-transparent: transparent;
   --color-current: currentColor;
 
-  --font-sans: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+  /*
+   * The system Hangul names stay on as a tail, not as the answer: they cover the swap window, and
+   * they are what actually draws the Hanja in 「본국검보[本國劍譜]」·「절차탁마(切磋琢磨)」 —
+   * Pretendard has no CJK ideographs at all (read from its cmap: zero glyphs in U+4E00–9FFF).
+   */
+  --font-sans: 'Pretendard Variable', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR',
+    system-ui, sans-serif;
+  /* Only Tailwind's preflight reaches for this now (code · pre · kbd · samp); `src/` never does. */
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
-  /* Every number in the app. Swap this one line to try another face. */
-  --font-num: 'Nunito', var(--font-mono);
+  /*
+   * Every number in the app, and now the same face as the body. The token stays rather than the
+   * class being removed at ~24 call sites: Tailwind generates `.font-num` *from this token*, and
+   * the route map's SVG reads it by name (`fontFamily="var(--font-num)"`). Swap this one line to
+   * try another face.
+   *
+   * `tnum` is not decoration. Nunito's figures were tabular by default (every advance 600/1000);
+   * Pretendard's are proportional (898–1278 at upem 2048, read from `hmtx`), so without this the
+   * floor strip and the counters would shift sideways as 9 ticks over to 10. Tailwind turns this
+   * companion key into a `font-feature-settings` declaration on `.font-num` itself.
+   */
+  --font-num: var(--font-sans);
+  --font-num--font-feature-settings: 'tnum' 1;
   --text-xs: 11px;
   --text-xs--line-height: 1.4;
   --text-sm: 13px;
@@ -185,4 +193,21 @@ body {
 }
 .scroll-x::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * The route map draws its floor numbers as SVG `<text font-family="var(--font-num)">`
+ * (`MetroMap.tsx` ~502 and ~676). Those nodes take the family from the token but carry no class,
+ * so `.font-num`'s tabular figures never reach them — and `font-feature-settings` is not an SVG
+ * presentation attribute, so it cannot be added in the TSX either. The attribute selector follows
+ * exactly the two `<text>` nodes that opt into the token; the map's 「시작」 label has no
+ * `font-family` and is left alone.
+ *
+ * `@layer base` rather than top level: an unlayered rule here would outrank Tailwind's own
+ * `tabular-nums` / `proportional-nums` utilities, which should stay able to win.
+ */
+@layer base {
+  svg text[font-family] {
+    font-feature-settings: 'tnum' 1;
+  }
 }

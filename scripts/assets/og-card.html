@@ -3,27 +3,29 @@
   The source of public/og.png (1200×630), the card a pasted share link unfurls into.
 
   Bake it with headless Chromium (no npm dependency, so this is a hand step — the PNG is
-  committed):
+  committed). The virtual-time budget is not optional: the font arrives through `@import` and a
+  `unicode-range` chunk, so the shot has to wait for it or the card comes out in the generic sans.
 
     chromium --headless --disable-gpu --hide-scrollbars \
+      --virtual-time-budget=5000 \
       --screenshot=public/og.png --window-size=1200,630 \
       scripts/assets/og-card.html
 
   Two rules this file keeps:
   - No game art. The repository ships no Project Moon assets, and a share card is the most public
     place one would sit. The mark is the app's own favicon geometry.
-  - Latin letters only. Nunito is the one font the repository carries, and it has no Hangul; the
-    Korean of the title is carried by `og:title`/`og:description` instead, where it is real text.
+  - Latin letters only — for now by choice, not by necessity. It used to be necessity: Nunito was
+    the one font here and had no Hangul. Pretendard does, so the card *could* carry the Korean
+    title; it still does not, because that is a design change and not this one. The Korean stays
+    in `og:title`/`og:description`, where it is real text.
 -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <style>
-      @font-face {
-        font-family: 'Nunito';
-        font-weight: 400 800;
-        src: url('../../src/assets/fonts/nunito-latin.woff2') format('woff2');
-      }
+      /* The app's own font, through the app's own stylesheet — one source of truth, and its
+         `unicode-range` picks whichever chunk this card's letters need. */
+      @import url('../../src/assets/fonts/pretendard.css');
       * {
         margin: 0;
         padding: 0;
@@ -34,7 +36,7 @@
         height: 630px;
         background: #1c1917;
         color: #ffffff;
-        font-family: 'Nunito', sans-serif;
+        font-family: 'Pretendard Variable', sans-serif;
         /* A column so the block sits centred whatever height the headless window really gets —
            an absolutely positioned footer drifted when the viewport was not exactly 630. */
         display: flex;
@@ -80,9 +82,12 @@
       }
       p {
         margin-top: 22px;
-        font-size: 30px;
+        /* 26px, not 30: Pretendard is wider than the Nunito this card used to bake with, and the
+           subtitle wrapped onto a second line. One line is the layout. */
+        font-size: 26px;
         font-weight: 600;
         color: #a8a29e;
+        white-space: nowrap;
       }
     </style>
   </head>
