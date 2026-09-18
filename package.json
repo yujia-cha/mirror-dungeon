@@ -4,6 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Limbus Company Mirror Dungeon deck-based E.G.O Gift route planner",
+  "license": "MIT",
+  "homepage": "https://yujia-cha.github.io/mirror-dungeon/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yujia-cha/mirror-dungeon.git"
+  },
   "engines": {
     "node": ">=22"
   },

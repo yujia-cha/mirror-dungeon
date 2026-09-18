@@ -24,6 +24,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const priority = useApp((s) => s.priority);
   const options = useApp((s) => s.options);
   const run = useApp((s) => s.run);
+  const lastFloor = useApp((s) => s.lastFloor);
   const setOptions = useApp((s) => s.setOptions);
   const setPriority = useApp((s) => s.setPriority);
   const removeWanted = useApp((s) => s.removeWanted);
@@ -46,8 +47,15 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   }
 
   const capped = shown.stats.searchCapped;
-  const SILENT_WARNINGS = new Set(['search-capped', 'parallel-requires-hard', 'general-drop-not-guaranteed', 'condition-unmet', 'fusion-slots']);
+  // A warning stays out of the 「참고」 list only when another surface already carries it: the app
+  // always plans Hard so `parallel-requires-hard` can never apply, `condition-unmet` is what the
+  // tiles' outer ring says, and `general-drop-not-guaranteed` is the general-drops card below,
+  // which also names the gifts. `fusion-slots` and `search-capped` used to be in here with
+  // nothing else saying them — the first was a silent failure, the second was the sentence that
+  // explains what the 「근사 결과」 badge means.
+  const SILENT_WARNINGS = new Set(['parallel-requires-hard', 'condition-unmet', 'general-drop-not-guaranteed']);
   const otherWarnings = shown.warnings.filter((w) => !SILENT_WARNINGS.has(w.code));
+  const generalDrops = shown.generalDrops;
   // The planner reports every miss it had to work around, ingredients included.
   const failedCount = shown.unresolved.filter((u) => u.reason === 'failed').length;
 
@@ -84,9 +92,20 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           <span className="font-num text-lg font-bold text-fg">{value}</span>
         </span>
       ))}
+      {/* 「확보 M/T」 counts a general gift as covered because the route has nothing left to do for
+          it — but the player still has to be lucky. The badge keeps the count honest. */}
+      {generalDrops.length > 0 ? (
+        <Badge tone="neutral" title={t('routeGeneralHint', lang)}>
+          {t('routeGeneralBadge', lang, { n: generalDrops.length })}
+        </Badge>
+      ) : null}
       {failedCount > 0 ? <Badge tone="alert">{t('runFailedCount', lang, { n: failedCount })}</Badge> : null}
       {shown.unresolved.length > 0 ? <Badge tone="neutral">{t('routeUnresolvedCount', lang, { n: shown.unresolved.length })}</Badge> : null}
-      {capped ? <Badge tone="approx">{t('routeApprox', lang)}</Badge> : null}
+      {capped ? (
+        <Badge tone="approx" title={t('routeApproxHint', lang)}>
+          {t('routeApprox', lang)}
+        </Badge>
+      ) : null}
       {/* Icon only: the toast after a press says what happened, so the label lives in the tooltip. */}
       <Button variant="ghost" size="sm" className="ml-auto" onClick={copy} title={t('routeCopy', lang)} ariaLabel={t('routeCopy', lang)}>
         <Copy size={13} aria-hidden />
@@ -161,7 +180,17 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     <div className="flex flex-col gap-3" data-testid="route-plan">
       {summary}
       {variantTabs}
-      <MetroMap plan={shown} ctx={ctx} keywordLabel={keywordLabel} run={{ currentFloor: run.currentFloor }} slots={data.rules.giftObservation.max} variant="vertical" detailMode="sheet" />
+      <MetroMap
+        plan={shown}
+        ctx={ctx}
+        keywordLabel={keywordLabel}
+        lastFloor={lastFloor}
+        fixedModeByFloor={indexes.fixedModeByFloor}
+        run={{ currentFloor: run.currentFloor }}
+        slots={data.rules.giftObservation.max}
+        variant="vertical"
+        detailMode="sheet"
+      />
       <PackConflicts
         groups={groups}
         others={others}
@@ -178,6 +207,26 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         onSeeVariants={variants.length > 0 && !variant ? seeVariants : undefined}
         detailMode="sheet"
       />
+      {/* The planner counts these as covered because no pack visit can improve them — the route
+          has nothing left to do. Naming them is the only way the screen can say that 「확보」 here
+          means 「나올 수 있음」 and not 「확정」. */}
+      {generalDrops.length > 0 ? (
+        <Card className="p-3.5" testId="route-general-drops">
+          <SectionTitle>{t('routeGeneralTitle', lang)}</SectionTitle>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {generalDrops.map((giftId) => {
+              const gift = indexes.giftById.get(giftId);
+              return (
+                <li key={giftId} className="flex items-center gap-1.5 text-xs text-fg-2">
+                  {gift ? <GiftIcon gift={gift} size={20} lang={lang} /> : null}
+                  <span>{giftName(giftId)}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-2 text-xs text-fg-3">{t('routeGeneralHint', lang)}</p>
+        </Card>
+      ) : null}
       {otherWarnings.length > 0 ? (
         <Card className="p-3.5">
           <SectionTitle>{t('routeWarnings', lang)}</SectionTitle>

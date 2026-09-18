@@ -1,0 +1,21 @@
+<!doctype html>
+<!--
+  The source of public/apple-touch-icon.png (180×180). iOS Safari will not take the SVG favicon
+  for 「홈 화면에 추가」, so a PNG has to exist; this is the same geometry as public/favicon.svg
+  with the rounded corners dropped (iOS masks them itself).
+
+    chromium --headless --disable-gpu --hide-scrollbars \
+      --screenshot=public/apple-touch-icon.png --window-size=180,180 \
+      scripts/assets/touch-icon.html
+-->
+<html><head><meta charset="UTF-8"><style>
+  *{margin:0;padding:0}
+  html,body{width:180px;height:180px;overflow:hidden;background:#1c1917}
+  svg{display:block}
+</style></head><body>
+<svg width="180" height="180" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#1c1917"/>
+  <path d="M16 4 26 16 16 28 6 16Z" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+  <path d="M16 9.5 21 16 16 22.5 11 16Z" fill="#f59e0b" opacity="0.55"/>
+</svg>
+</body></html>

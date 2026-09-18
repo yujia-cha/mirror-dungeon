@@ -19,10 +19,54 @@ function normaliseBase(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
 }
 
+/** A stalled connection never rejects on its own, and the app shows its skeleton while it waits. */
+const FETCH_TIMEOUT_MS = 15_000;
+
+/**
+ * Why this carries a code and not a sentence: the message reaches the user through the app's error
+ * card, next to strings the app has localized. A Korean sentence thrown from core showed up
+ * beside English ones for a reader in English mode. The app turns `cause` into its own text and
+ * falls back to `message` for anything it does not know.
+ */
+export class DataLoadError extends Error {
+  constructor(
+    readonly cause: 'http' | 'timeout' | 'network' | 'malformed',
+    readonly label: string,
+    readonly status?: number,
+  ) {
+    super(`data load failed (${cause}): ${label}${status === undefined ? '' : ` (${status})`}`);
+    this.name = 'DataLoadError';
+  }
+}
+
 async function fetchJson(url: string, label: string): Promise<unknown> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`게임 데이터를 불러올 수 없습니다: ${label} (${response.status})`);
-  return response.json() as Promise<unknown>;
+  // `AbortSignal.timeout` is Safari 16 / iOS 16, the app's floor, so no polyfill is needed.
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  } catch (cause) {
+    const timedOut = cause instanceof DOMException && (cause.name === 'TimeoutError' || cause.name === 'AbortError');
+    throw new DataLoadError(timedOut ? 'timeout' : 'network', label);
+  }
+  if (!response.ok) throw new DataLoadError('http', label, response.status);
+  try {
+    return (await response.json()) as unknown;
+  } catch {
+    // A host that answers a missing data file with its own HTML 200 lands here rather than deep
+    // inside the planner.
+    throw new DataLoadError('malformed', label);
+  }
+}
+
+/**
+ * Production skips Zod (parsing 446 gifts on every load is wasted work — CI already validated the
+ * files), but it must not skip *everything*: a truncated-yet-parseable file would otherwise become
+ * a `TypeError` several frames inside the planner, which is a white screen rather than the error
+ * card. This is the cheap middle: the shape each file must have for any reader to work.
+ */
+function assertShape(label: string, value: unknown, kind: 'array' | 'object'): void {
+  const ok = kind === 'array' ? Array.isArray(value) : value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (!ok) throw new DataLoadError('malformed', label);
 }
 
 /**
@@ -56,6 +100,13 @@ export async function loadGameData(
     ),
     Promise.all(SHARED_FILES.map((name) => fetchJson(`${base}data/${name}.json`, `${name}.json`))),
   ]);
+
+  assertShape(`md${season}/meta.json`, meta, 'object');
+  assertShape(`md${season}/rules.json`, rules, 'object');
+  assertShape(`md${season}/gifts.json`, gifts, 'array');
+  assertShape(`md${season}/packs.json`, packs, 'array');
+  assertShape('enums.json', enums, 'object');
+  assertShape('identities.json', identities, 'array');
 
   if (options.validate) {
     return {

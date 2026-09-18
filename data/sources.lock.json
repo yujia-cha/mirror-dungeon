@@ -1,5 +1,5 @@
 {
-  "$comment": "Pinned upstream game-data sources. Run `npm run data:fetch` to restore data/raw exactly, or `npm run data:fetch -- --update` to move to the latest upstream commit. See docs/research/data-sources.md for what each source is and how alive it is.",
+  "$comment": "Pinned upstream game-data sources. Run `npm run data:fetch` to restore data/raw exactly, or `npm run data:fetch -- --update` to move to the latest upstream commit. Each source's `note` says what it is for; data/README.md lists them with their licence status.",
   "sources": {
     "openLethe": {
       "repo": "LEAGUE-OF-NINE/OpenLethe",

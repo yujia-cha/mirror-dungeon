@@ -24,6 +24,12 @@ export const STRINGS = {
   loadFailed: { ko: '게임 데이터를 불러오지 못했습니다', en: 'Could not load the game data' },
   loadFailedHint: { ko: 'Pages 경로 설정을 확인하세요.', en: 'Check the Pages base path.' },
   retry: { ko: '다시 시도', en: 'Retry' },
+  // `DataLoadError` carries a cause, not a sentence, so both languages are written here instead
+  // of one Korean string reaching an English reader from core. `{label}` is the file that failed.
+  loadFailedHttp: { ko: '{label}을(를) 받지 못했습니다 ({status}).', en: 'Could not fetch {label} ({status}).' },
+  loadFailedTimeout: { ko: '{label} 요청이 시간을 넘겼습니다. 연결을 확인해 주세요.', en: 'The request for {label} timed out; check your connection.' },
+  loadFailedNetwork: { ko: '{label}에 연결할 수 없습니다.', en: 'Could not reach {label}.' },
+  loadFailedMalformed: { ko: '{label}의 내용을 읽을 수 없습니다.', en: 'Could not read the contents of {label}.' },
   dataVersion: { ko: '데이터', en: 'Data' },
   season: { ko: '시즌', en: 'Season' },
   seasonProvisional: {
@@ -36,10 +42,15 @@ export const STRINGS = {
   },
   seasonDroppedGifts: { ko: '이번 시즌에 없는 기프트 {n}개를 뺐습니다', en: 'Dropped {n} gift(s) this season does not have' },
   seasonDroppedPacks: { ko: '이번 시즌에 없는 팩 설정 {n}개를 뺐습니다', en: 'Dropped {n} pack setting(s) this season does not have' },
+  // Still one line, per the rule that the screen carries exactly two sentences of prose (this and
+  // the data version). 「제휴하거나 승인받지 않았습니다」 is the part the repo's LICENSE/NOTICE said
+  // and the app did not; the credits themselves are too long for a footer and live in NOTICE,
+  // which the link reaches.
   aboutData: {
-    ko: '게임 데이터와 텍스트의 권리는 Project Moon에 있습니다. 비상업 팬 프로젝트입니다.',
-    en: 'Game data and text belong to Project Moon. This is a non-commercial fan project.',
+    ko: '게임 데이터와 텍스트의 권리는 Project Moon에 있습니다. Project Moon과 제휴하거나 승인받지 않은 비상업 팬 프로젝트입니다.',
+    en: 'Game data and text belong to Project Moon. A non-commercial fan project, not affiliated with or endorsed by Project Moon.',
   },
+  aboutSource: { ko: '출처와 라이선스', en: 'Sources and licence' },
 
   toDeck: { ko: '덱 탭으로', en: 'To the deck tab' },
 
@@ -188,6 +199,18 @@ export const STRINGS = {
   routeConditionsBasis: { ko: '출격 {n} 기준', en: 'for {n} deployed' },
   routeUnresolved: { ko: '미해결', en: 'Unresolved' },
   routeWarnings: { ko: '참고', en: 'Notes' },
+  // 범용 기프트는 「나올 수 있음」이지 확정이 아니다. 계획이 확보로 세는 몫에 범용이 섞여 있으면
+  // 화면이 그 차이를 말해야 한다 — 이 셋이 그 말을 나눠 맡는다(배지·절 제목·설명).
+  routeGeneralBadge: { ko: '범용 {n} 확정 아님', en: '{n} not guaranteed' },
+  routeGeneralTitle: { ko: '범용 드랍 (확정 아님)', en: 'General drops (not guaranteed)' },
+  routeGeneralHint: {
+    ko: '이 기프트는 어느 팩에서나 나올 수 있을 뿐, 그 팩에 들어가도 확정으로 얻는 것이 아닙니다. 상점과 새로고침을 함께 쓰세요.',
+    en: 'These can drop from any pack but entering it never guarantees them; use the shop and refreshes too.',
+  },
+  routeApproxHint: {
+    ko: '목표가 많아 탐색을 끝까지 하지 못했습니다. 최선이 아닐 수 있고, 목표를 더 넣으면 이미 확보한 것이 빠질 수 있습니다.',
+    en: 'Too many goals to search exhaustively. This may not be optimal, and adding goals can drop ones already secured.',
+  },
   routeEmpty: { ko: '기프트를 고르면 루트가 나옵니다', en: 'Choose gifts and the route appears' },
   unresolvedNoPack: { ko: '층 범위 밖', en: 'No pack in range' },
   unresolvedConflict: { ko: '팩 충돌', en: 'Pack conflict' },
@@ -249,6 +272,23 @@ export const STRINGS = {
   stageGoalsFirst: { ko: '목표', en: 'Goals' },
   stageNext: { ko: '다음 층', en: 'Next floor' },
   stageDone: { ko: '{last}층까지 마쳤습니다', en: 'Floor {last} is done' },
+  // The header's 초기화 is the only other way to start a run, and it takes the deck and the goals
+  // with it. Mirror Dungeon is repeated content, so the common next move keeps both.
+  stageNewRun: { ko: '같은 목표로 새 런', en: 'New run, same goals' },
+  // Both of these throw a run away and neither can be undone, so both ask first — but only while
+  // a run is actually in progress.
+  confirmSharedTitle: { ko: '진행 중인 런을 버리고 링크를 열까요?', en: 'Discard the run in progress and open the link?' },
+  confirmSharedMessage: {
+    ko: '공유 링크는 보낸 사람의 덱·목표·설정으로 덮어씁니다. 지금 런의 기록은 되돌릴 수 없습니다.',
+    en: "The link replaces your deck, goals and settings with the sender's. The current run record cannot be recovered.",
+  },
+  confirmSharedConfirm: { ko: '링크 열기', en: 'Open the link' },
+  confirmSeasonTitle: { ko: '진행 중인 런을 버리고 시즌을 바꿀까요?', en: 'Discard the run in progress and change season?' },
+  confirmSeasonMessage: {
+    ko: '시즌을 바꾸면 런을 버리고, 새 시즌이 모르는 기프트·팩 설정도 빠집니다.',
+    en: 'Changing season discards the run and drops any gift or pack setting the new season does not know.',
+  },
+  confirmSeasonConfirm: { ko: '시즌 바꾸기', en: 'Change season' },
   giftTileToggle: { ko: '{name} 획득 표시', en: 'Mark {name} as got' },
   giftTileHold: { ko: '길게 누르면 정보', en: 'Hold for details' },
   trackerTitle: { ko: 'T4 기프트 추적', en: 'T4 gift tracker' },

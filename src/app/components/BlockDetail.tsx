@@ -75,7 +75,7 @@ export function DetailSurface({
           aria-label={label}
           data-testid="block-sheet"
           {...stop}
-          className="fixed inset-x-0 bottom-0 z-[60] max-h-[80vh] overflow-y-auto rounded-t-md border-t border-line-strong bg-surface px-4 pb-6 pt-2 shadow-pop lg:inset-x-auto lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2 lg:rounded-md lg:border"
+          className="fixed inset-x-0 bottom-0 z-[60] max-h-[80dvh] overflow-y-auto rounded-t-md border-t border-line-strong bg-surface px-4 pb-6 pt-2 shadow-pop lg:inset-x-auto lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2 lg:rounded-md lg:border"
         >
           <div className="mb-2 flex items-center">
             <span className="mx-auto h-1 w-10 rounded-full bg-line-strong" aria-hidden />

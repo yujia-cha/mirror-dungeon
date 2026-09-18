@@ -33,6 +33,17 @@ jobs:
         env:
           # GitHub Pages는 https://<owner>.github.io/<repo>/ 하위 경로에서 서비스된다.
           VITE_BASE: /${{ github.event.repository.name }}/
+          # 공유 링크가 카카오톡·디스코드에서 카드로 뜨게 하는 Open Graph·canonical 주소.
+          # 크롤러는 상대 경로를 풀지 않으므로 절대 주소여야 한다. 비어 있으면
+          # vite.config.ts의 기본값(공개 Pages 주소)을 쓴다.
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          # 기프트 아이콘·팩 이미지를 올려 둔 외부 주소. **일부러 비워 둔 상태다** —
+          # 게임 이미지는 Project Moon의 것이라 이 저장소에도, 우리 버킷에도 두지 않는다.
+          # 값이 없으면 앱이 회색 플레이스홀더를 그린다(src/app/lib/assets.ts).
+          # 붙이려면 공개 저장소 Settings → Secrets and variables → Actions → Variables에
+          # VITE_ASSET_BASE를 만든다. Pages에는 Cloudflare Pages 같은 환경변수 UI가 없어서
+          # 저장소 Variables가 유일한 경로다.
+          VITE_ASSET_BASE: ${{ vars.VITE_ASSET_BASE }}
         run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

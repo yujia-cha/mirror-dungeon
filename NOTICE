@@ -1,0 +1,63 @@
+# NOTICE
+
+거울 던전 루트 플래너 (Mirror Dungeon Route Planner)
+https://yujia-cha.github.io/mirror-dungeon/
+
+## 이 저장소의 라이선스가 덮는 범위
+
+`LICENSE`의 MIT 라이선스는 **이 프로젝트의 소스 코드에만** 적용됩니다.
+`data/`와 `public/data/` 아래의 게임 데이터·텍스트에는 적용되지 않습니다.
+
+The MIT licence in `LICENSE` covers **this project's source code only**. It does not cover the
+game data and text under `data/` and `public/data/`.
+
+## 게임 데이터와 텍스트
+
+Limbus Company의 게임 데이터·텍스트·에셋에 대한 권리는 **Project Moon**에 있습니다.
+이 프로젝트는 **비상업 팬 프로젝트**이며 Project Moon과 제휴하거나 승인받지 않았습니다.
+
+`data/`와 `public/data/`에 담긴 게임 데이터는 플래너가 동작하는 데 필요한 범위에서만
+재배포합니다. **게임 이미지는 이 저장소에 담지 않습니다** — 아이콘과 팩 이미지는 회색
+플레이스홀더이고, `VITE_ASSET_BASE`가 설정된 배포에서만 외부에서 불러옵니다.
+
+Limbus Company game data, text and assets are the property of **Project Moon**. This is a
+**non-commercial fan project**, not affiliated with or endorsed by Project Moon. Game data is
+redistributed only to the extent the planner needs it, and no game images are included.
+
+## 데이터 출처
+
+원본 저장소와 커밋은 `data/sources.lock.json`에 고정되어 있고, 무엇을 가져오는지는
+`data/README.md`에 적어 두었습니다. 세 곳 모두 업스트림에 라이선스 파일이 없습니다.
+
+- **LEAGUE-OF-NINE/OpenLethe** — https://github.com/LEAGUE-OF-NINE/OpenLethe
+  게임 클라이언트 정적 데이터. 내용의 권리는 Project Moon.
+- **x1bViolet/Limbus-Localization-Files** — https://github.com/x1bViolet/Limbus-Localization-Files
+  공식 한국어·영어 현지화 원문. 내용의 권리는 Project Moon.
+- **eldritchtools/limbus-assets** — https://github.com/eldritchtools/limbus-assets
+  limbus.tools의 가공 데이터. 게임 원본이 아니라 **제3자가 직접 가공한 편집물**이며,
+  정적 데이터에 없는 인격의 키워드를 채우고 얼어 있는 거울 던전 데이터를 교차검증하는 데
+  씁니다. 이 저장소가 내보내는 `public/data/identities.json`의 `keywordSource: "derived"`
+  항목이 여기서 옵니다.
+
+## 서체
+
+Nunito — SIL Open Font License 1.1. 라이선스 전문은 `src/assets/fonts/Nunito-OFL.txt`에
+있습니다. 빌드는 라틴 문자만 서브셋한 `.woff2`를 내보내므로, 이 고지가 그 사본을 따라가는
+OFL §2의 고지 역할을 합니다.
+
+Nunito is licensed under the SIL Open Font License 1.1; the full text is in
+`src/assets/fonts/Nunito-OFL.txt`.
+
+## 그 외 의존성
+
+npm 의존성의 라이선스는 `package-lock.json`이 가리키는 각 패키지에 있습니다.
+런타임 의존성은 모두 MIT / ISC / (MIT AND Zlib)입니다.
+
+## 삭제 요청 · 문의
+
+권리자가 이 저장소나 배포된 사이트의 내용에 대해 삭제를 요청하면 따릅니다.
+공개 저장소의 Issues로 알려 주세요 — https://github.com/yujia-cha/mirror-dungeon/issues
+(저장소 소유자: GitHub 사용자 `yujia-cha`)
+
+If you are a rights holder and want content removed from this repository or the deployed site,
+open an issue at https://github.com/yujia-cha/mirror-dungeon/issues and it will be honoured.

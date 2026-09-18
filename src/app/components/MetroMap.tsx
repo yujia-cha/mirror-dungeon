@@ -10,7 +10,6 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Eye, Star } from 'lucide-react';
 import type { ObservedGift, RoutePlan } from '../../core/types.ts';
 import { pick, t } from '../i18n.ts';
-import { MAX_FLOOR } from '../lib/timetable.ts';
 import { segmentsFor, stackBlocks, type Segment } from '../lib/metro.ts';
 import { useElementWidth } from '../lib/useElementWidth.ts';
 import { DetailSurface, ObservedDetailBody, type DetailMode } from './BlockDetail.tsx';
@@ -26,6 +25,10 @@ export interface MetroRun {
 export interface MetroMapProps {
   plan: RoutePlan;
   ctx: PackContext;
+  /** The season's last floor (`store.lastFloor`, which reads `rules.floors`) — never 15 in code. */
+  lastFloor: number;
+  /** `indexes.fixedModeByFloor`: which floors the season fixes to 평행중첩 or EXTREME. */
+  fixedModeByFloor: Map<number, 'parallel' | 'extreme'>;
   keywordLabel: (id: NonNullable<RoutePlan['start']['keyword']>) => string;
   run?: MetroRun;
   /** `auto` switches horizontal/vertical on the viewport; `vertical` always draws the narrow form (side panels). */
@@ -38,16 +41,30 @@ export interface MetroMapProps {
 
 type Open = { kind: 'pack'; packId: number; key: string; mode: DetailMode } | { kind: 'observed'; giftId: number; mode: DetailMode };
 
-const BANDS: [number, number][] = [
-  [1, 5],
-  [6, 10],
-  [11, 15],
-];
+/**
+ * The bands are the season's fixed-mode runs, not the numbers 1-5 / 6-10 / 11-15: the floor range
+ * comes from `rules.floors` in one place, and a season with five floors and no parallel block has
+ * to draw five stations rather than fifteen. `kind` is what the band means, so the fill no longer
+ * depends on a band's position in the list.
+ */
+type Band = { from: number; to: number; kind: 'normal' | 'parallel' | 'extreme' };
+
+function bandsOf(lastFloor: number, fixedModeByFloor: Map<number, 'parallel' | 'extreme'>): Band[] {
+  const bands: Band[] = [];
+  for (let floor = 1; floor <= lastFloor; floor += 1) {
+    const kind = fixedModeByFloor.get(floor) ?? 'normal';
+    const last = bands[bands.length - 1];
+    if (last && last.kind === kind) last.to = floor;
+    else bands.push({ from: floor, to: floor, kind });
+  }
+  return bands;
+}
 /** A one-row label card, until it has been measured. */
 const EST_CARD_H = 121;
 
-function bandFill(band: 0 | 1 | 2): string {
-  return band === 2 ? 'url(#metro-hatch)' : band === 1 ? 'var(--color-surface-2)' : 'transparent';
+/** EXTREME is hatched (observation is impossible there), 평행중첩 tinted, the rest bare. */
+function bandFill(kind: Band['kind'], hatchId: string): string {
+  return kind === 'extreme' ? `url(#${hatchId})` : kind === 'parallel' ? 'var(--color-surface-2)' : 'transparent';
 }
 
 function Station({
@@ -120,8 +137,9 @@ function ObservedTile({ entry, ctx, onPress }: { entry: ObservedGift; ctx: PackC
   );
 }
 
-export function MetroMap({ plan, ctx, keywordLabel, run, variant = 'auto', detailMode, slots = 0 }: MetroMapProps) {
+export function MetroMap({ plan, ctx, keywordLabel, lastFloor, fixedModeByFloor, run, variant = 'auto', detailMode, slots = 0 }: MetroMapProps) {
   const { lang } = ctx;
+  const bands = bandsOf(lastFloor, fixedModeByFloor);
   const metro = segmentsFor(plan);
   const [open, setOpen] = useState<Open | null>(null);
   const close = (): void => setOpen(null);
@@ -249,7 +267,7 @@ export function MetroMap({ plan, ctx, keywordLabel, run, variant = 'auto', detai
     });
   }, [plan, W]);
   const LEFT = 60;
-  const st = (W - LEFT - 20) / MAX_FLOOR;
+  const st = (W - LEFT - 20) / lastFloor;
   const x = (f: number): number => LEFT + (f - 1) * st + st / 2;
   const cards = metro.segments.map((segment) => {
     const span = segment.to - segment.from + 1;
@@ -285,15 +303,22 @@ export function MetroMap({ plan, ctx, keywordLabel, run, variant = 'auto', detai
               <rect width="1" height="7" x="6" fill="var(--color-line)" />
             </pattern>
           </defs>
-          {BANDS.map(([a, b], i) => (
-            <rect key={a} x={x(a) - st / 2} y={0} width={st * (b - a + 1)} height={H} fill={bandFill(i as 0 | 1 | 2)} />
+          {bands.map((band) => (
+            <rect
+              key={band.from}
+              x={x(band.from) - st / 2}
+              y={0}
+              width={st * (band.to - band.from + 1)}
+              height={H}
+              fill={bandFill(band.kind, 'metro-hatch')}
+            />
           ))}
           <line x1={LEFT} y1={LINE_Y} x2={W - 20} y2={LINE_Y} stroke="var(--color-line-strong)" strokeWidth={4} />
           <circle cx={LEFT - 24} cy={LINE_Y} r={9} fill="var(--color-ink)" />
           <text x={LEFT - 24} y={LINE_Y + 24} textAnchor="middle" fontSize={11} fill="var(--color-fg-2)">
             {t('routeStart', lang)}
           </text>
-          {Array.from({ length: MAX_FLOOR }, (_, i) => i + 1).map((f) => (
+          {Array.from({ length: lastFloor }, (_, i) => i + 1).map((f) => (
             <g key={f}>
               <Station cx={x(f)} cy={LINE_Y} r={7} half={metro.overlap.has(f)} floor={f} {...stationProps(f)} />
               <text x={x(f)} y={LINE_Y + 24} textAnchor="middle" fontSize={12} fontFamily="var(--font-num)" fill="var(--color-fg)" fontWeight={run && f === run.currentFloor ? 700 : undefined}>
@@ -358,7 +383,7 @@ export function MetroMap({ plan, ctx, keywordLabel, run, variant = 'auto', detai
   const SP = 64;
   const LX = 36;
   const y = (f: number): number => TOP + (f - 1) * SP + SP / 2;
-  const PH = TOP + MAX_FLOOR * SP + 10;
+  const PH = TOP + lastFloor * SP + 10;
   const LANE_W = 18;
   const X0 = LX + 26;
   const base = X0 + metro.lanes * LANE_W + 6;
@@ -374,11 +399,18 @@ export function MetroMap({ plan, ctx, keywordLabel, run, variant = 'auto', detai
               <rect width="1" height="7" x="6" fill="var(--color-line)" />
             </pattern>
           </defs>
-          {BANDS.map(([a, b], i) => (
-            <rect key={a} x={0} y={y(a) - SP / 2} width={PW} height={SP * (b - a + 1)} fill={i === 2 ? 'url(#metro-hatch-m)' : bandFill(i as 0 | 1 | 2)} />
+          {bands.map((band) => (
+            <rect
+              key={band.from}
+              x={0}
+              y={y(band.from) - SP / 2}
+              width={PW}
+              height={SP * (band.to - band.from + 1)}
+              fill={bandFill(band.kind, 'metro-hatch-m')}
+            />
           ))}
-          <line x1={LX} y1={y(1) - 20} x2={LX} y2={y(MAX_FLOOR) + 20} stroke="var(--color-line-strong)" strokeWidth={4} />
-          {Array.from({ length: MAX_FLOOR }, (_, i) => i + 1).map((f) => (
+          <line x1={LX} y1={y(1) - 20} x2={LX} y2={y(lastFloor) + 20} stroke="var(--color-line-strong)" strokeWidth={4} />
+          {Array.from({ length: lastFloor }, (_, i) => i + 1).map((f) => (
             <g key={f}>
               <Station cx={LX} cy={y(f)} r={7} half={metro.overlap.has(f)} floor={f} {...stationProps(f)} />
               <text x={LX - 16} y={y(f) + 4} textAnchor="end" fontSize={12} fontFamily="var(--font-num)" fill="var(--color-fg)" fontWeight={run && f === run.currentFloor ? 700 : undefined}>

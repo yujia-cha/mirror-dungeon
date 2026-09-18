@@ -45,7 +45,10 @@ export function GiftTileGrid({
   onOpen: (giftId: number) => void;
 }) {
   return (
-    <div className="grid gap-1.5 p-2 [grid-template-columns:repeat(auto-fill,minmax(64px,1fr))]" data-testid="gift-grid">
+    <div
+      className="grid gap-1.5 p-2 [grid-template-columns:repeat(auto-fill,minmax(64px,1fr))]"
+      data-testid="gift-grid"
+    >
       {tiles.map(({ entry, parent }) => {
         const gift = entry.gift;
         const name = pick(gift.name, lang);
@@ -55,13 +58,16 @@ export function GiftTileGrid({
         const report = decidingReport(entry.reports, entry.lack);
         const condition = conditionShort(report, enums, lang);
         const marked = selected || held;
-        const lockedBy = parent && wanted.includes(parent.id) ? t('giftSubOf', lang, { parent: pick(parent.name, lang) }) : undefined;
+        const lockedBy =
+          parent && wanted.includes(parent.id)
+            ? t('giftSubOf', lang, { parent: pick(parent.name, lang) })
+            : undefined;
         const blockedBy = block ? t('giftBlockedIncluded', lang, { name: giftName(block.by) }) : undefined;
         return (
           <div
             key={gift.id}
             id={`gift-${gift.id}`}
-            className={`relative flex flex-col items-center gap-[3px] rounded-md bg-surface px-1 pb-1.5 pt-2 ${marked ? 'border border-ink ring-1 ring-ink' : 'border border-line'} ${held ? 'opacity-55' : ''}`}
+            className={`relative flex flex-col items-center gap-[3px] rounded-md bg-surface px-1 pb-1.5 pt-2 ${marked ? 'border border-ink ring-1 ring-ink' : 'border border-line'}`}
             style={{ contentVisibility: 'auto', containIntrinsicSize: '84px' }}
             data-testid="gift-tile"
             data-gift={gift.id}
@@ -72,12 +78,19 @@ export function GiftTileGrid({
             title={blockedBy ?? lockedBy}
           >
             {marked ? (
-              <span className="absolute right-0.5 top-0.5 z-10 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ink text-ink-fg" aria-hidden>
+              <span
+                className="absolute right-0.5 top-0.5 z-10 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ink text-ink-fg"
+                aria-hidden
+              >
                 <Check size={9} strokeWidth={3} />
               </span>
             ) : null}
             {entangled.has(gift.id) ? (
-              <span className="absolute left-0.5 top-0.5 z-10 text-fg-2" aria-hidden title={blockedBy ?? t('giftEntangled', lang)}>
+              <span
+                className="absolute left-0.5 top-0.5 z-10 text-fg-2"
+                aria-hidden
+                title={blockedBy ?? t('giftEntangled', lang)}
+              >
                 <Link2 size={11} />
               </span>
             ) : null}
@@ -86,14 +99,19 @@ export function GiftTileGrid({
                 <CornerDownRight size={10} />
               </span>
             ) : null}
+            {/*
+              A `disabled` button takes no focus, so its `title` reached neither the keyboard nor a
+              screen reader — and `title` is hover-only, so a touch reader got nothing at all. The
+              lock reason goes into the accessible name, and into the line under the tile.
+            */}
             <button
               type="button"
               onClick={() => onToggle(gift)}
               disabled={held}
               aria-pressed={marked}
-              aria-label={name}
+              aria-label={[name, blockedBy ?? lockedBy].filter(Boolean).join(' · ')}
               title={blockedBy ?? lockedBy}
-              className="inline-flex disabled:cursor-default"
+              className={`inline-flex disabled:cursor-default ${held ? 'opacity-55' : ''}`}
             >
               <GiftIcon gift={gift} size={32} judgement={judgementOf(entry.reports)} lang={lang} />
             </button>
@@ -106,7 +124,23 @@ export function GiftTileGrid({
             >
               {name}
             </button>
-            <span className={`min-h-[13px] font-num text-[10px] leading-[13px] ${report?.satisfied ? 'text-fg' : 'text-fg-3'}`}>{condition ?? ''}</span>
+            {/*
+              For a locked tile this line says why rather than showing a condition the player
+              cannot act on: it is the one explanation that reaches a touch user, who never sees a
+              `title`. `text-fg-2` and not a dimmed `text-fg-3`, because it is the tile's only text
+              besides the name.
+            */}
+            {held ? (
+              <span className="line-clamp-2 min-h-[13px] break-keep text-center text-[10px] leading-[13px] text-fg-2">
+                {blockedBy ?? lockedBy}
+              </span>
+            ) : (
+              <span
+                className={`min-h-[13px] font-num text-[10px] leading-[13px] ${report?.satisfied ? 'text-fg' : 'text-fg-3'}`}
+              >
+                {condition ?? ''}
+              </span>
+            )}
           </div>
         );
       })}

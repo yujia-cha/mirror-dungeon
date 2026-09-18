@@ -103,7 +103,7 @@ export function ObserveSlots({
                 {candidates.length === 0 ? (
                   <p className="text-xs text-fg-3">{t('observeSlotNone', lang)}</p>
                 ) : (
-                  <ul className="flex max-h-[50vh] flex-col gap-1 overflow-y-auto" data-testid="observe-candidates">
+                  <ul className="flex max-h-[50dvh] flex-col gap-1 overflow-y-auto" data-testid="observe-candidates">
                     {candidates.map((id) => {
                       const candidate = indexes.giftById.get(id);
                       if (!candidate) return null;

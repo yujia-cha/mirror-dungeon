@@ -221,7 +221,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
           <span className="text-fg-3">{shut ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</span>
         </button>
         {shut ? null : (
-          <div className={group === 'other' ? 'max-h-[60vh] overflow-y-auto' : undefined} data-testid={group === 'other' ? 'gift-scroller' : undefined}>
+          <div className={group === 'other' ? 'max-h-[60dvh] overflow-y-auto' : undefined} data-testid={group === 'other' ? 'gift-scroller' : undefined}>
             <GiftTileGrid
               tiles={tiles}
               wanted={wanted}

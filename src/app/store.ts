@@ -197,6 +197,14 @@ export interface ObserveLimits {
   observable: (giftId: number) => boolean;
 }
 
+/**
+ * Whether there is a run worth warning about before something discards it. Floor 1 with no visit
+ * recorded is the state a fresh app is in, so it is not worth a question.
+ */
+export function runInProgress(run: RunState): boolean {
+  return run.currentFloor > 1 || Object.keys(run.visits).length > 0;
+}
+
 export function emptyRun(): RunState {
   return { currentFloor: 1, stageFloor: 1, visits: {}, giftStatus: {}, startGifts: [] };
 }
@@ -363,6 +371,57 @@ function withoutGift(priority: PriorityMap, giftId: number): PriorityMap {
 }
 
 /** A pinned observation only makes sense for a wanted gift. */
+/** The localStorage key and schema version. Exported so a crash screen can clear the state it saved. */
+export const PERSIST_KEY = 'md-route-planner';
+export const PERSIST_VERSION = 7;
+
+/** Exactly the keys `partialize` writes — what a migration has to hand back, all of them present. */
+export type PersistedState = Pick<
+  AppState,
+  'deck' | 'deployed' | 'wanted' | 'priority' | 'fusionGoal' | 'run' | 'ui' | 'options' | 'lang' | 'dark' | 'season'
+>;
+
+/**
+ * Everything a stored blob has to pass to become state. Both the version migration and the plain
+ * rehydrate go through here, so the checks run whether or not the version changed.
+ *
+ * Version gates: v2 backfilled the deployed list; v3 replaced the observation count with pinned
+ * observation gifts; v4 fixed the floor range at 15 and added per-gift priorities; v5 added fusion
+ * goals and the run in progress; v6 dropped the step flow (the run is always on) and added the
+ * panel state; v7 (M17) records the start-of-run gifts so returning to floor 1 takes them back —
+ * a run saved by an earlier build may still hold a recommended observation as collected.
+ */
+export function sanitizePersisted(persisted: unknown, version: number): PersistedState {
+  let state = (persisted && typeof persisted === 'object' ? persisted : {}) as Partial<AppState> & { step?: unknown };
+  if (version < 2) {
+    const legacyDeck = Array.isArray(state.deck) ? state.deck : [];
+    state = { ...state, deck: legacyDeck, deployed: legacyDeck.slice(0, LEGACY_DEPLOYED) };
+  }
+  const { step: _step, ...rest } = state;
+  void _step;
+  // An id list is the one shape a share link and a hand-edited blob both get wrong, so the
+  // elements are filtered too — `deck: "abc"` used to survive as a string and break every reader.
+  const ids = (raw: unknown): number[] => (Array.isArray(raw) ? raw.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : []);
+  const deck = ids(state.deck);
+  const wanted = ids(state.wanted);
+  const run = sanitizeRun(state.run);
+  if (version < 7 && run.currentFloor > 1) run.giftStatus = withoutLegacyGot(run.giftStatus, wanted);
+  return {
+    ...rest,
+    deck,
+    deployed: ids(state.deployed).filter((id) => deck.includes(id)),
+    wanted,
+    priority: sanitizePriority(state.priority, wanted),
+    fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
+    run,
+    ui: sanitizeUi(state.ui),
+    options: withObservedIn(sanitizeOptions(state.options), wanted),
+    lang: state.lang === 'en' ? 'en' : 'ko',
+    dark: typeof state.dark === 'boolean' ? state.dark : prefersDark(),
+    season: typeof state.season === 'number' && Number.isFinite(state.season) ? state.season : undefined,
+  };
+}
+
 function withObservedIn(options: PlanOptions, wanted: number[]): PlanOptions {
   const observedGifts = options.observedGifts.filter((id) => wanted.includes(id));
   return observedGifts.length === options.observedGifts.length ? options : { ...options, observedGifts };
@@ -645,34 +704,15 @@ export const useApp = create<AppState>()(
         }),
     }),
     {
-      name: 'md-route-planner',
-      version: 7,
-      migrate: (persisted, version) => {
-        let state = (persisted ?? {}) as Partial<AppState> & { step?: unknown };
-        if (version < 2) {
-          const deck = Array.isArray(state.deck) ? state.deck : [];
-          state = { ...state, deck, deployed: deck.slice(0, LEGACY_DEPLOYED) };
-        }
-        // v3 replaced the observation count with pinned observation gifts; v4 fixed the floor
-        // range at 15 and added per-gift priorities; v5 added fusion goals and the run in
-        // progress; v6 dropped the step flow (the run is always on) and added the panel state;
-        // v7 (M17) records the start-of-run gifts so returning to floor 1 takes them back — a run
-        // saved by an earlier build may still hold a recommended observation as collected.
-        const wanted = Array.isArray(state.wanted) ? state.wanted : [];
-        const { step: _step, ...rest } = state;
-        void _step;
-        const run = sanitizeRun(state.run);
-        if (version < 7 && run.currentFloor > 1) run.giftStatus = withoutLegacyGot(run.giftStatus, wanted);
-        return {
-          ...rest,
-          wanted,
-          priority: sanitizePriority(state.priority, wanted),
-          fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
-          run,
-          ui: sanitizeUi(state.ui),
-          options: withObservedIn(sanitizeOptions(state.options), wanted),
-        } as AppState;
-      },
+      name: PERSIST_KEY,
+      version: PERSIST_VERSION,
+      migrate: (persisted, version) => sanitizePersisted(persisted, version),
+      // zustand only calls `migrate` when the stored version differs from ours, so a blob that
+      // claims the current version reaches state unchecked — and that is the common shape of
+      // corruption (a `setItem` truncated by a full quota, a partial eviction by Safari's ITP).
+      // Merging through the same sanitizer makes the pass unconditional; it runs *before* the
+      // merge so a bad value never touches state, which `onRehydrateStorage` could not promise.
+      merge: (persisted, current) => ({ ...current, ...sanitizePersisted(persisted, PERSIST_VERSION) }),
       partialize: (state) => ({
         deck: state.deck,
         deployed: state.deployed,

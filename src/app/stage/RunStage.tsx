@@ -22,6 +22,7 @@ const FOLD_MS = 200;
 export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
   const { indexes, lang, shown, ctx, exclusivesOf, stageMode, enter, next } = usePlan();
   const run = useApp((s) => s.run);
+  const resetRun = useApp((s) => s.resetRun);
   const lastFloor = useApp((s) => s.lastFloor);
   const floor = run.stageFloor;
   const routePacks = enterablePacks(shown, floor);
@@ -52,6 +53,11 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
     body = (
       <Card className="flex flex-col items-center gap-2.5 px-4 py-8 text-center" testId="stage-done">
         <div className="text-sm font-semibold">{t('stageDone', lang, { last: lastFloor })}</div>
+        {/* Only the run is dropped. The deck, the goals and the route options are the plan the
+            player came here with, and the next dungeon reset uses the same one. */}
+        <Button variant="primary" onClick={resetRun}>
+          {t('stageNewRun', lang)}
+        </Button>
       </Card>
     );
   } else if (stageMode === 'entered' && entered !== undefined) {

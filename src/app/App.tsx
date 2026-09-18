@@ -2,13 +2,36 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, TriangleAlert, Hourglass } from 'lucide-react';
 import type { GameData, SeasonIndex } from '../core/schema.ts';
 import { analyseDeck, buildIndexes } from '../core/index.ts';
-import { loadGameData, loadSeasonIndex } from '../core/data/load.ts';
-import { t } from './i18n.ts';
-import { decodeShared, encodeShared, useApp } from './store.ts';
+import { DataLoadError, loadGameData, loadSeasonIndex } from '../core/data/load.ts';
+import { t, type StringKey } from './i18n.ts';
+import { decodeShared, encodeShared, runInProgress, useApp } from './store.ts';
+import type { SharedState } from './store.ts';
 import { defaultDeck } from './lib/default-deck.ts';
 import { lastFloorOf } from './lib/stage.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
+import { ConfirmDialog } from './components/ConfirmDialog.tsx';
 import { AppShell } from './shell/AppShell.tsx';
+
+/**
+ * A load failure the error card can say in the reader's language. `code` is set for the causes
+ * core names; anything else (a Zod failure on `index.json`, say) keeps its raw message, which is
+ * developer-facing but better than an empty card.
+ */
+type LoadFailure = { code: StringKey; params: Record<string, string | number>; text?: undefined } | { code?: undefined; params?: undefined; text: string };
+
+const FAILURE_KEY = {
+  http: 'loadFailedHttp',
+  timeout: 'loadFailedTimeout',
+  network: 'loadFailedNetwork',
+  malformed: 'loadFailedMalformed',
+} as const satisfies Record<DataLoadError['cause'], StringKey>;
+
+function loadFailure(cause: unknown): LoadFailure {
+  if (cause instanceof DataLoadError) {
+    return { code: FAILURE_KEY[cause.cause], params: { label: cause.label, status: cause.status ?? '' } };
+  }
+  return { text: cause instanceof Error ? cause.message : String(cause) };
+}
 
 export function App() {
   const lang = useApp((s) => s.lang);
@@ -28,27 +51,46 @@ export function App() {
 
   const [index, setIndex] = useState<SeasonIndex | null>(null);
   const [data, setData] = useState<GameData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LoadFailure | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [sharedCopied, setSharedCopied] = useState(false);
   const [linkBroken, setLinkBroken] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [dropped, setDropped] = useState<{ gifts: number; packs: number } | null>(null);
+  // Held decisions: a share link and a season change each throw the run away, so when one is
+  // live the choice waits here for the confirmation below.
+  const [pendingShared, setPendingShared] = useState<SharedState | null>(null);
+  const [pendingSeason, setPendingSeason] = useState<number | null>(null);
 
   // A share link must win over whatever localStorage remembers, or the link would not work. The
   // hash is consumed once and dropped from the URL, or a later reload would undo the user's edits.
   // A hash that says nothing to us is left in place: dropping it silently took away the only copy
   // of a link the reader might still want to re-open or pass on.
+  // A link is someone else's plan, so applying it replaces the deck, the goals and the run. On a
+  // fresh app that is exactly what the reader wants; mid-run it destroys a record no undo can get
+  // back (the hash is gone by then), so a run in progress is asked about first and the hash is
+  // kept until the answer comes.
   useEffect(() => {
     if (!window.location.hash.startsWith('#s=')) return;
     const shared = decodeShared(window.location.hash);
     if (!shared) {
       setLinkBroken(true);
+      window.setTimeout(() => setLinkBroken(false), 6000);
+      return;
+    }
+    if (runInProgress(useApp.getState().run)) {
+      setPendingShared(shared);
       return;
     }
     applyShared(shared);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   }, [applyShared]);
+
+  const takeShared = (): void => {
+    if (pendingShared) applyShared(pendingShared);
+    setPendingShared(null);
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  };
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -67,7 +109,7 @@ export function App() {
         if (!cancelled) setIndex(loaded);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
+        if (!cancelled) setError(loadFailure(cause));
       });
     return () => {
       cancelled = true;
@@ -101,7 +143,7 @@ export function App() {
         setDropped(counts.gifts + counts.packs > 0 ? counts : null);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
+        if (!cancelled) setError(loadFailure(cause));
       });
     return () => {
       cancelled = true;
@@ -154,7 +196,7 @@ export function App() {
           <TriangleAlert size={28} aria-hidden />
           <div className="text-sm font-semibold">{t('loadFailed', lang)}</div>
           <div className="text-xs text-fg-3">
-            {error}
+            {error.code ? t(error.code, lang, error.params) : error.text}
             <br />
             {t('loadFailedHint', lang)}
           </div>
@@ -193,7 +235,42 @@ export function App() {
 
   return (
     <>
-      <AppShell data={data} indexes={indexes} stats={stats} lang={lang} dark={dark} seasons={index?.seasons ?? []} onSeason={setSeason} onShare={share} onToggleLang={() => setLang(lang === 'ko' ? 'en' : 'ko')} onToggleDark={toggleDark} />
+      <AppShell
+        data={data}
+        indexes={indexes}
+        stats={stats}
+        lang={lang}
+        dark={dark}
+        seasons={index?.seasons ?? []}
+        onSeason={(id) => (runInProgress(useApp.getState().run) ? setPendingSeason(id) : setSeason(id))}
+        onShare={share}
+        onToggleLang={() => setLang(lang === 'ko' ? 'en' : 'ko')}
+        onToggleDark={toggleDark}
+      />
+      {pendingShared ? (
+        <ConfirmDialog
+          lang={lang}
+          title={t('confirmSharedTitle', lang)}
+          message={t('confirmSharedMessage', lang)}
+          confirmLabel={t('confirmSharedConfirm', lang)}
+          onConfirm={takeShared}
+          // Cancelling leaves the hash in the URL: it is the reader's only copy of the link, and
+          // they may want to open it after finishing the run.
+          onCancel={() => setPendingShared(null)}
+        />
+      ) : pendingSeason !== null ? (
+        <ConfirmDialog
+          lang={lang}
+          title={t('confirmSeasonTitle', lang)}
+          message={t('confirmSeasonMessage', lang)}
+          confirmLabel={t('confirmSeasonConfirm', lang)}
+          onConfirm={() => {
+            setSeason(pendingSeason);
+            setPendingSeason(null);
+          }}
+          onCancel={() => setPendingSeason(null)}
+        />
+      ) : null}
       {sharedCopied ? (
         <Toast>{t('shared', lang)}</Toast>
       ) : dropped ? (

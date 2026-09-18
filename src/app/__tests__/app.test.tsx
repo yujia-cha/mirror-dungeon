@@ -11,7 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions } from '../../core/index.ts';
 import { conditionText, josa, reachedTierText } from '../condition-text.ts';
-import { appDefaultOptions, decodeShared, defaultUi, emptyRun, encodeShared, sanitizeOptions, sanitizeRun, sanitizeUi, sinnerOf, useApp, withoutLegacyGot } from '../store.ts';
+import { PERSIST_KEY, PERSIST_VERSION, appDefaultOptions, decodeShared, defaultUi, emptyRun, encodeShared, sanitizeOptions, sanitizePersisted, sanitizeRun, sanitizeUi, sinnerOf, useApp, withoutLegacyGot } from '../store.ts';
 import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
@@ -19,6 +19,7 @@ import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { App } from '../App.tsx';
+import { ErrorBoundary } from '../ErrorBoundary.tsx';
 import { AppShell } from '../shell/AppShell.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { RoutePlanPanel } from '../shell/RoutePlanPanel.tsx';
@@ -176,6 +177,109 @@ describe('share links', () => {
     render(<App />);
     await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
     expect(window.location.hash).toBe('');
+  });
+
+  // A link replaces the deck, the goals and the run, and the hash is gone afterwards — so mid-run
+  // it destroyed a record with no warning and no way back.
+  it('asks before a link discards a run in progress, and keeps the hash when the answer is no', async () => {
+    const user = userEvent.setup();
+    useApp.getState().visitPack(1402, 1);
+    useApp.getState().setStageFloor(4);
+    const hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], priority: {}, options: defaultOptions() });
+    window.location.hash = hash;
+    render(<App />);
+    const dialog = await screen.findByTestId('confirm-dialog');
+    expect(useApp.getState().wanted).not.toEqual([9283]);
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    // Cancelling leaves the link in the URL: it is the reader's only copy.
+    expect(window.location.hash).toBe(hash);
+    expect(useApp.getState().run.visits).toEqual({ 1: 1402 });
+
+    render(<App />);
+    const again = await screen.findByTestId('confirm-dialog');
+    await user.click(within(again).getByRole('button', { name: /링크 열기/ }));
+    await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
+    expect(useApp.getState().run).toEqual(emptyRun());
+    expect(window.location.hash).toBe('');
+  });
+
+  it('applies a link with no question when no run is under way', async () => {
+    window.location.hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], priority: {}, options: defaultOptions() });
+    render(<App />);
+    await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
+    expect(screen.queryByTestId('confirm-dialog')).toBeNull();
+  });
+
+  // `copyFailed` and the season-dropped notice both time out; this one did not, so one bad link
+  // left the warning sitting over the UI for the rest of the session.
+  it('schedules the broken-link warning to go away instead of covering the app for the session', async () => {
+    const timer = vi.spyOn(window, 'setTimeout');
+    try {
+      window.location.hash = '#s=zzzznotalink';
+      render(<App />);
+      await waitFor(() => expect(screen.getByText('공유 링크를 읽지 못했습니다')).toBeTruthy());
+      expect(timer.mock.calls.some(([, delay]) => delay === 6000)).toBe(true);
+    } finally {
+      timer.mockRestore();
+    }
+  });
+});
+
+describe('a saved state that cannot be trusted', () => {
+  // zustand only runs `migrate` when the stored version differs from ours, so the blob that claims
+  // the current version is the one that used to reach state unchecked — and that is what a
+  // truncated write or a partial eviction leaves behind.
+  it('sanitizes a blob that claims the current version, instead of merging it as it stands', () => {
+    const state = sanitizePersisted({ deck: 'abc', deployed: 5, wanted: [9267, 'x', null], run: 42, ui: 'nope', priority: 7 }, PERSIST_VERSION);
+    expect(state.deck).toEqual([]);
+    expect(state.deployed).toEqual([]);
+    expect(state.wanted).toEqual([9267]);
+    expect(state.run).toEqual(emptyRun());
+    expect(state.ui).toEqual(defaultUi());
+    expect(state.priority).toEqual({});
+    expect(state.lang).toBe('ko');
+  });
+
+  it('keeps a deployed list inside the deck it came with', () => {
+    const state = sanitizePersisted({ deck: [10101, 10102], deployed: [10102, 99999] }, PERSIST_VERSION);
+    expect(state.deployed).toEqual([10102]);
+  });
+
+  it('renders the app from defaults when the stored blob is nonsense', async () => {
+    window.localStorage.setItem(PERSIST_KEY, JSON.stringify({ version: PERSIST_VERSION, state: { deck: 'abc', run: 42 } }));
+    useApp.persist.rehydrate();
+    render(<App />);
+    // The first visit's LCB deck, not a crash: the sanitizer emptied the deck and `App` filled it.
+    await waitFor(() => expect(useApp.getState().deck).toEqual(defaultDeck(data)));
+  });
+});
+
+describe('ErrorBoundary', () => {
+  function Boom(): never {
+    throw new Error('planner exploded');
+  }
+
+  it('offers a way out of a crash instead of a white screen, and clearing the state is one of them', async () => {
+    const user = userEvent.setup();
+    // React logs the caught error, and jsdom has no navigation for the reload that follows.
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    window.localStorage.setItem(PERSIST_KEY, '{"version":7,"state":{}}');
+    try {
+      render(
+        <ErrorBoundary>
+          <Boom />
+        </ErrorBoundary>,
+      );
+      expect(screen.getByTestId('crash')).toHaveTextContent('planner exploded');
+      // The store may be the broken thing, so the wording comes from the browser, not from `lang`.
+      // jsdom reports en-US, so this card is the English one.
+      expect(screen.getByTestId('crash')).toHaveTextContent('The app stopped');
+      // The header's 초기화 died with the tree, so the escape hatch has to live on this card.
+      await user.click(screen.getByRole('button', { name: /Clear saved state|저장된 상태를 지우고/ }));
+      expect(window.localStorage.getItem(PERSIST_KEY)).toBeNull();
+    } finally {
+      quiet.mockRestore();
+    }
   });
 });
 
@@ -751,9 +855,13 @@ describe('GiftsStep', () => {
     await user.click(within(tile(9088)).getByRole('button', { name: '진혼' }));
     expect(useApp.getState().wanted).toEqual([9088]);
     expect(tile(9157)).toHaveAttribute('data-locked');
-    const childButton = within(tile(9157)).getByRole('button', { name: '요리 비법 전서' });
+    // A disabled button takes no focus, so the lock reason has to be in its name, not its title.
+    const childButton = within(tile(9157)).getByRole('button', { name: /^요리 비법 전서 · / });
     expect(childButton).toBeDisabled();
     expect(childButton).toHaveAttribute('aria-pressed', 'true');
+    expect(childButton).toHaveAccessibleName(expect.stringContaining('진혼'));
+    // And visible under the tile, which is the only path a touch reader has.
+    expect(tile(9157)).toHaveTextContent('진혼');
     // The tiles carry no acquisition badges or tier text any more; the tier stays on the icon.
     expect(within(tile(9088)).queryByText('조합')).toBeNull();
     expect(within(tile(9157)).queryByText('포함')).toBeNull();
@@ -802,7 +910,7 @@ describe('GiftsStep', () => {
     expect(useApp.getState().wanted).toEqual([9235]);
     expect(tile(9233)).toHaveAttribute('data-locked');
     expect(tile(9233)).toHaveAttribute('data-block', 'included');
-    expect(within(tile(9233)).getByRole('button', { name: '노이즈 섞인 무전기' })).toBeDisabled();
+    expect(within(tile(9233)).getByRole('button', { name: /^노이즈 섞인 무전기 · / })).toBeDisabled();
     expect(tile(9233).title).toContain('데스페라도');
     // The name beside the icon is never disabled, so the sheet behind it has to hold the same lock
     // — it used to be the way around it.
@@ -810,6 +918,31 @@ describe('GiftsStep', () => {
     const sheet = screen.getByRole('dialog', { name: '노이즈 섞인 무전기' });
     expect(within(sheet).getByRole('button', { name: '목표로 삼기' })).toBeDisabled();
     expect(sheet).toHaveTextContent('데스페라도');
+  });
+
+  // `aria-modal="true"` tells assistive tech the rest of the page is not there, and the sheets are
+  // portalled to `document.body`, so everything behind them is a tabbable sibling. Tab used to
+  // walk straight out into a page the reader had been told did not exist.
+  it('keeps Tab inside an open sheet, at both ends', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderGifts();
+    await user.click(within(tile(9088)).getByRole('button', { name: '진혼 자세히' }));
+    const sheet = screen.getByRole('dialog', { name: '진혼' });
+    const stops = within(sheet)
+      .getAllByRole('button')
+      .filter((el) => !el.hasAttribute('disabled'));
+    expect(stops.length).toBeGreaterThan(1);
+    const first = stops[0]!;
+    const last = stops[stops.length - 1]!;
+
+    last.focus();
+    await user.tab();
+    expect(document.activeElement).toBe(first);
+
+    first.focus();
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(last);
   });
 
   it('takes the same goal out of the selection from every sheet, not only from the grid', async () => {
@@ -1087,6 +1220,41 @@ describe('RoutePlanPanel', () => {
     expect(screen.queryByTestId('route-goals')).toBeNull();
     expect(screen.queryByTestId('gift-tile')).toBeNull();
   });
+
+  /*
+   * 「확보 4/4 · 필요 팩 0」 for four general gifts is true and reads as a promise: the planner
+   * counts them covered because no pack visit can improve them, but the player still has to be
+   * lucky. The warning that says so was filtered out of the panel and `plan.generalDrops` was
+   * never rendered anywhere, so nothing on screen carried the difference — against the domain
+   * rule that it must. 187 of 446 gifts are general, so this is the ordinary case.
+   */
+  it('names the general gifts the route cannot promise, and counts them next to 확보', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    const general = data.gifts.filter((gift) => gift.acquisition.kind === 'general').slice(0, 4);
+    for (const gift of general) useApp.getState().toggleWanted(gift.id);
+    renderRoute();
+
+    const summary = screen.getByTestId('route-summary');
+    expect(summary).toHaveTextContent(`${general.length}/${general.length}`);
+
+    // Not `general.length`: an observation or the starting gift can make one of them certain, and
+    // then it is not a general drop any more. The badge counts what the route leaves to luck.
+    const card = screen.getByTestId('route-general-drops');
+    const named = general.filter((gift) => card.textContent?.includes(gift.name.ko));
+    expect(named.length).toBeGreaterThan(0);
+    expect(summary).toHaveTextContent(`범용 ${named.length} 확정 아님`);
+    expect(card).toHaveTextContent('확정으로 얻는 것이 아닙니다');
+    // The dedicated card carries the caveat, so the 「참고」 list must not repeat it.
+    expect(screen.queryByText(/범용 기프트는 어느 팩에서나 나올 수 있을 뿐 확정 획득이/)).toBeNull();
+  });
+
+  it('draws no general-drops card when every goal is a sure thing', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267);
+    renderRoute();
+    expect(screen.queryByTestId('route-general-drops')).toBeNull();
+    expect(screen.getByTestId('route-summary')).not.toHaveTextContent('확정 아님');
+  });
   const rows = () => screen.getByTestId('metro-rows');
   /** Spend all three observation slots on other gifts so observable fixtures get routed. */
   const fillObservations = () => {
@@ -1158,14 +1326,15 @@ describe('RoutePlanPanel', () => {
     expect(within(rows()).queryByTestId('suggested')).toBeNull();
   });
 
-  it('draws no legend, no band or segment wording, and no starlight, fusion or general-drop text', () => {
+  it('draws no legend and no wording on the map itself: no band, segment, starlight or drop text', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of [9415, 9427, 9267]) useApp.getState().toggleWanted(id); // partial windows and a fixed pack
     fillObservations();
     renderRoute();
     expect(screen.queryByTestId('legend')).toBeNull();
-    expect(rows().textContent).not.toMatch(/고정|한 층|추천|어느 층|Hard|EXTREME|평행중첩|범례/);
-    expect(screen.queryByText(/별빛|합성|범용 드랍|나올 수 있음/)).toBeNull();
+    // Scoped to the map: fill, dash and weight are its whole vocabulary. The panel around it does
+    // carry prose where the plan has to explain itself (the general-drops card, the 「참고」 list).
+    expect(rows().textContent).not.toMatch(/고정|한 층|추천|어느 층|Hard|EXTREME|평행중첩|범례|별빛|합성|범용 드랍|나올 수 있음/);
   });
 
   it('rides no gift on a route block: the map is packs and floors alone', () => {
@@ -1976,7 +2145,7 @@ describe('RunStage', () => {
     const icons = within(row).getAllByTestId('gift-icon');
     expect(icons.length).toBeGreaterThan(1);
     expect(row.querySelectorAll('[data-wanted]')).toHaveLength(1);
-    expect(within(row).getByRole('img', { name: '굴레' })).toBeInTheDocument();
+    expect(within(row).getByRole('img', { name: /^굴레 ·/ })).toBeInTheDocument();
     expect(row).not.toHaveTextContent('원함');
     // A row with exclusives but nothing wanted has icons and no ring; a pack without exclusives has neither.
     const other = rows.find((r) => r.getAttribute('data-pack') !== '1109' && within(r).queryAllByTestId('gift-icon').length > 0)!;
@@ -2015,7 +2184,7 @@ describe('RunStage', () => {
     expect(useApp.getState().run.visits).toEqual({ 4: 1109 });
   });
 
-  it('closes the run after floor 15 with nothing to press: a new run comes from the header reset', async () => {
+  it('closes the run after floor 15 and starts the next one from the done card, keeping the deck and the goals', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9267);
@@ -2028,8 +2197,13 @@ describe('RunStage', () => {
     // Nothing in the header moves the run any more: the cards and the pack area do.
     expect(within(header()).queryByRole('button', { name: /넘기기|다음 층|이전 층/ })).toBeNull();
     expect(screen.queryByTestId('other-entry-card')).toBeNull();
-    expect(within(screen.getByTestId('stage-done')).queryByRole('button')).toBeNull();
-    expect(screen.getByTestId('stage-done')).not.toHaveTextContent('새 런');
+    // The dungeon is repeated content, so the next run keeps the plan the player came with. The
+    // header's 초기화 is the one that also throws the deck and the goals away.
+    const deck = [...useApp.getState().deck];
+    await user.click(within(screen.getByTestId('stage-done')).getByRole('button', { name: /새 런/ }));
+    expect(useApp.getState().run).toMatchObject({ currentFloor: 1, stageFloor: 1, visits: {} });
+    expect(useApp.getState().deck).toEqual(deck);
+    expect(useApp.getState().wanted).toEqual([9267]);
   });
 
   it('draws every route pack of the floor as the same card, planned one first, then the dashed one', async () => {
@@ -2433,7 +2607,7 @@ describe('Tracker', () => {
     for (const group of ['keyword', 'shard', 'memory', 'attack', 'plain']) expect(screen.getByTestId(`tracker-${group}`)).toBeInTheDocument();
     expect(screen.getAllByTestId('gift-tile')).toHaveLength(25);
     expect(screen.getByTestId('tracker-keyword')).toHaveTextContent('0/7');
-    await user.click(screen.getByRole('button', { name: '불꽃의 편린 획득 표시' }));
+    await user.click(screen.getByRole('button', { name: /^불꽃의 편린 획득 표시/ }));
     expect(useApp.getState().run.giftStatus).toEqual({ 9045: 'got' });
     expect(tile(9045)).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('tracker-keyword')).toHaveTextContent('1/7');

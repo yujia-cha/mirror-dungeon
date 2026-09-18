@@ -53,15 +53,28 @@
    * share `kw-attack` and are told apart by the badge's shape. `kw-outline` is the hairline that
    * keeps a badge readable over artwork — 호흡 is white, so it needs one.
    */
-  --color-kw-combustion: #ec6b12;
-  --color-kw-laceration: #e0335f;
-  --color-kw-vibration: #d9a400;
-  --color-kw-burst: #3f9a33;
-  --color-kw-sinking: #2f6fdb;
-  --color-kw-breath: #ffffff;
-  --color-kw-charge: #f0a020;
-  --color-kw-attack: #1c1917;
-  --color-kw-outline: rgb(28 25 23 / 0.35);
+  /*
+   * These are measured against `surface-3`, the icon tile the badge actually sits on — not
+   * against `surface`. With no artwork configured every tile is that grey, so the tile is the
+   * real ground. WCAG 1.4.11 wants 3:1 for a graphic that carries meaning, and this badge is the
+   * only thing that carries a gift's keyword. The hue and saturation of each are the ones the
+   * palette had; only the lightness came down until each cleared the bar.
+   *
+   * 호흡 is the exception: it was pure white, which is 1.00:1 on anything pale, so the light
+   * theme gives it a cool grey instead. It keeps its white in the dark theme below, where white
+   * is what reads.
+   */
+  --color-kw-combustion: #ce5d10; /* 3.22 on the tile */
+  --color-kw-laceration: #e0335f; /* 3.48 */
+  --color-kw-vibration: #9e7700; /* 3.28 */
+  --color-kw-burst: #3b8f2f; /* 3.24 */
+  --color-kw-sinking: #2f6fdb; /* 3.79 */
+  --color-kw-breath: #6f747a; /* 3.75 */
+  --color-kw-charge: #b0710c; /* 3.21 */
+  --color-kw-attack: #1c1917; /* 13.93 */
+  /* The hairline that keeps a badge's edge crisp over artwork. Solid, not 35% — a translucent
+     one disappeared over a light sprite and did nothing for the fills it was meant to rescue. */
+  --color-kw-outline: rgb(28 25 23 / 0.7);
   --color-transparent: transparent;
   --color-current: currentColor;
 

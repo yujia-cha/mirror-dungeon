@@ -17,6 +17,36 @@ import { lastFloorOf } from '../lib/stage.ts';
 import { AppShell } from '../shell/AppShell.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { FloorHeader } from '../stage/FloorHeader.tsx';
+import { MetroMap } from '../components/MetroMap.tsx';
+import { usePlan } from '../shell/PlanContext.tsx';
+
+/** The map with whatever the provider has, drawn at the season's own length. */
+function Metro({ lastFloor, fixedModeByFloor }: { lastFloor: number; fixedModeByFloor: Map<number, 'parallel' | 'extreme'> }) {
+  const { ctx, keywordLabel, plan } = usePlan();
+  const empty = {
+    start: { keyword: null, startGift: null, observed: [] },
+    floors: [],
+    fusions: [],
+    unresolved: [],
+    warnings: [],
+    generalDrops: [],
+    stats: { requiredPacks: 0, starlight: 0, coveredWanted: 0, totalWanted: 0, searchCapped: false, elapsedMs: 0 },
+  };
+  return (
+    <MetroMap
+      plan={plan ?? (empty as unknown as Parameters<typeof MetroMap>[0]['plan'])}
+      ctx={ctx}
+      keywordLabel={keywordLabel}
+      lastFloor={lastFloor}
+      fixedModeByFloor={fixedModeByFloor}
+      variant="vertical"
+      detailMode="sheet"
+    />
+  );
+}
+
+const ShortMetro = () => <Metro lastFloor={5} fixedModeByFloor={shortIndexes.fixedModeByFloor} />;
+const FullMetro = () => <Metro lastFloor={15} fixedModeByFloor={md7Indexes.fixedModeByFloor} />;
 
 const md7 = loadGameDataFromDisk();
 const md7Indexes = buildIndexes(md7);
@@ -167,6 +197,36 @@ describe('adopting a season', () => {
       adopt(short);
     });
     expect(useApp.getState().run).toEqual(emptyRun());
+  });
+});
+
+describe('the metro map', () => {
+  // The map used to hold `MAX_FLOOR = 15` and the 1-5 / 6-10 / 11-15 bands as constants, so a
+  // five-floor season would have drawn fifteen stations and hatched an EXTREME block it has not
+  // got. The floor strip already read the season; this makes the map read it too.
+  it('draws one station per floor the season opens, and no band the season does not have', () => {
+    act(() => {
+      adopt(short);
+    });
+    render(
+      <PlanProvider data={short} indexes={shortIndexes} stats={analyseDeck([], shortIndexes, short.rules.deployment, [])} lang="ko">
+        <ShortMetro />
+      </PlanProvider>,
+    );
+    const stations = screen.getAllByTestId('station').map((el) => el.getAttribute('data-floor'));
+    expect(stations).toEqual(['1', '2', '3', '4', '5']);
+  });
+
+  it('still draws all fifteen for a season that opens them', () => {
+    act(() => {
+      adopt(md7);
+    });
+    render(
+      <PlanProvider data={md7} indexes={md7Indexes} stats={analyseDeck([], md7Indexes, md7.rules.deployment, [])} lang="ko">
+        <FullMetro />
+      </PlanProvider>,
+    );
+    expect(screen.getAllByTestId('station')).toHaveLength(15);
   });
 });
 

@@ -69,9 +69,25 @@ export function planToText(
     lines.push(t('routeUnresolved', lang));
     for (const entry of plan.unresolved) lines.push(`  ${name(entry.giftId)}: ${pick(entry.detail, lang)}`);
   }
+  // A pasted plan is read away from the app, so it has to carry the caveats the screen carries.
+  // Without these a reader sees a floor list and takes every line for a certainty.
+  if (plan.generalDrops.length > 0) {
+    lines.push('');
+    lines.push(`${t('routeGeneralTitle', lang)}: ${plan.generalDrops.map(name).join(', ')}`);
+    lines.push(`  ${t('routeGeneralHint', lang)}`);
+  }
   if (marks.bannedPacks && marks.bannedPacks.length > 0) {
     lines.push('');
     lines.push(`${t('packBanned', lang)}: ${marks.bannedPacks.map(packName).join(', ')}`);
+  }
+  // Same rule as the panel: a warning another line already carries stays out. The general-drop
+  // caveat rides the 「범용 드랍 (확정 아님)」 line above, which also names the gifts.
+  const CARRIED = new Set(['parallel-requires-hard', 'condition-unmet', 'general-drop-not-guaranteed']);
+  const notes = plan.warnings.filter((w) => !CARRIED.has(w.code));
+  if (notes.length > 0) {
+    lines.push('');
+    lines.push(t('routeWarnings', lang));
+    for (const note of notes) lines.push(`  - ${pick(note.detail, lang)}`);
   }
   return lines.join('\n');
 }

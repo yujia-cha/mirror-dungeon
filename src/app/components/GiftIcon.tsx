@@ -15,6 +15,7 @@ import type { Gift, Keyword } from '../../core/schema.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { giftIconUrl } from '../lib/assets.ts';
 import { tierLabel } from '../lib/labels.ts';
+import { useKeywordName } from '../lib/useEnums.ts';
 import type { Judgement } from '../lib/judgement.ts';
 
 export type GiftIconSize = 20 | 32 | 44;
@@ -74,8 +75,19 @@ export function GiftIcon({
   const failed = failedUrl !== null && failedUrl === url;
   const label = pick(gift.name, lang);
   const judged = judgement ? t(JUDGEMENT_KEY[judgement], lang) : null;
-  const statusText = status === 'got' ? t('giftStatusGot', lang) : status === 'failed' ? t('giftStatusFailed', lang) : null;
-  const aria = [must ? t('priorityMust', lang) : null, statusText, judged, label].filter(Boolean).join(' · ');
+  const statusText =
+    status === 'got' ? t('giftStatusGot', lang) : status === 'failed' ? t('giftStatusFailed', lang) : null;
+  const keywordText = useKeywordName(gift.keyword, lang);
+  // The badge and the tier chip are `aria-hidden`, and the badge is the only thing that carries a
+  // gift's keyword — seven of them differ by hue alone, and 범용 is told by the badge being absent.
+  // So a screen reader could not learn the keyword, the tier, or whether a gift is guaranteed:
+  // the three axes the app sorts and filters on. They go in the name instead (WCAG 1.4.1, 1.1.1).
+  // `None` is a keyword in the data with a name of its own (「범용」 / 「Keywordless」), so even the
+  // badge-less case reads from the enums rather than from a string written here.
+  const tierAria = gift.tier === null ? null : tierLabel(gift.tier);
+  const aria = [must ? t('priorityMust', lang) : null, statusText, judged, label, keywordText, tierAria]
+    .filter(Boolean)
+    .join(' · ');
   const badge = KEYWORD_BADGE[gift.keyword] ?? null;
   // A rotated square needs room for its diagonal, so the diamond is drawn a shade smaller.
   const badgeSize = (size >= 32 ? 9 : 6) - (gift.keyword === 'Slash' ? 2 : 0);
@@ -94,7 +106,13 @@ export function GiftIcon({
       style={{ width: size, height: size }}
     >
       {url && !failed ? (
-        <img src={url} alt="" loading="lazy" onError={() => setFailedUrl(url)} className="h-full w-full object-cover" />
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          onError={() => setFailedUrl(url)}
+          className="h-full w-full object-cover"
+        />
       ) : (
         <Gem size={Math.round(size * 0.45)} aria-hidden className="opacity-40" />
       )}
@@ -104,13 +122,22 @@ export function GiftIcon({
         </span>
       ) : null}
       {status ? (
-        <span className={`absolute right-0 top-0 rounded-bl-sm p-px ${status === 'got' ? 'bg-ink text-ink-fg' : 'bg-surface text-fg'}`} aria-hidden>
-          {status === 'got' ? <Check size={size >= 32 ? 10 : 8} strokeWidth={3} /> : <X size={size >= 32 ? 10 : 8} strokeWidth={3} />}
+        <span
+          className={`absolute right-0 top-0 rounded-bl-sm p-px ${status === 'got' ? 'bg-ink text-ink-fg' : 'bg-surface text-fg'}`}
+          aria-hidden
+        >
+          {status === 'got' ? (
+            <Check size={size >= 32 ? 10 : 8} strokeWidth={3} />
+          ) : (
+            <X size={size >= 32 ? 10 : 8} strokeWidth={3} />
+          )}
         </span>
       ) : null}
       {size >= 32 && gift.tier !== null ? (
         // 'EX' is a tier of its own; 'TEX' was a number template applied to a word.
-        <span className="absolute left-0 top-0 rounded-br-sm bg-surface px-0.5 font-num text-[9px] leading-[11px] text-fg-2">{tierLabel(gift.tier)}</span>
+        <span className="absolute left-0 top-0 rounded-br-sm bg-surface px-0.5 font-num text-[9px] leading-[11px] text-fg-2">
+          {tierLabel(gift.tier)}
+        </span>
       ) : null}
       {badge ? (
         <span
@@ -127,7 +154,10 @@ export function GiftIcon({
   return (
     <span className="flex min-w-0 flex-col items-center gap-0.5" style={{ width: Math.max(size, 52) }}>
       {tile}
-      <span className="line-clamp-2 w-full break-keep text-center text-[10px] leading-tight text-fg" aria-hidden>
+      <span
+        className="line-clamp-2 w-full break-keep text-center text-[10px] leading-tight text-fg"
+        aria-hidden
+      >
         {label}
       </span>
     </span>

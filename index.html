@@ -1,14 +1,68 @@
 <!doctype html>
-<html lang="ko" class="dark">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      viewport-fit=cover is what makes env(safe-area-inset-*) resolve to anything on a notched
+      iPhone; without it the panel pages' inset rules were dead code.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>거울 던전 루트 플래너</title>
     <meta
       name="description"
       content="림버스 컴퍼니 거울 던전에서 덱과 원하는 E.G.O 기프트에 맞는 테마팩 루트를 계산합니다."
     />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!-- iOS rejects an SVG here, so 「홈 화면에 추가」 needs the PNG. -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="canonical" href="%SITE_URL%" />
+    <meta name="theme-color" content="#f7f6f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1917" media="(prefers-color-scheme: dark)" />
+
+    <!--
+      The app is passed around as a share link (`#s=…`), so the unfurl in KakaoTalk, Discord and
+      Arca Live is the first thing most people see of it. Crawlers do not resolve relative image
+      or url values, so these are absolute and come from VITE_SITE_URL at build time.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="거울 던전 루트 플래너" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:title" content="거울 던전 루트 플래너" />
+    <meta
+      property="og:description"
+      content="덱 12인과 원하는 E.G.O 기프트를 고르면 층별 테마팩 루트를 계산합니다. 림버스 컴퍼니 비상업 팬 프로젝트."
+    />
+    <meta property="og:url" content="%SITE_URL%" />
+    <meta property="og:image" content="%SITE_URL%og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Mirror Dungeon Route Planner" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="거울 던전 루트 플래너" />
+    <meta
+      name="twitter:description"
+      content="덱 12인과 원하는 E.G.O 기프트를 고르면 층별 테마팩 루트를 계산합니다."
+    />
+    <meta name="twitter:image" content="%SITE_URL%og.png" />
+
+    <script>
+      /*
+       * The theme, before the first paint. `index.html` used to hard-code `class="dark"`, so a
+       * reader who prefers light saw a dark flash on every load. The store owns the setting once
+       * React is up; this only has to agree with it, so it reads the same persisted key.
+       */
+      (function () {
+        var dark;
+        try {
+          var saved = JSON.parse(window.localStorage.getItem('md-route-planner') || 'null');
+          if (saved && saved.state && typeof saved.state.dark === 'boolean') dark = saved.state.dark;
+        } catch (e) {
+          /* private mode, blocked storage, or a half-written blob — fall through to the query */
+        }
+        if (dark === undefined) dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

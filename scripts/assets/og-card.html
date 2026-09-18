@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  The source of public/og.png (1200×630), the card a pasted share link unfurls into.
+
+  Bake it with headless Chromium (no npm dependency, so this is a hand step — the PNG is
+  committed):
+
+    chromium --headless --disable-gpu --hide-scrollbars \
+      --screenshot=public/og.png --window-size=1200,630 \
+      scripts/assets/og-card.html
+
+  Two rules this file keeps:
+  - No game art. The repository ships no Project Moon assets, and a share card is the most public
+    place one would sit. The mark is the app's own favicon geometry.
+  - Latin letters only. Nunito is the one font the repository carries, and it has no Hangul; the
+    Korean of the title is carried by `og:title`/`og:description` instead, where it is real text.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      @font-face {
+        font-family: 'Nunito';
+        font-weight: 400 800;
+        src: url('../../src/assets/fonts/nunito-latin.woff2') format('woff2');
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1200px;
+        height: 630px;
+        background: #1c1917;
+        color: #ffffff;
+        font-family: 'Nunito', sans-serif;
+        /* A column so the block sits centred whatever height the headless window really gets —
+           an absolutely positioned footer drifted when the viewport was not exactly 630. */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 56px;
+        padding: 0 88px;
+        overflow: hidden;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 64px;
+      }
+      /* The floor strip, abstracted: fifteen cells, the one 「on stage」 in the accent. */
+      .strip {
+        display: flex;
+        gap: 6px;
+      }
+      .strip i {
+        width: 34px;
+        height: 8px;
+        border-radius: 2px;
+        background: #44403c;
+      }
+      .strip i.on {
+        background: #ffffff;
+      }
+      .strip i.done {
+        background: #f59e0b;
+      }
+      .mark {
+        flex: none;
+      }
+      h1 {
+        font-size: 82px;
+        font-weight: 800;
+        line-height: 1.02;
+        letter-spacing: -0.02em;
+      }
+      h1 span {
+        color: #f59e0b;
+      }
+      p {
+        margin-top: 22px;
+        font-size: 30px;
+        font-weight: 600;
+        color: #a8a29e;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+    <svg class="mark" width="216" height="216" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="6" fill="#1c1917" />
+      <path d="M16 4 26 16 16 28 6 16Z" fill="none" stroke="#f59e0b" stroke-width="2.5" />
+      <path d="M16 9.5 21 16 16 22.5 11 16Z" fill="#f59e0b" opacity="0.55" />
+    </svg>
+    <div>
+      <h1>Mirror Dungeon<br /><span>Route Planner</span></h1>
+      <p>Pick a deck and the gifts you want &middot; get the pack route</p>
+    </div>
+    </div>
+    <div class="strip">
+      <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i>
+      <i class="on"></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i>
+    </div>
+  </body>
+</html>
