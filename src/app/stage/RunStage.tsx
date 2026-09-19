@@ -25,7 +25,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
   const resetRun = useApp((s) => s.resetRun);
   const lastFloor = useApp((s) => s.lastFloor);
   const floor = run.stageFloor;
-  const routePacks = enterablePacks(shown, floor);
+  const routePacks = enterablePacks(shown, floor, indexes);
   const offered = packsOfferedOn(indexes, floor);
   const entered = run.visits[floor];
 
@@ -79,13 +79,32 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
         </div>
         {shown && routePacks.length === 0 && stageMode === 'undecided' ? <p className="text-xs text-fg-3">{t('stageNoRoutePack', lang)}</p> : null}
         <div className="flex flex-wrap items-start gap-2.5 pb-3" data-testid="stage-packs">
-          {routePacks.map(({ packId }) => {
+          {routePacks.map(({ packId, alternatives }) => {
             const pack = indexes.packById.get(packId);
-            return pack ? <StagePackCard key={packId} pack={pack} ctx={ctx} exclusivesOf={exclusivesOf} onEnter={enter} onOpen={setDetail} /> : null;
+            return pack ? (
+              <StagePackCard
+                key={packId}
+                pack={pack}
+                ctx={ctx}
+                exclusivesOf={exclusivesOf}
+                onEnter={enter}
+                onOpen={setDetail}
+                alternatives={alternatives}
+              />
+            ) : null;
           })}
           {stageMode === 'undecided' ? <OtherEntryCard onSkip={next} lang={lang} /> : null}
         </div>
-        <OtherPacks offered={offered} exclude={new Set(routePacks.map((p) => p.packId))} ctx={ctx} exclusivesOf={exclusivesOf} onEnter={enter} />
+        {/* The alternatives are already in this list — they are offered here and are not route
+            packs — so they are marked and pulled to the front rather than listed a second time. */}
+        <OtherPacks
+          offered={offered}
+          exclude={new Set(routePacks.map((p) => p.packId))}
+          sameGifts={new Set(routePacks.flatMap((p) => p.alternatives))}
+          ctx={ctx}
+          exclusivesOf={exclusivesOf}
+          onEnter={enter}
+        />
         {detail !== null ? (
           <DetailSurface mode="sheet" label={pick(indexes.packById.get(detail)?.name, lang)} closeLabel={t('routeClose', lang)} onClose={() => setDetail(null)}>
             <PackSheetBody packId={detail} ctx={ctx} />

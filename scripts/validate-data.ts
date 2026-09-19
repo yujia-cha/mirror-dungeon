@@ -36,6 +36,7 @@ import {
   enumsSchema,
   giftsFileSchema,
   identitiesFileSchema,
+  EFFECT_BUCKETS,
   metaSchema,
   packsFileSchema,
   rulesSchema,
@@ -49,6 +50,7 @@ import {
   type ThemePack,
 } from '../src/core/schema.ts';
 import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../src/core/text.ts';
+import { unknownLabels } from './lib/gift-effects.ts';
 
 /** The twelve sinners the game has had since launch; every one must be deckable. */
 const SINNER_COUNT = 12;
@@ -491,6 +493,38 @@ function checkInvariants(
     if (gift.formationSlots.some((slot) => slot > FORMATION_SIZE)) {
       err('invariant', `gift ${gift.id} limits itself to a formation position past ${FORMATION_SIZE}`);
     }
+  }
+
+  // Effect buckets: the only machine-readable answer to 「이 기프트는 어떤 도움인가」 comes from the
+  // community mirror's curated labels, so a label it adds upstream that our table does not name
+  // would silently drop gifts out of every bucket and off the 「스킬」 탭.
+  const shippedLabels = [...readDerivedGifts().values()].flatMap((gift) => gift.effects ?? []);
+  const unnamed = unknownLabels(shippedLabels);
+  if (unnamed.length > 0) {
+    err(
+      'invariant',
+      `${unnamed.length} effect label(s) are not in the bucket table: ${unnamed.join(', ')}` +
+        ' — name them in scripts/lib/gift-effects.ts',
+    );
+  }
+  const unbucketed = triggered.filter((g) => g.effectBuckets.length === 0);
+  if (unbucketed.length > 0) {
+    err(
+      'invariant',
+      `${unbucketed.length} gift(s) with a skill trigger have no effect bucket: ${unbucketed
+        .slice(0, 6)
+        .map((g) => g.id)
+        .join(', ')}` + ' — check classifyGiftEffects()',
+    );
+  }
+  for (const gift of gifts) {
+    const order = gift.effectBuckets.map((bucket) => EFFECT_BUCKETS.indexOf(bucket));
+    if (!ascendingUnique(order)) {
+      err('invariant', `gift ${gift.id} has effect buckets out of order or repeated`);
+    }
+  }
+  if (!gifts.some((g) => g.effectBuckets.includes('egoResource'))) {
+    warn('invariant', 'no gift is classed as an E.G.O resource gift; check the bucket table');
   }
 
   // Every identity must answer 「몇 번 스킬이 무슨 속성인가」: the static records cover 183 and the

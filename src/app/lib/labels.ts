@@ -1,4 +1,4 @@
-import type { AcquisitionKind, Gift, Sin } from '../../core/schema.ts';
+import type { AcquisitionKind, EffectBucket, Gift, Sin } from '../../core/schema.ts';
 import type { UnresolvedReason } from '../../core/types.ts';
 import type { StringKey } from '../i18n.ts';
 
@@ -36,6 +36,12 @@ export const SIN_LABEL: Record<Sin, StringKey> = {
   GLOOM: 'sinGLOOM',
   PRIDE: 'sinPRIDE',
   ENVY: 'sinENVY',
+};
+
+export const BUCKET_LABEL: Record<EffectBucket, StringKey> = {
+  damage: 'skillsBucketDamage',
+  survival: 'skillsBucketSurvival',
+  egoResource: 'skillsBucketEgoResource',
 };
 
 export const UNRESOLVED_LABEL: Record<UnresolvedReason, StringKey> = {

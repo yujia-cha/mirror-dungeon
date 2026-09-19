@@ -8,6 +8,11 @@
  * Every card is the same. The route's own order already puts the planned pack first, so the cards
  * carry no 「추천」 badge and no pack-state badge — the stage says which packs are here, and the
  * pack sheet behind a name says everything else about one.
+ *
+ * One exception, and it single out no card: 「외 N」 counts the OTHER packs on this floor that carry
+ * the same gifts. It is not a fact about this pack's standing but about the player's freedom — take
+ * any of them and the route still works — and a card that has equals says so, whichever card it is.
+ * It is a plain badge, not a control, because the whole card is a pull target.
  */
 import { useMemo, useState } from 'react';
 import { ChevronsDown, DoorOpen, LogIn, Search } from 'lucide-react';
@@ -82,6 +87,7 @@ export function StagePackCard({
   exclusivesOf,
   onEnter,
   onOpen,
+  alternatives = [],
 }: {
   pack: ThemePack;
   ctx: PackContext;
@@ -89,6 +95,8 @@ export function StagePackCard({
   onEnter: (packId: number) => void;
   /** Open the pack's sheet; it is rendered by the caller, outside the card the pull transforms. */
   onOpen: (packId: number) => void;
+  /** Packs on this floor carrying the same gifts. Said, not offered: the card is a pull target. */
+  alternatives?: number[];
 }) {
   const { lang } = ctx;
   const pull = usePullGesture({ directions: ['down'], onCommit: () => onEnter(pack.id) });
@@ -107,6 +115,13 @@ export function StagePackCard({
       <button type="button" onClick={() => onOpen(pack.id)} aria-haspopup="dialog" aria-label={t('stagePackDetail', lang, { name })} className="line-clamp-2 w-full break-keep text-center text-xs font-medium leading-tight text-fg underline-offset-2 hover:underline">
         {name}
       </button>
+      {alternatives.length > 0 ? (
+        <span data-testid="pack-alternatives" data-alternatives={alternatives.join(',')}>
+          <Badge tone="neutral" title={alternatives.map((id) => ctx.packName(id)).join(', ')}>
+            {t('stagePackAlternatives', lang, { n: alternatives.length })}
+          </Badge>
+        </span>
+      ) : null}
       <ExclusiveIcons packId={pack.id} ctx={ctx} exclusivesOf={exclusivesOf} justify="center" testId="stage-pack-gifts" />
       <button
         type="button"
@@ -125,12 +140,15 @@ export function StagePackCard({
 export function OtherPacks({
   offered,
   exclude,
+  sameGifts,
   ctx,
   exclusivesOf,
   onEnter,
 }: {
   offered: number[];
   exclude: ReadonlySet<number>;
+  /** Packs that would hand over the same gifts as a route pack on this floor. */
+  sameGifts?: ReadonlySet<number>;
   ctx: PackContext;
   exclusivesOf: (packId: number) => number[];
   onEnter: (packId: number) => void;
@@ -146,8 +164,9 @@ export function OtherPacks({
       .map((id) => ctx.indexes.packById.get(id))
       .filter((pack): pack is ThemePack => pack !== undefined)
       .filter((pack) => matchesQuery(pick(pack.name, lang).toLowerCase(), q) || exclusivesOf(pack.id).some((id) => matchesQuery(ctx.giftName(id).toLowerCase(), q)))
-      .sort((a, b) => a.id - b.id);
-  }, [offered, exclude, ctx, query, lang, exclusivesOf]);
+      // A pack that would do the route's job stands at the front, where it is worth finding.
+      .sort((a, b) => Number(sameGifts?.has(b.id) ?? false) - Number(sameGifts?.has(a.id) ?? false) || a.id - b.id);
+  }, [offered, exclude, sameGifts, ctx, query, lang, exclusivesOf]);
   return (
     <details className="rounded-md border border-line bg-surface" data-testid="other-packs">
       <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-fg-2">
@@ -168,7 +187,14 @@ export function OtherPacks({
                 <li key={pack.id} className="relative flex items-center gap-2 rounded-sm border border-line px-2 py-1.5" data-testid="other-pack" data-pack={pack.id}>
                   <PackCard pack={pack} size={28} onOpen={setOpen} lang={lang} />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="truncate text-sm">{name}</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate text-sm">{name}</span>
+                      {sameGifts?.has(pack.id) ? (
+                        <span data-testid="other-pack-same">
+                          <Badge tone="neutral">{t('stageSameGifts', lang)}</Badge>
+                        </span>
+                      ) : null}
+                    </span>
                     <ExclusiveIcons packId={pack.id} ctx={ctx} exclusivesOf={exclusivesOf} justify="start" testId="other-pack-gifts" />
                   </div>
                   {/* A pack is entered once a run. One already recorded says where, instead of

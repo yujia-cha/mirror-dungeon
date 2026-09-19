@@ -17,6 +17,7 @@ import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { tierLabel } from '../lib/labels.ts';
+import { EnumsContext } from '../lib/useEnums.ts';
 import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
@@ -1373,29 +1374,35 @@ describe('RoutePlanPanel', () => {
 
   it('draws a pack that may sit on several floors as one dashed segment with no suggested floor', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
-    useApp.getState().toggleWanted(9267); // 화왕지절, Hard 4-5, not observable
+    // 화왕지절 is offered on Hard 4-5 and again across 평행중첩 6-10, so one band does not bound it.
+    useApp.getState().toggleWanted(9267);
     renderRoute();
     const segment = within(rows()).getByTestId('segment');
     expect(segment).toHaveAttribute('data-from', '4');
-    expect(segment).toHaveAttribute('data-to', '5');
+    expect(segment).toHaveAttribute('data-to', '10');
     expect(segment).not.toHaveAttribute('data-partial');
     expect(segment.textContent).not.toMatch(/고정|한 층|추천|어느 층/);
     expect(within(segment).getByRole('button', { name: '화왕지절' })).toBeInTheDocument();
     expect(within(rows()).queryByTestId('suggested')).toBeNull();
-    expect(segment.style.height).toBe(`${64 * 2 - 8}px`);
+    expect(segment.style.height).toBe(`${64 * 7 - 8}px`);
   });
 
-  it('draws two fixed packs as solid blocks over their stations', () => {
+  it('draws a pack with nowhere else to go as a solid block over its station', () => {
+    // A fixed pack is rare now that a window may cross the band boundary: it takes a squeeze.
+    // 마주하지 않는 (1008) and 낙화 (1010) are both Hard 2-3, 기어오는 심연 (1014) is Hard 3-4, and
+    // none of the three is offered in 평행중첩 — so the first two fill 2 and 3 and 1014 has only
+    // floor 4 left. Observation is off because all three gifts are observable and the planner
+    // would otherwise buy them instead of the packs.
+    const noObservation = { ...data, rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } } };
     useApp.getState().setDeck(BURN_DECK, 7);
-    useApp.getState().toggleWanted(9754); // 2호선 (1109), Hard 4-5, not observable
-    useApp.getState().toggleWanted(9208); // 해방된 분노 (1302), Hard 5 only
-    renderRoute();
+    for (const id of [9415, 9419, 9427]) useApp.getState().toggleWanted(id);
+    renderPlanned(<RoutePlanPanel onOpenGifts={() => undefined} />, noObservation);
     const segments = within(rows()).getAllByTestId('segment');
     expect(segments.map((s) => [s.getAttribute('data-from'), s.getAttribute('data-to')])).toEqual([
+      ['2', '3'],
       ['4', '4'],
-      ['5', '5'],
     ]);
-    expect(segments[0]).not.toHaveTextContent('고정');
+    expect(segments[1]).not.toHaveTextContent('고정');
   });
 
   it('keeps partly overlapping windows on separate lanes with suggested stops and a half-filled station', () => {
@@ -2732,91 +2739,134 @@ describe('GoalsPanel', () => {
 });
 
 describe('SkillGiftsPanel', () => {
-  const groups = () => screen.getAllByTestId('skill-group-body');
-  const groupFor = (subject: string) =>
-    groups().find((el) => el.getAttribute('data-subject') === subject)!;
-  const giftIn = (root: HTMLElement, id: number) =>
-    within(root).getAllByTestId('skill-gift').find((el) => el.getAttribute('data-gift') === String(id));
+  // The panel reads game display names (참격 …) out of the enums, exactly as it does under AppShell.
+  const render = (props: { onOpenDeck?: () => void } = {}) =>
+    renderPlanned(
+      <EnumsContext.Provider value={data.enums}>
+        <SkillGiftsPanel {...props} />
+      </EnumsContext.Provider>,
+    );
+  const sections = () => screen.getAllByTestId('skills-section').map((el) => el.firstElementChild as HTMLElement);
+  const sectionFor = (effect: string) => sections().find((el) => el.getAttribute('data-effect') === effect)!;
+  const bucketsIn = (effect: string) =>
+    within(sectionFor(effect))
+      .getAllByTestId('skills-bucket')
+      .map((el) => el.getAttribute('data-bucket'));
+  const rowFor = (id: number, effect = 'gate') =>
+    within(sectionFor(effect))
+      .getAllByTestId('skill-gift')
+      .find((el) => el.getAttribute('data-gift') === String(id));
 
-  it('groups the gifts a deployed party sets off by the subject their text names', () => {
+  it('splits 발동 from 강화, opens 발동 and leaves 강화 folded', async () => {
+    const user = userEvent.setup();
     useApp.getState().setDeck(LCB_DECK, 6);
-    renderPlanned(<SkillGiftsPanel />);
-    // 10101 이상 LCB 수감자 is slot 1 우울/참격, slot 2 질투/관통, slot 3 나태/참격.
-    const gloom = groupFor('GLOOM');
-    const owners = within(gloom).getAllByTestId('skill-owner');
-    expect(owners.some((el) => el.getAttribute('data-identity') === '10101' && el.getAttribute('data-slot') === '1')).toBe(true);
-    // 9013 부적 묶음 keys off 참격, so it sits under Slash and not under a sin.
-    expect(giftIn(groupFor('Slash'), 9013)).toBeDefined();
-    expect(giftIn(gloom, 9013)).toBeUndefined();
+    render();
+    const cards = screen.getAllByTestId('skills-section');
+    expect(cards.map((el) => (el.firstElementChild as HTMLElement).getAttribute('data-effect'))).toEqual(['gate', 'boost']);
+    const boost = within(cards[1]!).getByRole('button', { name: /^강화/ });
+    expect(boost).toHaveAttribute('aria-expanded', 'false');
+    expect(within(cards[1]!).queryAllByTestId('skill-gift')).toEqual([]);
+    expect(within(cards[0]!).getByRole('button', { name: /^발동/ })).toHaveAttribute('aria-expanded', 'true');
+    await user.click(boost);
+    expect(boost).toHaveAttribute('aria-expanded', 'true');
+    expect(within(cards[1]!).getAllByTestId('skill-gift').length).toBeGreaterThan(0);
   });
 
-  it('lists the sins in the game order, then the attack types', () => {
+  it('sorts each section into 데미지 → 생존 → E.G.O 자원, and the rows inside by id', () => {
     useApp.getState().setDeck(LCB_DECK, 6);
-    renderPlanned(<SkillGiftsPanel />);
-    const order = groups().map((el) => el.getAttribute('data-subject'));
-    const expected = ['WRATH', 'LUST', 'SLOTH', 'GLUTTONY', 'GLOOM', 'PRIDE', 'ENVY', 'Slash', 'Penetrate', 'Hit'];
-    expect(order).toEqual(expected.filter((subject) => order.includes(subject)));
-  });
-
-  it('puts what the skill sets off before what it merely strengthens', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    renderPlanned(<SkillGiftsPanel />);
-    for (const group of groups()) {
-      const effects = within(group).getAllByTestId('skill-gift').map((el) => el.getAttribute('data-effect'));
-      expect(effects).toEqual([...effects].sort((a, b) => Number(a === 'boost') - Number(b === 'boost')));
+    render();
+    const order = bucketsIn('gate');
+    expect(order).toEqual(['damage', 'survival', 'egoResource'].filter((b) => order.includes(b)));
+    for (const bucket of within(sectionFor('gate')).getAllByTestId('skills-bucket')) {
+      const ids = within(bucket).getAllByTestId('skill-gift').map((el) => Number(el.getAttribute('data-gift')));
+      expect(ids).toEqual([...ids].sort((a, b) => a - b));
     }
   });
 
-  it('shows a slot-limited gift only under the skills that slot has (9195 구름무늬 호리병)', () => {
+  it('writes each gift two lines: what sets it off, and whose skills do', () => {
     useApp.getState().setDeck(LCB_DECK, 6);
-    renderPlanned(<SkillGiftsPanel />);
-    const row = giftIn(groupFor('Slash'), 9195)!;
-    expect(row).toBeDefined();
-    expect(within(row).getByTestId('skill-gift-slots')).toHaveAttribute('data-slots', '1');
+    render();
+    // 9009 작열우모 keys off 색욕 속성; among the deployed LCB starters 돈키호테·료슈·홍루 have one.
+    const row = rowFor(9009)!;
+    expect(within(row).getByTestId('skill-gift-trigger')).toHaveTextContent('색욕 속성 스킬');
+    expect(within(row).getByTestId('skill-gift-owners')).toHaveTextContent('돈키호테 1스킬');
+    // 9012 오늘의 표정 reacts to either 나태 속성 or 타격, and an identity's slots merge into one.
+    const two = rowFor(9012)!;
+    expect(within(two).getByTestId('skill-gift-trigger')).toHaveTextContent('나태 속성 스킬 · 타격 스킬');
+    expect(within(two).getByTestId('skill-gift-owners')).toHaveTextContent('뫼르소 1,2,3스킬');
   });
 
-  it('prints a 편성 restriction as a caveat and never filters on it (9193 닳고 닳은 숫돌)', () => {
+  it('names an identity once with its slots merged', () => {
     useApp.getState().setDeck(LCB_DECK, 6);
-    renderPlanned(<SkillGiftsPanel />);
-    const row = giftIn(groupFor('Slash'), 9193)!;
-    // 10101 sits first in this deck, not third, and the row is here all the same.
-    expect(within(row).getByTestId('skill-gift-formation')).toHaveAttribute('data-formation', '3');
+    render();
+    for (const line of screen.getAllByTestId('skill-gift-owners')) {
+      const names = (line.textContent ?? '').split(' / ').map((part) => part.split(' ')[0]);
+      expect(new Set(names).size).toBe(names.length);
+    }
+  });
+
+  it('lists only the deployed identities as owners', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    render();
+    const deployed = new Set(useApp.getState().deployed);
+    const seen = new Set(
+      screen
+        .getAllByTestId('skill-gift-owners')
+        .flatMap((el) => (el.getAttribute('data-identities') ?? '').split(',').map(Number)),
+    );
+    for (const id of seen) expect(deployed.has(id)).toBe(true);
+  });
+
+  it('says a slot limit and a 편성 limit on the row, and never filters on the 편성 one', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    render();
+    // 9195 구름무늬 호리병 — 「참격 유형인 스킬 1」.
+    expect(within(rowFor(9195)!).getByTestId('skill-gift-trigger')).toHaveTextContent('1스킬이 참격');
+    // 9193 닳고 닳은 숫돌 — 「[편성 3번 인격 전용 효과]」; 10101 is first in this deck, not third.
+    expect(within(rowFor(9193)!).getByTestId('skill-gift-formation')).toHaveAttribute('data-formation', '3');
+  });
+
+  it('hides a gift whose own condition this deck cannot meet, and says how many', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    render();
+    // 9280 본국검보 needs 검계 3인 이상; the LCB starters are in no faction that counts.
+    expect(screen.queryAllByTestId('skill-gift').some((el) => el.getAttribute('data-gift') === '9280')).toBe(false);
+    const hidden = screen.getByTestId('skills-excluded');
+    expect(Number(hidden.getAttribute('data-hidden'))).toBeGreaterThan(0);
+  });
+
+  it('gives a gift that helps two ways a row in each bucket, and still counts it once', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(LCB_DECK, 6);
+    render();
+    // 9025 잿빛 코트 deals damage and heals, so it is listed under both.
+    const rows = screen.getAllByTestId('skill-gift').filter((el) => el.getAttribute('data-gift') === '9025');
+    expect(rows.map((el) => el.getAttribute('data-bucket')).sort()).toEqual(['damage', 'survival']);
+    // The summary counts gifts, not rows, so unfolding everything must not make it disagree.
+    await user.click(within(screen.getAllByTestId('skills-section')[1]!).getByRole('button', { name: /^강화/ }));
+    const shown = new Set(screen.getAllByTestId('skill-gift').map((el) => el.getAttribute('data-gift')));
+    expect(screen.getByTestId('skills-summary')).toHaveTextContent(`기프트 ${shown.size}`);
   });
 
   it('opens the gift sheet the provider hosts when the name is pressed', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(LCB_DECK, 6);
-    renderPlanned(<SkillGiftsPanel />);
-    const row = giftIn(groupFor('Slash'), 9013)!;
-    await user.click(within(row).getByRole('button', { name: '부적 묶음' }));
+    render();
+    await user.click(within(rowFor(9195)!).getByRole('button', { name: '구름무늬 호리병' }));
     expect(screen.getByTestId('gift-detail')).toBeInTheDocument();
   });
 
-  it('starts with the explanation folded and opens it on request', async () => {
-    const user = userEvent.setup();
+  it('draws no 「이 탭은 무엇인가요」 card', () => {
     useApp.getState().setDeck(LCB_DECK, 6);
-    renderPlanned(<SkillGiftsPanel />);
-    const toggle = within(screen.getByTestId('skills-about')).getByRole('button');
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await user.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('skills-about')).toHaveTextContent('편성 순서');
-  });
-
-  it('counts only who is deployed', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    const deployed = useApp.getState().deployed;
-    renderPlanned(<SkillGiftsPanel />);
-    const owners = screen.getAllByTestId('skill-owner').map((el) => Number(el.getAttribute('data-identity')));
-    expect(new Set(owners)).toEqual(new Set(deployed));
+    render();
+    expect(screen.queryByTestId('skills-about')).toBeNull();
+    expect(screen.getByTestId('skills-panel').textContent).not.toMatch(/이 탭은|편성 순서를 모르므로/);
   });
 
   it('says so, with a way out, when nobody is deployed', () => {
-    renderPlanned(<SkillGiftsPanel onOpenDeck={() => undefined} />);
+    render({ onOpenDeck: () => undefined });
     expect(screen.getByTestId('skills-empty')).toBeInTheDocument();
-    expect(screen.queryAllByTestId('skill-group-body')).toEqual([]);
-    // The explanation is what makes an empty panel legible, so it stays.
-    expect(screen.getByTestId('skills-about')).toBeInTheDocument();
+    expect(screen.queryAllByTestId('skills-section')).toEqual([]);
   });
 });
 

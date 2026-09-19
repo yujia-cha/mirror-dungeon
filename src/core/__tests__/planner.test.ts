@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { loadGameDataFromDisk } from '../data/node.ts';
-import { buildIndexes, conflictGroups, defaultOptions, planAlternatives, planRoute, wantedRoots } from '../index.ts';
+import { alternativePacksOn, buildIndexes, conflictGroups, defaultOptions, planAlternatives, planRoute, wantedRoots } from '../index.ts';
 import { analyseDeck, dominantKeyword, evaluateConditions } from '../deck.ts';
 import { expandRequirements } from '../requirements.ts';
 import { modeForFloor, observationCost } from '../search.ts';
@@ -675,13 +675,43 @@ describe('floor windows', () => {
     expect(unchanging.window).toEqual({ from: 4, to: 5 });
   });
 
-  it('spans all of 평행중첩 for a pack placed there', () => {
+  it('spans the whole run of floors a pack is offered on, across the band boundary', () => {
+    // 상납된 시가 (1025) and 새하얀 캔버스 (1026) are both offered on Hard 5 and on 평행중첩 6-10.
+    // Two packs over six floors, so either may sit anywhere in 5-10 while the other takes a
+    // different floor — the window says so rather than stopping at the band the search happened to
+    // place the pack in.
     const result = planWithout({
       wanted: want(9283, 9222),
       options: options({ lastFloor: 10 }),
     });
     const parallel = result.floors.find((f) => f.packId !== null && f.mode === 'parallel')!;
-    expect(parallel.window).toEqual({ from: 6, to: 10 });
+    expect(parallel.window).toEqual({ from: 5, to: 10 });
+    const hard = result.floors.find((f) => f.packId !== null && f.mode === 'hard')!;
+    expect(hard.window).toEqual({ from: 5, to: 10 });
+  });
+
+  it('lets a window cross the Hard / 평행중첩 boundary when the pack is offered on both sides', () => {
+    // This is the shape the reporter hit: 1호선 (1108, Hard 5 + 6~10) and 2호선 (1109, Hard 4-5 +
+    // 6~10) both have to be visited, and either may take floor 5 while the other goes above it.
+    // Clipping each window at the band it was placed in used to offer only one pack on floor 5.
+    const result = planWithout({
+      wanted: want(9751, 9753),
+      options: options({ hardFromFloor: 1, lastFloor: 10 }),
+    });
+    const first = result.floors.find((f) => f.packId === 1108)!;
+    const second = result.floors.find((f) => f.packId === 1109)!;
+    expect(first.window).toEqual({ from: 5, to: 10 });
+    expect(second.window).toEqual({ from: 4, to: 10 });
+  });
+
+  it('stops a window at a floor the pack is not offered on, so two bands never merge', () => {
+    // 1호선 : 광기 (1513) is EXTREME-only, so nothing can stretch a window across 6~10 into it.
+    const result = planWithout({
+      wanted: want(9751),
+      options: options({ hardFromFloor: 1, lastFloor: 15 }),
+    });
+    const railway = result.floors.find((f) => f.packId === 1108)!;
+    expect(railway.window).toEqual({ from: 5, to: 10 });
   });
 
   it('collapses the window to the pinned floor', () => {
@@ -853,6 +883,30 @@ describe('alternative routes', () => {
   });
 });
 
+describe('alternativePacksOn', () => {
+  it('names every pack on the floor whose pool carries all the gifts', () => {
+    // 인연 얽힘 (9208) drops from all seven 죄악 packs, which share Hard 5 + 평행중첩 6~10.
+    expect(alternativePacksOn(10, 'parallel', [9208], indexes, { exclude: 1302 })).toEqual([
+      1305, 1308, 1311, 1314, 1317, 1320,
+    ]);
+    expect(alternativePacksOn(5, 'hard', [9208], indexes, { exclude: 1302 })).toEqual([
+      1305, 1308, 1311, 1314, 1317, 1320,
+    ]);
+  });
+
+  it('leaves out the banned packs and asks for nothing when there are no gifts', () => {
+    expect(alternativePacksOn(10, 'parallel', [9208], indexes, { exclude: 1302, banned: new Set([1305, 1308]) })).toEqual([
+      1311, 1314, 1317, 1320,
+    ]);
+    expect(alternativePacksOn(10, 'parallel', [], indexes)).toEqual([]);
+  });
+
+  it('has nothing to offer for a gift only one pack on the floor carries', () => {
+    // 뱀 허물 (9751) is 1호선's alone.
+    expect(alternativePacksOn(5, 'hard', [9751], indexes, { exclude: 1108 })).toEqual([]);
+  });
+});
+
 describe('pack choices', () => {
   it('includes a preferred pack somewhere in its window and never observes it away', () => {
     // 깨진 안경 is observable, so without a preference the planner observes it and needs no pack.
@@ -862,7 +916,8 @@ describe('pack choices', () => {
     const floor = kept.floors.find((f) => f.packId === 1012)!;
     expect(floor).toBeDefined();
     expect(floor.reason).toBe('required');
-    expect(floor.window).toEqual({ from: 4, to: 5 });
+    // 변하지 않는 (1012) is offered on Hard 4-5 and again across 평행중첩 6-10.
+    expect(floor.window).toEqual({ from: 4, to: 10 });
     expect(floor.pickups.map((p) => p.giftId)).toEqual([9423]);
     expect(kept.start.observed).toEqual([]);
   });
@@ -1110,7 +1165,7 @@ describe('observation pins', () => {
     const result = plan({ deck: LCB_DECK, wanted: want(...SCENARIO), options: hard15({ currentFloor: 3 }) });
     expect(result.start.observed).toEqual([]);
     expect(packAt(result, 3).packId).toBe(1010);
-    expect(packAt(result, 4)).toMatchObject({ packId: 1012, window: { from: 4, to: 5 } });
+    expect(packAt(result, 4)).toMatchObject({ packId: 1012, window: { from: 4, to: 10 } });
     expect(result.unresolved).toEqual([
       expect.objectContaining({ giftId: 9408, reason: 'no-pack-in-range' }),
       expect.objectContaining({ giftId: 9409, reason: 'no-pack-in-range' }),

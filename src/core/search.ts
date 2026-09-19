@@ -3,6 +3,31 @@ import type { Difficulty, Rules } from './schema.ts';
 import type { GameIndexes, PlanOptions, Requirement } from './types.ts';
 
 /**
+ * Other packs offered on `floor` that carry every one of `giftIds` — the packs a player could take
+ * instead, with the same gifts to show for it.
+ *
+ * 인연 얽힘 (9208) is the plain case: seven 죄악 packs all drop it, so naming only the one the search
+ * picked would hide six equally good choices. `giftPool` is the whole pool a pack can offer, so a
+ * pack's own 전용 gifts are in it too.
+ */
+export function alternativePacksOn(
+  floor: number,
+  mode: Difficulty,
+  giftIds: readonly number[],
+  indexes: GameIndexes,
+  options: { exclude?: number; banned?: ReadonlySet<number> } = {},
+): number[] {
+  if (giftIds.length === 0) return [];
+  const offered = indexes.packsByFloor[mode].get(floor) ?? [];
+  return offered.filter((candidate) => {
+    if (candidate === options.exclude) return false;
+    if (options.banned?.has(candidate)) return false;
+    const pack = indexes.packById.get(candidate);
+    return pack ? giftIds.every((giftId) => pack.giftPool.includes(giftId)) : false;
+  });
+}
+
+/**
  * Which run mode a floor is played in, given the single Hard switch point.
  *
  * Which floors are 평행중첩 or EXTREME is a property of the season, so it comes from the data

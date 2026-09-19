@@ -4,7 +4,7 @@
  * Pure TypeScript: no React, no DOM, no network. It runs in the browser, in Vitest and in
  * scripts/route-cli.ts, and the same input always produces the same output.
  */
-import type { Difficulty, GameData } from './schema.ts';
+import type { GameData } from './schema.ts';
 import type {
   FloorPlan,
   FusionStep,
@@ -20,7 +20,7 @@ import type {
 } from './types.ts';
 import { analyseDeck, evaluateConditions } from './deck.ts';
 import { expandRequirements, scarcity } from './requirements.ts';
-import { assignPacks, modeForFloor, observationCost, type SearchResult } from './search.ts';
+import { alternativePacksOn, assignPacks, modeForFloor, observationCost, type SearchResult } from './search.ts';
 import { requirementKey } from './requirements.ts';
 import { chooseStart, observable } from './starting.ts';
 import { josa } from './text.ts';
@@ -32,7 +32,7 @@ export type { ConflictGroup, ConflictCandidate } from './conflicts.ts';
 export { buildIndexes } from './data/indexes.ts';
 export { analyseDeck, dominantKeyword, evaluateConditions } from './deck.ts';
 export { chooseRecipe, expandRequirements, scarcity } from './requirements.ts';
-export { assignPacks, modeForFloor, observationCost } from './search.ts';
+export { alternativePacksOn, assignPacks, modeForFloor, observationCost } from './search.ts';
 export { matchSkillTriggers, skillsOf, triggerMatches } from './skills.ts';
 export type { GiftSkillMatch, SkillRef } from './skills.ts';
 export { chooseStart, observable } from './starting.ts';
@@ -144,31 +144,37 @@ function normaliseOptions(
 
 /**
  * The contiguous run of floors around `floor` on which `packId` could equally have been placed:
- * same mode, offered on that floor, and not already taken by another required or pinned pack.
- * This is what lets the UI say "any one of floors 4-5" instead of pinning a floor the search
- * merely happened to pick first.
+ * offered on that floor, and not already taken by another required or pinned pack. This is what
+ * lets the UI say "any one of floors 4-5" instead of pinning a floor the search merely happened to
+ * pick first.
+ *
+ * **A window crosses difficulty bands.** Plenty of packs are offered both on Hard 5 and across
+ * 평행중첩 6-10 (1호선, 2호선, the 죄악 packs …), and for those the player really may take the pack
+ * on any of floors 5-10. Clipping the window at the band boundary used to hide that: a pack the
+ * search happened to place on floor 5 reported a window of exactly {5,5}, and every pack in 6-10
+ * reported {6,10}, so the stage offered one pack on floor 5 when six were interchangeable. Per-floor
+ * legality is enforced by the `packsByFloor` lookup below, which is keyed by each floor's own mode,
+ * so a Hard-only pack still cannot wander into a Normal floor without the band check.
  */
 function windowFor(
   packId: number,
   floor: number,
-  mode: Difficulty,
   floors: number[],
   options: PlanOptions,
   assignment: Map<number, number>,
   indexes: GameIndexes,
 ): { from: number; to: number } {
-  // Floors a pack could be visited on, in this plan: same run mode as the assigned floor (so a
-  // Hard-only pack never wanders into Normal floors), offered there, and not pinned to another.
-  const candidates = (id: number, own: number): number[] =>
+  // Floors a pack could be visited on, in this plan: offered there (in that floor's own mode) and
+  // not pinned to another pack.
+  const candidates = (id: number): number[] =>
     floors.filter((g) => {
-      if (modeForFloor(g, options, indexes) !== modeForFloor(own, options, indexes)) return false;
       if (!(indexes.packsByFloor[modeForFloor(g, options, indexes)].get(g) ?? []).includes(id)) return false;
       const pinnedHere = options.pinnedPacks[g];
       return pinnedHere === undefined || pinnedHere === id;
     });
   // Played floors are settled and never move, so only packs still on plannable floors compete.
   const others = [...assignment.entries()].filter(([own, id]) => id !== packId && floors.includes(own));
-  const otherCandidates = others.map(([own, id]) => candidates(id, own));
+  const otherCandidates = others.map(([, id]) => candidates(id));
 
   // Floor g is possible for this pack when every other required pack still fits somewhere else:
   // a bipartite matching of the other packs onto the remaining floors (Kuhn's algorithm; the
@@ -190,12 +196,13 @@ function windowFor(
     return otherCandidates.every((_, i) => tryPlace(i, new Set()));
   };
 
-  const possible = new Set(candidates(packId, floor).filter((g) => g === floor || fits(g)));
+  // Only the unbroken run around `floor` is reported, so a pack offered on Hard 5 and again on
+  // EXTREME 11-15 does not claim the 평행중첩 floors in between.
+  const possible = new Set(candidates(packId).filter((g) => g === floor || fits(g)));
   let from = floor;
   while (possible.has(from - 1)) from -= 1;
   let to = floor;
   while (possible.has(to + 1)) to += 1;
-  void mode;
   return { from, to };
 }
 
@@ -439,7 +446,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       })
       .filter(({ pickups }) => pickups.length === 1 && canObserve(pickups[0]!.giftId))
       .map((entry) => {
-        const window = windowFor(entry.packId, entry.floor, modeForFloor(entry.floor, options, indexes), floors, options, search.assignment, indexes);
+        const window = windowFor(entry.packId, entry.floor, floors, options, search.assignment, indexes);
         return { ...entry, width: window.to - window.from, giftId: entry.pickups[0]!.giftId, key: requirementKey(entry.pickups[0]!) };
       })
       .sort(
@@ -692,13 +699,14 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
 
     // Packs on this floor that could have supplied the same pickups.
     const alternatives =
-      pickups.length > 0 && !isPassed
-        ? (indexes.packsByFloor[mode].get(floor) ?? [])
-            .filter((candidate) => candidate !== packId && !bannedPacks.has(candidate))
-            .filter((candidate) => {
-              const pack = indexes.packById.get(candidate);
-              return pack ? pickups.every((p) => pack.giftPool.includes(p.giftId)) : false;
-            })
+      !isPassed && packId !== null
+        ? alternativePacksOn(
+            floor,
+            mode,
+            pickups.map((p) => p.giftId),
+            indexes,
+            { exclude: packId, banned: bannedPacks },
+          )
         : [];
 
     const window =
@@ -706,7 +714,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         ? null
         : pinned
           ? { from: floor, to: floor }
-          : windowFor(packId, floor, mode, floors, options, search.assignment, indexes);
+          : windowFor(packId, floor, floors, options, search.assignment, indexes);
 
     return {
       floor,

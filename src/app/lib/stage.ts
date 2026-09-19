@@ -5,6 +5,7 @@
  */
 import type { Difficulty, GameData } from '../../core/schema.ts';
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
+import { alternativePacksOn } from '../../core/index.ts';
 import { runDoneFloor } from '../store.ts';
 import type { GiftStatus, RunState } from './plan-input.ts';
 
@@ -51,17 +52,40 @@ export interface EnterablePack {
   recommended: boolean;
   /** The floors the pack could sit on instead, per the plan. */
   window: { from: number; to: number };
+  /** Packs on THIS floor that carry the same gifts — take any of them and the route still works. */
+  alternatives: number[];
 }
 
-/** Route packs the player may enter on `floor`: the one planned here first, then those whose window covers it. */
-export function enterablePacks(plan: RoutePlan | null, floor: number): EnterablePack[] {
+/**
+ * Route packs the player may enter on `floor`: the one planned here first, then those whose window
+ * covers it.
+ *
+ * `alternatives` is recomputed for the floor being shown rather than read off the plan entry,
+ * because a pack's window spans several floors and the packs offered differ from floor to floor.
+ */
+export function enterablePacks(
+  plan: RoutePlan | null,
+  floor: number,
+  indexes: GameIndexes,
+): EnterablePack[] {
   if (!plan) return [];
   const out: EnterablePack[] = [];
   for (const entry of plan.floors) {
     if (entry.packId === null || entry.passed) continue;
     const window = entry.window ?? { from: entry.floor, to: entry.floor };
     if (floor < window.from || floor > window.to) continue;
-    out.push({ packId: entry.packId, recommended: entry.floor === floor, window });
+    out.push({
+      packId: entry.packId,
+      recommended: entry.floor === floor,
+      window,
+      alternatives: alternativePacksOn(
+        floor,
+        bandMode(indexes, floor),
+        entry.pickups.map((pickup) => pickup.giftId),
+        indexes,
+        { exclude: entry.packId },
+      ),
+    });
   }
   return out.sort((a, b) => Number(b.recommended) - Number(a.recommended) || a.packId - b.packId);
 }

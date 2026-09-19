@@ -212,6 +212,14 @@ export const skillTriggerSchema = z.object({
 
 export type SkillTrigger = z.infer<typeof skillTriggerSchema>;
 
+/**
+ * What kind of help a gift's effect is. Not a game concept — the game never says — but the one
+ * question a player sorting 90-odd gifts actually asks.
+ */
+export const EFFECT_BUCKETS = ['damage', 'survival', 'egoResource'] as const;
+export const effectBucketSchema = z.enum(EFFECT_BUCKETS);
+export type EffectBucket = z.infer<typeof effectBucketSchema>;
+
 export const giftSchema = z.object({
   id: z.number().int(),
   name: localizedSchema,
@@ -253,6 +261,14 @@ export const giftSchema = z.object({
   conditions: z.array(conditionSchema),
   /** Skill shapes this gift's effect keys off; empty when the effect names no skill. */
   skillTriggers: z.array(skillTriggerSchema).default([]),
+  /**
+   * Which kinds of help the effect gives, in `EFFECT_BUCKETS` order. A gift may help two ways —
+   * 9025 잿빛 코트 deals damage AND heals — and then carries both, so the 「스킬」 탭 can list it
+   * under each. Derived at build time; see `scripts/lib/gift-effects.ts`.
+   *
+   * SHOWN, NEVER PLANNED. Like `skillTriggers`, the planner does not read it.
+   */
+  effectBuckets: z.array(effectBucketSchema).default([]),
   /**
    * 1-based formation positions the whole effect is limited to, ascending — the game writes it as
    * 「[편성 3번 인격 전용 효과]」. Empty means every identity.

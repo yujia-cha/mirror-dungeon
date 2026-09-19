@@ -54,11 +54,11 @@ describe('metro segments', () => {
   });
 
   it('rides the 평행중첩 packs and five EXTREME packs on one segment per band', () => {
-    // 교본·검과 작품·끊어지지 않는 are all Hard 5 + 6~10: the planner fixes one on 5 and floats the rest.
+    // 교본·검과 작품·끊어지지 않는 are all Hard 5 + 6~10, so all three share one window and one
+    // segment: the player may take any of them on any of floors 5-10.
     const metro = segmentsFor(plan(9283, 9222, 9217, 9250, 9251, 9252, 9253, 9254));
     expect(metro.segments.map((s) => [s.from, s.to, s.fixed, s.packs.length])).toEqual([
-      [5, 5, true, 1],
-      [6, 10, false, 2],
+      [5, 10, false, 3],
       [11, 15, false, 5],
     ]);
     expect(metro.segments.every((s) => !s.partial)).toBe(true);

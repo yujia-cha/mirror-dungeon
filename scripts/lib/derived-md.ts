@@ -34,6 +34,12 @@ export interface DerivedGift {
   /** Fixed recipes as ingredient id lists; the mixed recipe appears as an options object instead. */
   recipes?: (string | { count: number; options: string[] })[][];
   exclusiveTo?: string[];
+  /**
+   * Curated effect labels from a closed vocabulary (「Deal More Damage」, 「Heal HP」,
+   * 「Gain E.G.O Resource」 …). Nothing in the game's own static data says what KIND of help a gift
+   * is, so this list is the only machine-readable answer anywhere — see `scripts/lib/gift-effects.ts`.
+   */
+  effects?: string[];
   hardonly?: boolean;
   enhanceable?: boolean;
   hidden?: boolean;

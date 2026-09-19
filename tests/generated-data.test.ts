@@ -161,6 +161,29 @@ describe('gifts', () => {
     expect(gift.formationSlots).toEqual(formationSlots);
   });
 
+  it('says what kind of help every skill-trigger gift is', () => {
+    const triggered = gifts.filter((g) => g.skillTriggers.length > 0);
+    expect(triggered.filter((g) => g.effectBuckets.length === 0)).toEqual([]);
+    const rows = triggered.flatMap((g) => g.effectBuckets);
+    expect(rows.filter((b) => b === 'damage')).toHaveLength(88);
+    expect(rows.filter((b) => b === 'survival')).toHaveLength(19);
+    // 도착증 alone gives an E.G.O resource; 충전 and 신속 are damage, by decision.
+    expect(triggered.filter((g) => g.effectBuckets.includes('egoResource')).map((g) => g.id)).toEqual([9002]);
+  });
+
+  it.each([
+    // Decided by the community labels.
+    [9025, ['damage', 'survival']], // 잿빛 코트 — 피해량 + 체력 회복
+    [9072, ['damage']], // 피뢰침 — 충전 횟수
+    [9137, ['damage']], // 수술용 메스 — 신속
+    [9002, ['egoResource']], // 도착증
+    // Decided by the bracketed buff name, because the label says only 「Gain Buff」.
+    [9010, ['damage']], // 블러디 가젯 — [피해량 증가]
+    [9143, ['damage']], // 목공용 대못 — [관통 피해량 증가]
+  ])('sorts gift %i into %s', (id, buckets) => {
+    expect(giftById.get(id as number)!.effectBuckets).toEqual(buckets);
+  });
+
   it('names every buff the Korean text refers to, leaving no bracketed id on screen', () => {
     // The game writes a buff into its own text as `[BloodDinner]` and paints the name over it at
     // run time. Every BattleKeywords* table is read, so the Korean text carries no Latin id: 혈찬,

@@ -17,21 +17,48 @@ describe('stage', () => {
   });
 
   it('offers a route pack on every floor of its window and marks the planned floor as recommended', () => {
-    const route = plan([9267]); // 화왕지절 (1402): Hard 4-5
-    expect(enterablePacks(route, 3)).toEqual([]);
-    expect(enterablePacks(route, 4)).toEqual([{ packId: 1402, recommended: true, window: { from: 4, to: 5 } }]);
-    expect(enterablePacks(route, 5)).toEqual([{ packId: 1402, recommended: false, window: { from: 4, to: 5 } }]);
-    expect(enterablePacks(null, 4)).toEqual([]);
+    // 화왕지절 (1402) is offered on Hard 4-5 AND across 평행중첩 6-10, so the window spans the band
+    // boundary: nothing else is planned, so the player may take it on any floor from 4 to 10.
+    const route = plan([9267]);
+    expect(enterablePacks(route, 3, indexes)).toEqual([]);
+    expect(enterablePacks(route, 4, indexes)).toEqual([
+      { packId: 1402, recommended: true, window: { from: 4, to: 10 }, alternatives: [] },
+    ]);
+    expect(enterablePacks(route, 7, indexes)).toMatchObject([{ packId: 1402, recommended: false }]);
+    expect(enterablePacks(null, 4, indexes)).toEqual([]);
+  });
+
+  it('names the other packs on the floor that would hand over the same gifts', () => {
+    // 9267 인연 얽힘의 짝 comes from 화왕지절 (1402) and from 해방된 분노 (1302). 1302 is not offered
+    // on floor 4, so only floor 5 has a choice to report.
+    const route = plan([9267]);
+    expect(enterablePacks(route, 4, indexes)[0]!.alternatives).toEqual([]);
+    expect(enterablePacks(route, 5, indexes)[0]!.alternatives).toEqual([1302]);
+    // A floor the plan leaves free has no pickups, so it has nothing to be an alternative to.
+    expect(enterablePacks(route, 3, indexes)).toEqual([]);
   });
 
   it('lists packs that share a floor with the recommended one first, and leaves played floors out', () => {
     const route = plan([9415, 9419], { currentFloor: 2 }); // 마주하지 않는 + 낙화, both Hard 2-3
-    const onTwo = enterablePacks(route, 2);
+    const onTwo = enterablePacks(route, 2, indexes);
     expect(onTwo.map((p) => p.packId).sort()).toEqual([1008, 1010]);
     expect(onTwo.filter((p) => p.recommended)).toHaveLength(1);
     expect(onTwo[0]!.recommended).toBe(true);
     const played = plan([9267], { currentFloor: 6, pinnedPacks: { 4: 1402 } });
-    expect(enterablePacks(played, 4)).toEqual([]);
+    expect(enterablePacks(played, 4, indexes)).toEqual([]);
+  });
+
+  it('offers every interchangeable route pack on the floor they all fit (the 1호선/2호선 report)', () => {
+    // 뱀 허물 → 1호선 (1108, Hard 5 + 6~10), 메트로놈 → 2호선 (1109, Hard 4-5 + 6~10), 인연 얽힘 →
+    // a 죄악 pack (Hard 5 + 6~10). All three fit floor 5, so all three are offered there and the
+    // planner's own seat merely decides which one is 「추천」.
+    const route = plan([9751, 9753, 9208]);
+    const onFive = enterablePacks(route, 5, indexes);
+    expect(onFive.map((p) => p.packId).sort()).toEqual([1108, 1109, 1302]);
+    expect(onFive.filter((p) => p.recommended)).toHaveLength(1);
+    expect(onFive[0]!.recommended).toBe(true);
+    // 2호선 is offered on floor 4 as well, but 1호선 and the 죄악 pack are not.
+    expect(enterablePacks(route, 4, indexes).map((p) => p.packId)).toEqual([1109]);
   });
 
   it('knows which packs the game can offer on a floor', () => {
