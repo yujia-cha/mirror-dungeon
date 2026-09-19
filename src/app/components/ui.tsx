@@ -236,6 +236,52 @@ export function FilterSelect<T extends string>({
   );
 }
 
+/**
+ * A row of tags, several of which can be on at once — the only multi-select control in the app.
+ * `FilterSelect` and `Segmented` both pick exactly one, which cannot say 「데미지 and 버프」.
+ *
+ * An empty row means no constraint, so turning every tag off is how a reader asks for everything;
+ * the caller decides what that means. A tag whose count is 0 stays pressable rather than
+ * disappearing — a control that vanishes when it would empty the list cannot be un-pressed.
+ */
+export function TagToggles<T extends string>({
+  label,
+  options,
+  selected,
+  onToggle,
+  testId,
+}: {
+  label: string;
+  options: { value: T; label: string; count: number }[];
+  selected: ReadonlySet<T>;
+  onToggle: (value: T) => void;
+  testId?: string;
+}) {
+  return (
+    <div role="group" aria-label={label} data-testid={testId} className="flex flex-wrap gap-1">
+      {options.map((option) => {
+        const on = selected.has(option.value);
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(option.value)}
+            data-testid="skills-tag"
+            data-tag={option.value}
+            className={`inline-flex h-7 flex-none items-center gap-1 rounded-full border px-2.5 text-xs font-medium ${
+              on ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong bg-surface text-fg-2 hover:bg-surface-2'
+            }`}
+          >
+            {option.label}
+            <span className={`font-num ${on ? 'opacity-70' : 'text-fg-3'}`}>{option.count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Segmented<T extends string | number>({
   label,
   value,

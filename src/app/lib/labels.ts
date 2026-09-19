@@ -42,6 +42,8 @@ export const BUCKET_LABEL: Record<EffectBucket, StringKey> = {
   damage: 'skillsBucketDamage',
   survival: 'skillsBucketSurvival',
   egoResource: 'skillsBucketEgoResource',
+  buff: 'skillsBucketBuff',
+  debuff: 'skillsBucketDebuff',
 };
 
 export const UNRESOLVED_LABEL: Record<UnresolvedReason, StringKey> = {

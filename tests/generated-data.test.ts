@@ -165,21 +165,25 @@ describe('gifts', () => {
     const triggered = gifts.filter((g) => g.skillTriggers.length > 0);
     expect(triggered.filter((g) => g.effectBuckets.length === 0)).toEqual([]);
     const rows = triggered.flatMap((g) => g.effectBuckets);
-    expect(rows.filter((b) => b === 'damage')).toHaveLength(88);
-    expect(rows.filter((b) => b === 'survival')).toHaveLength(19);
-    // 도착증 alone gives an E.G.O resource; 충전 and 신속 are damage, by decision.
+    const count = (bucket: string) => rows.filter((b) => b === bucket).length;
+    // 138 rows over 92 gifts: a gift that helps two ways is listed under each.
+    expect([count('damage'), count('survival'), count('egoResource'), count('buff'), count('debuff')]).toEqual([
+      41, 12, 1, 60, 24,
+    ]);
     expect(triggered.filter((g) => g.effectBuckets.includes('egoResource')).map((g) => g.id)).toEqual([9002]);
   });
 
   it.each([
-    // Decided by the community labels.
     [9025, ['damage', 'survival']], // 잿빛 코트 — 피해량 + 체력 회복
-    [9072, ['damage']], // 피뢰침 — 충전 횟수
-    [9137, ['damage']], // 수술용 메스 — 신속
-    [9002, ['egoResource']], // 도착증
-    // Decided by the bracketed buff name, because the label says only 「Gain Buff」.
-    [9010, ['damage']], // 블러디 가젯 — [피해량 증가]
-    [9143, ['damage']], // 목공용 대못 — [관통 피해량 증가]
+    [9002, ['egoResource']], // 도착증 — the only one
+    // What the ally gains is a buff, whatever it goes on to do.
+    [9072, ['buff']], // 피뢰침 — 충전 횟수
+    [9137, ['buff']], // 수술용 메스 — 신속
+    [9010, ['buff']], // 블러디 가젯 — [피해량 증가]
+    [9143, ['buff']], // 목공용 대못 — [관통 피해량 증가]
+    [9012, ['buff']], // 오늘의 표정 — 타격 스킬 위력 +2
+    // What the enemy is handed is a debuff.
+    [9031, ['debuff']], // 닉시 다이버전스 — 대상에게 [진동] 위력 부여
   ])('sorts gift %i into %s', (id, buckets) => {
     expect(giftById.get(id as number)!.effectBuckets).toEqual(buckets);
   });

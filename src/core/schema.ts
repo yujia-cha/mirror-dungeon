@@ -215,8 +215,13 @@ export type SkillTrigger = z.infer<typeof skillTriggerSchema>;
 /**
  * What kind of help a gift's effect is. Not a game concept — the game never says — but the one
  * question a player sorting 90-odd gifts actually asks.
+ *
+ * The line that matters is WHO the effect lands on: a stat or status the ally gains is 버프, one
+ * inflicted on the enemy is 디버프, and 데미지 is only damage actually dealt. 「[공격 레벨 증가]를
+ * 얻음」 and 「적에게 [화상] 위력 부여」 both raise damage in the end, but a player choosing gifts is
+ * choosing between those two things, not between them and nothing.
  */
-export const EFFECT_BUCKETS = ['damage', 'survival', 'egoResource'] as const;
+export const EFFECT_BUCKETS = ['damage', 'survival', 'egoResource', 'buff', 'debuff'] as const;
 export const effectBucketSchema = z.enum(EFFECT_BUCKETS);
 export type EffectBucket = z.infer<typeof effectBucketSchema>;
 
