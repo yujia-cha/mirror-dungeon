@@ -122,6 +122,45 @@ describe('gifts', () => {
     expect(gifts).toHaveLength(446);
   });
 
+  it('reads a skill trigger out of every gift whose effect names a skill', () => {
+    const triggered = gifts.filter((g) => g.skillTriggers.length > 0);
+    expect(triggered).toHaveLength(92);
+    // The same loose scan data:validate uses: a gift that plainly names one must have parsed one.
+    const loose =
+      /(분노|색욕|나태|탐식|우울|오만|질투|참격|관통|타격)[^\n가-힣]{0,4}(?:속성|유형)?[^\n가-힣]{0,4}(?:기본\s*)?(?:공격\s*)?스킬/;
+    expect(gifts.filter((g) => g.skillTriggers.length === 0 && loose.test(g.desc.ko))).toEqual([]);
+  });
+
+  it('keeps every trigger and 편성 restriction in a shape the app can read', () => {
+    const ascending = (values: readonly number[]) => values.every((v, i) => i === 0 || v > values[i - 1]!);
+    for (const gift of gifts) {
+      for (const trigger of gift.skillTriggers) {
+        expect(trigger.sin !== null || trigger.attackType !== null).toBe(true);
+        expect(ascending(trigger.slots)).toBe(true);
+      }
+      expect(ascending(gift.formationSlots)).toBe(true);
+      expect(gift.formationSlots.every((slot) => slot >= 1 && slot <= 12)).toBe(true);
+    }
+    // Only these two narrow themselves to a slot; the third such sentence (9203) is widened again
+    // by a later line, which is what the parser's subsumption rule is for.
+    expect(gifts.filter((g) => g.skillTriggers.some((t) => t.slots.length > 0)).map((g) => g.id)).toEqual([
+      9195, 9199,
+    ]);
+    expect(gifts.filter((g) => g.formationSlots.length > 0)).toHaveLength(60);
+  });
+
+  it.each([
+    [9013, [{ sin: null, attackType: 'Slash', slots: [], effect: 'boost' }], []],
+    [9767, [{ sin: 'PRIDE', attackType: 'Penetrate', slots: [], effect: 'gate' }], [1]],
+    [9195, [{ sin: null, attackType: 'Slash', slots: [1], effect: 'gate' }], []],
+    [9193, [{ sin: null, attackType: 'Slash', slots: [], effect: 'gate' }], [3]],
+    [9761, [], [1, 2, 7, 8]],
+  ])('gift %i keys off the skills its text names', (id, triggers, formationSlots) => {
+    const gift = giftById.get(id as number)!;
+    expect(gift.skillTriggers).toEqual(triggers);
+    expect(gift.formationSlots).toEqual(formationSlots);
+  });
+
   it('names every buff the Korean text refers to, leaving no bracketed id on screen', () => {
     // The game writes a buff into its own text as `[BloodDinner]` and paints the name over it at
     // run time. Every BattleKeywords* table is read, so the Korean text carries no Latin id: 혈찬,
@@ -285,6 +324,34 @@ describe('identities', () => {
       expect(identity.attackTypes.length).toBeGreaterThan(0);
     },
   );
+
+  it('gives every identity a per-slot skill table, whichever source it came from', () => {
+    for (const identity of identities) {
+      expect(identity.skills.length).toBeGreaterThan(0);
+      expect([...new Set(identity.skills.map((s) => s.slot))].sort()).toEqual([1, 2, 3]);
+      // The flat sets are a projection of the same table, so neither may claim the other lacks.
+      const sins = new Set(identity.skills.map((s) => s.sin));
+      const types = new Set(identity.skills.map((s) => s.attackType));
+      for (const sin of identity.sins) expect(sins.has(sin)).toBe(true);
+      for (const type of identity.attackTypes) expect(types.has(type)).toBe(true);
+    }
+  });
+
+  it('reads 10101 이상 LCB 수감자 slot by slot', () => {
+    expect(identityById.get(10101)!.skills).toEqual([
+      { slot: 1, sin: 'GLOOM', attackType: 'Slash', copies: 3 },
+      { slot: 2, sin: 'ENVY', attackType: 'Penetrate', copies: 2 },
+      { slot: 3, sin: 'SLOTH', attackType: 'Slash', copies: 1 },
+    ]);
+  });
+
+  it('keeps an alternate skill that shares a slot but not its axes (11115 오티스)', () => {
+    const skills = identityById.get(11115)!.skills;
+    expect(skills.filter((s) => s.slot === 1)).toEqual([
+      { slot: 1, sin: 'LUST', attackType: 'Hit', copies: 3 },
+      { slot: 1, sin: 'ENVY', attackType: 'Hit', copies: 0 },
+    ]);
+  });
 
   it('derives keywords from skills for all but a handful of identities', () => {
     const withoutKeywords = identities.filter((i) => i.keywordSource === 'none');

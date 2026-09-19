@@ -67,6 +67,20 @@ const KEYWORD_DISAGREEMENT_BUDGET = 15;
  */
 const DERIVED_ONLY_PACKS = [3001] as const;
 const DERIVED_ONLY_GIFTS = [9242, 9831, 9832, 9833, 9834, 9835, 9836, 9837, 9838, 9839] as const;
+/** The formation holds one seat per sinner; 9761 names 편성 8번, so the range really is 1..12. */
+const FORMATION_SIZE = SINNER_COUNT;
+/**
+ * A loose read of the same sentences `parseSkillTriggers` models — a sin or attack type with 스킬
+ * close behind. It over-matches on purpose: its job is to be louder than the real parser, so a
+ * wording change upstream shows up as a gift the loose scan sees and the parser does not.
+ */
+const LOOSE_SKILL_SUBJECT =
+  /(분노|색욕|나태|탐식|우울|오만|질투|참격|관통|타격)[^\n가-힣]{0,4}(?:속성|유형)?[^\n가-힣]{0,4}(?:기본\s*)?(?:공격\s*)?스킬/;
+
+function ascendingUnique(values: readonly number[]): boolean {
+  return values.every((value, i) => i === 0 || value > values[i - 1]!);
+}
+
 const lenient = hasFlag('--lenient');
 
 const errors: string[] = [];
@@ -439,6 +453,75 @@ function checkInvariants(
         .map((g) => g.id)
         .join(', ')}` + ' — consider extending the parser or adding data/curated/conditions.json entries',
     );
+  }
+
+  // Skill triggers: which skills a gift's effect lands on, read out of the Korean text. The parser
+  // is the only source, so losing it is silent — nothing else in the data says 「참격 스킬」.
+  const triggered = gifts.filter((g) => g.skillTriggers.length > 0);
+  if (triggered.length === 0) {
+    strict(
+      'invariant',
+      "no gift has a skill trigger; check parseSkillTriggers() against the season's effect text",
+    );
+  }
+  // The loose scan is the regression guard: a gift whose text plainly names a skill subject but
+  // whose triggers came out empty means the wording moved and the parser did not follow.
+  const missed = gifts.filter((g) => g.skillTriggers.length === 0 && LOOSE_SKILL_SUBJECT.test(g.desc.ko));
+  if (missed.length > 0) {
+    err(
+      'invariant',
+      `${missed.length} gift(s) name a skill's sin or attack type but parsed no trigger: ${missed
+        .slice(0, 6)
+        .map((g) => g.id)
+        .join(', ')}` + ' — extend parseSkillTriggers() or add a data/curated/conditions.json entry',
+    );
+  }
+  for (const gift of gifts) {
+    for (const trigger of gift.skillTriggers) {
+      if (trigger.sin === null && trigger.attackType === null) {
+        err('invariant', `gift ${gift.id} has a skill trigger naming neither a sin nor an attack type`);
+      }
+      if (!ascendingUnique(trigger.slots)) {
+        err('invariant', `gift ${gift.id} has skill trigger slots out of order or repeated`);
+      }
+    }
+    if (!ascendingUnique(gift.formationSlots)) {
+      err('invariant', `gift ${gift.id} has formationSlots out of order or repeated`);
+    }
+    if (gift.formationSlots.some((slot) => slot > FORMATION_SIZE)) {
+      err('invariant', `gift ${gift.id} limits itself to a formation position past ${FORMATION_SIZE}`);
+    }
+  }
+
+  // Every identity must answer 「몇 번 스킬이 무슨 속성인가」: the static records cover 183 and the
+  // derived mirror the remaining 4, so a gap means a source stopped rather than that one is empty.
+  const noSkills = identities.filter((i) => i.skills.length === 0);
+  if (noSkills.length > 0) {
+    err(
+      'invariant',
+      `${noSkills.length} identity/identities ship no skill table: ${noSkills
+        .slice(0, 6)
+        .map((i) => i.id)
+        .join(', ')}` + ' — check deriveIdentitySkills() and derivedSkills()',
+    );
+  }
+  for (const identity of identities) {
+    // The flat sets and the per-slot table are two readings of the same skills, so neither may
+    // claim something the other does not have.
+    const sins = new Set(identity.skills.map((s) => s.sin).filter(Boolean));
+    const types = new Set(identity.skills.map((s) => s.attackType).filter(Boolean));
+    for (const sin of identity.sins) {
+      if (!sins.has(sin)) err('invariant', `identity ${identity.id} lists sin ${sin} that no skill row has`);
+    }
+    for (const type of identity.attackTypes) {
+      if (!types.has(type)) {
+        err('invariant', `identity ${identity.id} lists attack type ${type} that no skill row has`);
+      }
+    }
+    const slots = new Set(identity.skills.map((s) => s.slot));
+    if (identity.skills.length > 0 && (!slots.has(1) || !slots.has(2) || !slots.has(3))) {
+      err('invariant', `identity ${identity.id} is missing a base attack skill slot`);
+    }
   }
 
   // Shipped gift text carries no leftovers a reader would notice as a defect: a bracketed buff

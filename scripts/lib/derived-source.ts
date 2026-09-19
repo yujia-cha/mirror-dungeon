@@ -11,7 +11,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { readJson, repoPath } from './io.ts';
-import type { AttackType, IdentityKeywordId, Sin } from '../../src/core/schema.ts';
+import type { AttackType, IdentitySkill, IdentityKeywordId, Sin } from '../../src/core/schema.ts';
+import { sortIdentitySkills } from './derive.ts';
 
 export const DERIVED_DIR = repoPath('data/raw/derived/eldritchtools');
 
@@ -132,6 +133,32 @@ export function derivedSins(entry: DerivedIdentity): Sin[] {
     if (sin) out.add(sin);
   }
   return [...out];
+}
+
+/**
+ * The base attack skills as a per-slot table — the derived counterpart of `deriveIdentitySkills`.
+ *
+ * This source states the slot outright (`type.tier`), so a backfilled identity loses nothing: the
+ * four identities the static mirror never shipped answer 「몇 번 스킬이 무슨 속성인가」 as fully as
+ * the other 183.
+ */
+export function derivedSkills(entry: DerivedIdentity): IdentitySkill[] {
+  const rows: { skill: IdentitySkill; id: number }[] = [];
+  for (const skill of entry.skillTypes ?? []) {
+    const tier = skill.type?.tier;
+    if (tier !== 1 && tier !== 2 && tier !== 3) continue;
+    const id = Number(skill.id);
+    rows.push({
+      id: Number.isFinite(id) ? id : 0,
+      skill: {
+        slot: tier,
+        sin: skill.type?.affinity ? (SIN_BY_AFFINITY[skill.type.affinity] ?? null) : null,
+        attackType: skill.type?.type ? (ATTACK_BY_TYPE[skill.type.type] ?? null) : null,
+        copies: Math.max(0, skill.num ?? 0),
+      },
+    });
+  }
+  return sortIdentitySkills(rows);
 }
 
 export function derivedAttackTypes(entry: DerivedIdentity): AttackType[] {

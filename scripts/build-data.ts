@@ -52,6 +52,7 @@ import {
   availabilityFor,
   cleanFactionName,
   deriveIdentityKeywords,
+  deriveIdentitySkills,
   groupForPackId,
   sinnerIdFromIdentityId,
   tierFromTags,
@@ -59,6 +60,7 @@ import {
 } from './lib/derive.ts';
 import { OUT, seasonDir } from './lib/out.ts';
 import { parseConditions } from './lib/parse-conditions.ts';
+import { parseSkillTriggers } from './lib/parse-skill-triggers.ts';
 import { deriveConsumedKeywordsFromText, deriveIdentityKeywordsFromText, skillsOfIdentity } from './lib/derive-text.ts';
 import { DERIVED_DIR } from './lib/derived-source.ts';
 import {
@@ -74,6 +76,7 @@ import {
   derivedFactions,
   derivedAttackSkillIds,
   derivedSins,
+  derivedSkills,
   readDerivedIdentities,
 } from './lib/derived-source.ts';
 import {
@@ -86,6 +89,7 @@ import {
   type Enums,
   type Gift,
   type Identity,
+  type IdentitySkill,
   type Localized,
   type Meta,
   metaSchema,
@@ -93,6 +97,7 @@ import {
   type Rules,
   type SeasonEntry,
   type Sin,
+  type SkillTrigger,
   type ThemePack,
 } from '../src/core/schema.ts';
 
@@ -139,6 +144,7 @@ interface CuratedIdentity {
   traits?: string[];
   sins?: string[];
   attackTypes?: string[];
+  skills?: IdentitySkill[];
 }
 
 const curated = {
@@ -152,9 +158,12 @@ const curated = {
     ) ?? {},
   identities: readJsonIfExists<Record<string, CuratedIdentity>>(repoPath('data/curated/identities.json')) ?? {},
   conditions:
-    readJsonIfExists<Record<string, { conditions?: Condition[] }>>(
-      repoPath('data/curated/conditions.json'),
-    ) ?? {},
+    readJsonIfExists<
+      Record<
+        string,
+        { conditions?: Condition[]; skillTriggers?: SkillTrigger[]; formationSlots?: number[] }
+      >
+    >(repoPath('data/curated/conditions.json')) ?? {},
   names:
     readJsonIfExists<{
       gifts?: Record<string, Partial<Localized>>;
@@ -494,6 +503,7 @@ const generalShare = curated.rules.generalGiftPackShare ?? 0.6;
 
 const missingText: number[] = [];
 let unparsedConditionCount = 0;
+let skillTriggerGiftCount = 0;
 
 const gifts: Gift[] = [...giftIds]
   .sort((a, b) => a - b)
@@ -540,6 +550,13 @@ const gifts: Gift[] = [...giftIds]
       conditions = parsed.conditions;
       unparsedConditionCount += parsed.unparsedCount;
     }
+
+    // The same file corrects both, and each key wins on its own: an empty array erases a
+    // derivation the text tricked us into, without touching the other.
+    const parsedTriggers = parseSkillTriggers(desc);
+    const skillTriggers = curatedCondition?.skillTriggers ?? parsedTriggers.triggers;
+    const formationSlots = curatedCondition?.formationSlots ?? parsedTriggers.formationSlots;
+    if (skillTriggers.length > 0) skillTriggerGiftCount += 1;
 
     const startKeyword = startKeywordByGift.get(id);
     const notes = curated.notes.gifts?.[String(id)];
@@ -595,6 +612,8 @@ const gifts: Gift[] = [...giftIds]
             }
           : null,
       conditions,
+      skillTriggers,
+      formationSlots,
       upgradeOf: null,
       ...(notes ? { notes } : {}),
     };
@@ -683,6 +702,7 @@ const derivedIdentities: Identity[] = rawPersonalities
       keywordSource,
       sins: [...sins].sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
       attackTypes: [...attackTypes].sort(),
+      skills: deriveIdentitySkills(raw, skills),
     };
   });
 
@@ -748,6 +768,7 @@ const backfilledIdentities: Identity[] = [...derivedSource.entries()]
       keywordSource: 'backfilled',
       sins: derivedSins(entry).sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
       attackTypes: derivedAttackTypes(entry).sort(),
+      skills: derivedSkills(entry),
     };
   })
   .sort((a, b) => a.id - b.id);
@@ -789,6 +810,7 @@ const curatedIdentities: Identity[] = curatedEntries(curated.identities).map(([k
     keywordSource: 'curated',
     sins: [...(entry.sins ?? [])].sort((a, b) => SINS.indexOf(a as Sin) - SINS.indexOf(b as Sin)) as Identity['sins'],
     attackTypes: [...(entry.attackTypes ?? [])].sort() as Identity['attackTypes'],
+    skills: (entry.skills ?? []) as Identity['skills'],
   };
 });
 
@@ -1128,6 +1150,7 @@ if (unnamedFactions.length > 0) {
       ' — add them to data/curated/factions.json',
   );
 }
+console.log(`  skill triggers: ${skillTriggerGiftCount} gift(s)`);
 if (unparsedConditionCount > 0) {
   console.log(`  ${unparsedConditionCount} condition sentence(s) could not be parsed (kept as "unparsed")`);
 }

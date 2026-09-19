@@ -28,6 +28,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCB Sinner",
       "ko": "LCB 수감자"
@@ -65,6 +85,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Seven Assoc. South Section 6",
       "ko": "남부 세븐 협회 6과"
@@ -100,6 +140,26 @@
       "WRATH",
       "PRIDE",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Blade Lineage Salsu",
@@ -143,6 +203,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Effloresced E.G.O::Spicebush",
       "ko": "개화 E.G.O:: 동백"
@@ -178,6 +258,26 @@
       "WRATH",
       "LUST",
       "SLOTH"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Molar Office Fixer",
@@ -220,6 +320,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "W Corp. L3 Cleanup Agent",
       "ko": "W사 3등급 정리 요원"
@@ -259,6 +379,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Pequod First Mate",
       "ko": "피쿼드호 일등 항해사"
@@ -294,6 +434,26 @@
       "LUST",
       "SLOTH",
       "GLUTTONY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Dieci Assoc. South Section 4",
@@ -331,6 +491,26 @@
       "LUST",
       "SLOTH",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Ring Pointillist Student",
@@ -377,6 +557,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Lobotomy E.G.O:: Solemn Lament",
       "ko": "로보토미 E.G.O:: 엄숙한 애도"
@@ -415,6 +615,26 @@
       "GLUTTONY",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCE E.G.O:: Lantern",
       "ko": "LCE E.G.O:: 초롱"
@@ -450,6 +670,26 @@
       "WRATH",
       "SLOTH",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Liu Assoc. South Section 3",
@@ -492,6 +732,26 @@
       "LUST",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "N Corp. E.G.O:: Fell Bullet",
       "ko": "N사 E.G.O:: 흉탄"
@@ -533,6 +793,26 @@
       "SLOTH",
       "GLUTTONY",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Heishou Pack - Wu Branch Adept",
@@ -583,6 +863,32 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The House of Spiders: The Index Nursefather",
       "ko": "거미집 검지 아비"
@@ -626,6 +932,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCE E.G.O:: Dimension Shredder",
       "ko": "LCE E.G.O:: 차원찢개"
@@ -655,6 +981,26 @@
       "SLOTH",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCB Sinner",
@@ -691,6 +1037,26 @@
       "WRATH",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "W Corp. L2 Cleanup Agent",
@@ -732,6 +1098,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Lobotomy Corp. Remnant",
       "ko": "살아남은 로보토미 직원"
@@ -771,6 +1157,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The One Who Grips",
       "ko": "쥐는 자"
@@ -801,6 +1207,26 @@
       "LUST",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Zwei Assoc. South Section 4",
@@ -838,6 +1264,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Seven Assoc. South Section 4",
       "ko": "남부 세븐 협회 4과"
@@ -873,6 +1319,26 @@
       "WRATH",
       "SLOTH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Lobotomy E.G.O::Regret",
@@ -916,6 +1382,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Blade Lineage Salsu",
       "ko": "검계 살수"
@@ -953,6 +1439,26 @@
       "WRATH",
       "LUST",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Wuthering Heights Butler",
@@ -992,6 +1498,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "MultiCrack Office Rep",
       "ko": "멀티크랙 사무소 대표"
@@ -1029,6 +1555,26 @@
       "WRATH",
       "SLOTH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCE E.G.O:: Ardor Blossom Star",
@@ -1070,6 +1616,26 @@
       "SLOTH",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Heishou Pack - Mao Branch Adept",
@@ -1113,6 +1679,32 @@
       "LUST",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 0,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Shi Assoc. East Section 3",
       "ko": "동부 시 협회 3과"
@@ -1152,6 +1744,26 @@
       "SLOTH",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Index Proselyte: 【Paper Slip】",
@@ -1196,6 +1808,26 @@
       "GLUTTONY",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The House of Spiders: The Ring Apprentice",
       "ko": "거미집 약지 제자"
@@ -1239,6 +1871,32 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Dawn Office Fixer",
       "ko": "새벽 사무소 해결사"
@@ -1275,6 +1933,26 @@
       "LUST",
       "GLUTTONY",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCB Sinner",
@@ -1317,6 +1995,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "W Corp. L3 Cleanup Agent",
       "ko": "W사 3등급 정리 요원"
@@ -1351,6 +2049,26 @@
       "WRATH",
       "LUST",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Shi Assoc. South Section 5 Director",
@@ -1394,6 +2112,26 @@
       "LUST",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "N Corp. Mittelhammer",
       "ko": "N사 중간 망치"
@@ -1423,6 +2161,26 @@
       "LUST",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Cinq Assoc. South Section 5 Director",
@@ -1460,6 +2218,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Middle Little Sister",
       "ko": "중지 작은 아우"
@@ -1496,6 +2274,26 @@
       "LUST",
       "GLUTTONY",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Lobotomy E.G.O::Lantern",
@@ -1535,6 +2333,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Blade Lineage Salsu",
       "ko": "검계 살수"
@@ -1572,6 +2390,26 @@
       "SLOTH",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "T Corp. Class 3 Collection Staff",
@@ -1611,6 +2449,26 @@
       "WRATH",
       "LUST",
       "SLOTH"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Manager of La Manchaland",
@@ -1652,6 +2510,26 @@
       "WRATH",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Cinq Assoc. East Section 3",
@@ -1696,6 +2574,26 @@
       "WRATH",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Lobotomy E.G.O:: In the Name of Love and Hate",
       "ko": "로보토미 E.G.O:: 사랑과 증오의 이름으로"
@@ -1737,6 +2635,26 @@
       "LUST",
       "GLUTTONY",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Heishou Pack - Wei Branch",
@@ -1780,6 +2698,44 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Index Proxy - Effloresced E.G.O:: Procuration",
       "ko": "검지 대행자 - 개화 E.G.O:: 대행"
@@ -1818,6 +2774,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCB Sinner",
       "ko": "LCB 수감자"
@@ -1855,6 +2831,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Seven Assoc. South Section 6",
       "ko": "남부 세븐 협회 6과"
@@ -1890,6 +2886,26 @@
       "LUST",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Kurokumo Clan Wakashu",
@@ -1928,6 +2944,26 @@
       "LUST",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "R.B. Chef de Cuisine",
       "ko": "료. 고. 파. 주방장"
@@ -1964,6 +3000,26 @@
       "LUST",
       "PRIDE",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "W Corp. L3 Cleanup Agent",
@@ -2014,6 +3070,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCCB Assistant Manager",
       "ko": "LCCB 대리"
@@ -2050,6 +3126,26 @@
       "LUST",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Liu Assoc. South Section 4",
       "ko": "남부 리우 협회 4과"
@@ -2085,6 +3181,26 @@
       "WRATH",
       "LUST",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Edgar Family Chief Butler",
@@ -2124,6 +3240,26 @@
       "SLOTH",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "District 20 Yurodivy",
       "ko": "20구 유로지비"
@@ -2159,6 +3295,26 @@
       "LUST",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Lobotomy E.G.O:: Red Eyes & Penitence",
@@ -2196,6 +3352,26 @@
       "LUST",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Heishou Pack - Mao Branch",
@@ -2242,6 +3418,32 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 0,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "N Corp. E.G.O:: Contempt, Awe",
       "ko": "N사 E.G.O:: 경멸, 경외"
@@ -2281,6 +3483,26 @@
       "GLUTTONY",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Drifting Blade of Hongyuan",
@@ -2324,6 +3546,26 @@
       "SLOTH",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Lobotomy E.G.O:: Faint Aroma & Solitude",
@@ -2371,6 +3613,32 @@
       "LUST",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Blade of the House of Spiders",
       "ko": "거미집의 검"
@@ -2412,6 +3680,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Haute Couture:: Le Noir Footwear Hall",
       "ko": "오트쿠튀르:: 르누아르 신발관"
@@ -2445,6 +3733,26 @@
       "SLOTH",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCB Sinner",
@@ -2482,6 +3790,26 @@
       "WRATH",
       "LUST",
       "SLOTH"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Liu Assoc. South Section 6",
@@ -2523,6 +3851,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "W Corp. L2 Cleanup Agent",
       "ko": "W사 2등급 정리 요원"
@@ -2559,6 +3907,26 @@
       "WRATH",
       "SLOTH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "N Corp. Großhammer",
@@ -2598,6 +3966,26 @@
       "SLOTH",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Rosespanner Workshop Fixer",
@@ -2640,6 +4028,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "R Corp. 4th Pack Rhino",
       "ko": "R사 제 4무리 코뿔소팀"
@@ -2674,6 +4082,26 @@
       "WRATH",
       "SLOTH",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Middle Little Brother",
@@ -2714,6 +4142,26 @@
       "WRATH",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Blade Lineage Mentor",
       "ko": "검계 우두머리"
@@ -2751,6 +4199,26 @@
       "LUST",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Dead Rabbits Boss",
       "ko": "데드레빗츠 보스"
@@ -2787,6 +4255,26 @@
       "SLOTH",
       "GLUTTONY",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Dieci Assoc. South Section 4 Director",
@@ -2827,6 +4315,26 @@
       "GLUTTONY",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Cinq Assoc. West Section 3",
@@ -2873,6 +4381,26 @@
       "LUST",
       "SLOTH"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Thumb East Capo IIII",
       "ko": "동부 엄지 카포IIII"
@@ -2918,6 +4446,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Prince of La Manchaland",
       "ko": "라만차랜드 왕자"
@@ -2962,6 +4510,26 @@
       "WRATH",
       "LUST"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Lobotomy E.G.O:: Hornet 【Alteration】",
       "ko": "로보토미 E.G.O:: 호넷【변조】"
@@ -3003,6 +4571,26 @@
       "WRATH",
       "LUST",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Ring Fauvist Student",
@@ -3047,6 +4635,26 @@
       "SLOTH",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCB Sinner",
       "ko": "LCB 수감자"
@@ -3082,6 +4690,26 @@
       "LUST",
       "SLOTH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Kurokumo Clan Wakashu",
@@ -3120,6 +4748,26 @@
       "GLUTTONY",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Tingtang Gang Gangleader",
       "ko": "콩콩이파 두목"
@@ -3157,6 +4805,26 @@
       "LUST",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Liu Assoc. South Section 5",
       "ko": "남부 리우 협회 5과"
@@ -3193,6 +4861,26 @@
       "SLOTH",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "K Corp. Class 3 Excision Staff",
@@ -3234,6 +4922,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "W Corp. L2 Cleanup Agent",
       "ko": "W사 2등급 정리 요원"
@@ -3268,6 +4976,26 @@
       "WRATH",
       "LUST",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Hook Office Fixer",
@@ -3307,6 +5035,26 @@
       "SLOTH",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Dieci Assoc. South Section 4",
       "ko": "남부 디에치 협회 4과"
@@ -3344,6 +5092,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "District 20 Yurodivy",
       "ko": "20구 유로지비"
@@ -3379,6 +5147,26 @@
       "WRATH",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Fanghunt Office Fixer",
@@ -3421,6 +5209,32 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Full-Stop Office Rep",
       "ko": "마침표 사무소 대표"
@@ -3461,6 +5275,26 @@
       "GLUTTONY",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "R Corp. 4th Pack Reindeer",
       "ko": "R사 제 4무리 순록팀"
@@ -3500,6 +5334,26 @@
       "GLUTTONY",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Lord of Hongyuan",
@@ -3547,6 +5401,32 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 0,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The House of Spiders: The Ring Nursefather",
       "ko": "거미집 약지 아비"
@@ -3590,6 +5470,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "S Corp. Ch'unokkun",
       "ko": "S사 추노꾼"
@@ -3630,6 +5530,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Cinq Assoc. East Section 3",
       "ko": "동부 섕크 협회 3과"
@@ -3663,6 +5583,26 @@
       "WRATH",
       "LUST",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCB Sinner",
@@ -3700,6 +5640,26 @@
       "WRATH",
       "LUST",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Shi Assoc. South Section 5",
@@ -3749,6 +5709,26 @@
       "GLUTTONY",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "R Corp. 4th Pack Rabbit",
       "ko": "R사 제 4무리 토끼팀"
@@ -3785,6 +5765,26 @@
       "LUST",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "N Corp. Kleinhammer",
@@ -3826,6 +5826,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Lobotomy E.G.O:: Sunshower",
       "ko": "로보토미 E.G.O:: 여우비"
@@ -3862,6 +5882,26 @@
       "WRATH",
       "GLUTTONY",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Seven Assoc. South Section 4",
@@ -3902,6 +5942,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Pequod Harpooneer",
       "ko": "피쿼드호 작살잡이"
@@ -3937,6 +5997,26 @@
       "GLOOM",
       "PRIDE",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Öufi Assoc. South Section 3",
@@ -3974,6 +6054,26 @@
       "WRATH",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "MultiCrack Office Fixer",
@@ -4013,6 +6113,26 @@
       "WRATH",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Wild Hunt",
@@ -4054,6 +6174,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Full-Stop Office Fixer",
       "ko": "마침표 사무소 해결사"
@@ -4089,6 +6229,32 @@
       "WRATH",
       "LUST",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Kurokumo Clan Wakashu",
@@ -4130,6 +6296,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "W Corp. L4 Cleanup Agent - CCA",
       "ko": "W사 4등급 정리 요원 - CCA"
@@ -4169,6 +6355,26 @@
       "WRATH",
       "GLUTTONY",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Heishou Pack - You Branch Adept",
@@ -4214,6 +6420,26 @@
       "WRATH",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Middle Big Brother",
       "ko": "중지 작은 형님"
@@ -4255,6 +6481,26 @@
       "LUST",
       "SLOTH"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The House of Spiders: The Thumb Apprentice",
       "ko": "거미집 엄지 제자"
@@ -4291,6 +6537,26 @@
       "WRATH",
       "GLUTTONY",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCB Sinner",
@@ -4332,6 +6598,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "R Corp. 4th Pack Reindeer",
       "ko": "R사 제 4무리 순록팀"
@@ -4367,6 +6653,26 @@
       "WRATH",
       "LUST",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Shi Assoc. South Section 5",
@@ -4413,6 +6719,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCCB Assistant Manager",
       "ko": "LCCB 대리"
@@ -4452,6 +6778,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Lobotomy E.G.O::Sloshing",
       "ko": "로보토미 E.G.O:: 출렁임"
@@ -4487,6 +6833,26 @@
       "WRATH",
       "LUST",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Liu Assoc. South Section 4",
@@ -4527,6 +6893,26 @@
       "SLOTH",
       "GLOOM",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Molar Boatworks Fixer",
@@ -4572,6 +6958,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Pequod Captain",
       "ko": "피쿼드호 선장"
@@ -4613,6 +7019,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Edgar Family Butler",
       "ko": "에드가 가문 버틀러"
@@ -4650,6 +7076,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Zwei Assoc. West Section 3",
       "ko": "서부 츠바이 협회 3과"
@@ -4685,6 +7131,26 @@
       "LUST",
       "PRIDE",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Kurokumo Clan Captain",
@@ -4728,6 +7194,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Family Hierarch Candidate",
       "ko": "가주 후보"
@@ -4770,6 +7256,32 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Jeong's Office Rep",
       "ko": "정사무소 대표"
@@ -4810,6 +7322,26 @@
       "WRATH",
       "LUST",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The House of Spiders: The Middle Apprentice",
@@ -4854,6 +7386,38 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCD OSIR Team",
       "ko": "LCD 현장추리팀"
@@ -4892,6 +7456,26 @@
       "LUST",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Haute Couture:: Boutique du Rouge",
       "ko": "오트쿠튀르:: 르루주 부티크"
@@ -4925,6 +7509,26 @@
       "WRATH",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCB Sinner",
@@ -4966,6 +7570,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Kurokumo Clan Wakashu",
       "ko": "흑운회 와카슈"
@@ -4997,6 +7621,26 @@
       "GLUTTONY",
       "PRIDE",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "LCCB Assistant Manager",
@@ -5034,6 +7678,26 @@
       "WRATH",
       "LUST",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "N Corp. Mittelhammer",
@@ -5075,6 +7739,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Rosespanner Workshop Rep",
       "ko": "장미스패너 공방 대표"
@@ -5111,6 +7795,26 @@
       "SLOTH",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Zwei Assoc. South Section 5",
       "ko": "남부 츠바이 협회 5과"
@@ -5146,6 +7850,26 @@
       "SLOTH",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Dieci Assoc. South Section 4",
@@ -5184,6 +7908,26 @@
       "LUST",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Liu Assoc. South Section 4 Director",
       "ko": "남부 리우 협회 4과 부장"
@@ -5220,6 +7964,26 @@
       "SLOTH",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "T Corp. Class 2 Collection Staff",
       "ko": "T사 2등급 징수직 직원"
@@ -5254,6 +8018,26 @@
       "WRATH",
       "LUST",
       "GLUTTONY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Devyat' Assoc. North Section 3",
@@ -5299,6 +8083,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Princess of La Manchaland",
       "ko": "라만차랜드 공주"
@@ -5342,6 +8146,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Heishou Pack - Si Branch",
       "ko": "흑수 - 사"
@@ -5377,6 +8201,26 @@
       "GLOOM",
       "PRIDE",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Lobotomy E.G.O:: The Sword Sharpened with Tears",
@@ -5419,6 +8263,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "R Corp. 4th Pack Reindeer",
       "ko": "R사 제 4무리 순록팀"
@@ -5458,6 +8322,26 @@
       "LUST",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Ring Fauvist Docent",
@@ -5511,6 +8395,32 @@
       "SLOTH",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The House of Spiders: The Thumb Nursefather",
       "ko": "거미집 엄지 아비"
@@ -5553,6 +8463,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCB Sinner",
       "ko": "LCB 수감자"
@@ -5594,6 +8524,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Blade Lineage Salsu",
       "ko": "검계 살수"
@@ -5630,6 +8580,26 @@
       "WRATH",
       "SLOTH",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Zwei Assoc. South Section 6",
@@ -5670,6 +8640,26 @@
       "SLOTH",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Los Mariachis Jefe",
@@ -5713,6 +8703,26 @@
       "LUST",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The One Who Shall Grip",
       "ko": "쥐어들 자"
@@ -5748,6 +8758,26 @@
       "LUST",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Lobotomy E.G.O::Red Sheet",
@@ -5786,6 +8816,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Molar Boatworks Fixer",
       "ko": "어금니 보트 센터 해결사"
@@ -5821,6 +8871,26 @@
       "LUST",
       "GLUTTONY",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Cinq Assoc. South Section 4 Director",
@@ -5859,6 +8929,32 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      },
+      {
+        "attackType": "Slash",
+        "copies": 0,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Dawn Office Fixer",
       "ko": "새벽 사무소 해결사"
@@ -5896,6 +8992,26 @@
       "SLOTH",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Zwei Assoc. West Section 3",
       "ko": "서부 츠바이 협회 3과"
@@ -5932,6 +9048,26 @@
       "LUST",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Devyat' Assoc. North Section 3",
       "ko": "북부 제뱌찌 협회 3과"
@@ -5966,6 +9102,26 @@
     "sins": [
       "GLUTTONY",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Middle Little Brother",
@@ -6012,6 +9168,26 @@
       "LUST",
       "SLOTH"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Thumb East Soldato II",
       "ko": "동부 엄지 솔다토II"
@@ -6054,6 +9230,26 @@
       "LUST",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Heishou Pack - You Branch",
       "ko": "흑수 - 유"
@@ -6094,6 +9290,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The House of Spiders: The Pinky Apprentice",
       "ko": "거미집 소지 제자"
@@ -6132,6 +9348,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCB Sinner",
       "ko": "LCB 수감자"
@@ -6168,6 +9404,26 @@
       "WRATH",
       "LUST",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Blade Lineage Salsu",
@@ -6207,6 +9463,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "G Corp. Head Manager",
       "ko": "G사 부장"
@@ -6242,6 +9518,26 @@
       "LUST",
       "SLOTH",
       "GLUTTONY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Seven Assoc. South Section 6 Director",
@@ -6280,6 +9576,26 @@
       "LUST",
       "SLOTH"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Molar Office Fixer",
       "ko": "어금니 사무소 해결사"
@@ -6316,6 +9632,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Cinq Assoc. South Section 4",
       "ko": "남부 섕크 협회 4과"
@@ -6351,6 +9687,26 @@
     "sins": [
       "WRATH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Lobotomy E.G.O::Magic Bullet",
@@ -6389,6 +9745,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Wuthering Heights Chief Butler",
       "ko": "워더링하이츠 치프 버틀러"
@@ -6426,6 +9802,26 @@
       "WRATH",
       "LUST",
       "GLUTTONY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLUTTONY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The Ring Pointillist Student",
@@ -6469,6 +9865,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "W Corp. L3 Cleanup Captain",
       "ko": "W사 3등급 정리 요원 팀장"
@@ -6508,6 +9924,26 @@
       "LUST",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Barber of La Manchaland",
       "ko": "라만차랜드 이발사"
@@ -6546,6 +9982,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Heishou Pack - Mao Branch",
       "ko": "흑수 - 묘"
@@ -6581,6 +10037,26 @@
       "LUST",
       "SLOTH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "T Corp. Class 3 VDCU Staff",
@@ -6627,6 +10103,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCA Udjat Vanguard Team 3 Leader",
       "ko": "LCA 우제트 선봉 3팀 팀장"
@@ -6665,6 +10161,32 @@
     "sins": [
       "LUST",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 0,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "The House of Spiders: The Middle Nursefather",
@@ -6706,6 +10228,26 @@
       "GLUTTONY",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLOOM",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCB Sinner",
       "ko": "LCB 수감자"
@@ -6741,6 +10283,26 @@
       "WRATH",
       "LUST",
       "SLOTH"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "SLOTH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Liu Assoc. South Section 6",
@@ -6779,6 +10341,26 @@
       "SLOTH",
       "GLUTTONY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "SLOTH",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "G Corp. Manager Corporal",
       "ko": "G사 일등대리"
@@ -6814,6 +10396,26 @@
       "LUST",
       "GLUTTONY",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "R.B. Sous-chef",
@@ -6861,6 +10463,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "ENVY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Rosespanner Workshop Fixer",
       "ko": "장미스패너 공방 해결사"
@@ -6891,6 +10513,26 @@
       "SLOTH",
       "GLUTTONY",
       "GLOOM"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Zwei Assoc. South Section 4",
@@ -6936,6 +10578,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Twinhook Pirates First Mate",
       "ko": "쌍갈고리 해적단 부선장"
@@ -6973,6 +10635,26 @@
       "SLOTH",
       "GLOOM"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "GLOOM",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Kurokumo Clan Captain",
       "ko": "흑운회 부조장"
@@ -7008,6 +10690,26 @@
       "LUST",
       "GLOOM",
       "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "ENVY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Edgar Family Heir",
@@ -7052,6 +10754,26 @@
       "GLUTTONY",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "LUST",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "The Priest of La Manchaland",
       "ko": "라만차랜드 신부"
@@ -7087,6 +10809,26 @@
     "sins": [
       "WRATH",
       "LUST"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "copies": 3,
+        "sin": "LUST",
+        "slot": 1
+      },
+      {
+        "attackType": "Hit",
+        "copies": 2,
+        "sin": "WRATH",
+        "slot": 2
+      },
+      {
+        "attackType": "Hit",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Firefist Office Survivor",
@@ -7130,6 +10872,26 @@
       "PRIDE",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "PRIDE",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLUTTONY",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Heishou Pack - Si Branch",
       "ko": "흑수 - 사"
@@ -7169,6 +10931,26 @@
       "LUST",
       "SLOTH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "LUST",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Night Awls Capitano",
@@ -7211,6 +10993,26 @@
       "GLOOM",
       "PRIDE"
     ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "copies": 3,
+        "sin": "WRATH",
+        "slot": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Penetrate",
+        "copies": 1,
+        "sin": "PRIDE",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "Lobotomy E.G.O::Lamp",
       "ko": "로보토미 E.G.O:: 램프"
@@ -7252,6 +11054,26 @@
       "GLOOM",
       "ENVY"
     ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "GLUTTONY",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "GLOOM",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "ENVY",
+        "slot": 3
+      }
+    ],
     "title": {
       "en": "LCE E.G.O:: AEDD",
       "ko": "LCE E.G.O:: AEDD"
@@ -7291,6 +11113,26 @@
       "WRATH",
       "SLOTH",
       "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Slash",
+        "copies": 3,
+        "sin": "SLOTH",
+        "slot": 1
+      },
+      {
+        "attackType": "Slash",
+        "copies": 2,
+        "sin": "PRIDE",
+        "slot": 2
+      },
+      {
+        "attackType": "Slash",
+        "copies": 1,
+        "sin": "WRATH",
+        "slot": 3
+      }
     ],
     "title": {
       "en": "Dawn Office Rep",

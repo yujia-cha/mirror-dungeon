@@ -26,6 +26,7 @@ import { AppShell } from '../shell/AppShell.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { RoutePlanPanel } from '../shell/RoutePlanPanel.tsx';
 import { GoalsPanel } from '../shell/GoalsPanel.tsx';
+import { SkillGiftsPanel } from '../shell/SkillGiftsPanel.tsx';
 import { RouteOptions } from '../shell/RouteOptions.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
@@ -408,6 +409,8 @@ describe('run store', () => {
 
   it('keeps panel widths inside the band they may be dragged to', () => {
     expect(sanitizeUi({ rightTab: 'goals' }).rightTab).toBe('goals');
+    expect(sanitizeUi({ rightTab: 'skills' }).rightTab).toBe('skills');
+    expect(sanitizeUi({ rightTab: 'nope' }).rightTab).toBe('plan');
     // The old 「루트 설정」 tab lives under the items tab now.
     expect(sanitizeUi({ leftTab: 'settings' }).leftTab).toBe('gifts');
     expect(sanitizeUi({}).leftWidth).toBe(336);
@@ -1777,6 +1780,11 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('tab', { name: '목표' }));
     expect(screen.getByTestId('goals-empty')).toBeInTheDocument();
     expect(useApp.getState().ui.rightTab).toBe('goals');
+    // A fourth tab must reach its own panel, not fall through to the tracker.
+    await user.click(screen.getByRole('tab', { name: '스킬' }));
+    expect(screen.getByTestId('skills-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('tracker')).toBeNull();
+    expect(useApp.getState().ui.rightTab).toBe('skills');
     await user.click(screen.getByRole('tab', { name: '추적기' }));
     expect(screen.getByTestId('tracker')).toBeInTheDocument();
     expect(useApp.getState().ui.rightTab).toBe('tracker');
@@ -2720,6 +2728,95 @@ describe('GoalsPanel', () => {
     await user.click(within(goals()).getAllByTestId('gift-tile-info')[0]!);
     expect(dialog()).toBeInTheDocument();
     await close();
+  });
+});
+
+describe('SkillGiftsPanel', () => {
+  const groups = () => screen.getAllByTestId('skill-group-body');
+  const groupFor = (subject: string) =>
+    groups().find((el) => el.getAttribute('data-subject') === subject)!;
+  const giftIn = (root: HTMLElement, id: number) =>
+    within(root).getAllByTestId('skill-gift').find((el) => el.getAttribute('data-gift') === String(id));
+
+  it('groups the gifts a deployed party sets off by the subject their text names', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    renderPlanned(<SkillGiftsPanel />);
+    // 10101 이상 LCB 수감자 is slot 1 우울/참격, slot 2 질투/관통, slot 3 나태/참격.
+    const gloom = groupFor('GLOOM');
+    const owners = within(gloom).getAllByTestId('skill-owner');
+    expect(owners.some((el) => el.getAttribute('data-identity') === '10101' && el.getAttribute('data-slot') === '1')).toBe(true);
+    // 9013 부적 묶음 keys off 참격, so it sits under Slash and not under a sin.
+    expect(giftIn(groupFor('Slash'), 9013)).toBeDefined();
+    expect(giftIn(gloom, 9013)).toBeUndefined();
+  });
+
+  it('lists the sins in the game order, then the attack types', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    renderPlanned(<SkillGiftsPanel />);
+    const order = groups().map((el) => el.getAttribute('data-subject'));
+    const expected = ['WRATH', 'LUST', 'SLOTH', 'GLUTTONY', 'GLOOM', 'PRIDE', 'ENVY', 'Slash', 'Penetrate', 'Hit'];
+    expect(order).toEqual(expected.filter((subject) => order.includes(subject)));
+  });
+
+  it('puts what the skill sets off before what it merely strengthens', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    renderPlanned(<SkillGiftsPanel />);
+    for (const group of groups()) {
+      const effects = within(group).getAllByTestId('skill-gift').map((el) => el.getAttribute('data-effect'));
+      expect(effects).toEqual([...effects].sort((a, b) => Number(a === 'boost') - Number(b === 'boost')));
+    }
+  });
+
+  it('shows a slot-limited gift only under the skills that slot has (9195 구름무늬 호리병)', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    renderPlanned(<SkillGiftsPanel />);
+    const row = giftIn(groupFor('Slash'), 9195)!;
+    expect(row).toBeDefined();
+    expect(within(row).getByTestId('skill-gift-slots')).toHaveAttribute('data-slots', '1');
+  });
+
+  it('prints a 편성 restriction as a caveat and never filters on it (9193 닳고 닳은 숫돌)', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    renderPlanned(<SkillGiftsPanel />);
+    const row = giftIn(groupFor('Slash'), 9193)!;
+    // 10101 sits first in this deck, not third, and the row is here all the same.
+    expect(within(row).getByTestId('skill-gift-formation')).toHaveAttribute('data-formation', '3');
+  });
+
+  it('opens the gift sheet the provider hosts when the name is pressed', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(LCB_DECK, 6);
+    renderPlanned(<SkillGiftsPanel />);
+    const row = giftIn(groupFor('Slash'), 9013)!;
+    await user.click(within(row).getByRole('button', { name: '부적 묶음' }));
+    expect(screen.getByTestId('gift-detail')).toBeInTheDocument();
+  });
+
+  it('starts with the explanation folded and opens it on request', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(LCB_DECK, 6);
+    renderPlanned(<SkillGiftsPanel />);
+    const toggle = within(screen.getByTestId('skills-about')).getByRole('button');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('skills-about')).toHaveTextContent('편성 순서');
+  });
+
+  it('counts only who is deployed', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    const deployed = useApp.getState().deployed;
+    renderPlanned(<SkillGiftsPanel />);
+    const owners = screen.getAllByTestId('skill-owner').map((el) => Number(el.getAttribute('data-identity')));
+    expect(new Set(owners)).toEqual(new Set(deployed));
+  });
+
+  it('says so, with a way out, when nobody is deployed', () => {
+    renderPlanned(<SkillGiftsPanel onOpenDeck={() => undefined} />);
+    expect(screen.getByTestId('skills-empty')).toBeInTheDocument();
+    expect(screen.queryAllByTestId('skill-group-body')).toEqual([]);
+    // The explanation is what makes an empty panel legible, so it stays.
+    expect(screen.getByTestId('skills-about')).toBeInTheDocument();
   });
 });
 
