@@ -241,7 +241,8 @@ describe('gifts', () => {
   it('parses the expected number of machine-evaluable conditions', () => {
     const counts = { keywordSkillCount: 0, factionCount: 0, fullResonance: 0, unparsed: 0 };
     for (const gift of gifts) for (const c of gift.conditions) counts[c.type] += 1;
-    expect(counts).toEqual({ keywordSkillCount: 39, factionCount: 19, fullResonance: 1, unparsed: 1 });
+    // 39 → 46: the seven gates the parser used to drop (혈찬·탄환·두 키워드 형태). Nothing is unparsed now.
+    expect(counts).toEqual({ keywordSkillCount: 46, factionCount: 19, fullResonance: 1, unparsed: 0 });
   });
 
   it('resolves every faction named by a condition to a known faction id', () => {
@@ -317,7 +318,10 @@ describe('identities', () => {
 
   it('keeps 탄환 out of the gift keywords, since no gift, pack or start pool has it', () => {
     expect(enums.keywords.map((k) => k.id)).not.toContain('Bullet');
-    expect(enums.identityOnlyKeywords).toEqual([{ id: 'Bullet', name: { ko: '탄환', en: 'Ammo' } }]);
+    expect(enums.identityOnlyKeywords).toEqual([
+      { id: 'Bullet', name: { ko: '탄환', en: 'Ammo' } },
+      { id: 'BloodDinner', name: { ko: '혈찬', en: 'Bloodfeast' } },
+    ]);
     expect(gifts.some((g) => (g.keyword as string) === 'Bullet')).toBe(false);
     expect(packs.some((p) => (p.keywordAffinity as string | null) === 'Bullet')).toBe(false);
     expect(Object.keys(rules.startGift.poolsByKeyword)).not.toContain('Bullet');

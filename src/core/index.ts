@@ -753,7 +753,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     indexes,
   );
 
-  const unmet = conditions.filter((c) => !c.satisfied);
+  // Only real gates can go unmet; a count with no threshold has nothing to fail.
+  const unmet = conditions.filter((c) => c.gate && !c.satisfied);
   if (unmet.length > 0) {
     warnings.push({
       code: 'condition-unmet',
@@ -796,16 +797,6 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       detail: {
         ko: `재료가 ${data.rules.fusion.maxShopSlots}개를 넘어 일반 상점에서는 한 번에 조합할 수 없습니다. 하위 재료부터 조합하세요.`,
         en: `Needs more than ${data.rules.fusion.maxShopSlots} fusion slots, so fuse the sub-ingredients first.`,
-      },
-    });
-  }
-
-  if (stats.identitiesWithoutKeywords.length > 0) {
-    warnings.push({
-      code: 'identity-keywords-unknown',
-      detail: {
-        ko: `키워드를 확인할 수 없는 인격이 ${stats.identitiesWithoutKeywords.length}명 있어 조건 판정이 낮게 나올 수 있습니다.`,
-        en: `${stats.identitiesWithoutKeywords.length} identity/identities have unknown keywords, so condition counts may be low.`,
       },
     });
   }

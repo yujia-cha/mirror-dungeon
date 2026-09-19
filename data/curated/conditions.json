@@ -5,7 +5,8 @@
       "conditions": [
         {
           "type": "keywordSkillCount",
-          "keyword": "Sinking",
+          "keywords": ["Sinking"],
+          "verb": "inflict",
           "min": 6,
           "scope": "deployed",
           "includesSpecial": false,

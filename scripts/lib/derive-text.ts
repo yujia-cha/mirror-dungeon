@@ -10,7 +10,7 @@
  * `tests/text-derivation.test.ts` calibrates this against every identity that has both, and the
  * property it holds to is one-sided: the text may miss a keyword, it must never invent one.
  */
-import { IDENTITY_KEYWORDS, type IdentityKeywordId } from '../../src/core/schema.ts';
+import { CONSUMED_KEYWORDS, IDENTITY_KEYWORDS, type IdentityKeywordId } from '../../src/core/schema.ts';
 import { IDENTITY_KEYWORD_BY_KO, type IdentityKeywordCounts } from './derive.ts';
 import type { LocalizedSkill } from './raw.ts';
 
@@ -29,6 +29,16 @@ const GRANTS = /부여|증가/;
  * keywords (10109 약지 점묘파 스튜던트 is the worst case).
  */
 const ENUMERATION = /중|무작위/;
+
+/**
+ * The keywords a 「… 부여/증가」 sentence may claim — everything but the consumed resources.
+ *
+ * 혈찬 is written in the same bracketed form and the same skills also say 「[BloodDinner] 60 증가」,
+ * which is the identity *generating* it, not inflicting anything. Without this guard four
+ * 라만차랜드 identities would gain a 혈찬 keyword from that line and the text derivation would start
+ * claiming what the static data never says — the one-sided property the backfill rests on.
+ */
+const INFLICTABLE = new Set<string>(IDENTITY_KEYWORDS.filter((k) => !CONSUMED_KEYWORDS.includes(k as never)));
 
 /** Every ammo buff the game ships carries `Bullet` in its id, exactly as in `derive.ts`. */
 const AMMO_BUFF_ID = /Bullet/;
@@ -119,7 +129,7 @@ export function keywordsInSkillText(
       if (!token) continue;
       const variant = specialVariants.get(token);
       if (variant) special.add(variant);
-      else if ((IDENTITY_KEYWORDS as readonly string[]).includes(token)) base.add(token as IdentityKeywordId);
+      else if (INFLICTABLE.has(token)) base.add(token as IdentityKeywordId);
     }
   }
   // 탄환 is spent, not inflicted, so it is never written as 「부여」. Its presence anywhere in the
@@ -193,4 +203,45 @@ export function skillsOfIdentity(
   return [...skills.values()]
     .filter((s) => identityIdOfSkill(s.id) === identityId)
     .sort((a, b) => a.id - b.id);
+}
+
+/**
+ * 「[BloodDinner]을 최대 30 소모하여 …」 — a skill spending 혈찬. The window is short so the 소모
+ * has to belong to this mention and not to a later clause on the same line.
+ */
+const CONSUMES = new RegExp(`\\[(${CONSUMED_KEYWORDS.join('|')})\\][^\n]{0,20}소모`);
+
+/**
+ * The keywords an identity's skills SPEND, read from the Korean sentence.
+ *
+ * This is separate from the inflict-side derivation on purpose, and it is the only sound signal we
+ * have. The game declares nothing machine-readable for 혈찬: there is no `buffKeyword` and no
+ * `[necessary:…]` token (that grammar is used for ammo and nothing else), and the script names
+ * conflate the three mechanics — `GiveBuffOnUseWithBloodDinner…` consumes,
+ * `AddBloodDinnerOnKillTarget…` generates, `GiveBuffOnUseByAccumulatedBloodDinner…` reads the
+ * accumulator. Matching the id in a script name would therefore miss 10513 뫼르소 and 10911 로쟈,
+ * whose consuming skills never name it, and would wrongly count the other three's generating ones.
+ */
+export function deriveConsumedKeywordsFromText(
+  skills: LocalizedSkill[],
+  attackSkillIds?: Iterable<number>,
+): IdentityKeywordCounts {
+  const attacks = attackSkillIds ? new Set(attackSkillIds) : null;
+  const counts = new Map<IdentityKeywordId, number>();
+  for (const skill of skills) {
+    if (attacks ? !attacks.has(skill.id) : !looksLikeAttackSkill(skill)) continue;
+    const found = new Set<IdentityKeywordId>();
+    for (const line of linesOf(skill)) {
+      const match = CONSUMES.exec(line);
+      if (match?.[1]) found.add(match[1] as IdentityKeywordId);
+    }
+    for (const kw of found) counts.set(kw, (counts.get(kw) ?? 0) + 1);
+  }
+  const out: IdentityKeywordCounts = {};
+  // No 특수 form exists for a consumed keyword: `BattleKeywords*` declares no 「특수 혈찬」.
+  for (const kw of CONSUMED_KEYWORDS) {
+    const n = counts.get(kw) ?? 0;
+    if (n > 0) out[kw] = { skills: n, specialSkills: 0 };
+  }
+  return out;
 }

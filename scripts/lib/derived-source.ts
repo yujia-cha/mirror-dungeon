@@ -29,6 +29,12 @@ export interface DerivedIdentity {
   /** Release date, `YYYY-MM-DD`. The only freshness signal any source gives us per identity. */
   date?: string;
   skillKeywordList?: string[];
+  /**
+   * Every buff id this source says the identity's skills touch — `["AttackDown","Sinking",…]`.
+   * Wider than `skillKeywordList`: it is not filtered to attack skills and it uses raw game ids,
+   * so it cannot replace our derivation. It is exact about *absence*, which is what we use it for.
+   */
+  statuses?: string[];
   /** Exactly the base attack skills — the counterpart of the static `attributeList`. */
   skillTypes?: DerivedSkill[];
   defenseSkillTypes?: DerivedSkill[];
@@ -102,6 +108,16 @@ export function derivedKeywords(entry: DerivedIdentity): Set<IdentityKeywordId> 
     if (keyword) out.add(keyword);
   }
   return out;
+}
+
+/**
+ * The raw buff ids this source says the identity touches, whatever the skill. We never derive from
+ * it — it does not separate attack skills from passives, nor inflicting from spending — but an id
+ * missing here is strong evidence the identity does not touch it at all, which is how the build
+ * checks that an identity we derive no keyword for really has none.
+ */
+export function derivedStatuses(entry: DerivedIdentity): Set<string> {
+  return new Set(entry.statuses ?? []);
 }
 
 /** The ids of the base attack skills, which this source lists outright. */

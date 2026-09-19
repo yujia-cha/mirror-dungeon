@@ -26,13 +26,16 @@ export interface GiftEntry {
 }
 
 export function classifyGift(gift: Gift, reports: ConditionReport[]): GiftEntry {
-  if (reports.length === 0) return { gift, reports, group: 'other', ratio: null, lack: null, unjudgeable: false };
-  const unjudgeable = reports.some((r) => r.have === null || r.need === null);
-  const judgeable = reports.filter((r) => r.have !== null && r.need !== null && r.need > 0);
+  // A count with no threshold is not a bar to clear, so it neither activates a gift nor holds one
+  // back: a gift with only those sorts exactly like a gift with no condition at all.
+  const gates = reports.filter((r) => r.gate);
+  if (gates.length === 0) return { gift, reports, group: 'other', ratio: null, lack: null, unjudgeable: false };
+  const unjudgeable = gates.some((r) => r.have === null || r.need === null);
+  const judgeable = gates.filter((r) => r.have !== null && r.need !== null && r.need > 0);
   const ratio =
     judgeable.length > 0 ? Math.min(...judgeable.map((r) => Math.min(1, r.have! / r.need!))) : null;
   const lack = judgeable.filter((r) => !r.satisfied).sort((a, b) => b.have! / b.need! - a.have! / a.need!)[0] ?? null;
-  const group: GiftGroup = !unjudgeable && reports.every((r) => r.satisfied) ? 'active' : 'other';
+  const group: GiftGroup = !unjudgeable && gates.every((r) => r.satisfied) ? 'active' : 'other';
   return { gift, reports, group, ratio, lack, unjudgeable };
 }
 

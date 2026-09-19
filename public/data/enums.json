@@ -536,6 +536,13 @@
         "en": "Ammo",
         "ko": "탄환"
       }
+    },
+    {
+      "id": "BloodDinner",
+      "name": {
+        "en": "Bloodfeast",
+        "ko": "혈찬"
+      }
     }
   ],
   "keywords": [

@@ -6,6 +6,8 @@ import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions, planRout
 import { planToText } from '../lib/plan-text.ts';
 import { unresolvedDetailText } from '../lib/unresolved-text.ts';
 import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
+import { conditionText } from '../condition-text.ts';
+import { judgementOf } from '../lib/judgement.ts';
 import { blockedGifts, entanglements } from '../lib/entangle.ts';
 import { classifyGift } from '../lib/gift-priority.ts';
 import { identityKeywordLabel, renderEffect, withJosa } from '../format.ts';
@@ -192,5 +194,40 @@ describe('korean particles', () => {
     expect(withJosa('Soothe the Dead', '을/를', 'ko')).toBe('Soothe the Dead을(를)');
     // English sentences carry no particle at all.
     expect(withJosa('Soothe the Dead', '을/를', 'en')).toBe('Soothe the Dead');
+  });
+});
+
+describe('special keyword conditions', () => {
+  const laManchaland = data.identities.filter((i) => i.keywords.BloodDinner).map((i) => i.id);
+  const withBloodfiends = analyseDeck([...laManchaland, ...BURN_DECK].slice(0, 12), indexes, data.rules.deployment, laManchaland);
+  const reportFor = (id: number) => evaluateConditions([id], withBloodfiends, indexes)[0]!;
+
+  it('writes the 소모 verb, and 「또는」 between two keywords', () => {
+    expect(conditionText(reportFor(9795), data.enums, 'ko')).toMatch(/^혈찬을 소모하는 스킬 보유 인격/);
+    expect(conditionText(reportFor(9795), data.enums, 'en')).toMatch(/identities consume Bloodfeast/);
+    expect(conditionText(reportFor(9802), data.enums, 'ko')).toMatch(/^파열 또는 충전을 부여하는 공격 스킬 보유 인격/);
+  });
+
+  it('puts several keywords on one chip, the way factions already read', () => {
+    expect(conditionShort(reportFor(9802), data.enums, 'ko')).toMatch(/^파열\/충전 \d+\/6$/);
+    expect(conditionShort(reportFor(9803), data.enums, 'ko')).toMatch(/^파열\/호흡 \d+\/6$/);
+  });
+
+  it('shows a count with no bar, and draws no ring, when the gift only scales', () => {
+    const report = reportFor(9842);
+    expect(report.gate).toBe(false);
+    expect(conditionShort(report, data.enums, 'ko')).toBe('혈찬 5');
+    expect(conditionText(report, data.enums, 'ko')).toContain('수에 따라 강화');
+    expect(judgementOf([report])).toBeNull();
+    // and it neither activates the gift nor holds it back
+    expect(classifyGift(indexes.giftById.get(9842)!, [report])).toMatchObject({ group: 'other', ratio: null });
+  });
+
+  it('judges every gate a deck can decide, leaving only 완전 공명 unjudgeable', () => {
+    const unknown = data.gifts
+      .filter((g) => g.conditions.length > 0)
+      .filter((g) => judgementOf(evaluateConditions([g.id], withBloodfiends, indexes)) === 'unknown')
+      .map((g) => g.id);
+    expect(unknown).toEqual([9208]);
   });
 });

@@ -699,6 +699,20 @@ describe('DeckStep', () => {
     expect(screen.getByText('출격 / 편성 12인')).toBeInTheDocument();
   });
 
+  it('says nothing at all for an identity whose skills inflict no keyword', () => {
+    // 10201 파우스트 LCB 수감자 is one of the five that derive none, and it is in the default deck —
+    // so this is what a first-time visitor sees. It really does inflict none (its skills apply
+    // 마비·방어 레벨 감소 …, and the derived mirror agrees), so the old 「?」 chip and the
+    // 「조건 판정이 낮게 나올 수 있습니다」 notice both claimed something untrue.
+    useApp.getState().setDeck(defaultDeck(data), 6);
+    renderDeck();
+    expect(screen.queryByText('?')).toBeNull();
+    expect(screen.queryByText(/판정이 낮게/)).toBeNull();
+    expect(screen.queryByText(/키워드 미확인/)).toBeNull();
+    // The identities that do have keywords still show them.
+    expect(screen.getAllByTitle('침잠 부여 공격 스킬 보유').length).toBeGreaterThan(0);
+  });
+
   it('names each keyword on the identity chips without a skill count, marking the 특수 variants', async () => {
     const user = userEvent.setup();
     // 10614 거미집 약지 아비 uses 충전 and 특수 충전 (생체 재료); 10504 N사 큰 망치 only 못 (특수 출혈).

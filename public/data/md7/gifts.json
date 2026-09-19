@@ -9008,7 +9008,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Combustion",
+        "keywords": [
+          "Combustion"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -9016,7 +9018,8 @@
           "ko": "[화상] 횟수 또는 특수 화상을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -9171,7 +9174,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Laceration",
+        "keywords": [
+          "Laceration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -9179,7 +9184,8 @@
           "ko": "[출혈] 횟수 또는 특수 출혈을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -9334,7 +9340,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -9342,7 +9350,8 @@
           "ko": "[진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -9493,7 +9502,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Burst",
+        "keywords": [
+          "Burst"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -9501,7 +9512,8 @@
           "ko": "[파열] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -9648,7 +9660,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Sinking",
+        "keywords": [
+          "Sinking"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -9656,7 +9670,8 @@
           "ko": "[침잠] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -9803,7 +9818,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Breath",
+        "keywords": [
+          "Breath"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -9811,7 +9828,8 @@
           "ko": "[호흡] 횟수를 부여하거나 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -9966,7 +9984,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -9974,7 +9994,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -13716,7 +13737,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Combustion",
+        "keywords": [
+          "Combustion"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -13724,7 +13747,8 @@
           "ko": "[화상] 횟수 또는 특수 화상을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -13771,7 +13795,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Combustion",
+        "keywords": [
+          "Combustion"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -13779,7 +13805,8 @@
           "ko": "[화상] 및 특수 화상을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -13965,7 +13992,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Laceration",
+        "keywords": [
+          "Laceration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -13973,7 +14002,8 @@
           "ko": "[출혈] 횟수 또는 특수 출혈을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14020,7 +14050,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Laceration",
+        "keywords": [
+          "Laceration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14028,7 +14060,8 @@
           "ko": "[출혈] 및 특수 출혈을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14250,7 +14283,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14258,7 +14293,8 @@
           "ko": "[진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14296,7 +14332,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14304,7 +14342,8 @@
           "ko": "[진동] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14351,7 +14390,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14359,7 +14400,8 @@
           "ko": "[진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14528,7 +14570,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Burst",
+        "keywords": [
+          "Burst"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14536,7 +14580,8 @@
           "ko": "[파열] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14574,7 +14619,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Burst",
+        "keywords": [
+          "Burst"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14582,7 +14629,8 @@
           "ko": "[파열] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14629,7 +14677,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Burst",
+        "keywords": [
+          "Burst"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14637,7 +14687,8 @@
           "ko": "[파열] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14867,7 +14918,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Sinking",
+        "keywords": [
+          "Sinking"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14875,7 +14928,8 @@
           "ko": "[침잠] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14913,7 +14967,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Sinking",
+        "keywords": [
+          "Sinking"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14921,7 +14977,8 @@
           "ko": "[침잠] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -14968,7 +15025,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Sinking",
+        "keywords": [
+          "Sinking"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -14976,7 +15035,8 @@
           "ko": "[침잠] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -15170,7 +15230,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Breath",
+        "keywords": [
+          "Breath"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -15178,7 +15240,8 @@
           "ko": "[호흡] 횟수를 부여하거나 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -15225,7 +15288,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Breath",
+        "keywords": [
+          "Breath"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -15233,7 +15298,8 @@
           "ko": "[호흡] 횟수를 부여하거나 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -15385,7 +15451,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -15393,7 +15461,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -15431,7 +15500,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -15439,7 +15510,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -15486,7 +15558,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -15494,7 +15568,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -17132,7 +17207,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Laceration",
+        "keywords": [
+          "Laceration"
+        ],
         "min": 5,
         "scope": "formation",
         "text": {
@@ -17145,7 +17222,8 @@
             "min": 10
           }
         ],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -17382,7 +17460,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Sinking",
+        "keywords": [
+          "Sinking"
+        ],
         "min": 6,
         "scope": "formation",
         "text": {
@@ -17395,11 +17475,14 @@
             "min": 10
           }
         ],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       },
       {
         "includesSpecial": true,
-        "keyword": "Sinking",
+        "keywords": [
+          "Sinking"
+        ],
         "min": 10,
         "scope": "formation",
         "text": {
@@ -17407,7 +17490,8 @@
           "ko": "[침잠] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 10인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -17618,7 +17702,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Combustion",
+        "keywords": [
+          "Combustion"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -17626,7 +17712,8 @@
           "ko": "[화상] 횟수 또는 특수 화상을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -18339,7 +18426,32 @@
       "packs": [],
       "startKeyword": null
     },
-    "conditions": [],
+    "conditions": [
+      {
+        "includesSpecial": false,
+        "keywords": [
+          "Bullet"
+        ],
+        "min": 2,
+        "scope": "formation",
+        "text": {
+          "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that gain or spend [Ammo] (except E.G.O Skills; counts all units in the Team)\n\n- At 2+...\nOn Use with a Skill that gains or spends [Ammo]: Gain 2 [Haste] and 4 [Offense Level Up] next turn (once per Identity per turn)\n\n- At 5+...\nSkills used by Identities that gain or spend [Ammo]: Clash",
+          "ko": "[탄환]을 얻거나 소모하는 인격이 편성된 수에 따라"
+        },
+        "tiers": [
+          {
+            "label": "5인 이상",
+            "min": 5
+          },
+          {
+            "label": "8인 이상",
+            "min": 8
+          }
+        ],
+        "type": "keywordSkillCount",
+        "verb": "consume"
+      }
+    ],
     "desc": {
       "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that gain or spend [Ammo] (except E.G.O Skills; counts all units in the Team)\n\n- At 2+...\nOn Use with a Skill that gains or spends [Ammo]: Gain 2 [Haste] and 4 [Offense Level Up] next turn (once per Identity per turn)\n\n- At 5+...\nSkills used by Identities that gain or spend [Ammo]: Clash Power +1, deal +10% damage\nSkills that gain or spend [Ammo]: Deal +(100 / # of Coins)% damage\nIf an affected unit is out of [Ammo], gain 4 [Ammo] at the next Turn Start (once per Identity per Encounter)\n\n- At 8+...\nTurn Start: Apply 1 [Desperado] to Identities that gain or spend [Ammo]\n• If the affected unit did not spend [Ammo] last turn, apply 1 additional [Desperado]\nCombat End: deal (total sum of [Desperado] on all allies x 3) Pierce damage to 1 random enemy (max 30)\n• Then, repeat the above effect (number of Identities in the Team that gain or spend [Ammo] - 1) times",
       "ko": "[탄환]을 얻거나 소모하는 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함)\n\n- 2인 이상\n[탄환]을 얻거나 소모하는 스킬 사용 시 다음 턴에 [신속] 2, [공격 레벨 증가] 4 얻음 (인격별로 턴당 1회)\n\n- 5인 이상\n[탄환]을 얻거나 소모하는 인격이 사용하는 스킬의 합 위력 +1, 피해량 +10%\n[탄환]을 얻거나 소모하는 스킬의 피해량 +(100/코인 수)%\n[탄환]을 전부 소모했으면, 다음 턴 시작 시 [탄환] 4 얻음 (인격 별로 전투 당 1회)\n\n- 8인 이상\n턴 시작 시 [탄환]을 얻거나 소모하는 인격에게 [데스페라도] 1 부여\n• 이전 턴에 [탄환]을 소모하지 않았으면, [데스페라도] 1 추가 부여\n전투 종료 시 무작위 적 1명에게 (아군이 보유한 모든 [데스페라도]의 합 x 3)만큼 관통 피해를 입힘 (최대 30)\n• 이후, 이 효과를 (편성된 수 - 1)만큼 반복함"
@@ -22360,7 +22472,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -22368,7 +22482,8 @@
           "ko": "[진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -22415,7 +22530,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -22423,7 +22540,8 @@
           "ko": "[진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -22470,7 +22588,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -22478,7 +22598,8 @@
           "ko": "[진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -22525,7 +22646,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Vibration",
+        "keywords": [
+          "Vibration"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -22533,7 +22656,8 @@
           "ko": "[진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -22892,7 +23016,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -22900,7 +23026,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -22947,7 +23074,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -22955,7 +23084,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -23002,7 +23132,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -23010,7 +23142,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -23057,7 +23190,9 @@
     "conditions": [
       {
         "includesSpecial": true,
-        "keyword": "Charge",
+        "keywords": [
+          "Charge"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -23065,7 +23200,8 @@
           "ko": "[충전] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -25063,7 +25199,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Burst",
+        "keywords": [
+          "Burst"
+        ],
         "min": 5,
         "scope": "deployed",
         "text": {
@@ -25071,7 +25209,8 @@
           "ko": "[파열] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -25164,11 +25303,19 @@
     },
     "conditions": [
       {
+        "includesSpecial": false,
+        "keywords": [
+          "BloodDinner"
+        ],
+        "min": 3,
+        "scope": "deployed",
         "text": {
           "en": "Turn Start: This Gift activates for the whole Encounter when 3 or more Identities have Skills that consume [Bloodfeast]. (except E.G.O Skills; except Backup Units)\n\nCombat Start: if the target getting attacked by an Identity that consumes [Bloodfeast] has 30+ [Bleed] Potency, reduce their [Bleed] Potency to 15. Then, increase [Bloodfeast] equal to the amount of [Bleed] Potency re",
-          "ko": "턴 시작 시, [혈찬]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)"
+          "ko": "[혈찬]을 소모하는 스킬을 보유한 인격이 3인 이상"
         },
-        "type": "unparsed"
+        "tiers": [],
+        "type": "keywordSkillCount",
+        "verb": "consume"
       }
     ],
     "desc": {
@@ -25210,7 +25357,9 @@
     "conditions": [
       {
         "includesSpecial": false,
-        "keyword": "Breath",
+        "keywords": [
+          "Breath"
+        ],
         "min": 5,
         "scope": "formation",
         "text": {
@@ -25218,7 +25367,8 @@
           "ko": "[호흡] 횟수를 부여 또는 획득하는 공격 스킬을 보유한 인격이 5인 이상"
         },
         "tiers": [],
-        "type": "keywordSkillCount"
+        "type": "keywordSkillCount",
+        "verb": "inflict"
       }
     ],
     "desc": {
@@ -25436,7 +25586,29 @@
       ],
       "startKeyword": null
     },
-    "conditions": [],
+    "conditions": [
+      {
+        "includesSpecial": false,
+        "keywords": [
+          "Burst",
+          "Charge"
+        ],
+        "min": 6,
+        "scope": "formation",
+        "text": {
+          "en": "On Hit with Skills that consume [Charge] Count: inflict 1 [Rupture] (3 times per Skill; including 'Unique Charge')\n\nThis E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that apply [Rupture] or gain [Charge]. (except E.G.O Skills; counts all units in the Team)\n\n- At 6+...\nWhen dealing [Rupture] damage to enemies, gain +1 [Charge] Count (3 times p",
+          "ko": "[파열], [충전]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라"
+        },
+        "tiers": [
+          {
+            "label": "8인 이상",
+            "min": 8
+          }
+        ],
+        "type": "keywordSkillCount",
+        "verb": "inflict"
+      }
+    ],
     "desc": {
       "en": "On Hit with Skills that consume [Charge] Count: inflict 1 [Rupture] (3 times per Skill; including 'Unique Charge')\n\nThis E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that apply [Rupture] or gain [Charge]. (except E.G.O Skills; counts all units in the Team)\n\n- At 6+...\nWhen dealing [Rupture] damage to enemies, gain +1 [Charge] Count (3 times per Skill)\n\n- At 8+...\nOn Hit with Skills that consume [Charge] Count, inflict +1 [Rupture] Count (3 times per Skill; including 'Unique Charge')",
       "ko": "[충전] 횟수를 소모하는 스킬 적중 시 [파열] 1 부여 (스킬 당 3회 발동. 특수 충전을 포함)\n\n[파열], [충전]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함).\n\n- 6인 이상\n적에게 [파열] 피해를 입히면, [충전] 횟수 1 증가 (스킬 당 3회)\n\n- 8인 이상\n[충전] 횟수를 소모하는 스킬 적중 시 [파열] 횟수 1 증가 (스킬 당 3회. 특수 충전을 포함)"
@@ -25473,7 +25645,29 @@
       ],
       "startKeyword": null
     },
-    "conditions": [],
+    "conditions": [
+      {
+        "includesSpecial": false,
+        "keywords": [
+          "Burst",
+          "Breath"
+        ],
+        "min": 6,
+        "scope": "formation",
+        "text": {
+          "en": "Every Turn Start: inflict 3 [Rupture] Potency and +1 [Rupture] Count against all enemies (for Focused Encounters, all Parts)\n\nThis E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that apply [Rupture] or gain [Poise]. (except E.G.O Skills; counts all units in the Team)\n\n- At 6+...\nWhen [Rupture] damage occurs On Hit with a Skill, gain +1 [Poise] ",
+          "ko": "[파열], [호흡]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라"
+        },
+        "tiers": [
+          {
+            "label": "10인 이상",
+            "min": 10
+          }
+        ],
+        "type": "keywordSkillCount",
+        "verb": "inflict"
+      }
+    ],
     "desc": {
       "en": "Every Turn Start: inflict 3 [Rupture] Potency and +1 [Rupture] Count against all enemies (for Focused Encounters, all Parts)\n\nThis E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that apply [Rupture] or gain [Poise]. (except E.G.O Skills; counts all units in the Team)\n\n- At 6+...\nWhen [Rupture] damage occurs On Hit with a Skill, gain +1 [Poise] Count (3 times per Skill)\n\n- At 10+...\nOn Crit with a Skill, inflict +1 [Rupture] Count (3 times per Skill)",
       "ko": "매 턴 시작 시 모든 적에게 [파열] 위력 3 부여, [파열] 횟수 1 증가 (집중 전투일 경우, 모든 부위에 적용).\n\n[파열], [호흡]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함).\n\n- 6인 이상\n스킬 적중 시 [파열] 피해가 발생했다면, [호흡] 횟수 1 얻음 (스킬 당 3회)\n\n- 10인 이상\n스킬 적중 시 크리티컬이 발생했다면, [파열] 횟수 1 증가 (스킬 당 3회)"
@@ -25510,7 +25704,24 @@
       ],
       "startKeyword": null
     },
-    "conditions": [],
+    "conditions": [
+      {
+        "includesSpecial": false,
+        "keywords": [
+          "Burst",
+          "Breath"
+        ],
+        "min": 12,
+        "scope": "formation",
+        "text": {
+          "en": "On Hit against enemies with 5+ [Rupture] Potency: gain 1 [Poise] Potency and +1 [Poise] Count (3 times per Skill)\n\nThis E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that apply [Rupture] or gain [Poise]. (except E.G.O Skills; counts all units in the Team)\n\nOn Hit with a Skill: if target has 20+ [Rupture], deal +10% damage on Critical Hit (a",
+          "ko": "[파열], [호흡]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라"
+        },
+        "tiers": [],
+        "type": "keywordSkillCount",
+        "verb": "inflict"
+      }
+    ],
     "desc": {
       "en": "On Hit against enemies with 5+ [Rupture] Potency: gain 1 [Poise] Potency and +1 [Poise] Count (3 times per Skill)\n\nThis E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that apply [Rupture] or gain [Poise]. (except E.G.O Skills; counts all units in the Team)\n\nOn Hit with a Skill: if target has 20+ [Rupture], deal +10% damage on Critical Hit (additional +3% damage on Critical Hit for every 1 Deployed Identity that fit the above condition)\n\n- At 12+...\nOn Hit with a Skill: if it hit Critically, remove 1 random removable negative effect applied to self (once per turn, per Identity)",
       "ko": "[파열] 위력이 5 이상 부여된 적에게 공격 적중 시 [호흡] 위력 1을 얻고, 자신의 [호흡] 횟수 1 증가 (스킬당 최대 3회).\n\n[파열], [호흡]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함).\n\n스킬 적중 시 대상의 [파열]이 20 이상이면, 크리티컬 피해량 +10% (편성 인원 수 1명당 크리티컬 피해량 3% 추가로 증가)\n\n- 12인 이상\n스킬 적중 시 크리티컬이 발생했다면, 자신에게 부여된 해제 가능한 부정적인 효과 중 무작위 1개 제거 (턴 당, 인격 당 1회)"
@@ -26583,7 +26794,23 @@
       ],
       "startKeyword": null
     },
-    "conditions": [],
+    "conditions": [
+      {
+        "includesSpecial": false,
+        "keywords": [
+          "BloodDinner"
+        ],
+        "min": null,
+        "scope": "formation",
+        "text": {
+          "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [Bloodfeast] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nFirst Turn Start of a wave: increase [Bloodfeast] by (N x 20); then, apply 3 [Bleed] and +3 [Bleed] Count to all targets ([Blo",
+          "ko": "[혈찬]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라"
+        },
+        "tiers": [],
+        "type": "keywordSkillCount",
+        "verb": "consume"
+      }
+    ],
     "desc": {
       "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [Bloodfeast] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nFirst Turn Start of a wave: increase [Bloodfeast] by (N x 20); then, apply 3 [Bleed] and +3 [Bleed] Count to all targets ([Bloodfeast] increased by this effect is capped to 100 per activation)\n\nAllies take -(N x 10%) [Bleed] damage (min 1 [Bleed] damage; max 40%)\n- Reduced damage does not affect the amount of [Bloodfeast] increased\n\nEnemies take +(N x 5)% [Bleed] damage (max 20%)",
       "ko": "[혈찬]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)\n\n웨이브 첫 턴 시작 시, [혈찬]을 (편성된 수 x 20)만큼 생성하고, 모든 대상에게 [출혈], [출혈] 횟수를 3만큼 부여 (웨이브 첫 턴당 [혈찬] 생산량 최대 100)\n\n아군이 받는 [출혈] 피해량이 (편성된 수 x 10)% 감소 ([출혈] 최소 피해량 1. 최대 40%)\n- 감소된 피해량은 [혈찬]의 저장량에 영향을 주지 않음\n\n적이 받는 [출혈] 피해량이 (편성된 수 x 5)% 증가 (최대 20%)"
@@ -26620,7 +26847,23 @@
       ],
       "startKeyword": null
     },
-    "conditions": [],
+    "conditions": [
+      {
+        "includesSpecial": false,
+        "keywords": [
+          "BloodDinner"
+        ],
+        "min": null,
+        "scope": "formation",
+        "text": {
+          "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [Bloodfeast] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nEncounter Start: all allies gain (N - 2)[Hardblood Cast] (max 3)",
+          "ko": "[혈찬]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라"
+        },
+        "tiers": [],
+        "type": "keywordSkillCount",
+        "verb": "consume"
+      }
+    ],
     "desc": {
       "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [Bloodfeast] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nEncounter Start: all allies gain (N - 2)[Hardblood Cast] (max 3)",
       "ko": "[혈찬]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)\n\n스테이지 시작 시, 모든 아군이 [주조된 경혈]을 (편성된 수 - 2)만큼 얻음 (최대 3)"

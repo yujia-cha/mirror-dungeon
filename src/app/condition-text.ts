@@ -24,10 +24,22 @@ export function conditionText(report: ConditionReport, enums: Enums, lang: Lang)
 
   switch (report.subject.kind) {
     case 'keyword': {
-      const name = keywordName(report.subject.ids[0] as never, enums, lang);
+      const names = report.subject.ids.map((id) => keywordName(id as never, enums, lang));
+      const list = names.join(' 또는 ');
+      // 탄환·혈찬 are spent by a skill, not inflicted on anyone — 「소모하는」, not 「부여하는」.
+      const consume = report.subject.verb === 'consume';
+      const ko = consume ? `${josa(list, '을/를')} 소모하는` : `${josa(list, '을/를')} 부여하는 공격`;
+      const en = consume ? 'consume' : 'inflict';
+      // Without a threshold the sentence states the count and says what it is for: the gift is
+      // always on and only grows with it, so there is nothing to meet.
+      if (!report.gate) {
+        return lang === 'ko'
+          ? `${ko} 스킬 보유 인격 ${have}명${scopeSuffix} · 수에 따라 강화`
+          : `${have} identities ${en} ${names.join(' or ')}${scopeSuffix} · scales with the count`;
+      }
       return lang === 'ko'
-        ? `${josa(name, '을/를')} 부여하는 공격 스킬 보유 인격 ${have}/${need}${scopeSuffix}`
-        : `${have}/${need} identities inflict ${name}${scopeSuffix}`;
+        ? `${ko} 스킬 보유 인격 ${have}/${need}${scopeSuffix}`
+        : `${have}/${need} identities ${en} ${names.join(' or ')}${scopeSuffix}`;
     }
     case 'faction': {
       const names = report.subject.ids.map((id) => factionName(id, enums, lang));

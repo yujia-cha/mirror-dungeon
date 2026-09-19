@@ -1591,6 +1591,10 @@
     "id": 10310,
     "keywordSource": "derived",
     "keywords": {
+      "BloodDinner": {
+        "skills": 4,
+        "specialSkills": 0
+      },
       "Laceration": {
         "skills": 6,
         "specialSkills": 0
@@ -2889,6 +2893,10 @@
     "id": 10513,
     "keywordSource": "derived",
     "keywords": {
+      "BloodDinner": {
+        "skills": 2,
+        "specialSkills": 0
+      },
       "Burst": {
         "skills": 4,
         "specialSkills": 0
@@ -5266,6 +5274,10 @@
     "id": 10911,
     "keywordSource": "derived",
     "keywords": {
+      "BloodDinner": {
+        "skills": 2,
+        "specialSkills": 0
+      },
       "Burst": {
         "skills": 4,
         "specialSkills": 0
@@ -6475,6 +6487,10 @@
     "id": 11111,
     "keywordSource": "derived",
     "keywords": {
+      "BloodDinner": {
+        "skills": 3,
+        "specialSkills": 0
+      },
       "Laceration": {
         "skills": 3,
         "specialSkills": 0
@@ -7011,6 +7027,10 @@
     "id": 11210,
     "keywordSource": "derived",
     "keywords": {
+      "BloodDinner": {
+        "skills": 1,
+        "specialSkills": 0
+      },
       "Burst": {
         "skills": 3,
         "specialSkills": 0

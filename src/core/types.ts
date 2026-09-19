@@ -83,11 +83,17 @@ export interface DeckStats {
   /** The same, counting only the base keyword: what 「[Laceration]을 부여하는 …」 counts. */
   baseKeywordCounts: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number>>>;
   factionCounts: Record<'deployed' | 'formation' | 'reserve', Record<string, number>>;
+  /**
+   * The identities behind each count. A condition naming several keywords or factions counts
+   * DISTINCT identities — one who inflicts both 파열 and 충전 is one identity, not two — so the
+   * union has to be taken over ids and never by adding the counts above, which are these lengths.
+   */
+  keywordMembers: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number[]>>>;
+  baseKeywordMembers: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number[]>>>;
+  factionMembers: Record<'deployed' | 'formation' | 'reserve', Record<string, number[]>>;
   deployed: number[];
   reserve: number[];
   unknownIdentities: number[];
-  /** Identities whose keywords could not be derived, so counts may be too low. */
-  identitiesWithoutKeywords: number[];
 }
 
 export interface ConditionReport {
@@ -105,7 +111,14 @@ export interface ConditionReport {
     kind: 'keyword' | 'faction' | 'resonance' | 'text';
     ids: string[];
     scope: 'deployed' | 'formation' | 'reserve' | null;
+    /** How the skills use the keyword: 부여·획득 or 소모 (탄환·혈찬). Null off the keyword path. */
+    verb?: 'inflict' | 'consume';
   };
+  /**
+   * False when the sentence names no threshold — 「…인격이 편성된 수에 따라 기프트 효과 강화」.
+   * Such a condition states a number, not a bar: it is shown and never judged, and draws no ring.
+   */
+  gate: boolean;
   /** A plain fallback sentence for the CLI and for copy-as-text. */
   detail: { ko: string; en: string };
 }
@@ -214,7 +227,6 @@ export type WarningCode =
   | 'fusion-late'
   | 'fusion-slots'
   | 'search-capped'
-  | 'identity-keywords-unknown'
   | 'gift-observation-unverified'
   /** Pinned observations that were dropped: unknown, not observable, or over the limit. */
   | 'observation-trimmed'

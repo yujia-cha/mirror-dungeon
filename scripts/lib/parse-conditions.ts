@@ -12,8 +12,8 @@
  * Anything that looks like a threshold but does not match becomes an `unparsed` condition so the
  * UI can still show the sentence and `data/curated/conditions.json` can correct it.
  */
-import type { Condition, ConditionScope, Localized, StatusKeyword } from '../../src/core/schema.ts';
-import { STATUS_KEYWORDS } from '../../src/core/schema.ts';
+import type { Condition, ConditionScope, IdentityKeywordId, Localized, StatusKeyword } from '../../src/core/schema.ts';
+import { IDENTITY_KEYWORDS } from '../../src/core/schema.ts';
 import { stripRichText } from '../../src/core/text.ts';
 
 /** Internal status token -> Korean display name, used to recognise "특수 화상" style wording. */
@@ -27,7 +27,7 @@ const KEYWORD_KO: Record<StatusKeyword, string> = {
   Charge: '충전',
 };
 
-const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
+const IDENTITY_KEYWORD_SET = new Set<string>(IDENTITY_KEYWORDS);
 
 /** Strip Unity rich-text markup so the regexes see plain Korean. */
 export const stripMarkup = stripRichText;
@@ -43,13 +43,45 @@ function scopeFrom(sentence: string, tail: string): ConditionScope {
   return 'deployed';
 }
 
+/**
+ * The 「- N인 이상」 steps listed under a 「편성된 수에 따라」 gate, ascending and deduped.
+ *
+ * The scan runs to the end of the text: a gift states one such gate and then its steps, and no
+ * gift in the data states two (checked across the season). `tiersAfter` has the same property.
+ */
+function bulletTiers(text: string, from: number): number[] {
+  const out = new Set<number>();
+  BULLET_TIER_RE.lastIndex = 0;
+  for (const match of text.slice(from).matchAll(BULLET_TIER_RE)) out.add(Number(match[1]));
+  return [...out].sort((a, b) => a - b);
+}
+
 /** Look a little past the match for the parenthetical that names the scope. */
 function tailAfter(text: string, index: number): string {
   return text.slice(index, index + 90);
 }
 
+/**
+ * The subject of a keyword gate: one or more bracketed buff ids, a verb, and the unit counted.
+ *
+ *   「[Combustion] 횟수 또는 특수 화상을 부여하는 공격 스킬을 보유한 인격이 5인 이상」
+ *   「[BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상」        ← 소모, and no 「공격」
+ *   「[Bullet]을 얻거나 소모하는 인격이 편성된 수에 따라」             ← no 「스킬을 보유한」 at all
+ *   「[Burst], [Charge]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라」
+ *
+ * Every axis the game varies is optional here rather than baked in, because it varies
+ * independently: the verb, the 「공격」, the 「스킬을 보유한」, and whether the threshold is inline
+ * or left to the bullet list that follows. Group 1 holds the whole `[A], [B]` run — JS cannot
+ * capture a repeated group — and is rescanned for the ids.
+ */
 const KEYWORD_RE =
-  /\[([A-Za-z]+)\][^[\]\n]{0,80}?(?:부여|획득)(?:하거나\s*획득)?하는\s*공격\s*스킬을\s*보유한\s*인격이\s*(\d+)\s*(?:인|명)\s*이상/g;
+  /((?:\[[A-Za-z0-9_]+\]\s*,\s*)*\[[A-Za-z0-9_]+\])([^[\]\n]{0,80}?)((?:부여|획득|얻|소모)(?:하거나\s*(?:부여|획득|얻|소모))?)하는\s*(?:공격\s*)?(?:스킬을\s*보유한\s*)?인격이\s*(?:(\d+)\s*(?:인|명)\s*이상|편성된\s*수에\s*따라)/g;
+
+/** 「- 6인 이상」 bullet lines that carry the thresholds of a 「편성된 수에 따라」 gate. */
+const BULLET_TIER_RE = /^[-•]\s*(\d+)\s*(?:인|명)\s*이상/gm;
+
+/** The ids inside a `[A], [B]` run, in order. */
+const TOKEN_RE = /\[([A-Za-z0-9_]+)\]/g;
 
 /**
  * Faction clauses. The name can be a single faction or "A 또는 B"; we keep the raw Korean and
@@ -80,7 +112,7 @@ export interface ParseResult {
 function dedupeKey(c: Condition): string {
   switch (c.type) {
     case 'keywordSkillCount':
-      return `k:${c.keyword}:${c.min}:${c.scope}`;
+      return `k:${[...c.keywords].sort().join('+')}:${c.min ?? '*'}:${c.scope}:${c.verb}`;
     case 'factionCount':
       return `f:${[...c.factions].sort().join('|')}:${c.min}:${c.scope}`;
     case 'fullResonance':
@@ -122,19 +154,30 @@ export function parseConditions(desc: Localized, ctx: ParseContext): ParseResult
   KEYWORD_RE.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = KEYWORD_RE.exec(ko)) !== null) {
-    const token = m[1]!;
-    if (!STATUS_SET.has(token)) continue;
-    const keyword = token as StatusKeyword;
-    const min = Number(m[2]);
+    const keywords = [...m[1]!.matchAll(TOKEN_RE)]
+      .map((t) => t[1]!)
+      .filter((token): token is IdentityKeywordId => IDENTITY_KEYWORD_SET.has(token));
+    // A bracketed id we do not count — an identity-specific buff, a status the deck cannot supply.
+    if (keywords.length === 0) continue;
     const clause = m[0];
-    const tail = tailAfter(ko, m.index + clause.length);
+    const after = m.index + clause.length;
+    const tail = tailAfter(ko, after);
+    // 「얻거나 소모하는」 and 「소모하는」 both spend; everything else inflicts.
+    const verb = /소모/.test(m[3]!) ? 'consume' : 'inflict';
+    // No inline threshold means 「편성된 수에 따라」: the bullet list under it holds the steps, the
+    // smallest being the bar the gift needs at all. No bullets at all means there is no bar —
+    // the gift always works and only scales, so the condition is a count, not a gate.
+    const bullets = bulletTiers(ko, after);
+    const min = m[4] ? Number(m[4]) : (bullets[0] ?? null);
+    const rest = m[4] ? tiersAfter(ko, after, Number(m[4])) : bullets.slice(1).map((n) => ({ min: n, label: `${n}인 이상` }));
     push({
       type: 'keywordSkillCount',
-      keyword,
+      keywords,
+      verb,
       min,
       scope: scopeFrom(clause, tail),
-      includesSpecial: clause.includes(`특수 ${KEYWORD_KO[keyword]}`),
-      tiers: tiersAfter(ko, m.index + clause.length, min),
+      includesSpecial: keywords.some((k) => k in KEYWORD_KO && clause.includes(`특수 ${KEYWORD_KO[k as StatusKeyword]}`)),
+      tiers: rest,
       text: { ko: clause.trim(), en: en.trim().slice(0, 400) },
     });
   }

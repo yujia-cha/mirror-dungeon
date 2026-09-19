@@ -227,7 +227,7 @@ describe('deck conditions', () => {
     // 혈향도래 reads 「[Laceration] … 또는 특수 출혈 …」 over the formation, so 못 counts.
     const gift = indexes.giftById.get(9206)!;
     const condition = gift.conditions.find((c) => c.type === 'keywordSkillCount')!;
-    expect(condition).toMatchObject({ keyword: 'Laceration', scope: 'formation', includesSpecial: true });
+    expect(condition).toMatchObject({ keywords: ['Laceration'], scope: 'formation', includesSpecial: true });
     expect(evaluateConditions([9206], stats, indexes).find((r) => r.subject.kind === 'keyword')!.have).toBe(2);
     // The same sentence without 「또는 특수 출혈」 would not count it.
     const strict = buildIndexes({
@@ -239,6 +239,52 @@ describe('deck conditions', () => {
       ),
     });
     expect(evaluateConditions([9206], stats, strict).find((r) => r.subject.kind === 'keyword')!.have).toBe(1);
+  });
+
+  it('counts an identity once when a condition names two keywords', () => {
+    // 9802 전격부 wants 파열 OR 충전 over the formation. 10601 홍루 LCB 수감자 has 파열 and 침잠;
+    // an identity carrying both of a condition's keywords is still one identity.
+    const both = data.identities.filter((i) => i.keywords.Burst && i.keywords.Charge).map((i) => i.id);
+    expect(both.length).toBeGreaterThan(0);
+    const deck = [...both.slice(0, 2), 10101, 10301, 10401, 10501];
+    const stats = analyseDeck(deck, indexes, data.rules.deployment, deck);
+    const condition = data.gifts.find((g) => g.id === 9802)!.conditions[0]!;
+    const seen = new Set(deck.filter((id) => {
+      const kw = indexes.identityById.get(id)!.keywords;
+      return kw.Burst || kw.Charge;
+    }));
+    expect(evaluateConditions([9802], stats, indexes)[0]!.have).toBe(seen.size);
+    expect(condition).toMatchObject({ keywords: ['Burst', 'Charge'] });
+  });
+
+  it('counts 특수-only ammo for the 탄환 gate, which never says 「또는 특수 탄환」', () => {
+    // 10414 잔향・외로움 spends only 탄환 - 고독, so it is 특수-only. 데스페라도's sentence has no
+    // 「또는 특수」 — the game writes none for 탄환 — so honouring includesSpecial would drop the
+    // seven 특수-only ammo identities and read the gate as unreached on a full ammo deck.
+    const ammo = data.identities.filter((i) => i.keywords.Bullet).map((i) => i.id);
+    expect(ammo.length).toBe(13);
+    const stats = analyseDeck(ammo.slice(0, 12), indexes, data.rules.deployment, ammo.slice(0, 12));
+    const report = evaluateConditions([9235], stats, indexes)[0]!;
+    expect(data.gifts.find((g) => g.id === 9235)!.conditions[0]).toMatchObject({ includesSpecial: false });
+    expect(report.have).toBe(12);
+    expect(report.satisfied).toBe(true);
+  });
+
+  it('reports a count with no threshold as a number, not a gate', () => {
+    // 9842 scales with the count and has no bar, so there is nothing to meet or miss.
+    const deck = data.identities.filter((i) => i.keywords.BloodDinner).map((i) => i.id);
+    const stats = analyseDeck(deck, indexes, data.rules.deployment, deck);
+    const report = evaluateConditions([9842], stats, indexes)[0]!;
+    expect(report).toMatchObject({ gate: false, have: 5, need: null });
+  });
+
+  it('judges the 혈찬 gate against the deck instead of giving up on it', () => {
+    // 9795 wants three 혈찬 users among the deployed; it used to be unparsed and never judged.
+    const bloodfiends = data.identities.filter((i) => i.keywords.BloodDinner).map((i) => i.id);
+    const enough = analyseDeck(bloodfiends, indexes, data.rules.deployment, bloodfiends.slice(0, 3));
+    expect(evaluateConditions([9795], enough, indexes)[0]).toMatchObject({ have: 3, need: 3, satisfied: true });
+    const short = analyseDeck(bloodfiends, indexes, data.rules.deployment, bloodfiends.slice(0, 2));
+    expect(evaluateConditions([9795], short, indexes)[0]).toMatchObject({ have: 2, satisfied: false });
   });
 
   it('counts 특수 충전 (생체 재료) for 사원증, which says 「또는 특수 충전」', () => {

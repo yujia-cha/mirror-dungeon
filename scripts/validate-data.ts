@@ -18,7 +18,7 @@ import type { z } from 'zod';
 import { hasFlag, flagValue, readJson, readJsonIfExists, repoPath } from './lib/io.ts';
 import { readCommonData, readPersonalities, readThemePacks, staticDataPresent } from './lib/raw.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
-import { derivedKeywords, readDerivedFetchedAt, readDerivedIdentities } from './lib/derived-source.ts';
+import { derivedKeywords, derivedStatuses, readDerivedFetchedAt, readDerivedIdentities } from './lib/derived-source.ts';
 import {
   derivedFixedRecipes,
   derivedMdPresent,
@@ -29,6 +29,8 @@ import {
   readDerivedStartPools,
 } from './lib/derived-md.ts';
 import {
+  CONSUMED_KEYWORDS,
+  IDENTITY_KEYWORDS,
   STATUS_KEYWORDS,
   type ArtManifest,
   enumsSchema,
@@ -470,6 +472,31 @@ function checkInvariants(
     strict('invariant', 'no identity uses 탄환; check the skill requirement tokens in scripts/lib/derive.ts');
   }
 
+  // 혈찬 is read off the Korean 「…을 소모하는」 sentence — the game declares nothing else for it.
+  if (!identities.some((i) => i.keywords.BloodDinner)) {
+    strict('invariant', 'no identity consumes 혈찬; check deriveConsumedKeywordsFromText() against Skills_personality-*.json');
+  }
+
+  // The consumed keywords, against the one source that knows them independently. KR skill text
+  // covers 125 of 187 identities, so a new 혈귀 could arrive without one; the mirror would still
+  // list it and this would say so instead of the app quietly counting one identity short.
+  for (const keyword of CONSUMED_KEYWORDS) {
+    const ours = new Set(identities.filter((i) => i.keywords[keyword]).map((i) => i.id));
+    const theirs = new Set(
+      [...readDerivedIdentities()].filter(([, e]) => derivedStatuses(e).has(keyword)).map(([id]) => id),
+    );
+    for (const id of theirs) {
+      if (!ours.has(id)) {
+        strict('invariant', `${id} uses ${keyword} per the derived source but we ship none; add data/curated/identity-keywords.json`);
+      }
+    }
+    for (const id of ours) {
+      if (!theirs.has(id) && readDerivedIdentities().has(id)) {
+        warn('invariant', `${id} is shipped with ${keyword} but the derived source does not list it`);
+      }
+    }
+  }
+
   for (const entry of enums.identityOnlyKeywords) {
     if (entry.name.ko === entry.id || entry.name.en === entry.id) {
       err('invariant', `identity-only keyword ${entry.id} has no localized name; check BattleKeywords.json`);
@@ -490,6 +517,25 @@ function checkInvariants(
       'invariant',
       `${noKeyword.length} identities have no keywords derived; skill data may be incomplete`,
     );
+  }
+
+  // An identity we derive no keyword for shows no keyword at all on screen — no 「?」, no caveat —
+  // because the five that do so genuinely inflict none. That is only honest while it stays true, so
+  // it is checked against the one source that answers independently: the mirror lists every buff an
+  // identity's skills touch, and for these it lists none of ours. A hit here means the derivation
+  // regressed and the empty chip has started lying.
+  const derivedById = readDerivedIdentities();
+  const countable = new Set<string>(IDENTITY_KEYWORDS);
+  for (const identity of noKeyword) {
+    const entry = derivedById.get(identity.id);
+    if (!entry) continue;
+    const claimed = [...derivedStatuses(entry)].filter((s) => countable.has(s));
+    if (claimed.length > 0) {
+      strict(
+        'invariant',
+        `${identity.id} ${identity.title.ko} derives no keyword, but the mirror says its skills touch ${claimed.join(', ')}`,
+      );
+    }
   }
 
   // The roster is the union of every source, not any one of them.
@@ -542,14 +588,16 @@ function checkInvariants(
   // What the derived source says the keywords are, against what we derived ourselves. It is the
   // weaker reading — it misses a keyword our static derivation finds on 10 of 179 identities — so a
   // disagreement is a prompt to look, not a failure.
+  const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
   const derivedIdentitiesByid = readDerivedIdentities();
   const keywordDisagreements: number[] = [];
   for (const identity of identities) {
     const entry = derivedIdentitiesByid.get(identity.id);
     if (!entry?.skillKeywordList) continue;
     const theirs = derivedKeywords(entry);
-    // Ammo is a resource the derived list does not track at all, so it is left out of the compare.
-    const ours = new Set(Object.keys(identity.keywords).filter((k) => k !== 'Bullet'));
+    // 탄환·혈찬 are resources the derived list does not track at all — `skillKeywordList` holds
+    // inflicted statuses only — so the compare is over the seven. Their own cross-checks are above.
+    const ours = new Set(Object.keys(identity.keywords).filter((k) => STATUS_SET.has(k)));
     const same = ours.size === theirs.size && [...ours].every((k) => theirs.has(k as never));
     if (!same) keywordDisagreements.push(identity.id);
   }

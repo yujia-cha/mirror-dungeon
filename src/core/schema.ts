@@ -32,11 +32,21 @@ export const STATUS_KEYWORDS = [
 ] as const;
 
 /**
- * What an identity's skills can be built around: the seven status keywords plus 탄환 (`Bullet`),
- * the ammo certain skills spend. 탄환 is deliberately NOT a `Keyword`: no gift carries it, no
- * theme pack has it as an affinity and no starting gift pool exists for it.
+ * What an identity's skills can be built around: the seven status keywords plus the two resources
+ * certain skills spend — 탄환 (`Bullet`) and 혈찬 (`BloodDinner`). Neither is a `Keyword`: no gift
+ * carries them, no theme pack has them as an affinity and no starting gift pool exists for them.
  */
-export const IDENTITY_KEYWORDS = [...STATUS_KEYWORDS, 'Bullet'] as const;
+export const IDENTITY_KEYWORDS = [...STATUS_KEYWORDS, 'Bullet', 'BloodDinner'] as const;
+
+/**
+ * Identity keywords a skill SPENDS rather than inflicts.
+ *
+ * 혈찬 is here and 탄환 is not, because of how each is written down: ammo is declared as a skill
+ * requirement (`[necessary:Bullet:1]`), while 혈찬 appears only in the Korean sentence 「…을
+ * 소모하는」. The distinction matters to the derivations — the inflict-side ones must never claim a
+ * consumed keyword, since the same text also says 「[BloodDinner] 60 증가」, which is generation.
+ */
+export const CONSUMED_KEYWORDS = ['BloodDinner'] as const;
 
 export const ATTACK_TYPES = ['Slash', 'Penetrate', 'Hit'] as const;
 
@@ -94,13 +104,20 @@ export type ConditionScope = z.infer<typeof conditionScopeSchema>;
 
 export const conditionSchema = z.discriminatedUnion('type', [
   /**
-   * "[X]를 부여하는 공격 스킬을 보유한 인격이 N인 이상".
-   * Counts identities whose attack skills inflict the keyword — NOT identities tagged with it.
+   * "[X]를 부여하는 공격 스킬을 보유한 인격이 N인 이상", and its 소모 and multi-keyword forms.
+   * Counts identities whose skills use the keyword — NOT identities tagged with it.
    */
   z.object({
     type: z.literal('keywordSkillCount'),
-    keyword: statusKeywordSchema,
-    min: z.number().int().positive(),
+    /** One or more keywords. An identity using ANY of them counts, and counts ONCE. */
+    keywords: z.array(identityKeywordIdSchema).min(1),
+    /** 부여·획득 or 소모 (탄환·혈찬). Decides how the sentence reads, never how it counts. */
+    verb: z.enum(['inflict', 'consume']).default('inflict'),
+    /**
+     * Null when the sentence names no threshold — 「…인격이 편성된 수에 따라 기프트 효과 강화」.
+     * That is a count, not a bar: it is shown and never judged.
+     */
+    min: z.number().int().positive().nullable(),
     scope: conditionScopeSchema,
     includesSpecial: z.boolean(),
     tiers: z.array(conditionTierSchema).default([]),

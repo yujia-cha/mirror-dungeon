@@ -36,7 +36,7 @@ describe('keyword conditions', () => {
     );
     expect(c).toMatchObject({
       type: 'keywordSkillCount',
-      keyword: 'Combustion',
+      keywords: ['Combustion'],
       min: 5,
       scope: 'deployed',
       includesSpecial: true,
@@ -48,7 +48,7 @@ describe('keyword conditions', () => {
       '턴 시작시, [Sinking] 위력, 횟수를 부여하는 공격 스킬을 보유한 인격이 6인 이상이면 아래 효과 적용\n' +
         '[Sinking]을 부여하는 공격 스킬을 보유한 인격이 10인 이상이면 효과가 강화됨',
     );
-    expect(c).toMatchObject({ type: 'keywordSkillCount', keyword: 'Sinking', min: 6 });
+    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['Sinking'], min: 6 });
     expect(c && 'tiers' in c ? c.tiers : []).toEqual([{ min: 10, label: '10인 이상' }]);
   });
 
@@ -57,12 +57,12 @@ describe('keyword conditions', () => {
       parse('[Charge] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상')[0],
     ).toMatchObject({
       type: 'keywordSkillCount',
-      keyword: 'Charge',
+      keywords: ['Charge'],
       min: 5,
     });
     expect(parse('[Breath] 횟수를 부여하거나 획득하는 공격 스킬을 보유한 인격이 5인 이상')[0]).toMatchObject({
       type: 'keywordSkillCount',
-      keyword: 'Breath',
+      keywords: ['Breath'],
       min: 5,
     });
   });
@@ -72,12 +72,43 @@ describe('keyword conditions', () => {
     expect(c).toMatchObject({ includesSpecial: false });
   });
 
-  it('ignores bracketed tokens that are not status keywords', () => {
+  it('ignores bracketed ids that are no identity keyword', () => {
+    // An identity-specific buff nobody's deck can be counted for.
     expect(
-      parse('[BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상이면').every(
+      parse('[BloodArmorCasting]을 소모하는 스킬을 보유한 인격이 3인 이상이면').every(
         (c) => c.type !== 'keywordSkillCount',
       ),
     ).toBe(true);
+  });
+
+  it('reads the 소모 form, with no 「공격」 in the sentence', () => {
+    // 9795 떨어진 한 방울. 혈찬 is spent by a skill, not inflicted on anyone.
+    const [c] = parse('턴 시작 시, [BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)');
+    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['BloodDinner'], verb: 'consume', min: 3, scope: 'deployed' });
+  });
+
+  it('reads a two-keyword gate, either of them counting', () => {
+    // 9802 전격부, whose steps sit on their own lines under the gate.
+    const [c] = parse(
+      '[Burst], [Charge]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함).\n\n- 6인 이상\n\n- 8인 이상',
+    );
+    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['Burst', 'Charge'], verb: 'inflict', min: 6, scope: 'formation' });
+    expect((c as { tiers: { min: number }[] }).tiers.map((t) => t.min)).toEqual([8]);
+  });
+
+  it('reads 「얻거나 소모하는 인격이」, which names no skill at all', () => {
+    // 9235 데스페라도. The smallest step is the bar the gift needs to do anything.
+    const [c] = parse(
+      '[Bullet]을 얻거나 소모하는 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함)\n\n- 2인 이상\n\n- 5인 이상\n\n- 8인 이상',
+    );
+    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['Bullet'], verb: 'consume', min: 2, scope: 'formation' });
+    expect((c as { tiers: { min: number }[] }).tiers.map((t) => t.min)).toEqual([5, 8]);
+  });
+
+  it('leaves min null when 「편성된 수에 따라」 lists no step', () => {
+    // 9842. The gift is always on and only scales, so there is no bar — a count, not a gate.
+    const [c] = parse('[BloodDinner]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)');
+    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['BloodDinner'], verb: 'consume', min: null, scope: 'formation', tiers: [] });
   });
 });
 
@@ -141,9 +172,7 @@ describe('other clauses', () => {
   });
 
   it('keeps a threshold sentence it cannot model as unparsed', () => {
-    const conditions = parse(
-      '[BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동',
-    );
+    const conditions = parse('키가 3인 이상인 인격이 있으면, 이번 전투 동안 발동');
     expect(conditions).toHaveLength(1);
     expect(conditions[0]).toMatchObject({ type: 'unparsed' });
   });

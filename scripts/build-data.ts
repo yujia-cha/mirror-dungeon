@@ -59,7 +59,7 @@ import {
 } from './lib/derive.ts';
 import { OUT, seasonDir } from './lib/out.ts';
 import { parseConditions } from './lib/parse-conditions.ts';
-import { deriveIdentityKeywordsFromText, skillsOfIdentity } from './lib/derive-text.ts';
+import { deriveConsumedKeywordsFromText, deriveIdentityKeywordsFromText, skillsOfIdentity } from './lib/derive-text.ts';
 import { DERIVED_DIR } from './lib/derived-source.ts';
 import {
   derivedGiftAsRaw,
@@ -617,6 +617,9 @@ for (let sinner = 1; sinner <= 12; sinner += 1) {
   SINNER_NAMES[sinner] = loc(personalityKo.get(baseId)?.name, personalityEn.get(baseId)?.name);
 }
 
+/** Korean skill text, the only place a consumed keyword (혈찬) is stated. */
+const localizedSkills = readLocalizedPersonalitySkills('KR');
+
 /** 특수 variant buff ids (생체 재료 → 특수 충전 …), read off the game's own buff descriptions. */
 const specialVariants = readSpecialVariants();
 
@@ -624,7 +627,16 @@ const derivedIdentities: Identity[] = rawPersonalities
   .map((raw): Identity => {
     const sinnerId = sinnerIdFromIdentityId(raw.id);
     const curatedKeywords = curated.identityKeywords[String(raw.id)]?.keywords;
-    const derived = deriveIdentityKeywords(raw, skills, specialVariants);
+    // 혈찬 is spent, never inflicted, and the static data says nothing machine-readable about it —
+    // only the Korean sentence does. So it is read separately and merged over what the skill data
+    // gives; a curated entry still wins outright.
+    const derived = {
+      ...deriveIdentityKeywords(raw, skills, specialVariants),
+      ...deriveConsumedKeywordsFromText(
+        skillsOfIdentity(raw.id, localizedSkills),
+        (raw.attributeList ?? []).map((entry) => entry.skillId),
+      ),
+    };
     const keywords = (curatedKeywords ?? derived) as Identity['keywords'];
     const keywordSource: Identity['keywordSource'] = curatedKeywords
       ? 'curated'
@@ -685,7 +697,6 @@ const derivedIdentities: Identity[] = rawPersonalities
 
 const staticIdentityIds = new Set(derivedIdentities.map((identity) => identity.id));
 const derivedSource = readDerivedIdentities();
-const localizedSkills = readLocalizedPersonalitySkills('KR');
 
 /** English faction names inverted, so a derived tag can be read back as the id the app uses. */
 const factionIdByEnglishName = new Map<string, string>();
@@ -951,7 +962,9 @@ const provisional = curatedSeason.provisional === true || packsWithoutGeneralPoo
 
 const meta: Meta = {
   dataVersion: `${dungeonId}.${inputsFingerprint()}`,
-  schemaVersion: 1,
+  // 2: a keyword condition names a list (`keywords`), says 부여 or 소모 (`verb`), and may
+  //    carry `min: null` for a gate that only scales. A season frozen at 1 cannot be reread.
+  schemaVersion: 2,
   dungeon: {
     id: dungeonId,
     name: loc(
@@ -1097,7 +1110,11 @@ console.log(`  identity keywords: ${summarize(identities.map((i) => i.keywordSou
 console.log(
   `  특수 variants: ${specialVariants.size} buff(s), ${identities.filter((i) => Object.values(i.keywords).some((k) => k.specialSkills > 0)).length} identities`,
 );
-console.log(`  탄환 identities: ${identities.filter((i) => i.keywords.Bullet).length}`);
+console.log(
+  `  identity-only keywords: ${enums.identityOnlyKeywords
+    .map((k) => `${k.name.ko} ${identities.filter((i) => i.keywords[k.id]).length}`)
+    .join(' · ')}`,
+);
 if (unnamedBuffIds.size > 0) {
   // Not an error: these are identity- or gift-specific buffs the game names nowhere we can read.
   console.log(`  ${unnamedBuffIds.size} buff id(s) left as ids in the text: ${[...unnamedBuffIds].sort().slice(0, 8).join(', ')}…`);

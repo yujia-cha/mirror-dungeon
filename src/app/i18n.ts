@@ -80,7 +80,6 @@ export const STRINGS = {
   // 탄환 is spent, not inflicted, and always reads plainly — there is no 특수 form of this line.
   deckKeywordUses: { ko: '{keyword} 소모 공격 스킬 보유', en: 'Has attack skills that spend {keyword}' },
   deckKeywordSpecialOnlyHint: { ko: '특수 {keyword}만 부여·획득 — 「또는 특수 {keyword}」 조건에만 셈', en: 'Only Unique {keyword} — counts only for conditions that say "or Unique {keyword}"' },
-  deckKeywordUnknown: { ko: '키워드 미확인 — 조건 판정이 낮게 나올 수 있습니다', en: 'Keywords unknown; condition counts may read low' },
   deckSinnerSearch: { ko: '{sinner} 인격 검색', en: 'Search {sinner} identities' },
   deckShowing: { ko: '{total}명 중 {n}명', en: '{n} of {total}' },
   deckClose: { ko: '닫기', en: 'Close' },

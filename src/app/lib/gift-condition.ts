@@ -12,7 +12,8 @@ import { t, type Lang } from '../i18n.ts';
 function subjectShort(report: ConditionReport, enums: Enums, lang: Lang): string | null {
   switch (report.subject.kind) {
     case 'keyword':
-      return keywordName(report.subject.ids[0] as never, enums, lang);
+      // Several keywords read like several factions: 「파열/충전」, either of them counting.
+      return report.subject.ids.map((id) => keywordName(id as never, enums, lang)).join('/');
     case 'faction':
       return report.subject.ids.map((id) => factionName(id, enums, lang)).join('/');
     case 'resonance':
@@ -26,6 +27,8 @@ function subjectShort(report: ConditionReport, enums: Enums, lang: Lang): string
 export function conditionShort(report: ConditionReport | null | undefined, enums: Enums, lang: Lang): string | null {
   if (!report) return null;
   const subject = subjectShort(report, enums, lang);
+  // No bar to clear — 「혈찬 3」, just how many the formation has.
+  if (!report.gate && report.have !== null) return subject ? `${subject} ${report.have}` : String(report.have);
   if (report.have === null || report.need === null) return subject ? `${subject} ?` : '?';
   const count = `${report.have}/${report.need}`;
   return subject ? `${subject} ${count}` : count;

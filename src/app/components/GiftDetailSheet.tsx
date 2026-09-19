@@ -161,7 +161,7 @@ export function GiftDetailSheet({
               const extra = reachedTierText(report, lang);
               return (
                 <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
-                  <span className={`font-num font-semibold ${met ? 'text-ok' : 'text-bad'}`}>{conditionShort(report, data.enums, lang)}</span>
+                  <span className={`font-num font-semibold ${!report.gate ? 'text-fg-2' : met ? 'text-ok' : 'text-bad'}`}>{conditionShort(report, data.enums, lang)}</span>
                   <span className="text-fg-3">{conditionText(report, data.enums, lang)}</span>
                   {extra ? <span className="text-fg-3">{extra}</span> : null}
                 </div>

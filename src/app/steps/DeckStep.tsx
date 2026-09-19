@@ -10,7 +10,7 @@ import { identitiesFromFormationCode } from '../lib/formation-code.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { deckSummaryChips } from '../lib/deck-summary.ts';
 import { stepIndex, useDismiss } from '../lib/useDismiss.ts';
-import { Button, Chip, Notice } from '../components/ui.tsx';
+import { Button, Chip } from '../components/ui.tsx';
 
 interface Props {
   data: GameData;
@@ -43,11 +43,11 @@ function matches(identity: Identity, needles: string[], data: GameData): boolean
 
 function KeywordChips({ identity, data, lang }: { identity: Identity; data: GameData; lang: Lang }) {
   const entries = Object.entries(identity.keywords);
-  if (entries.length === 0) {
-    return identity.keywordSource === 'none' ? (
-      <Chip title={t('deckKeywordUnknown', lang)}>?</Chip>
-    ) : null;
-  }
+  // Nothing at all when an identity carries no keyword. The five that derive none genuinely inflict
+  // none — their skills only apply 마비·속박·방어 레벨 류 buffs, and the derived mirror agrees — so a
+  // 「?」 and a 「판정이 낮게 나올 수 있습니다」 said something untrue. Whether the derivation itself
+  // ever goes wrong is a build-time question, and `data:validate` asks it against the mirror.
+  if (entries.length === 0) return null;
   // Name only — 「침잠」, not 「침잠 5」. Whether a keyword is the 특수 variant is part of the name.
   return (
     <>
@@ -333,8 +333,6 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           <span className="text-xs text-fg-3">{t('deckSummaryBasis', lang)}</span>
         </div>
       )}
-
-      {stats.identitiesWithoutKeywords.length > 0 ? <Notice>{t('deckKeywordUnknown', lang)}</Notice> : null}
 
     </div>
   );
