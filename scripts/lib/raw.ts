@@ -320,10 +320,14 @@ const SPECIAL_VARIANT_LINE = /^-?\s*특수 (화상|출혈|진동|파열|침잠|�
  * The only machine-readable signal is a bullet in the buff's Korean description that reads
  * exactly 「특수 충전」; buffs that merely *mention* a 특수 variant in a longer sentence are not
  * variants themselves, which is why the line has to stand alone.
+ *
+ * Read from every `BattleKeywords*` file, like the names: the chapter tables are where
+ * `AccelBullet` and `BulletLament` are finally declared — M20 had to count them as base 탄환
+ * for want of a row.
  */
 export function readSpecialVariants(): Map<string, IdentityKeywordId> {
   const out = new Map<string, IdentityKeywordId>();
-  for (const e of localizeFile('KR', 'BattleKeywords.json')) {
+  for (const e of localizeFiles('KR', BATTLE_KEYWORD_FILES)) {
     const m = typeof e.desc === 'string' ? SPECIAL_VARIANT_LINE.exec(e.desc) : null;
     const keyword = m ? IDENTITY_KEYWORD_BY_KO[m[1]!] : undefined;
     if (keyword) out.set(String(e.id), keyword);
@@ -362,11 +366,27 @@ export function readLocalizedPersonalitySkills(lang: Lang = 'KR'): Map<number, L
   return out;
 }
 
-/** Battle keyword display names (탄환 …), for keywords the gift categories do not carry. */
+/** Every buff-name table the game ships: the base one plus the per-chapter and per-season files. */
+const BATTLE_KEYWORD_FILES = /^BattleKeywords.*\.json$/;
+
+/**
+ * Battle keyword display names (탄환, 혈찬, 진동 - 작열 …), used both for keywords the gift
+ * categories do not carry and to write the bracketed buff ids in gift text out in full.
+ *
+ * **All** `BattleKeywords*` files are read, not just the base one. The base file holds the 577
+ * buffs common to every mode; the buffs a Mirror Dungeon gift refers to live in the season and
+ * chapter tables (`BattleKeywords_Mirror7.json`, `BattleKeywords-a1c7p1.json` …), which is why
+ * 37 ids used to reach the screen as `[BloodDinner]`. Together they name 1744 ids and — checked
+ * across the whole set — no id is given two different names, so merge order does not matter.
+ *
+ * Names are trimmed: the game ships `AttackDown` as `공격 레벨 감소 ` / `Offense Level Down `, and
+ * pasting that into the text verbatim reads 「[공격 레벨 감소 ] 5」 with the bracket adrift.
+ */
 export function readBattleKeywordNames(lang: Lang): Map<string, string> {
   const out = new Map<string, string>();
-  for (const e of localizeFile(lang, 'BattleKeywords.json')) {
-    if (e.name) out.set(String(e.id), e.name);
+  for (const e of localizeFiles(lang, BATTLE_KEYWORD_FILES)) {
+    const name = e.name?.trim();
+    if (name && !out.has(String(e.id))) out.set(String(e.id), name);
   }
   return out;
 }

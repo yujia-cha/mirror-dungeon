@@ -77,9 +77,8 @@ export const STRINGS = {
   deckKeywordSpecial: { ko: '{keyword}(특수)', en: '{keyword} (Unique)' },
   deckKeywordSpecialHint: { ko: '{keyword} 또는 특수 {keyword} 부여·획득 공격 스킬 보유', en: 'Has attack skills that inflict or gain {keyword} or Unique {keyword}' },
   deckKeywordSpecialOnly: { ko: '특수 {keyword}', en: 'Unique {keyword}' },
+  // 탄환 is spent, not inflicted, and always reads plainly — there is no 특수 form of this line.
   deckKeywordUses: { ko: '{keyword} 소모 공격 스킬 보유', en: 'Has attack skills that spend {keyword}' },
-  deckKeywordUsesSpecial: { ko: '{keyword} 또는 특수 {keyword} 소모 공격 스킬 보유', en: 'Has attack skills that spend {keyword} or Unique {keyword}' },
-  deckKeywordUsesSpecialOnly: { ko: '특수 {keyword}만 소모 — 기프트 조건에는 쓰이지 않음', en: 'Has attack skills that spend only Unique {keyword}' },
   deckKeywordSpecialOnlyHint: { ko: '특수 {keyword}만 부여·획득 — 「또는 특수 {keyword}」 조건에만 셈', en: 'Only Unique {keyword} — counts only for conditions that say "or Unique {keyword}"' },
   deckKeywordUnknown: { ko: '키워드 미확인 — 조건 판정이 낮게 나올 수 있습니다', en: 'Keywords unknown; condition counts may read low' },
   deckSinnerSearch: { ko: '{sinner} 인격 검색', en: 'Search {sinner} identities' },
@@ -99,7 +98,8 @@ export const STRINGS = {
   giftUnselect: { ko: '목표에서 빼기', en: 'Drop the goal' },
   giftBlockedIncluded: { ko: '{name} 조합에 이미 포함됨', en: 'Already part of {name}' },
   giftEntangled: { ko: '얽힘', en: 'Entangled' },
-  giftEntangledWith: { ko: '{name}과(와) 재료가 겹칩니다: {list}', en: 'shares ingredients with {name}: {list}' },
+  // `{name}` is a gift name, so the particle is picked by `josa` at the call site.
+  giftEntangledWith: { ko: '{name} 재료가 겹칩니다: {list}', en: 'shares ingredients with {name}: {list}' },
   giftDetail: { ko: '{name} 자세히', en: '{name} details' },
   giftsDeckEmpty: { ko: '덱이 비어 있습니다', en: 'The deck is empty' },
   giftsDeckEmptyHint: { ko: '조건부 기프트를 판정하려면 인격이 필요합니다.', en: 'Conditional gifts need identities to judge.' },
@@ -195,7 +195,8 @@ export const STRINGS = {
   conflictHeader: { ko: '{from}~{to}층 · 자리 {slots}개에 팩 {packs}개', en: 'Floors {from}–{to} · {packs} packs for {slots} floors' },
   routeOtherUnresolved: { ko: '그 외 미해결', en: 'Other unresolved' },
   routeBannedList: { ko: '포기한 팩 {n}', en: '{n} packs given up' },
-  packBanConfirm: { ko: '{gift}은(는) 이 팩에서만 나옵니다. 그래도 포기할까요?', en: '{gift} comes only from this pack. Give it up anyway?' },
+  // `{gift}` is a list of gift names; the particle is picked by `josa` at the call site.
+  packBanConfirm: { ko: '{gift} 이 팩에서만 나옵니다. 그래도 포기할까요?', en: '{gift} comes only from this pack. Give it up anyway?' },
   routeFree: { ko: '자유', en: 'Free' },
   routeFloorRange: { ko: '{from}~{to}층', en: 'Floors {from}–{to}' },
   giftUnjudgeable: { ko: '판정 불가', en: 'Cannot judge' },
@@ -308,7 +309,8 @@ export const STRINGS = {
   settingsObserved: { ko: '관측 지정', en: 'Pinned observations' },
   settingsPreferred: { ko: '포함 지정한 팩', en: 'Packs set to include' },
   settingsNone: { ko: '없음', en: 'None' },
-  unresolvedMissing: { ko: '재료 {names}을(를) 구할 수 없어 조합할 수 없습니다.', en: 'Cannot be fused: {names} cannot be obtained in this plan.' },
+  // `{names}` is a list of gift names, so the particle is picked by `josa` at the call site.
+  unresolvedMissing: { ko: '재료 {names} 구할 수 없어 조합할 수 없습니다.', en: 'Cannot be fused: {names} cannot be obtained in this plan.' },
   actionObserveGift: { ko: '{name} 관측 지정', en: 'Observe {name}' },
   actionReleaseObservations: { ko: '관측 지정 해제', en: 'Release pinned observations' },
 } as const satisfies Record<string, Localized>;

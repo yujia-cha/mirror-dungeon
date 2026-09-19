@@ -323,6 +323,17 @@ describe('deck conditions', () => {
     expect(result.unresolved).toEqual([]);
   });
 
+  it('ignores a start keyword with no pool, rather than handing out no starting gift', () => {
+    // 범용 (`None`) is a gift keyword with no starting pool. The picker no longer offers it, but a
+    // saved run or a share link made before that filter can still name it.
+    expect(Object.keys(data.rules.startGift.poolsByKeyword)).not.toContain('None');
+    const withNone = plan({ wanted: want(9003), options: options({ startKeyword: 'None' }) });
+    const auto = plan({ wanted: want(9003), options: options({ startKeyword: 'auto' }) });
+    expect(withNone.start.keyword).toBe(auto.start.keyword);
+    expect(withNone.start.keyword).not.toBe('None');
+    expect(withNone.start.startGift).toEqual(auto.start.startGift);
+  });
+
   it('never picks 탄환 as the automatic start keyword, however many ammo identities the deck has', () => {
     // Five ammo users; 탄환 outnumbers every status keyword in this formation.
     const ammoDeck = [10611, 10711, 10414, 10512, 10514];
@@ -1059,6 +1070,8 @@ describe('observation pins', () => {
       expect.objectContaining({ giftId: 9409, reason: 'no-pack-in-range' }),
       expect.objectContaining({ giftId: 9410, reason: 'fusion-ingredient-unresolved', missing: [9408, 9409] }),
     ]);
+    // The particle follows the name's final consonant: 「귀신 들린 신발을」, never 「신발를」.
+    expect(result.unresolved[0]!.detail.ko).toBe('귀신 들린 신발을 주는 팩이 남은 층에 없습니다.');
     expect(result.stats).toMatchObject({ requiredPacks: 2, coveredWanted: 3 });
   });
 

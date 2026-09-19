@@ -10,7 +10,8 @@ import lzString from 'lz-string';
 import userEvent from '@testing-library/user-event';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions } from '../../core/index.ts';
-import { conditionText, josa, reachedTierText } from '../condition-text.ts';
+import { conditionText, reachedTierText } from '../condition-text.ts';
+import { josa } from '../../core/text.ts';
 import { PERSIST_KEY, PERSIST_VERSION, appDefaultOptions, decodeShared, defaultUi, emptyRun, encodeShared, sanitizeOptions, sanitizePersisted, sanitizeRun, sanitizeUi, sinnerOf, useApp, withoutLegacyGot } from '../store.ts';
 import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
@@ -714,16 +715,18 @@ describe('DeckStep', () => {
     for (const option of options) expect(option.textContent).not.toMatch(/충전\s*\d/);
   });
 
-  it('shows 탄환 on the identities that spend ammo, marking the 특수 ones', async () => {
+  it('writes 탄환 plainly on every ammo identity, 특수 variant or not', async () => {
     const user = userEvent.setup();
     // 10611 마침표 사무소 대표 spends plain 탄환, 10414 잔향・외로움 only 탄환 - 고독,
-    // 10711 마침표 해결사 both.
+    // 10711 마침표 해결사 both. No gift, pack or starting pool carries 탄환, so no condition ever
+    // says 「또는 특수 탄환」 — splitting the chip would name a difference nothing can act on.
     useApp.getState().setDeck([10611, 10414, 10711], 3);
     renderDeck();
-    const chip = (title: RegExp) => screen.getAllByTitle(title)[0]!;
-    expect(chip(/^탄환 소모/).textContent).toBe('탄환');
-    expect(chip(/^특수 탄환만 소모/).textContent).toBe('특수 탄환');
-    expect(chip(/^탄환 또는 특수 탄환 소모/).textContent).toBe('탄환(특수)');
+    const ammo = screen.getAllByTitle('탄환 소모 공격 스킬 보유');
+    expect(ammo).toHaveLength(3);
+    for (const chip of ammo) expect(chip.textContent).toBe('탄환');
+    expect(screen.queryByText('특수 탄환')).toBeNull();
+    expect(screen.queryByText('탄환(특수)')).toBeNull();
     // 탄환 is a keyword of the formation like any other, so the summary counts it.
     expect(screen.getAllByTitle(/출격 \d+명 · 편성 전체 \d+명/).map((el) => el.textContent)).toEqual(
       expect.arrayContaining([expect.stringContaining('탄환')]),
@@ -1044,8 +1047,21 @@ describe('GiftsStep', () => {
     expect(tile(9717)).toHaveAttribute('data-entangled');
     expect(tile(9718)).toHaveAttribute('data-entangled');
     await user.click(within(tile(9717)).getByRole('button', { name: '장관 자세히' }));
-    expect(screen.getByTestId('gift-entangled')).toHaveTextContent('부동');
+    // The particle comes from the name, not from a bracketed 과(와) in the string.
+    expect(screen.getByTestId('gift-entangled')).toHaveTextContent('부동과 재료가 겹칩니다');
     expect(screen.getByTestId('gift-entangled')).toHaveTextContent('녹슨 칼자루');
+  });
+
+  it('renders the effect text with its paragraph breaks intact', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderGifts();
+    await user.click(within(tile(9088)).getByRole('button', { name: '진혼 자세히' }));
+    // The game writes a gift as several clauses split by blank lines; without `whitespace-pre-line`
+    // CSS folds them into one run-on paragraph.
+    const effect = within(screen.getByTestId('gift-detail')).getByText(/턴 시작 시/);
+    expect(effect.textContent).toContain('\n\n');
+    expect(effect.className).toContain('whitespace-pre-line');
   });
 
   it('opens a gift sheet with its effect, conditions and a recipe that starts folded', async () => {
@@ -1258,7 +1274,12 @@ describe('RouteOptions', () => {
     for (const id of [9267, 9423]) useApp.getState().toggleWanted(id);
     useApp.getState().banPack(1402);
     renderPlanned(<RouteOptions />);
-    expect(screen.getByRole('combobox', { name: '시작 키워드' })).toBeInTheDocument();
+    const startKeyword = screen.getByRole('combobox', { name: '시작 키워드' });
+    // Only keywords the season has a starting pool for. 범용 (`None`) is a gift keyword with no
+    // pool, so offering it handed the player no starting gift at all, silently.
+    const starts = within(startKeyword).getAllByRole('option').map((o) => o.textContent);
+    expect(starts).toContain('화상');
+    expect(starts).not.toContain('범용');
     expect(screen.getByTestId('route-options').textContent).not.toMatch(/Hard|1~15/);
     expect(screen.queryByTestId('settings-observed')).toBeNull();
     expect(screen.queryByRole('button', { name: /옵션 초기화|새 런/ })).toBeNull();

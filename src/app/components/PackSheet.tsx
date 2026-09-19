@@ -14,6 +14,7 @@ import { bandMode } from '../lib/stage.ts';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { GiftTile } from './GiftTile.tsx';
+import { withJosa } from '../format.ts';
 import { PackCard } from './PackCard.tsx';
 import { Badge, Button } from './ui.tsx';
 
@@ -142,7 +143,7 @@ export function PackActions({ packId, ctx, size = 'sm' }: { packId: number; ctx:
       {confirming ? (
         <ConfirmDialog
           title={t('packBan', ctx.lang)}
-          message={t('packBanConfirm', ctx.lang, { gift: exclusiveWanted.map(ctx.giftName).join(', ') })}
+          message={t('packBanConfirm', ctx.lang, { gift: withJosa(exclusiveWanted.map(ctx.giftName).join(', '), '은/는', ctx.lang) })}
           confirmLabel={t('packBan', ctx.lang)}
           onConfirm={() => {
             setConfirming(false);

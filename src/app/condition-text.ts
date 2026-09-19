@@ -8,23 +8,13 @@ import type { Enums } from '../core/schema.ts';
 import type { ConditionReport } from '../core/types.ts';
 import type { Lang } from './i18n.ts';
 import { factionName, keywordName } from './format.ts';
+import { josa } from '../core/text.ts';
 
 const SCOPE_TEXT: Record<'deployed' | 'formation' | 'reserve', { ko: string; en: string }> = {
   deployed: { ko: '출격 인원', en: 'deployed only' },
   formation: { ko: '편성 인원', en: 'whole formation' },
   reserve: { ko: '대기 인원', en: 'reserves only' },
 };
-
-/**
- * Pick the Korean object particle by the final consonant of the word: 화상을, 연기를. A word that
- * does not end in Hangul (an English fallback name) gets the bracketed form.
- */
-export function josa(word: string, pair: '을/를' | '이/가' | '은/는'): string {
-  const [withBatchim, without] = pair.split('/') as [string, string];
-  const code = word.codePointAt(word.length - 1) ?? 0;
-  if (code < 0xac00 || code > 0xd7a3) return `${word}${withBatchim}(${without})`;
-  return `${word}${(code - 0xac00) % 28 === 0 ? without : withBatchim}`;
-}
 
 export function conditionText(report: ConditionReport, enums: Enums, lang: Lang): string {
   const have = report.have ?? '?';

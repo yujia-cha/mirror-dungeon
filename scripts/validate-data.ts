@@ -46,6 +46,7 @@ import {
   type SeasonIndex,
   type ThemePack,
 } from '../src/core/schema.ts';
+import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../src/core/text.ts';
 
 /** The twelve sinners the game has had since launch; every one must be deckable. */
 const SINNER_COUNT = 12;
@@ -435,6 +436,25 @@ function checkInvariants(
         .slice(0, 6)
         .map((g) => g.id)
         .join(', ')}` + ' — consider extending the parser or adding data/curated/conditions.json entries',
+    );
+  }
+
+  // Shipped gift text carries no leftovers a reader would notice as a defect: a bracketed buff
+  // name padded with whitespace (`AttackDown` arrives from the game as 「공격 레벨 감소 」), Unity
+  // rich-text tags, or the runtime `{0}` counter. Each has a fix in the build; a hit here means a
+  // new shape arrived that the build does not clean.
+  const messyText = gifts.filter((g) =>
+    [g.desc.ko, g.desc.en, ...g.conditions.flatMap((c) => (c.text ? [c.text.ko, c.text.en] : []))].some(
+      (text) => PADDED_BRACKET.test(text) || new RegExp(RICH_TEXT_TAG.source).test(text) || RUNTIME_PLACEHOLDER.test(text),
+    ),
+  );
+  if (messyText.length > 0) {
+    warn(
+      'invariant',
+      `${messyText.length} gift(s) ship text with stray markup or padding: ${messyText
+        .slice(0, 6)
+        .map((g) => g.id)
+        .join(', ')}` + ' — check readBattleKeywordNames() and stripRichText() in the build',
     );
   }
 

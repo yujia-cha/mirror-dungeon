@@ -353,12 +353,12 @@
     "keywordSource": "derived",
     "keywords": {
       "Bullet": {
-        "skills": 3,
-        "specialSkills": 0
+        "skills": 0,
+        "specialSkills": 3
       },
       "Sinking": {
         "skills": 3,
-        "specialSkills": 0
+        "specialSkills": 3
       },
       "Vibration": {
         "skills": 3,
@@ -1674,7 +1674,7 @@
       },
       "Charge": {
         "skills": 6,
-        "specialSkills": 0
+        "specialSkills": 5
       },
       "Sinking": {
         "skills": 3,
@@ -5474,8 +5474,8 @@
         "specialSkills": 0
       },
       "Bullet": {
-        "skills": 3,
-        "specialSkills": 0
+        "skills": 0,
+        "specialSkills": 3
       },
       "Combustion": {
         "skills": 6,

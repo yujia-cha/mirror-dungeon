@@ -2012,8 +2012,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Turn Start: If there are Staggered enemies, un-Stagger enemies. Then, inflict (8 + Stagger LV x 4) [Bleed] Potency and (8 + Stagger LV x4)/2 [Offense Level Down ] on them this turn and next turn. (Activates once per enemy per Encounter. Does not activate against certain enemies that do not recover from Stagger)",
-      "ko": "턴 시작 시 흐트러짐 상태인 적들이 있을 경우, 대상은 흐트러짐 상태에서 풀려나는 대신 (8+흐트러짐 단계x4)만큼 [출혈] 위력을 얻고 그 수치의 절반만큼 이번 턴과 다음 턴 동안 대상에게 [공격 레벨 감소 ] 부여(동일한 적에게는 전투 당 1회 발동하며, 흐트러짐 상태에서 풀려나지 않는 특정 적에게는 발동하지 않음)."
+      "en": "Turn Start: If there are Staggered enemies, un-Stagger enemies. Then, inflict (8 + Stagger LV x 4) [Bleed] Potency and (8 + Stagger LV x4)/2 [Offense Level Down] on them this turn and next turn. (Activates once per enemy per Encounter. Does not activate against certain enemies that do not recover from Stagger)",
+      "ko": "턴 시작 시 흐트러짐 상태인 적들이 있을 경우, 대상은 흐트러짐 상태에서 풀려나는 대신 (8+흐트러짐 단계x4)만큼 [출혈] 위력을 얻고 그 수치의 절반만큼 이번 턴과 다음 턴 동안 대상에게 [공격 레벨 감소] 부여(동일한 적에게는 전투 당 1회 발동하며, 흐트러짐 상태에서 풀려나지 않는 특정 적에게는 발동하지 않음)."
     },
     "fusion": null,
     "hardOnly": false,
@@ -2422,8 +2422,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Inflict 5 [Offense Level Down ] and 5 [Defense Level Down] next turn against enemies affected by [Tremor Burst]. (3 times per turn)",
-      "ko": "[진동 폭발]된 적에게 다음 턴에 [공격 레벨 감소 ] 5와 [방어 레벨 감소] 5 부여. (턴 당 최대 3회)"
+      "en": "Inflict 5 [Offense Level Down] and 5 [Defense Level Down] next turn against enemies affected by [Tremor Burst]. (3 times per turn)",
+      "ko": "[진동 폭발]된 적에게 다음 턴에 [공격 레벨 감소] 5와 [방어 레벨 감소] 5 부여. (턴 당 최대 3회)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -6523,7 +6523,7 @@
     "conditions": [],
     "desc": {
       "en": "Deal +35% damage against enemies suffering negative effects (Low Morale, Panic) from SP loss.\n\nIf the Skill inflicts [Sinking] Potency or Count(including 'Unique Sinking'), deal +10% damage in addition to the above.\n\nWhen [Sinking]'s effect applies to enemies that are Non-SP Units, the Affinity of the damage inflicted changes to whatever is the most effective.",
-      "ko": "정신력 감소로 인하여 부정적 효과(사기저하, 패닉)를 얻은 적에게 입히는 피해량 35% 증가.\n\n[침잠] 위력을 부여하거나 횟수를 증가시키는 스킬일 경우, 추가로 피해량 10% 증가 (특수 <noparse>침잠</noparse> 포함)\n\n정신력이 없는 적에게 [침잠] 효과가 적용될 경우, 우울 속성 피해를 입히는 대신 이를 포함한 죄악 속성 중 가장 효과적인 속성 피해로 변경."
+      "ko": "정신력 감소로 인하여 부정적 효과(사기저하, 패닉)를 얻은 적에게 입히는 피해량 35% 증가.\n\n[침잠] 위력을 부여하거나 횟수를 증가시키는 스킬일 경우, 추가로 피해량 10% 증가 (특수 침잠 포함)\n\n정신력이 없는 적에게 [침잠] 효과가 적용될 경우, 우울 속성 피해를 입히는 대신 이를 포함한 죄악 속성 중 가장 효과적인 속성 피해로 변경."
     },
     "fusion": null,
     "hardOnly": false,
@@ -8658,7 +8658,7 @@
     "conditions": [],
     "desc": {
       "en": "Turn Start: select one of the fastest allies and apply 5 [Haste] to them next turn.\n\nNext Turn Start: select one of the other fastest allies (allies without the Ancient Effigy effect) and re-apply the Gift effect to them. (effect expires if no other allies can be selected)\n\nAt 10+ Speed, the ally gains (Speed difference with the target / 2) Offense Level (max 5; rounded down)",
-      "ko": "턴 시작 시, 속도가 제일 빠른 아군 중 하나를 지정하고 다음 턴에 대상에게 [신속] 5 부여\n\n다음 턴 시작 시, 오래된 조각상 효과를 받는 아군을 제외한 나머지 아군 중 속도가 제일 빠른 아군 하나를 지정하여 기프트 효과를 다시 적용 (대상으로 지정할 다른 아군이 없을 경우, 효과 소멸)\n\n자신의 속도가 10 이상이면, 대상과의 (속도 차이/2)만큼 <noparse>공격 레벨 증가</noparse> (최대 5, 소수점 버림)"
+      "ko": "턴 시작 시, 속도가 제일 빠른 아군 중 하나를 지정하고 다음 턴에 대상에게 [신속] 5 부여\n\n다음 턴 시작 시, 오래된 조각상 효과를 받는 아군을 제외한 나머지 아군 중 속도가 제일 빠른 아군 하나를 지정하여 기프트 효과를 다시 적용 (대상으로 지정할 다른 아군이 없을 경우, 효과 소멸)\n\n자신의 속도가 10 이상이면, 대상과의 (속도 차이/2)만큼 공격 레벨 증가 (최대 5, 소수점 버림)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -9346,8 +9346,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n\nInflict 5 [Tremor] and +5 [Tremor] Count to all enemies. (or all Abnormality parts; once per wave)\n\nApply 5 [Tremor] Potency and 2 [Fragile] this turn and next turn to enemies affected by [Tremor Burst]. (activates once per Attack Skill that triggers [Tremor Burst])\n\nAfter triggering 3 [Tremor Burst] to a target this turn, Stagger the target at the next Turn Start and add a new Stagger Threshold at 66% and 33% marks of the target's current HP. (once per Encounter)\n\nWhen triggering [Amplitude Conversion] or [FusionVibration], inflict 1 [Fragile] (3 times per turn)",
-      "ko": "턴 시작 시, [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n턴 시작 시, 적 전체(환상체일 경우, 모든 부위)에게 [진동] 위력 5, [진동] 횟수 5 부여. (웨이브 당 최대 1회)\n\n[진동 폭발]이 적용된 적에게 이번 턴과 다음 턴에 [진동] 위력 5, [취약] 2 부여 (공격 스킬을 사용하여 [진동 폭발] 부여 시, 스킬 당 최대 1회).\n\n이번 턴에 대상에게 [진동 폭발]을 3회 부여하였을 경우, 다음 턴 시작 시 대상을 흐트러뜨리고 현재 체력 기준 66%, 33%에 새로운 흐트러짐 구간 추가 (전투 당 1회 발동).\n\n[진폭 변환], [FusionVibration] 시 [취약] 1 부여 (턴 당 최대 3회)"
+      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n\nInflict 5 [Tremor] and +5 [Tremor] Count to all enemies. (or all Abnormality parts; once per wave)\n\nApply 5 [Tremor] Potency and 2 [Fragile] this turn and next turn to enemies affected by [Tremor Burst]. (activates once per Attack Skill that triggers [Tremor Burst])\n\nAfter triggering 3 [Tremor Burst] to a target this turn, Stagger the target at the next Turn Start and add a new Stagger Threshold at 66% and 33% marks of the target's current HP. (once per Encounter)\n\nWhen triggering [Amplitude Conversion] or [Amplitude Entanglement], inflict 1 [Fragile] (3 times per turn)",
+      "ko": "턴 시작 시, [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n턴 시작 시, 적 전체(환상체일 경우, 모든 부위)에게 [진동] 위력 5, [진동] 횟수 5 부여. (웨이브 당 최대 1회)\n\n[진동 폭발]이 적용된 적에게 이번 턴과 다음 턴에 [진동] 위력 5, [취약] 2 부여 (공격 스킬을 사용하여 [진동 폭발] 부여 시, 스킬 당 최대 1회).\n\n이번 턴에 대상에게 [진동 폭발]을 3회 부여하였을 경우, 다음 턴 시작 시 대상을 흐트러뜨리고 현재 체력 기준 66%, 33%에 새로운 흐트러짐 구간 추가 (전투 당 1회 발동).\n\n[진폭 변환], [진폭 얽힘] 시 [취약] 1 부여 (턴 당 최대 3회)"
     },
     "fusion": {
       "recipes": [
@@ -13783,8 +13783,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Burn] or 'Unique Burn'. (except E.G.O Skills; except Backup Units)\n\nOn Hit with a Skill(including E.G.O Skills): if the target has 3+ [Burn] Count, activate [Burn] once on the target. (target loses 1 [Burn] Count; activates once per Skill)\n\nTurn End: targets with 3+ [Burn] Count activates [Burn] one more time (target loses 1 [Burn] Count)\n\nIf a target with [Burn] is defeated(for Abnormalities, when the Core is defeated), inflict its remaining [Burn] Potency to one of the enemies with the least [Burn] Potency at the next Turn Start.\n\nTurn Start: for this turn, inflict 4 [Offense Level Down ] to enemies with [Burn]\n\nIf a target with [Burn] is defeated, at the next Turn Start, (defeated enemy's [Burn] Potency / 15) allies with Skills that inflict [Burn] gain 2 [Damage Up]. (once per turn)",
-      "ko": "턴 시작 시, [화상] 및 특수 화상을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n스킬(E.G.O 스킬 포함) 적중 시 대상의 [화상] 횟수가 3 이상이면, 대상의 [화상]을 1회 발동함. ([화상] 횟수 1 감소, 스킬당 1회 발동)\n\n턴 종료시, [화상] 횟수를 3 이상 보유한 적이 [화상]을 1회 더 발동함 ([화상] 횟수 1 감소)\n\n[화상] 상태인 적이 사망하였을 경우(환상체일 경우, 본체 사망 시), 남은 [화상] 위력 수치만큼을 다음 턴 시작 시 [화상] 위력 수치가 제일 적은 적 중 하나에게 부여.\n\n턴 시작 시 [화상] 상태인 적에게 이번 턴 동안 [공격 레벨 감소 ] 4 부여\n\n[화상]을 보유한 적이 사망하였을 경우, 다음 턴 시작시, [화상] 부여 스킬을 보유한 아군 (사망한 적의 [화상] 위력/15)명이 [피해량 증가] 2 얻음. (턴 당 1회 발동)"
+      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Burn] or 'Unique Burn'. (except E.G.O Skills; except Backup Units)\n\nOn Hit with a Skill(including E.G.O Skills): if the target has 3+ [Burn] Count, activate [Burn] once on the target. (target loses 1 [Burn] Count; activates once per Skill)\n\nTurn End: targets with 3+ [Burn] Count activates [Burn] one more time (target loses 1 [Burn] Count)\n\nIf a target with [Burn] is defeated(for Abnormalities, when the Core is defeated), inflict its remaining [Burn] Potency to one of the enemies with the least [Burn] Potency at the next Turn Start.\n\nTurn Start: for this turn, inflict 4 [Offense Level Down] to enemies with [Burn]\n\nIf a target with [Burn] is defeated, at the next Turn Start, (defeated enemy's [Burn] Potency / 15) allies with Skills that inflict [Burn] gain 2 [Damage Up]. (once per turn)",
+      "ko": "턴 시작 시, [화상] 및 특수 화상을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n스킬(E.G.O 스킬 포함) 적중 시 대상의 [화상] 횟수가 3 이상이면, 대상의 [화상]을 1회 발동함. ([화상] 횟수 1 감소, 스킬당 1회 발동)\n\n턴 종료시, [화상] 횟수를 3 이상 보유한 적이 [화상]을 1회 더 발동함 ([화상] 횟수 1 감소)\n\n[화상] 상태인 적이 사망하였을 경우(환상체일 경우, 본체 사망 시), 남은 [화상] 위력 수치만큼을 다음 턴 시작 시 [화상] 위력 수치가 제일 적은 적 중 하나에게 부여.\n\n턴 시작 시 [화상] 상태인 적에게 이번 턴 동안 [공격 레벨 감소] 4 부여\n\n[화상]을 보유한 적이 사망하였을 경우, 다음 턴 시작시, [화상] 부여 스킬을 보유한 아군 (사망한 적의 [화상] 위력/15)명이 [피해량 증가] 2 얻음. (턴 당 1회 발동)"
     },
     "fusion": {
       "recipes": [
@@ -14262,8 +14262,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n\nWhen [Tremor Burst] triggers on a target for the 6th time this turn, add an additional Stagger Threshold at 0% mark of their current HP (once per Encounter)\n\nInflict 1 [Fragile] when triggering [Amplitude Conversion] or [FusionVibration] (once per turn)",
-      "ko": "턴 시작 시, [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n이번 턴에 대상에게 [진동 폭발]을 6회 부여하였을 경우, 대상의 현재 체력 기준 0%에 새로운 흐트러짐 구간 추가 (전투 당 1회 발동).\n\n[진폭 변환], [FusionVibration] 시 [취약] 1 부여 (턴 당 최대 1회)"
+      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n\nWhen [Tremor Burst] triggers on a target for the 6th time this turn, add an additional Stagger Threshold at 0% mark of their current HP (once per Encounter)\n\nInflict 1 [Fragile] when triggering [Amplitude Conversion] or [Amplitude Entanglement] (once per turn)",
+      "ko": "턴 시작 시, [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n이번 턴에 대상에게 [진동 폭발]을 6회 부여하였을 경우, 대상의 현재 체력 기준 0%에 새로운 흐트러짐 구간 추가 (전투 당 1회 발동).\n\n[진폭 변환], [진폭 얽힘] 시 [취약] 1 부여 (턴 당 최대 1회)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -14363,8 +14363,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n(If an Identity only has Attack Skills that gain [Tremor] Count on self, this E.G.O Gift does not activate for them)\n\nWhen winning a Clash with a Skill that inflicts [Tremor] Potency or Count, or consumes [Tremor] Count on self: inflict (# of remaining Coins) [Tremor] Potency against the target and gain (# of remaining Coins) Tremor Count (max +3 Tremor Count gained per Skill). If the target does not have [Tremor], inflict +3 [Tremor] Count\n\nTurn Start: gain (1 + ([Tremor] Count on self / 5)) [ParryingResultUp]. (max 3)\n\nWhen using a Skill that consumes [Tremor] Count on self: when defeating or Staggering a target, gain ([Tremor] Count consumed / 2) [Tremor] Count (once per Skill)\n\nSkills deal +([Tremor] consumed on self + [Tremor] Potency on the enemy + 5)% damage (except E.G.O Skills; max 50%)\nWhen the target has [VibrationNesting], when triggering either [Amplitude Conversion] or [FusionVibration] against the enemy with a type of [Tremor] they don't have in their [VibrationNesting], extend the [VibrationNesting] on target at Turn End to the next turn",
-      "ko": "턴 시작 시, [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외. 인격이 스스로 [진동] 횟수를 얻는 경우에는 발동 x)\n\n[진동] 위력 또는 [진동] 횟수를 부여하거나 자신의 [진동] 횟수를 소모하는 스킬로 합 승리 시 남은 코인만큼 대상에게 [진동] 위력 부여. 자신의 진동 횟수 증가 (스킬당 자신의 진동 횟수 최대 3 증가). 대상에게 [진동]이 없으면, 대상의 [진동] 횟수 3 증가.\n\n턴 시작 시 [ParryingResultUp]를 1 + (자신의 [진동] 횟수/5)만큼 얻음. (최대 3)\n\n자신의 [진동] 횟수를 소모하는 스킬을 사용했을 때, 적 처치 혹은 흐트러짐 상태로 만들경우 (소모한 [진동] 횟수 / 2)만큼 자신의 [진동] 횟수 증가 (스킬당 1회)\n\n스킬의 피해량 +(자신이 소모한 [진동] 횟수 + 적이 보유한 [진동] 위력 + 5)% (E.G.O 스킬 제외, 최대 50%)\n대상에게 [VibrationNesting]이 있을 때, 그 대상에게 중첩되지 않은 유형의 [진동]으로 [진폭 변환], [FusionVibration]을 사용하면, 턴 종료 시 대상이 보유한 [VibrationNesting]을 다음 턴까지 연장함"
+      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n(If an Identity only has Attack Skills that gain [Tremor] Count on self, this E.G.O Gift does not activate for them)\n\nWhen winning a Clash with a Skill that inflicts [Tremor] Potency or Count, or consumes [Tremor] Count on self: inflict (# of remaining Coins) [Tremor] Potency against the target and gain (# of remaining Coins) Tremor Count (max +3 Tremor Count gained per Skill). If the target does not have [Tremor], inflict +3 [Tremor] Count\n\nTurn Start: gain (1 + ([Tremor] Count on self / 5)) [Clash Power Up]. (max 3)\n\nWhen using a Skill that consumes [Tremor] Count on self: when defeating or Staggering a target, gain ([Tremor] Count consumed / 2) [Tremor] Count (once per Skill)\n\nSkills deal +([Tremor] consumed on self + [Tremor] Potency on the enemy + 5)% damage (except E.G.O Skills; max 50%)\nWhen the target has [Tremor - Superposition], when triggering either [Amplitude Conversion] or [Amplitude Entanglement] against the enemy with a type of [Tremor] they don't have in their [Tremor - Superposition], extend the [Tremor - Superposition] on target at Turn End to the next turn",
+      "ko": "턴 시작 시, [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외. 인격이 스스로 [진동] 횟수를 얻는 경우에는 발동 x)\n\n[진동] 위력 또는 [진동] 횟수를 부여하거나 자신의 [진동] 횟수를 소모하는 스킬로 합 승리 시 남은 코인만큼 대상에게 [진동] 위력 부여. 자신의 진동 횟수 증가 (스킬당 자신의 진동 횟수 최대 3 증가). 대상에게 [진동]이 없으면, 대상의 [진동] 횟수 3 증가.\n\n턴 시작 시 [합 위력 증가]를 1 + (자신의 [진동] 횟수/5)만큼 얻음. (최대 3)\n\n자신의 [진동] 횟수를 소모하는 스킬을 사용했을 때, 적 처치 혹은 흐트러짐 상태로 만들경우 (소모한 [진동] 횟수 / 2)만큼 자신의 [진동] 횟수 증가 (스킬당 1회)\n\n스킬의 피해량 +(자신이 소모한 [진동] 횟수 + 적이 보유한 [진동] 위력 + 5)% (E.G.O 스킬 제외, 최대 50%)\n대상에게 [진동 - 중첩]이 있을 때, 그 대상에게 중첩되지 않은 유형의 [진동]으로 [진폭 변환], [진폭 얽힘]을 사용하면, 턴 종료 시 대상이 보유한 [진동 - 중첩]을 다음 턴까지 연장함"
     },
     "fusion": {
       "recipes": [
@@ -17074,8 +17074,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "On enemy kill, increase [BloodDinner] by the killed enemy's (max HP / 10) (max 50)\nTurn End: If an ally has been defeated this turn, all allies gain 2 [Attack Power Up] next turn",
-      "ko": "적 처치시, 해당 적의 (최대 체력/10)만큼 [BloodDinner] 생성 (최대 50)\n턴 종료 시 이번턴에 사망한 아군이 있으면, 다음 턴에 모든 아군이 [공격 위력 증가] 2 얻음"
+      "en": "On enemy kill, increase [Bloodfeast] by the killed enemy's (max HP / 10) (max 50)\nTurn End: If an ally has been defeated this turn, all allies gain 2 [Attack Power Up] next turn",
+      "ko": "적 처치시, 해당 적의 (최대 체력/10)만큼 [혈찬] 생성 (최대 50)\n턴 종료 시 이번턴에 사망한 아군이 있으면, 다음 턴에 모든 아군이 [공격 위력 증가] 2 얻음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -17149,7 +17149,7 @@
       }
     ],
     "desc": {
-      "en": "The ally with the least HP before Combat Start heals 3% HP On Hit with Attack Skills that apply [Bleed] or <noparse>Unique Bleed</noparse> (2 times per turn)\n\nIn a Clash using Skills that apply [Bleed] or <noparse>Unique Bleed</noparse> against enemies with [Bleed] or <noparse>Unique Bleed</noparse>, Clash Power +1\n- If 5 or more Identities have Attack Skills that apply [Bleed] or <noparse>Unique Bleed</noparse>, Clash Power +1 and deal +10% damage instead (counts all units in the Team)\n- If there are 10 or more Identities that fit the above description, Clash Power +2 and deal +15% damage instead",
+      "en": "The ally with the least HP before Combat Start heals 3% HP On Hit with Attack Skills that apply [Bleed] or Unique Bleed (2 times per turn)\n\nIn a Clash using Skills that apply [Bleed] or Unique Bleed against enemies with [Bleed] or Unique Bleed, Clash Power +1\n- If 5 or more Identities have Attack Skills that apply [Bleed] or Unique Bleed, Clash Power +1 and deal +10% damage instead (counts all units in the Team)\n- If there are 10 or more Identities that fit the above description, Clash Power +2 and deal +15% damage instead",
       "ko": "전투 시작 전 체력이 가장 낮은 아군이 [출혈] 또는 특수 출혈을 부여하는 공격 스킬 적중 시, 최대 체력 3%만큼 체력 회복 (턴당 2회)\n\n[출혈] 또는 특수 출혈을 부여하는 스킬로 [출혈] 또는 특수 출혈을 보유한 적과 합을 진행할 때, 합 위력 +1\n- [출혈] 또는 특수 출혈을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 대신 합 위력 +1, 피해량 +10% (편성 인원 포함)\n- 10인 이상이면, 대신 합 위력 +2, 피해량 +15%"
     },
     "fusion": null,
@@ -17342,8 +17342,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #4 Deployed Identity]\n\nIf this unit has 2+ Blunt Attack Skills, gain 1 [ParryingResultUp] at Turn Start",
-      "ko": "[편성 4번 인격 전용 효과]\n\n타격 공격 스킬을 2개 이상 보유한 경우, 턴 시작 시 [ParryingResultUp] 1 얻음"
+      "en": "[Effects apply only to #4 Deployed Identity]\n\nIf this unit has 2+ Blunt Attack Skills, gain 1 [Clash Power Up] at Turn Start",
+      "ko": "[편성 4번 인격 전용 효과]\n\n타격 공격 스킬을 2개 이상 보유한 경우, 턴 시작 시 [합 위력 증가] 1 얻음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -17458,8 +17458,8 @@
       }
     ],
     "desc": {
-      "en": "Activates when there are 3 or more The Pequod-faction Identities (counting Backup units)\n\nOn Hit with an Attack Skill against enemies with [Bleed] or 'Unique Bleed': Gain 3 [Poise] or +2 [Poise] Count (3 times per turn per Identity)\n\nOn Crit: 80% chance to gain 1 [Pierce Power Up] next turn (2 times per turn per Identity; including E.G.O Skills and Counter Skills)\n- The Pequod-faction Identities gain 1 [Plus Coin Boost] next turn as well (once per turn per Identity)\n\nOn Crit Heads Hit with a Base Skill: Inflict +1 more of the negative effect with that Coin (once per turn per Identity; including Counter Skills and excluding E.G.O Skills)\n\nOn enemy or ally death, The Pequod-faction Identities gain 1 [Pierce Power Up], 1 [Protection], and 1 [CriticalDamageUp] each turn for the rest of this Encounter (3 times per Encounter)\n\nIf one of The Pequod-faction Identities attacks and hits an enemy, heal 7 SP for The Pequod-faction Identity with the earliest Deployment order (once per Skill)\n\nWhen an ally kills an enemy, heal 15 SP for The Pequod-faction Identity with the earliest Deployment order if said Identity lost SP",
-      "ko": "편성된 피쿼드호 소속 인격이 3인 이상일 때 발동 (대기 인원 포함)\n\n[출혈] 또는 특수 출혈이 부여된 적에게 공격 스킬 적중 시 [호흡] 횟수 2 증가 또는 [호흡] 3 얻음 (인격별 턴당 3회 발동)\n\n스킬 적중 시 크리티컬이 발생했다면, 80% 확률로 다음 턴에 [관통 위력 증가] 1 얻음 (인격별 턴당 2회 발동, E.G.O 스킬 포함, 반격 포함)\n- 피쿼드호 소속 인격이면, 추가로 다음 턴에 [더하기 코인 강화] 1 얻음 (인격별 턴당 1회 발동)\n\n기본 스킬로 크리티컬 앞면 적중 시 해당 코인으로 부여하는 부정적인 효과의 수치가 1 증가함 (인격별 턴당 1회 발동, E.G.O 스킬 제외, 반격 포함)\n\n적 또는 아군 사망 시 이번 전투동안 피쿼드호 소속 인격이 매턴 [관통 위력 증가] 1, [보호] 1, [CriticalDamageUp] 1 얻음 (전투당 최대 3회 발동)\n\n피쿼드호 소속의 인원이 공격을 적중했으면, 편성 순서가 가장 빠른 피쿼드호 소속 인격의 정신력 7 회복 (스킬당 1회)\n\n아군이 적 처치 시 편성 순서가 가장 빠른 피쿼드호 소속 인격의 정신력이 감소했으면, 정신력 15 회복"
+      "en": "Activates when there are 3 or more The Pequod-faction Identities (counting Backup units)\n\nOn Hit with an Attack Skill against enemies with [Bleed] or 'Unique Bleed': Gain 3 [Poise] or +2 [Poise] Count (3 times per turn per Identity)\n\nOn Crit: 80% chance to gain 1 [Pierce Power Up] next turn (2 times per turn per Identity; including E.G.O Skills and Counter Skills)\n- The Pequod-faction Identities gain 1 [Plus Coin Boost] next turn as well (once per turn per Identity)\n\nOn Crit Heads Hit with a Base Skill: Inflict +1 more of the negative effect with that Coin (once per turn per Identity; including Counter Skills and excluding E.G.O Skills)\n\nOn enemy or ally death, The Pequod-faction Identities gain 1 [Pierce Power Up], 1 [Protection], and 1 [Crit DMG Up] each turn for the rest of this Encounter (3 times per Encounter)\n\nIf one of The Pequod-faction Identities attacks and hits an enemy, heal 7 SP for The Pequod-faction Identity with the earliest Deployment order (once per Skill)\n\nWhen an ally kills an enemy, heal 15 SP for The Pequod-faction Identity with the earliest Deployment order if said Identity lost SP",
+      "ko": "편성된 피쿼드호 소속 인격이 3인 이상일 때 발동 (대기 인원 포함)\n\n[출혈] 또는 특수 출혈이 부여된 적에게 공격 스킬 적중 시 [호흡] 횟수 2 증가 또는 [호흡] 3 얻음 (인격별 턴당 3회 발동)\n\n스킬 적중 시 크리티컬이 발생했다면, 80% 확률로 다음 턴에 [관통 위력 증가] 1 얻음 (인격별 턴당 2회 발동, E.G.O 스킬 포함, 반격 포함)\n- 피쿼드호 소속 인격이면, 추가로 다음 턴에 [더하기 코인 강화] 1 얻음 (인격별 턴당 1회 발동)\n\n기본 스킬로 크리티컬 앞면 적중 시 해당 코인으로 부여하는 부정적인 효과의 수치가 1 증가함 (인격별 턴당 1회 발동, E.G.O 스킬 제외, 반격 포함)\n\n적 또는 아군 사망 시 이번 전투동안 피쿼드호 소속 인격이 매턴 [관통 위력 증가] 1, [보호] 1, [크리티컬 피해량 증가] 1 얻음 (전투당 최대 3회 발동)\n\n피쿼드호 소속의 인원이 공격을 적중했으면, 편성 순서가 가장 빠른 피쿼드호 소속 인격의 정신력 7 회복 (스킬당 1회)\n\n아군이 적 처치 시 편성 순서가 가장 빠른 피쿼드호 소속 인격의 정신력이 감소했으면, 정신력 15 회복"
     },
     "fusion": {
       "recipes": [
@@ -17500,8 +17500,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "All Bloodfiend allies: Base Skill Coin Power +1, deal +([BloodDinner_Accumulation] / 10)% Skill damage\n\nTurn End: Among allies with [Bleed], 2 allies with the least HP heal 5% HP and gain 10 [Shimmering【Bloodfiend】] at next Turn Start\n\nOn enemy Kill, increase [BloodDinner] by (enemy Core max HP / 10) (max 50)\n\nTurn End: If an ally died this turn, all allies gain 2 [Attack Power Up] next turn\n\nIn Encounters where backup enemies appear: When new enemies appear, inflict 5 [Bleed] and +3 [Bleed] Count against them at Combat Start.\nIf there is a <Bloodfiend> among allies: When new enemies enter the battle, activate [Bleed] on all enemies twice and reduce their [Bleed] Count by 2",
-      "ko": "혈귀인 모든 아군의 기본 스킬 코인 위력 +1, 자신의 ([BloodDinner_Accumulation] / 10)%만큼 스킬 <noparse>피해량 증가</noparse>\n\n턴 종료 시, [출혈]을 보유한 아군 중 가장 체력이 적은 인격 2명이 자신의 최대 체력의 5%만큼 체력을 회복하고 다음 턴 시작시 [일렁임【혈귀】] 10 얻음\n\n적 처치시, 해당 적의 (본체 최대 체력/10)만큼 [BloodDinner] 생성 (최대 50)\n\n턴 종료시 이번 턴에 사망한 아군이 있으면, 다음 턴에 모든 아군이 [공격 위력 증가] 2 얻음\n\n적이 증원되는 전투에서 새로운 적이 등장하면, 전투 시작 시 해당 적에게 [출혈] 5, [출혈] 횟수 3 부여.\n아군에 <혈귀>가 있다면, 적이 증원될 때 모든 적의 [출혈]을 2회 발동시키고, 모든 적의 [출혈] 횟수 2 감소"
+      "en": "All Bloodfiend allies: Base Skill Coin Power +1, deal +([Bloodfeast Consumed] / 10)% Skill damage\n\nTurn End: Among allies with [Bleed], 2 allies with the least HP heal 5% HP and gain 10 [Shimmering【Bloodfiend】] at next Turn Start\n\nOn enemy Kill, increase [Bloodfeast] by (enemy Core max HP / 10) (max 50)\n\nTurn End: If an ally died this turn, all allies gain 2 [Attack Power Up] next turn\n\nIn Encounters where backup enemies appear: When new enemies appear, inflict 5 [Bleed] and +3 [Bleed] Count against them at Combat Start.\nIf there is a <Bloodfiend> among allies: When new enemies enter the battle, activate [Bleed] on all enemies twice and reduce their [Bleed] Count by 2",
+      "ko": "혈귀인 모든 아군의 기본 스킬 코인 위력 +1, 자신의 ([누적 소모 혈찬] / 10)%만큼 스킬 피해량 증가\n\n턴 종료 시, [출혈]을 보유한 아군 중 가장 체력이 적은 인격 2명이 자신의 최대 체력의 5%만큼 체력을 회복하고 다음 턴 시작시 [일렁임【혈귀】] 10 얻음\n\n적 처치시, 해당 적의 (본체 최대 체력/10)만큼 [혈찬] 생성 (최대 50)\n\n턴 종료시 이번 턴에 사망한 아군이 있으면, 다음 턴에 모든 아군이 [공격 위력 증가] 2 얻음\n\n적이 증원되는 전투에서 새로운 적이 등장하면, 전투 시작 시 해당 적에게 [출혈] 5, [출혈] 횟수 3 부여.\n아군에 <혈귀>가 있다면, 적이 증원될 때 모든 적의 [출혈]을 2회 발동시키고, 모든 적의 [출혈] 횟수 2 감소"
     },
     "fusion": {
       "recipes": [
@@ -17547,8 +17547,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "If the enemy has [VibrationIgnition], apply the following effects:\n- On Base Skill Hit, inflict 1 [Burn] (3 times per Skill)\n- On Base Skill Hit, if the enemy has 15+ [VibrationIgnition], inflict +1 [Burn] Count (2 times per Skill)\n- For every 3 [Burn], +1% to Stagger Threshold raised by [Tremor Burst] (max 15%)",
-      "ko": "적에게 [VibrationIgnition]이 있을 경우 다음 효과 적용\n- 기본 스킬 적중 시 [화상] 위력 1 부여 (스킬당 최대 3회)\n- 기본 스킬 적중 시 [VibrationIgnition]이 15 이상이면, [화상] 횟수 1 증가 (스킬당 최대 2회)\n- [화상] 3당, [진동 폭발]로 인한 흐트러짐 손상 +1% (최대 15%)"
+      "en": "If the enemy has [Tremor - Scorch], apply the following effects:\n- On Base Skill Hit, inflict 1 [Burn] (3 times per Skill)\n- On Base Skill Hit, if the enemy has 15+ [Tremor - Scorch], inflict +1 [Burn] Count (2 times per Skill)\n- For every 3 [Burn], +1% to Stagger Threshold raised by [Tremor Burst] (max 15%)",
+      "ko": "적에게 [진동 - 작열]이 있을 경우 다음 효과 적용\n- 기본 스킬 적중 시 [화상] 위력 1 부여 (스킬당 최대 3회)\n- 기본 스킬 적중 시 [진동 - 작열]이 15 이상이면, [화상] 횟수 1 증가 (스킬당 최대 2회)\n- [화상] 3당, [진동 폭발]로 인한 흐트러짐 손상 +1% (최대 15%)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -17677,8 +17677,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Attack End: If [IndexPrescriptTargetToEnemy] is killed, the Identity who attacked and killed [IndexPrescriptTargetToEnemy] gains 1 [Gloom Power Up] next turn; inflict +3 [Sinking] Count to 1 random surviving enemy (once per turn)\n- If the unit that killed [IndexPrescriptTargetToEnemy] is in The Index faction, gain 1 [Attack Power Up] instead of [Gloom Power Up] next turn (once per turn)\n\nTurn End: The Index faction units take ([KarmaOfIndexAlly] Stack on self)% HP damage.\n(Does not get Staggered due to this effect; this damage does not reduce the allies' HP below 20% HP)\nThen, Identities who took damage due to the above effect gain ([KarmaOfIndexAlly] Stack on self / 5) [Power Up] next turn (max 2)",
-      "ko": "공격 종료 시 [IndexPrescriptTargetToEnemy]이 사망했으면, [IndexPrescriptTargetToEnemy]을 처치한 아군이 다음 턴에 [우울 위력 증가] 1 얻고 생존한 무작위 적 1명의 [침잠] 횟수 3 증가 (턴당 1회)\n- [IndexPrescriptTargetToEnemy]을 처치한 아군이 검지 소속 인격이면, [우울 위력 증가] 대신 다음 턴에 [공격 위력 증가] 1 얻음. (턴당 1회)\n\n턴 종료 시 검지 소속이면, 최대 체력의 (보유한 [KarmaOfIndexAlly] 수치)%만큼 피해를 입음.\n(이 효과로 흐트러짐 상태가 되지 않으며, 최대 체력의 20% 미만으로 체력이 감소하지 않음)\n이후 해당 효과로 피해를 입은 인격이 다음 턴에 (보유한 [KarmaOfIndexAlly] 수치/5) 만큼 [위력 증가] 얻음 (최대 2)"
+      "en": "Attack End: If [The Prescript's Target] is killed, the Identity who attacked and killed [The Prescript's Target] gains 1 [Gloom Power Up] next turn; inflict +3 [Sinking] Count to 1 random surviving enemy (once per turn)\n- If the unit that killed [The Prescript's Target] is in The Index faction, gain 1 [Attack Power Up] instead of [Gloom Power Up] next turn (once per turn)\n\nTurn End: The Index faction units take ([Karmic Consequence] Stack on self)% HP damage.\n(Does not get Staggered due to this effect; this damage does not reduce the allies' HP below 20% HP)\nThen, Identities who took damage due to the above effect gain ([Karmic Consequence] Stack on self / 5) [Power Up] next turn (max 2)",
+      "ko": "공격 종료 시 [지령 대상]이 사망했으면, [지령 대상]을 처치한 아군이 다음 턴에 [우울 위력 증가] 1 얻고 생존한 무작위 적 1명의 [침잠] 횟수 3 증가 (턴당 1회)\n- [지령 대상]을 처치한 아군이 검지 소속 인격이면, [우울 위력 증가] 대신 다음 턴에 [공격 위력 증가] 1 얻음. (턴당 1회)\n\n턴 종료 시 검지 소속이면, 최대 체력의 (보유한 [카르마] 수치)%만큼 피해를 입음.\n(이 효과로 흐트러짐 상태가 되지 않으며, 최대 체력의 20% 미만으로 체력이 감소하지 않음)\n이후 해당 효과로 피해를 입은 인격이 다음 턴에 (보유한 [카르마] 수치/5) 만큼 [위력 증가] 얻음 (최대 2)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -17913,8 +17913,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "The Ring-faction Identities gain [Inspire]\n\nIf The Ring-faction Identity with [Inspire] hits an enemy with Lust or Slash Skills, inflict [ObjectOfExploration] on said enemy next turn\n- If the enemy already has [ObjectOfExploration], replace [ObjectOfExploration] with [PaintingMaterial]\n\nIf The Ring-faction Identity with [Inspire] kills an enemy that has [PaintingMaterial], said Identity gains 1 [Plus Coin Boost] next turn (once per turn)",
-      "ko": "약지 소속 인격이 [Inspire]을 얻음\n\n[Inspire]을 보유한 약지 소속 인격의 색욕 속성 또는 참격 속성 스킬이 적중한 적에게 다음 턴에 [ObjectOfExploration] 부여\n- 적이 [ObjectOfExploration]를 이미 보유했을 시, [ObjectOfExploration]이 [PaintingMaterial]로 교체됨\n\n[PaintingMaterial]가 있는 대상을 [Inspire]을 보유한 약지 소속 인격이 처치했으면, 다음 턴에 [더하기 코인 강화] 1 얻음 (턴당 1회)"
+      "en": "The Ring-faction Identities gain [Spark of Inspiration]\n\nIf The Ring-faction Identity with [Spark of Inspiration] hits an enemy with Lust or Slash Skills, inflict [Curio] on said enemy next turn\n- If the enemy already has [Curio], replace [Curio] with [Art Medium]\n\nIf The Ring-faction Identity with [Spark of Inspiration] kills an enemy that has [Art Medium], said Identity gains 1 [Plus Coin Boost] next turn (once per turn)",
+      "ko": "약지 소속 인격이 [영감]을 얻음\n\n[영감]을 보유한 약지 소속 인격의 색욕 속성 또는 참격 속성 스킬이 적중한 적에게 다음 턴에 [탐구 대상] 부여\n- 적이 [탐구 대상]를 이미 보유했을 시, [탐구 대상]이 [그림 재료]로 교체됨\n\n[그림 재료]가 있는 대상을 [영감]을 보유한 약지 소속 인격이 처치했으면, 다음 턴에 [더하기 코인 강화] 1 얻음 (턴당 1회)"
     },
     "fusion": null,
     "hardOnly": true,
@@ -17946,8 +17946,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "The Ring-faction Identities gain [Inspire]\n\nIf The Ring-faction Identity with [Inspire] hits an enemy, inflict [ObjectOfExploration] on said enemy\n- If the enemy already has [ObjectOfExploration], replace [ObjectOfExploration] with [PaintingMaterial]\n\nIf The Ring-faction Identity with [Inspire] kills an enemy that has [PaintingMaterial], said Identity loses [Inspire] and gains [GreatAesthetics]\n\nOn Hit with Plus Coin Attack Skills against an enemy that has 15+ [Bleed], heal 3 SP (once per turn for each Identity)\n- If said Identity or target has 3+ types of negative effects, heal 6 SP instead",
-      "ko": "약지 소속 인격이 [Inspire]을 얻음\n\n[Inspire]을 보유한 약지 소속 인격의 공격 스킬이 적중한 적에게 [ObjectOfExploration] 부여\n- 적이 [ObjectOfExploration]를 이미 보유했을 시, [ObjectOfExploration]이 [PaintingMaterial]로 교체됨\n\n[PaintingMaterial]가 있는 대상을 [Inspire]을 보유한 약지 소속 인격이 처치했으면,\n해당 약지 소속 인격이 [Inspire]을 잃고 [GreatAesthetics]을 얻음\n\n[출혈]이 15이상 있는 적에게 더하기 코인 공격 스킬 적중 시 정신력 3 회복 (인격 별로 턴당 1회)\n- 자신 혹은 대상이 부정적인 효과가 3개 이상이면, 대신 정신력 6 회복"
+      "en": "The Ring-faction Identities gain [Spark of Inspiration]\n\nIf The Ring-faction Identity with [Spark of Inspiration] hits an enemy, inflict [Curio] on said enemy\n- If the enemy already has [Curio], replace [Curio] with [Art Medium]\n\nIf The Ring-faction Identity with [Spark of Inspiration] kills an enemy that has [Art Medium], said Identity loses [Spark of Inspiration] and gains [Exquisite Aesthetics]\n\nOn Hit with Plus Coin Attack Skills against an enemy that has 15+ [Bleed], heal 3 SP (once per turn for each Identity)\n- If said Identity or target has 3+ types of negative effects, heal 6 SP instead",
+      "ko": "약지 소속 인격이 [영감]을 얻음\n\n[영감]을 보유한 약지 소속 인격의 공격 스킬이 적중한 적에게 [탐구 대상] 부여\n- 적이 [탐구 대상]를 이미 보유했을 시, [탐구 대상]이 [그림 재료]로 교체됨\n\n[그림 재료]가 있는 대상을 [영감]을 보유한 약지 소속 인격이 처치했으면,\n해당 약지 소속 인격이 [영감]을 잃고 [훌륭한 미감]을 얻음\n\n[출혈]이 15이상 있는 적에게 더하기 코인 공격 스킬 적중 시 정신력 3 회복 (인격 별로 턴당 1회)\n- 자신 혹은 대상이 부정적인 효과가 3개 이상이면, 대신 정신력 6 회복"
     },
     "fusion": {
       "recipes": [
@@ -18030,8 +18030,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Combat Start: Allies with Shield gain 1 [CriticalDamageUp]\nOn Crit with ally Skill, said ally gains Shield equal to ([Poise] / 5) for the next turn (max 15)",
-      "ko": "전투 시작 시 보호막이 있으면, [CriticalDamageUp] 1 얻음\n아군의 스킬이 크리티컬 적중 시, 다음 턴에 해당 아군이 ([호흡] 수치/5)만큼 보호막을 얻음 (최대 15)"
+      "en": "Combat Start: Allies with Shield gain 1 [Crit DMG Up]\nOn Crit with ally Skill, said ally gains Shield equal to ([Poise] / 5) for the next turn (max 15)",
+      "ko": "전투 시작 시 보호막이 있으면, [크리티컬 피해량 증가] 1 얻음\n아군의 스킬이 크리티컬 적중 시, 다음 턴에 해당 아군이 ([호흡] 수치/5)만큼 보호막을 얻음 (최대 15)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18063,8 +18063,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "This E.G.O Gift changes after 6 Encounter wins\n{0}\n\nFor all allies: Take +20% damage, Clash Power -1",
-      "ko": "전투를 6회 승리할 시 해당 E.G.O 기프트가 변경됨\n{0}\n\n모든 아군이 받는 피해 20% 증가, 합위력 -1"
+      "en": "This E.G.O Gift changes after 6 Encounter wins\n\nFor all allies: Take +20% damage, Clash Power -1",
+      "ko": "전투를 6회 승리할 시 해당 E.G.O 기프트가 변경됨\n\n모든 아군이 받는 피해 20% 증가, 합위력 -1"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18131,8 +18131,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "This E.G.O Gift changes after 6 Encounter wins\n{0}\n\nMin & Max Speed -5 for all allies (this effect cannot reduce Speed below 1)",
-      "ko": "전투를 6회 승리할 시 해당 E.G.O 기프트가 변경됨\n{0}\n\n모든 아군의 속도 최소, 최댓값 5 감소 (1미만으로 내려가지 않음)"
+      "en": "This E.G.O Gift changes after 6 Encounter wins\n\nMin & Max Speed -5 for all allies (this effect cannot reduce Speed below 1)",
+      "ko": "전투를 6회 승리할 시 해당 E.G.O 기프트가 변경됨\n\n모든 아군의 속도 최소, 최댓값 5 감소 (1미만으로 내려가지 않음)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18199,8 +18199,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "This E.G.O Gift changes after 6 Encounter wins\n{0}\n\nTurn Start: A random ally who is not Staggered enters a forced Stagger state",
-      "ko": "전투를 6회 승리할 시 해당 E.G.O 기프트가 변경됨\n{0}\n\n턴 시작 시 흐트러짐 상태가 아닌 무작위 아군 1명 강제 흐트러짐 발생"
+      "en": "This E.G.O Gift changes after 6 Encounter wins\n\nTurn Start: A random ally who is not Staggered enters a forced Stagger state",
+      "ko": "전투를 6회 승리할 시 해당 E.G.O 기프트가 변경됨\n\n턴 시작 시 흐트러짐 상태가 아닌 무작위 아군 1명 강제 흐트러짐 발생"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18341,8 +18341,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that gain or spend [Ammo] (except E.G.O Skills; counts all units in the Team)\n\n- At 2+...\nOn Use with a Skill that gains or spends [Ammo]: Gain 2 [Haste] and 4 [Offense Level Up] next turn (once per Identity per turn)\n\n- At 5+...\nSkills used by Identities that gain or spend [Ammo]: Clash Power +1, deal +10% damage\nSkills that gain or spend [Ammo]: Deal +(100 / # of Coins)% damage\nIf an affected unit is out of [Ammo], gain 4 [Ammo] at the next Turn Start (once per Identity per Encounter)\n\n- At 8+...\nTurn Start: Apply 1 [DesperadoBuff] to Identities that gain or spend [Ammo]\n• If the affected unit did not spend [Ammo] last turn, apply 1 additional [DesperadoBuff]\nCombat End: deal (total sum of [DesperadoBuff] on all allies x 3) Pierce damage to 1 random enemy (max 30)\n• Then, repeat the above effect (number of Identities in the Team that gain or spend [Ammo] - 1) times",
-      "ko": "[탄환]을 얻거나 소모하는 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함)\n\n- 2인 이상\n[탄환]을 얻거나 소모하는 스킬 사용 시 다음 턴에 [신속] 2, [공격 레벨 증가] 4 얻음 (인격별로 턴당 1회)\n\n- 5인 이상\n[탄환]을 얻거나 소모하는 인격이 사용하는 스킬의 합 위력 +1, 피해량 +10%\n[탄환]을 얻거나 소모하는 스킬의 피해량 +(100/코인 수)%\n[탄환]을 전부 소모했으면, 다음 턴 시작 시 [탄환] 4 얻음 (인격 별로 전투 당 1회)\n\n- 8인 이상\n턴 시작 시 [탄환]을 얻거나 소모하는 인격에게 [DesperadoBuff] 1 부여\n• 이전 턴에 [탄환]을 소모하지 않았으면, [DesperadoBuff] 1 추가 부여\n전투 종료 시 무작위 적 1명에게 (아군이 보유한 모든 [DesperadoBuff]의 합 x 3)만큼 관통 피해를 입힘 (최대 30)\n• 이후, 이 효과를 (편성된 수 - 1)만큼 반복함"
+      "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that gain or spend [Ammo] (except E.G.O Skills; counts all units in the Team)\n\n- At 2+...\nOn Use with a Skill that gains or spends [Ammo]: Gain 2 [Haste] and 4 [Offense Level Up] next turn (once per Identity per turn)\n\n- At 5+...\nSkills used by Identities that gain or spend [Ammo]: Clash Power +1, deal +10% damage\nSkills that gain or spend [Ammo]: Deal +(100 / # of Coins)% damage\nIf an affected unit is out of [Ammo], gain 4 [Ammo] at the next Turn Start (once per Identity per Encounter)\n\n- At 8+...\nTurn Start: Apply 1 [Desperado] to Identities that gain or spend [Ammo]\n• If the affected unit did not spend [Ammo] last turn, apply 1 additional [Desperado]\nCombat End: deal (total sum of [Desperado] on all allies x 3) Pierce damage to 1 random enemy (max 30)\n• Then, repeat the above effect (number of Identities in the Team that gain or spend [Ammo] - 1) times",
+      "ko": "[탄환]을 얻거나 소모하는 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함)\n\n- 2인 이상\n[탄환]을 얻거나 소모하는 스킬 사용 시 다음 턴에 [신속] 2, [공격 레벨 증가] 4 얻음 (인격별로 턴당 1회)\n\n- 5인 이상\n[탄환]을 얻거나 소모하는 인격이 사용하는 스킬의 합 위력 +1, 피해량 +10%\n[탄환]을 얻거나 소모하는 스킬의 피해량 +(100/코인 수)%\n[탄환]을 전부 소모했으면, 다음 턴 시작 시 [탄환] 4 얻음 (인격 별로 전투 당 1회)\n\n- 8인 이상\n턴 시작 시 [탄환]을 얻거나 소모하는 인격에게 [데스페라도] 1 부여\n• 이전 턴에 [탄환]을 소모하지 않았으면, [데스페라도] 1 추가 부여\n전투 종료 시 무작위 적 1명에게 (아군이 보유한 모든 [데스페라도]의 합 x 3)만큼 관통 피해를 입힘 (최대 30)\n• 이후, 이 효과를 (편성된 수 - 1)만큼 반복함"
     },
     "fusion": {
       "recipes": [
@@ -18425,8 +18425,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #3 Deployed Identity]\n\nTurn Start: Gain 1 [TensionUp]\n\nOn Hit, 25% chance to apply 1 [TensionUp] on self and 1 random ally\n- If it was a Skill that inflicts [Bleed] or [Burn](includes Potency, Count, and Unique variants), raise the chance to 50%",
-      "ko": "[편성 3번 인격 전용 효과]\n\n턴 시작 시 [TensionUp] 1 얻음\n\n공격 적중 시, 25% 확률로 자신과 무작위 아군 1명에게 [TensionUp] 1 부여\n- [출혈] 또는 [화상] 위력, 횟수 부여하는 스킬(특수 키워드 포함)이면, 부여 확률이 50%로 변경"
+      "en": "[Effects apply only to #3 Deployed Identity]\n\nTurn Start: Gain 1 [Hyped-up]\n\nOn Hit, 25% chance to apply 1 [Hyped-up] on self and 1 random ally\n- If it was a Skill that inflicts [Bleed] or [Burn](includes Potency, Count, and Unique variants), raise the chance to 50%",
+      "ko": "[편성 3번 인격 전용 효과]\n\n턴 시작 시 [텐션 업] 1 얻음\n\n공격 적중 시, 25% 확률로 자신과 무작위 아군 1명에게 [텐션 업] 1 부여\n- [출혈] 또는 [화상] 위력, 횟수 부여하는 스킬(특수 키워드 포함)이면, 부여 확률이 50%로 변경"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18462,8 +18462,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "On Hit by an ally with a Skill that inflicts [Sinking] Potency, Count, or 'Unique Sinking', inflict 1 [PinkPetals]\n- Inflict 1 additional [PinkPetals] for every 5 [Sinking] on the enemy (max 4)",
-      "ko": "아군이 [침잠] 위력, [침잠] 횟수 또는 특수 침잠을 부여하는 스킬로 적에게 공격 적중 시, [PinkPetals] 1 부여\n- 적의 [침잠] 위력 5당, [PinkPetals] 1 추가 부여 (최대 4)"
+      "en": "On Hit by an ally with a Skill that inflicts [Sinking] Potency, Count, or 'Unique Sinking', inflict 1 [Pink Petals]\n- Inflict 1 additional [Pink Petals] for every 5 [Sinking] on the enemy (max 4)",
+      "ko": "아군이 [침잠] 위력, [침잠] 횟수 또는 특수 침잠을 부여하는 스킬로 적에게 공격 적중 시, [분홍 꽃잎] 1 부여\n- 적의 [침잠] 위력 5당, [분홍 꽃잎] 1 추가 부여 (최대 4)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18495,8 +18495,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "On Hit with a Pierce Skill against an enemy: Gain 1 [Haste] and 1 [Pierce DMG Up] next turn (2 times per turn per Identity)\n- On enemy Kill with the said Skill: gain 1 additional [Haste] and 2 additional [Pierce DMG Up] next turn (once per turn per Identity)\n\nOn Hit by an ally with a Skill that inflicts [Sinking] Potency, Count, or 'Unique Sinking', inflict 2 [PinkPetals]\n- Inflict 1 additional [PinkPetals] for every 5 [Sinking] on the enemy (max 4)\n- If the enemy has 10+ [PinkPetals] Stack, inflict 2 [Tremor] On Hit (3 times per turn)\n\nTurn End: Inflict 2 [Bind] and 3 [Defense Level Down] next turn against enemies(for Abnormalities, Parts) with 5+ ([Sinking] + [Tremor])\n- If target has 10+ ([Sinking] + [Tremor]), inflict 2 [Bind], 1 [Paralyze], and 4 [Defense Level Down] instead\n\nTurn End: If all enemies have remaining [PinkPetals] Stack, all allies gain 1 [Attack Power Up] next turn",
-      "ko": "관통 스킬을 사용하여 적에게 적중 시, 다음 턴에 [신속] 1, [관통 피해량 증가] 1 얻음 (인격별 턴당 2회)\n- 해당 스킬로 적 처치 시, 다음 턴에 [신속] 1, [관통 피해량 증가] 2 추가로 얻음 (인격별 턴당 1회)\n\n[침잠] 위력, [침잠] 횟수 또는 특수 침잠을 부여하는 스킬로 적에게 공격 적중 시, [PinkPetals] 2 부여\n- 적의 [침잠] 위력 5당, [PinkPetals] 1 추가 부여 (최대 4)\n- 적의 [PinkPetals] 수치가 10 이상이면, 공격 적중 시 [진동] 2 부여 (턴당 3회)\n\n턴 종료 시, [침잠]과 [진동] 위력의 합 5 이상 보유한 적(환상체일 경우, 해당 부위)에게 다음 턴에 [속박] 2, [방어 레벨 감소] 3 부여\n- 대상이 [침잠]과 [진동] 위력의 합이 10 이상이면, 효과가 강화되어 [속박] 2, [마비] 1, [방어 레벨 감소] 4 부여\n\n턴 종료 시 모든 적에게 [PinkPetals]이 있을 경우, 다음 턴에 모든 아군이 [공격 위력 증가] 1 얻음"
+      "en": "On Hit with a Pierce Skill against an enemy: Gain 1 [Haste] and 1 [Pierce DMG Up] next turn (2 times per turn per Identity)\n- On enemy Kill with the said Skill: gain 1 additional [Haste] and 2 additional [Pierce DMG Up] next turn (once per turn per Identity)\n\nOn Hit by an ally with a Skill that inflicts [Sinking] Potency, Count, or 'Unique Sinking', inflict 2 [Pink Petals]\n- Inflict 1 additional [Pink Petals] for every 5 [Sinking] on the enemy (max 4)\n- If the enemy has 10+ [Pink Petals] Stack, inflict 2 [Tremor] On Hit (3 times per turn)\n\nTurn End: Inflict 2 [Bind] and 3 [Defense Level Down] next turn against enemies(for Abnormalities, Parts) with 5+ ([Sinking] + [Tremor])\n- If target has 10+ ([Sinking] + [Tremor]), inflict 2 [Bind], 1 [Paralyze], and 4 [Defense Level Down] instead\n\nTurn End: If all enemies have remaining [Pink Petals] Stack, all allies gain 1 [Attack Power Up] next turn",
+      "ko": "관통 스킬을 사용하여 적에게 적중 시, 다음 턴에 [신속] 1, [관통 피해량 증가] 1 얻음 (인격별 턴당 2회)\n- 해당 스킬로 적 처치 시, 다음 턴에 [신속] 1, [관통 피해량 증가] 2 추가로 얻음 (인격별 턴당 1회)\n\n[침잠] 위력, [침잠] 횟수 또는 특수 침잠을 부여하는 스킬로 적에게 공격 적중 시, [분홍 꽃잎] 2 부여\n- 적의 [침잠] 위력 5당, [분홍 꽃잎] 1 추가 부여 (최대 4)\n- 적의 [분홍 꽃잎] 수치가 10 이상이면, 공격 적중 시 [진동] 2 부여 (턴당 3회)\n\n턴 종료 시, [침잠]과 [진동] 위력의 합 5 이상 보유한 적(환상체일 경우, 해당 부위)에게 다음 턴에 [속박] 2, [방어 레벨 감소] 3 부여\n- 대상이 [침잠]과 [진동] 위력의 합이 10 이상이면, 효과가 강화되어 [속박] 2, [마비] 1, [방어 레벨 감소] 4 부여\n\n턴 종료 시 모든 적에게 [분홍 꽃잎]이 있을 경우, 다음 턴에 모든 아군이 [공격 위력 증가] 1 얻음"
     },
     "fusion": {
       "recipes": [
@@ -18542,8 +18542,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #6 Deployed Identity]\n\nEncounter Start: Gain [QueenBeepheromone]\n\nTake -15% damage from enemies with [Burn]\n\nTurn End: Inflict [QueenBeeMark] next turn against the enemy(in Focused Encounters, the Part) that dealt the most damage to this unit\n- If allies did not take any damage from enemies, inflict [QueenBeeMark] next turn against 1 random enemy(in Focused Encounters, a Part)",
-      "ko": "[편성 6번 인격 전용 효과]\n\n스테이지 시작 시 [QueenBeepheromone] 얻음\n\n[화상]이 있는 적에게 받는 피해량 -15%\n\n턴 종료 시 자신에게 피해를 가장 많이 준 적 1명(집중 전투에서는 부위로 판정)에게 다음 턴에 [QueenBeeMark] 부여\n- 적에게 피해를 받지 않았으면, 무작위 적 1명(집중 전투에서는 부위로 판정)에게 다음 턴에 [QueenBeeMark] 부여"
+      "en": "[Effects apply only to #6 Deployed Identity]\n\nEncounter Start: Gain [Pheromone]\n\nTake -15% damage from enemies with [Burn]\n\nTurn End: Inflict [Pheromone Mark] next turn against the enemy(in Focused Encounters, the Part) that dealt the most damage to this unit\n- If allies did not take any damage from enemies, inflict [Pheromone Mark] next turn against 1 random enemy(in Focused Encounters, a Part)",
+      "ko": "[편성 6번 인격 전용 효과]\n\n스테이지 시작 시 [페로몬] 얻음\n\n[화상]이 있는 적에게 받는 피해량 -15%\n\n턴 종료 시 자신에게 피해를 가장 많이 준 적 1명(집중 전투에서는 부위로 판정)에게 다음 턴에 [페로몬 표식] 부여\n- 적에게 피해를 받지 않았으면, 무작위 적 1명(집중 전투에서는 부위로 판정)에게 다음 턴에 [페로몬 표식] 부여"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18723,8 +18723,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Limbus Company Identities:\n- Turn Start: Gain (# of Limbus Company Identities participating in battle / 3) [ParryingResultUp] (max 2; rounded down)\n\nLCE Identities:\n- Deal +(# of Identities in battle wearing E.G.O Gears x 10)% damage (max 30%)\n- On same-faction Ally Death: Gain 1 E.G.O resource each for all Affinities; gain 1 [Plus Coin Boost] and 1 [Minus Coin Boost] at Turn Start for the rest of this Encounter (2 times per Encounter per Identity)",
-      "ko": "림버스 컴퍼니 소속 인격이면, 아래 효과 적용\n- 턴 시작 시 [ParryingResultUp]를 (전투에 참여한 림버스 컴퍼니 소속 인격 수 / 3)만큼 얻음 (최대 2, 소수점 버림)\n\nLCE 소속 인격이면, 아래 효과 적용\n- (전투에 참여한 E.G.O 장비를 입은 인격 수 X 10)%만큼 가하는 <noparse>피해량 증가</noparse> (최대 30%)\n- 같은 소속 아군 사망 시 모든 종류의 E.G.O 자원을 1개씩 얻고, 이번 전투동안 턴 시작 시 [더하기 코인 강화] 1, [빼기 코인 강화] 1 얻음 (전투당 인격별 최대 2회)"
+      "en": "Limbus Company Identities:\n- Turn Start: Gain (# of Limbus Company Identities participating in battle / 3) [Clash Power Up] (max 2; rounded down)\n\nLCE Identities:\n- Deal +(# of Identities in battle wearing E.G.O Gears x 10)% damage (max 30%)\n- On same-faction Ally Death: Gain 1 E.G.O resource each for all Affinities; gain 1 [Plus Coin Boost] and 1 [Minus Coin Boost] at Turn Start for the rest of this Encounter (2 times per Encounter per Identity)",
+      "ko": "림버스 컴퍼니 소속 인격이면, 아래 효과 적용\n- 턴 시작 시 [합 위력 증가]를 (전투에 참여한 림버스 컴퍼니 소속 인격 수 / 3)만큼 얻음 (최대 2, 소수점 버림)\n\nLCE 소속 인격이면, 아래 효과 적용\n- (전투에 참여한 E.G.O 장비를 입은 인격 수 X 10)%만큼 가하는 피해량 증가 (최대 30%)\n- 같은 소속 아군 사망 시 모든 종류의 E.G.O 자원을 1개씩 얻고, 이번 전투동안 턴 시작 시 [더하기 코인 강화] 1, [빼기 코인 강화] 1 얻음 (전투당 인격별 최대 2회)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18756,8 +18756,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #1, #2, #3 Deployed Identities]\n\nWhen winning a Clash with an Attack Skill that inflicts [Rupture] Potency or Count, inflict 5 [Rupture] Potency and +3 [Rupture] Count against the target (once per turn per Identity)\n\nWhen Clashing against an enemy with a slower Speed, gain Final Power +1 and deal +25% damage\n\nWhen winning a Clash against an enemy with [Offense Level Up] buff, gain 3 [Offense Level Up] for the next turn, and inflict 3 [Offense Level Down ] on the enemy that lost the Clash (3 times per turn per Identity)\n\nEvery time Skill 1, Skill 2, or Skill 3 is used, activate the following effect (once per Skill rank):\n- The unit that used said Skill gains 1 [Haste] and 1 [Base Power Up] at Turn Start for this Encounter (can stack up to 3 times)",
-      "ko": "[편성 1번, 2번, 3번 인격 전용 효과]\n\n[파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬을 사용하여 합 승리 시, 대상 적에게 [파열] 위력 5, [파열] 횟수 3 부여 (인격별 턴당 1회)\n\n자신보다 속도가 낮은 적과 합을 진행할 때, 최종 위력 +1, 피해량 +25%\n\n[공격 레벨 증가] 버프를 보유한 적과 합하여 승리 시, 다음 턴 동안 자신은 [공격 레벨 증가] 3을 얻고 합에서 패배한 적에게는 [공격 레벨 감소 ] 3 부여 (인격별 턴당 최대 3회)\n\n스킬 1, 스킬 2, 스킬 3을 사용할 때마다 아래 효과 발동 (스킬 종류당 1회)\n- 해당 스킬을 사용한 캐릭터는 이번 전투동안 턴 시작 시 [신속] 1, [기본 위력 증가] 1 얻음 (최대 3회 누적)"
+      "en": "[Effects apply only to #1, #2, #3 Deployed Identities]\n\nWhen winning a Clash with an Attack Skill that inflicts [Rupture] Potency or Count, inflict 5 [Rupture] Potency and +3 [Rupture] Count against the target (once per turn per Identity)\n\nWhen Clashing against an enemy with a slower Speed, gain Final Power +1 and deal +25% damage\n\nWhen winning a Clash against an enemy with [Offense Level Up] buff, gain 3 [Offense Level Up] for the next turn, and inflict 3 [Offense Level Down] on the enemy that lost the Clash (3 times per turn per Identity)\n\nEvery time Skill 1, Skill 2, or Skill 3 is used, activate the following effect (once per Skill rank):\n- The unit that used said Skill gains 1 [Haste] and 1 [Base Power Up] at Turn Start for this Encounter (can stack up to 3 times)",
+      "ko": "[편성 1번, 2번, 3번 인격 전용 효과]\n\n[파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬을 사용하여 합 승리 시, 대상 적에게 [파열] 위력 5, [파열] 횟수 3 부여 (인격별 턴당 1회)\n\n자신보다 속도가 낮은 적과 합을 진행할 때, 최종 위력 +1, 피해량 +25%\n\n[공격 레벨 증가] 버프를 보유한 적과 합하여 승리 시, 다음 턴 동안 자신은 [공격 레벨 증가] 3을 얻고 합에서 패배한 적에게는 [공격 레벨 감소] 3 부여 (인격별 턴당 최대 3회)\n\n스킬 1, 스킬 2, 스킬 3을 사용할 때마다 아래 효과 발동 (스킬 종류당 1회)\n- 해당 스킬을 사용한 캐릭터는 이번 전투동안 턴 시작 시 [신속] 1, [기본 위력 증가] 1 얻음 (최대 3회 누적)"
     },
     "fusion": {
       "recipes": [
@@ -18850,8 +18850,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #1 Deployed Identity]\nEncounter Start: Gain 1 [KAmpouleMirror]",
-      "ko": "[편성 순서 1번 인격 전용 효과]\n스테이지 시작시, [KAmpouleMirror] 1 얻음"
+      "en": "[Effects apply only to #1 Deployed Identity]\nEncounter Start: Gain 1 [K Corp. Emergency Ampule]",
+      "ko": "[편성 순서 1번 인격 전용 효과]\n스테이지 시작시, [비상용 K사 앰플] 1 얻음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18920,7 +18920,7 @@
     },
     "conditions": [],
     "desc": {
-      "en": "<noparse>N Corp. Fanatic</noparse> Identities: Base Skills gain Base Power +3\n\nWhen an <noparse>N Corp. Fanatic</noparse> Identity gains [Fanatic], all <noparse>N Corp. Fanatic</noparse> Identities gain the same Stack of [Fanatic] (once per turn including the first unit)\n- If there is a Lust A-Reson., triple the Stack gained\n\nEncounter Start: Inflict 2 [Nails] on all enemies\n\nWhen an <noparse>N Corp. Fanatic</noparse> Identity uses a Base Skill to Clash against a target that has [Nails], inflict 3 [Bleed] (once per Skill)\n\n<noparse>N Corp. Fanatic</noparse> Identities deal +100% damage using Base Skills against targets that have [Nails]",
+      "en": "N Corp. Fanatic Identities: Base Skills gain Base Power +3\n\nWhen an N Corp. Fanatic Identity gains [Fanatic], all N Corp. Fanatic Identities gain the same Stack of [Fanatic] (once per turn including the first unit)\n- If there is a Lust A-Reson., triple the Stack gained\n\nEncounter Start: Inflict 2 [Nails] on all enemies\n\nWhen an N Corp. Fanatic Identity uses a Base Skill to Clash against a target that has [Nails], inflict 3 [Bleed] (once per Skill)\n\nN Corp. Fanatic Identities deal +100% damage using Base Skills against targets that have [Nails]",
       "ko": "N사 광신도 소속이면, 기본 스킬의 기본 위력 +3\n\nN사 광신도 소속 인격이 [광신]을 얻을 때, 모든 N사 광신도 소속 인격도 해당 수치만큼 [광신] 얻음 (턴당 1회, 본인 포함)\n- 색욕 완전 공명이 있으면, 부여량 3배로 적용\n\n스테이지 시작시 모든 적에게 [못] 2 부여\n\nN사 광신도 소속 인격이 [못]이 있는 대상과 기본 스킬로 합 진행 시 [출혈] 3 부여 (스킬당 1회)\n\nN사 광신도 소속 인격이 [못]이 있는 대상에게 기본 스킬로 가하는 피해량 +100%"
     },
     "fusion": null,
@@ -18955,8 +18955,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "First Turn Start: Increase [BloodDinner] by 300\nDouble the amount of [BloodDinner] increased by [Bleed]\nOn Use of a Skill that consumes [BloodDinner], at Attack End, consume additional [BloodDinner] equal to the amount consumed by the Skill\n\n[La Manchaland Identities Only]\nWhen a La Manchaland Identity enters the field, the Identity gains their respective effect:\n- The Manager of La Manchaland Don Quixote: Gain 15 [Hardblood]\n- The Princess of La Manchaland Rodion: Gain 15 [Blooming Thorn]\n- The Priest of La Manchaland Gregor: Gain 15 [Bloodied Hand]\n- The Barber of La Manchaland Outis: Gain 15 [Blood-tinged Scissorblades]\n- The Prince of La Manchaland Meursault: Gain 3 [Hardblood Armor]\n\n[The Manager of La Manchaland Don Quixote Only]\nThe Manager of La Manchaland Don Quixote's Base Skills gain Final Power +1 and deal +30% damage for every La Manchaland Identity in the Team (max 4; max 120%; including Backup Units; including defeated units; excluding undeployed units)",
-      "ko": "첫 턴 시작시, [BloodDinner] 300 얻음\n[BloodDinner]이 [출혈] 효과로 생성될 때 2배로 생성됨\n[BloodDinner]을 소모하는 스킬 사용시 해당 스킬에서 소모한 값만큼 공격 종료 시에 [BloodDinner]을 추가 소모함\n\n[라만차랜드 인격 전용 효과]\n라만차랜드 소속 인격 전투 참여 시, 인격에 따라 아래 효과 적용\n- 라만차랜드 실장 돈키호테: [경혈] 15 얻음\n- 라만차랜드 공주 로쟈: [피어나는 가시] 15 얻음\n- 라만차랜드 신부 그레고르: [피로 물든 손] 15 얻음\n- 라만차랜드 이발사 오티스: [핏빛 가위날] 15 얻음\n- 라만차랜드 왕자 뫼르소: [경혈 갑주] 3 얻음\n\n[라만차랜드 실장 돈키호테 전용 효과]\n- 자신을 제외한 라만차랜드 소속 인격 1명당 라만차랜드 실장 돈키호테 기본 스킬의 최종 위력 +1, 가하는 피해량 +30% (최대 4, 120%, 대기 인원 포함, 사망 인원 포함, 미 편성 인원 제외)"
+      "en": "First Turn Start: Increase [Bloodfeast] by 300\nDouble the amount of [Bloodfeast] increased by [Bleed]\nOn Use of a Skill that consumes [Bloodfeast], at Attack End, consume additional [Bloodfeast] equal to the amount consumed by the Skill\n\n[La Manchaland Identities Only]\nWhen a La Manchaland Identity enters the field, the Identity gains their respective effect:\n- The Manager of La Manchaland Don Quixote: Gain 15 [Hardblood]\n- The Princess of La Manchaland Rodion: Gain 15 [Blooming Thorn]\n- The Priest of La Manchaland Gregor: Gain 15 [Bloodied Hand]\n- The Barber of La Manchaland Outis: Gain 15 [Blood-tinged Scissorblades]\n- The Prince of La Manchaland Meursault: Gain 3 [Hardblood Armor]\n\n[The Manager of La Manchaland Don Quixote Only]\nThe Manager of La Manchaland Don Quixote's Base Skills gain Final Power +1 and deal +30% damage for every La Manchaland Identity in the Team (max 4; max 120%; including Backup Units; including defeated units; excluding undeployed units)",
+      "ko": "첫 턴 시작시, [혈찬] 300 얻음\n[혈찬]이 [출혈] 효과로 생성될 때 2배로 생성됨\n[혈찬]을 소모하는 스킬 사용시 해당 스킬에서 소모한 값만큼 공격 종료 시에 [혈찬]을 추가 소모함\n\n[라만차랜드 인격 전용 효과]\n라만차랜드 소속 인격 전투 참여 시, 인격에 따라 아래 효과 적용\n- 라만차랜드 실장 돈키호테: [경혈] 15 얻음\n- 라만차랜드 공주 로쟈: [피어나는 가시] 15 얻음\n- 라만차랜드 신부 그레고르: [피로 물든 손] 15 얻음\n- 라만차랜드 이발사 오티스: [핏빛 가위날] 15 얻음\n- 라만차랜드 왕자 뫼르소: [경혈 갑주] 3 얻음\n\n[라만차랜드 실장 돈키호테 전용 효과]\n- 자신을 제외한 라만차랜드 소속 인격 1명당 라만차랜드 실장 돈키호테 기본 스킬의 최종 위력 +1, 가하는 피해량 +30% (최대 4, 120%, 대기 인원 포함, 사망 인원 포함, 미 편성 인원 제외)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -18991,7 +18991,7 @@
     "conditions": [],
     "desc": {
       "en": "Base Skills that consume [Tremor] Count or [Charge] Count deal +20% damage (including 'Unique Charge'; excluding 'Unique Charge'(fixed Potency))\n\nWhen consuming [Tremor] Count or [Charge] Count by using Base Skills, regain the half of consumed Count at Skill End (min 1, rounded down; including 'Unique Charge', excluding 'Unique Charge'(fixed Potency))",
-      "ko": "[진동] 횟수나 [충전] 횟수를 소모하는 기본 스킬의 피해량 +20% (특수 <noparse>충전</noparse> 포함, 위력 고정 특수 <noparse>충전</noparse> 제외)\n\n기본 스킬로 [진동] 횟수나 [충전] 횟수를 소모했으면, 스킬 종료 시 소모한 횟수의 절반 돌려받음 (최소 1, 소수점 <noparse>버림</noparse>, 특수 <noparse>충전</noparse> 포함, 위력 고정 특수 <noparse>충전</noparse> 제외)"
+      "ko": "[진동] 횟수나 [충전] 횟수를 소모하는 기본 스킬의 피해량 +20% (특수 충전 포함, 위력 고정 특수 충전 제외)\n\n기본 스킬로 [진동] 횟수나 [충전] 횟수를 소모했으면, 스킬 종료 시 소모한 횟수의 절반 돌려받음 (최소 1, 소수점 버림, 특수 충전 포함, 위력 고정 특수 충전 제외)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19025,8 +19025,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "On Clash Win using a Base Skill that inflicts [Tremor] Potency, Count, or 'Unique Tremor' against an enemy, trigger [FusionVibration] into a random 'Unique Tremor' from the following (once per turn):\n- [VibrationIgnition]\n- [Tremor - Hemorrhage]\n- [Tremor - Reverb]\n- [Tremor - Decay]\n- [Tremor - Chain]",
-      "ko": "적에게 [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 기본 스킬로 합 승리시 아래 특수 <noparse>진동</noparse> 중 무작위 특수 <noparse>진동</noparse>으로 [FusionVibration] (턴당 최대 1회)\n- [VibrationIgnition]\n- [진동 - 과다출혈]\n- [진동 - 반향]\n- [진동 - 붕괴]\n- [진동 - 사슬]"
+      "en": "On Clash Win using a Base Skill that inflicts [Tremor] Potency, Count, or 'Unique Tremor' against an enemy, trigger [Amplitude Entanglement] into a random 'Unique Tremor' from the following (once per turn):\n- [Tremor - Scorch]\n- [Tremor - Hemorrhage]\n- [Tremor - Reverb]\n- [Tremor - Decay]\n- [Tremor - Chain]",
+      "ko": "적에게 [진동] 위력, [진동] 횟수 또는 특수 진동을 부여하는 기본 스킬로 합 승리시 아래 특수 진동 중 무작위 특수 진동으로 [진폭 얽힘] (턴당 최대 1회)\n- [진동 - 작열]\n- [진동 - 과다출혈]\n- [진동 - 반향]\n- [진동 - 붕괴]\n- [진동 - 사슬]"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19058,8 +19058,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Allies' Plus Coin Skills: Gain Coin Power +(8 / # of Coins) (gains at least 1 Coin Power, includes E.G.O Skills; rounded down)\n\nAllies' Minus Coin Skills: Gain Final Power +(8 / # of Coins) (gains at least 1 Final Power, includes E.G.O Skills; rounded down)\n\n[Effects apply only to #1 Deployed Identity]\n- In a Clash, gain 1 [LookingFutureMirror] with every Clash. Inflict 2 [Tremor] and [Burn] on target (10 times per Skill)\n- On Clash Win, trigger [Amplitude Conversion] into [VibrationIgnition] and trigger [Tremor Burst] on the main target. Target loses 1 [Tremor] Count\n- On Hit with a Skill, if target is Staggered, deal +30% damage\n- On Crit, trigger [Tremor Burst]. Target loses 1 [Tremor] Count (2 times per Skill)",
-      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 <noparse>버림</noparse>, E.G.O 스킬 포함)\n\n[편성 1번 인격 전용 효과]\n- 합 진행 시 매 합마다 자신이 [LookingFutureMirror] 1 얻음. 대상에게 [진동]과 [화상] 2 부여 (스킬당 최대 10회)\n- 합 승리 시 메인 타겟에게 [VibrationIgnition]로 [진폭 변환]하고, [진동 폭발]. 대상의 [진동] 횟수 1 감소\n- 스킬 적중 시 대상이 흐트러짐 상태라면, 가하는 피해량 +30%\n- 크리티컬 적중 시 [진동 폭발]. 대상의 [진동] 횟수 1 감소 (스킬당 2회)"
+      "en": "Allies' Plus Coin Skills: Gain Coin Power +(8 / # of Coins) (gains at least 1 Coin Power, includes E.G.O Skills; rounded down)\n\nAllies' Minus Coin Skills: Gain Final Power +(8 / # of Coins) (gains at least 1 Final Power, includes E.G.O Skills; rounded down)\n\n[Effects apply only to #1 Deployed Identity]\n- In a Clash, gain 1 [Glimpse of Precognition] with every Clash. Inflict 2 [Tremor] and [Burn] on target (10 times per Skill)\n- On Clash Win, trigger [Amplitude Conversion] into [Tremor - Scorch] and trigger [Tremor Burst] on the main target. Target loses 1 [Tremor] Count\n- On Hit with a Skill, if target is Staggered, deal +30% damage\n- On Crit, trigger [Tremor Burst]. Target loses 1 [Tremor] Count (2 times per Skill)",
+      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 버림, E.G.O 스킬 포함)\n\n[편성 1번 인격 전용 효과]\n- 합 진행 시 매 합마다 자신이 [순간의 예지] 1 얻음. 대상에게 [진동]과 [화상] 2 부여 (스킬당 최대 10회)\n- 합 승리 시 메인 타겟에게 [진동 - 작열]로 [진폭 변환]하고, [진동 폭발]. 대상의 [진동] 횟수 1 감소\n- 스킬 적중 시 대상이 흐트러짐 상태라면, 가하는 피해량 +30%\n- 크리티컬 적중 시 [진동 폭발]. 대상의 [진동] 횟수 1 감소 (스킬당 2회)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19091,8 +19091,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Allies' Plus Coin Skills: Gain Coin Power +(8 / # of Coins) (gains at least 1 Coin Power, includes E.G.O Skills; rounded down)\n\nAllies' Minus Coin Skills: Gain Final Power +(8 / # of Coins) (gains at least 1 Final Power, includes E.G.O Skills; rounded down)\n\nIn a Clash, gain Clash Power +1 for every 30 ([Sinking] on target + [Poise] on self) (max 5)\n\nDeal +25% damage with [Unbreakable Coin]s\nTake -25% damage from [Unbreakable Coin]s\n\n[The Index-faction Exclusive Effect]\n- Upon entering the Encounter for the first time, gain 6 [BlessingOfIndexPrescriptAlly]\n· If the unit is an Identity that can gain [UnlockBuff_Base], gain [UnlockBuffAlly_2] as well\n- Deal +50% damage against [IndexPrescriptTargetToEnemy]",
-      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 <noparse>버림</noparse>, E.G.O 스킬 포함)\n\n합 진행 시, 대상의 [침잠]과 자신의 [호흡]의 합 30당, 합 위력 +1 (최대 5)\n\n[파괴 불가 코인]의 피해량 +25%\n[파괴 불가 코인]으로 피해를 받을 때, 피해량 -25%,\n\n[검지 소속 인격 전용 효과]\n- 전장에 처음으로 등장할 때, [BlessingOfIndexPrescriptAlly] 6 얻음\n· [UnlockBuff_Base]을 획득 가능한 인격일 경우, 추가로 [UnlockBuffAlly_2] 얻음\n- [IndexPrescriptTargetToEnemy]을 보유한 적에게 입히는 피해량 +50%"
+      "en": "Allies' Plus Coin Skills: Gain Coin Power +(8 / # of Coins) (gains at least 1 Coin Power, includes E.G.O Skills; rounded down)\n\nAllies' Minus Coin Skills: Gain Final Power +(8 / # of Coins) (gains at least 1 Final Power, includes E.G.O Skills; rounded down)\n\nIn a Clash, gain Clash Power +1 for every 30 ([Sinking] on target + [Poise] on self) (max 5)\n\nDeal +25% damage with [Unbreakable Coin]s\nTake -25% damage from [Unbreakable Coin]s\n\n[The Index-faction Exclusive Effect]\n- Upon entering the Encounter for the first time, gain 6 [Grace of the Prescript]\n· If the unit is an Identity that can gain [Unlock], gain [Unlock - II] as well\n- Deal +50% damage against [The Prescript's Target]",
+      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 버림, E.G.O 스킬 포함)\n\n합 진행 시, 대상의 [침잠]과 자신의 [호흡]의 합 30당, 합 위력 +1 (최대 5)\n\n[파괴 불가 코인]의 피해량 +25%\n[파괴 불가 코인]으로 피해를 받을 때, 피해량 -25%,\n\n[검지 소속 인격 전용 효과]\n- 전장에 처음으로 등장할 때, [지령의 가호] 6 얻음\n· [해금]을 획득 가능한 인격일 경우, 추가로 [해금 - II] 얻음\n- [지령 대상]을 보유한 적에게 입히는 피해량 +50%"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19125,7 +19125,7 @@
     "conditions": [],
     "desc": {
       "en": "Allies' Plus Coin Skills: Gain Coin Power +(8 / # of Coins) (gains at least 1 Coin Power, includes E.G.O Skills; rounded down)\n\nAllies' Minus Coin Skills: Gain Final Power +(8 / # of Coins) (gains at least 1 Final Power, includes E.G.O Skills; rounded down)\n\nEncounter Start: All allies gain 50 Shield for every The Middle-faction allied unit on the field (excluding Backup units; Shield gained via this effect does not expire at Turn End)\n\nAttack End with The Middle-faction allied units' Envy or Blunt Base Skills: Heal 10% of Skill damage dealt\n- If this effect is triggered by a Counter Skill, heal 20% of Skill damage dealt instead\n- Excess HP healed is converted into Shield (Shield gained via this effect does not expire at Turn End)\n\nCombat Start: The Middle-faction allied units gain Offense Level for the turn based on the number of Defense Skills equipped (max 12 Offense Level)\n- If 6+ Defense Skills are equipped, deal +30% damage with Envy Base Skills\n- Deal an additional +10% damage for every Defense Skill equipped beyond 6 (max 60%)",
-      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 <noparse>버림</noparse>, E.G.O 스킬 포함)\n\n스테이지 시작시 전장에 있는 중지 소속 아군 1명당 모든 아군이 보호막 50씩 얻음 (대기 인원 미포함, 이 효과로 획득한 보호막은 턴 종료시에도 사라지지 않음)\n\n 중지 소속 아군이 질투 속성이나 타격 속성 기본 스킬 공격 종료 시 입힌 스킬 피해량의 10%만큼 체력 회복\n- 반격 스킬로 발동했을 경우, 대신 입힌 스킬 피해량의 20%만큼 체력 회복\n- 초과된 체력 회복량은 보호막으로 획득함 (이 효과로 획득한 보호막은 턴 종료시에도 사라지지 않음)\n\n전투 시작시, 장착한 수비 스킬 수만큼 해당 턴 동안 중지 소속 아군의 공격 레벨이 증가 (최대 12)\n- 장착한 수비 스킬 수가 6 이상이면, 질투 속성 기본 스킬 피해량 +30%, 초과한 수비 스킬 수만큼 추가로 +10% (최대 추가 증가량 60%)"
+      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 버림, E.G.O 스킬 포함)\n\n스테이지 시작시 전장에 있는 중지 소속 아군 1명당 모든 아군이 보호막 50씩 얻음 (대기 인원 미포함, 이 효과로 획득한 보호막은 턴 종료시에도 사라지지 않음)\n\n 중지 소속 아군이 질투 속성이나 타격 속성 기본 스킬 공격 종료 시 입힌 스킬 피해량의 10%만큼 체력 회복\n- 반격 스킬로 발동했을 경우, 대신 입힌 스킬 피해량의 20%만큼 체력 회복\n- 초과된 체력 회복량은 보호막으로 획득함 (이 효과로 획득한 보호막은 턴 종료시에도 사라지지 않음)\n\n전투 시작시, 장착한 수비 스킬 수만큼 해당 턴 동안 중지 소속 아군의 공격 레벨이 증가 (최대 12)\n- 장착한 수비 스킬 수가 6 이상이면, 질투 속성 기본 스킬 피해량 +30%, 초과한 수비 스킬 수만큼 추가로 +10% (최대 추가 증가량 60%)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19158,7 +19158,7 @@
     "conditions": [],
     "desc": {
       "en": "Allies' Plus Coin Skills: Gain Coin Power +(8 / # of Coins) (gains at least 1 Coin Power, includes E.G.O Skills; rounded down)\n\nAllies' Minus Coin Skills: Gain Final Power +(8 / # of Coins) (gains at least 1 Final Power, includes E.G.O Skills; rounded down)\n\nWhen The Ring-faction Identities use Base Attack Skills, apply the following effects based on the number of negative effect types on the target:\n- 2+: Clash Power +2\n- 4+: Deal +15% damage\n- 6+: Inflict +1 more Potency and Count of negative effects via Coin effects\n- 7+: Base Power +2\n- 8+: Deal +35% damage",
-      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 <noparse>버림</noparse>, E.G.O 스킬 포함)\n\n약지 소속 인격이 기본 공격 스킬 사용 시, 대상에게 부여된 부정적인 효과의 개수에 따라 해당 스킬에 아래 효과 적용\n- 2 ~ : 합 위력 +2\n- 4 ~ : 피해량 +15%\n- 6 ~ : 코인 효과로 부여하는 부정적인 효과의 위력, 횟수 부여값 +1\n- 7 ~ : 기본 위력 +2\n- 8 ~ : 피해량 +35%"
+      "ko": "아군이 사용하는 스킬의 코인 위력 +(8/ 코인 수) (더하기 코인 적용), 최종 위력 +(8 / 코인 수) (빼기 코인 적용) (최소 증가 값 1, 소수점 버림, E.G.O 스킬 포함)\n\n약지 소속 인격이 기본 공격 스킬 사용 시, 대상에게 부여된 부정적인 효과의 개수에 따라 해당 스킬에 아래 효과 적용\n- 2 ~ : 합 위력 +2\n- 4 ~ : 피해량 +15%\n- 6 ~ : 코인 효과로 부여하는 부정적인 효과의 위력, 횟수 부여값 +1\n- 7 ~ : 기본 위력 +2\n- 8 ~ : 피해량 +35%"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19195,7 +19195,7 @@
     "conditions": [],
     "desc": {
       "en": "If an ally consumed 10+ [Charge] Count in a single turn with its Base Skills, the said ally deals +20% damage with Base Skills next turn (excluding 'Unique Charge' with fixed Potency)\n- If the [Charge] consumed was 'Unique Charge', inflict +1 more [Bleed] and [Bleed] Count next turn",
-      "ko": "한 턴 동안 자신의 기본 스킬로 [충전] 횟수를 10 이상 소모했으면, 다음 턴에 기본 스킬로 가하는 피해량 +20% (위력 고정인 특수 <noparse>충전</noparse> 제외)\n- 소모한 [충전]이 특수 충전이면, 다음 턴에 부여하는 [출혈] 위력과 [출혈] 횟수 +1"
+      "ko": "한 턴 동안 자신의 기본 스킬로 [충전] 횟수를 10 이상 소모했으면, 다음 턴에 기본 스킬로 가하는 피해량 +20% (위력 고정인 특수 충전 제외)\n- 소모한 [충전]이 특수 충전이면, 다음 턴에 부여하는 [출혈] 위력과 [출혈] 횟수 +1"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19315,8 +19315,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: Activates when there are 2 or more The Ring-faction Identities (only counts Identities on the field)\n\nThe Ring School of Corporism-faction Identities inflict 1 [Slash Resist Down] On Hit with Base Skills (once per Skill; 2 times per turn)\n\nThe Ring Identities deal +20% damage\n\nTurn Start: At 99+ total sum of [Bleed] Potency on all enemies, The Ring School of Corporism-faction Identities gain 1 [RingFingerPhysical]",
-      "ko": "턴 시작시, 약지 소속 인격이 2인 이상일 때 발동 (출격 인원을 기준으로 함).\n\n약지 신체파 소속 인격의 기본 스킬 적중시 대상에게 [참격 내성 약화] 1 부여 (스킬당 1회, 턴당 2회)\n\n약지 소속 인격이 가하는 피해량 +20%\n\n턴 시작시 모든 적들의 [출혈] 위력의 합이 99 이상이면, 약지 신체파 소속 인격이 [RingFingerPhysical] 1 얻음"
+      "en": "Turn Start: Activates when there are 2 or more The Ring-faction Identities (only counts Identities on the field)\n\nThe Ring School of Corporism-faction Identities inflict 1 [Slash Resist Down] On Hit with Base Skills (once per Skill; 2 times per turn)\n\nThe Ring Identities deal +20% damage\n\nTurn Start: At 99+ total sum of [Bleed] Potency on all enemies, The Ring School of Corporism-faction Identities gain 1 [Beauty of the Physique]",
+      "ko": "턴 시작시, 약지 소속 인격이 2인 이상일 때 발동 (출격 인원을 기준으로 함).\n\n약지 신체파 소속 인격의 기본 스킬 적중시 대상에게 [참격 내성 약화] 1 부여 (스킬당 1회, 턴당 2회)\n\n약지 소속 인격이 가하는 피해량 +20%\n\n턴 시작시 모든 적들의 [출혈] 위력의 합이 99 이상이면, 약지 신체파 소속 인격이 [육체미] 1 얻음"
     },
     "fusion": {
       "recipes": [
@@ -19371,8 +19371,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: Activates when there are 2 or more The Ring-faction Identities (only counts Identities on the field)\n\nThe Ring School of Fauvism-faction Identities inflict 1 [Blunt Resist Down] On Hit with Base Skills (once per Skill; 2 times per turn)\n\nThe Ring Identities deal +20% damage\n\nTurn Start: At 99+ total sum of [Bleed] Potency on all enemies, The Ring School of Fauvism-faction Identities gain 1 [RingFingerFauvism]",
-      "ko": "턴 시작시, 약지 소속 인격이 2인 이상일 때 발동 (출격 인원을 기준으로 함).\n\n약지 야수파 소속 인격의 기본 스킬 적중시 대상에게 [타격 내성 약화] 1 부여 (스킬당 1회, 턴당 2회)\n\n약지 소속 인격이 가하는 피해량 +20%\n\n턴 시작시 모든 적들의 [출혈] 위력의 합이 99 이상이면, 약지 야수파 소속 인격이 [RingFingerFauvism] 1 얻음"
+      "en": "Turn Start: Activates when there are 2 or more The Ring-faction Identities (only counts Identities on the field)\n\nThe Ring School of Fauvism-faction Identities inflict 1 [Blunt Resist Down] On Hit with Base Skills (once per Skill; 2 times per turn)\n\nThe Ring Identities deal +20% damage\n\nTurn Start: At 99+ total sum of [Bleed] Potency on all enemies, The Ring School of Fauvism-faction Identities gain 1 [Charm of the Beastly]",
+      "ko": "턴 시작시, 약지 소속 인격이 2인 이상일 때 발동 (출격 인원을 기준으로 함).\n\n약지 야수파 소속 인격의 기본 스킬 적중시 대상에게 [타격 내성 약화] 1 부여 (스킬당 1회, 턴당 2회)\n\n약지 소속 인격이 가하는 피해량 +20%\n\n턴 시작시 모든 적들의 [출혈] 위력의 합이 99 이상이면, 약지 야수파 소속 인격이 [야성미] 1 얻음"
     },
     "fusion": {
       "recipes": [
@@ -19455,7 +19455,7 @@
     "conditions": [],
     "desc": {
       "en": "At Attack End of a Skill that has 2+ Atk Weight, gain +(# of hits on an enemy / 2) E.G.O resource of that Skill's Affinity (rounded down; max 5 per Skill)\n\nOn Crit with a Skill that has 2+ Atk Weight, gain +(# of Coins that hit Critically) E.G.O resource of the least-owned Affinity at Attack End (max 3)",
-      "ko": "공격 가중치가 2 이상인 스킬 공격 종료 시, 사용한 스킬 속성의 E.G.O 자원 +(적에게 적중한 횟수 / 2). (소수점 <noparse>버림</noparse>, 스킬당 최대 5)\n\n공격 가중치가 2 이상인 스킬로 크리티컬이 발생했다면, 공격 종료시 제일 적게 보유한 E.G.O 자원 +(크리티컬이 발생한 코인 수). (최대 3)"
+      "ko": "공격 가중치가 2 이상인 스킬 공격 종료 시, 사용한 스킬 속성의 E.G.O 자원 +(적에게 적중한 횟수 / 2). (소수점 버림, 스킬당 최대 5)\n\n공격 가중치가 2 이상인 스킬로 크리티컬이 발생했다면, 공격 종료시 제일 적게 보유한 E.G.O 자원 +(크리티컬이 발생한 코인 수). (최대 3)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19530,8 +19530,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Turn End: Randomly apply 1 Stack of a random Affinity's <noparse>Damage Up</noparse> next turn to (# of enemies with [Bleed]) The Ring-faction Identities (once per Identity per turn; in Focused Encounters, Parts)\n\nThe Ring-faction Identities deal +10% damage",
-      "ko": "턴 종료시, 무작위 약지 소속 인격 ([출혈]을 보유한 적 수)명에게 다음 턴에 무작위 죄악 속성 <noparse>피해량 증가</noparse> 1 부여 (턴당 인격 별로 최대 1회, 집중 전투일 경우 부위로 판정)\n\n약지 소속 인격이 가하는 피해량 +10%"
+      "en": "Turn End: Randomly apply 1 Stack of a random Affinity's Damage Up next turn to (# of enemies with [Bleed]) The Ring-faction Identities (once per Identity per turn; in Focused Encounters, Parts)\n\nThe Ring-faction Identities deal +10% damage",
+      "ko": "턴 종료시, 무작위 약지 소속 인격 ([출혈]을 보유한 적 수)명에게 다음 턴에 무작위 죄악 속성 피해량 증가 1 부여 (턴당 인격 별로 최대 1회, 집중 전투일 경우 부위로 판정)\n\n약지 소속 인격이 가하는 피해량 +10%"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19666,8 +19666,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "When a Heishou Pack - Mao Branch Identity enters the Encounter for the first time, cap its min Speed to 10 for a turn (at 10+ min Speed, this effect does not activate)\n\nIf an ally has [LegStrength], the ally's Base Skills gain Clash Power +1 and deal +10% damage",
-      "ko": "흑수 - 묘 소속 인격이 스테이지에 첫 등장 시 1턴동안 속도 최솟값이 10으로 유지됨 (속도 최솟값이 10 이상이면, 이 효과는 발동하지 않음)\n\n자신에게 [LegStrength]가 있으면, 기본 스킬의 합 위력 +1, 피해량 +10%"
+      "en": "When a Heishou Pack - Mao Branch Identity enters the Encounter for the first time, cap its min Speed to 10 for a turn (at 10+ min Speed, this effect does not activate)\n\nIf an ally has [Strider【Mao】], the ally's Base Skills gain Clash Power +1 and deal +10% damage",
+      "ko": "흑수 - 묘 소속 인격이 스테이지에 첫 등장 시 1턴동안 속도 최솟값이 10으로 유지됨 (속도 최솟값이 10 이상이면, 이 효과는 발동하지 않음)\n\n자신에게 [각력【묘】]가 있으면, 기본 스킬의 합 위력 +1, 피해량 +10%"
     },
     "fusion": null,
     "hardOnly": true,
@@ -19699,8 +19699,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "When a Heishou Pack - Mao Branch Identity enters the Encounter for the first time, cap its min Speed to 10 for 3 turns (at 10+ min Speed, this effect does not activate)\n\nBase Skills gain Clash Power +1 and deal +10% damage for every [LegStrength] Stack\n\nWhen inflicting [BurstAgility], also inflict it on 2 enemies that do not have [BurstAgility] (once per turn; in Focused Encounters, Parts)\n\nIf an ally's Speed is faster than its target's, the ally's Skills inflict (Speed difference / 3) more [Rupture] or [Rupture] Count (max 3)\n\nTurn End: Heishou Pack - Mao Branch allies gain 2 [Haste] next turn\nIf an ally's Speed is faster than its target's, or when an ally uses an Unopposed Attack, the said ally deals +10% Slash damage for every (Speed difference / 3) (max 30%)\nIf an ally's Speed is faster than its target's, take -10% damage for every (Speed difference / 3) (max 30%)",
-      "ko": "흑수 - 묘 소속 인격이 스테이지에 첫 등장 시 3턴동안 속도 최솟값이 10으로 유지됨 (속도 최솟값이 10 이상이면, 이 효과는 발동하지 않음)\n\n자신의 [LegStrength] 수치 1당, 기본 스킬의 합 위력 +1, 피해량 +10%\n\n[BurstAgility] 부여 시 [BurstAgility]이 없는 적 2명에게 추가 부여함 (턴당 1회, 집중 전투에서는 부위로 판정)\n\n자신의 속도가 대상보다 빠를 때, 스킬로 부여하는 [파열] 혹은 [파열] 횟수를 대상에게 (속도 차 / 3)만큼 추가 부여 (최대 3)\n\n턴 종료시 흑수 - 묘 소속이면, 다음 턴에 [신속] 2 얻음\n자신의 속도가 대상보다 빠르거나 일방 공격을 할 경우, (속도 차 / 3)만큼 참격 피해량 +10% (최대 30%)\n자신의 속도가 대상보다 빠르면, (속도 차 / 3)당 받는 피해량 -10% (최대 30%)"
+      "en": "When a Heishou Pack - Mao Branch Identity enters the Encounter for the first time, cap its min Speed to 10 for 3 turns (at 10+ min Speed, this effect does not activate)\n\nBase Skills gain Clash Power +1 and deal +10% damage for every [Strider【Mao】] Stack\n\nWhen inflicting [Deathrite【Haste】], also inflict it on 2 enemies that do not have [Deathrite【Haste】] (once per turn; in Focused Encounters, Parts)\n\nIf an ally's Speed is faster than its target's, the ally's Skills inflict (Speed difference / 3) more [Rupture] or [Rupture] Count (max 3)\n\nTurn End: Heishou Pack - Mao Branch allies gain 2 [Haste] next turn\nIf an ally's Speed is faster than its target's, or when an ally uses an Unopposed Attack, the said ally deals +10% Slash damage for every (Speed difference / 3) (max 30%)\nIf an ally's Speed is faster than its target's, take -10% damage for every (Speed difference / 3) (max 30%)",
+      "ko": "흑수 - 묘 소속 인격이 스테이지에 첫 등장 시 3턴동안 속도 최솟값이 10으로 유지됨 (속도 최솟값이 10 이상이면, 이 효과는 발동하지 않음)\n\n자신의 [각력【묘】] 수치 1당, 기본 스킬의 합 위력 +1, 피해량 +10%\n\n[주살【신속】] 부여 시 [주살【신속】]이 없는 적 2명에게 추가 부여함 (턴당 1회, 집중 전투에서는 부위로 판정)\n\n자신의 속도가 대상보다 빠를 때, 스킬로 부여하는 [파열] 혹은 [파열] 횟수를 대상에게 (속도 차 / 3)만큼 추가 부여 (최대 3)\n\n턴 종료시 흑수 - 묘 소속이면, 다음 턴에 [신속] 2 얻음\n자신의 속도가 대상보다 빠르거나 일방 공격을 할 경우, (속도 차 / 3)만큼 참격 피해량 +10% (최대 30%)\n자신의 속도가 대상보다 빠르면, (속도 차 / 3)당 받는 피해량 -10% (최대 30%)"
     },
     "fusion": {
       "recipes": [
@@ -19752,8 +19752,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "All allies gain 1 Offense Level and 1 Defense Level for every defeated ally (max 10)\n\nIf Blade of the House of Spiders Ryōshū is in the Team loadout, any defeated Identities excluding Blade of the House of Spiders Ryōshū will not be revived after clearing an Encounter (Floor final boss nodes and Hidden nodes)\n\n[Effects apply only to #1 Deployed Identity]\n\nTurn Start: If there are no surviving allies apart from this unit, gain [RedButterfly]\n\n[Effects apply only to Blade of the House of Spiders Ryōshū]\n\nUpon entering the Encounter for the first time, for every The House of Spiders allied Identity that is defeated, gain 5 [Dihui Star's Blade]\nFor every 2 defeated The House of Spiders allies, Final Power +1, Coin Power +1, and deal +10% damage (max 3 and 30%, respectively)\nIf there are no surviving allies apart from Blade of the House of Spiders Ryōshū, gain +12 modifier for all Choice Event Skill checks",
-      "ko": "사망한 아군 인격 1명당, 모든 아군의 공격 레벨 1, 방어 레벨 1 증가 (최대 10)\n\n거미집의 검 료슈가 덱에 편성되어 있으면, 거미집의 검 료슈 이외의 인격이 사망할 시 전투 종료 후 부활이 발동하지 않음 (보스층, 히든 노드 클리어)\n\n[편성 1번 인격 전용 효과]\n\n턴 시작 시 자신을 제외한 모든 아군이 사망했을 경우, [RedButterfly] 얻음\n\n[거미집의 검 료슈 전용 효과]\n\n스테이지에 첫 등장 시 사망한 거미집 소속 아군 인격 1명당, [지혜성도] 5 얻음\n사망한 거미집 소속 아군 인격 2명당, 최종 위력 +1, 코인 위력 +1, 가하는 피해량 10% (각각 최대 3, 30%)\n거미집의 검 료슈 외에 생존한 아군이 없으면, 모든 선택지 보정 +12"
+      "en": "All allies gain 1 Offense Level and 1 Defense Level for every defeated ally (max 10)\n\nIf Blade of the House of Spiders Ryōshū is in the Team loadout, any defeated Identities excluding Blade of the House of Spiders Ryōshū will not be revived after clearing an Encounter (Floor final boss nodes and Hidden nodes)\n\n[Effects apply only to #1 Deployed Identity]\n\nTurn Start: If there are no surviving allies apart from this unit, gain [Torn-out Butterfly]\n\n[Effects apply only to Blade of the House of Spiders Ryōshū]\n\nUpon entering the Encounter for the first time, for every The House of Spiders allied Identity that is defeated, gain 5 [Dihui Star's Blade]\nFor every 2 defeated The House of Spiders allies, Final Power +1, Coin Power +1, and deal +10% damage (max 3 and 30%, respectively)\nIf there are no surviving allies apart from Blade of the House of Spiders Ryōshū, gain +12 modifier for all Choice Event Skill checks",
+      "ko": "사망한 아군 인격 1명당, 모든 아군의 공격 레벨 1, 방어 레벨 1 증가 (최대 10)\n\n거미집의 검 료슈가 덱에 편성되어 있으면, 거미집의 검 료슈 이외의 인격이 사망할 시 전투 종료 후 부활이 발동하지 않음 (보스층, 히든 노드 클리어)\n\n[편성 1번 인격 전용 효과]\n\n턴 시작 시 자신을 제외한 모든 아군이 사망했을 경우, [찢겨나온나비] 얻음\n\n[거미집의 검 료슈 전용 효과]\n\n스테이지에 첫 등장 시 사망한 거미집 소속 아군 인격 1명당, [지혜성도] 5 얻음\n사망한 거미집 소속 아군 인격 2명당, 최종 위력 +1, 코인 위력 +1, 가하는 피해량 10% (각각 최대 3, 30%)\n거미집의 검 료슈 외에 생존한 아군이 없으면, 모든 선택지 보정 +12"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19789,8 +19789,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "On Crit against an enemy, inflict 1 [Bind] next turn (2 times per turn)\nOn Hit using a Skill against an enemy that has [Bind], gain 1 [Poise] (2 times per turn per Identity)\n\nTurn Start: All enemies that have [Bleed] gain [Offense Level Down ] equal to [Bind] on themselves (max 5)\n\nTurn Start: If all enemies(for Focused Encounters, all Parts) have [Bind], all allies gain 3 [Poise]",
-      "ko": "적에게 크리티컬 적중시 다음 턴에 [속박] 1 부여 (턴당 2회)\n[속박]을 보유한 적에게 스킬 적중시, [호흡] 1 얻음. (인격당 턴당 2회)\n\n턴 시작 시 [출혈]을 보유한 모든 적이 자신의 [속박] 수치만큼 [공격 레벨 감소 ] 얻음 (최대 5)\n\n턴 시작 시 모든 적(집중 전투면 부위로 판정)에게 [속박]이 부여되어있다면, 모든 아군이 [호흡] 3 얻음"
+      "en": "On Crit against an enemy, inflict 1 [Bind] next turn (2 times per turn)\nOn Hit using a Skill against an enemy that has [Bind], gain 1 [Poise] (2 times per turn per Identity)\n\nTurn Start: All enemies that have [Bleed] gain [Offense Level Down] equal to [Bind] on themselves (max 5)\n\nTurn Start: If all enemies(for Focused Encounters, all Parts) have [Bind], all allies gain 3 [Poise]",
+      "ko": "적에게 크리티컬 적중시 다음 턴에 [속박] 1 부여 (턴당 2회)\n[속박]을 보유한 적에게 스킬 적중시, [호흡] 1 얻음. (인격당 턴당 2회)\n\n턴 시작 시 [출혈]을 보유한 모든 적이 자신의 [속박] 수치만큼 [공격 레벨 감소] 얻음 (최대 5)\n\n턴 시작 시 모든 적(집중 전투면 부위로 판정)에게 [속박]이 부여되어있다면, 모든 아군이 [호흡] 3 얻음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -19900,8 +19900,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "If an ally was not hit by an enemy this turn, the said ally gains 1 [Slash DMG Up] next turn\nWhen an ally is hit by an enemy, the said ally gains 4 [Poise], and gains 1 [CriticalDamageUp] this turn and next turn (once per turn per Identity)\n- If the affected ally is a Blade Lineage Identity, gain double the effects of this E.G.O Gift",
-      "ko": "아군이 이번 턴에 적에게 피격당하지 않았으면, 다음 턴에 [참격 피해량 증가] 1 얻음\n아군이 적에게 피격 시, [호흡]을 4 얻고 이번 턴과 다음 턴에 [CriticalDamageUp] 1 얻음 (인격당 턴당 1회)\n- 검계 소속 인격이면, 이 기프트의 효과를 2배로 받음"
+      "en": "If an ally was not hit by an enemy this turn, the said ally gains 1 [Slash DMG Up] next turn\nWhen an ally is hit by an enemy, the said ally gains 4 [Poise], and gains 1 [Crit DMG Up] this turn and next turn (once per turn per Identity)\n- If the affected ally is a Blade Lineage Identity, gain double the effects of this E.G.O Gift",
+      "ko": "아군이 이번 턴에 적에게 피격당하지 않았으면, 다음 턴에 [참격 피해량 증가] 1 얻음\n아군이 적에게 피격 시, [호흡]을 4 얻고 이번 턴과 다음 턴에 [크리티컬 피해량 증가] 1 얻음 (인격당 턴당 1회)\n- 검계 소속 인격이면, 이 기프트의 효과를 2배로 받음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -20084,8 +20084,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: Activates when there are 3 or more <noparse>Dawn Office</noparse> Identities (counts Backup Identities)\n\nTurn 1: Apply 2 [Dawnherald] on all allies\nCombat Start: <noparse>Dawn Office</noparse> Fixer Sinclair heals 10 SP, and the said Identity may enter the \"Volatile E.G.O::Waxen Pinion\" state via the Passive effect of \"Unstable Shell of Ego\" at 25+ SP instead of 40+ SP\n\n[<noparse>Dawn Office</noparse> Identities Exclusive Effect]\nOn Hit using Base Skills, inflict 2 [Burn] and 2 [Tremor] on target (once per Skill)\n<noparse>Dawn Office</noparse> Identities are considered \"Identities that inflict [Burn] and [Tremor]\"\n- <noparse>Dawn Office</noparse> Identities' Base Skills count as \"Skills that inflict [Burn] and [Tremor]\"\nEncounter Start: If <noparse>Dawn Office</noparse> Faust is on the field, apply 1 [Battle Instinct] on the said Identity",
-      "ko": "턴 시작시, <noparse>새벽 사무소</noparse> 소속 인격이 3인 이상일 때 발동 (편성 인원을 기준으로 함)\n첫 턴이면, 모든 아군에게 [새벽맞이] 2 부여\n<noparse>새벽 사무소</noparse> 해결사 싱클레어가 전투 시작시 정신력을 10 회복하고, '불안정한 자아의 껍질' 패시브 효과로 불안정 E.G.O 밀랍날개 상태가 되는 정신력 조건이 25로 감소\n\n[<noparse>새벽 사무소</noparse> 소속 인격 전용 효과]\n기본 스킬의 공격 적중 시 대상에게 [화상] 2, [진동] 2 부여 (스킬당 1회)\n<noparse>새벽 사무소</noparse> 소속 인격을 [화상], [진동]을 부여하는 인격으로 취급됨\n- 이 효과로 인해서 기본 스킬이 [화상], [진동]을 부여하는 스킬로 취급됨\n스테이지 시작시 <noparse>새벽 사무소</noparse> 해결사 파우스트 인격이 전투에 등장해 있으면, [전투 감각] 1 부여"
+      "en": "Turn Start: Activates when there are 3 or more Dawn Office Identities (counts Backup Identities)\n\nTurn 1: Apply 2 [Dawnherald] on all allies\nCombat Start: Dawn Office Fixer Sinclair heals 10 SP, and the said Identity may enter the \"Volatile E.G.O::Waxen Pinion\" state via the Passive effect of \"Unstable Shell of Ego\" at 25+ SP instead of 40+ SP\n\n[Dawn Office Identities Exclusive Effect]\nOn Hit using Base Skills, inflict 2 [Burn] and 2 [Tremor] on target (once per Skill)\nDawn Office Identities are considered \"Identities that inflict [Burn] and [Tremor]\"\n- Dawn Office Identities' Base Skills count as \"Skills that inflict [Burn] and [Tremor]\"\nEncounter Start: If Dawn Office Faust is on the field, apply 1 [Battle Instinct] on the said Identity",
+      "ko": "턴 시작시, 새벽 사무소 소속 인격이 3인 이상일 때 발동 (편성 인원을 기준으로 함)\n첫 턴이면, 모든 아군에게 [새벽맞이] 2 부여\n새벽 사무소 해결사 싱클레어가 전투 시작시 정신력을 10 회복하고, '불안정한 자아의 껍질' 패시브 효과로 불안정 E.G.O 밀랍날개 상태가 되는 정신력 조건이 25로 감소\n\n[새벽 사무소 소속 인격 전용 효과]\n기본 스킬의 공격 적중 시 대상에게 [화상] 2, [진동] 2 부여 (스킬당 1회)\n새벽 사무소 소속 인격을 [화상], [진동]을 부여하는 인격으로 취급됨\n- 이 효과로 인해서 기본 스킬이 [화상], [진동]을 부여하는 스킬로 취급됨\n스테이지 시작시 새벽 사무소 해결사 파우스트 인격이 전투에 등장해 있으면, [전투 감각] 1 부여"
     },
     "fusion": null,
     "hardOnly": false,
@@ -20127,7 +20127,7 @@
         "min": 3,
         "scope": "deployed",
         "text": {
-          "en": "Turn Start: Activates when there are 3 or more \"The Thumb\" Identities (only counts Identities on the field)\nTurn Start: \"The Thumb\" Identities gain 1 [Plus Coin Boost] and 2 [Damage Up]\n\"The Thumb\" Identities gain 1 [Offense Level Up] for every \"The Thumb\" Identity on the field (max 4)\nDeal +1% damage for every [VibrationIgnition] on target (max 20%)\n- Skills that spend [Ammo] deal an additional +1% d",
+          "en": "Turn Start: Activates when there are 3 or more \"The Thumb\" Identities (only counts Identities on the field)\nTurn Start: \"The Thumb\" Identities gain 1 [Plus Coin Boost] and 2 [Damage Up]\n\"The Thumb\" Identities gain 1 [Offense Level Up] for every \"The Thumb\" Identity on the field (max 4)\nDeal +1% damage for every [Tremor - Scorch] on target (max 20%)\n- Skills that spend [Ammo] deal an additional +1% d",
           "ko": "엄지 소속 인격이 3인 이상"
         },
         "tiers": [],
@@ -20135,8 +20135,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: Activates when there are 3 or more \"The Thumb\" Identities (only counts Identities on the field)\nTurn Start: \"The Thumb\" Identities gain 1 [Plus Coin Boost] and 2 [Damage Up]\n\"The Thumb\" Identities gain 1 [Offense Level Up] for every \"The Thumb\" Identity on the field (max 4)\nDeal +1% damage for every [VibrationIgnition] on target (max 20%)\n- Skills that spend [Ammo] deal an additional +1% damage (max 20%)\n- \"The Thumb\" Identities deal an additional +1% damage (max 20%)\n\nUnits that triggered [Tremor Burst] with their Skill effects gain 2 [Offense Level Up] next turn (3 times per turn)\n\nAt Attack End of The House of Spiders: The Thumb Nursefather Rodion's Skill 3, apply 1 [Maturing Textbook] on The House of Spiders: The Thumb Apprentice Heathcliff",
-      "ko": "턴 시작시, 엄지 소속 인격이 3인 이상일 때 발동 (출격 인원을 기준으로 함)\n엄지 소속 인격이 턴 시작 시 [더하기 코인 강화] 1, [피해량 증가] 2 얻음\n엄지 소속 인격 1명당 엄지 소속 인격이 [공격 레벨 증가] 1 얻음 (최대 4)\n대상이 보유한 [VibrationIgnition] 1당 피해량 +1% (최대 20%)\n- [탄환]을 소모하는 스킬이면, 추가로 +1% (최대 20%)\n- 엄지 소속이면, 추가로 +1% (최대 20%)\n\n자신의 스킬 효과로 [진동 폭발]이 발동되었다면, 다음 턴에 [공격 레벨 증가] 2 얻음 (턴당 3회)\n\n거미집 엄지 아비 로쟈의 스킬 3 공격 종료시 거미집 엄지 제자 히스클리프에게 [완성되어가는 교본] 1 부여"
+      "en": "Turn Start: Activates when there are 3 or more \"The Thumb\" Identities (only counts Identities on the field)\nTurn Start: \"The Thumb\" Identities gain 1 [Plus Coin Boost] and 2 [Damage Up]\n\"The Thumb\" Identities gain 1 [Offense Level Up] for every \"The Thumb\" Identity on the field (max 4)\nDeal +1% damage for every [Tremor - Scorch] on target (max 20%)\n- Skills that spend [Ammo] deal an additional +1% damage (max 20%)\n- \"The Thumb\" Identities deal an additional +1% damage (max 20%)\n\nUnits that triggered [Tremor Burst] with their Skill effects gain 2 [Offense Level Up] next turn (3 times per turn)\n\nAt Attack End of The House of Spiders: The Thumb Nursefather Rodion's Skill 3, apply 1 [Maturing Textbook] on The House of Spiders: The Thumb Apprentice Heathcliff",
+      "ko": "턴 시작시, 엄지 소속 인격이 3인 이상일 때 발동 (출격 인원을 기준으로 함)\n엄지 소속 인격이 턴 시작 시 [더하기 코인 강화] 1, [피해량 증가] 2 얻음\n엄지 소속 인격 1명당 엄지 소속 인격이 [공격 레벨 증가] 1 얻음 (최대 4)\n대상이 보유한 [진동 - 작열] 1당 피해량 +1% (최대 20%)\n- [탄환]을 소모하는 스킬이면, 추가로 +1% (최대 20%)\n- 엄지 소속이면, 추가로 +1% (최대 20%)\n\n자신의 스킬 효과로 [진동 폭발]이 발동되었다면, 다음 턴에 [공격 레벨 증가] 2 얻음 (턴당 3회)\n\n거미집 엄지 아비 로쟈의 스킬 3 공격 종료시 거미집 엄지 제자 히스클리프에게 [완성되어가는 교본] 1 부여"
     },
     "fusion": null,
     "hardOnly": false,
@@ -20659,8 +20659,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #1, #2 Deployed Identities]\n\nWhen winning a Clash with an Attack Skill that inflicts [Rupture] Potency or Count, inflict 5 [Rupture] Potency and +3 [Rupture] Count against the target (once per turn per Identity)\n\nWhen Clashing against an enemy with a slower Speed, gain Final Power +1 and deal +25% damage.\n\nWhen winning a Clash against an enemy with [Offense Level Up] buff, gain 3 [Offense Level Up] for the next turn, and inflict 3 [Offense Level Down ] on the enemy that lost the Clash (3 times per turn per Identity)",
-      "ko": "[편성 1번, 2번 인격 전용 효과]\n\n[파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬을 사용하여 합 승리 시, 대상 적에게 [파열] 위력 5, [파열] 횟수 3 부여 (인격 별로 턴 당 1회).\n\n자신보다 속도가 낮은 적과 합을 진행할 때, 최종 위력 +1, 피해량 +25%.\n\n[공격 레벨 증가] 버프를 보유한 적과 합하여 승리 시, 다음 턴 동안 자신은 [공격 레벨 증가] 3을 얻고 합에서 패배한 적에게는 [공격 레벨 감소 ] 3 부여 (인격별 턴당 최대 3회)"
+      "en": "[Effects apply only to #1, #2 Deployed Identities]\n\nWhen winning a Clash with an Attack Skill that inflicts [Rupture] Potency or Count, inflict 5 [Rupture] Potency and +3 [Rupture] Count against the target (once per turn per Identity)\n\nWhen Clashing against an enemy with a slower Speed, gain Final Power +1 and deal +25% damage.\n\nWhen winning a Clash against an enemy with [Offense Level Up] buff, gain 3 [Offense Level Up] for the next turn, and inflict 3 [Offense Level Down] on the enemy that lost the Clash (3 times per turn per Identity)",
+      "ko": "[편성 1번, 2번 인격 전용 효과]\n\n[파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬을 사용하여 합 승리 시, 대상 적에게 [파열] 위력 5, [파열] 횟수 3 부여 (인격 별로 턴 당 1회).\n\n자신보다 속도가 낮은 적과 합을 진행할 때, 최종 위력 +1, 피해량 +25%.\n\n[공격 레벨 증가] 버프를 보유한 적과 합하여 승리 시, 다음 턴 동안 자신은 [공격 레벨 증가] 3을 얻고 합에서 패배한 적에게는 [공격 레벨 감소] 3 부여 (인격별 턴당 최대 3회)"
     },
     "fusion": {
       "recipes": [
@@ -21048,8 +21048,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Regular Encounters) On Hit against enemies with 10+ (sum of [Sinking] Count and Potency):\nif the target is at -45 SP, deal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nFocused Encounters) On Hit against enemies with 10+ (sum of [Sinking] Count and Potency):\ndeal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts [Sinking](including [Sinking] Count and Unique <noparse>Sinking</noparse>), instead of dealing ([Sinking] Potency on target / 2) Gloom damage, deal ([Sinking] Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)",
-      "ko": "일반 전투에서 [침잠] 위력과 [침잠] 횟수의 합이 10 이상인 적에게 공격 적중시, 대상의 정신력이 -45이면,\n대상의 ([침잠] 위력 / 2)만큼 우울 피해를 입힘 (스킬당 1회 발동)\n\n집중 전투에서 [침잠] 위력과 [침잠] 횟수의 합이 10 이상인 적에게 공격 적중시,\n대상의 ([침잠] 위력 / 2)만큼 우울 피해를 입힘 (스킬당 1회 발동)\n\n적에게 공격 적중한 스킬이 [침잠](횟수, 특수 <noparse>침잠</noparse> 포함)을 부여하는 스킬일 경우, ([침잠] 위력/2) 대신 ([침잠] 위력)만큼 우울 피해를 입힘 \n(턴에서 처음으로 공격 적중한 [침잠] 부여 스킬에만 적용)"
+      "en": "Regular Encounters) On Hit against enemies with 10+ (sum of [Sinking] Count and Potency):\nif the target is at -45 SP, deal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nFocused Encounters) On Hit against enemies with 10+ (sum of [Sinking] Count and Potency):\ndeal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts [Sinking](including [Sinking] Count and Unique Sinking), instead of dealing ([Sinking] Potency on target / 2) Gloom damage, deal ([Sinking] Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)",
+      "ko": "일반 전투에서 [침잠] 위력과 [침잠] 횟수의 합이 10 이상인 적에게 공격 적중시, 대상의 정신력이 -45이면,\n대상의 ([침잠] 위력 / 2)만큼 우울 피해를 입힘 (스킬당 1회 발동)\n\n집중 전투에서 [침잠] 위력과 [침잠] 횟수의 합이 10 이상인 적에게 공격 적중시,\n대상의 ([침잠] 위력 / 2)만큼 우울 피해를 입힘 (스킬당 1회 발동)\n\n적에게 공격 적중한 스킬이 [침잠](횟수, 특수 침잠 포함)을 부여하는 스킬일 경우, ([침잠] 위력/2) 대신 ([침잠] 위력)만큼 우울 피해를 입힘 \n(턴에서 처음으로 공격 적중한 [침잠] 부여 스킬에만 적용)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -22372,8 +22372,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n\nTo allies' Skill 3s that inflict [Tremor] Potency, Count, or 'Unique Tremor': Plus Coin Power +2 and deal +25% damage.\n- Minus Coin Skills: Instead of gaining Plus Coin Power, gain Base Power +(8/# of Coins) (min 1; rounded down)\n\nWhen an ally that inflicts [Tremor] Potency, Count, or 'Unique Tremor' triggers [Amplitude Conversion] or [FusionVibration] on an enemy with Attack Skills(Including E.G.O Skills): multiply the [Tremor] Potency and Count by 1.5(only when actually Converting them into different 'Tremor' types) and inflict 5 [Defense Level Down] next turn. (once per turn)\n\nTurn Start: inflict (12 - current Speed) [Tremor] Potency (min. 6) to 3 enemies with the slowest Speed. (once per wave)",
-      "ko": "턴 시작 시, [진동] 위력 또는 [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n[진동] 위력 또는 [진동] 횟수 또는 특수 진동을 부여하는 아군이 사용하는 스킬 3의 더하기 코인 위력 +2, 피해량 +25%.\n- 빼기 코인 스킬일 경우, 더하기 코인 위력 대신 기본 위력 +(8/코인 수) (최소 1, 소수점 버림)\n\n[진동] 위력 또는 [진동] 횟수 또는 특수 진동을 부여하는 아군이 공격 스킬(E.G.O 스킬 포함)을 사용하여 적을 [진폭 변환] 또는 [FusionVibration] 상태로 만들 경우, 변환되는 [진동] 위력과 [진동] 횟수 값이 1.5배로 적용(다른 유형으로 변환되는 경우에만 적용)되고 다음 턴에 [방어 레벨 감소] 5를 부여 (턴 당 1회).\n\n턴 시작 시, 속도가 제일 낮은 적 3명에게 (12-현재 속도)만큼 [진동] 위력 부여 (최소 6, 웨이브 당 최대 1회)."
+      "en": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply [Tremor] Potency, Count, or 'Unique Tremor'. (except E.G.O Skills; except Backup Units)\n\nTo allies' Skill 3s that inflict [Tremor] Potency, Count, or 'Unique Tremor': Plus Coin Power +2 and deal +25% damage.\n- Minus Coin Skills: Instead of gaining Plus Coin Power, gain Base Power +(8/# of Coins) (min 1; rounded down)\n\nWhen an ally that inflicts [Tremor] Potency, Count, or 'Unique Tremor' triggers [Amplitude Conversion] or [Amplitude Entanglement] on an enemy with Attack Skills(Including E.G.O Skills): multiply the [Tremor] Potency and Count by 1.5(only when actually Converting them into different 'Tremor' types) and inflict 5 [Defense Level Down] next turn. (once per turn)\n\nTurn Start: inflict (12 - current Speed) [Tremor] Potency (min. 6) to 3 enemies with the slowest Speed. (once per wave)",
+      "ko": "턴 시작 시, [진동] 위력 또는 [진동] 횟수 또는 특수 진동을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n[진동] 위력 또는 [진동] 횟수 또는 특수 진동을 부여하는 아군이 사용하는 스킬 3의 더하기 코인 위력 +2, 피해량 +25%.\n- 빼기 코인 스킬일 경우, 더하기 코인 위력 대신 기본 위력 +(8/코인 수) (최소 1, 소수점 버림)\n\n[진동] 위력 또는 [진동] 횟수 또는 특수 진동을 부여하는 아군이 공격 스킬(E.G.O 스킬 포함)을 사용하여 적을 [진폭 변환] 또는 [진폭 얽힘] 상태로 만들 경우, 변환되는 [진동] 위력과 [진동] 횟수 값이 1.5배로 적용(다른 유형으로 변환되는 경우에만 적용)되고 다음 턴에 [방어 레벨 감소] 5를 부여 (턴 당 1회).\n\n턴 시작 시, 속도가 제일 낮은 적 3명에게 (12-현재 속도)만큼 [진동] 위력 부여 (최소 6, 웨이브 당 최대 1회)."
     },
     "fusion": {
       "recipes": [
@@ -23637,8 +23637,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Turn Start: If an Identity has Substituted in, the said Identity heals 10 SP and gains 2 [Attack Power Up], 2 [ParryingResultUp], and gains 1 E.G.O resource for each one of their Skills 1, 2, and 3",
-      "ko": "턴 시작 시 대기 해제된 인격이 있으면, 해당 인격이 정신력 10 회복, [공격 위력 증가] 2, [ParryingResultUp] 2 얻음, 자신의 스킬 1, 2, 3 속성의 E.G.O 자원을 1개씩 얻음."
+      "en": "Turn Start: If an Identity has Substituted in, the said Identity heals 10 SP and gains 2 [Attack Power Up], 2 [Clash Power Up], and gains 1 E.G.O resource for each one of their Skills 1, 2, and 3",
+      "ko": "턴 시작 시 대기 해제된 인격이 있으면, 해당 인격이 정신력 10 회복, [공격 위력 증가] 2, [합 위력 증가] 2 얻음, 자신의 스킬 1, 2, 3 속성의 E.G.O 자원을 1개씩 얻음."
     },
     "fusion": null,
     "hardOnly": false,
@@ -23711,8 +23711,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #1 Deployed Identity]\n\nIf there are enemies in Staggered, Low Morale, or Panic states at Turn Start, inflict 1 [Offense Level Down ] or 1 [Defense Level Down] against all enemies. (3 times per turn)\n\nOn Hit against enemies in Staggered, Low Morale, or Panic states: inflict 1 [Offense Level Down ] or 1 [Defense Level Down] (3 times per turn)",
-      "ko": "[편성 1번 인격 전용 효과]\n\n턴 시작시 흐트러짐, 사기저하, 패닉 상태인 적이 있으면, 모든 적에게 [공격 레벨 감소 ] 1 또는 [방어 레벨 감소] 1 부여. (턴 당 최대 3회)\n\n흐트러짐, 사기저하, 패닉 상태인 적에게 공격 적중시, [공격 레벨 감소 ] 1 또는 [방어 레벨 감소] 1 부여 (턴 당 최대 3회)"
+      "en": "[Effects apply only to #1 Deployed Identity]\n\nIf there are enemies in Staggered, Low Morale, or Panic states at Turn Start, inflict 1 [Offense Level Down] or 1 [Defense Level Down] against all enemies. (3 times per turn)\n\nOn Hit against enemies in Staggered, Low Morale, or Panic states: inflict 1 [Offense Level Down] or 1 [Defense Level Down] (3 times per turn)",
+      "ko": "[편성 1번 인격 전용 효과]\n\n턴 시작시 흐트러짐, 사기저하, 패닉 상태인 적이 있으면, 모든 적에게 [공격 레벨 감소] 1 또는 [방어 레벨 감소] 1 부여. (턴 당 최대 3회)\n\n흐트러짐, 사기저하, 패닉 상태인 적에게 공격 적중시, [공격 레벨 감소] 1 또는 [방어 레벨 감소] 1 부여 (턴 당 최대 3회)"
     },
     "fusion": null,
     "hardOnly": true,
@@ -23744,8 +23744,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #1, #2, #7, and #8 Deployed Identities]\n\nGain +1 more [Tremor] Count from Skill & Coin effects\n  - If the target is in Staggered, Low Morale, or Panic states, gain +2 more instead\n\nIf there are enemies in Staggered, Low Morale, or Panic states at Turn Start, inflict 2 [Offense Level Down ] or 2 [Defense Level Down] against all enemies. (3 times per turn)\n\nOn Hit against enemies in Staggered, Low Morale, or Panic states: inflict 1 [Offense Level Down ] or 1 [Defense Level Down] (3 times per turn between all Identities)",
-      "ko": "[편성 1, 2, 7, 8번 인격 전용 효과]\n\n스킬, 코인 효과로 얻는 [진동] 횟수의 값 +1\n  - 공격 대상이 흐트러짐, 사기저하, 패닉 상태면 대신 +2\n\n턴 시작시 흐트러짐, 사기저하, 패닉 상태인 적이 있으면, 모든 적에게 [공격 레벨 감소 ] 2 또는 [방어 레벨 감소] 2 부여 (턴 당 최대 3회)\n\n흐트러짐, 사기저하, 패닉 상태인 적에게 공격 적중시, [공격 레벨 감소 ] 1 또는 [방어 레벨 감소] 1 부여 (턴 당 최대 3회. 다른 인격과 횟수 공유)"
+      "en": "[Effects apply only to #1, #2, #7, and #8 Deployed Identities]\n\nGain +1 more [Tremor] Count from Skill & Coin effects\n  - If the target is in Staggered, Low Morale, or Panic states, gain +2 more instead\n\nIf there are enemies in Staggered, Low Morale, or Panic states at Turn Start, inflict 2 [Offense Level Down] or 2 [Defense Level Down] against all enemies. (3 times per turn)\n\nOn Hit against enemies in Staggered, Low Morale, or Panic states: inflict 1 [Offense Level Down] or 1 [Defense Level Down] (3 times per turn between all Identities)",
+      "ko": "[편성 1, 2, 7, 8번 인격 전용 효과]\n\n스킬, 코인 효과로 얻는 [진동] 횟수의 값 +1\n  - 공격 대상이 흐트러짐, 사기저하, 패닉 상태면 대신 +2\n\n턴 시작시 흐트러짐, 사기저하, 패닉 상태인 적이 있으면, 모든 적에게 [공격 레벨 감소] 2 또는 [방어 레벨 감소] 2 부여 (턴 당 최대 3회)\n\n흐트러짐, 사기저하, 패닉 상태인 적에게 공격 적중시, [공격 레벨 감소] 1 또는 [방어 레벨 감소] 1 부여 (턴 당 최대 3회. 다른 인격과 횟수 공유)"
     },
     "fusion": {
       "recipes": [
@@ -24368,8 +24368,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Every time [Rupture] activates 3 times on enemies with [Rupture] due to getting hit by allies' Attack Skills(including E.G.O Skills) that inflict [Rupture] Potency or Count, inflict 2 [Offense Level Down ] on the said enemy next turn (3 times per turn per enemy; for Abnormalities, for each Part)\n\nOn Kill with a Base Attack Skill that inflicts [Rupture] Count: inflict the remaining [Rupture] Count on the defeated enemy on a random enemy next turn (2 times per turn)",
-      "ko": "[파열]을 보유한 적이 아군으로부터 [파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬(E.G.O 스킬 포함)로 적중받아 [파열]이 3회 발동할 때마다 다음 턴에 [공격 레벨 감소 ] 2 얻음 (적 별로 턴 당 3회, 환상체일 경우 부위별로 계산)\n\n[파열] 횟수를 부여하는 기본 공격 스킬로 적 처치 시, 사망한 대상이 보유한 남은 [파열] 횟수를 다음 턴에 무작위 적에게 부여 (턴 당 2회)."
+      "en": "Every time [Rupture] activates 3 times on enemies with [Rupture] due to getting hit by allies' Attack Skills(including E.G.O Skills) that inflict [Rupture] Potency or Count, inflict 2 [Offense Level Down] on the said enemy next turn (3 times per turn per enemy; for Abnormalities, for each Part)\n\nOn Kill with a Base Attack Skill that inflicts [Rupture] Count: inflict the remaining [Rupture] Count on the defeated enemy on a random enemy next turn (2 times per turn)",
+      "ko": "[파열]을 보유한 적이 아군으로부터 [파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬(E.G.O 스킬 포함)로 적중받아 [파열]이 3회 발동할 때마다 다음 턴에 [공격 레벨 감소] 2 얻음 (적 별로 턴 당 3회, 환상체일 경우 부위별로 계산)\n\n[파열] 횟수를 부여하는 기본 공격 스킬로 적 처치 시, 사망한 대상이 보유한 남은 [파열] 횟수를 다음 턴에 무작위 적에게 부여 (턴 당 2회)."
     },
     "fusion": null,
     "hardOnly": false,
@@ -24817,8 +24817,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "When defeating a target with [Rupture](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency on the target between all enemies(for Focused Encounters, all Parts) (max 2 per enemy, rounded down)\n\nWhen defeating a target with [BurstAgility](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency and Count on the target between all enemies(for Focused Encounters, all Parts) (max 2 per enemy, rounded down)",
-      "ko": "자신의 공격 스킬로 [파열]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 대상의 [파열] 위력을 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 2씩, 소수점 버림)\n\n자신의 공격 스킬로 [BurstAgility]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 위 효과를 대신하여 대상의 [파열] 위력과 횟수를 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 2씩, 소수점 버림)"
+      "en": "When defeating a target with [Rupture](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency on the target between all enemies(for Focused Encounters, all Parts) (max 2 per enemy, rounded down)\n\nWhen defeating a target with [Deathrite【Haste】](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency and Count on the target between all enemies(for Focused Encounters, all Parts) (max 2 per enemy, rounded down)",
+      "ko": "자신의 공격 스킬로 [파열]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 대상의 [파열] 위력을 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 2씩, 소수점 버림)\n\n자신의 공격 스킬로 [주살【신속】]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 위 효과를 대신하여 대상의 [파열] 위력과 횟수를 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 2씩, 소수점 버림)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -24934,8 +24934,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "When clashing against targets with [Rupture], gain ([Rupture] on the target / 20) Clash Power (max 2)\n- When clashing against targets with [BurstAgility], gain ([Rupture] on the target / 15) Clash Power instead (max 3)\n\nWhen dealing damage with [BurstAgility] effect, deal fixed damage by ([BurstAgility] damage / 3)",
-      "ko": "[파열]을 가진 대상과 합을 할 때, (대상의 [파열] / 20)만큼 합 위력이 증가 (최대 2)\n- [BurstAgility]을 가진 대상과 합을 할 때, 위 효과를 대신하여 (대상의 [파열] / 15)만큼 합 위력이 증가 (최대 3)\n\n[BurstAgility] 효과로 피해를 줄 때, ([BurstAgility] 피해 / 3)만큼 고정 피해 입힘"
+      "en": "When clashing against targets with [Rupture], gain ([Rupture] on the target / 20) Clash Power (max 2)\n- When clashing against targets with [Deathrite【Haste】], gain ([Rupture] on the target / 15) Clash Power instead (max 3)\n\nWhen dealing damage with [Deathrite【Haste】] effect, deal fixed damage by ([Deathrite【Haste】] damage / 3)",
+      "ko": "[파열]을 가진 대상과 합을 할 때, (대상의 [파열] / 20)만큼 합 위력이 증가 (최대 2)\n- [주살【신속】]을 가진 대상과 합을 할 때, 위 효과를 대신하여 (대상의 [파열] / 15)만큼 합 위력이 증가 (최대 3)\n\n[주살【신속】] 효과로 피해를 줄 때, ([주살【신속】] 피해 / 3)만큼 고정 피해 입힘"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25075,8 +25075,8 @@
       }
     ],
     "desc": {
-      "en": "Turn Start: This Gift activates for the whole Encounter when there are 5 or more Identities that inflict [Rupture] Potency or [Rupture] Count (except E.G.O Skills; except Backup Units)\n\nWhen defeating a target with [Rupture](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency on the target between all enemies(for Focused Encounters, all Parts) (max 3 per enemy)\n\nWhen defeating a target with [BurstAgility](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency and Count on the target between all enemies(for Focused Encounters, all Parts) (max 6 per enemy)\n\nWhen clashing against targets with [Rupture], gain ([Rupture] on the target / 20) Clash Power (max 2)\n- When clashing against targets with [BurstAgility], gain ([Rupture] on the target / 10) Coin Power instead (max 2)\n\nWhen dealing damage with [BurstAgility] effect, deal fixed damage by ([BurstAgility] damage / 2)",
-      "ko": "턴 시작 시, [파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n자신의 공격 스킬로 [파열]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 대상의 [파열] 위력을 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 3씩)\n\n자신의 공격 스킬로 [BurstAgility]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 위 효과를 대신하여 대상의 [파열] 위력과 횟수를 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 6씩)\n\n[파열]을 가진 대상과 합을 할 때, (대상의 [파열] / 20)만큼 합 위력이 증가 (최대 2)\n- [BurstAgility]을 가진 대상과 합을 할 때, 위 효과를 대신하여 (대상의 [파열] / 10)만큼 코인 위력이 증가 (최대 2)\n\n[BurstAgility] 효과로 피해를 줄 때, ([BurstAgility] 피해 / 2)만큼 고정 피해 입힘"
+      "en": "Turn Start: This Gift activates for the whole Encounter when there are 5 or more Identities that inflict [Rupture] Potency or [Rupture] Count (except E.G.O Skills; except Backup Units)\n\nWhen defeating a target with [Rupture](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency on the target between all enemies(for Focused Encounters, all Parts) (max 3 per enemy)\n\nWhen defeating a target with [Deathrite【Haste】](for Focused Encounters, a Part) with an Attack Skill, inflict the [Rupture] Potency and Count on the target between all enemies(for Focused Encounters, all Parts) (max 6 per enemy)\n\nWhen clashing against targets with [Rupture], gain ([Rupture] on the target / 20) Clash Power (max 2)\n- When clashing against targets with [Deathrite【Haste】], gain ([Rupture] on the target / 10) Coin Power instead (max 2)\n\nWhen dealing damage with [Deathrite【Haste】] effect, deal fixed damage by ([Deathrite【Haste】] damage / 2)",
+      "ko": "턴 시작 시, [파열] 위력 또는 [파열] 횟수를 부여하는 공격 스킬을 보유한 인격이 5인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n자신의 공격 스킬로 [파열]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 대상의 [파열] 위력을 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 3씩)\n\n자신의 공격 스킬로 [주살【신속】]을 가진 대상을 처치할 시 (집중 전투의 경우 부위 파괴), 위 효과를 대신하여 대상의 [파열] 위력과 횟수를 나누어 모든 적 (집중 전투일 경우 부위)에게 부여함 (최대 6씩)\n\n[파열]을 가진 대상과 합을 할 때, (대상의 [파열] / 20)만큼 합 위력이 증가 (최대 2)\n- [주살【신속】]을 가진 대상과 합을 할 때, 위 효과를 대신하여 (대상의 [파열] / 10)만큼 코인 위력이 증가 (최대 2)\n\n[주살【신속】] 효과로 피해를 줄 때, ([주살【신속】] 피해 / 2)만큼 고정 피해 입힘"
     },
     "fusion": {
       "recipes": [
@@ -25165,15 +25165,15 @@
     "conditions": [
       {
         "text": {
-          "en": "Turn Start: This Gift activates for the whole Encounter when 3 or more Identities have Skills that consume [BloodDinner]. (except E.G.O Skills; except Backup Units)\n\nCombat Start: if the target getting attacked by an Identity that consumes [BloodDinner] has 30+ [Bleed] Potency, reduce their [Bleed] Potency to 15. Then, increase [BloodDinner] equal to the amount of [Bleed] Potency re",
-          "ko": "턴 시작 시, [BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)"
+          "en": "Turn Start: This Gift activates for the whole Encounter when 3 or more Identities have Skills that consume [Bloodfeast]. (except E.G.O Skills; except Backup Units)\n\nCombat Start: if the target getting attacked by an Identity that consumes [Bloodfeast] has 30+ [Bleed] Potency, reduce their [Bleed] Potency to 15. Then, increase [Bloodfeast] equal to the amount of [Bleed] Potency re",
+          "ko": "턴 시작 시, [혈찬]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)"
         },
         "type": "unparsed"
       }
     ],
     "desc": {
-      "en": "Turn Start: This Gift activates for the whole Encounter when 3 or more Identities have Skills that consume [BloodDinner]. (except E.G.O Skills; except Backup Units)\n\nCombat Start: if the target getting attacked by an Identity that consumes [BloodDinner] has 30+ [Bleed] Potency, reduce their [Bleed] Potency to 15. Then, increase [BloodDinner] equal to the amount of [Bleed] Potency reduced. (once per turn for the enemy group as a whole; only activates against the main target when using multi-Atk Weight Skills)\n\nFor Identities with Skills that consume [BloodDinner], apply 1 Power Up and 1 Damage Up next turn for every 10 [BloodDinner] generated with the above effect (max 4)",
-      "ko": "턴 시작 시, [BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n전투 시작 시 [BloodDinner]을 소모하는 인격이 공격하는 대상의 [출혈] 위력이 30 이상일 때, 대상의 [출혈] 위력을 15로 감소시키고, 감소한 [출혈] 위력만큼 [BloodDinner]을 생성함. (턴 당 적 전체에서 1회 발동, 광역 스킬의 경우 메인 타겟에게만 적용됨)\n\n해당 효과로 생성된 [BloodDinner] 10 당, [BloodDinner]을 소모하는 스킬을 보유한 인격에게 다음 턴에 위력 증가 1, 피해량 증가 1 부여 (최대 4)"
+      "en": "Turn Start: This Gift activates for the whole Encounter when 3 or more Identities have Skills that consume [Bloodfeast]. (except E.G.O Skills; except Backup Units)\n\nCombat Start: if the target getting attacked by an Identity that consumes [Bloodfeast] has 30+ [Bleed] Potency, reduce their [Bleed] Potency to 15. Then, increase [Bloodfeast] equal to the amount of [Bleed] Potency reduced. (once per turn for the enemy group as a whole; only activates against the main target when using multi-Atk Weight Skills)\n\nFor Identities with Skills that consume [Bloodfeast], apply 1 Power Up and 1 Damage Up next turn for every 10 [Bloodfeast] generated with the above effect (max 4)",
+      "ko": "턴 시작 시, [혈찬]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)\n\n전투 시작 시 [혈찬]을 소모하는 인격이 공격하는 대상의 [출혈] 위력이 30 이상일 때, 대상의 [출혈] 위력을 15로 감소시키고, 감소한 [출혈] 위력만큼 [혈찬]을 생성함. (턴 당 적 전체에서 1회 발동, 광역 스킬의 경우 메인 타겟에게만 적용됨)\n\n해당 효과로 생성된 [혈찬] 10 당, [혈찬]을 소모하는 스킬을 보유한 인격에게 다음 턴에 위력 증가 1, 피해량 증가 1 부여 (최대 4)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25259,8 +25259,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Turn Start: Gain 2 [GiftCannon] and 2 [GiftGlass] every turn\n\nStarting from the 2nd turn, Stacks of [GiftCannon] and [GiftGlass] gained from the above effect increase by 1 each (up to 8 times)",
-      "ko": "턴 시작 시, 매 턴마다 [GiftCannon] 2, [GiftGlass] 2 얻음\n2번째 턴부터, 매 턴마다 획득하는 값이 각각 1씩 증가함 (최대 8회 증가)"
+      "en": "Turn Start: Gain 2 [Firepower] and 2 [Delicateness] every turn\n\nStarting from the 2nd turn, Stacks of [Firepower] and [Delicateness] gained from the above effect increase by 1 each (up to 8 times)",
+      "ko": "턴 시작 시, 매 턴마다 [화력] 2, [연약] 2 얻음\n2번째 턴부터, 매 턴마다 획득하는 값이 각각 1씩 증가함 (최대 8회 증가)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25296,8 +25296,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Encounter Start: Increase [BloodDinner] by 100\nTurn Start: Inflict 2 [Gluttonous Thorn (貪食棘)] against enemies (or Parts) with [Bleed].\nIf all enemies (or all Parts) have [Bleed], inflict 4 [Gluttonous Thorn (貪食棘)].",
-      "ko": "스테이지 시작시, [BloodDinner]을 100 생성\n턴 시작 시, [출혈]이 있는 적 (부위)에 [탐식극(貪食棘)]을 2 부여함.\n모든 적 (부위)에 [출혈]이 있으면, [탐식극(貪食棘)]을 4 부여함."
+      "en": "Encounter Start: Increase [Bloodfeast] by 100\nTurn Start: Inflict 2 [Gluttonous Thorn (貪食棘)] against enemies (or Parts) with [Bleed].\nIf all enemies (or all Parts) have [Bleed], inflict 4 [Gluttonous Thorn (貪食棘)].",
+      "ko": "스테이지 시작시, [혈찬]을 100 생성\n턴 시작 시, [출혈]이 있는 적 (부위)에 [탐식극(貪食棘)]을 2 부여함.\n모든 적 (부위)에 [출혈]이 있으면, [탐식극(貪食棘)]을 4 부여함."
     },
     "fusion": null,
     "hardOnly": false,
@@ -25549,8 +25549,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "[Effects apply only to #1 Deployed Identity]\n\nGain [KnightBless] at Encounter Start",
-      "ko": "[편성 1번 인격 전용 효과]\n\n스테이지 시작 시 [KnightBless] 얻음"
+      "en": "[Effects apply only to #1 Deployed Identity]\n\nGain [Blessing] at Encounter Start",
+      "ko": "[편성 1번 인격 전용 효과]\n\n스테이지 시작 시 [가호] 얻음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25734,8 +25734,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Encounter Start: all allies gain 2 [TraumaShield]",
-      "ko": "스테이지 시작 시, 모든 아군이 [TraumaShield] 2 얻음"
+      "en": "Encounter Start: all allies gain 2 [Trauma Shield]",
+      "ko": "스테이지 시작 시, 모든 아군이 [트라우마 방지장] 2 얻음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25808,8 +25808,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "When triggering [Amplitude Conversion] or [FusionVibration], trigger [Tremor Burst] on target (once per turn per Identity)",
-      "ko": "적에게 [진폭 변환] 혹은 [FusionVibration] 시킬 경우, 대상에게 [진동 폭발] (인격마다 턴 당 1회)"
+      "en": "When triggering [Amplitude Conversion] or [Amplitude Entanglement], trigger [Tremor Burst] on target (once per turn per Identity)",
+      "ko": "적에게 [진폭 변환] 혹은 [진폭 얽힘] 시킬 경우, 대상에게 [진동 폭발] (인격마다 턴 당 1회)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25882,8 +25882,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "At Turn Start, for 1 Identity with the most [Tremor] Count, trigger [FusionVibration] to convert their [Tremor] to [VibrationDistribution]",
-      "ko": "턴 시작 시 [진동] 횟수가 가장 많은 인격 1명의 [진동]을 [VibrationDistribution]로 [FusionVibration]"
+      "en": "At Turn Start, for 1 Identity with the most [Tremor] Count, trigger [Amplitude Entanglement] to convert their [Tremor] to [Tremor - Distribution]",
+      "ko": "턴 시작 시 [진동] 횟수가 가장 많은 인격 1명의 [진동]을 [진동 - 분배]로 [진폭 얽힘]"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25919,8 +25919,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Effects apply only to #1 Deployed Identity\n\nApplies to Identities with Skills that inflict [Tremor] Potency, Count, or trigger [Tremor Burst].\nEncounter Start: gain 5 [UltraPrecisionTimeAcceleration]",
-      "ko": "[편성 순서 1번 인격 전용 효과]\n\n기본 공격 스킬 중에 [진동] 위력, 횟수를 부여하거나, [진동 폭발] 효과를 보유한 스킬이 있는 인격에게 적용됨\n스테이지 시작시, [UltraPrecisionTimeAcceleration]을 5 얻음"
+      "en": "Effects apply only to #1 Deployed Identity\n\nApplies to Identities with Skills that inflict [Tremor] Potency, Count, or trigger [Tremor Burst].\nEncounter Start: gain 5 [Microprecision Time Acceleration]",
+      "ko": "[편성 순서 1번 인격 전용 효과]\n\n기본 공격 스킬 중에 [진동] 위력, 횟수를 부여하거나, [진동 폭발] 효과를 보유한 스킬이 있는 인격에게 적용됨\n스테이지 시작시, [초정밀 시간 가속]을 5 얻음"
     },
     "fusion": null,
     "hardOnly": false,
@@ -25975,7 +25975,7 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Enemies in Low Morale or Panic states lose 1 Final Power (against targets that are Non-SP Units, when they have 25+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or <noparse>Unique Sinking</noparse>, inflict 2 [Defense Level Down] (2 times per turn)",
+      "en": "Enemies in Low Morale or Panic states lose 1 Final Power (against targets that are Non-SP Units, when they have 25+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or Unique Sinking, inflict 2 [Defense Level Down] (2 times per turn)",
       "ko": "사기저하 또는 패닉 상태인 적의 스킬 최종 위력 -1 (정신력이 없는 적은 [침잠] 위력이 25 이상일 때 발동)\n- 해당 적에게 [침잠] 위력, [침잠] 횟수 또는 특수 침잠을 부여하는 스킬로 피해를 입힐 경우, [방어 레벨 감소] 2 부여 (턴당 최대 2회)"
     },
     "fusion": null,
@@ -26012,7 +26012,7 @@
     },
     "conditions": [],
     "desc": {
-      "en": "When dealing damage against enemies with Skills that consume [Charge] Count or <noparse>Unique Charge</noparse>, +0.1 to the lowest Attack Type Resist. for the turn (once per turn)",
+      "en": "When dealing damage against enemies with Skills that consume [Charge] Count or Unique Charge, +0.1 to the lowest Attack Type Resist. for the turn (once per turn)",
       "ko": "[충전] 횟수 또는 특수 충전을 소모하는 스킬로 적에게 피해를 입히면, 이번 턴 동안 해당 적의 물리 내성 중 가장 낮은 값 +0.1 (턴당 1회)"
     },
     "fusion": null,
@@ -26349,8 +26349,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "Double the amount of Bloodfeast generated in the Stage\nSkills that inflict [Bleed] Potency, [Bleed] Count, or 'Unique Bleed': Heal 30% of the HP damage dealt at Attack End (max 20)\n* If a unit healed using the above effect, it gains 1 [Attack Power Up] at the next Turn Start (max 2)\n\nFor every 50 [BloodDinner_Common_Accumulation], all allies gain 1 [Offense Level Up] at the next Turn Start (max 5)\nEach La Manchaland unit also gains 1 [Offense Level Up] for every 30 [BloodDinner_Accumulation] consumed by each unit (max 3)",
-      "ko": "스테이지 내 혈찬의 생산량이 2배로 적용됨\n[출혈] 위력, [출혈] 횟수 또는 특수 출혈을 부여하는 스킬 공격 종료 시, 입힌 체력 피해량의 30% 만큼 체력 회복. (최대 20)\n- 위 효과로 체력을 회복했을 경우 다음 턴 시작 시 [공격 위력 증가] 1 얻음 (최대 2)\n\n[BloodDinner_Common_Accumulation] 50당, 다음 턴 시작 시 모든 아군의 [공격 레벨 증가] 1 얻음 (최대 5)\n라만차랜드 소속의 경우 추가로 자신의 [BloodDinner_Accumulation] 30당, 다음 턴 시작 시 [공격 레벨 증가] 1 얻음 (최대 3)"
+      "en": "Double the amount of Bloodfeast generated in the Stage\nSkills that inflict [Bleed] Potency, [Bleed] Count, or 'Unique Bleed': Heal 30% of the HP damage dealt at Attack End (max 20)\n* If a unit healed using the above effect, it gains 1 [Attack Power Up] at the next Turn Start (max 2)\n\nFor every 50 [Bloodfeast Consumed (shared)], all allies gain 1 [Offense Level Up] at the next Turn Start (max 5)\nEach La Manchaland unit also gains 1 [Offense Level Up] for every 30 [Bloodfeast Consumed] consumed by each unit (max 3)",
+      "ko": "스테이지 내 혈찬의 생산량이 2배로 적용됨\n[출혈] 위력, [출혈] 횟수 또는 특수 출혈을 부여하는 스킬 공격 종료 시, 입힌 체력 피해량의 30% 만큼 체력 회복. (최대 20)\n- 위 효과로 체력을 회복했을 경우 다음 턴 시작 시 [공격 위력 증가] 1 얻음 (최대 2)\n\n[공용 누적 소모 혈찬] 50당, 다음 턴 시작 시 모든 아군의 [공격 레벨 증가] 1 얻음 (최대 5)\n라만차랜드 소속의 경우 추가로 자신의 [누적 소모 혈찬] 30당, 다음 턴 시작 시 [공격 레벨 증가] 1 얻음 (최대 3)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -26468,8 +26468,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "On the first Turn Start of an Encounter, and on all allies who Substitute in, apply 3 [VerEmergencyCandy]\nIf they did not consume [VerEmergencyCandy] in the previous turn, apply 1 [VerHunger] at Turn Start",
-      "ko": "스테이지 첫 턴 시작시 또는 대기 해제되는 모든 아군에게 [VerEmergencyCandy] 3 부여\n이전 턴에 [VerEmergencyCandy]이 소모되지 않았으면, 턴 시작 시 [VerHunger] 1 부여"
+      "en": "On the first Turn Start of an Encounter, and on all allies who Substitute in, apply 3 [Backup Candy]\nIf they did not consume [Backup Candy] in the previous turn, apply 1 [Hunger] at Turn Start",
+      "ko": "스테이지 첫 턴 시작시 또는 대기 해제되는 모든 아군에게 [비상용 사탕] 3 부여\n이전 턴에 [비상용 사탕]이 소모되지 않았으면, 턴 시작 시 [배고픔] 1 부여"
     },
     "fusion": null,
     "hardOnly": false,
@@ -26505,7 +26505,7 @@
     },
     "conditions": [],
     "desc": {
-      "en": "After using a Skill that gains [Charge] Count or <noparse>Unique Charge</noparse>, gain [Emergency Barrier Battery] equal to the Count gained (max 7 per Identity)",
+      "en": "After using a Skill that gains [Charge] Count or Unique Charge, gain [Emergency Barrier Battery] equal to the Count gained (max 7 per Identity)",
       "ko": "[충전] 횟수 또는 특수 충전을 획득하는 스킬 사용 종료 시, 획득한 수치만큼 [비상용 역장 배터리] 얻음 (인격당 최대 7)"
     },
     "fusion": null,
@@ -26538,7 +26538,7 @@
     },
     "conditions": [],
     "desc": {
-      "en": "After using a Skill that gains [Charge] Count or <noparse>Unique Charge</noparse>, gain [Emergency Barrier Battery] equal to Count gained (max 7 per Identity)\n\nSkills that consume [Charge] Count or <noparse>Unique Charge</noparse> deal +(number of Identities in the Team with Skills that gain or consume [Charge] Count or <noparse>Unique Charge</noparse>)% damage (counts all units in the Team)\n\nSkills that consume [Charge] Count or <noparse>Unique Charge</noparse> gain Clash Power +3 and deal +15% damage\n- When using said Skills, the unit gains +4 [Charge] Count and 1 [Charge Barrier] (once per Identity per turn)\n\nW Corp. Identities gain the following effects:\n- When dealing damage with a Skill(including E.G.O Skills), inflict 2 [HP Healing Down] (cannot Stack)\n- During the combat phase, when this unit takes HP damage from sources other than direct Skill damage, gain 5 [Charge Barrier] (once per turn per Identity)\n- Skill 2 gains Clash Power +3 and deals +15% damage\n- Turn Start: for this turn, Skill 3 deals +(number of W Corp. Identities on the field x 6.25)% damage\n- Turn Start: W Corp. L2 Agents gain 1 [Plus Coin Boost]\n- Turn Start: gain (number of W Corp. Identities on the field / 3) [Load] (max 2; rounded down)\n\nAmong Identities that inflict [Dimensional Rift] using Base Skills, count 1 non-W Corp. Identity with the earliest Deployment order as a W Corp. Identity",
+      "en": "After using a Skill that gains [Charge] Count or Unique Charge, gain [Emergency Barrier Battery] equal to Count gained (max 7 per Identity)\n\nSkills that consume [Charge] Count or Unique Charge deal +(number of Identities in the Team with Skills that gain or consume [Charge] Count or Unique Charge)% damage (counts all units in the Team)\n\nSkills that consume [Charge] Count or Unique Charge gain Clash Power +3 and deal +15% damage\n- When using said Skills, the unit gains +4 [Charge] Count and 1 [Charge Barrier] (once per Identity per turn)\n\nW Corp. Identities gain the following effects:\n- When dealing damage with a Skill(including E.G.O Skills), inflict 2 [HP Healing Down] (cannot Stack)\n- During the combat phase, when this unit takes HP damage from sources other than direct Skill damage, gain 5 [Charge Barrier] (once per turn per Identity)\n- Skill 2 gains Clash Power +3 and deals +15% damage\n- Turn Start: for this turn, Skill 3 deals +(number of W Corp. Identities on the field x 6.25)% damage\n- Turn Start: W Corp. L2 Agents gain 1 [Plus Coin Boost]\n- Turn Start: gain (number of W Corp. Identities on the field / 3) [Load] (max 2; rounded down)\n\nAmong Identities that inflict [Dimensional Rift] using Base Skills, count 1 non-W Corp. Identity with the earliest Deployment order as a W Corp. Identity",
       "ko": "[충전] 횟수 또는 특수 충전을 획득하는 스킬 사용 종료 시, 획득한 수치만큼 [비상용 역장 배터리] 얻음 (인격당 최대 7)\n\n[충전] 횟수 또는 특수 충전을 소모하는 스킬의 피해량 +([충전] 횟수 또는 특수 충전을 획득하거나 소모하는 스킬을 보유한 인격이 편성된 수)% (편성 인원 포함)\n\n[충전] 횟수 또는 특수 충전을 획득하거나 소모하는 스킬 1의 합 위력 +3, 피해량 +15%\n- 해당 스킬 사용 시, [충전] 횟수 4, [충전 역장] 1 얻음 (인격당 턴당 1회)\n\nW사 소속 인격이면, 아래의 효과 적용\n- 스킬(E.G.O 스킬 포함)로 적에게 피해를 입혔다면, [체력 회복 감소] 2 부여 (중첩 불가)\n- 전투 중 스킬의 직접적인 피해를 제외한 효과에 의해 체력 피해를 입었다면, [충전 역장] 5 얻음 (인격당 턴당 1회)\n- 스킬 2의 합 위력 +3, 피해량 +15%\n- 턴 시작 시, 이번 턴 동안 스킬 3의 피해량 +(전투에 참여한 W사 소속 인격 수 x 6.25)%\n- 턴 시작 시, W사 2등급 직원에게 [더하기 코인 강화] 1 부여\n- 턴 시작 시, [부하]를 (전투에 참여한 W사 소속 인격 수/3)만큼 얻음 (최대 2. 소수점 내림)\n편성 순서가 가장 빠른 자신의 기본 스킬로 [차원 균열]을 부여하는 인격 중 W사 소속이 아닌 인격 1인을 W사 소속으로 취급함"
     },
     "fusion": {
@@ -26585,8 +26585,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [BloodDinner] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nFirst Turn Start of a wave: increase [BloodDinner] by (N x 20); then, apply 3 [Bleed] and +3 [Bleed] Count to all targets ([BloodDinner] increased by this effect is capped to 100 per activation)\n\nAllies take -(N x 10%) [Bleed] damage (min 1 [Bleed] damage; max 40%)\n- Reduced damage does not affect the amount of [BloodDinner] increased\n\nEnemies take +(N x 5)% [Bleed] damage (max 20%)",
-      "ko": "[BloodDinner]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)\n\n웨이브 첫 턴 시작 시, [BloodDinner]을 (편성된 수 x 20)만큼 생성하고, 모든 대상에게 [출혈], [출혈] 횟수를 3만큼 부여 (웨이브 첫 턴당 [BloodDinner] 생산량 최대 100)\n\n아군이 받는 [출혈] 피해량이 (편성된 수 x 10)% 감소 ([출혈] 최소 피해량 1. 최대 40%)\n- 감소된 피해량은 [BloodDinner]의 저장량에 영향을 주지 않음\n\n적이 받는 [출혈] 피해량이 (편성된 수 x 5)% 증가 (최대 20%)"
+      "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [Bloodfeast] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nFirst Turn Start of a wave: increase [Bloodfeast] by (N x 20); then, apply 3 [Bleed] and +3 [Bleed] Count to all targets ([Bloodfeast] increased by this effect is capped to 100 per activation)\n\nAllies take -(N x 10%) [Bleed] damage (min 1 [Bleed] damage; max 40%)\n- Reduced damage does not affect the amount of [Bloodfeast] increased\n\nEnemies take +(N x 5)% [Bleed] damage (max 20%)",
+      "ko": "[혈찬]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)\n\n웨이브 첫 턴 시작 시, [혈찬]을 (편성된 수 x 20)만큼 생성하고, 모든 대상에게 [출혈], [출혈] 횟수를 3만큼 부여 (웨이브 첫 턴당 [혈찬] 생산량 최대 100)\n\n아군이 받는 [출혈] 피해량이 (편성된 수 x 10)% 감소 ([출혈] 최소 피해량 1. 최대 40%)\n- 감소된 피해량은 [혈찬]의 저장량에 영향을 주지 않음\n\n적이 받는 [출혈] 피해량이 (편성된 수 x 5)% 증가 (최대 20%)"
     },
     "fusion": null,
     "hardOnly": false,
@@ -26622,8 +26622,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [BloodDinner] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nEncounter Start: all allies gain (N - 2)[Hardblood Cast] (max 3)",
-      "ko": "[BloodDinner]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)\n\n스테이지 시작 시, 모든 아군이 [주조된 경혈]을 (편성된 수 - 2)만큼 얻음 (최대 3)"
+      "en": "This E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that consume [Bloodfeast] (number of Identities that meet the condition represented by \"N\" below; except E.G.O Skills; counts all units in the Team)\n\nEncounter Start: all allies gain (N - 2)[Hardblood Cast] (max 3)",
+      "ko": "[혈찬]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)\n\n스테이지 시작 시, 모든 아군이 [주조된 경혈]을 (편성된 수 - 2)만큼 얻음 (최대 3)"
     },
     "fusion": null,
     "hardOnly": false,

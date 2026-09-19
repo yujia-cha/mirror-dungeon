@@ -29,11 +29,16 @@ export function RouteOptions() {
             className="h-[30px] rounded-full border border-line bg-surface-2 px-2.5 text-xs text-fg-2"
           >
             <option value="auto">{t('optionAuto', lang)}</option>
-            {data.enums.keywords.map((k) => (
-              <option key={k.id} value={k.id}>
-                {pick(k.name, lang)}
-              </option>
-            ))}
+            {/* Only the keywords the season actually has a starting pool for. 범용 (`None`) is a
+                gift keyword but has no pool, so offering it handed the player no starting gift at
+                all, silently. Read from the rules rather than listed here, like everywhere else. */}
+            {data.enums.keywords
+              .filter((k) => data.rules.startGift.poolsByKeyword[k.id] !== undefined)
+              .map((k) => (
+                <option key={k.id} value={k.id}>
+                  {pick(k.name, lang)}
+                </option>
+              ))}
           </select>
         </label>
       </Card>

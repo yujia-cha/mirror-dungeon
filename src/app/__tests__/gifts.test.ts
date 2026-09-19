@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { Unresolved } from '../../core/types.ts';
+import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../../core/text.ts';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
-import { analyseDeck, buildIndexes, evaluateConditions } from '../../core/index.ts';
+import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions, planRoute } from '../../core/index.ts';
+import { planToText } from '../lib/plan-text.ts';
+import { unresolvedDetailText } from '../lib/unresolved-text.ts';
 import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
 import { blockedGifts, entanglements } from '../lib/entangle.ts';
 import { classifyGift } from '../lib/gift-priority.ts';
+import { identityKeywordLabel, renderEffect, withJosa } from '../format.ts';
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
@@ -84,5 +89,108 @@ describe('blocked gifts', () => {
   it('blocks nothing when no goal is a fusion', () => {
     expect(blockedGifts([], indexes, SLOTS).size).toBe(0);
     expect(blockedGifts([9267, 9105], indexes, SLOTS).size).toBe(0);
+  });
+});
+
+describe('effect text', () => {
+  const desc = (id: number) => renderEffect(indexes.giftById.get(id)!.desc, data.enums, 'ko');
+
+  it('keeps the words the game wrote in angle brackets', () => {
+    // 「아군에 <혈귀>가 있다면」. A blanket `<[^>]*>` strip used to leave 「아군에 가 있다면」 —
+    // Unity's tag names are an allowlist, not "anything in angle brackets".
+    expect(desc(9213)).toContain('<혈귀>');
+    expect(desc(9440)).toContain('아군에 <혈귀>가 있다면');
+    expect(renderEffect(indexes.giftById.get(9416)!.desc, data.enums, 'en')).toContain('<Mechanical Amalgam>');
+  });
+
+  it('strips the rich-text tags and the runtime counter the game leaves behind', () => {
+    for (const gift of data.gifts) {
+      for (const lang of ['ko', 'en'] as const) {
+        const text = renderEffect(gift.desc, data.enums, lang);
+        expect(text, `${gift.id} ${gift.name.ko}`).not.toMatch(new RegExp(RICH_TEXT_TAG.source));
+        expect(text, `${gift.id} ${gift.name.ko}`).not.toMatch(RUNTIME_PLACEHOLDER);
+      }
+    }
+  });
+
+  it('names the buff ids it knows in Korean, with no padding inside the brackets', () => {
+    expect(desc(9024)).toContain('[공격 레벨 감소] 5와 [방어 레벨 감소] 5');
+    expect(desc(9022)).toContain('[공격 레벨 증가] 2');
+    expect(desc(9026)).toContain('[방어 레벨 증가]');
+    // The game ships `AttackDown` as 「공격 레벨 감소 」; the trailing space used to reach the screen.
+    for (const gift of data.gifts) {
+      for (const lang of ['ko', 'en'] as const) {
+        expect(renderEffect(gift.desc, data.enums, lang), `${gift.id} ${gift.name.ko}`).not.toMatch(PADDED_BRACKET);
+      }
+    }
+  });
+
+});
+
+describe('identity keyword chips', () => {
+  const label = (id: number, keyword: 'Bullet' | 'Charge' | 'Laceration') =>
+    identityKeywordLabel(keyword, indexes.identityById.get(id)!.keywords[keyword], data.enums, 'ko');
+
+  it('writes 탄환 plainly whether or not the skills use a 특수 variant', () => {
+    // 10611 plain ammo, 10414 only 탄환 - 고독, 10711 both. 탄환 is spent, and no gift condition
+    // ever asks for 「또는 특수 탄환」, so the 특수 split said nothing a player could act on.
+    for (const id of [10611, 10414, 10711]) {
+      expect(label(id, 'Bullet'), String(id)).toEqual({ label: '탄환', title: '탄환 소모 공격 스킬 보유' });
+    }
+  });
+
+  it('still marks the 특수 variants of the status keywords, which conditions do count', () => {
+    expect(label(10614, 'Charge').label).toBe('충전(특수)');
+    expect(label(10504, 'Laceration').label).toBe('특수 출혈');
+  });
+});
+
+describe('unresolved detail text', () => {
+  const giftName = (id: number) => indexes.giftById.get(id)?.name.ko ?? String(id);
+
+  it('names the ingredients a fusion is missing instead of listing their ids', () => {
+    // Core can only write the ids — the planner never carries display names — so the reason is
+    // rebuilt here. The panel always did this; the copied plan text printed the raw numbers.
+    const entry: Unresolved = {
+      giftId: 9410,
+      reason: 'fusion-ingredient-unresolved',
+      detail: { ko: '재료 9408, 9409을(를) 구할 수 없어 조합할 수 없습니다.', en: 'x' },
+      missing: [9408, 9409],
+    };
+    const text = unresolvedDetailText(entry, giftName, 'ko');
+    expect(text).toContain(giftName(9408));
+    expect(text).toContain(giftName(9409));
+    expect(text).not.toMatch(/9408|9409/);
+  });
+
+  it('reaches the copied plan text, not just the route panel', () => {
+    const deck = [10101, 10201, 10301, 10401, 10501, 10601, 10701, 10801, 10901, 11001, 11101, 11201];
+    const plan = planRoute(
+      {
+        deck,
+        wanted: [9191, 9410, 9419, 9423].map((giftId) => ({ giftId, required: true })),
+        options: { ...defaultOptions(), lastFloor: 15, hardFromFloor: 1, currentFloor: 3 },
+      },
+      data,
+      indexes,
+    );
+    expect(plan.unresolved.some((u) => u.reason === 'fusion-ingredient-unresolved')).toBe(true);
+    const text = planToText(plan, giftName, (id) => indexes.packById.get(id)?.name.ko ?? '', () => '', 'ko');
+    expect(text).toContain('재료 ' + giftName(9408));
+    expect(text).not.toMatch(/재료 \d+/);
+  });
+});
+
+describe('korean particles', () => {
+  it('follows the name\'s final consonant, and leaves English alone', () => {
+    expect(withJosa('진혼', '을/를', 'ko')).toBe('진혼을');
+    expect(withJosa('미니어처 대관람차', '을/를', 'ko')).toBe('미니어처 대관람차를');
+    expect(withJosa('부동', '과/와', 'ko')).toBe('부동과');
+    expect(withJosa('깨진 안경', '과/와', 'ko')).toBe('깨진 안경과');
+    expect(withJosa('진혼', '은/는', 'ko')).toBe('진혼은');
+    // A word that does not end in Hangul gets the bracketed form a Korean writer would use.
+    expect(withJosa('Soothe the Dead', '을/를', 'ko')).toBe('Soothe the Dead을(를)');
+    // English sentences carry no particle at all.
+    expect(withJosa('Soothe the Dead', '을/를', 'en')).toBe('Soothe the Dead');
   });
 });

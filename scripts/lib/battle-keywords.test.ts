@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { localizeBuffTokens } from './battle-keywords.ts';
+import { stripRichText } from '../../src/core/text.ts';
 
 const names = new Map([
   ['Combustion', '화상'],
@@ -23,5 +24,15 @@ describe('localizeBuffTokens', () => {
     // Korean text in brackets is the game's own wording, not a token; so is an empty pair.
     expect(localizeBuffTokens('[편성 1번 인격 전용 효과] []', names)).toBe('[편성 1번 인격 전용 효과] []');
     expect(localizeBuffTokens('피해량 +1 (최대 [3])', names)).toBe('피해량 +1 (최대 [3])');
+  });
+});
+
+describe('stripRichText', () => {
+  it('removes the Unity tags and keeps every other angle-bracketed word', () => {
+    expect(stripRichText('특수 <noparse>침잠</noparse> 포함')).toBe('특수 침잠 포함');
+    expect(stripRichText('<color=#fff>붉은</color><b>글</b>')).toBe('붉은글');
+    // The game writes creature names this way; a blanket strip left 「아군에 가 있다면」.
+    expect(stripRichText('아군에 <혈귀>가 있다면')).toBe('아군에 <혈귀>가 있다면');
+    expect(stripRichText('<Mechanical Amalgam>인 적에게')).toBe('<Mechanical Amalgam>인 적에게');
   });
 });

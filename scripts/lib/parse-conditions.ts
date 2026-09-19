@@ -14,6 +14,7 @@
  */
 import type { Condition, ConditionScope, Localized, StatusKeyword } from '../../src/core/schema.ts';
 import { STATUS_KEYWORDS } from '../../src/core/schema.ts';
+import { stripRichText } from '../../src/core/text.ts';
 
 /** Internal status token -> Korean display name, used to recognise "특수 화상" style wording. */
 const KEYWORD_KO: Record<StatusKeyword, string> = {
@@ -29,17 +30,7 @@ const KEYWORD_KO: Record<StatusKeyword, string> = {
 const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
 
 /** Strip Unity rich-text markup so the regexes see plain Korean. */
-export function stripMarkup(text: string): string {
-  return text
-    .replace(/<\/?noparse>/g, '')
-    .replace(/<style=[^>]*>/g, '')
-    .replace(/<\/style>/g, '')
-    .replace(/<color=[^>]*>/g, '')
-    .replace(/<\/color>/g, '')
-    .replace(/<\/?s>/g, '')
-    .replace(/<\/?b>/g, '')
-    .replace(/<\/?i>/g, '');
-}
+export const stripMarkup = stripRichText;
 
 /**
  * Which units the count applies to.

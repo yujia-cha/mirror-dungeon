@@ -8,10 +8,11 @@ import { useState, type ReactNode } from 'react';
 import { ChevronRight, Eye, Star, TriangleAlert, X } from 'lucide-react';
 import type { ConflictGroup } from '../../core/conflicts.ts';
 import type { Unresolved } from '../../core/types.ts';
-import { pick, t } from '../i18n.ts';
+import { t } from '../i18n.ts';
 import { UNRESOLVED_LABEL } from '../lib/labels.ts';
 import type { Priority } from '../lib/plan-input.ts';
 import type { UnresolvedAction } from '../lib/unresolved-actions.ts';
+import { unresolvedDetailText } from '../lib/unresolved-text.ts';
 import { DetailSurface, type DetailMode } from './BlockDetail.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { PackCard } from './PackCard.tsx';
@@ -55,13 +56,7 @@ export function PackConflicts({ groups, others, ctx, priorityOf, setPriority, re
       {icon}
     </button>
   );
-  const detailText = (entry: Unresolved): string => {
-    if (entry.reason !== 'fusion-ingredient-unresolved' || !entry.missing || entry.missing.length === 0) return pick(entry.detail, lang);
-    const missing = t('unresolvedMissing', lang, { names: entry.missing.map(ctx.giftName).join(', ') });
-    return entry.droppedIngredients && entry.droppedIngredients.length > 0
-      ? `${missing} ${t('unresolvedDropped', lang, { names: entry.droppedIngredients.map(ctx.giftName).join(', ') })}`
-      : missing;
-  };
+  const detailText = (entry: Unresolved): string => unresolvedDetailText(entry, ctx.giftName, lang);
 
   const packSheet = (packId: number): ReactNode =>
     openPack === packId ? (

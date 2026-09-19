@@ -4,7 +4,16 @@
  */
 import type { Enums, Identity, IdentityKeywordId, Keyword, Localized } from '../core/schema.ts';
 import { STATUS_KEYWORDS } from '../core/schema.ts';
+import { josa, stripRichText } from '../core/text.ts';
 import { pick, t, type Lang } from './i18n.ts';
+
+/**
+ * Attach the Korean particle a name needs, and leave English alone. The i18n strings hold the
+ * sentence without the particle, because only the call site knows the word that precedes it.
+ */
+export function withJosa(word: string, pair: '을/를' | '이/가' | '은/는' | '과/와', lang: Lang): string {
+  return lang === 'ko' ? josa(word, pair) : word;
+}
 
 /** Faction ids localized through enums, so the planner never carries display names. */
 export function factionName(id: string, enums: Enums, lang: Lang): string {
@@ -21,13 +30,17 @@ export function keywordName(id: Keyword | IdentityKeywordId, enums: Enums, lang:
 /**
  * Replace the `[Token]` status references the game embeds in effect text with their Korean or
  * English names, and strip the rich-text markup that survived the data build.
+ *
+ * The strip goes through `stripRichText`, which knows the Unity tag names, rather than removing
+ * everything in angle brackets: the game also writes creature names that way — 「아군에 <혈귀>가
+ * 있다면」 — and a blanket strip left 「아군에 가 있다면」 on the screen.
  */
 export function renderEffect(text: Localized, enums: Enums, lang: Lang): string {
   let out = pick(text, lang);
   for (const keyword of enums.keywords) {
     out = out.split(`[${keyword.id}]`).join(pick(keyword.name, lang) || keyword.id);
   }
-  return out.replace(/<[^>]*>/g, '');
+  return stripRichText(out);
 }
 
 const STATUS_KEYWORD_SET = new Set<string>(STATUS_KEYWORDS);
@@ -37,7 +50,12 @@ const STATUS_KEYWORD_SET = new Set<string>(STATUS_KEYWORDS);
  * its skills also use the 특수 variant (생체 재료), 「특수 출혈」 when they use only the variant (못).
  * The count of skills is deliberately not shown — the deck-level chips carry the numbers.
  *
- * 탄환 is spent rather than inflicted, so only its tooltip differs: 「소모하는」, not 「부여하는」.
+ * 탄환 is the exception, and always reads plainly. It is spent rather than inflicted (hence
+ * 「소모하는」, not 「부여하는」), and no gift, pack or starting pool carries it, so no condition ever
+ * asks for 「또는 특수 탄환」. Marking 호표탄 or 포자탄 as 특수 therefore split the chip on a
+ * distinction that changes nothing a player can plan around — and split it unevenly, because the
+ * variant flag is unknown for the ammo buffs the game has not localized (`BulletLament`,
+ * `AccelBullet`), which fall back to the base keyword.
  */
 export function identityKeywordLabel(
   keyword: IdentityKeywordId,
@@ -46,18 +64,20 @@ export function identityKeywordLabel(
   lang: Lang,
 ): { label: string; title: string } {
   const name = keywordName(keyword, enums, lang);
-  const spent = !STATUS_KEYWORD_SET.has(keyword);
+  if (!STATUS_KEYWORD_SET.has(keyword)) {
+    return { label: name, title: t('deckKeywordUses', lang, { keyword: name }) };
+  }
   if (!info || info.specialSkills === 0) {
-    return { label: name, title: t(spent ? 'deckKeywordUses' : 'deckKeywordSkills', lang, { keyword: name }) };
+    return { label: name, title: t('deckKeywordSkills', lang, { keyword: name }) };
   }
   if (info.skills === 0) {
     return {
       label: t('deckKeywordSpecialOnly', lang, { keyword: name }),
-      title: t(spent ? 'deckKeywordUsesSpecialOnly' : 'deckKeywordSpecialOnlyHint', lang, { keyword: name }),
+      title: t('deckKeywordSpecialOnlyHint', lang, { keyword: name }),
     };
   }
   return {
     label: t('deckKeywordSpecial', lang, { keyword: name }),
-    title: t(spent ? 'deckKeywordUsesSpecial' : 'deckKeywordSpecialHint', lang, { keyword: name }),
+    title: t('deckKeywordSpecialHint', lang, { keyword: name }),
   };
 }

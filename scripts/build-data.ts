@@ -22,6 +22,7 @@ import { readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { flagValue, hasFlag, readJson, readJsonIfExists, repoPath, writeJsonStable } from './lib/io.ts';
 import { localizeBuffTokens } from './lib/battle-keywords.ts';
+import { stripRichText } from '../src/core/text.ts';
 import {
   SIN_BY_COLOR,
   listSeasons,
@@ -1007,10 +1008,23 @@ function findDungeonName(lang: 'KR' | 'EN'): string {
  * guessed name would be worse than a visible id. The count is reported below so the gap is known.
  */
 const unnamedBuffIds = new Set<string>();
+
+/**
+ * `{0}` is a live counter the game substitutes at runtime (「전투를 6회 승리할 시 …」 then the
+ * player's progress). We have no value for it, so the placeholder line is dropped rather than
+ * shipped as a literal `{0}`. Any `{n}` counts — only `{0}` occurs today.
+ */
+function dropRuntimePlaceholders(text: string): string {
+  return text
+    .split('\n')
+    .filter((line) => !/^\{\d+\}$/.test(line.trim()))
+    .join('\n');
+}
+
 for (const gift of gifts) {
   const text = (value: Localized): Localized => ({
-    ko: localizeBuffTokens(value.ko, battleKeywordKo, unnamedBuffIds),
-    en: localizeBuffTokens(value.en, battleKeywordEn, unnamedBuffIds),
+    ko: dropRuntimePlaceholders(stripRichText(localizeBuffTokens(value.ko, battleKeywordKo, unnamedBuffIds))),
+    en: dropRuntimePlaceholders(stripRichText(localizeBuffTokens(value.en, battleKeywordEn, unnamedBuffIds))),
   });
   gift.desc = text(gift.desc);
   for (const condition of gift.conditions) if (condition.text) condition.text = text(condition.text);

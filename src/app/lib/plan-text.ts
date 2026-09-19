@@ -2,6 +2,7 @@ import type { Keyword } from '../../core/schema.ts';
 import type { RoutePlan } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { segmentsFor } from './metro.ts';
+import { unresolvedDetailText } from './unresolved-text.ts';
 
 /**
  * A Discord-friendly plain-text rendering of the plan, one line per metro segment: packs that
@@ -67,7 +68,7 @@ export function planToText(
   if (plan.unresolved.length > 0) {
     lines.push('');
     lines.push(t('routeUnresolved', lang));
-    for (const entry of plan.unresolved) lines.push(`  ${name(entry.giftId)}: ${pick(entry.detail, lang)}`);
+    for (const entry of plan.unresolved) lines.push(`  ${name(entry.giftId)}: ${unresolvedDetailText(entry, giftName, lang)}`);
   }
   // Which goals no pack is fetching — the copied plan carries the same list the panel shows.
   if (plan.generalDrops.length > 0) {

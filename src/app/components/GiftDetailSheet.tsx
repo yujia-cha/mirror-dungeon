@@ -7,7 +7,7 @@ import type { GameData, Gift } from '../../core/schema.ts';
 import { chooseRecipe, observable } from '../../core/index.ts';
 import type { ConditionReport, GameIndexes } from '../../core/types.ts';
 import { conditionText, reachedTierText } from '../condition-text.ts';
-import { renderEffect } from '../format.ts';
+import { renderEffect, withJosa } from '../format.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { conditionShort } from '../lib/gift-condition.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
@@ -170,7 +170,10 @@ export function GiftDetailSheet({
           </div>
         ) : null}
 
-        <p className="text-xs leading-relaxed text-fg-2">{renderEffect(gift.desc, data.enums, lang)}</p>
+        {/* `whitespace-pre-line`: the game writes a gift as several clauses separated by blank lines,
+            with 「- 」 sub-lines under some of them. Without it CSS folds all of that into one run-on
+            paragraph. */}
+        <p className="whitespace-pre-line text-xs leading-relaxed text-fg-2">{renderEffect(gift.desc, data.enums, lang)}</p>
 
         {entangled.length > 0 ? (
           <div className="flex items-start gap-2 rounded-sm border border-line-strong px-2.5 py-2 text-xs text-fg-2" data-testid="gift-entangled">
@@ -180,7 +183,7 @@ export function GiftDetailSheet({
               {entangled
                 .map((e) =>
                   t('giftEntangledWith', lang, {
-                    name: pick(indexes.giftById.get(e.other)?.name, lang),
+                    name: withJosa(pick(indexes.giftById.get(e.other)?.name, lang), '과/와', lang),
                     list: e.shared.map((id) => pick(indexes.giftById.get(id)?.name, lang)).join(', '),
                   }),
                 )

@@ -23,6 +23,7 @@ import { expandRequirements, scarcity } from './requirements.ts';
 import { assignPacks, modeForFloor, observationCost, type SearchResult } from './search.ts';
 import { requirementKey } from './requirements.ts';
 import { chooseStart, observable } from './starting.ts';
+import { josa } from './text.ts';
 
 export { planAlternatives } from './alternatives.ts';
 export type { RouteVariant, AlternativeOptions } from './alternatives.ts';
@@ -578,7 +579,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         giftId,
         reason: 'ingredient-shared',
         detail: {
-          ko: `${gift?.name.ko ?? giftId}는 한 런에서 한 번만 얻을 수 있는데 ${eaters.join('·')}이(가) 함께 먹습니다. 두 번째 몫을 줄 팩이 더 없습니다.`,
+          ko: `${josa(String(gift?.name.ko ?? giftId), '은/는')} 한 런에서 한 번만 얻을 수 있는데 ${josa(eaters.join('·'), '이/가')} 함께 먹습니다. 두 번째 몫을 줄 팩이 더 없습니다.`,
           en: 'Two fusions eat this ingredient, and no second pack can supply the second copy.',
         },
       });
@@ -599,11 +600,11 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
             }
           : midRun
             ? {
-                ko: `${gift?.name.ko ?? giftId}를 주는 팩이 남은 층에 없습니다.`,
+                ko: `${josa(String(gift?.name.ko ?? giftId), '을/를')} 주는 팩이 남은 층에 없습니다.`,
                 en: 'No pack that supplies it appears on the floors still ahead.',
               }
             : {
-                ko: `${gift?.name.ko ?? giftId}를 주는 팩이 계획한 층 범위에 없습니다.`,
+                ko: `${josa(String(gift?.name.ko ?? giftId), '을/를')} 주는 팩이 계획한 층 범위에 없습니다.`,
                 en: 'No pack that supplies it appears within the planned floors.',
               },
     });
@@ -629,7 +630,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         code: 'shared-ingredient',
         giftIds: shared,
         detail: {
-          ko: `${shared.map((id) => indexes.giftById.get(id)?.name.ko ?? id).join('·')}은(는) 두 조합이 함께 먹습니다. 같은 기프트는 한 번에 하나만 가질 수 있으니, 먼저 조합해 소모한 뒤에야 두 번째 것이 다시 나옵니다.`,
+          ko: `${josa(shared.map((id) => indexes.giftById.get(id)?.name.ko ?? String(id)).join('·'), '은/는')} 두 조합이 함께 먹습니다. 같은 기프트는 한 번에 하나만 가질 수 있으니, 먼저 조합해 소모한 뒤에야 두 번째 것이 다시 나옵니다.`,
           en: 'Two fusions eat the same ingredient. A gift you hold is never offered again, so the first fusion has to happen before the second copy can drop.',
         },
       });
@@ -735,11 +736,11 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       ...(droppedIngredients ? { droppedIngredients } : {}),
       detail: droppedIngredients
         ? {
-            ko: `재료 ${missing.join(', ')}를 구할 수 없어 조합할 수 없습니다. 나머지 재료(${droppedIngredients.join(', ')})만을 위한 방문은 취소했습니다.`,
+            ko: `재료 ${missing.join(', ')}을(를) 구할 수 없어 조합할 수 없습니다. 나머지 재료(${droppedIngredients.join(', ')})만을 위한 방문은 취소했습니다.`,
             en: `Cannot be fused: ingredients ${missing.join(', ')} are not obtainable. Visits for the remaining ingredients (${droppedIngredients.join(', ')}) alone were dropped.`,
           }
         : {
-            ko: `재료 ${missing.join(', ')}를 구할 수 없어 조합할 수 없습니다.`,
+            ko: `재료 ${missing.join(', ')}을(를) 구할 수 없어 조합할 수 없습니다.`,
             en: `Cannot be fused: ingredients ${missing.join(', ')} are not obtainable in this plan.`,
           },
     });

@@ -16,6 +16,7 @@ import {
   rulesSchema,
   seasonIndexSchema,
 } from '../src/core/schema.ts';
+import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../src/core/text.ts';
 
 const DATA = resolve(process.cwd(), 'public/data');
 const index = seasonIndexSchema.parse(JSON.parse(readFileSync(resolve(DATA, 'index.json'), 'utf8')));
@@ -119,6 +120,44 @@ describe('theme packs', () => {
 describe('gifts', () => {
   it('covers every gift the season references', () => {
     expect(gifts).toHaveLength(446);
+  });
+
+  it('names every buff the Korean text refers to, leaving no bracketed id on screen', () => {
+    // The game writes a buff into its own text as `[BloodDinner]` and paints the name over it at
+    // run time. Every BattleKeywords* table is read, so the Korean text carries no Latin id: 혈찬,
+    // not BloodDinner. (The English text legitimately contains Latin — those are display names.)
+    const leftovers = new Map<string, number>();
+    for (const gift of gifts) {
+      const ko = [gift.desc.ko, ...gift.conditions.flatMap((c) => (c.text ? [c.text.ko] : []))].join('\n');
+      for (const m of ko.matchAll(/\[([A-Za-z][A-Za-z0-9_]*)\]/g)) leftovers.set(m[1]!, (leftovers.get(m[1]!) ?? 0) + 1);
+    }
+    expect([...leftovers.keys()]).toEqual([]);
+    // The ids that used to leak, now named from the season and chapter tables.
+    expect(giftById.get(9213)!.desc.ko).toContain('[혈찬]');
+    expect(giftById.get(9795)!.conditions[0]!.text!.ko).toContain('[혈찬]을 소모하는');
+    expect(giftById.get(9214)!.desc.ko).toContain('[진동 - 작열]');
+  });
+
+  it('ships description text with nothing left for the app to clean up', () => {
+    // The build localizes the game's bracketed buff ids, strips Unity rich-text tags and drops the
+    // runtime `{0}` counter. What it cannot name (identity-only buffs like `BloodDinner`) keeps its
+    // bracketed id on purpose — a guessed name would be worse.
+    for (const gift of gifts) {
+      const texts = [gift.desc.ko, gift.desc.en, ...gift.conditions.flatMap((c) => (c.text ? [c.text.ko, c.text.en] : []))];
+      for (const text of texts) {
+        const where = `${gift.id} ${gift.name.ko}`;
+        // `AttackDown` arrives from the game as 「공격 레벨 감소 」 / 「Offense Level Down 」.
+        expect(text, where).not.toMatch(PADDED_BRACKET);
+        expect(text, where).not.toMatch(new RegExp(RICH_TEXT_TAG.source));
+        expect(text, where).not.toMatch(RUNTIME_PLACEHOLDER);
+      }
+    }
+    // The buff names the table does have are in the reader's language, brackets and all.
+    expect(giftById.get(9024)!.desc.ko).toContain('[공격 레벨 감소] 5와 [방어 레벨 감소] 5');
+    expect(giftById.get(9024)!.desc.en).toContain('[Offense Level Down] and 5 [Defense Level Down]');
+    expect(giftById.get(9022)!.desc.ko).toContain('[공격 레벨 증가] 2');
+    // Words the game wrote in angle brackets are content, not markup, and survive.
+    expect(giftById.get(9440)!.desc.ko).toContain('아군에 <혈귀>가 있다면');
   });
 
   it('splits acquisition the way the game does', () => {
