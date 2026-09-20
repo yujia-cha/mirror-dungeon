@@ -19,6 +19,7 @@ function t(partial: Partial<SkillTrigger>): SkillTrigger {
     keywords: [],
     verb: 'inflict',
     includesSpecial: false,
+    factions: [],
     subject: 'skill',
     slots: [],
     effect: 'gate',
@@ -221,5 +222,96 @@ describe('parseSkillTriggers — keyword clauses', () => {
       t({ sin: 'ENVY' }),
       t({ keywords: ['Charge'], includesSpecial: true, slots: [1] }),
     ]);
+  });
+});
+
+describe('parseSkillTriggers — 소속', () => {
+  /** The real name→id map the build hands the parser. */
+  const factions = new Map([
+    ['약지', 'RING_FINGER'],
+    ['신체파', 'RING_FINGER_PHYSICAL'],
+    ['검계', 'BLADE_LINEAGE'],
+    ['중지', 'MIDDLE_FINGER'],
+    ['W사', 'W_CORP'],
+    ['디에치 협회', 'DIECI'],
+    ['흑운회', 'BLACK_CLOUD'],
+    ['림버스 컴퍼니', 'LIMBUS_COMPANY'],
+  ]);
+  const withFactions = (ko: string) => parseSkillTriggers({ ko, en: '' }, { factionIdByName: factions }).triggers;
+
+  it('gates both halves of an OR list on the 소속 (9223 범작)', () => {
+    expect(
+      withFactions('[영감]을 보유한 약지 소속 인격의 색욕 속성 또는 참격 속성 스킬이 적중한 적에게'),
+    ).toEqual([
+      t({ sin: 'LUST', factions: ['RING_FINGER'] }),
+      t({ attackType: 'Slash', factions: ['RING_FINGER'] }),
+    ]);
+  });
+
+  it('finds the 소속 when it follows the skill instead of leading it (9785 떼구름)', () => {
+    expect(withFactions('참격 기본 공격 스킬을 보유한 흑운회 소속 인격이 턴 시작 시')).toEqual([
+      t({ attackType: 'Slash', factions: ['BLACK_CLOUD'] }),
+    ]);
+  });
+
+  it('reads 「이나」 as an OR list too (9258 앙갚음 장부)', () => {
+    // The only place the game joins with 이나; a bare 「나」 is not a separator because it would
+    // split 나태 in half.
+    expect(withFactions('중지 소속 아군이 질투 속성이나 타격 속성 기본 스킬 공격 종료 시')).toEqual([
+      t({ sin: 'ENVY', factions: ['MIDDLE_FINGER'] }),
+      t({ attackType: 'Hit', factions: ['MIDDLE_FINGER'] }),
+    ]);
+  });
+
+  it('reads a slot the 소속 alone qualifies (9720 낡은 도포)', () => {
+    expect(withFactions('검계 소속일 경우 스킬 1의 코인 위력 +1')).toEqual([
+      t({ slots: [1], factions: ['BLADE_LINEAGE'] }),
+    ]);
+  });
+
+  it('keeps every slot of one 소속 clause together (9778 통상 작전용 장비)', () => {
+    // One clause, two slots — reading only the first would tell a 림버스 컴퍼니 deck that its
+    // 3스킬 does nothing.
+    expect(
+      withFactions('림버스 컴퍼니 소속 인격이 사용하는 스킬 2의 공격 레벨 +1, 피해량 +15%, 스킬 3의 공격 레벨 +2'),
+    ).toEqual([t({ slots: [2, 3], factions: ['LIMBUS_COMPANY'] })]);
+  });
+
+  it('gives the extra types to the 소속 and leaves the base type alone (9202 포켓 암기 노트)', () => {
+    expect(
+      withFactions(
+        '타격 기본 공격 스킬로 합 승리 시, 대상 적에게 다음 턴에 방어 레벨 감소 2 부여\n' +
+          '- 디에치 협회 소속 인격은 참격, 관통 기본 공격 스킬에도 효과가 적용되고',
+      ),
+    ).toEqual([
+      t({ attackType: 'Slash', factions: ['DIECI'] }),
+      t({ attackType: 'Penetrate', factions: ['DIECI'] }),
+      t({ attackType: 'Hit' }),
+    ]);
+  });
+
+  it('will not read a 소속 that is only being counted (9841 C형 정리 요원 장비 세트)', () => {
+    // 「W사 소속 인격 수 x 6.25」 scales the effect; it does not say whose skill 3 fires.
+    expect(withFactions('- 턴 시작 시, 이번 턴 동안 스킬 3의 피해량 +(전투에 참여한 W사 소속 인격 수 x 6.25)%')).toEqual([]);
+  });
+
+  it('will not read a 소속 that is a threshold or a re-assignment', () => {
+    // A threshold is a `Condition`; a re-assignment is prose about who counts as what.
+    expect(withFactions('턴 시작 시, 검계 소속 인격이 3인 이상일 때 발동, 참격 스킬 공격 레벨 +2')).toEqual([
+      t({ attackType: 'Slash' }),
+    ]);
+    expect(
+      withFactions('검계 소속 인격을 제외한 편성 순서가 가장 빠른 S사 소속 인격 1인을 검계 소속으로 취급하고'),
+    ).toEqual([]);
+  });
+
+  it('prefers the longer 소속 name when one contains another', () => {
+    expect(withFactions('약지 신체파 소속 인격의 참격 스킬')).toEqual([
+      t({ attackType: 'Slash', factions: ['RING_FINGER_PHYSICAL'] }),
+    ]);
+  });
+
+  it('claims nothing when the 소속 name is unknown, rather than claiming it of everyone', () => {
+    expect(withFactions('없는협회 소속일 경우 스킬 1의 코인 위력 +1')).toEqual([]);
   });
 });

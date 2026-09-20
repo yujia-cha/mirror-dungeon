@@ -40,6 +40,7 @@ function trigger(partial: Partial<SkillTrigger>): SkillTrigger {
     keywords: [],
     verb: 'inflict',
     includesSpecial: false,
+    factions: [],
     subject: 'skill',
     slots: [],
     effect: 'gate',
@@ -104,6 +105,7 @@ describe('triggerMatches', () => {
     copies: 2,
     keywords: { base: ['Combustion'], special: ['Charge'] },
     identityKeywords: { base: ['Combustion', 'Sinking'], special: ['Charge'] },
+    factions: ['BLADE_LINEAGE'],
   };
 
   it('ignores an axis the trigger leaves null', () => {
@@ -145,6 +147,16 @@ describe('triggerMatches', () => {
     // 부여 must select the same skills — anything else would be a guess.
     expect(triggerMatches(trigger({ keywords: ['Combustion'], verb: 'consume' }), skill)).toBe(true);
     expect(triggerMatches(trigger({ keywords: ['Combustion'], verb: 'any' }), skill)).toBe(true);
+  });
+
+  it('gates on the identity 소속 when the sentence names one', () => {
+    // 9223 범작 asks for 약지's 색욕 or 참격 — a 검계 identity with the right skill still misses.
+    expect(triggerMatches(trigger({ attackType: 'Slash', factions: ['BLADE_LINEAGE'] }), skill)).toBe(true);
+    expect(triggerMatches(trigger({ attackType: 'Slash', factions: ['RING_FINGER'] }), skill)).toBe(false);
+    // Several factions read as an OR, the way the other axes do.
+    expect(
+      triggerMatches(trigger({ factions: ['RING_FINGER', 'BLADE_LINEAGE'] }), skill),
+    ).toBe(true);
   });
 
   it('limits itself to the named slots, and to no slot when none are named', () => {

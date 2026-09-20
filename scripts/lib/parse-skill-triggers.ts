@@ -46,7 +46,7 @@ import type {
 } from '../../src/core/schema.ts';
 import { ATTACK_TYPES, IDENTITY_KEYWORDS, SINS } from '../../src/core/schema.ts';
 import { stripRichText } from '../../src/core/text.ts';
-import { KEYWORD_KO } from './parse-conditions.ts';
+import { KEYWORD_KO, resolveFaction } from './parse-conditions.ts';
 
 /** Korean sin name -> the id the app uses. */
 const SIN_BY_KO: Record<string, Sin> = {
@@ -79,14 +79,16 @@ const MEMBER = `(?:${SUBJECT})\\s*(?:속성|유형)?(?:인|의)?`;
  * Every word between a subject and 스킬 is optional because the game varies them independently:
  * 「분노 속성 스킬」, 「오만 속성 공격 스킬」, 「탐식 속성의 스킬」, 「참격 기본 공격 스킬」,
  * 「참격 유형인 스킬 1」. Members join with 「,」 or 「또는」 (an OR list), or with nothing at all —
- * 「오만 관통 스킬」, where the two words narrow each other instead (an AND).
+ * 「오만 관통 스킬」, where the two words narrow each other instead (an AND). 「이나」 joins a list
+ * as 「또는」 does (9258 「질투 속성이나 타격 속성」); a bare 「나」 is not a separator here because it
+ * would split 나태 in half.
  *
  * Group 1 is the whole run, rescanned for its words; group 2 is the 「스킬 1, 스킬 2」 run, rescanned
  * for its digits. A list cannot swallow the next clause of 「참격 스킬 또는 질투 속성 스킬」, because
  * the first member is already followed by 스킬.
  */
 const TRIGGER_RE = new RegExp(
-  `((?:${MEMBER}\\s*(?:,|또는)\\s*)*${MEMBER}(?:\\s+(?:${SUBJECT}))?)` +
+  `((?:${MEMBER}\\s*(?:,|또는|이나)\\s*)*${MEMBER}(?:\\s+(?:${SUBJECT}))?)` +
     `\\s*(?:기본\\s*)?(?:공격\\s*)?스킬\\s*((?:[123](?:\\s*,\\s*스킬\\s*[123])*)?)`,
   'g',
 );
@@ -116,6 +118,63 @@ const FORMATION_RES = [
 const BOOST_RE = /효과가\s*강화|효과를\s*대신하여|효과가\s*변경|우선으로\s*적용|효과\s*적용/;
 
 const SUBJECT_RE = new RegExp(SUBJECT, 'g');
+
+// ---------------------------------------------------------------------------
+// Faction — 「약지 소속 인격의 색욕 속성 또는 참격 속성 스킬」
+// ---------------------------------------------------------------------------
+
+/**
+ * A 소속 clause that names WHO swings the skill.
+ *
+ * The name is captured loosely and handed to `resolveFaction`, which walks progressively shorter
+ * suffixes — so 「[영감]을 보유한 약지 소속」 and 「분노, 오만 스킬을 장착한 검계 소속」 both land on
+ * the faction and 「약지 신체파 소속」 lands on 신체파 rather than 약지.
+ *
+ * The trailing form matters because it separates a gate from a count: 「소속 인격이」, 「소속 아군이」,
+ * 「소속일 경우」 restrict whose skill it is, while 「소속 인격 수」 and 「소속 아군 1명당」 merely
+ * count the party. See `FACTION_NOT_A_GATE`.
+ */
+const FACTION_RE = /([가-힣A-Za-z0-9 ·-]{2,16}?)\s*소속(?:\s*(?:인격|아군))?\s*(이|은|의|일|에게|를|을)?/g;
+
+/**
+ * Faction mentions that do not gate a skill, by what follows the name.
+ *
+ * - **A count**: 「W사 소속 인격 수 x 6.25」 (9841), 「중지 소속 아군 1명당」 (9258),
+ *   「검계 소속 인격이 3인 이상일 때」 (9720, 9785, 9829). The threshold forms are already read as
+ *   a `factionCount` condition, and the scaling ones are not a gate at all.
+ * - **A re-assignment**: 「… 1인을 검계 소속으로 취급하고」 (9280), 「W사 소속이 아닌 인격 1인을 W사
+ *   소속으로 취급함」 (9841) — prose about changing who counts, not about whose skill fires.
+ * - **A negation**: 「검계 소속 인격을 제외한」, 「W사 소속이 아닌」.
+ */
+const FACTION_NOT_A_GATE = [
+  /^\s*(?:인격|아군)?\s*수/,
+  /^\s*\d+\s*(?:명당|인\s*이상|인당)/,
+  /^\s*(?:인격|아군)?\s*(?:이|가)?\s*\d+\s*인\s*이상/,
+  /^\s*(?:으)?로\s*취급/,
+  /^\s*(?:이|가)?\s*아닌/,
+  /^\s*(?:인격|아군)?\s*을?\s*제외/,
+];
+
+/**
+ * The factions named as a gate on one line, resolved to ids and sorted.
+ *
+ * The line is the unit because the game writes one effect per line, and the faction can sit on
+ * either side of the skill it qualifies: 「약지 소속 인격의 색욕 … 스킬」 puts it first, 「참격 기본
+ * 공격 스킬을 보유한 흑운회 소속 인격이」 (9785) puts it last.
+ */
+function factionsOnLine(line: string, byName: Map<string, string>): string[] {
+  const out = new Set<string>();
+  FACTION_RE.lastIndex = 0;
+  for (const match of line.matchAll(FACTION_RE)) {
+    const tail = line.slice(match.index + match[0].length);
+    const afterName = line.slice(match.index + match[1]!.length);
+    if (FACTION_NOT_A_GATE.some((re) => re.test(tail) || re.test(afterName.replace(/^\s*소속/, ''))))
+      continue;
+    const id = resolveFaction(match[1]!, byName);
+    if (id) out.add(id);
+  }
+  return [...out].sort();
+}
 
 // ---------------------------------------------------------------------------
 // Keyword triggers — 「[충전] 횟수 또는 특수 충전을 증가시키는 스킬 1」
@@ -190,7 +249,7 @@ const VERB_RE = new RegExp(VERB, 'g');
  * 「또는 특수 충전」 is the only thing that makes 특수 변형 count — the same rule conditions follow,
  * and the reason 탄환 is exempt elsewhere does not apply here because no bullet gift exists.
  */
-function keywordTriggerOf(clause: string, identityScope: boolean, slot: SkillSlot, effect: SkillTrigger['effect']): SkillTrigger | null {
+function keywordTriggerOf(clause: string, identityScope: boolean, slot: SkillSlot, effect: SkillTrigger['effect'], factions: string[]): SkillTrigger | null {
   KEYWORD_MENTION_RE.lastIndex = 0;
   const keywords = [
     ...new Set([...clause.matchAll(KEYWORD_MENTION_RE)].map((m) => KEYWORD_BY_NAME[m[1]!]!)),
@@ -211,6 +270,7 @@ function keywordTriggerOf(clause: string, identityScope: boolean, slot: SkillSlo
     keywords,
     verb,
     includesSpecial,
+    factions,
     subject: identityScope ? 'identity' : 'skill',
     slots: [slot],
     effect,
@@ -226,6 +286,7 @@ function triggerOf(
   words: string[],
   slots: SkillSlot[],
   effect: SkillTrigger['effect'],
+  factions: string[] = [],
 ): SkillTrigger {
   const sin = words.map((w) => SIN_BY_KO[w]).find(Boolean) ?? null;
   const attackType = words.map((w) => ATTACK_BY_KO[w]).find(Boolean) ?? null;
@@ -235,6 +296,7 @@ function triggerOf(
     keywords: [],
     verb: 'inflict',
     includesSpecial: false,
+    factions,
     subject: 'skill',
     slots,
     effect,
@@ -270,6 +332,7 @@ function keyOf(trigger: SkillTrigger): string {
     trigger.keywords.length > 0 ? trigger.verb : '',
     trigger.keywords.length > 0 ? trigger.subject : '',
     trigger.keywords.length > 0 && trigger.includesSpecial ? 'special' : '',
+    trigger.factions.join(','),
   ].join('|');
 }
 
@@ -312,15 +375,44 @@ function normalise(triggers: SkillTrigger[]): SkillTrigger[] {
     .sort((a, b) => subjectRank(a) - subjectRank(b) || (keyOf(a) < keyOf(b) ? -1 : keyOf(a) > keyOf(b) ? 1 : 0));
 }
 
+/**
+ * A slot qualified by a 소속 and nothing else — 「검계 소속일 경우 스킬 1의 코인 위력 +1」 (9720),
+ * 「림버스 컴퍼니 소속 인격이 사용하는 스킬 2의 … 스킬 3의 …」 (9778·9780).
+ *
+ * `TRIGGER_RE` cannot see these because no sin or attack type stands before 스킬, and without the
+ * faction they would say 「1스킬」 of everyone, which is not what the gift does. The faction itself
+ * comes from the line, as it does for every other trigger; this pattern only finds the slot.
+ */
+const FACTION_SLOT_RE = /소속[^.\n]{0,14}?스킬\s*[123](?!\s*이?\s*아닌)/g;
+
+/** Every slot the rest of that sentence names, so 「스킬 2의 … 스킬 3의 …」 is one trigger, not one slot. */
+const TRAILING_SLOT_RE = /스킬\s*([123])(?!\s*이?\s*아닌)/g;
+
+export interface SkillTriggerContext {
+  /** Korean faction name -> faction id, the same map `parseConditions` is given. */
+  factionIdByName?: Map<string, string>;
+}
+
 export interface SkillTriggerResult {
   triggers: SkillTrigger[];
   /** 1-based formation positions the effect is limited to, ascending. Empty means no limit. */
   formationSlots: number[];
 }
 
-export function parseSkillTriggers(desc: Localized): SkillTriggerResult {
+export function parseSkillTriggers(desc: Localized, ctx: SkillTriggerContext = {}): SkillTriggerResult {
   const ko = stripRichText(desc.ko ?? '');
   const found: SkillTrigger[] = [];
+  const byName = ctx.factionIdByName ?? new Map<string, string>();
+  // One lookup per line, because every trigger on a line shares its 소속.
+  const factionCache = new Map<string, string[]>();
+  const factionsFor = (index: number): string[] => {
+    const line = lineAt(ko, index);
+    const seen = factionCache.get(line);
+    if (seen) return seen;
+    const ids = factionsOnLine(line, byName);
+    factionCache.set(line, ids);
+    return ids;
+  };
 
   TRIGGER_RE.lastIndex = 0;
   for (const match of ko.matchAll(TRIGGER_RE)) {
@@ -331,17 +423,35 @@ export function parseSkillTriggers(desc: Localized): SkillTriggerResult {
       .map(Number)
       .sort((a, b) => a - b) as SkillSlot[];
     const effect = BOOST_RE.test(lineAt(ko, match.index)) ? 'boost' : 'gate';
+    const factions = factionsFor(match.index);
     // A run joined by 「,」 or 「또는」 lists alternatives; one joined by nothing narrows itself.
-    if (/,|또는/.test(run)) for (const word of words) found.push(triggerOf([word], slots, effect));
-    else found.push(triggerOf(words, slots, effect));
+    if (/,|또는|이나/.test(run))
+      for (const word of words) found.push(triggerOf([word], slots, effect, factions));
+    else found.push(triggerOf(words, slots, effect, factions));
   }
 
   KEYWORD_TRIGGER_RE.lastIndex = 0;
   for (const match of ko.matchAll(KEYWORD_TRIGGER_RE)) {
     const slot = Number(match[2]) as SkillSlot;
     const effect = BOOST_RE.test(lineAt(ko, match.index)) ? 'boost' : 'gate';
-    const trigger = keywordTriggerOf(match[0], Boolean(match[1]), slot, effect);
+    const trigger = keywordTriggerOf(match[0], Boolean(match[1]), slot, effect, factionsFor(match.index));
     if (trigger) found.push(trigger);
+  }
+
+  // 「검계 소속일 경우 스킬 1의 …」 — a slot the faction alone qualifies. Only worth a trigger when
+  // the faction actually resolved: without it the clause would claim that slot of every identity.
+  FACTION_SLOT_RE.lastIndex = 0;
+  for (const match of ko.matchAll(FACTION_SLOT_RE)) {
+    const factions = factionsFor(match.index);
+    if (factions.length === 0) continue;
+    const effect = BOOST_RE.test(lineAt(ko, match.index)) ? 'boost' : 'gate';
+    // The clause runs to the end of its sentence: 9778 states 스킬 2 and 스킬 3 under one 소속.
+    const sentenceEnd = ko.slice(match.index).search(/[.\n]/);
+    const clause = ko.slice(match.index, sentenceEnd === -1 ? undefined : match.index + sentenceEnd);
+    TRAILING_SLOT_RE.lastIndex = 0;
+    const slots = [...new Set([...clause.matchAll(TRAILING_SLOT_RE)].map((m) => Number(m[1])))]
+      .sort((a, b) => a - b) as SkillSlot[];
+    if (slots.length > 0) found.push(triggerOf([], slots, effect, factions));
   }
 
   const formationSlots = new Set<number>();

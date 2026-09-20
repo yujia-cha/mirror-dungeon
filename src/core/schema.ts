@@ -215,6 +215,15 @@ export const skillTriggerSchema = z.object({
    */
   includesSpecial: z.boolean().default(false),
   /**
+   * Factions the identity swinging the skill must belong to, as an OR list of faction ids. Empty
+   * means the sentence does not ask for one.
+   *
+   * The game gates on 소속 in the same breath as the skill — 「약지 소속 인격의 색욕 속성 또는
+   * 참격 속성 스킬」 (9223 범작) — so it narrows the same trigger rather than standing apart as a
+   * `Condition`: a condition counts the party against a threshold, this asks whose skill it is.
+   */
+  factions: z.array(z.string()).default([]),
+  /**
    * Who has to use the keyword. `skill` means the skill in that slot does it itself
    * (「[화상]…부여하는 스킬 3」); `identity` means the identity does it somewhere and the slot only
    * names which skill the effect lands on (「[진동]…부여하는 아군이 사용하는 스킬 3」). The game

@@ -27,6 +27,7 @@ function trigger(partial: Partial<SkillTrigger>): SkillTrigger {
     keywords: [],
     verb: 'inflict',
     includesSpecial: false,
+    factions: [],
     subject: 'skill',
     slots: [],
     effect: 'gate',
@@ -140,9 +141,9 @@ describe('gifts', () => {
 
   it('reads a skill trigger out of every gift whose effect names a skill', () => {
     const triggered = gifts.filter((g) => g.skillTriggers.length > 0);
-    // 92 sin/type gifts plus the 12 that only a keyword clause reaches (15 carry one, 3 of which
-    // already had a sin clause of their own).
-    expect(triggered).toHaveLength(104);
+    // 92 sin/type gifts, plus the 12 that only a keyword clause reaches, plus the 3 that only a
+    // 소속 reaches (9720 검계, 9778·9780 림버스 컴퍼니 — a slot with no sin or type before it).
+    expect(triggered).toHaveLength(107);
     // The same loose scan data:validate uses: a gift that plainly names one must have parsed one.
     const loose =
       /(분노|색욕|나태|탐식|우울|오만|질투|참격|관통|타격)[^\n가-힣]{0,4}(?:속성|유형)?[^\n가-힣]{0,4}(?:기본\s*)?(?:공격\s*)?스킬/;
@@ -153,9 +154,14 @@ describe('gifts', () => {
     const ascending = (values: readonly number[]) => values.every((v, i) => i === 0 || v > values[i - 1]!);
     for (const gift of gifts) {
       for (const trigger of gift.skillTriggers) {
-        // A trigger has to state SOMETHING, or it would match every skill in the game.
+        // A trigger has to narrow SOMETHING, or it would match every skill in the game. A 소속 on
+        // its own does not count: it would mean 「that faction's every skill」, which the parser is
+        // deliberately not asked to read.
         expect(
-          trigger.sin !== null || trigger.attackType !== null || trigger.keywords.length > 0,
+          trigger.sin !== null ||
+            trigger.attackType !== null ||
+            trigger.keywords.length > 0 ||
+            trigger.slots.length > 0,
         ).toBe(true);
         expect(ascending(trigger.slots)).toBe(true);
         // The keyword axes are only meaningful alongside a keyword; left at their defaults
@@ -175,8 +181,8 @@ describe('gifts', () => {
     // absent on purpose: its 「스킬 1, 스킬 2」 is widened again by a later unrestricted line, which
     // is what the parser's subsumption rule is for.
     expect(gifts.filter((g) => g.skillTriggers.some((t) => t.slots.length > 0)).map((g) => g.id)).toEqual([
-      9098, 9135, 9177, 9179, 9184, 9195, 9199, 9215, 9216, 9728, 9729, 9730, 9731, 9734, 9735,
-      9743, 9841,
+      9098, 9135, 9177, 9179, 9184, 9195, 9199, 9215, 9216, 9720, 9728, 9729, 9730, 9731, 9734,
+      9735, 9743, 9778, 9780, 9841,
     ]);
     expect(gifts.filter((g) => g.formationSlots.length > 0)).toHaveLength(60);
   });
@@ -191,8 +197,27 @@ describe('gifts', () => {
     [
       9734,
       [
-        trigger({ sin: 'ENVY' }),
+        // 「W사 소속 인격이 질투 속성 스킬로」 — the 소속 is part of the gate, not a separate count.
+        trigger({ sin: 'ENVY', factions: ['W_CORP'] }),
         trigger({ keywords: ['Charge'], includesSpecial: true, slots: [1] }),
+      ],
+      [],
+    ],
+    // 9223 범작 — 「약지 소속 인격의 색욕 속성 또는 참격 속성 스킬」, the shape that prompted this.
+    [
+      9223,
+      [trigger({ sin: 'LUST', factions: ['RING_FINGER'] }), trigger({ attackType: 'Slash', factions: ['RING_FINGER'] })],
+      [],
+    ],
+    // 9720 낡은 도포 — a slot the 소속 alone qualifies; no sin or type stands before 스킬 1.
+    [9720, [trigger({ slots: [1], factions: ['BLADE_LINEAGE'] })], []],
+    // 9202 포켓 암기 노트 — 타격 is everyone's, 참격·관통 belong to 디에치 협회 alone.
+    [
+      9202,
+      [
+        trigger({ attackType: 'Slash', factions: ['DIECI'] }),
+        trigger({ attackType: 'Penetrate', factions: ['DIECI'] }),
+        trigger({ attackType: 'Hit' }),
       ],
       [],
     ],
@@ -213,7 +238,7 @@ describe('gifts', () => {
     const count = (bucket: string) => rows.filter((b) => b === bucket).length;
     // A gift that helps two ways is listed under each, so the rows outnumber the 104 gifts.
     expect([count('damage'), count('survival'), count('egoResource'), count('buff'), count('debuff')]).toEqual([
-      51, 13, 1, 72, 27,
+      54, 13, 1, 75, 27,
     ]);
     expect(triggered.filter((g) => g.effectBuckets.includes('egoResource')).map((g) => g.id)).toEqual([9002]);
   });

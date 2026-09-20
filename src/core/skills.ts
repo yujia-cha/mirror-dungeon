@@ -26,6 +26,8 @@ export interface SkillRef {
   keywords: SkillKeywords;
   /** Every keyword the whole identity uses, for the 「…하는 인격이 사용하는 스킬 3」 shape. */
   identityKeywords: SkillKeywords;
+  /** The identity's 소속, for 「약지 소속 인격의 색욕 … 스킬」. */
+  factions: readonly string[];
 }
 
 export interface GiftSkillMatch {
@@ -73,6 +75,7 @@ export function skillsOf(
         copies: skill.copies,
         keywords: skill.keywords,
         identityKeywords,
+        factions: identity.factions,
       });
     }
   }
@@ -89,6 +92,10 @@ export function triggerMatches(trigger: SkillTrigger, skill: SkillRef): boolean 
   if (trigger.sin !== null && trigger.sin !== skill.sin) return false;
   if (trigger.attackType !== null && trigger.attackType !== skill.attackType) return false;
   if (trigger.slots.length > 0 && !trigger.slots.includes(skill.slot)) return false;
+  // 소속 gates the identity swinging the skill, not the skill itself — 9223 범작 wants 약지's
+  // 색욕 or 참격, and saying 「색욕 스킬」 alone would promise the gift to a deck it never fires for.
+  if (trigger.factions.length > 0 && !trigger.factions.some((f) => skill.factions.includes(f)))
+    return false;
   if (trigger.keywords.length > 0) {
     // `subject` decides WHOSE keyword is asked for. 「[화상]을 부여하는 스킬 3」 wants that skill to
     // do it; 「[진동]을 부여하는 아군이 사용하는 스킬 3」 wants the identity to do it somewhere and

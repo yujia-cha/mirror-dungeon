@@ -303,6 +303,7 @@ function checkInvariants(
   enums: Enums,
 ): void {
   const selectable = packs.filter((p) => p.selectable);
+  const factionIds = new Set(enums.factions.map((f) => f.id));
 
   // Expected scale for Mirror Dungeon 7. A real season change moves these; bump them deliberately
   // and say why in the commit message (see the update-game-data skill).
@@ -517,8 +518,25 @@ function checkInvariants(
   }
   for (const gift of gifts) {
     for (const trigger of gift.skillTriggers) {
-      if (trigger.sin === null && trigger.attackType === null && trigger.keywords.length === 0) {
-        err('invariant', `gift ${gift.id} has a skill trigger naming neither a sin, an attack type nor a keyword`);
+      // A trigger has to narrow SOMETHING, or it would claim every skill in the game. A 소속 on
+      // its own is not enough either — 「검계 소속일 경우 스킬 1」 narrows by slot as well, and a
+      // faction with no other axis would mean 「that faction's every skill」, which the parser is
+      // deliberately not asked to read.
+      const axes =
+        (trigger.sin !== null ? 1 : 0) +
+        (trigger.attackType !== null ? 1 : 0) +
+        (trigger.keywords.length > 0 ? 1 : 0) +
+        (trigger.slots.length > 0 ? 1 : 0);
+      if (axes === 0) {
+        err('invariant', `gift ${gift.id} has a skill trigger that narrows nothing`);
+      }
+      if (trigger.factions.length > 0 && axes === 0) {
+        err('invariant', `gift ${gift.id} has a skill trigger naming only a 소속`);
+      }
+      for (const faction of trigger.factions) {
+        if (!factionIds.has(faction)) {
+          err('invariant', `gift ${gift.id} has a skill trigger naming unknown 소속 ${faction}`);
+        }
       }
       // The keyword axes only mean anything alongside a keyword. Left at their defaults otherwise,
       // so no reader has to ask whether they apply.

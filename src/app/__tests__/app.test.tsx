@@ -5,7 +5,7 @@
  */
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import lzString from 'lz-string';
 import userEvent from '@testing-library/user-event';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
@@ -2864,6 +2864,38 @@ describe('SkillGiftsPanel', () => {
     expect(bandage).toBeDefined();
     expect(within(bandage).getByTestId('skill-gift-trigger')).toHaveTextContent('타격 스킬');
     expect(within(bandage).getByTestId('skill-gift-trigger')).not.toHaveTextContent('우울');
+  });
+
+  it('names the 소속 the gift gates on, and keeps it out of a deck that lacks it (9223 범작)', async () => {
+    const user = userEvent.setup();
+    // 약지 identities, which is what 「약지 소속 인격의 색욕 속성 또는 참격 속성 스킬」 asks for.
+    useApp.getState().setDeck([10109, 10215, 10515, 10614, 10915, 11109, ...LCB_DECK.slice(0, 6)], 6);
+    render();
+    await user.click(tag('bucket', 'damage')); // clear the default so every 계열 shows
+    const forgery = rowFor(9223)!;
+    expect(forgery).toBeDefined();
+    expect(within(forgery).getByTestId('skill-gift-trigger')).toHaveTextContent('약지 소속');
+    expect(within(forgery).getByTestId('skill-gift-trigger')).toHaveTextContent('색욕');
+
+    // The LCB deck has no 약지, so the gift cannot fire at all and must not be listed.
+    useApp.getState().setDeck(LCB_DECK, 6);
+    cleanup();
+    render();
+    await user.click(tag('bucket', 'damage'));
+    expect(rowFor(9223)).toBeUndefined();
+  });
+
+  it('reads a slot that only a 소속 qualifies (9720 낡은 도포)', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck([10103, 10208, 10308, 10508, 10815, 11002, ...LCB_DECK.slice(0, 6)], 6);
+    render();
+    await user.click(tag('bucket', 'damage'));
+    // 「검계 소속일 경우 스킬 1의 코인 위력 +1」 — no sin or type stands before 스킬 1, so before
+    // 소속 was read this gift carried no trigger at all and never appeared.
+    const robe = rowFor(9720)!;
+    expect(robe).toBeDefined();
+    expect(within(robe).getByTestId('skill-gift-trigger')).toHaveTextContent('검계 소속');
+    expect(within(robe).getByTestId('skill-gift-trigger')).toHaveTextContent('1스킬');
   });
 
   it('lists a gift that helps two ways under each 계열, with its own tags on the row', async () => {

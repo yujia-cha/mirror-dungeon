@@ -284,6 +284,7 @@ export const STRINGS = {
     ko: '{keyword} {verb} 인격의 {slots}스킬',
     en: 'Skill {slots} of an identity that {verb} {keyword}',
   },
+  skillsTriggerFaction: { ko: '{factions} 소속 · {rest}', en: '{factions} · {rest}' },
   skillsKeywordSpecial: { ko: '{keyword}(특수)', en: '{keyword} (incl. unique)' },
   skillsKeywordOr: { ko: '·', en: ' or ' },
   skillsVerbInflict: { ko: '부여', en: 'applies' },

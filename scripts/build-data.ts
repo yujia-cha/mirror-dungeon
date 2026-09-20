@@ -560,7 +560,7 @@ const gifts: Gift[] = [...giftIds]
 
     // The same file corrects both, and each key wins on its own: an empty array erases a
     // derivation the text tricked us into, without touching the other.
-    const parsedTriggers = parseSkillTriggers(desc);
+    const parsedTriggers = parseSkillTriggers(desc, { factionIdByName });
     const skillTriggers = curatedCondition?.skillTriggers ?? parsedTriggers.triggers;
     const formationSlots = curatedCondition?.formationSlots ?? parsedTriggers.formationSlots;
     if (skillTriggers.length > 0) skillTriggerGiftCount += 1;

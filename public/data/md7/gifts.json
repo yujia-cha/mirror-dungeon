@@ -207,6 +207,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "WRATH",
@@ -433,6 +434,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "WRATH",
@@ -766,6 +768,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -987,6 +990,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -1107,6 +1111,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -1331,6 +1336,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "SLOTH",
@@ -1341,6 +1347,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -1460,6 +1467,7 @@
       {
         "attackType": "Slash",
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -1580,6 +1588,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "SLOTH",
@@ -1700,6 +1709,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "SLOTH",
@@ -1815,6 +1825,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLUTTONY",
@@ -1935,6 +1946,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLUTTONY",
@@ -2158,6 +2170,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLUTTONY",
@@ -2168,6 +2181,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -2824,6 +2838,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -2944,6 +2959,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -3059,6 +3075,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -3069,6 +3086,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -3294,6 +3312,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -3409,6 +3428,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -3419,6 +3439,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -3534,6 +3555,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -3649,6 +3671,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -3659,6 +3682,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -3778,6 +3802,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -3895,6 +3920,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -4663,6 +4689,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "WRATH",
@@ -4673,6 +4700,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -4996,6 +5024,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "WRATH",
@@ -5421,6 +5450,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -5735,6 +5765,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "SLOTH",
@@ -6256,6 +6287,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLUTTONY",
@@ -6602,6 +6634,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLUTTONY",
@@ -6814,6 +6847,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -6929,6 +6963,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -7048,6 +7083,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -7725,6 +7761,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -8046,6 +8083,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -8161,6 +8199,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -8276,6 +8315,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -10041,6 +10081,7 @@
       {
         "attackType": "Slash",
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -10811,6 +10852,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -10821,6 +10863,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [
           "Breath"
@@ -12074,6 +12117,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -12960,6 +13004,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -13039,6 +13084,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -13553,6 +13599,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Charge"
@@ -13707,6 +13754,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -13788,6 +13836,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -13870,6 +13919,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -13949,6 +13999,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14031,6 +14082,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14114,6 +14166,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14195,6 +14248,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14276,6 +14330,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14356,6 +14411,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14439,6 +14495,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14522,6 +14579,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14603,6 +14661,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14685,6 +14744,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -14695,6 +14755,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14774,6 +14835,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14856,6 +14918,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -14939,6 +15002,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -16855,6 +16919,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [
           "Breath"
@@ -17007,6 +17072,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -17017,6 +17083,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [
           "Breath"
@@ -17395,6 +17462,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [
           "Charge"
@@ -18291,6 +18359,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18368,6 +18437,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18378,6 +18448,9 @@
       {
         "attackType": "Penetrate",
         "effect": "boost",
+        "factions": [
+          "SEVEN"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18388,6 +18461,9 @@
       {
         "attackType": "Hit",
         "effect": "boost",
+        "factions": [
+          "SEVEN"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18467,6 +18543,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18544,6 +18621,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18622,6 +18700,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18698,6 +18777,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18773,6 +18853,7 @@
       {
         "attackType": "Penetrate",
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18850,6 +18931,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -18928,6 +19010,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -19004,6 +19087,9 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [
+          "DIECI"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -19014,6 +19100,9 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [
+          "DIECI"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -19024,6 +19113,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -19099,6 +19189,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -19178,6 +19269,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -19551,6 +19643,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -19842,6 +19935,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Combustion"
@@ -19923,6 +20017,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Combustion"
@@ -20163,6 +20258,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -20259,6 +20355,9 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [
+          "RING_FINGER"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -20269,6 +20368,9 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [
+          "RING_FINGER"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -20986,6 +21088,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -21370,6 +21473,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -21750,6 +21854,20 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
+        "includesSpecial": false,
+        "keywords": [],
+        "sin": "ENVY",
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
+      },
+      {
+        "attackType": null,
+        "effect": "gate",
+        "factions": [
+          "MIDDLE_FINGER"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -21760,6 +21878,9 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [
+          "MIDDLE_FINGER"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -21896,6 +22017,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLOOM",
@@ -21906,6 +22028,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -22298,6 +22421,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -22379,6 +22503,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -22749,6 +22874,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -22802,6 +22928,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -22876,6 +23003,9 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [
+          "BLADE_LINEAGE"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": "WRATH",
@@ -22886,6 +23016,9 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [
+          "BLADE_LINEAGE"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -22896,6 +23029,7 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -23109,6 +23243,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -23119,6 +23254,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "GLUTTONY",
@@ -23392,6 +23528,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "WRATH",
@@ -23402,6 +23539,7 @@
       {
         "attackType": null,
         "effect": "boost",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "LUST",
@@ -24562,6 +24700,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -25263,7 +25402,23 @@
     "obtainable": true,
     "price": 432,
     "sin": "SLOTH",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "factions": [
+          "BLADE_LINEAGE"
+        ],
+        "includesSpecial": false,
+        "keywords": [],
+        "sin": null,
+        "slots": [
+          1
+        ],
+        "subject": "skill",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -25648,6 +25803,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Vibration"
@@ -25728,6 +25884,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Vibration"
@@ -25807,6 +25964,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Vibration"
@@ -25886,6 +26044,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Vibration"
@@ -26035,6 +26194,9 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [
+          "W_CORP"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -26045,6 +26207,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Charge"
@@ -26104,6 +26267,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Charge"
@@ -26424,6 +26588,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -26564,6 +26729,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Charge"
@@ -27634,6 +27800,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "PRIDE",
@@ -28140,7 +28307,24 @@
     "obtainable": true,
     "price": 252,
     "sin": "LUST",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "factions": [
+          "LIMBUS_COMPANY"
+        ],
+        "includesSpecial": false,
+        "keywords": [],
+        "sin": null,
+        "slots": [
+          2,
+          3
+        ],
+        "subject": "skill",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_3"
     ],
@@ -28233,7 +28417,24 @@
     "obtainable": true,
     "price": 404,
     "sin": "GLOOM",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "factions": [
+          "LIMBUS_COMPANY"
+        ],
+        "includesSpecial": false,
+        "keywords": [],
+        "sin": null,
+        "slots": [
+          2,
+          3
+        ],
+        "subject": "skill",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -28505,6 +28706,9 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "factions": [
+          "BLACK_CLOUD"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -28561,6 +28765,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -28858,6 +29063,7 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -29624,6 +29830,7 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -30524,6 +30731,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": false,
         "keywords": [],
         "sin": "WRATH",
@@ -30590,6 +30798,9 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [
+          "MIDDLE_FINGER"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": "ENVY",
@@ -30600,6 +30811,9 @@
       {
         "attackType": "Hit",
         "effect": "boost",
+        "factions": [
+          "MIDDLE_FINGER"
+        ],
         "includesSpecial": false,
         "keywords": [],
         "sin": null,
@@ -30745,6 +30959,7 @@
       {
         "attackType": null,
         "effect": "gate",
+        "factions": [],
         "includesSpecial": true,
         "keywords": [
           "Charge"

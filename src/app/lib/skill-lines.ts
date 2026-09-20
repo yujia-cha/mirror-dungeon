@@ -36,10 +36,18 @@ export function triggerText(
   lang: Lang,
   attackNames: Record<AttackType, string>,
   keywordNames?: (keyword: IdentityKeywordId) => string,
+  factionNames?: (faction: string) => string,
 ): string {
-  const parts: string[] = [];
-  const push = (text: string): void => {
-    if (text && !parts.includes(text)) parts.push(text);
+  // Grouped by 소속, because the game names it once for the whole list — 「약지 소속 인격의 색욕
+  // 속성 또는 참격 속성 스킬」 is one 소속 and two skills, and repeating 「약지 소속」 before each
+  // would read as two separate demands.
+  const groups = new Map<string, string[]>();
+  const push = (text: string, trigger: SkillTrigger): void => {
+    if (!text) return;
+    const key = trigger.factions.join(',');
+    const group = groups.get(key) ?? [];
+    if (!group.includes(text)) group.push(text);
+    groups.set(key, group);
   };
   for (const trigger of triggers) {
     if (trigger.keywords.length > 0 && keywordNames) {
@@ -56,6 +64,7 @@ export function triggerText(
         trigger.subject === 'identity'
           ? t('skillsTriggerKeywordIdentity', lang, { keyword, verb, slots })
           : t('skillsTriggerKeywordSkill', lang, { keyword, verb, slots }),
+        trigger,
       );
       continue;
     }
@@ -67,14 +76,31 @@ export function triggerText(
         : t('skillsSinSubject', lang, { sin: t(SIN_LABEL[trigger.sin], lang) })
       : null;
     const subject = [sin, trigger.attackType ? attackNames[trigger.attackType] : null].filter(Boolean).join(' ');
-    if (!subject) continue;
+    if (!subject) {
+      // 「검계 소속일 경우 스킬 1의 …」 — the 소속 and the slot are the whole condition.
+      if (trigger.factions.length > 0 && trigger.slots.length > 0) {
+        push(t('skillsSlot', lang, { n: trigger.slots.join(',') }), trigger);
+      }
+      continue;
+    }
     push(
       trigger.slots.length > 0
         ? t('skillsTriggerSlot', lang, { slots: trigger.slots.join(','), subject })
         : t('skillsTriggerAny', lang, { subject }),
+      trigger,
     );
   }
-  return parts.join(' · ');
+  // The faction-free group leads: it is what the gift does for everyone, and the 소속 groups are
+  // the narrower claims hanging off it.
+  const keys = [...groups.keys()].sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a < b ? -1 : 1));
+  return keys
+    .map((key) => {
+      const rest = groups.get(key)!.join(' · ');
+      if (!key || !factionNames) return rest;
+      const factions = key.split(',').map(factionNames).join(t('skillsKeywordOr', lang));
+      return t('skillsTriggerFaction', lang, { factions, rest });
+    })
+    .join(' / ');
 }
 
 /**

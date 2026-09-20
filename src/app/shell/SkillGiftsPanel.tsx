@@ -132,6 +132,14 @@ export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
     return (keyword: IdentityKeywordId): string => out[keyword] ?? keyword;
   }, [enums, lang]);
 
+  // Faction display names come from the enums too — a 소속 is a game name, never an i18n string.
+  const factionNames = useMemo(() => {
+    const out = new Map<string, string>(
+      (enums?.factions ?? []).map((faction) => [faction.id, pick(faction.name, lang)]),
+    );
+    return (faction: string): string => out.get(faction) ?? faction;
+  }, [enums, lang]);
+
   const identityName = (identityId: number): { short: string; full: string } => {
     const identity = indexes.identityById.get(identityId);
     if (!identity) return { short: String(identityId), full: String(identityId) };
@@ -207,6 +215,7 @@ export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
             lang={lang}
             attackNames={attackNames}
             keywordNames={keywordNames}
+            factionNames={factionNames}
             judgements={judgements}
             giftTitle={giftTitle}
             openGift={openGift}
@@ -226,6 +235,7 @@ function BucketSection({
   lang,
   attackNames,
   keywordNames,
+  factionNames,
   judgements,
   giftTitle,
   openGift,
@@ -238,6 +248,7 @@ function BucketSection({
   lang: Lang;
   attackNames: Record<AttackType, string>;
   keywordNames: (keyword: IdentityKeywordId) => string;
+  factionNames: (faction: string) => string;
   judgements: ReturnType<typeof usePlan>['judgements'];
   giftTitle: ReturnType<typeof usePlan>['giftTitle'];
   openGift: (giftId: number) => void;
@@ -270,6 +281,7 @@ function BucketSection({
                   lang={lang}
                   attackNames={attackNames}
                   keywordNames={keywordNames}
+                  factionNames={factionNames}
                   judgement={judgements.get(row.gift.id) ?? null}
                   title={giftTitle(row.gift.id)}
                   openGift={openGift}
@@ -289,6 +301,7 @@ function GiftRow({
   lang,
   attackNames,
   keywordNames,
+  factionNames,
   judgement,
   title,
   openGift,
@@ -299,6 +312,7 @@ function GiftRow({
   lang: Lang;
   attackNames: Record<AttackType, string>;
   keywordNames: (keyword: IdentityKeywordId) => string;
+  factionNames: (faction: string) => string;
   judgement: ReturnType<typeof usePlan>['judgements'] extends Map<number, infer V> ? V : never;
   title: string | undefined;
   openGift: (giftId: number) => void;
@@ -334,7 +348,7 @@ function GiftRow({
           </span>
         </div>
         <span className="text-[11px] text-fg-2" data-testid="skill-gift-trigger">
-          {triggerText(row.triggers, lang, attackNames, keywordNames)}
+          {triggerText(row.triggers, lang, attackNames, keywordNames, factionNames)}
         </span>
         <span
           className="text-[11px] text-fg-3"
