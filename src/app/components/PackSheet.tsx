@@ -56,8 +56,10 @@ export interface PackContext {
   onBan?: (packId: number) => void;
   onRestore?: (packId: number) => void;
   onToggleObserved?: (giftId: number) => void;
-  /** Add or remove a gift as a goal (from a pack's gift list). */
+  /** Add or remove a gift as a goal (from a pack's gift list). Carries the fusion tree with it. */
   onToggleWanted?: (giftId: number) => void;
+  /** Drop one gift from the selection and nothing else — what 「포기」 means for a single gift. */
+  onGiveUpGift?: (giftId: number) => void;
   /** Present while a run is being tracked. */
   run?: RunContext;
   lang: Lang;
@@ -110,9 +112,23 @@ export function PackActions({ packId, ctx, size = 'sm' }: { packId: number; ctx:
     ) : null;
   }
   const preferred = ctx.preferred.has(packId);
-  // Any wanted exclusive is lost with the pack, not only a 「반드시」 one: giving up the only source
-  // of an ordinary goal was silent before.
-  const exclusiveWanted = ctx.indexes.packById.get(packId)?.exclusiveGifts.filter((id) => ctx.wanted.has(id)) ?? [];
+  /*
+   * The wanted gifts this pack is the LAST source of — those are what giving it up really costs.
+   * `exclusiveGifts` alone was too loud: 9267 달궈진 놋쇠 is 테마 팩 한정 of both 1302 and 1402, so
+   * banning one of them still leaves the gift reachable, and the dialog said 「이 팩에서만 나옵니다」
+   * anyway. `acquisition.exclusiveTo` names every pack that can hand it over; a source already
+   * given up is no source, so the banned ones are discounted too.
+   */
+  const exclusiveWanted =
+    ctx.indexes.packById
+      .get(packId)
+      ?.exclusiveGifts.filter(
+        (id) =>
+          ctx.wanted.has(id) &&
+          (ctx.indexes.giftById.get(id)?.acquisition.exclusiveTo ?? []).every(
+            (source) => source === packId || ctx.banned.has(source),
+          ),
+      ) ?? [];
   const ban = (): void => {
     if (exclusiveWanted.length > 0) {
       setConfirming(true);
@@ -147,6 +163,12 @@ export function PackActions({ packId, ctx, size = 'sm' }: { packId: number; ctx:
           confirmLabel={t('packBan', ctx.lang)}
           onConfirm={() => {
             setConfirming(false);
+            // Giving up the pack gives up what only it could bring. The dialog already names those
+            // gifts and asks about them, so leaving them selected made the same decision twice:
+            // the pack went to the give-up list and every gift came back as a `pack-banned` row to
+            // dismiss by hand. This deselects exactly the named gifts — `onToggleWanted` would
+            // carry their fusion parents out with them, which is a bigger decision than was asked.
+            for (const giftId of exclusiveWanted) ctx.onGiveUpGift?.(giftId);
             ctx.onBan?.(packId);
           }}
           onCancel={() => setConfirming(false)}

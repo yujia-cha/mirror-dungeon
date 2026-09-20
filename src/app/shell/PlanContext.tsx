@@ -9,7 +9,7 @@ import type { GameData, Gift, Keyword } from '../../core/schema.ts';
 import { observable, planAlternatives, planRoute } from '../../core/index.ts';
 import type { DeckStats, GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
 import type { RouteVariant } from '../../core/index.ts';
-import { pick, type Lang } from '../i18n.ts';
+import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { keywordName } from '../format.ts';
 import { conditionText } from '../condition-text.ts';
@@ -91,6 +91,7 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
   const restorePack = useApp((s) => s.restorePack);
   const toggleObserved = useApp((s) => s.toggleObserved);
   const toggleWanted = useApp((s) => s.toggleWanted);
+  const removeWanted = useApp((s) => s.removeWanted);
   const visitPack = useApp((s) => s.visitPack);
   const unvisitPack = useApp((s) => s.unvisitPack);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
@@ -135,9 +136,35 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     const packName = (id: number): string => pick(indexes.packById.get(id)?.name, lang);
     const keywordLabel = (id: Keyword): string => keywordName(id, data.enums, lang);
     const judgements = judgementsByGift(shown?.conditions ?? []);
+    /*
+     * Fusion goals the plan has given up on — a missed ingredient is the usual way, and core says
+     * so with `fusion-ingredient-unresolved` and even drops the visits that served only them.
+     * The app has to read that: what the route no longer chases must stop looking chased.
+     */
+    const deadFusions = new Set(
+      (shown?.unresolved ?? [])
+        .filter((entry) => entry.reason === 'fusion-ingredient-unresolved')
+        .map((entry) => entry.giftId),
+    );
+    /** Ingredient -> the dead fusions that wanted it, so a tile can say why it stopped mattering. */
+    const deadFusionOf = new Map<number, number[]>();
+    for (const resultId of deadFusions) {
+      const result = indexes.giftById.get(resultId);
+      if (!result?.fusion) continue;
+      for (const id of ingredientsOf(result, indexes, data.rules.fusion.maxShopSlots)) {
+        deadFusionOf.set(id, [...(deadFusionOf.get(id) ?? []), resultId]);
+      }
+    }
     const giftTitle = (id: number): string | undefined => {
       const reports = (shown?.conditions ?? []).filter((c) => c.giftId === id);
-      return reports.length > 0 ? reports.map((r) => conditionText(r, data.enums, lang)).join(' / ') : undefined;
+      const parts = reports.map((r) => conditionText(r, data.enums, lang));
+      // Only when nothing live still wants it: an ingredient two fusions share is still chased by
+      // the other one, and saying 「조합 불가」 there would be false.
+      const dead = deadFusionOf.get(id);
+      if (dead && !needed.has(id)) {
+        parts.push(t('giftFusionDead', lang, { result: dead.map(giftName).join(', ') }));
+      }
+      return parts.length > 0 ? parts.join(' / ') : undefined;
     };
     const goals = new Set(input.wanted.map((w) => w.giftId));
     /*
@@ -149,6 +176,10 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     const needed = new Set(goals);
     for (const want of input.wanted) {
       if (want.ingredientsAsGoals === false) continue;
+      // A fusion the plan gave up on promises nothing about its ingredients any more. Leaving them
+      // ringed sent the player after pieces that could no longer finish anything — and core had
+      // already dropped the visits that served only them, so the ring outlived the route.
+      if (deadFusions.has(want.giftId)) continue;
       const gift = indexes.giftById.get(want.giftId);
       if (!gift?.fusion) continue;
       for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots)) needed.add(id);
@@ -207,6 +238,7 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
             const gift = indexes.giftById.get(giftId);
             if (gift) toggleGoal(gift);
           },
+      onGiveUpGift: variant ? undefined : removeWanted,
       run: {
         currentFloor: run.currentFloor,
         stageFloor: run.stageFloor,
@@ -273,6 +305,7 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     restorePack,
     toggleObserved,
     toggleGoal,
+    removeWanted,
     visitPack,
     unvisitPack,
     setGiftStatus,

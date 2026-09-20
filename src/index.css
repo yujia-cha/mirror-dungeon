@@ -60,7 +60,7 @@
   --color-kw-burst: #3b8f2f; /* 3.24 */
   --color-kw-sinking: #2f6fdb; /* 3.79 */
   --color-kw-breath: #6f747a; /* 3.75 */
-  --color-kw-charge: #b0710c; /* 3.21 */
+  --color-kw-charge: #0d807e; /* 3.80 — 게임의 충전 시안, 3:1을 넘도록 명도만 내렸다 */
   --color-kw-attack: #1c1917; /* 13.93 */
   /* The hairline that keeps a badge's edge crisp over artwork. Solid, not 35% — a translucent
      one disappeared over a light sprite and did nothing for the fills it was meant to rescue. */
@@ -131,7 +131,7 @@
   --color-kw-burst: #63c05a;
   --color-kw-sinking: #6a9aee;
   --color-kw-breath: #ffffff;
-  --color-kw-charge: #f5b95a;
+  --color-kw-charge: #16dad7;
   /* 검정은 어두운 배경에서 사라지므로 중성 회색으로 뒤집는다. 모양이 셋을 가른다. */
   --color-kw-attack: #a8a29e;
   --color-kw-outline: rgb(0 0 0 / 0.5);

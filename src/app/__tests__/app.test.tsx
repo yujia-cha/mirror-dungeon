@@ -5,7 +5,7 @@
  */
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import lzString from 'lz-string';
 import userEvent from '@testing-library/user-event';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
@@ -23,7 +23,7 @@ import { GiftIcon } from '../components/GiftIcon.tsx';
 import { App } from '../App.tsx';
 import { ErrorBoundary } from '../ErrorBoundary.tsx';
 import { AppShell } from '../shell/AppShell.tsx';
-import { PlanProvider } from '../shell/PlanContext.tsx';
+import { PlanProvider, usePlan } from '../shell/PlanContext.tsx';
 import { RoutePlanPanel } from '../shell/RoutePlanPanel.tsx';
 import { GoalsPanel } from '../shell/GoalsPanel.tsx';
 import { RouteOptions } from '../shell/RouteOptions.tsx';
@@ -1531,18 +1531,38 @@ describe('RoutePlanPanel', () => {
     expect(within(wantedRow).getByTestId('gift-tile')).toHaveAttribute('aria-pressed', 'false');
     expect(within(sheet).queryByRole('button', { name: '화왕지절 입장' })).toBeNull();
     await user.click(within(sheet).getByRole('button', { name: '화왕지절 이 팩 포기' }));
-    // Giving up the only source of a wanted gift asks first — in the app's own dialog, not the
-    // browser's, which failed open where `window.confirm` is withheld.
-    const ask = screen.getByTestId('confirm-dialog');
-    expect(ask).toHaveTextContent('달궈진 놋쇠');
-    await user.click(within(ask).getByRole('button', { name: '이 팩 포기' }));
+    // No dialog here: 달궈진 놋쇠 is 테마 팩 한정 of 1302 as well, so giving up 1402 costs nothing.
+    // The warning used to fire on the pack's whole `exclusiveGifts` list and said 「이 팩에서만
+    // 나옵니다」 about a gift two packs hand out.
+    expect(screen.queryByTestId('confirm-dialog')).toBeNull();
     expect(useApp.getState().options.bannedPacks).toEqual([1402]);
+    // And the goal survives, because the other pack still brings it.
+    expect(useApp.getState().wanted).toContain(9267);
     // The gift now comes from the other pack, and the given-up pack can be restored.
     expect(within(rows()).getByRole('button', { name: '해방된 분노' })).toBeInTheDocument();
     const banned = within(screen.getByTestId('unresolved')).getByTestId('banned-pack');
     expect(banned).toHaveTextContent('화왕지절');
     await user.click(within(banned).getByRole('button', { name: '화왕지절 되돌리기' }));
     expect(useApp.getState().options.bannedPacks).toEqual([]);
+  });
+
+  it('asks before giving up the last source of a goal, and lets the goal go with it', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    // 9283 상납된 시가 is 테마 팩 한정 of 1025 교본 and of nothing else, so giving up that pack
+    // really is giving up the gift. It is not observable either, so the route has to walk to it.
+    useApp.getState().toggleWanted(9283);
+    renderRoute();
+    await user.click(within(rows()).getByRole('button', { name: '교본' }));
+    const sheet = screen.getByRole('dialog', { name: '교본' });
+    await user.click(within(sheet).getByRole('button', { name: '교본 이 팩 포기' }));
+    const ask = screen.getByTestId('confirm-dialog');
+    expect(ask).toHaveTextContent('상납된 시가');
+    await user.click(within(ask).getByRole('button', { name: '이 팩 포기' }));
+    expect(useApp.getState().options.bannedPacks).toEqual([1025]);
+    // The decision is made once: the gift leaves the selection with the pack rather than coming
+    // back as a `pack-banned` row to dismiss by hand.
+    expect(useApp.getState().wanted).not.toContain(9283);
   });
 
   it('opens a sheet from an observed tile and pins the observation from it', async () => {
@@ -2241,6 +2261,44 @@ describe('RunStage', () => {
     expect(screen.getByTestId('route-summary')).not.toHaveTextContent('실패');
     expect(screen.getByTestId('run-stage')).toHaveAttribute('data-mode', 'undecided');
     await waitFor(() => expect(screen.queryByTestId('pack-area-closing')).toBeNull());
+  });
+
+  it('stops chasing a dead fusion\u2019s remaining ingredients, and says why', () => {
+    /*
+     * 9249 조그맣고 근사한 바이올린 needs 9431 부서진 바이올린 (팩 1016 저택의 부산물) plus 9706·9707
+     * (팩 1102 우.미.다). Missing the first kills the fusion — core says so and even drops the
+     * visits that served only the rest — but the goal ring is built from the static fusion tree, so
+     * the two the other pack still holds went on wearing it and sending the player after pieces
+     * that could no longer finish anything.
+     */
+    const seen: { needed: ReadonlySet<number>; title: (id: number) => string | undefined }[] = [];
+    function Probe() {
+      const { needed, giftTitle } = usePlan();
+      seen.push({ needed, title: giftTitle });
+      return null;
+    }
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9249);
+    renderPlanned(<Probe />);
+    const before = seen.at(-1)!;
+    // While the fusion lives, every ingredient wears the ring.
+    expect(before.needed.has(9431)).toBe(true);
+    expect(before.needed.has(9706)).toBe(true);
+    expect(before.needed.has(9707)).toBe(true);
+    expect(before.title(9706) ?? '').not.toContain('조합 불가');
+
+    cleanup();
+    seen.length = 0;
+    useApp.getState().setGiftStatus(9431, 'failed');
+    renderPlanned(<Probe />);
+    const after = seen.at(-1)!;
+    expect(after.needed.has(9706)).toBe(false);
+    expect(after.needed.has(9707)).toBe(false);
+    // The result stays a goal — the player chose it, and the unresolved card explains it.
+    expect(after.needed.has(9249)).toBe(true);
+    // And the ingredients say why they stopped mattering, rather than going quietly grey.
+    expect(after.title(9706)).toContain('조합 불가');
+    expect(after.title(9706)).toContain('조그맣고 근사한 바이올린');
   });
 
   it('collects the observed gift on the first move off floor 1 and shows played floors as history', async () => {

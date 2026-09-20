@@ -195,7 +195,7 @@ export const STRINGS = {
   routeOtherUnresolved: { ko: '그 외 미해결', en: 'Other unresolved' },
   routeBannedList: { ko: '포기한 팩 {n}', en: '{n} packs given up' },
   // `{gift}` is a list of gift names; the particle is picked by `josa` at the call site.
-  packBanConfirm: { ko: '{gift} 이 팩에서만 나옵니다. 그래도 포기할까요?', en: '{gift} comes only from this pack. Give it up anyway?' },
+  packBanConfirm: { ko: '{gift} 이 팩에서만 나옵니다. 포기하면 목표에서도 뺍니다.', en: '{gift} comes only from this pack. Giving it up removes it from your goals too.' },
   routeFree: { ko: '자유', en: 'Free' },
   routeFloorRange: { ko: '{from}~{to}층', en: 'Floors {from}–{to}' },
   giftUnjudgeable: { ko: '판정 불가', en: 'Cannot judge' },
@@ -236,6 +236,7 @@ export const STRINGS = {
   giftStatusFailed: { ko: '실패', en: 'Missed' },
   giftAddGoal: { ko: '목표에 추가', en: 'Add as goal' },
   giftRemoveGoal: { ko: '목표에서 빼기', en: 'Remove goal' },
+  giftFusionDead: { ko: '조합 불가 — {result} 재료를 구할 수 없습니다', en: 'Fusion lost — {result} cannot get its ingredients' },
   fusionGoalIngredients: { ko: '재료도 목표', en: 'Ingredients are goals too' },
   fusionGoalHint: { ko: '끄면 조합이 불가능해졌을 때 남은 재료만을 위한 방문을 취소합니다.', en: 'Off: when the fusion becomes impossible, visits for the remaining ingredients alone are dropped.' },
 
