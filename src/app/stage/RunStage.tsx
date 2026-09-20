@@ -25,7 +25,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
   const resetRun = useApp((s) => s.resetRun);
   const lastFloor = useApp((s) => s.lastFloor);
   const floor = run.stageFloor;
-  const routePacks = enterablePacks(shown, floor, indexes);
+  const routePacks = enterablePacks(shown, floor, indexes, ctx.banned);
   const offered = packsOfferedOn(indexes, floor);
   const entered = run.visits[floor];
 

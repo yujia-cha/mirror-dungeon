@@ -38,6 +38,12 @@ describe('stage', () => {
     expect(enterablePacks(route, 3, indexes)).toEqual([]);
   });
 
+  it('leaves a pack that was given up out of the 「외 N」 count, as the plan itself does', () => {
+    const route = plan([9267], { bannedPacks: [1302] });
+    expect(route.floors.find((f) => f.packId === 1402)!.alternatives).not.toContain(1302);
+    expect(enterablePacks(route, 5, indexes, new Set([1302]))[0]!.alternatives).toEqual([]);
+  });
+
   it('lists packs that share a floor with the recommended one first, and leaves played floors out', () => {
     const route = plan([9415, 9419], { currentFloor: 2 }); // 마주하지 않는 + 낙화, both Hard 2-3
     const onTwo = enterablePacks(route, 2, indexes);

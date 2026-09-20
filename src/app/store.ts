@@ -30,7 +30,7 @@ export interface SharedState {
    * can only have meant 7.
    */
   season?: number;
-  /** Identity ids in formation order (at most 12, one per sinner). */
+  /** Identity ids in formation order: at most 12, one per sinner (enforced by `uniqueDeck` on every way in). */
   deck: number[];
   /** Who fights, as a subset of `deck`; the order comes from the deck. */
   deployed: number[];
@@ -383,7 +383,8 @@ export type PersistedState = Pick<
 
 /**
  * Everything a stored blob has to pass to become state. Both the version migration and the plain
- * rehydrate go through here, so the checks run whether or not the version changed.
+ * rehydrate go through here, so the checks run whether or not the version changed, and nothing
+ * but the persisted keys comes out.
  *
  * Version gates: v2 backfilled the deployed list; v3 replaced the observation count with pinned
  * observation gifts; v4 fixed the floor range at 15 and added per-gift priorities; v5 added fusion
@@ -397,17 +398,18 @@ export function sanitizePersisted(persisted: unknown, version: number): Persiste
     const legacyDeck = Array.isArray(state.deck) ? state.deck : [];
     state = { ...state, deck: legacyDeck, deployed: legacyDeck.slice(0, LEGACY_DEPLOYED) };
   }
-  const { step: _step, ...rest } = state;
-  void _step;
   // An id list is the one shape a share link and a hand-edited blob both get wrong, so the
   // elements are filtered too — `deck: "abc"` used to survive as a string and break every reader.
   const ids = (raw: unknown): number[] => (Array.isArray(raw) ? raw.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : []);
-  const deck = ids(state.deck);
+  // One identity per sinner and at most twelve, as `setDeck` enforces: a blob with two of one
+  // sinner made the deck builder show one and the planner count both.
+  const deck = uniqueDeck(ids(state.deck));
   const wanted = ids(state.wanted);
   const run = sanitizeRun(state.run);
   if (version < 7 && run.currentFloor > 1) run.giftStatus = withoutLegacyGot(run.giftStatus, wanted);
+  // Only the keys `partialize` writes come back. Spreading the blob through used to let any other
+  // key — `lastFloor`, or one named like an action — reach `merge` and overwrite live state.
   return {
-    ...rest,
     deck,
     deployed: ids(state.deployed).filter((id) => deck.includes(id)),
     wanted,
@@ -666,8 +668,12 @@ export const useApp = create<AppState>()(
           (Object.keys(state.options.pinnedPacks).length - Object.keys(pinnedPacks).length);
         // A run recorded on a longer season cannot be replayed on a shorter one; one that still
         // fits keeps only the packs and gifts this season can draw, so no nameless row survives.
+        // The done floor is one past the last (that is where the done card lives), so a finished
+        // run stands at `runDoneFloor` on both counts and is kept; only a run that walked further
+        // than this season goes is gone. Testing the stage against `lastFloor` wiped every finished
+        // run on the next load.
         const run =
-          state.run.currentFloor > lastFloor + 1 || state.run.stageFloor > lastFloor
+          state.run.currentFloor > runDoneFloor(lastFloor) || state.run.stageFloor > runDoneFloor(lastFloor)
             ? emptyRun()
             : {
                 ...state.run,
@@ -688,11 +694,12 @@ export const useApp = create<AppState>()(
       },
 
       // A link is someone's plan, not this device's run: the run record starts over with it.
-      applyShared: (shared) =>
+      applyShared: (shared) => {
+        const deck = uniqueDeck(shared.deck);
         set({
           ...(shared.season === undefined ? {} : { season: shared.season }),
-          deck: shared.deck,
-          deployed: shared.deployed.filter((id) => shared.deck.includes(id)),
+          deck,
+          deployed: shared.deployed.filter((id) => deck.includes(id)),
           wanted: shared.wanted,
           priority: sanitizePriority(shared.priority, shared.wanted),
           fusionGoal: sanitizeFusionGoal(shared.fusionGoal, shared.wanted),
@@ -701,7 +708,8 @@ export const useApp = create<AppState>()(
           // then drop it without a word the next time any gift was toggled.
           options: withObservedIn(sanitizeOptions(shared.options), shared.wanted),
           run: emptyRun(),
-        }),
+        });
+      },
     }),
     {
       name: PERSIST_KEY,
@@ -768,7 +776,7 @@ export function decodeShared(hash: string): SharedState | null {
         : (parsed.v ?? 0) < 5
           ? LEGACY_SEASON
           : undefined;
-    const deck = parsed.deck.filter((n): n is number => typeof n === 'number');
+    const deck = uniqueDeck(parsed.deck.filter((n): n is number => typeof n === 'number'));
     // v1 links carried no deployed list: the first six fought.
     const deployed = Array.isArray(parsed.deployed)
       ? parsed.deployed.filter((n): n is number => typeof n === 'number' && deck.includes(n))

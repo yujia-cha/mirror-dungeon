@@ -135,9 +135,15 @@ export function assignPacks(input: SearchInput): SearchResult {
   const floorsFor = (packId: number): number[] => {
     const known = floorsOf.get(packId);
     if (known) return known;
-    const out = openFloors.filter((floor) =>
-      (indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? []).includes(packId),
-    );
+    // A pack is visited once per run. One already settled on a played or pinned floor has no open
+    // floor left whatever the mode tables say: it hands over one copy of each of its gifts for
+    // free (see `freeLeft` below), and a second copy has to come from another pack. Without this
+    // the second copy could pick the settled pack again and put it on two floors at once.
+    const out = settledPacks.has(packId)
+      ? []
+      : openFloors.filter((floor) =>
+          (indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? []).includes(packId),
+        );
     floorsOf.set(packId, out);
     return out;
   };

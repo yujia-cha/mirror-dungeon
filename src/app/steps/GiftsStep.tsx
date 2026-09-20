@@ -17,9 +17,6 @@ import { useApp } from '../store.ts';
 import { matchesQuery } from '../lib/hangul.ts';
 import { SIN_LABEL, badgeFor, tierLabel } from '../lib/labels.ts';
 import { prioritiseGifts, type GiftEntry, type GiftGroup } from '../lib/gift-priority.ts';
-import { blockedGifts, entanglements } from '../lib/entangle.ts';
-import { carriedBy } from '../lib/goal-toggle.ts';
-import { upgradeChildren } from '../lib/upgrade-children.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { useChipDrag } from '../lib/useChipDrag.ts';
 import { Badge, Button, Card, FilterSelect } from '../components/ui.tsx';
@@ -49,14 +46,15 @@ const GROUPS: { group: GiftGroup; title: 'giftsActive' | 'giftsOther' }[] = [
 export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   const deck = useApp((s) => s.deck);
   const wanted = useApp((s) => s.wanted);
-  const toggleWanted = useApp((s) => s.toggleWanted);
   const removeWanted = useApp((s) => s.removeWanted);
   const clearWanted = useApp((s) => s.clearWanted);
   const observedGifts = useApp((s) => s.options.observedGifts);
   const toggleObserved = useApp((s) => s.toggleObserved);
   const setOptions = useApp((s) => s.setOptions);
   const observeMax = data.rules.giftObservation.max;
-  const { openGift } = usePlan();
+  // The selection rule and the derived views over `wanted` are the shell's (`PlanProvider`), so
+  // they are computed once and every surface agrees.
+  const { openGift, childrenOf, entangled, blocked, toggleGoal: toggle } = usePlan();
 
   const [query, setQuery] = useState('');
   const [keyword, setKeyword] = useState<Keyword | 'all'>('all');
@@ -93,15 +91,8 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     return map;
   }, [data, stats, indexes]);
 
-  // 조합 계승: a child (upgradeOf) never stands alone; it hangs under its parent.
-  const childrenOf = useMemo(() => upgradeChildren(data), [data]);
-
   // Two fusion goals can eat the same ingredient; a state that already holds both still says so.
-  const entangled = useMemo(() => entanglements(wanted, indexes, data.rules.fusion.maxShopSlots), [wanted, indexes, data]);
   const entangledIds = useMemo(() => new Set(entangled.keys()), [entangled]);
-  // What the current goals rule out: their own ingredients (포함) and the fusions that would fight
-  // them over one (얽힘).
-  const blocked = useMemo(() => blockedGifts(wanted, indexes, data.rules.fusion.maxShopSlots), [wanted, indexes, data]);
 
   const matchesFilters = (gift: Gift): boolean => {
     const needle = query.trim().toLowerCase();
@@ -163,8 +154,6 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     return gift ? observable(gift, data.rules) : false;
   };
 
-  const carryIndex = { indexes, childrenOf, maxShopSlots: data.rules.fusion.maxShopSlots };
-  const toggle = (gift: Gift): void => toggleWanted(gift.id, carriedBy(gift, carryIndex));
 
   // Observation: the slots take a selected gift from the 「+」 list or from a dragged chip. A drop
   // on a filled slot replaces its gift; a drop elsewhere, or of a gift that cannot be observed,

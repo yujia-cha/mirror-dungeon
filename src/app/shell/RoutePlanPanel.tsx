@@ -26,6 +26,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const run = useApp((s) => s.run);
   const lastFloor = useApp((s) => s.lastFloor);
   const setOptions = useApp((s) => s.setOptions);
+  const toggleObserved = useApp((s) => s.toggleObserved);
   const setPriority = useApp((s) => s.setPriority);
   const removeWanted = useApp((s) => s.removeWanted);
   const [copied, setCopied] = useState(false);
@@ -149,7 +150,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
       ? t('actionObserveGift', lang, { name: action.giftId !== undefined ? giftName(action.giftId) : '' })
       : t('actionReleaseObservations', lang);
   const unresolvedActions = shown.unresolved.map((entry) =>
-    actionsFor(entry, indexes.giftById.get(entry.giftId), options, data.rules).map((action) => ({ ...action, label: actionLabel(action) })),
+    actionsFor(entry, indexes.giftById.get(entry.giftId), options, data.rules, ctx.wanted).map((action) => ({ ...action, label: actionLabel(action) })),
   );
   const sharedLabels = new Set(
     unresolvedActions
@@ -199,7 +200,12 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           return (unresolvedActions[i] ?? []).find((a) => a.kind === 'observeGift' && !sharedLabels.has(a.label));
         }}
         headerActions={headerActions}
-        onAction={(action) => setOptions(action.patch)}
+        // A pin goes through the store's own guard, like the sheet's and the slots' pins do.
+        onAction={(action) =>
+          action.kind === 'observeGift' && action.giftId !== undefined
+            ? toggleObserved(action.giftId, { max: data.rules.giftObservation.max, observable: ctx.observable })
+            : setOptions(action.patch)
+        }
         onSeeVariants={variants.length > 0 && !variant ? seeVariants : undefined}
         detailMode="sheet"
       />
@@ -225,8 +231,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         <Card className="p-3.5">
           <SectionTitle>{t('routeWarnings', lang)}</SectionTitle>
           <ul className="mt-2 flex flex-col gap-1 text-xs text-fg-2">
-            {otherWarnings.map((w) => (
-              <li key={w.code}>{pick(w.detail, lang)}</li>
+            {/* One code can come twice (`pack-option-dropped` for unknown pins and for unplaced preferences). */}
+            {otherWarnings.map((w, i) => (
+              <li key={`${w.code}:${i}`}>{pick(w.detail, lang)}</li>
             ))}
           </ul>
         </Card>

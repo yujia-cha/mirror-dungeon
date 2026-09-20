@@ -3,7 +3,7 @@
  * and the run record) and handed to the stage and both side panels, together with the pack
  * context every pack surface takes and the run actions that settle gifts as floors are left.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { evaluateConditions } from '../../core/index.ts';
 import type { GameData, Gift, Keyword } from '../../core/schema.ts';
 import { observable, planAlternatives, planRoute } from '../../core/index.ts';
@@ -16,7 +16,7 @@ import { conditionText } from '../condition-text.ts';
 import { judgementsByGift, type Judgement } from '../lib/judgement.ts';
 import { planInputFor, priorityOf } from '../lib/plan-input.ts';
 import { autoFailedFor, exclusivesIndex, lastFloorOf, stageModeFor, type StageMode } from '../lib/stage.ts';
-import { blockedGifts, entanglements, ingredientsOf } from '../lib/entangle.ts';
+import { blockedGifts, entanglements, ingredientsOf, type Block, type Entanglement } from '../lib/entangle.ts';
 import { carriedBy } from '../lib/goal-toggle.ts';
 import { upgradeChildren } from '../lib/upgrade-children.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
@@ -40,6 +40,14 @@ export interface PlanState {
   variant: RouteVariant | undefined;
   /** Goal gifts the planner works for (given-up ones excluded). */
   goals: ReadonlySet<number>;
+  /** 조합 계승 children of each gift (`upgradeChildren`), computed once per data set. */
+  childrenOf: ReadonlyMap<number, Gift[]>;
+  /** Goals that share an ingredient with another goal, and what they share. */
+  entangled: ReadonlyMap<number, Entanglement[]>;
+  /** Gifts the current goals rule out, and why. */
+  blocked: ReadonlyMap<number, Block>;
+  /** Make a gift a goal (or drop it), taking its children and recipe tree out of the selection. */
+  toggleGoal: (gift: Gift) => void;
   /** The goals and everything a fusion goal consumes on the way: what the route is out to collect. */
   needed: ReadonlySet<number>;
   judgements: Map<number, Judgement | null>;
@@ -97,7 +105,11 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
   const setGiftStatus = useApp((s) => s.setGiftStatus);
   const nextFloor = useApp((s) => s.nextFloor);
   const setStageFloor = useApp((s) => s.setStageFloor);
-  const [variantIndex, setVariantIndex] = useState(0);
+  // The alternative on display is remembered by the gift it drops, not by its position: a run
+  // mark recomputes the plan, and the same variant is re-found in the new list. Gone (the conflict
+  // resolved, the gift deselected) means back to the main plan. An index reset on every input
+  // change used to flip the panel back to the main plan on any gift mark.
+  const [variantKey, setVariantKey] = useState<number | null>(null);
   const [detailGift, setDetailGift] = useState<number | null>(null);
   const desktop = useDesktop();
   const closeSheet = useCallback(() => setDetailGift(null), []);
@@ -117,7 +129,11 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     () => (plan && plan.unresolved.some((u) => u.reason === 'pack-conflict') ? planAlternatives(input, data, indexes, plan) : []),
     [plan, input, data, indexes],
   );
-  useEffect(() => setVariantIndex(0), [input]);
+  const variantIndex = variantKey === null ? 0 : variants.findIndex((v) => v.dropped[0] === variantKey) + 1;
+  const setVariantIndex = useCallback(
+    (index: number) => setVariantKey(index > 0 ? (variants[index - 1]?.dropped[0] ?? null) : null),
+    [variants],
+  );
   const variant = variantIndex > 0 ? variants[variantIndex - 1] : undefined;
   const shown = variant?.plan ?? plan;
   const exclusivesOf = useMemo(() => exclusivesIndex(data, indexes), [data, indexes]);
@@ -268,6 +284,10 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
       setVariantIndex,
       variant,
       goals,
+      childrenOf,
+      entangled,
+      blocked,
+      toggleGoal,
       needed,
       judgements,
       giftTitle,
@@ -295,11 +315,15 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     shown,
     variants,
     variantIndex,
+    setVariantIndex,
     variant,
     priority,
     options,
     run,
     exclusivesOf,
+    childrenOf,
+    entangled,
+    blocked,
     preferPack,
     banPack,
     restorePack,

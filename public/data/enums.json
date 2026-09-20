@@ -170,18 +170,18 @@
     },
     {
       "deprecated": false,
-      "id": "H_CORP",
-      "name": {
-        "en": "H Corp.",
-        "ko": "H사"
-      }
-    },
-    {
-      "deprecated": false,
       "id": "HOOK_OFFICE",
       "name": {
         "en": "Hook Office",
         "ko": "갈고리 사무소"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "H_CORP",
+      "name": {
+        "en": "H Corp.",
+        "ko": "H사"
       }
     },
     {
@@ -202,14 +202,6 @@
     },
     {
       "deprecated": false,
-      "id": "K_CORP",
-      "name": {
-        "en": "K Corp.",
-        "ko": "K사"
-      }
-    },
-    {
-      "deprecated": false,
       "id": "KONG_KONG",
       "name": {
         "en": "Tingtang Gang",
@@ -218,10 +210,10 @@
     },
     {
       "deprecated": false,
-      "id": "L_CORP",
+      "id": "K_CORP",
       "name": {
-        "en": "Lobotomy Corp. HQ",
-        "ko": "로보토미 본사"
+        "en": "K Corp.",
+        "ko": "K사"
       }
     },
     {
@@ -306,6 +298,14 @@
     },
     {
       "deprecated": false,
+      "id": "L_CORP",
+      "name": {
+        "en": "Lobotomy Corp. HQ",
+        "ko": "로보토미 본사"
+      }
+    },
+    {
+      "deprecated": false,
       "id": "MARIACHI",
       "name": {
         "en": "Los Mariachis",
@@ -338,6 +338,14 @@
     },
     {
       "deprecated": false,
+      "id": "NIGHTSTILETTO",
+      "name": {
+        "en": "Night Awls",
+        "ko": "밤의 송곳"
+      }
+    },
+    {
+      "deprecated": false,
       "id": "N_CORP",
       "name": {
         "en": "N Corp.",
@@ -350,14 +358,6 @@
       "name": {
         "en": "N Corp. Fanatic",
         "ko": "N사 광신도"
-      }
-    },
-    {
-      "deprecated": false,
-      "id": "NIGHTSTILETTO",
-      "name": {
-        "en": "Night Awls",
-        "ko": "밤의 송곳"
       }
     },
     {
@@ -382,14 +382,6 @@
       "name": {
         "en": "The Pequod",
         "ko": "피쿼드호"
-      }
-    },
-    {
-      "deprecated": false,
-      "id": "R_CORP",
-      "name": {
-        "en": "R Corp.",
-        "ko": "R사"
       }
     },
     {
@@ -426,10 +418,10 @@
     },
     {
       "deprecated": false,
-      "id": "S_CORP",
+      "id": "R_CORP",
       "name": {
-        "en": "S Corp.",
-        "ko": "S사"
+        "en": "R Corp.",
+        "ko": "R사"
       }
     },
     {
@@ -466,10 +458,10 @@
     },
     {
       "deprecated": false,
-      "id": "T_CORP",
+      "id": "S_CORP",
       "name": {
-        "en": "T Corp.",
-        "ko": "T사"
+        "en": "S Corp.",
+        "ko": "S사"
       }
     },
     {
@@ -490,10 +482,10 @@
     },
     {
       "deprecated": false,
-      "id": "W_CORP",
+      "id": "T_CORP",
       "name": {
-        "en": "W Corp.",
-        "ko": "W사"
+        "en": "T Corp.",
+        "ko": "T사"
       }
     },
     {
@@ -510,6 +502,14 @@
       "name": {
         "en": "Wuthering Heights",
         "ko": "워더링하이츠"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "W_CORP",
+      "name": {
+        "en": "W Corp.",
+        "ko": "W사"
       }
     },
     {

@@ -254,8 +254,33 @@ describe('a saved state that cannot be trusted', () => {
   });
 
   it('keeps a deployed list inside the deck it came with', () => {
-    const state = sanitizePersisted({ deck: [10101, 10102], deployed: [10102, 99999] }, PERSIST_VERSION);
-    expect(state.deployed).toEqual([10102]);
+    const state = sanitizePersisted({ deck: [10101, 10201], deployed: [10201, 99999] }, PERSIST_VERSION);
+    expect(state.deployed).toEqual([10201]);
+  });
+
+  it('keeps one identity per sinner and at most twelve, whichever way a deck comes in', () => {
+    // 10101 and 10102 are both 이상, 10203 and 10204 both 파우스트: the first of each stays.
+    const doubled = [10101, 10102, 10203, 10204];
+    const saved = sanitizePersisted({ deck: doubled, deployed: [10102, 10203] }, PERSIST_VERSION);
+    expect(saved.deck).toEqual([10101, 10203]);
+    expect(saved.deployed).toEqual([10203]);
+    const link = decodeShared(encodeShared({ deck: doubled, deployed: [10102, 10203], wanted: [], priority: {}, options: appDefaultOptions() }))!;
+    expect(link.deck).toEqual([10101, 10203]);
+    expect(link.deployed).toEqual([10203]);
+    // Fourteen ids of fourteen different "sinners" come back as twelve.
+    const fourteen = [...LCB_DECK, 11301, 11401];
+    expect(decodeShared(encodeShared({ deck: fourteen, deployed: [], wanted: [], priority: {}, options: appDefaultOptions() }))!.deck).toHaveLength(12);
+    useApp.getState().applyShared({ deck: doubled, deployed: [10102], wanted: [], priority: {}, options: appDefaultOptions() });
+    expect(useApp.getState()).toMatchObject({ deck: [10101, 10203], deployed: [] });
+  });
+
+  it('lets nothing through that partialize never wrote, so a blob cannot overwrite an action or the floor count', async () => {
+    const state = sanitizePersisted({ deck: [10101], resetRun: 1, lastFloor: 3, step: 'deck' }, PERSIST_VERSION);
+    expect(Object.keys(state).sort()).toEqual(['dark', 'deck', 'deployed', 'fusionGoal', 'lang', 'options', 'priority', 'run', 'season', 'ui', 'wanted']);
+    window.localStorage.setItem(PERSIST_KEY, JSON.stringify({ version: PERSIST_VERSION, state: { deck: [10101], resetRun: 1, lastFloor: 3 } }));
+    await useApp.persist.rehydrate();
+    expect(typeof useApp.getState().resetRun).toBe('function');
+    expect(useApp.getState().lastFloor).toBe(15);
   });
 
   it('renders the app from defaults when the stored blob is nonsense', async () => {
@@ -1662,14 +1687,35 @@ describe('RoutePlanPanel', () => {
   it('offers an observation for an unresolved gift only while it is observable and a slot is free', () => {
     const conflict = (giftId: number) => ({ giftId, reason: 'pack-conflict' as const, detail: { ko: '', en: '' } });
     const free = appDefaultOptions();
-    expect(actionsFor(conflict(9423), indexes.giftById.get(9423), free, data.rules)).toEqual([
+    const goals = new Set([9423, 9255, 9283]);
+    expect(actionsFor(conflict(9423), indexes.giftById.get(9423), free, data.rules, goals)).toEqual([
       { kind: 'observeGift', giftId: 9423, patch: { observedGifts: [9423] } },
     ]);
     // EXTREME clear rewards cannot be observed.
-    expect(actionsFor(conflict(9255), indexes.giftById.get(9255), free, data.rules)).toEqual([]);
+    expect(actionsFor(conflict(9255), indexes.giftById.get(9255), free, data.rules, goals)).toEqual([]);
     const full = { ...free, observedGifts: [9283, 9222, 9217] };
-    expect(actionsFor(conflict(9423), indexes.giftById.get(9423), full, data.rules)).toEqual([{ kind: 'releaseObservations', patch: { observedGifts: [] } }]);
-    expect(actionsFor(conflict(9283), indexes.giftById.get(9283), full, data.rules)).toEqual([]);
+    expect(actionsFor(conflict(9423), indexes.giftById.get(9423), full, data.rules, goals)).toEqual([{ kind: 'releaseObservations', patch: { observedGifts: [] } }]);
+    expect(actionsFor(conflict(9283), indexes.giftById.get(9283), full, data.rules, goals)).toEqual([]);
+    // An ingredient the plan chases (녹슨 칼자루 for 장관) is not a goal: only a goal can hold a pin,
+    // so offering one here would be undone by the next toggle.
+    expect(actionsFor(conflict(9713), indexes.giftById.get(9713), free, data.rules, new Set([9717]))).toEqual([]);
+    expect(actionsFor(conflict(9713), indexes.giftById.get(9713), free, data.rules, new Set([9713]))).toHaveLength(1);
+  });
+
+  it('keeps the chosen alternative on screen when a gift is marked during the run', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
+    renderRoute();
+    const tab = () => within(screen.getByRole('tablist', { name: '대안 루트' })).getAllByRole('tab')[1]!;
+    await user.click(tab());
+    expect(tab()).toHaveAttribute('aria-selected', 'true');
+    // A mark on an unrelated gift changes the plan input but not the conflict: the same variant stays.
+    act(() => useApp.getState().setGiftStatus(9267, 'got'));
+    expect(tab()).toHaveAttribute('aria-selected', 'true');
+    // Deselecting the dropped gift removes that variant, so the main plan is back.
+    await user.click(screen.getByRole('button', { name: '이 기프트 선택 해제' }));
+    expect(screen.queryByRole('tablist')).toBeNull();
   });
 
   it('toggles a goal between 보통 and 반드시 from its sheet; 포기 is not a priority any more', async () => {

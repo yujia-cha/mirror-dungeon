@@ -198,6 +198,23 @@ describe('adopting a season', () => {
     });
     expect(useApp.getState().run).toEqual(emptyRun());
   });
+
+  it('keeps a finished run: the done floor is one past the last, and that is where the done card lives', () => {
+    // The done state used to fail the "stage past the last floor" test and be wiped on every load.
+    const done = { ...emptyRun(), currentFloor: 16, stageFloor: 16, visits: { 15: 1511 }, giftStatus: { 9250: 'got' as const } };
+    act(() => useApp.setState({ lastFloor: 15, run: done }));
+    act(() => {
+      adopt(md7);
+    });
+    expect(useApp.getState().run).toEqual(done);
+    // The same on a five-floor season: floor 6 is its done floor.
+    const shortDone = { ...emptyRun(), currentFloor: 6, stageFloor: 6, visits: { 5: 1402 } };
+    act(() => useApp.setState({ lastFloor: 5, run: shortDone }));
+    act(() => {
+      adopt(short);
+    });
+    expect(useApp.getState().run).toEqual(shortDone);
+  });
 });
 
 describe('the metro map', () => {

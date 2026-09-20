@@ -505,6 +505,27 @@ describe('shared ingredients', () => {
     // One copy still comes off the floor; the observed one is in hand from the start.
     expect(floorOf(result, 9713)).toHaveLength(1);
   });
+
+  it('never revisits a pinned pack for the second copy: that copy is ingredient-shared, or observed', () => {
+    // With 육참골단 (1104) given up, its 복각 (1116) is the only source of 녹슨 칼자루 — and it is pinned
+    // on floor 7. The search used to place 1116 on floor 4 a second time for the second copy.
+    const pinned = hard15({ pinnedPacks: { 7: 1116 }, bannedPacks: [1104] });
+    const result = planWithout({ wanted: want(9717, 9718), options: pinned });
+    expect(result.floors.filter((f) => f.packId === 1116).map((f) => f.floor)).toEqual([7]);
+    expect(result.floors.find((f) => f.floor === 7)).toMatchObject({ reason: 'pinned' });
+    expect(floorOf(result, 9713)).toEqual([7]);
+    expect(result.floors.find((f) => f.floor === 7)!.pickups.filter((p) => p.giftId === 9713)).toHaveLength(1);
+    expect(result.unresolved.find((u) => u.giftId === 9713)?.reason).toBe('ingredient-shared');
+    expect(result.unresolved.filter((u) => u.reason === 'fusion-ingredient-unresolved')).toHaveLength(1);
+    expect(result.stats).toMatchObject({ requiredPacks: 1, coveredWanted: 1 });
+    expect(result.warnings.map((w) => w.code)).not.toContain('shared-ingredient');
+
+    // With observation on, the second copy is observed instead and both fusions live.
+    const observed = plan({ wanted: want(9717, 9718), options: pinned });
+    expect(observed.start.observed.map((o) => o.giftId)).toContain(9713);
+    expect(observed.floors.filter((f) => f.packId === 1116).map((f) => f.floor)).toEqual([7]);
+    expect(observed.stats.coveredWanted).toBe(2);
+  });
 });
 
 describe('observation cost', () => {
@@ -926,6 +947,22 @@ describe('pack choices', () => {
     const result = planWithout({ wanted: [], options: options({ hardFromFloor: 1, lastFloor: 15, preferredPacks: [1402] }) });
     expect(result.floors.filter((f) => f.packId === 1402)).toHaveLength(1);
     expect(result.warnings.map((w) => w.code)).not.toContain('pack-option-dropped');
+  });
+
+  it('validates a pin against the Hard plan it is about to force, not the Normal one it was given', () => {
+    // 변하지 않는 (1012) is Hard-only on 4-5; a 15-floor plan is Hard from floor 1 anyway. The pin
+    // used to be checked before the switch, dropped with a warning, and then placed there regardless.
+    const pinnedOnNormal = options({ hardFromFloor: null, lastFloor: 15, pinnedPacks: { 4: 1012 } });
+    const result = planWithout({ wanted: want(9423), options: pinnedOnNormal });
+    expect(result.warnings.map((w) => w.code)).toContain('parallel-requires-hard');
+    expect(result.warnings.map((w) => w.code)).not.toContain('pack-option-dropped');
+    expect(result.floors.find((f) => f.floor === 4)).toMatchObject({
+      packId: 1012,
+      reason: 'pinned',
+      pickups: [{ giftId: 9423, kind: 'exclusive', neededFor: null }],
+    });
+    // A pinned floor is never freed by observation either.
+    expect(plan({ wanted: want(9423), options: pinnedOnNormal }).start.observed).toEqual([]);
   });
 
   it('reports pack-banned when every pack that supplies a gift was given up', () => {

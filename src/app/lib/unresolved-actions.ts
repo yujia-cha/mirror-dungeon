@@ -16,11 +16,23 @@ export interface UnresolvedAction {
   patch: Partial<PlanOptions>;
 }
 
-export function actionsFor(entry: Unresolved, gift: Gift | undefined, options: PlanOptions, rules: Rules): UnresolvedAction[] {
+export function actionsFor(
+  entry: Unresolved,
+  gift: Gift | undefined,
+  options: PlanOptions,
+  rules: Rules,
+  /**
+   * The chosen gifts. A pin is only ever kept for a goal (`toggleObserved`, `withObservedIn`), so an
+   * unresolved fusion ingredient gets no offer: pinning it worked for one render and was stripped,
+   * without a word, by the next toggle.
+   */
+  goals: ReadonlySet<number>,
+): UnresolvedAction[] {
   const out: UnresolvedAction[] = [];
   if (
     (entry.reason === 'no-pack-in-range' || entry.reason === 'pack-conflict') &&
     gift &&
+    goals.has(gift.id) &&
     observable(gift, rules) &&
     !options.observedGifts.includes(gift.id)
   ) {

@@ -55,7 +55,7 @@ export function defaultOptions(): PlanOptions {
 }
 
 /**
- * Planning past floor 5 requires 평행중첩, which in turn requires floors 1-5 cleared on Hard.
+ * Planning into 평행중첩 requires every floor before it cleared on Hard.
  * Rather than produce an impossible plan, the options are corrected and the change is reported.
  */
 function normaliseOptions(
@@ -80,6 +80,24 @@ function normaliseOptions(
   const maxFloor = Math.max(...data.rules.floors.normal, ...data.rules.floors.parallel, ...data.rules.floors.extreme);
   const lastFloor = Math.min(maxFloor, Math.max(1, Math.round(next.lastFloor)));
   if (lastFloor !== next.lastFloor) next = { ...next, lastFloor };
+
+  // 평행중첩 needs every floor before it cleared on Hard. Which floor opens that band is the
+  // season's (`rules.floors.parallel`; a season without the band never forces Hard), and it has to
+  // be settled before the pins are checked: a Hard-only pack pinned on floor 4 is legal on this
+  // plan exactly because the plan is Hard from floor 1. Checking pins first dropped such a pin
+  // with a warning and then placed the same pack on the same floor as a recommendation.
+  const parallelFrom = Math.min(...data.rules.floors.parallel);
+  if (lastFloor >= parallelFrom && data.rules.difficulty.parallelRequiresAllHard && next.hardFromFloor !== 1) {
+    next = { ...next, hardFromFloor: 1 };
+    warnings.push({
+      code: 'parallel-requires-hard',
+      detail: {
+        ko: `평행중첩(${parallelFrom}층 이상)은 1~${parallelFrom - 1}층을 전부 Hard로 클리어해야 들어갈 수 있어, 1층부터 Hard로 계획했습니다.`,
+        en: `Floors ${parallelFrom}+ need floors 1-${parallelFrom - 1} cleared on Hard, so the plan switches to Hard from floor 1.`,
+      },
+    });
+  }
+
 
   // Run progress: the floor about to be entered stays within the plan, and a gift is either in
   // hand or missed, never both (in hand wins).
@@ -106,7 +124,7 @@ function normaliseOptions(
   for (const [floorText, packId] of Object.entries(next.pinnedPacks ?? {})) {
     const floor = Number(floorText);
     const offered = Number.isInteger(floor) && floor >= 1 && floor <= lastFloor
-      ? (indexes.packsByFloor[modeForFloor(floor, { ...next, lastFloor }, indexes)].get(floor) ?? [])
+      ? (indexes.packsByFloor[modeForFloor(floor, next, indexes)].get(floor) ?? [])
       : [];
     if (known(packId) && offered.includes(packId) && !bannedSet.has(packId)) pinnedPacks[floor] = packId;
     else if (typeof packId === 'number') dropped.push(packId);
@@ -125,17 +143,6 @@ function normaliseOptions(
     });
   }
   next = { ...next, bannedPacks, preferredPacks, pinnedPacks };
-
-  if (next.lastFloor > 5 && data.rules.difficulty.parallelRequiresAllHard && next.hardFromFloor !== 1) {
-    next = { ...next, hardFromFloor: 1 };
-    warnings.push({
-      code: 'parallel-requires-hard',
-      detail: {
-        ko: '평행중첩(6층 이상)은 1~5층을 전부 Hard로 클리어해야 들어갈 수 있어, 1층부터 Hard로 계획했습니다.',
-        en: 'Floors 6+ need floors 1-5 cleared on Hard, so the plan switches to Hard from floor 1.',
-      },
-    });
-  }
 
   return { options: next, warnings, droppedObservations };
 }
@@ -893,7 +900,9 @@ function soleOccupantToFree(
   canObserve: (giftId: number) => boolean,
 ): { giftId: number; packId: number; key: string } | null {
   const banned = new Set(options.bannedPacks);
-  const packs = (indexes.packsByGift.get(giftId) ?? []).filter((id) => !banned.has(id));
+  // A pinned or played pack cannot be visited again, so no floor is worth freeing for it.
+  const settled = new Set(Object.values(options.pinnedPacks));
+  const packs = (indexes.packsByGift.get(giftId) ?? []).filter((id) => !banned.has(id) && !settled.has(id));
   const usable = floors.filter((floor) => {
     if (options.pinnedPacks[floor] !== undefined) return false;
     const offered = indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? [];

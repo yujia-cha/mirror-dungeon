@@ -818,7 +818,9 @@ const enums: Enums = {
   })),
   factions: [...factionNameById]
     .map(([id, name]) => ({ id, name, deprecated: factionDeprecated.has(id) }))
-    .sort((a, b) => a.id.localeCompare(b.id)),
+    // Code-point order, like every other sort in this build: `localeCompare` is ICU collation,
+    // which ignores `_` and put H_CORP after HOOK_OFFICE — and depends on the Node build's ICU.
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
   sinners: SINNER_NAMES.flatMap((name, id) => (id >= 1 ? [{ id, name }] : [])),
   sins: [...SINS],
 };

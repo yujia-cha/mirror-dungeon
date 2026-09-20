@@ -31,10 +31,12 @@ function numbers(text: string | undefined): number[] {
     .filter((n) => Number.isFinite(n));
 }
 
-function parseFloors(text: string | undefined): 5 | 10 | 15 {
-  const last = Number((text ?? '1-5').split('-').pop());
-  if (last === 15) return 15;
-  if (last === 10) return 10;
+/** `--floors 1-7` → 7. Any last floor is accepted; `planRoute` clamps it to the season's range. */
+function parseFloors(text: string | undefined): number {
+  if (text === undefined) return 5;
+  const last = Number(text.trim().split('-').pop());
+  if (Number.isInteger(last) && last >= 1) return last;
+  console.error(`route: --floors "${text}" is not a range like 1-15; planning floors 1-5`);
   return 5;
 }
 

@@ -82,14 +82,24 @@ export function derivedDataPresent(): boolean {
   return existsSync(join(DERIVED_DIR, 'data', 'identities.json'));
 }
 
+let derivedIdentities: Map<number, DerivedIdentity> | null = null;
+
+/**
+ * Parsed once per process: the file is 300KB and `validate-data` asks for it inside a loop.
+ * Callers read it and never mutate it. A process that vendors the file (`data:fetch`) exits before
+ * reading it back, so the cache never goes stale.
+ */
 export function readDerivedIdentities(): Map<number, DerivedIdentity> {
+  if (derivedIdentities) return derivedIdentities;
   const out = new Map<number, DerivedIdentity>();
-  if (!derivedDataPresent()) return out;
-  const raw = readJson<Record<string, DerivedIdentity>>(join(DERIVED_DIR, 'data', 'identities.json'));
-  for (const [key, value] of Object.entries(raw)) {
-    const id = Number(key);
-    if (Number.isFinite(id)) out.set(id, value);
+  if (derivedDataPresent()) {
+    const raw = readJson<Record<string, DerivedIdentity>>(join(DERIVED_DIR, 'data', 'identities.json'));
+    for (const [key, value] of Object.entries(raw)) {
+      const id = Number(key);
+      if (Number.isFinite(id)) out.set(id, value);
+    }
   }
+  derivedIdentities = out;
   return out;
 }
 

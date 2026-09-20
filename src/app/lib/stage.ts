@@ -67,6 +67,8 @@ export function enterablePacks(
   plan: RoutePlan | null,
   floor: number,
   indexes: GameIndexes,
+  /** Packs given up are no choice, so they are no alternative either — as in the plan's own list. */
+  banned: ReadonlySet<number> = new Set(),
 ): EnterablePack[] {
   if (!plan) return [];
   const out: EnterablePack[] = [];
@@ -83,7 +85,7 @@ export function enterablePacks(
         bandMode(indexes, floor),
         entry.pickups.map((pickup) => pickup.giftId),
         indexes,
-        { exclude: entry.packId },
+        { exclude: entry.packId, banned },
       ),
     });
   }

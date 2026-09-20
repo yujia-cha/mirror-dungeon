@@ -10,10 +10,14 @@ export default defineConfig({
     },
   },
   test: {
-    // jsdom everywhere: the core planner does not care, and the app tests need it.
-    environment: 'jsdom',
-    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts', 'tests/**/*.test.{ts,tsx}'],
     setupFiles: ['tests/setup.ts'],
     restoreMocks: true,
+    // Only the app tests need a DOM. The planner, the pipeline and the generated-data checks are
+    // node code, and paying for a jsdom per worker on them was a fifth of the run; four of them
+    // were already opting out one file at a time with `@vitest-environment node`.
+    projects: [
+      { extends: true, test: { name: 'app', environment: 'jsdom', include: ['src/app/**/*.test.{ts,tsx}'] } },
+      { extends: true, test: { name: 'node', environment: 'node', include: ['src/core/**/*.test.ts', 'scripts/**/*.test.ts', 'tests/**/*.test.{ts,tsx}'] } },
+    ],
   },
 });

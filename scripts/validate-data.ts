@@ -33,6 +33,7 @@ import {
   IDENTITY_KEYWORDS,
   STATUS_KEYWORDS,
   type ArtManifest,
+  artManifestSchema,
   enumsSchema,
   giftsFileSchema,
   identitiesFileSchema,
@@ -152,7 +153,15 @@ function checkArt(gifts: Gift[], packs: ThemePack[]): void {
       .sort();
   };
   const onDisk = { gifts: listed('gifts'), packs: listed('packs') };
-  const manifest = readJsonIfExists<ArtManifest>(manifestPath);
+  const rawManifest = readJsonIfExists<unknown>(manifestPath);
+  // The same schema the app parses it with (`loadArtManifest`): a manifest that fails there
+  // silently leaves every tile without art, so it fails here instead.
+  const parsedManifest = rawManifest === null ? null : artManifestSchema.safeParse(rawManifest);
+  if (parsedManifest && !parsedManifest.success) {
+    err('art', `public/art/manifest.json does not match artManifestSchema: ${parsedManifest.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
+    return;
+  }
+  const manifest: ArtManifest | null = parsedManifest ? parsedManifest.data : null;
 
   if (!manifest) {
     if (onDisk.gifts.length + onDisk.packs.length > 0) {
@@ -480,18 +489,17 @@ function checkInvariants(
   // The consumed keywords, against the one source that knows them independently. KR skill text
   // covers 125 of 187 identities, so a new 혈귀 could arrive without one; the mirror would still
   // list it and this would say so instead of the app quietly counting one identity short.
+  const derivedById = readDerivedIdentities();
   for (const keyword of CONSUMED_KEYWORDS) {
     const ours = new Set(identities.filter((i) => i.keywords[keyword]).map((i) => i.id));
-    const theirs = new Set(
-      [...readDerivedIdentities()].filter(([, e]) => derivedStatuses(e).has(keyword)).map(([id]) => id),
-    );
+    const theirs = new Set([...derivedById].filter(([, e]) => derivedStatuses(e).has(keyword)).map(([id]) => id));
     for (const id of theirs) {
       if (!ours.has(id)) {
         strict('invariant', `${id} uses ${keyword} per the derived source but we ship none; add data/curated/identity-keywords.json`);
       }
     }
     for (const id of ours) {
-      if (!theirs.has(id) && readDerivedIdentities().has(id)) {
+      if (!theirs.has(id) && derivedById.has(id)) {
         warn('invariant', `${id} is shipped with ${keyword} but the derived source does not list it`);
       }
     }
@@ -524,7 +532,6 @@ function checkInvariants(
   // it is checked against the one source that answers independently: the mirror lists every buff an
   // identity's skills touch, and for these it lists none of ours. A hit here means the derivation
   // regressed and the empty chip has started lying.
-  const derivedById = readDerivedIdentities();
   const countable = new Set<string>(IDENTITY_KEYWORDS);
   for (const identity of noKeyword) {
     const entry = derivedById.get(identity.id);
@@ -557,7 +564,7 @@ function checkInvariants(
     repoPath('data/raw/localize/KR/Personalities.json'),
   );
   for (const entry of localizedIdentities?.dataList ?? []) noteRoster(Number(entry.id), '현지화');
-  for (const id of readDerivedIdentities().keys()) noteRoster(id, '파생 미러');
+  for (const id of derivedById.keys()) noteRoster(id, '파생 미러');
 
   if (roster.size > 0) {
     const named = [...roster].map(([id, sources]) => `${id} (${sources.join(', ')})`);
@@ -589,7 +596,7 @@ function checkInvariants(
   // weaker reading — it misses a keyword our static derivation finds on 10 of 179 identities — so a
   // disagreement is a prompt to look, not a failure.
   const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
-  const derivedIdentitiesByid = readDerivedIdentities();
+  const derivedIdentitiesByid = derivedById;
   const keywordDisagreements: number[] = [];
   for (const identity of identities) {
     const entry = derivedIdentitiesByid.get(identity.id);
