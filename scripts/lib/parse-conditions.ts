@@ -16,11 +16,8 @@ import type { Condition, ConditionScope, IdentityKeywordId, Localized, StatusKey
 import { IDENTITY_KEYWORDS } from '../../src/core/schema.ts';
 import { stripRichText } from '../../src/core/text.ts';
 
-/**
- * Internal status token -> Korean display name, used to recognise "특수 화상" style wording.
- * Shared with `parse-skill-triggers.ts`, which asks the same question of the effect sentence.
- */
-export const KEYWORD_KO: Record<StatusKeyword, string> = {
+/** Internal status token -> Korean display name, used to recognise "특수 화상" style wording. */
+const KEYWORD_KO: Record<StatusKeyword, string> = {
   Combustion: '화상',
   Laceration: '출혈',
   Vibration: '진동',

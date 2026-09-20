@@ -1,5 +1,5 @@
 {
-  "_comment": "Corrections to what we read out of a gift's Korean effect text. Keys are gift ids. `conditions` corrects the activation clauses the party is judged against; `skillTriggers` and `formationSlots` correct which skills the effect keys off (see scripts/lib/parse-skill-triggers.ts). Each key wins on its own and replaces the parse wholesale — set one to [] when the parser invented something that is not there. See the add-curated-override skill for the shape of each condition type.",
+  "_comment": "Corrections to conditional-gift activation clauses parsed from the Korean effect text. Keys are gift ids. Set `conditions` to [] when the parser invented a condition that does not exist. See the add-curated-override skill for the shape of each condition type.",
   "_example": {
     "9211": {
       "conditions": [

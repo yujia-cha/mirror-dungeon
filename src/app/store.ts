@@ -7,7 +7,7 @@ import type { Lang } from './i18n.ts';
 import type { FusionGoalMap, Priority, PriorityMap, RunState } from './lib/plan-input.ts';
 
 export type LeftTab = 'deck' | 'gifts';
-export type RightTab = 'plan' | 'goals' | 'skills' | 'tracker';
+export type RightTab = 'plan' | 'goals' | 'tracker';
 
 /** Which side panels are open on a desktop layout, and which tab each shows. Device-only. */
 export interface UiState {
@@ -228,14 +228,7 @@ export function sanitizeUi(raw: unknown): UiState {
   // The old 「루트 설정」 tab folded into the items tab.
   if (source.leftTab === 'deck' || source.leftTab === 'gifts') out.leftTab = source.leftTab;
   else if (source.leftTab === 'settings') out.leftTab = 'gifts';
-  if (
-    source.rightTab === 'plan' ||
-    source.rightTab === 'goals' ||
-    source.rightTab === 'skills' ||
-    source.rightTab === 'tracker'
-  ) {
-    out.rightTab = source.rightTab;
-  }
+  if (source.rightTab === 'plan' || source.rightTab === 'goals' || source.rightTab === 'tracker') out.rightTab = source.rightTab;
   out.leftWidth = clampPanelWidth(source.leftWidth);
   out.rightWidth = clampPanelWidth(source.rightWidth);
   return out;

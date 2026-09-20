@@ -36,7 +36,6 @@ import {
   enumsSchema,
   giftsFileSchema,
   identitiesFileSchema,
-  EFFECT_BUCKETS,
   metaSchema,
   packsFileSchema,
   rulesSchema,
@@ -50,7 +49,6 @@ import {
   type ThemePack,
 } from '../src/core/schema.ts';
 import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../src/core/text.ts';
-import { unknownLabels } from './lib/gift-effects.ts';
 
 /** The twelve sinners the game has had since launch; every one must be deckable. */
 const SINNER_COUNT = 12;
@@ -69,40 +67,6 @@ const KEYWORD_DISAGREEMENT_BUDGET = 15;
  */
 const DERIVED_ONLY_PACKS = [3001] as const;
 const DERIVED_ONLY_GIFTS = [9242, 9831, 9832, 9833, 9834, 9835, 9836, 9837, 9838, 9839] as const;
-/** The formation holds one seat per sinner; 9761 names 편성 8번, so the range really is 1..12. */
-const FORMATION_SIZE = SINNER_COUNT;
-/**
- * A loose read of the same sentences `parseSkillTriggers` models — a sin or attack type with 스킬
- * close behind. It over-matches on purpose: its job is to be louder than the real parser, so a
- * wording change upstream shows up as a gift the loose scan sees and the parser does not.
- */
-const LOOSE_SKILL_SUBJECT =
-  /(분노|색욕|나태|탐식|우울|오만|질투|참격|관통|타격)[^\n가-힣]{0,4}(?:속성|유형)?[^\n가-힣]{0,4}(?:기본\s*)?(?:공격\s*)?스킬/;
-
-/**
- * The same loud reading for a keyword clause that narrows itself to a slot — 「…하는 스킬 3」. It is
- * deliberately cruder than the parser and so it over-matches; the two gifts below are the price of
- * that, and both are over-matches rather than misses.
- */
-const LOOSE_KEYWORD_SLOT = /(화상|출혈|진동|파열|침잠|호흡|충전|탄환|혈찬)[^.\n]{0,80}?(?:부여|획득|증가|감소|소모|얻)[^.\n]{0,24}?스킬\s*[123]/;
-
-/**
- * The one gift that trips `LOOSE_KEYWORD_SLOT` although no slot-limited trigger belongs: 9771
- * 근접 전술 교본 says 「[탄환]을 얻으면, … 사용하는 스킬 3」, where the keyword is WHEN the gift
- * fires and the slot is only what it lands on. Joining them would describe the gift backwards.
- *
- * What this scan does NOT reach is the mirror image — a real clause split across two of them.
- * 9134 순찰용 손전등 says 「…하는 스킬을 보유하였다면」 and then 「대상의 스킬 1」 a clause later, so
- * its slot-1 effect carries no trigger and nothing here complains. Catching it would need a
- * pattern loose enough to join any two clauses in a sentence, which would cry wolf far more often
- * than it found anything; it is written down here instead.
- */
-const LOOSE_KEYWORD_SLOT_EXEMPT = new Set([9771]);
-
-function ascendingUnique(values: readonly number[]): boolean {
-  return values.every((value, i) => i === 0 || value > values[i - 1]!);
-}
-
 const lenient = hasFlag('--lenient');
 
 const errors: string[] = [];
@@ -303,7 +267,6 @@ function checkInvariants(
   enums: Enums,
 ): void {
   const selectable = packs.filter((p) => p.selectable);
-  const factionIds = new Set(enums.factions.map((f) => f.id));
 
   // Expected scale for Mirror Dungeon 7. A real season change moves these; bump them deliberately
   // and say why in the commit message (see the update-game-data skill).
@@ -476,149 +439,6 @@ function checkInvariants(
         .map((g) => g.id)
         .join(', ')}` + ' — consider extending the parser or adding data/curated/conditions.json entries',
     );
-  }
-
-  // Skill triggers: which skills a gift's effect lands on, read out of the Korean text. The parser
-  // is the only source, so losing it is silent — nothing else in the data says 「참격 스킬」.
-  const triggered = gifts.filter((g) => g.skillTriggers.length > 0);
-  if (triggered.length === 0) {
-    strict(
-      'invariant',
-      "no gift has a skill trigger; check parseSkillTriggers() against the season's effect text",
-    );
-  }
-  // The loose scan is the regression guard: a gift whose text plainly names a skill subject but
-  // whose triggers came out empty means the wording moved and the parser did not follow.
-  const missed = gifts.filter((g) => g.skillTriggers.length === 0 && LOOSE_SKILL_SUBJECT.test(g.desc.ko));
-  if (missed.length > 0) {
-    err(
-      'invariant',
-      `${missed.length} gift(s) name a skill's sin or attack type but parsed no trigger: ${missed
-        .slice(0, 6)
-        .map((g) => g.id)
-        .join(', ')}` + ' — extend parseSkillTriggers() or add a data/curated/conditions.json entry',
-    );
-  }
-  // The same guard for the keyword clauses: they are the only way a gift says 「[화상]을 부여하는
-  // 스킬 3」, and a wording change upstream would take the slot with it and go unnoticed.
-  const missedKeyword = gifts.filter(
-    (g) =>
-      !LOOSE_KEYWORD_SLOT_EXEMPT.has(g.id) &&
-      LOOSE_KEYWORD_SLOT.test(g.desc.ko) &&
-      !g.skillTriggers.some((t) => t.keywords.length > 0 && t.slots.length > 0),
-  );
-  if (missedKeyword.length > 0) {
-    err(
-      'invariant',
-      `${missedKeyword.length} gift(s) name a keyword and a skill slot but parsed no keyword trigger: ${missedKeyword
-        .slice(0, 6)
-        .map((g) => g.id)
-        .join(', ')}` + ' — extend parseSkillTriggers() or add a data/curated/conditions.json entry',
-    );
-  }
-  for (const gift of gifts) {
-    for (const trigger of gift.skillTriggers) {
-      // A trigger has to narrow SOMETHING, or it would claim every skill in the game. A 소속 on
-      // its own is not enough either — 「검계 소속일 경우 스킬 1」 narrows by slot as well, and a
-      // faction with no other axis would mean 「that faction's every skill」, which the parser is
-      // deliberately not asked to read.
-      const axes =
-        (trigger.sin !== null ? 1 : 0) +
-        (trigger.attackType !== null ? 1 : 0) +
-        (trigger.keywords.length > 0 ? 1 : 0) +
-        (trigger.slots.length > 0 ? 1 : 0);
-      if (axes === 0) {
-        err('invariant', `gift ${gift.id} has a skill trigger that narrows nothing`);
-      }
-      if (trigger.factions.length > 0 && axes === 0) {
-        err('invariant', `gift ${gift.id} has a skill trigger naming only a 소속`);
-      }
-      for (const faction of trigger.factions) {
-        if (!factionIds.has(faction)) {
-          err('invariant', `gift ${gift.id} has a skill trigger naming unknown 소속 ${faction}`);
-        }
-      }
-      // The keyword axes only mean anything alongside a keyword. Left at their defaults otherwise,
-      // so no reader has to ask whether they apply.
-      if (
-        trigger.keywords.length === 0 &&
-        (trigger.verb !== 'inflict' || trigger.includesSpecial || trigger.subject !== 'skill')
-      ) {
-        err('invariant', `gift ${gift.id} sets a keyword axis on a trigger that names no keyword`);
-      }
-      if (!ascendingUnique(trigger.slots)) {
-        err('invariant', `gift ${gift.id} has skill trigger slots out of order or repeated`);
-      }
-    }
-    if (!ascendingUnique(gift.formationSlots)) {
-      err('invariant', `gift ${gift.id} has formationSlots out of order or repeated`);
-    }
-    if (gift.formationSlots.some((slot) => slot > FORMATION_SIZE)) {
-      err('invariant', `gift ${gift.id} limits itself to a formation position past ${FORMATION_SIZE}`);
-    }
-  }
-
-  // Effect buckets: the only machine-readable answer to 「이 기프트는 어떤 도움인가」 comes from the
-  // community mirror's curated labels, so a label it adds upstream that our table does not name
-  // would silently drop gifts out of every bucket and off the 「스킬」 탭.
-  const shippedLabels = [...readDerivedGifts().values()].flatMap((gift) => gift.effects ?? []);
-  const unnamed = unknownLabels(shippedLabels);
-  if (unnamed.length > 0) {
-    err(
-      'invariant',
-      `${unnamed.length} effect label(s) are not in the bucket table: ${unnamed.join(', ')}` +
-        ' — name them in scripts/lib/gift-effects.ts',
-    );
-  }
-  const unbucketed = triggered.filter((g) => g.effectBuckets.length === 0);
-  if (unbucketed.length > 0) {
-    err(
-      'invariant',
-      `${unbucketed.length} gift(s) with a skill trigger have no effect bucket: ${unbucketed
-        .slice(0, 6)
-        .map((g) => g.id)
-        .join(', ')}` + ' — check classifyGiftEffects()',
-    );
-  }
-  for (const gift of gifts) {
-    const order = gift.effectBuckets.map((bucket) => EFFECT_BUCKETS.indexOf(bucket));
-    if (!ascendingUnique(order)) {
-      err('invariant', `gift ${gift.id} has effect buckets out of order or repeated`);
-    }
-  }
-  if (!gifts.some((g) => g.effectBuckets.includes('egoResource'))) {
-    warn('invariant', 'no gift is classed as an E.G.O resource gift; check the bucket table');
-  }
-
-  // Every identity must answer 「몇 번 스킬이 무슨 속성인가」: the static records cover 183 and the
-  // derived mirror the remaining 4, so a gap means a source stopped rather than that one is empty.
-  const noSkills = identities.filter((i) => i.skills.length === 0);
-  if (noSkills.length > 0) {
-    err(
-      'invariant',
-      `${noSkills.length} identity/identities ship no skill table: ${noSkills
-        .slice(0, 6)
-        .map((i) => i.id)
-        .join(', ')}` + ' — check deriveIdentitySkills() and derivedSkills()',
-    );
-  }
-  for (const identity of identities) {
-    // The flat sets and the per-slot table are two readings of the same skills, so neither may
-    // claim something the other does not have.
-    const sins = new Set(identity.skills.map((s) => s.sin).filter(Boolean));
-    const types = new Set(identity.skills.map((s) => s.attackType).filter(Boolean));
-    for (const sin of identity.sins) {
-      if (!sins.has(sin)) err('invariant', `identity ${identity.id} lists sin ${sin} that no skill row has`);
-    }
-    for (const type of identity.attackTypes) {
-      if (!types.has(type)) {
-        err('invariant', `identity ${identity.id} lists attack type ${type} that no skill row has`);
-      }
-    }
-    const slots = new Set(identity.skills.map((s) => s.slot));
-    if (identity.skills.length > 0 && (!slots.has(1) || !slots.has(2) || !slots.has(3))) {
-      err('invariant', `identity ${identity.id} is missing a base attack skill slot`);
-    }
   }
 
   // Shipped gift text carries no leftovers a reader would notice as a defect: a bracketed buff

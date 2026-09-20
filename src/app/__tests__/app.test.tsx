@@ -5,7 +5,7 @@
  */
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import lzString from 'lz-string';
 import userEvent from '@testing-library/user-event';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
@@ -17,7 +17,6 @@ import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { tierLabel } from '../lib/labels.ts';
-import { EnumsContext } from '../lib/useEnums.ts';
 import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
@@ -27,7 +26,6 @@ import { AppShell } from '../shell/AppShell.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { RoutePlanPanel } from '../shell/RoutePlanPanel.tsx';
 import { GoalsPanel } from '../shell/GoalsPanel.tsx';
-import { SkillGiftsPanel } from '../shell/SkillGiftsPanel.tsx';
 import { RouteOptions } from '../shell/RouteOptions.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
@@ -410,8 +408,6 @@ describe('run store', () => {
 
   it('keeps panel widths inside the band they may be dragged to', () => {
     expect(sanitizeUi({ rightTab: 'goals' }).rightTab).toBe('goals');
-    expect(sanitizeUi({ rightTab: 'skills' }).rightTab).toBe('skills');
-    expect(sanitizeUi({ rightTab: 'nope' }).rightTab).toBe('plan');
     // The old 「루트 설정」 tab lives under the items tab now.
     expect(sanitizeUi({ leftTab: 'settings' }).leftTab).toBe('gifts');
     expect(sanitizeUi({}).leftWidth).toBe(336);
@@ -1787,11 +1783,6 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('tab', { name: '목표' }));
     expect(screen.getByTestId('goals-empty')).toBeInTheDocument();
     expect(useApp.getState().ui.rightTab).toBe('goals');
-    // A fourth tab must reach its own panel, not fall through to the tracker.
-    await user.click(screen.getByRole('tab', { name: '스킬' }));
-    expect(screen.getByTestId('skills-panel')).toBeInTheDocument();
-    expect(screen.queryByTestId('tracker')).toBeNull();
-    expect(useApp.getState().ui.rightTab).toBe('skills');
     await user.click(screen.getByRole('tab', { name: '추적기' }));
     expect(screen.getByTestId('tracker')).toBeInTheDocument();
     expect(useApp.getState().ui.rightTab).toBe('tracker');
@@ -2735,266 +2726,6 @@ describe('GoalsPanel', () => {
     await user.click(within(goals()).getAllByTestId('gift-tile-info')[0]!);
     expect(dialog()).toBeInTheDocument();
     await close();
-  });
-});
-
-describe('SkillGiftsPanel', () => {
-  // The panel reads game display names (참격 …) out of the enums, exactly as it does under AppShell.
-  const render = (props: { onOpenDeck?: () => void } = {}) =>
-    renderPlanned(
-      <EnumsContext.Provider value={data.enums}>
-        <SkillGiftsPanel {...props} />
-      </EnumsContext.Provider>,
-    );
-  const tagRow = (axis: string) => screen.getByTestId('skills-panel').querySelector(`[data-axis="${axis}"]`) as HTMLElement;
-  const tag = (axis: string, name: string) =>
-    within(tagRow(axis)).getAllByTestId('skills-tag').find((el) => el.getAttribute('data-tag') === name)!;
-  const sections = () =>
-    screen.queryAllByTestId('skills-bucket').map((el) => el.firstElementChild as HTMLElement);
-  const bucketNames = () => sections().map((el) => el.getAttribute('data-bucket'));
-  const rows = () => screen.queryAllByTestId('skill-gift');
-  const rowFor = (id: number) => rows().find((el) => el.getAttribute('data-gift') === String(id));
-
-  it('opens on 데미지 and nothing else, with 계열 the only axis', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    expect(tag('bucket', 'damage')).toHaveAttribute('aria-pressed', 'true');
-    for (const name of ['survival', 'egoResource', 'buff', 'debuff']) {
-      expect(tag('bucket', name)).toHaveAttribute('aria-pressed', 'false');
-    }
-    expect(bucketNames()).toEqual(['damage']);
-    // 발동/강화 is no longer a filter: the list is 발동 gifts only, so a 강화 tag would select
-    // nothing and a 발동 tag would select all of it.
-    expect(screen.getByTestId('skills-panel').querySelector('[data-axis="effect"]')).toBeNull();
-  });
-
-  it('leaves out a gift whose triggers only strengthen an effect (9002 도착증)', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    // 9002 asks for a 분노 skill and only 「효과가 강화되어」 — it answers a different question
-    // from 「무엇이 내 스킬 때문에 켜지나」, which is what this tab is for.
-    expect(rowFor(9002)).toBeUndefined();
-    expect(rowFor(9013)).toBeUndefined();
-  });
-
-  it('adds a section when another 계열 tag is turned on, and drops one when it is turned off', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(tag('bucket', 'buff'));
-    expect(bucketNames()).toEqual(['damage', 'buff']);
-    await user.click(tag('bucket', 'damage'));
-    expect(bucketNames()).toEqual(['buff']);
-  });
-
-  it('treats an empty tag row as no constraint, so clearing it shows everything', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    const before = new Set(rows().map((el) => el.getAttribute('data-gift')));
-    await user.click(tag('bucket', 'damage'));
-    // Every 계열 that has a gift now has a section.
-    expect(bucketNames()!.length).toBeGreaterThan(1);
-    const after = new Set(rows().map((el) => el.getAttribute('data-gift')));
-    expect(after.size).toBeGreaterThan(before.size);
-  });
-
-  it('counts a tag as what picking it would actually give', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    const countOf = (name: string) => Number(tag('bucket', name).textContent!.match(/\d+$/)![0]);
-    const buff = countOf('buff');
-    await user.click(tag('bucket', 'damage')); // clear the default
-    await user.click(tag('bucket', 'buff'));
-    expect(new Set(rows().map((el) => el.getAttribute('data-gift'))).size).toBe(buff);
-    // The count does not move when the selection does — with one axis there is nothing to answer to.
-    expect(countOf('buff')).toBe(buff);
-  });
-
-  it('says so and offers a way back when the tags select nothing', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(tag('bucket', 'damage'));
-    await user.click(tag('bucket', 'egoResource')); // 발동 + 자원 = nothing
-    expect(screen.getByTestId('skills-none-tagged')).toBeInTheDocument();
-    expect(rows()).toEqual([]);
-    await user.click(screen.getByRole('button', { name: '태그 지우기' }));
-    expect(screen.queryByTestId('skills-none-tagged')).toBeNull();
-    expect(rows().length).toBeGreaterThan(0);
-  });
-
-  it('says 3스킬이 화상 부여 for a 스킬 단위 clause and 화상 인격의 3스킬 for an 인격 단위 one', async () => {
-    const user = userEvent.setup();
-    // 충전 identities: 10202 파우스트's skill 1 charges, which is what 9734 E식 차원 단검 asks for.
-    useApp.getState().setDeck([10202, 10210, 10215, 10302, 10312, 10106, ...LCB_DECK.slice(0, 6)], 6);
-    render();
-    await user.click(tag('bucket', 'damage')); // clear the default so every 계열 shows
-    const dagger = rowFor(9734)!;
-    expect(dagger).toBeDefined();
-    // 스킬 단위: that slot's own skill must charge. 「또는 특수 충전」 shows as 충전(특수).
-    expect(within(dagger).getByTestId('skill-gift-trigger')).toHaveTextContent('1스킬이 충전(특수) 부여');
-    expect(within(dagger).getByTestId('skill-gift-owners')).toHaveTextContent('파우스트 1스킬');
-  });
-
-  it('names the identity, not the skill, when the keyword belongs to the whole kit', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(tag('bucket', 'damage'));
-    // 9177 어느 날의 기억: 「[호흡]…획득하는 인격이 사용하는 스킬 3」 — the ally brings 호흡, slot 3
-    // only says which skill is buffed. Reading it like 9734 would demand a 호흡 3스킬 the game
-    // never asks for. (Its 회중시계 siblings say the same thing but need 5 진동 identities, which
-    // the LCB deck has not got, so the tab hides them.)
-    const memory = rowFor(9177)!;
-    expect(memory).toBeDefined();
-    expect(within(memory).getByTestId('skill-gift-trigger')).toHaveTextContent('호흡 부여 인격의 3스킬');
-    expect(within(memory).getByTestId('skill-gift-owners')).toHaveTextContent('3스킬');
-  });
-
-  it('describes only the triggers that activate, not ones that merely strengthen', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(tag('bucket', 'damage'));
-    // 9149 압박 붕대 gates on 타격 and merely strengthens on 우울. Only the 타격 half may reach
-    // the lines, or the gift would name 우울 identities as the ones setting it off.
-    const bandage = rowFor(9149)!;
-    expect(bandage).toBeDefined();
-    expect(within(bandage).getByTestId('skill-gift-trigger')).toHaveTextContent('타격 스킬');
-    expect(within(bandage).getByTestId('skill-gift-trigger')).not.toHaveTextContent('우울');
-  });
-
-  it('names the 소속 the gift gates on, and keeps it out of a deck that lacks it (9223 범작)', async () => {
-    const user = userEvent.setup();
-    // 약지 identities, which is what 「약지 소속 인격의 색욕 속성 또는 참격 속성 스킬」 asks for.
-    useApp.getState().setDeck([10109, 10215, 10515, 10614, 10915, 11109, ...LCB_DECK.slice(0, 6)], 6);
-    render();
-    await user.click(tag('bucket', 'damage')); // clear the default so every 계열 shows
-    const forgery = rowFor(9223)!;
-    expect(forgery).toBeDefined();
-    expect(within(forgery).getByTestId('skill-gift-trigger')).toHaveTextContent('약지 소속');
-    expect(within(forgery).getByTestId('skill-gift-trigger')).toHaveTextContent('색욕');
-
-    // The LCB deck has no 약지, so the gift cannot fire at all and must not be listed.
-    useApp.getState().setDeck(LCB_DECK, 6);
-    cleanup();
-    render();
-    await user.click(tag('bucket', 'damage'));
-    expect(rowFor(9223)).toBeUndefined();
-  });
-
-  it('reads a slot that only a 소속 qualifies (9720 낡은 도포)', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck([10103, 10208, 10308, 10508, 10815, 11002, ...LCB_DECK.slice(0, 6)], 6);
-    render();
-    await user.click(tag('bucket', 'damage'));
-    // 「검계 소속일 경우 스킬 1의 코인 위력 +1」 — no sin or type stands before 스킬 1, so before
-    // 소속 was read this gift carried no trigger at all and never appeared.
-    const robe = rowFor(9720)!;
-    expect(robe).toBeDefined();
-    expect(within(robe).getByTestId('skill-gift-trigger')).toHaveTextContent('검계 소속');
-    expect(within(robe).getByTestId('skill-gift-trigger')).toHaveTextContent('1스킬');
-  });
-
-  it('lists a gift that helps two ways under each 계열, with its own tags on the row', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(tag('bucket', 'survival')); // 9025 잿빛 코트 is damage + survival
-    const both = rows().filter((el) => el.getAttribute('data-gift') === '9025');
-    expect(both.map((el) => el.getAttribute('data-bucket')).sort()).toEqual(['damage', 'survival']);
-    expect(both[0]).toHaveAttribute('data-buckets', 'damage,survival');
-    expect(within(both[0]!).getByTestId('skill-gift-tags')).toHaveTextContent('데미지');
-    expect(within(both[0]!).getByTestId('skill-gift-tags')).toHaveTextContent('생존');
-    // The summary counts gifts, not rows.
-    const distinct = new Set(rows().map((el) => el.getAttribute('data-gift')));
-    expect(screen.getByTestId('skills-summary')).toHaveTextContent(`기프트 ${distinct.size}`);
-  });
-
-  it('sorts what the ally gains into 버프 and what the enemy is handed into 디버프', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(tag('bucket', 'damage'));
-    await user.click(tag('bucket', 'buff'));
-    // 9012 오늘의 표정 — 「타격 스킬 위력 +2」, a stat the ally gains.
-    expect(rowFor(9012)).toHaveAttribute('data-bucket', 'buff');
-    await user.click(tag('bucket', 'buff'));
-    await user.click(tag('bucket', 'debuff'));
-    // 9031 닉시 다이버전스 — 「대상에게 [진동] 위력 2 부여」, landed on the enemy.
-    expect(rowFor(9031)).toHaveAttribute('data-bucket', 'debuff');
-  });
-
-  it('writes each gift two lines: what sets it off, and whose skills do', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    // 9025 잿빛 코트 keys off 우울 속성 and is 데미지 + 생존, so it is in the opening view.
-    const row = rowFor(9025)!;
-    expect(within(row).getByTestId('skill-gift-trigger')).toHaveTextContent('우울 속성 스킬');
-    expect(within(row).getByTestId('skill-gift-owners')).toHaveTextContent('이상 1스킬');
-  });
-
-  it('names an identity once with its slots merged', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    for (const line of screen.getAllByTestId('skill-gift-owners')) {
-      const names = (line.textContent ?? '').split(' / ').map((part) => part.split(' ')[0]);
-      expect(new Set(names).size).toBe(names.length);
-    }
-  });
-
-  it('lists only the deployed identities as owners', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    const deployed = new Set(useApp.getState().deployed);
-    const seen = new Set(
-      screen
-        .getAllByTestId('skill-gift-owners')
-        .flatMap((el) => (el.getAttribute('data-identities') ?? '').split(',').map(Number)),
-    );
-    for (const id of seen) expect(deployed.has(id)).toBe(true);
-  });
-
-  it('says a slot limit in the trigger line and a 편성 limit on the row, filtering on neither', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(tag('bucket', 'damage')); // 계열 unconstrained
-    // 9195 구름무늬 호리병 — 「참격 유형인 스킬 1」.
-    expect(within(rowFor(9195)!).getByTestId('skill-gift-trigger')).toHaveTextContent('1스킬이 참격');
-    // 9193 닳고 닳은 숫돌 — 「[편성 3번 인격 전용 효과]」; 10101 is first in this deck, not third.
-    expect(within(rowFor(9193)!).getByTestId('skill-gift-formation')).toHaveAttribute('data-formation', '3');
-  });
-
-  it('hides a gift whose own condition this deck cannot meet, and says how many', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    // 9280 본국검보 needs 검계 3인 이상; the LCB starters are in no faction that counts.
-    expect(rowFor(9280)).toBeUndefined();
-    expect(Number(screen.getByTestId('skills-excluded').getAttribute('data-hidden'))).toBeGreaterThan(0);
-  });
-
-  it('opens the gift sheet the provider hosts when the name is pressed', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    await user.click(within(rowFor(9025)!).getByRole('button', { name: '잿빛 코트' }));
-    expect(screen.getByTestId('gift-detail')).toBeInTheDocument();
-  });
-
-  it('draws no 「이 탭은 무엇인가요」 card', () => {
-    useApp.getState().setDeck(LCB_DECK, 6);
-    render();
-    expect(screen.queryByTestId('skills-about')).toBeNull();
-    expect(screen.getByTestId('skills-panel').textContent).not.toMatch(/이 탭은|편성 순서를 모르므로/);
-  });
-
-  it('says so, with a way out, when nobody is deployed', () => {
-    render({ onOpenDeck: () => undefined });
-    expect(screen.getByTestId('skills-empty')).toBeInTheDocument();
-    expect(sections()).toEqual([]);
   });
 });
 

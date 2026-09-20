@@ -7,14 +7,22 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { localizeList, readJson, repoPath, staticList } from './io.ts';
-import type { IdentityKeywordId } from '../../src/core/schema.ts';
+import type { IdentityKeywordId, Sin } from '../../src/core/schema.ts';
 import { IDENTITY_KEYWORD_BY_KO } from './derive.ts';
-// The colour table lives with the derivations so that pure, browser-safe modules can read it
-// without dragging this file's node:fs imports along.
-export { SIN_BY_COLOR } from './derive.ts';
 
 export const STATIC_DIR = repoPath('data/raw/static');
 export const LOCALIZE_DIR = repoPath('data/raw/localize');
+
+/** Verified against identity 10101 (참격/우울, 관통/질투, 참격/나태) — see docs/research/mechanics.md. */
+export const SIN_BY_COLOR: Record<string, Sin> = {
+  CRIMSON: 'WRATH',
+  SCARLET: 'LUST',
+  AMBER: 'SLOTH',
+  SHAMROCK: 'GLUTTONY',
+  AZURE: 'GLOOM',
+  INDIGO: 'PRIDE',
+  VIOLET: 'ENVY',
+};
 
 export interface RawThemePack {
   id: number;
@@ -52,8 +60,6 @@ export interface RawPersonality {
 export interface RawSkill {
   id: number;
   skillType?: string;
-  /** 1/2/3 — the slot the game calls 「스킬 N」. Agrees with the skill id's last two digits. */
-  skillTier?: number;
   skillData?: RawSkillData[];
 }
 

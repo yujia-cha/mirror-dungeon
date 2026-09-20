@@ -5,29 +5,13 @@
 import type {
   AttackType,
   Difficulty,
-  IdentitySkill,
   IdentityKeywordId,
   PackGroup,
   Sin,
-  SkillSlot,
   StatusKeyword,
 } from '../../src/core/schema.ts';
 import { IDENTITY_KEYWORDS, STATUS_KEYWORDS } from '../../src/core/schema.ts';
 import type { RawPersonality, RawSkill, RawThemePack } from './raw.ts';
-
-/**
- * The static data's skill colour -> 죄악. Verified against identity 10101 (참격/우울, 관통/질투,
- * 참격/나태) — see docs/research/mechanics.md.
- */
-export const SIN_BY_COLOR: Record<string, Sin> = {
-  CRIMSON: 'WRATH',
-  SCARLET: 'LUST',
-  AMBER: 'SLOTH',
-  SHAMROCK: 'GLUTTONY',
-  AZURE: 'GLOOM',
-  INDIGO: 'PRIDE',
-  VIOLET: 'ENVY',
-};
 
 /** `dungeonIdx` in the static data maps onto the four run modes. */
 export const DIFFICULTY_BY_DUNGEON_IDX: Record<number, Difficulty> = {
@@ -243,95 +227,6 @@ export function deriveIdentityKeywords(
     if (n + s > 0) out[kw] = { skills: n, specialSkills: s };
   }
   return out;
-}
-
-/** `atkType` in the static skill data -> the attack type the app names. `NONE` is a non-attack. */
-const ATTACK_BY_ATK_TYPE: Record<string, AttackType> = {
-  SLASH: 'Slash',
-  PENETRATE: 'Penetrate',
-  HIT: 'Hit',
-};
-
-/** The slot a skill sits in, from `skillTier`, falling back to the id's last two digits. */
-function slotOf(skill: RawSkill): SkillSlot | null {
-  const tier = skill.skillTier ?? Number(String(skill.id).slice(-2));
-  return tier === 1 || tier === 2 || tier === 3 ? tier : null;
-}
-
-/**
- * An identity's base attack skills as a table: slot, 죄악 속성, 공격 유형, and how many copies the
- * slot deck holds.
- *
- * `attributeList` is exactly the base attack skills, so this reads the same list
- * `deriveIdentityKeywords` does — but it keeps each skill apart instead of counting them, because
- * gift effects say 「참격 유형인 스킬 1」 and the flat `sins`/`attackTypes` sets cannot answer that.
- *
- * `skillData[0]` is the gaksung-1 row; the later rows are deltas and never restate 속성 or 유형.
- * A slot can hold more than one skill (a conditional alternate form, `number: 0`), so the result is
- * a list rather than one row per slot.
- */
-export function deriveIdentitySkills(
-  personality: RawPersonality,
-  skills: Map<number, RawSkill>,
-  specialVariants: Map<string, IdentityKeywordId> = new Map(),
-): IdentitySkill[] {
-  const out: { skill: IdentitySkill; id: number }[] = [];
-  for (const entry of personality.attributeList ?? []) {
-    const skill = skills.get(entry.skillId);
-    if (!skill) continue;
-    if (skill.skillType && skill.skillType !== 'SKILL') continue;
-    const slot = slotOf(skill);
-    if (slot === null) continue;
-    const data = skill.skillData?.[0];
-    // The same call `deriveIdentityKeywords` makes, kept per skill instead of counted: 「[화상]을
-    // 부여하는 스킬 3」 asks which slot does it, and a count cannot answer that.
-    const found = keywordsInSkill(skill, specialVariants);
-    out.push({
-      id: skill.id,
-      skill: {
-        slot,
-        sin: data?.attributeType ? (SIN_BY_COLOR[data.attributeType] ?? null) : null,
-        attackType: data?.atkType ? (ATTACK_BY_ATK_TYPE[data.atkType] ?? null) : null,
-        copies: Math.max(0, entry.number ?? 0),
-        keywords: { base: [...found.base].sort(), special: [...found.special].sort() },
-      },
-    });
-  }
-  return sortIdentitySkills(out);
-}
-
-/**
- * One deterministic table for every layer: slot, then the always-there skill before its alternate,
- * then skill id.
- *
- * Rows that agree on all three axes are folded together, keeping the largest `copies`. An identity
- * can carry several alternate forms of the same skill (오티스 has six slot-3 rows, all 타격/질투),
- * and repeating an identical row says nothing except that the game stores it more than once.
- */
-export function sortIdentitySkills(rows: { skill: IdentitySkill; id: number }[]): IdentitySkill[] {
-  const byAxes = new Map<string, { skill: IdentitySkill; id: number }>();
-  for (const row of rows) {
-    const key = `${row.skill.slot}|${row.skill.sin ?? ''}|${row.skill.attackType ?? ''}`;
-    const seen = byAxes.get(key);
-    if (!seen) {
-      byAxes.set(key, { id: row.id, skill: { ...row.skill } });
-      continue;
-    }
-    if (row.skill.copies > seen.skill.copies) {
-      seen.skill.copies = row.skill.copies;
-      seen.id = row.id;
-    }
-    // Keywords are unioned rather than taken from the surviving row: the alternate forms of one
-    // slot are all skills the identity can actually swing, so any keyword one of them uses is a
-    // keyword that slot uses. 오티스 has six slot-3 rows and only some carry the buff.
-    seen.skill.keywords = {
-      base: [...new Set([...seen.skill.keywords.base, ...row.skill.keywords.base])].sort(),
-      special: [...new Set([...seen.skill.keywords.special, ...row.skill.keywords.special])].sort(),
-    };
-  }
-  return [...byAxes.values()]
-    .sort((a, b) => a.skill.slot - b.skill.slot || b.skill.copies - a.skill.copies || a.id - b.id)
-    .map((row) => row.skill);
 }
 
 /** Remove Unity rich-text markup and report whether the name was struck through (deprecated). */

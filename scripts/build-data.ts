@@ -52,7 +52,6 @@ import {
   availabilityFor,
   cleanFactionName,
   deriveIdentityKeywords,
-  deriveIdentitySkills,
   groupForPackId,
   sinnerIdFromIdentityId,
   tierFromTags,
@@ -60,8 +59,6 @@ import {
 } from './lib/derive.ts';
 import { OUT, seasonDir } from './lib/out.ts';
 import { parseConditions } from './lib/parse-conditions.ts';
-import { parseSkillTriggers } from './lib/parse-skill-triggers.ts';
-import { classifyGiftEffects, unknownLabels } from './lib/gift-effects.ts';
 import { deriveConsumedKeywordsFromText, deriveIdentityKeywordsFromText, skillsOfIdentity } from './lib/derive-text.ts';
 import { DERIVED_DIR } from './lib/derived-source.ts';
 import {
@@ -77,7 +74,6 @@ import {
   derivedFactions,
   derivedAttackSkillIds,
   derivedSins,
-  derivedSkills,
   readDerivedIdentities,
 } from './lib/derived-source.ts';
 import {
@@ -90,16 +86,13 @@ import {
   type Enums,
   type Gift,
   type Identity,
-  type IdentitySkill,
   type Localized,
   type Meta,
   metaSchema,
   rulesSchema,
   type Rules,
   type SeasonEntry,
-  type EffectBucket,
   type Sin,
-  type SkillTrigger,
   type ThemePack,
 } from '../src/core/schema.ts';
 
@@ -146,7 +139,6 @@ interface CuratedIdentity {
   traits?: string[];
   sins?: string[];
   attackTypes?: string[];
-  skills?: IdentitySkill[];
 }
 
 const curated = {
@@ -160,15 +152,8 @@ const curated = {
     ) ?? {},
   identities: readJsonIfExists<Record<string, CuratedIdentity>>(repoPath('data/curated/identities.json')) ?? {},
   conditions:
-    readJsonIfExists<
-      Record<
-        string,
-        { conditions?: Condition[]; skillTriggers?: SkillTrigger[]; formationSlots?: number[] }
-      >
-    >(repoPath('data/curated/conditions.json')) ?? {},
-  giftEffects:
-    readJsonIfExists<Record<string, { buckets?: EffectBucket[] }>>(
-      repoPath('data/curated/gift-effects.json'),
+    readJsonIfExists<Record<string, { conditions?: Condition[] }>>(
+      repoPath('data/curated/conditions.json'),
     ) ?? {},
   names:
     readJsonIfExists<{
@@ -272,9 +257,9 @@ const rawPacks = [...staticPacks, ...backfilledPacks];
 
 /** English names for backfilled content, used only where the localization has nothing yet. */
 const derivedPackNames = derivedMdPresent() ? readDerivedPacks() : new Map();
-const derivedGiftsById = derivedMdPresent() ? readDerivedGifts() : new Map();
+const derivedGiftNames = derivedMdPresent() ? readDerivedGifts() : new Map();
 const derivedPackName = (id: number): string | undefined => derivedPackNames.get(id)?.name;
-const derivedGiftName = (id: number): string | undefined => derivedGiftsById.get(id)?.names?.[0];
+const derivedGiftName = (id: number): string | undefined => derivedGiftNames.get(id)?.names?.[0];
 
 const backfilledGiftIds = new Set(backfilledPacks.flatMap((pack) => pack.specificEgoGiftPool ?? []));
 const backfilledGifts = (() => {
@@ -509,8 +494,6 @@ const generalShare = curated.rules.generalGiftPackShare ?? 0.6;
 
 const missingText: number[] = [];
 let unparsedConditionCount = 0;
-let skillTriggerGiftCount = 0;
-const effectStages: Record<'curated' | 'label' | 'text' | 'none', number> = { curated: 0, label: 0, text: 0, none: 0 };
 
 const gifts: Gift[] = [...giftIds]
   .sort((a, b) => a - b)
@@ -557,13 +540,6 @@ const gifts: Gift[] = [...giftIds]
       conditions = parsed.conditions;
       unparsedConditionCount += parsed.unparsedCount;
     }
-
-    // The same file corrects both, and each key wins on its own: an empty array erases a
-    // derivation the text tricked us into, without touching the other.
-    const parsedTriggers = parseSkillTriggers(desc, { factionIdByName });
-    const skillTriggers = curatedCondition?.skillTriggers ?? parsedTriggers.triggers;
-    const formationSlots = curatedCondition?.formationSlots ?? parsedTriggers.formationSlots;
-    if (skillTriggers.length > 0) skillTriggerGiftCount += 1;
 
     const startKeyword = startKeywordByGift.get(id);
     const notes = curated.notes.gifts?.[String(id)];
@@ -619,9 +595,6 @@ const gifts: Gift[] = [...giftIds]
             }
           : null,
       conditions,
-      skillTriggers,
-      formationSlots,
-      effectBuckets: [] as EffectBucket[],
       upgradeOf: null,
       ...(notes ? { notes } : {}),
     };
@@ -710,7 +683,6 @@ const derivedIdentities: Identity[] = rawPersonalities
       keywordSource,
       sins: [...sins].sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
       attackTypes: [...attackTypes].sort(),
-      skills: deriveIdentitySkills(raw, skills, specialVariants),
     };
   });
 
@@ -776,7 +748,6 @@ const backfilledIdentities: Identity[] = [...derivedSource.entries()]
       keywordSource: 'backfilled',
       sins: derivedSins(entry).sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
       attackTypes: derivedAttackTypes(entry).sort(),
-      skills: derivedSkills(entry),
     };
   })
   .sort((a, b) => a.id - b.id);
@@ -818,7 +789,6 @@ const curatedIdentities: Identity[] = curatedEntries(curated.identities).map(([k
     keywordSource: 'curated',
     sins: [...(entry.sins ?? [])].sort((a, b) => SINS.indexOf(a as Sin) - SINS.indexOf(b as Sin)) as Identity['sins'],
     attackTypes: [...(entry.attackTypes ?? [])].sort() as Identity['attackTypes'],
-    skills: (entry.skills ?? []) as Identity['skills'],
   };
 });
 
@@ -1073,19 +1043,6 @@ for (const gift of gifts) {
   for (const condition of gift.conditions) if (condition.text) condition.text = text(condition.text);
 }
 
-// What kind of help each gift's effect is. This runs AFTER the text above is normalised, because
-// its second stage reads the game's bracketed buff names (「[피해량 증가]」) — and until
-// `localizeBuffTokens` has run those are still raw ids (`[AttackDmgUp]`), which match nothing.
-for (const gift of gifts) {
-  const effects = classifyGiftEffects({
-    labels: derivedGiftsById.get(gift.id)?.effects ?? [],
-    desc: gift.desc,
-    override: curated.giftEffects[String(gift.id)]?.buckets,
-  });
-  gift.effectBuckets = effects.buckets;
-  effectStages[effects.stage] += 1;
-}
-
 // ---------------------------------------------------------------------------
 // Write
 // ---------------------------------------------------------------------------
@@ -1170,16 +1127,6 @@ if (unnamedFactions.length > 0) {
     `  ${unnamedFactions.length} faction(s) without a display name: ${unnamedFactions.join(', ')}` +
       ' — add them to data/curated/factions.json',
   );
-}
-console.log(`  skill triggers: ${skillTriggerGiftCount} gift(s)`);
-console.log(
-  `  effect buckets: label ${effectStages.label}, text ${effectStages.text}, curated ${effectStages.curated}, none ${effectStages.none}`,
-);
-{
-  const unknown = unknownLabels([...derivedGiftsById.values()].flatMap((gift) => gift.effects ?? []));
-  if (unknown.length > 0) {
-    console.log(`  ${unknown.length} effect label(s) the bucket table does not name: ${unknown.join(', ')}`);
-  }
 }
 if (unparsedConditionCount > 0) {
   console.log(`  ${unparsedConditionCount} condition sentence(s) could not be parsed (kept as "unparsed")`);

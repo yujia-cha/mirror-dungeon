@@ -1,9 +1,0 @@
-{
-  "_comment": "기프트 효과가 어느 칸(데미지 / 생존 / E.G.O 자원)에 드는지의 보정. 키는 기프트 id. `buckets`가 있으면 커뮤니티 라벨과 한국어 도출을 통째로 이긴다. 빈 배열은 「어느 칸에도 넣지 않는다」는 뜻이다. 칸 이름은 src/core/schema.ts의 EFFECT_BUCKETS이고, 도출 규칙은 scripts/lib/gift-effects.ts에 적혀 있다.",
-  "_example": {
-    "9414": {
-      "buckets": ["damage", "survival"],
-      "_source": "desc 원문 확인: [신속]과 [수비 위력 증가]를 함께 준다"
-    }
-  }
-}

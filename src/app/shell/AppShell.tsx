@@ -22,7 +22,6 @@ import { Tracker } from '../tracker/Tracker.tsx';
 import { PlanProvider } from './PlanContext.tsx';
 import { RoutePlanPanel } from './RoutePlanPanel.tsx';
 import { GoalsPanel } from './GoalsPanel.tsx';
-import { SkillGiftsPanel } from './SkillGiftsPanel.tsx';
 import { RouteOptions } from './RouteOptions.tsx';
 import { PanelResizer } from './PanelResizer.tsx';
 import { EnumsContext } from '../lib/useEnums.ts';
@@ -117,10 +116,6 @@ export function AppShell({
     setUi({ leftTab: 'gifts', ...(desktop ? { leftOpen: true } : {}) });
     if (!desktop) setDrawer('left');
   };
-  const openDeck = (): void => {
-    setUi({ leftTab: 'deck', ...(desktop ? { leftOpen: true } : {}) });
-    if (!desktop) setDrawer('left');
-  };
   const [confirmReset, setConfirmReset] = useState(false);
   const [menu, setMenu] = useState(false);
   const reset = (): void => {
@@ -134,7 +129,6 @@ export function AppShell({
   const rightTabs: { id: RightTab; label: string }[] = [
     { id: 'plan', label: t('tabRoutePlan', lang) },
     { id: 'goals', label: t('tabGoals', lang) },
-    { id: 'skills', label: t('tabSkills', lang) },
     { id: 'tracker', label: t('tabTracker', lang) },
   ];
 
@@ -336,12 +330,13 @@ export function AppShell({
               lang={lang}
               width={ui.rightWidth}
             >
-              {/* Named branches, not a trailing else: a fourth tab must not fall through to a
-                  third tab's panel. */}
-              {ui.rightTab === 'plan' ? <RoutePlanPanel onOpenGifts={openGifts} /> : null}
-              {ui.rightTab === 'goals' ? <GoalsPanel onOpenGifts={openGifts} /> : null}
-              {ui.rightTab === 'skills' ? <SkillGiftsPanel onOpenDeck={openDeck} /> : null}
-              {ui.rightTab === 'tracker' ? <Tracker /> : null}
+              {ui.rightTab === 'plan' ? (
+                <RoutePlanPanel onOpenGifts={openGifts} />
+              ) : ui.rightTab === 'goals' ? (
+                <GoalsPanel onOpenGifts={openGifts} />
+              ) : (
+                <Tracker />
+              )}
             </SidePanel>
           </div>
           {confirmReset ? (

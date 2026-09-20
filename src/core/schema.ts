@@ -50,9 +50,6 @@ export const CONSUMED_KEYWORDS = ['BloodDinner'] as const;
 
 export const ATTACK_TYPES = ['Slash', 'Penetrate', 'Hit'] as const;
 
-/** The three base attack skill slots the game calls 「스킬 1」~「스킬 3」. */
-export const SKILL_SLOTS = [1, 2, 3] as const;
-
 export const SINS = ['WRATH', 'LUST', 'SLOTH', 'GLUTTONY', 'GLOOM', 'PRIDE', 'ENVY'] as const;
 
 export const PACK_GROUPS = [
@@ -71,7 +68,6 @@ export const keywordSchema = z.enum(KEYWORDS);
 export const statusKeywordSchema = z.enum(STATUS_KEYWORDS);
 export const identityKeywordIdSchema = z.enum(IDENTITY_KEYWORDS);
 export const attackTypeSchema = z.enum(ATTACK_TYPES);
-export const skillSlotSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 export const sinSchema = z.enum(SINS);
 export const packGroupSchema = z.enum(PACK_GROUPS);
 export const difficultySchema = z.enum(DIFFICULTIES);
@@ -80,7 +76,6 @@ export type Keyword = z.infer<typeof keywordSchema>;
 export type StatusKeyword = z.infer<typeof statusKeywordSchema>;
 export type IdentityKeywordId = z.infer<typeof identityKeywordIdSchema>;
 export type AttackType = z.infer<typeof attackTypeSchema>;
-export type SkillSlot = z.infer<typeof skillSlotSchema>;
 export type Sin = z.infer<typeof sinSchema>;
 export type PackGroup = z.infer<typeof packGroupSchema>;
 export type Difficulty = z.infer<typeof difficultySchema>;
@@ -182,81 +177,6 @@ export const mixedRecipeSchema = z.object({
   bCount: z.number().int().positive(),
 });
 
-/**
- * A skill shape a gift's effect keys off: 「참격 스킬을 사용할 경우」, 「분노 속성 스킬」,
- * 「참격 유형인 스킬 1」.
- *
- * This is NOT a `Condition`. A condition gates whether the gift works at all and the game states it
- * as a threshold over the party; a trigger says which of an identity's skills the gift acts on, and
- * the game states it inline in the effect sentence. They are counted differently, so they are kept
- * apart — see `scripts/lib/parse-skill-triggers.ts`.
- *
- * One trigger is an AND over its non-null fields; a gift fires when ANY of its triggers matches a
- * skill. 「타격 스킬 또는 나태 속성 스킬」 is two triggers, 「참격 유형인 스킬 1」 is one.
- */
-export const skillTriggerSchema = z.object({
-  /** 죄악 속성. Null when the sentence only names an attack type. */
-  sin: sinSchema.nullable(),
-  /** 참격/관통/타격. Null when the sentence only names a sin. */
-  attackType: attackTypeSchema.nullable(),
-  /**
-   * Keywords the skill must use, as an OR list. Empty means the sentence does not ask for one —
-   * 「[충전] 횟수 또는 특수 충전을 증가시키는 스킬 1」 is the shape that fills it.
-   */
-  keywords: z.array(identityKeywordIdSchema).default([]),
-  /**
-   * How the skill uses the keyword: 부여·획득 (`inflict`), 소모 (`consume`), or both when the
-   * sentence names both (「획득하거나 소모하는」). Only read when `keywords` is non-empty.
-   */
-  verb: z.enum(['inflict', 'consume', 'any']).default('inflict'),
-  /**
-   * Whether 특수 변형 counts too — true only when the sentence says 「또는 특수 X」, the same rule
-   * `keywordSkillCount` follows. Only read when `keywords` is non-empty.
-   */
-  includesSpecial: z.boolean().default(false),
-  /**
-   * Factions the identity swinging the skill must belong to, as an OR list of faction ids. Empty
-   * means the sentence does not ask for one.
-   *
-   * The game gates on 소속 in the same breath as the skill — 「약지 소속 인격의 색욕 속성 또는
-   * 참격 속성 스킬」 (9223 범작) — so it narrows the same trigger rather than standing apart as a
-   * `Condition`: a condition counts the party against a threshold, this asks whose skill it is.
-   */
-  factions: z.array(z.string()).default([]),
-  /**
-   * Who has to use the keyword. `skill` means the skill in that slot does it itself
-   * (「[화상]…부여하는 스킬 3」); `identity` means the identity does it somewhere and the slot only
-   * names which skill the effect lands on (「[진동]…부여하는 아군이 사용하는 스킬 3」). The game
-   * writes both, they answer 「누구의 몇 번 스킬」 differently, so they are not folded together.
-   * Only read when `keywords` is non-empty.
-   */
-  subject: z.enum(['skill', 'identity']).default('skill'),
-  /** Slots the effect is limited to, ascending. Empty means any slot. */
-  slots: z.array(skillSlotSchema).default([]),
-  /**
-   * What the skill does for the gift: `gate` means the effect only happens on such a skill,
-   * `boost` means it happens anyway and such a skill makes it stronger (「효과가 강화되어」,
-   * 「효과를 대신하여」). Read off the wording of the sentence, so it can be wrong about the
-   * strength of a claim — never about whether the gift reacts to the skill at all.
-   */
-  effect: z.enum(['gate', 'boost']),
-});
-
-export type SkillTrigger = z.infer<typeof skillTriggerSchema>;
-
-/**
- * What kind of help a gift's effect is. Not a game concept — the game never says — but the one
- * question a player sorting 90-odd gifts actually asks.
- *
- * The line that matters is WHO the effect lands on: a stat or status the ally gains is 버프, one
- * inflicted on the enemy is 디버프, and 데미지 is only damage actually dealt. 「[공격 레벨 증가]를
- * 얻음」 and 「적에게 [화상] 위력 부여」 both raise damage in the end, but a player choosing gifts is
- * choosing between those two things, not between them and nothing.
- */
-export const EFFECT_BUCKETS = ['damage', 'survival', 'egoResource', 'buff', 'debuff'] as const;
-export const effectBucketSchema = z.enum(EFFECT_BUCKETS);
-export type EffectBucket = z.infer<typeof effectBucketSchema>;
-
 export const giftSchema = z.object({
   id: z.number().int(),
   name: localizedSchema,
@@ -296,27 +216,6 @@ export const giftSchema = z.object({
     })
     .nullable(),
   conditions: z.array(conditionSchema),
-  /** Skill shapes this gift's effect keys off; empty when the effect names no skill. */
-  skillTriggers: z.array(skillTriggerSchema).default([]),
-  /**
-   * Which kinds of help the effect gives, in `EFFECT_BUCKETS` order. A gift may help two ways —
-   * 9025 잿빛 코트 deals damage AND heals — and then carries both, so the 「스킬」 탭 can list it
-   * under each. Derived at build time; see `scripts/lib/gift-effects.ts`.
-   *
-   * SHOWN, NEVER PLANNED. Like `skillTriggers`, the planner does not read it.
-   */
-  effectBuckets: z.array(effectBucketSchema).default([]),
-  /**
-   * 1-based formation positions the whole effect is limited to, ascending — the game writes it as
-   * 「[편성 3번 인격 전용 효과]」. Empty means every identity.
-   *
-   * SHOWN, NEVER JUDGED. The app has no formation-order control: `store.deck` is filled per sinner,
-   * so a position in it is an accident of the order the player happened to pick, not a seat they
-   * chose. Positions also run past the deployed party (9761 names 7번 and 8번). Filtering on it
-   * would hand back an answer the player can neither verify nor change, so the panel prints the
-   * restriction as a caveat and leaves the judgement to them.
-   */
-  formationSlots: z.array(z.number().int().min(1).max(12)).default([]),
   /**
    * The one fusion result this gift is a lower-tier, same-keyword ingredient of (조합 계승).
    * `요리 비법 전서 → 진혼`. Null when the gift feeds several results or none.
@@ -379,44 +278,6 @@ export const identityKeywordSchema = z
   })
   .refine((k) => k.skills + k.specialSkills > 0, { message: 'a keyword entry needs at least one skill' });
 
-/**
- * One base attack skill of an identity: which slot it sits in, and the two axes gift effects key
- * off. Do not confuse this with `identityKeywordSchema.skills`, which is a COUNT of skills that
- * inflict a keyword; this is the table those counts are drawn from.
- *
- * `copies` is how many of that skill the slot deck holds (3/2/1). A conditional alternate skill —
- * an awakened or transformed form — is `0`, and ~20% of identities have one.
- */
-/**
- * The keywords ONE skill uses, split the way gift sentences ask about them.
- *
- * `identity.keywords` counts how many of an identity's skills touch a keyword; this says which
- * skill does, which is what 「[화상]…부여하는 스킬 3」 needs and a count cannot answer. Empty can
- * mean 「없다」 or 「모른다」 — the identity's `keywordSource` and `skills.length` tell them apart.
- *
- * It records that a skill USES the keyword, not whether it grants or spends it: the static data
- * names the buff, never the direction. So a trigger's `verb` decides how the line reads and never
- * which skills match — the same rule `keywordSkillCount` already follows.
- */
-export const skillKeywordsSchema = z.object({
-  /** The plain keyword, the same signal `identity.keywords[K].skills` counts. */
-  base: z.array(identityKeywordIdSchema).default([]),
-  /** The 특수 변형 (특수 충전, 특수 출혈 …), counted only when a sentence says 「또는 특수 X」. */
-  special: z.array(identityKeywordIdSchema).default([]),
-});
-
-export type SkillKeywords = z.infer<typeof skillKeywordsSchema>;
-
-export const identitySkillSchema = z.object({
-  slot: skillSlotSchema,
-  sin: sinSchema.nullable(),
-  attackType: attackTypeSchema.nullable(),
-  copies: z.number().int().nonnegative(),
-  keywords: skillKeywordsSchema.default({ base: [], special: [] }),
-});
-
-export type IdentitySkill = z.infer<typeof identitySkillSchema>;
-
 export const identitySchema = z.object({
   id: z.number().int(),
   /** 1-12, derived from the id (1SSNN). */
@@ -431,12 +292,8 @@ export const identitySchema = z.object({
   traits: z.array(z.string()),
   keywords: z.record(identityKeywordIdSchema, identityKeywordSchema),
   keywordSource: z.enum(['derived', 'backfilled', 'curated', 'none']),
-  /** Every sin that appears somewhere in the kit, flattened. `skills` keeps the per-slot detail. */
   sins: z.array(sinSchema),
-  /** Every attack type that appears somewhere in the kit, flattened. */
   attackTypes: z.array(attackTypeSchema),
-  /** The base attack skills, one row each, sorted by slot. Empty when no source knows them. */
-  skills: z.array(identitySkillSchema).default([]),
 });
 
 export type Identity = z.infer<typeof identitySchema>;

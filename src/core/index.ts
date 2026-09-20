@@ -33,8 +33,6 @@ export { buildIndexes } from './data/indexes.ts';
 export { analyseDeck, dominantKeyword, evaluateConditions } from './deck.ts';
 export { chooseRecipe, expandRequirements, scarcity } from './requirements.ts';
 export { alternativePacksOn, assignPacks, modeForFloor, observationCost } from './search.ts';
-export { matchSkillTriggers, skillsOf, triggerMatches } from './skills.ts';
-export type { GiftSkillMatch, SkillRef } from './skills.ts';
 export { chooseStart, observable } from './starting.ts';
 export * from './types.ts';
 export * from './schema.ts';
