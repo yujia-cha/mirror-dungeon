@@ -792,18 +792,6 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     });
   }
 
-  const lateFusions = fusions.filter((f) => !f.unreachable && f.earliestFloor >= options.lastFloor);
-  if (lateFusions.length > 0) {
-    warnings.push({
-      code: 'fusion-late',
-      giftIds: lateFusions.map((f) => f.result),
-      detail: {
-        ko: '마지막 층에서야 재료가 모이는 조합이 있습니다. 그 층의 상점이나 휴식 노드를 반드시 들러야 합니다.',
-        en: 'Some fusions only become possible on the final floor; you must reach a shop or rest node there.',
-      },
-    });
-  }
-
   const slotHeavy = fusions.filter((f) => f.exceedsShopSlots);
   if (slotHeavy.length > 0) {
     warnings.push({

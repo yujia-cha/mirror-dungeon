@@ -42,7 +42,6 @@ export interface PackContext {
   giftTitle: (id: number) => string | undefined;
   giftName: (id: number) => string;
   packName: (id: number) => string;
-  isMust: (id: number) => boolean;
   observable: (id: number) => boolean;
   observed: ReadonlySet<number>;
   wanted: ReadonlySet<number>;
@@ -193,16 +192,15 @@ function GiftRow({ giftId, exclusive, ctx }: { giftId: number; exclusive: boolea
     <li className="flex flex-col gap-1.5 py-1.5" data-testid="pack-gift" data-gift={giftId} data-wanted={wanted || undefined} data-status={status ?? undefined}>
       <div className="flex items-start gap-2.5">
         {ctx.run ? (
-          <GiftTile gift={gift} size={44} status={status} wanted={wanted} must={ctx.isMust(giftId)} judgement={ctx.judgements.get(giftId) ?? null} onToggle={(next) => ctx.run?.onGiftStatus(giftId, next)} lang={ctx.lang} />
+          <GiftTile gift={gift} size={44} status={status} wanted={wanted} judgement={ctx.judgements.get(giftId) ?? null} onToggle={(next) => ctx.run?.onGiftStatus(giftId, next)} lang={ctx.lang} />
         ) : (
-          <GiftIcon gift={gift} size={44} judgement={ctx.judgements.get(giftId) ?? null} must={ctx.isMust(giftId)} status={status} lang={ctx.lang} />
+          <GiftIcon gift={gift} size={44} judgement={ctx.judgements.get(giftId) ?? null} status={status} lang={ctx.lang} />
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className={`text-sm ${wanted ? 'font-semibold' : 'font-medium text-fg-2'}`}>{name}</span>
             {exclusive ? <Badge tone="sure">{t('giftExclusive', ctx.lang)}</Badge> : null}
             {wanted ? <Badge tone="start">{t('giftWanted', ctx.lang)}</Badge> : null}
-            {ctx.isMust(giftId) ? <Badge tone="alert">{t('priorityMust', ctx.lang)}</Badge> : null}
           </div>
           {condition ? <span className="text-xs text-fg-2">{condition}</span> : null}
         </div>

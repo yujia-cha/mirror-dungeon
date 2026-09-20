@@ -110,7 +110,6 @@ beforeEach(() => {
     deck: [],
     deployed: [],
     wanted: [],
-    priority: {},
     fusionGoal: {},
     run: emptyRun(),
     ui: defaultUi(),
@@ -158,7 +157,6 @@ describe('adopting a season', () => {
     act(() => {
       useApp.setState({
         wanted: [kept, gone],
-        priority: { [gone]: 'must' },
         fusionGoal: { [gone]: 'resultOnly' },
         options: { ...appDefaultOptions(), observedGifts: [gone], bannedPacks: [unknownPack] },
       });
@@ -170,7 +168,6 @@ describe('adopting a season', () => {
     expect(counts).toEqual({ gifts: 1, packs: 1 });
     const state = useApp.getState();
     expect(state.wanted).toEqual([kept]);
-    expect(state.priority).toEqual({});
     expect(state.fusionGoal).toEqual({});
     expect(state.options.observedGifts).toEqual([]);
     expect(state.options.bannedPacks).toEqual([]);

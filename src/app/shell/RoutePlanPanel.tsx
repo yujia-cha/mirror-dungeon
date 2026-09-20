@@ -10,7 +10,6 @@ import { conflictGroups } from '../../core/index.ts';
 import { pick, t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { planToText } from '../lib/plan-text.ts';
-import { priorityOf } from '../lib/plan-input.ts';
 import { actionsFor, type UnresolvedAction } from '../lib/unresolved-actions.ts';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { MetroMap } from '../components/MetroMap.tsx';
@@ -20,14 +19,11 @@ import { usePlan } from './PlanContext.tsx';
 
 export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const { data, indexes, lang, input, plan, shown, variants, variantIndex, setVariantIndex, variant, giftName, packName, keywordLabel, ctx } = usePlan();
-  const wanted = useApp((s) => s.wanted);
-  const priority = useApp((s) => s.priority);
   const options = useApp((s) => s.options);
   const run = useApp((s) => s.run);
   const lastFloor = useApp((s) => s.lastFloor);
   const setOptions = useApp((s) => s.setOptions);
   const toggleObserved = useApp((s) => s.toggleObserved);
-  const setPriority = useApp((s) => s.setPriority);
   const removeWanted = useApp((s) => s.removeWanted);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
@@ -62,7 +58,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
 
   const copy = async (): Promise<void> => {
     const text = planToText(shown, giftName, packName, keywordLabel, lang, variant?.dropped ?? [], {
-        must: wanted.filter((id) => priorityOf(priority, id) === 'must'),
         bannedPacks: options.bannedPacks,
         ...(run.currentFloor > 1 || Object.keys(run.visits).length > 0 ? { run: { currentFloor: run.currentFloor, visits: run.visits } } : {}),
       },
@@ -192,8 +187,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         groups={groups}
         others={others}
         ctx={ctx}
-        priorityOf={(id) => priorityOf(priority, id)}
-        setPriority={setPriority}
         removeWanted={removeWanted}
         observeAction={(entry) => {
           const i = shown.unresolved.indexOf(entry);

@@ -14,7 +14,7 @@ import { Button, Card, SectionTitle } from '../components/ui.tsx';
 import { usePlan } from './PlanContext.tsx';
 
 export function GoalsPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
-  const { indexes, lang, judgements, giftTitle, ctx, openGift } = usePlan();
+  const { indexes, lang, judgements, giftTitle, openGift } = usePlan();
   const wanted = useApp((s) => s.wanted);
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
@@ -57,7 +57,6 @@ export function GoalsPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
                   size={32}
                   status={giftStatus[id] ?? null}
                   wanted
-                  must={ctx.isMust(id)}
                   judgement={judgements.get(id) ?? null}
                   title={giftTitle(id)}
                   onToggle={(next) => {

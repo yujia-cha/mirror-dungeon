@@ -94,7 +94,6 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
                         size={44}
                         status={giftStatus[id] ?? null}
                         wanted={needed.has(id)}
-                        must={ctx.isMust(id)}
                         judgement={ctx.judgements.get(id) ?? null}
                         title={ctx.giftTitle(id)}
                         onToggle={(nextStatus) => setGiftStatus(id, nextStatus)}

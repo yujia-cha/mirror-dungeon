@@ -20,7 +20,7 @@ import { loadGameDataFromDisk } from '../src/core/data/node.ts';
 import { buildIndexes, defaultOptions, planAlternatives, planRoute } from '../src/core/index.ts';
 import type { Keyword } from '../src/core/schema.ts';
 import type { PlanInput, PlanOptions } from '../src/core/types.ts';
-import { plannedGifts, type FusionGoalMap, type PriorityMap } from '../src/app/lib/plan-input.ts';
+import { plannedGifts, type FusionGoalMap } from '../src/app/lib/plan-input.ts';
 import { flagValue, hasFlag } from './lib/io.ts';
 
 function numbers(text: string | undefined): number[] {
@@ -52,10 +52,10 @@ function parsePins(text: string | undefined): Record<number, number> {
 /**
  * Accept a share hash from the web app so a user report can be reproduced verbatim.
  *
- * The payload carries the app's own 반드시/보통 map and its 「재료도 목표」 choices, so the wanted
- * list is built with the very function the app uses. Reading them matters: a plan where one gift
- * is 반드시 and the rest are 보통 is not the same input as one where every gift is 반드시, and a
- * report about priority cannot be reproduced without it.
+ * The payload carries the app's 「재료도 목표」 choices, so the wanted list is built with the very
+ * function the app uses — which also means every goal comes out best-effort, the way the app
+ * plans them. `--must` is a CLI-only lever and does not apply to a shared link. Links written
+ * before the app dropped 반드시/보통 still carry a `priority` map; it is ignored here too.
  */
 function fromShare(hash: string): PlanInput | null {
   const payload = hash.replace(/^#?s=/, '');
@@ -66,13 +66,12 @@ function fromShare(hash: string): PlanInput | null {
       deck?: number[];
       deployed?: number[];
       wanted?: number[];
-      priority?: PriorityMap;
       fusionGoal?: FusionGoalMap;
       options?: Partial<PlanOptions>;
     };
     return {
       deck: parsed.deck ?? [],
-      wanted: plannedGifts(parsed.wanted ?? [], parsed.priority ?? {}, parsed.fusionGoal ?? {}),
+      wanted: plannedGifts(parsed.wanted ?? [], parsed.fusionGoal ?? {}),
       options: { ...defaultOptions(), ...parsed.options, ...(parsed.deployed ? { deployed: parsed.deployed } : {}) },
     };
   } catch {

@@ -1,7 +1,8 @@
 /**
- * The route options shown under the items tab: the starting keyword and the packs the player
- * chose to include or give up. Observation lives in the slots above the selected gifts, and the
- * reset in the header.
+ * The route options shown under the items tab: the starting keyword and the packs the player gave
+ * up. Packs set to include are not listed — that choice is made and shown where the route is, in
+ * the pack sheet and the conflict groups, and a second copy here only made the tab longer.
+ * Observation lives in the slots above the selected gifts, and the reset in the header.
  */
 import type { Keyword } from '../../core/schema.ts';
 import { pick, t } from '../i18n.ts';
@@ -15,7 +16,7 @@ export function RouteOptions() {
   const { data, indexes, lang, ctx } = usePlan();
   const options = useApp((s) => s.options);
   const setOptions = useApp((s) => s.setOptions);
-  const chosenPacks = [...new Set([...options.preferredPacks, ...options.bannedPacks])].sort((a, b) => a - b);
+  const givenUpPacks = [...options.bannedPacks].sort((a, b) => a - b);
 
   return (
     <div className="flex flex-col gap-2.5" data-testid="route-options">
@@ -44,18 +45,18 @@ export function RouteOptions() {
       </Card>
 
       <Card className="px-3.5 py-3" testId="settings-packs">
-        <SectionTitle>{t('settingsPreferred', lang)}</SectionTitle>
-        {chosenPacks.length === 0 ? (
+        <SectionTitle>{t('packBanned', lang)}</SectionTitle>
+        {givenUpPacks.length === 0 ? (
           <p className="mt-2 text-xs text-fg-3">{t('settingsNone', lang)}</p>
         ) : (
           <ul className="mt-2 flex flex-col gap-2">
-            {chosenPacks.map((packId) => {
+            {givenUpPacks.map((packId) => {
               const pack = indexes.packById.get(packId);
               if (!pack) return null;
               return (
                 <li key={packId} className="flex items-center gap-2" data-testid="settings-pack" data-pack={packId}>
                   <PackCard pack={pack} size={28} lang={lang} />
-                  <span className={`min-w-0 flex-1 truncate text-sm ${options.bannedPacks.includes(packId) ? 'line-through text-fg-3' : ''}`}>{pick(pack.name, lang)}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-fg-3 line-through">{pick(pack.name, lang)}</span>
                   <PackActions packId={packId} ctx={ctx} />
                 </li>
               );

@@ -21,7 +21,7 @@ const GROUP_KEY: Record<TrackerGroupId, 'trackerGroupKeyword' | 'trackerGroupSha
 };
 
 export function Tracker() {
-  const { data, indexes, lang, ctx, goals, openGift } = usePlan();
+  const { data, indexes, lang, goals, openGift } = usePlan();
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
   const groups = useMemo(() => trackerGifts(data, indexes), [data, indexes]);
@@ -45,7 +45,6 @@ export function Tracker() {
                 size={32}
                 status={giftStatus[gift.id] ?? null}
                 wanted={goals.has(gift.id)}
-                must={ctx.isMust(gift.id)}
                 onToggle={(next) => {
                   setGiftStatus(gift.id, next);
                   // Only marking the mixed-fusion result raises the reminder; unmarking closes it.

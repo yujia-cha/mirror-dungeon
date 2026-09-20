@@ -67,7 +67,7 @@ const BURN_DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916
 const LCB_DECK = [10101, 10201, 10301, 10401, 10501, 10601, 10701, 10801, 10901, 11001, 11101, 11201];
 
 beforeEach(() => {
-  useApp.setState({ deck: [], deployed: [], wanted: [], priority: {}, fusionGoal: {}, run: emptyRun(), ui: defaultUi(), options: appDefaultOptions(), lang: 'ko', dark: true });
+  useApp.setState({ deck: [], deployed: [], wanted: [], fusionGoal: {}, run: emptyRun(), ui: defaultUi(), options: appDefaultOptions(), lang: 'ko', dark: true });
 });
 
 afterEach(() => {
@@ -97,12 +97,11 @@ const stubMatchMedia = (desktop: boolean): void => {
 };
 
 describe('share links', () => {
-  it('round-trips a deck, who is deployed, a gift list with priorities and the options', () => {
+  it('round-trips a deck, who is deployed, the gift list and the options', () => {
     const state = {
       deck: [10101, 10403],
       deployed: [10403],
       wanted: [9283, 9088],
-      priority: { 9283: 'must' as const },
       fusionGoal: { 9088: 'resultOnly' as const },
       options: { ...appDefaultOptions(), startKeyword: 'auto' as const },
     };
@@ -112,7 +111,7 @@ describe('share links', () => {
 
   it('carries fusion goals but never the run in progress, and strips run options from any link', () => {
     useApp.getState().visitPack(1402, 4, { got: [9283] });
-    const hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9088], priority: {}, fusionGoal: { 9088: 'resultOnly' }, options: { ...appDefaultOptions(), currentFloor: 4, ownedGifts: [9283] } });
+    const hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9088], fusionGoal: { 9088: 'resultOnly' }, options: { ...appDefaultOptions(), currentFloor: 4, ownedGifts: [9283] } });
     const raw = JSON.parse(lzString.decompressFromEncodedURIComponent(hash.slice(3))!) as Record<string, unknown>;
     expect(raw.v).toBe(5);
     expect('run' in raw).toBe(false);
@@ -124,24 +123,25 @@ describe('share links', () => {
   });
 
   it('carries the season, and reads a link made before seasons as Mirror Dungeon 7', () => {
-    const hash = encodeShared({ season: 8, deck: [10101], deployed: [10101], wanted: [9088], priority: {}, fusionGoal: {}, options: appDefaultOptions() });
+    const hash = encodeShared({ season: 8, deck: [10101], deployed: [10101], wanted: [9088], fusionGoal: {}, options: appDefaultOptions() });
     const raw = JSON.parse(lzString.decompressFromEncodedURIComponent(hash.slice(3))!) as Record<string, unknown>;
     expect(raw.s).toBe(8);
     expect(decodeShared(hash)!.season).toBe(8);
     // A v4 link could only have been MD7; the version field, written since v1, is what says so.
     const old = lzString.compressToEncodedURIComponent(
-      JSON.stringify({ v: 4, deck: [10101], deployed: [10101], wanted: [9283], priority: {}, options: appDefaultOptions() }),
+      JSON.stringify({ v: 4, deck: [10101], deployed: [10101], wanted: [9283], options: appDefaultOptions() }),
     );
     expect(decodeShared(`#s=${old}`)!.season).toBe(7);
   });
 
-  it('plans every link for floors 1-15 on Hard and keeps priorities only for wanted gifts', () => {
+  it('plans every link for floors 1-15 on Hard and ignores the priority map an old link carries', () => {
     const old = lzString.compressToEncodedURIComponent(
-      JSON.stringify({ v: 2, deck: [10101], deployed: [10101], wanted: [9283], priority: { 9283: 'must', 9088: 'skip', 9222: 'other' }, options: { ...defaultOptions(), lastFloor: 5, hardFromFloor: 3 } }),
+      JSON.stringify({ v: 2, deck: [10101], deployed: [10101], wanted: [9283], priority: { 9283: 'must', 9088: 'skip' }, options: { ...defaultOptions(), lastFloor: 5, hardFromFloor: 3 } }),
     );
     const decoded = decodeShared(`#s=${old}`)!;
     expect(decoded.options).toMatchObject({ lastFloor: 15, hardFromFloor: 1 });
-    expect(decoded.priority).toEqual({ 9283: 'must' });
+    // 반드시/보통 is gone: a link that still carries the map loses it rather than failing.
+    expect('priority' in decoded).toBe(false);
   });
 
   it('reads a v1 link without a deployed list as "the first six fight"', () => {
@@ -180,13 +180,13 @@ describe('share links', () => {
   it('starts a recipient on a fresh run, whatever this device had recorded', () => {
     useApp.getState().visitPack(1402, 4);
     useApp.getState().setGiftStatus(9267, 'got');
-    useApp.getState().applyShared({ deck: [10101], deployed: [10101], wanted: [9283], priority: {}, options: defaultOptions() });
+    useApp.getState().applyShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
     expect(useApp.getState().run).toEqual(emptyRun());
     expect(useApp.getState().wanted).toEqual([9283]);
   });
 
   it('consumes the hash once so a reload keeps later edits', async () => {
-    window.location.hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], priority: {}, options: defaultOptions() });
+    window.location.hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
     render(<App />);
     await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
     expect(window.location.hash).toBe('');
@@ -198,7 +198,7 @@ describe('share links', () => {
     const user = userEvent.setup();
     useApp.getState().visitPack(1402, 1);
     useApp.getState().setStageFloor(4);
-    const hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], priority: {}, options: defaultOptions() });
+    const hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
     window.location.hash = hash;
     render(<App />);
     const dialog = await screen.findByTestId('confirm-dialog');
@@ -217,7 +217,7 @@ describe('share links', () => {
   });
 
   it('applies a link with no question when no run is under way', async () => {
-    window.location.hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], priority: {}, options: defaultOptions() });
+    window.location.hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
     render(<App />);
     await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
     expect(screen.queryByTestId('confirm-dialog')).toBeNull();
@@ -243,13 +243,12 @@ describe('a saved state that cannot be trusted', () => {
   // the current version is the one that used to reach state unchecked — and that is what a
   // truncated write or a partial eviction leaves behind.
   it('sanitizes a blob that claims the current version, instead of merging it as it stands', () => {
-    const state = sanitizePersisted({ deck: 'abc', deployed: 5, wanted: [9267, 'x', null], run: 42, ui: 'nope', priority: 7 }, PERSIST_VERSION);
+    const state = sanitizePersisted({ deck: 'abc', deployed: 5, wanted: [9267, 'x', null], run: 42, ui: 'nope' }, PERSIST_VERSION);
     expect(state.deck).toEqual([]);
     expect(state.deployed).toEqual([]);
     expect(state.wanted).toEqual([9267]);
     expect(state.run).toEqual(emptyRun());
     expect(state.ui).toEqual(defaultUi());
-    expect(state.priority).toEqual({});
     expect(state.lang).toBe('ko');
   });
 
@@ -264,19 +263,19 @@ describe('a saved state that cannot be trusted', () => {
     const saved = sanitizePersisted({ deck: doubled, deployed: [10102, 10203] }, PERSIST_VERSION);
     expect(saved.deck).toEqual([10101, 10203]);
     expect(saved.deployed).toEqual([10203]);
-    const link = decodeShared(encodeShared({ deck: doubled, deployed: [10102, 10203], wanted: [], priority: {}, options: appDefaultOptions() }))!;
+    const link = decodeShared(encodeShared({ deck: doubled, deployed: [10102, 10203], wanted: [], options: appDefaultOptions() }))!;
     expect(link.deck).toEqual([10101, 10203]);
     expect(link.deployed).toEqual([10203]);
     // Fourteen ids of fourteen different "sinners" come back as twelve.
     const fourteen = [...LCB_DECK, 11301, 11401];
-    expect(decodeShared(encodeShared({ deck: fourteen, deployed: [], wanted: [], priority: {}, options: appDefaultOptions() }))!.deck).toHaveLength(12);
-    useApp.getState().applyShared({ deck: doubled, deployed: [10102], wanted: [], priority: {}, options: appDefaultOptions() });
+    expect(decodeShared(encodeShared({ deck: fourteen, deployed: [], wanted: [], options: appDefaultOptions() }))!.deck).toHaveLength(12);
+    useApp.getState().applyShared({ deck: doubled, deployed: [10102], wanted: [], options: appDefaultOptions() });
     expect(useApp.getState()).toMatchObject({ deck: [10101, 10203], deployed: [] });
   });
 
   it('lets nothing through that partialize never wrote, so a blob cannot overwrite an action or the floor count', async () => {
     const state = sanitizePersisted({ deck: [10101], resetRun: 1, lastFloor: 3, step: 'deck' }, PERSIST_VERSION);
-    expect(Object.keys(state).sort()).toEqual(['dark', 'deck', 'deployed', 'fusionGoal', 'lang', 'options', 'priority', 'run', 'season', 'ui', 'wanted']);
+    expect(Object.keys(state).sort()).toEqual(['dark', 'deck', 'deployed', 'fusionGoal', 'lang', 'options', 'run', 'season', 'ui', 'wanted']);
     window.localStorage.setItem(PERSIST_KEY, JSON.stringify({ version: PERSIST_VERSION, state: { deck: [10101], resetRun: 1, lastFloor: 3 } }));
     await useApp.persist.rehydrate();
     expect(typeof useApp.getState().resetRun).toBe('function');
@@ -346,7 +345,6 @@ describe('state that outlived the game data', () => {
   it('drops ids this season cannot resolve, from the goals, the options and the run alike', () => {
     useApp.setState({
       wanted: [9267, 999999],
-      priority: { 999999: 'must' },
       fusionGoal: { 999999: 'resultOnly' },
       options: { ...appDefaultOptions(), observedGifts: [9267, 999999], bannedPacks: [1402, 888888], preferredPacks: [888888], pinnedPacks: { 3: 888888, 4: 1402 } },
       run: { currentFloor: 3, stageFloor: 2, visits: { 1: 888888, 2: 1402 }, giftStatus: { 9267: 'got', 999999: 'got' }, startGifts: [999999] },
@@ -354,7 +352,6 @@ describe('state that outlived the game data', () => {
     const counts = adopt();
     const state = useApp.getState();
     expect(state.wanted).toEqual([9267]);
-    expect(state.priority).toEqual({});
     expect(state.fusionGoal).toEqual({});
     expect(state.options).toMatchObject({ observedGifts: [9267], bannedPacks: [1402], preferredPacks: [], pinnedPacks: { 4: 1402 } });
     // The run is kept — it still fits the season — but nothing unresolvable rides along in it.
@@ -363,9 +360,9 @@ describe('state that outlived the game data', () => {
   });
 
   it('keeps a pin only for a gift that is still a goal, from a link and from a saved state', () => {
-    // A pin is a decision about a goal, like a priority — a link carrying one for anything else
-    // used to spend observation budget on it and then lose it without a word.
-    useApp.getState().applyShared({ deck: LCB_DECK, deployed: LCB_DECK.slice(0, 6), wanted: [9267], priority: {}, options: { ...appDefaultOptions(), observedGifts: [9267, 9283] } });
+    // A pin is a decision about a goal — a link carrying one for anything else used to spend
+    // observation budget on it and then lose it without a word.
+    useApp.getState().applyShared({ deck: LCB_DECK, deployed: LCB_DECK.slice(0, 6), wanted: [9267], options: { ...appDefaultOptions(), observedGifts: [9267, 9283] } });
     expect(useApp.getState().options.observedGifts).toEqual([9267]);
     useApp.setState({ options: { ...useApp.getState().options, observedGifts: [9267, 9283] } });
     adopt();
@@ -463,7 +460,7 @@ describe('run store', () => {
     const giftStatus: Record<number, 'got' | 'failed'> = { 9419: 'got', 9423: 'got', 9409: 'got', 9431: 'failed' };
     expect(withoutLegacyGot(giftStatus, wanted)).toEqual({ 9419: 'got', 9423: 'got', 9431: 'failed' });
     const migrate = useApp.persist.getOptions().migrate!;
-    const saved = { deck: LCB_DECK, deployed: LCB_DECK.slice(0, 6), wanted, priority: {}, fusionGoal: {}, options: { ...appDefaultOptions(), observedGifts: [9191, 9419, 9423] }, run: { currentFloor: 2, stageFloor: 2, visits: { 1: 1004 }, giftStatus }, ui: defaultUi(), lang: 'ko', dark: true };
+    const saved = { deck: LCB_DECK, deployed: LCB_DECK.slice(0, 6), wanted, fusionGoal: {}, options: { ...appDefaultOptions(), observedGifts: [9191, 9419, 9423] }, run: { currentFloor: 2, stageFloor: 2, visits: { 1: 1004 }, giftStatus }, ui: defaultUi(), lang: 'ko', dark: true };
     const upgraded = (await migrate(saved, 6)) as ReturnType<typeof useApp.getState>;
     expect(upgraded.run).toEqual({ currentFloor: 2, stageFloor: 2, visits: { 1: 1004 }, giftStatus: { 9419: 'got', 9423: 'got', 9431: 'failed' }, startGifts: [] });
     // The phantom ingredient is gone, so the plan routes for it again.
@@ -928,10 +925,28 @@ describe('GiftsStep', () => {
   it('dims the square and not the name, the same way with artwork or without', () => {
     const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
     const { unmount } = render(<GiftIcon gift={gift} size={44} dim lang="ko" />);
-    expect(screen.getByTestId('gift-icon').className).toContain('grayscale opacity-55');
+    expect(screen.getByTestId('gift-dim').className).toContain('grayscale opacity-55');
+    expect(screen.getByTestId('gift-icon').className).not.toContain('grayscale');
     unmount();
     render(<GiftIcon gift={gift} size={44} lang="ko" />);
-    expect(screen.getByTestId('gift-icon').className).not.toContain('grayscale');
+    expect(screen.getByTestId('gift-dim').className).not.toContain('grayscale');
+  });
+
+  /*
+   * The dim is a `grayscale` filter, and a filter takes every descendant with it. With the badge
+   * inside, an uncollected gift lost the one thing still naming its keyword: the tile went grey,
+   * so 진동 and 화상 looked alike. A missed gift dims harder still, and keeps it too.
+   */
+  it('keeps the keyword badge in full colour on a gift not collected yet, and on a missed one', () => {
+    const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
+    for (const props of [{ dim: true }, { status: 'failed' as const }]) {
+      const { unmount } = render(<GiftIcon gift={gift} size={44} {...props} lang="ko" />);
+      const badge = screen.getByTestId('gift-keyword');
+      expect(badge.className).toContain('bg-kw-combustion');
+      expect(screen.getByTestId('gift-dim').contains(badge)).toBe(false);
+      expect(screen.getByTestId('gift-dim').className).toContain('grayscale');
+      unmount();
+    }
   });
 
   it('colours a gift icon by whether the deck meets its condition', async () => {
@@ -1322,11 +1337,16 @@ describe('RouteOptions', () => {
     expect(screen.getByTestId('route-options').textContent).not.toMatch(/Hard|1~15/);
     expect(screen.queryByTestId('settings-observed')).toBeNull();
     expect(screen.queryByRole('button', { name: /옵션 초기화|새 런/ })).toBeNull();
-    // The given-up pack is listed with its restore action.
+    // The given-up pack is listed with its restore action. A pack set to include is not: that
+    // choice is shown where the route is, and a second list here only made the tab longer.
+    useApp.getState().preferPack(1502);
     const packs = screen.getByTestId('settings-packs');
+    expect(within(packs).getAllByTestId('settings-pack')).toHaveLength(1);
     expect(within(packs).getByTestId('settings-pack')).toHaveAttribute('data-pack', '1402');
     await user.click(within(packs).getByRole('button', { name: '화왕지절 되돌리기' }));
     expect(useApp.getState().options.bannedPacks).toEqual([]);
+    expect(useApp.getState().options.preferredPacks).toEqual([1502]);
+    expect(screen.queryByTestId('settings-pack')).toBeNull();
   });
 });
 
@@ -1654,9 +1674,8 @@ describe('RoutePlanPanel', () => {
     expect(screen.queryByTestId('conflict-group')).toBeNull();
     expect(screen.getByText(/^확보/).parentElement).toHaveTextContent('5/5');
     await user.click(screen.getByRole('button', { name: '이 기프트 선택 해제' }));
-    // 포기 is no longer a priority: the gift simply leaves the selection.
+    // 포기 is 말 그대로 a deselection: the gift simply leaves the selection.
     expect(useApp.getState().wanted).toHaveLength(CLEAR_REWARDS.length - 1);
-    expect(useApp.getState().priority).toEqual({});
     expect(screen.queryByTestId('skipped')).toBeNull();
     expect(screen.queryByRole('tablist')).toBeNull();
   });
@@ -1672,16 +1691,6 @@ describe('RoutePlanPanel', () => {
     expect(within(row).queryByRole('button', { name: /포기/ })).toBeNull();
     await user.click(within(row).getByRole('button', { name: /선택 해제$/ }));
     expect(useApp.getState().wanted).toHaveLength(CLEAR_REWARDS.length - 1);
-  });
-
-  it('lets a must-have gift win the conflict and shows its pack as included', () => {
-    useApp.getState().setDeck(BURN_DECK, 7);
-    for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
-    useApp.getState().setPriority(9255, 'must');
-    renderRoute();
-    const cards = within(screen.getByTestId('conflict-group')).getAllByTestId('pack-conflict-card');
-    expect(cards.find((c) => c.getAttribute('data-pack') === '1516')).toHaveAttribute('data-included');
-    expect(cards.filter((c) => !c.hasAttribute('data-included'))).toHaveLength(1);
   });
 
   it('offers an observation for an unresolved gift only while it is observable and a slot is free', () => {
@@ -1718,7 +1727,7 @@ describe('RoutePlanPanel', () => {
     expect(screen.queryByRole('tablist')).toBeNull();
   });
 
-  it('toggles a goal between 보통 and 반드시 from its sheet; 포기 is not a priority any more', async () => {
+  it('offers no priority in a goal\'s sheet — 반드시/보통 is gone and 포기 is a deselection', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9283);
@@ -1726,15 +1735,11 @@ describe('RoutePlanPanel', () => {
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
     await user.click(within(screen.getByTestId('gift-chip')).getByRole('button', { name: '상납된 시가 자세히' }));
     const sheet = screen.getByRole('dialog', { name: '상납된 시가' });
-    await user.click(within(sheet).getByRole('button', { name: '상납된 시가 우선순위: 보통' }));
-    expect(useApp.getState().priority).toEqual({ 9283: 'must' });
-    await user.click(within(sheet).getByRole('button', { name: '상납된 시가 우선순위: 반드시' }));
-    expect(useApp.getState().priority).toEqual({});
-    expect(within(sheet).queryByRole('button', { name: /포기/ })).toBeNull();
-    // Deselecting a gift forgets its priority.
-    useApp.getState().setPriority(9283, 'must');
-    useApp.getState().toggleWanted(9283);
-    expect(useApp.getState().priority).toEqual({});
+    for (const word of [/우선순위/, /반드시/, /보통/, /포기/]) {
+      expect(within(sheet).queryByRole('button', { name: word })).toBeNull();
+    }
+    await user.click(within(sheet).getByRole('button', { name: '목표에서 빼기' }));
+    expect(useApp.getState().wanted).toEqual([]);
   });
 
   it('copies the plan by segment with localized names instead of raw ids', () => {
@@ -1768,8 +1773,10 @@ describe('RoutePlanPanel', () => {
     for (const word of ['별빛', '조합', '범용']) expect(text).not.toContain(word);
     const without = planToText(plan, (id) => indexes.giftById.get(id)?.name.ko ?? '', () => '', () => '', 'ko', [9283]);
     expect(without.split('\n')[0]).toBe('상납된 시가 제외');
-    const marked = planToText(plan, (id) => indexes.giftById.get(id)?.name.ko ?? '', (id) => indexes.packById.get(id)?.name.ko ?? '', () => '', 'ko', [], { must: [9423], bannedPacks: [1402] });
-    expect(marked).toContain('깨진 안경 (반드시)');
+    const marked = planToText(plan, (id) => indexes.giftById.get(id)?.name.ko ?? '', (id) => indexes.packById.get(id)?.name.ko ?? '', () => '', 'ko', [], { bannedPacks: [1402] });
+    // No 반드시 mark any more — every goal is best-effort, so a name is just a name.
+    expect(marked).toContain('깨진 안경');
+    expect(marked).not.toContain('(반드시)');
     expect(marked.trim().split('\n').at(-1)).toBe('포기한 팩: 화왕지절');
     expect(marked).not.toContain('포기: ');
   });
@@ -1904,7 +1911,6 @@ describe('AppShell', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of [9267, 9423, 9249]) useApp.getState().toggleWanted(id);
-    useApp.getState().setPriority(9267, 'must');
     useApp.getState().setFusionGoal(9249, 'resultOnly');
     useApp.getState().toggleObserved(9423, { max: 3, observable: () => true });
     useApp.getState().banPack(1402);
@@ -1938,7 +1944,6 @@ describe('AppShell', () => {
     expect(state.deck).toEqual(defaultDeck(data));
     expect(state.deployed).toEqual(defaultDeck(data).slice(0, data.rules.deployment.default));
     expect(state.wanted).toEqual([]);
-    expect(state.priority).toEqual({});
     expect(state.fusionGoal).toEqual({});
     expect(state.options).toEqual(appDefaultOptions());
     expect(state.run).toEqual(emptyRun());
@@ -2702,14 +2707,6 @@ describe('GoalsPanel', () => {
     expect(screen.getByTestId('goals-panel')).toBeInTheDocument();
   });
 
-  it('marks a must-have gift with a star badge on its tile', () => {
-    useApp.getState().setDeck(BURN_DECK, 7);
-    useApp.getState().toggleWanted(9267);
-    useApp.getState().setPriority(9267, 'must');
-    renderBoth();
-    expect(within(goalTile(9267)).getByTestId('gift-icon')).toHaveAttribute('data-must', 'true');
-  });
-
   it('shares one record with the tiles of the entered pack, in both directions', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -2821,8 +2818,7 @@ describe('GoalsPanel', () => {
     // The corner button and a right-click open the same sheet, which carries the items-tab controls.
     await user.click(within(screen.getByTestId('exclusive-gifts')).getAllByTestId('gift-tile-info')[0]!);
     expect(dialog()).toBeInTheDocument();
-    await user.click(within(dialog()!).getByRole('button', { name: '달궈진 놋쇠 우선순위: 보통' }));
-    expect(useApp.getState().priority).toEqual({ 9267: 'must' });
+    expect(within(dialog()!).getByRole('button', { name: /목표/ })).toBeInTheDocument();
     await close();
     fireEvent.contextMenu(stageTile(9267));
     expect(dialog()).toBeInTheDocument();

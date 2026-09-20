@@ -40,7 +40,6 @@ export function App() {
   const deck = useApp((s) => s.deck);
   const deployed = useApp((s) => s.deployed);
   const wanted = useApp((s) => s.wanted);
-  const priority = useApp((s) => s.priority);
   const fusionGoal = useApp((s) => s.fusionGoal);
   const setLang = useApp((s) => s.setLang);
   const toggleDark = useApp((s) => s.toggleDark);
@@ -184,7 +183,7 @@ export function App() {
   );
 
   const share = async (): Promise<void> => {
-    const url = `${window.location.origin}${window.location.pathname}${encodeShared({ season: useApp.getState().season, deck, deployed, wanted, priority, fusionGoal, options: useApp.getState().options })}`;
+    const url = `${window.location.origin}${window.location.pathname}${encodeShared({ season: useApp.getState().season, deck, deployed, wanted, fusionGoal, options: useApp.getState().options })}`;
     // Plain http and an unfocused document both leave `navigator.clipboard` unusable. Saying so
     // beats an unhandled rejection nobody sees.
     try {

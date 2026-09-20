@@ -45,7 +45,7 @@ function ExclusiveIcons({ packId, ctx, exclusivesOf, justify, testId }: { packId
         const wanted = ctx.needed.has(id);
         return (
           <span key={id} className={`inline-flex rounded-sm ${wanted ? 'ring-1 ring-ink' : ''}`} data-wanted={wanted || undefined}>
-            <GiftIcon gift={gift} size={20} must={ctx.isMust(id)} status={ctx.run?.giftStatus(id) ?? null} lang={ctx.lang} />
+            <GiftIcon gift={gift} size={20} status={ctx.run?.giftStatus(id) ?? null} lang={ctx.lang} />
           </span>
         );
       })}

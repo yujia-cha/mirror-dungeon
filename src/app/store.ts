@@ -4,7 +4,7 @@ import lzString from 'lz-string';
 import type { PlanOptions } from '../core/types.ts';
 import { defaultOptions } from '../core/index.ts';
 import type { Lang } from './i18n.ts';
-import type { FusionGoalMap, Priority, PriorityMap, RunState } from './lib/plan-input.ts';
+import type { FusionGoalMap, RunState } from './lib/plan-input.ts';
 
 export type LeftTab = 'deck' | 'gifts';
 export type RightTab = 'plan' | 'goals' | 'tracker';
@@ -35,8 +35,6 @@ export interface SharedState {
   /** Who fights, as a subset of `deck`; the order comes from the deck. */
   deployed: number[];
   wanted: number[];
-  /** Per-gift priority; gifts absent here are planned as best-effort. */
-  priority: PriorityMap;
   options: PlanOptions;
   /** Fusion results whose ingredients are not goals of their own. Absent = ingredients count too. */
   fusionGoal?: FusionGoalMap;
@@ -69,8 +67,6 @@ interface AppState extends SharedState {
   /** Pin or unpin a wanted gift for 기프트 관측; at most `max` pins. */
   /** Pin or unpin a wanted gift for 기프트 관측; a pin needs a free slot and an observable gift. */
   toggleObserved: (giftId: number, limits: ObserveLimits) => void;
-  /** 반드시 / 보통 for a wanted gift; giving a gift up is `removeWanted`. */
-  setPriority: (giftId: number, priority: Priority) => void;
   /** Pack-level choices: include somewhere (the planner picks the floor), give up, or neither. */
   preferPack: (packId: number) => void;
   banPack: (packId: number) => void;
@@ -351,25 +347,6 @@ function withStatus(giftStatus: RunState['giftStatus'], settle?: { got?: number[
   return next;
 }
 
-/** Priorities only for the gifts in `wanted`, with the two non-default values. */
-export function sanitizePriority(raw: unknown, wanted: number[]): PriorityMap {
-  const out: PriorityMap = {};
-  if (!raw || typeof raw !== 'object') return out;
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    const id = Number(key);
-    if (!wanted.includes(id)) continue;
-    if (value === 'must') out[id] = value;
-  }
-  return out;
-}
-
-function withoutGift(priority: PriorityMap, giftId: number): PriorityMap {
-  if (!(giftId in priority)) return priority;
-  const next = { ...priority };
-  delete next[giftId];
-  return next;
-}
-
 /** A pinned observation only makes sense for a wanted gift. */
 /** The localStorage key and schema version. Exported so a crash screen can clear the state it saved. */
 export const PERSIST_KEY = 'md-route-planner';
@@ -378,7 +355,7 @@ export const PERSIST_VERSION = 7;
 /** Exactly the keys `partialize` writes — what a migration has to hand back, all of them present. */
 export type PersistedState = Pick<
   AppState,
-  'deck' | 'deployed' | 'wanted' | 'priority' | 'fusionGoal' | 'run' | 'ui' | 'options' | 'lang' | 'dark' | 'season'
+  'deck' | 'deployed' | 'wanted' | 'fusionGoal' | 'run' | 'ui' | 'options' | 'lang' | 'dark' | 'season'
 >;
 
 /**
@@ -413,7 +390,6 @@ export function sanitizePersisted(persisted: unknown, version: number): Persiste
     deck,
     deployed: ids(state.deployed).filter((id) => deck.includes(id)),
     wanted,
-    priority: sanitizePriority(state.priority, wanted),
     fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
     run,
     ui: sanitizeUi(state.ui),
@@ -447,7 +423,6 @@ export const useApp = create<AppState>()(
       deck: [],
       deployed: [],
       wanted: [],
-      priority: {},
       options: appDefaultOptions(),
       fusionGoal: {},
       run: emptyRun(),
@@ -504,7 +479,6 @@ export const useApp = create<AppState>()(
             : [...state.wanted.filter((id) => !dropWithIt.includes(id)), giftId];
           return {
             wanted,
-            priority: sanitizePriority(state.priority, wanted),
             fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
             options: withObservedIn(state.options, wanted),
             run: withRunFor(state.run, wanted),
@@ -516,7 +490,6 @@ export const useApp = create<AppState>()(
           const wanted = state.wanted.filter((id) => id !== giftId);
           return {
             wanted,
-            priority: withoutGift(state.priority, giftId),
             fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
             options: withObservedIn(state.options, wanted),
             run: withRunFor(state.run, wanted),
@@ -524,7 +497,7 @@ export const useApp = create<AppState>()(
         }),
 
       clearWanted: () =>
-        set((state) => ({ wanted: [], priority: {}, fusionGoal: {}, options: { ...state.options, observedGifts: [] }, run: withRunFor(state.run, []) })),
+        set((state) => ({ wanted: [], fusionGoal: {}, options: { ...state.options, observedGifts: [] }, run: withRunFor(state.run, []) })),
 
       setFusionGoal: (giftId, goal) =>
         set((state) => {
@@ -594,12 +567,6 @@ export const useApp = create<AppState>()(
           return { run: { ...state.run, giftStatus } };
         }),
 
-      setPriority: (giftId, priority) =>
-        set((state) => {
-          if (!state.wanted.includes(giftId)) return {};
-          return { priority: priority === 'normal' ? withoutGift(state.priority, giftId) : { ...state.priority, [giftId]: priority } };
-        }),
-
       preferPack: (packId) =>
         set((state) => ({
           options: {
@@ -638,7 +605,7 @@ export const useApp = create<AppState>()(
       setOptions: (patch) => set((state) => ({ options: { ...state.options, ...patch } })),
       resetAll: (deck, deployedDefault) => {
         const next = uniqueDeck(deck);
-        set({ deck: next, deployed: next.slice(0, deployedDefault), wanted: [], priority: {}, fusionGoal: {}, options: appDefaultOptions(), run: emptyRun() });
+        set({ deck: next, deployed: next.slice(0, deployedDefault), wanted: [], fusionGoal: {}, options: appDefaultOptions(), run: emptyRun() });
       },
       setUi: (patch) => set((state) => ({ ui: sanitizeUi({ ...state.ui, ...patch }) })),
       setLang: (lang) => set({ lang }),
@@ -650,8 +617,8 @@ export const useApp = create<AppState>()(
       adoptSeason: ({ season, lastFloor, giftIds, packIds }) => {
         const state = get();
         const wanted = state.wanted.filter((id) => giftIds.has(id));
-        // A pin is a decision about a goal, like a priority: one left on a gift that is no longer
-        // wanted would spend observation budget and then vanish without a word at the next toggle.
+        // A pin is a decision about a goal: one left on a gift that is no longer wanted would
+        // spend observation budget and then vanish without a word at the next toggle.
         const observed = (state.options.observedGifts ?? []).filter((id) => giftIds.has(id) && wanted.includes(id));
         const preferredPacks = state.options.preferredPacks.filter((id) => packIds.has(id));
         const bannedPacks = state.options.bannedPacks.filter((id) => packIds.has(id));
@@ -686,7 +653,6 @@ export const useApp = create<AppState>()(
           lastFloor,
           run,
           wanted,
-          priority: sanitizePriority(state.priority, wanted),
           fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
           options: { ...state.options, observedGifts: observed, preferredPacks, bannedPacks, pinnedPacks },
         });
@@ -701,7 +667,6 @@ export const useApp = create<AppState>()(
           deck,
           deployed: shared.deployed.filter((id) => deck.includes(id)),
           wanted: shared.wanted,
-          priority: sanitizePriority(shared.priority, shared.wanted),
           fusionGoal: sanitizeFusionGoal(shared.fusionGoal, shared.wanted),
           // Pins follow the same rule priorities and fusion goals do: only a goal can be observed.
           // A link that carried a pin for something else used to spend observation budget on it and
@@ -725,7 +690,6 @@ export const useApp = create<AppState>()(
         deck: state.deck,
         deployed: state.deployed,
         wanted: state.wanted,
-        priority: state.priority,
         fusionGoal: state.fusionGoal,
         run: state.run,
         ui: state.ui,
@@ -751,7 +715,6 @@ export function encodeShared(state: SharedState): string {
     deck: state.deck,
     deployed: state.deployed,
     wanted: state.wanted,
-    priority: state.priority,
     fusionGoal: state.fusionGoal ?? {},
     options: state.options,
   });
@@ -787,7 +750,6 @@ export function decodeShared(hash: string): SharedState | null {
       deck,
       deployed,
       wanted,
-      priority: sanitizePriority(parsed.priority, wanted),
       fusionGoal: sanitizeFusionGoal(parsed.fusionGoal, wanted),
       options: sanitizeOptions(parsed.options),
     };

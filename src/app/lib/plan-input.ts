@@ -1,12 +1,10 @@
 /**
- * What the app hands the planner. The wanted list carries a per-gift priority: a gift marked
- * 반드시 is `required` (the search satisfies those first), a normal one is best-effort. Giving a
+ * What the app hands the planner. Every selected gift is best-effort: the app has no per-gift
+ * priority, so `required` — core's 「satisfy this one first」 — is never set from here. Giving a
  * gift up simply removes it from the selection.
  */
 import type { PlanInput, PlanOptions, WantedGift } from '../../core/types.ts';
 
-export type Priority = 'must' | 'normal';
-export type PriorityMap = Record<number, 'must'>;
 /** Fusion results the user wants only as a whole: their ingredients are not goals of their own. */
 export type FusionGoalMap = Record<number, 'resultOnly'>;
 
@@ -35,14 +33,10 @@ export interface RunState {
   startGifts: number[];
 }
 
-export function priorityOf(priority: PriorityMap, giftId: number): Priority {
-  return priority[giftId] ?? 'normal';
-}
-
-export function plannedGifts(wanted: number[], priority: PriorityMap, fusionGoal: FusionGoalMap = {}): WantedGift[] {
+export function plannedGifts(wanted: number[], fusionGoal: FusionGoalMap = {}): WantedGift[] {
   return wanted.map((id) => ({
     giftId: id,
-    required: priorityOf(priority, id) === 'must',
+    required: false,
     ...(fusionGoal[id] === 'resultOnly' ? { ingredientsAsGoals: false } : {}),
   }));
 }
@@ -52,7 +46,6 @@ export function planInputFor(
     deck: number[];
     deployed: number[];
     wanted: number[];
-    priority: PriorityMap;
     options: PlanOptions;
     fusionGoal?: FusionGoalMap;
     run?: RunState;
@@ -73,7 +66,7 @@ export function planInputFor(
     : { currentFloor: 1, ownedGifts: [], unobtainableGifts: [] };
   return {
     deck: state.deck,
-    wanted: plannedGifts(state.wanted, state.priority, state.fusionGoal ?? {}),
+    wanted: plannedGifts(state.wanted, state.fusionGoal ?? {}),
     options: {
       ...state.options,
       ...progress,

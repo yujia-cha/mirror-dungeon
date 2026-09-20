@@ -14,7 +14,7 @@ import { useApp } from '../store.ts';
 import { keywordName } from '../format.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementsByGift, type Judgement } from '../lib/judgement.ts';
-import { planInputFor, priorityOf } from '../lib/plan-input.ts';
+import { planInputFor } from '../lib/plan-input.ts';
 import { autoFailedFor, exclusivesIndex, lastFloorOf, stageModeFor, type StageMode } from '../lib/stage.ts';
 import { blockedGifts, entanglements, ingredientsOf, type Block, type Entanglement } from '../lib/entangle.ts';
 import { carriedBy } from '../lib/goal-toggle.ts';
@@ -90,7 +90,6 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
   const deck = useApp((s) => s.deck);
   const deployed = useApp((s) => s.deployed);
   const wanted = useApp((s) => s.wanted);
-  const priority = useApp((s) => s.priority);
   const options = useApp((s) => s.options);
   const fusionGoal = useApp((s) => s.fusionGoal);
   const run = useApp((s) => s.run);
@@ -121,8 +120,8 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
   // saved or shared plan may claim.
   const lastFloor = useMemo(() => lastFloorOf(data), [data]);
   const input = useMemo(
-    () => planInputFor({ deck, deployed, wanted, priority, options, fusionGoal, run }, { lastFloor }),
-    [deck, deployed, wanted, priority, options, fusionGoal, run, lastFloor],
+    () => planInputFor({ deck, deployed, wanted, options, fusionGoal, run }, { lastFloor }),
+    [deck, deployed, wanted, options, fusionGoal, run, lastFloor],
   );
   const plan = useMemo(() => (input.wanted.length === 0 ? null : planRoute(input, data, indexes)), [input, data, indexes]);
   const variants = useMemo(
@@ -236,7 +235,6 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
       giftTitle,
       giftName,
       packName,
-      isMust: (id) => priorityOf(priority, id) === 'must',
       observable: canObserve,
       observed: new Set((shown?.start.observed ?? []).filter((o) => o.pinned).map((o) => o.giftId)),
       wanted: goals,
@@ -317,7 +315,6 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     variantIndex,
     setVariantIndex,
     variant,
-    priority,
     options,
     run,
     exclusivesOf,

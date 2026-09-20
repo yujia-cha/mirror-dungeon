@@ -224,7 +224,6 @@ export type WarningCode =
   | 'hard-required'
   | 'parallel-requires-hard'
   | 'general-drop-not-guaranteed'
-  | 'fusion-late'
   | 'fusion-slots'
   | 'search-capped'
   | 'gift-observation-unverified'

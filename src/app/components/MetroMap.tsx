@@ -166,7 +166,6 @@ function ObservedTile({
           gift={gift}
           size={32}
           judgement={ctx.judgements.get(entry.giftId) ?? null}
-          must={ctx.isMust(entry.giftId)}
           lang={ctx.lang}
         />
         <span

@@ -16,15 +16,14 @@ export function planToText(
   keywordLabel: (id: Keyword) => string,
   lang: Lang,
   dropped: number[] = [],
-  marks: { must?: number[]; bannedPacks?: number[]; run?: { currentFloor: number; visits: Record<number, number> } } = {},
+  marks: { bannedPacks?: number[]; run?: { currentFloor: number; visits: Record<number, number> } } = {},
 ): string {
   const lines: string[] = [];
   // The app says 「4층」 everywhere else; the copied plan used to be the one place writing `4F` at a
   // Korean reader. `routeFreeRange` already held the range form and was going unused.
   const at = (floor: number): string => t('stageFloor', lang, { floor });
   const range = (from: number, to: number): string => (from === to ? at(from) : t('routeFloorRange', lang, { from, to }));
-  const must = new Set(marks.must ?? []);
-  const name = (id: number): string => (must.has(id) ? `${giftName(id)} (${t('priorityMust', lang)})` : giftName(id));
+  const name = giftName;
   if (dropped.length > 0) lines.push(t('routeVariantWithout', lang, { name: dropped.map(giftName).join(', ') }));
   if (marks.run) {
     const visits = Object.entries(marks.run.visits)

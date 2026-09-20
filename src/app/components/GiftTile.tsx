@@ -1,9 +1,9 @@
 /**
  * A gift the player marks as got or not: a pressable tile whose look carries the state — not got
  * is greyscale and dimmed, got is full colour with a check, missed (decided by the run) is dimmed
- * with a cross and a press turns it into got. A goal gift wears a ring so it stands out among
- * the rest of a pack's drops. With `onOpen`, the tile also opens the gift's details: hold it for a
- * second, right-click it, or press the small ⓘ in its corner.
+ * harder with a cross and a press turns it into got. A goal gift wears a ring so it stands out
+ * among the rest of a pack's drops. With `onOpen`, the tile also opens the gift's details: hold it
+ * for a second, right-click it, or press the small ⓘ in its corner.
  */
 import { Info } from 'lucide-react';
 import type { Gift } from '../../core/schema.ts';
@@ -21,7 +21,6 @@ export function GiftTile({
   gift,
   status,
   wanted = false,
-  must = false,
   judgement = null,
   size = 44,
   title,
@@ -32,7 +31,6 @@ export function GiftTile({
   gift: Gift;
   status: GiftStatus | null;
   wanted?: boolean;
-  must?: boolean;
   judgement?: Judgement | null;
   size?: GiftIconSize;
   title?: string;
@@ -91,22 +89,12 @@ export function GiftTile({
         } ${status === null || status === 'failed' ? '' : 'bg-surface'}`}
       >
         {/*
-          The dim says 「아직 안 얻음」, and it used to be set on the whole button — which put the
-          10px name at 3.93:1 on the light ground, under the 4.5:1 the floor strip was already
-          careful about. The name is the only thing telling two gifts apart while the icons are
-          grey placeholders, so it stays at full contrast and only the artwork dims.
+          「아직 안 얻음」 is a dim, and `GiftIcon` owns it — setting it here wrapped the icon's
+          keyword badge in the same `grayscale`, and that badge is the only thing still saying
+          which keyword an uncollected gift has. The name stays outside it either way: at 10px it
+          would sit at 3.93:1 on the light ground, under the 4.5:1 the floor strip is careful about.
         */}
-        <span
-          className={`inline-flex transition-[filter,opacity] ${
-            status === null
-              ? 'grayscale opacity-55 group-hover:opacity-80'
-              : status === 'failed'
-                ? 'opacity-45'
-                : ''
-          }`}
-        >
-          <GiftIcon gift={gift} size={size} judgement={judgement} must={must} status={status} lang={lang} />
-        </span>
+        <GiftIcon gift={gift} size={size} judgement={judgement} status={status} dim={status === null} lang={lang} />
         <span className="line-clamp-2 w-full break-keep text-[10px] leading-tight text-fg" aria-hidden>
           {name}
         </span>

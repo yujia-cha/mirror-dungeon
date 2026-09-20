@@ -5,27 +5,24 @@
  * simply removes it from the selection.
  */
 import { useState, type ReactNode } from 'react';
-import { ChevronRight, Eye, Star, TriangleAlert, X } from 'lucide-react';
+import { ChevronRight, Eye, TriangleAlert, X } from 'lucide-react';
 import type { ConflictGroup } from '../../core/conflicts.ts';
 import type { Unresolved } from '../../core/types.ts';
 import { t } from '../i18n.ts';
 import { UNRESOLVED_LABEL } from '../lib/labels.ts';
-import type { Priority } from '../lib/plan-input.ts';
 import type { UnresolvedAction } from '../lib/unresolved-actions.ts';
 import { unresolvedDetailText } from '../lib/unresolved-text.ts';
 import { DetailSurface, type DetailMode } from './BlockDetail.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { PackCard } from './PackCard.tsx';
 import { PackActions, PackSheetBody, PackStateBadge, type PackContext } from './PackSheet.tsx';
-import { Badge, Button, Card, Chip } from './ui.tsx';
+import { Button, Card, Chip } from './ui.tsx';
 
 export interface PackConflictsProps {
   groups: ConflictGroup[];
   /** Unresolved entries that are not pack conflicts. */
   others: Unresolved[];
   ctx: PackContext;
-  priorityOf: (giftId: number) => Priority;
-  setPriority: (giftId: number, priority: Priority) => void;
   /** Giving a gift up removes it from the selection. */
   removeWanted: (giftId: number) => void;
   /** Observation action for an entry, if one applies. */
@@ -37,7 +34,7 @@ export interface PackConflictsProps {
   detailMode?: DetailMode;
 }
 
-export function PackConflicts({ groups, others, ctx, priorityOf, setPriority, removeWanted, observeAction, headerActions, onAction, onSeeVariants, detailMode = 'sheet' }: PackConflictsProps) {
+export function PackConflicts({ groups, others, ctx, removeWanted, observeAction, headerActions, onAction, onSeeVariants, detailMode = 'sheet' }: PackConflictsProps) {
   const { lang } = ctx;
   const [openPack, setOpenPack] = useState<number | null>(null);
   const banned = [...ctx.banned].sort((a, b) => a - b);
@@ -119,7 +116,7 @@ export function PackConflicts({ groups, others, ctx, priorityOf, setPriority, re
                           const gift = ctx.indexes.giftById.get(giftId);
                           return gift ? (
                             <li key={giftId} className="flex items-center gap-1.5 text-xs">
-                              <GiftIcon gift={gift} size={20} judgement={ctx.judgements.get(giftId) ?? null} must={ctx.isMust(giftId)} lang={lang} />
+                              <GiftIcon gift={gift} size={20} judgement={ctx.judgements.get(giftId) ?? null} lang={lang} />
                               <span className="truncate">{ctx.giftName(giftId)}</span>
                             </li>
                           ) : null;
@@ -144,7 +141,6 @@ export function PackConflicts({ groups, others, ctx, priorityOf, setPriority, re
           <ul>
             {others.map((entry) => {
               const gift = ctx.indexes.giftById.get(entry.giftId);
-              const level = priorityOf(entry.giftId);
               const observe = observeAction(entry);
               const name = ctx.giftName(entry.giftId);
               return (
@@ -154,17 +150,10 @@ export function PackConflicts({ groups, others, ctx, priorityOf, setPriority, re
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">{name}</span>
                       <Chip>{t(UNRESOLVED_LABEL[entry.reason], lang)}</Chip>
-                      {level === 'must' ? <Badge tone="sure">{t('priorityMust', lang)}</Badge> : null}
                     </div>
                     <span className="text-xs text-fg-2">{detailText(entry)}</span>
                   </div>
                   <span className="flex flex-none gap-1">
-                    {iconButton(
-                      level === 'must' ? t('prioritySetNormal', lang, { name }) : t('prioritySetMust', lang, { name }),
-                      () => setPriority(entry.giftId, level === 'must' ? 'normal' : 'must'),
-                      <Star size={13} fill={level === 'must' ? 'currentColor' : 'none'} />,
-                      level === 'must',
-                    )}
                     {observe ? iconButton(observe.label, () => onAction(observe), <Eye size={13} />) : null}
                     {iconButton(t('removeFromSelection', lang, { name }), () => removeWanted(entry.giftId), <X size={13} />)}
                   </span>

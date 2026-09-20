@@ -2,7 +2,7 @@
  * Everything about one gift, opened from its tile: what it does, the conditions it needs, how it
  * is obtained, and — folded away until asked for — the recipe the planner would actually use.
  */
-import { Check, Eye, Link2, Star } from 'lucide-react';
+import { Check, Eye, Link2 } from 'lucide-react';
 import type { GameData, Gift } from '../../core/schema.ts';
 import { chooseRecipe, observable } from '../../core/index.ts';
 import type { ConditionReport, GameIndexes } from '../../core/types.ts';
@@ -13,7 +13,6 @@ import { conditionShort } from '../lib/gift-condition.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { badgeFor } from '../lib/labels.ts';
-import { priorityOf, type Priority } from '../lib/plan-input.ts';
 import { useApp } from '../store.ts';
 import { DetailSurface } from './BlockDetail.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
@@ -88,8 +87,6 @@ export function GiftDetailSheet({
   onClose: () => void;
 }) {
   const wanted = useApp((s) => s.wanted);
-  const priority = useApp((s) => s.priority);
-  const setPriority = useApp((s) => s.setPriority);
   const observedGifts = useApp((s) => s.options.observedGifts);
   const toggleObserved = useApp((s) => s.toggleObserved);
   const fusionGoal = useApp((s) => s.fusionGoal);
@@ -98,8 +95,6 @@ export function GiftDetailSheet({
 
   const name = pick(gift.name, lang);
   const selected = wanted.includes(gift.id);
-  const level = priorityOf(priority, gift.id);
-  const nextLevel: Priority = level === 'must' ? 'normal' : 'must';
   const pinned = observedGifts.includes(gift.id);
   const canObserve = observable(gift, data.rules);
   const observeFull = !pinned && observedGifts.length >= observeMax;
@@ -110,7 +105,7 @@ export function GiftDetailSheet({
     <DetailSurface mode="sheet" label={name} closeLabel={t('routeClose', lang)} onClose={onClose}>
       <div className="flex flex-col gap-3" data-testid="gift-detail">
         <div className="flex items-start gap-2.5">
-          <GiftIcon gift={gift} size={44} judgement={judgementOf(reports)} must={level === 'must'} lang={lang} />
+          <GiftIcon gift={gift} size={44} judgement={judgementOf(reports)} lang={lang} />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-base font-bold">{name}</span>
             <span className="text-xs text-fg-3">{acquisitionLine(gift, indexes, lang)}</span>
@@ -132,14 +127,6 @@ export function GiftDetailSheet({
           {blockedBy ? <span className="text-xs text-fg-2">{blockedBy}</span> : null}
           {selected ? (
             <>
-              <Button
-                variant={level === 'must' ? 'primary' : 'secondary'}
-                onClick={() => setPriority(gift.id, nextLevel)}
-                ariaLabel={t('priorityOf', lang, { name, value: t(level === 'must' ? 'priorityMust' : 'priorityNormal', lang) })}
-              >
-                <Star size={13} aria-hidden fill={level === 'must' ? 'currentColor' : 'none'} />
-                {t(level === 'must' ? 'priorityMust' : 'priorityNormal', lang)}
-              </Button>
               <Button
                 variant={pinned ? 'primary' : 'secondary'}
                 onClick={() => toggleObserved(gift.id, { max: observeMax, observable: () => canObserve })}
