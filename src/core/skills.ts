@@ -11,7 +11,7 @@
  * gift performs, not whether a pack can hand it over. It is a reading of the deck, kept here
  * because it is pure and because the app must not reimplement it.
  */
-import type { AttackType, Gift, Sin, SkillSlot, SkillTrigger } from './schema.ts';
+import type { AttackType, Gift, IdentityKeywordId, SkillKeywords, Sin, SkillSlot, SkillTrigger } from './schema.ts';
 import type { GameIndexes } from './types.ts';
 
 /** One base attack skill of one identity in the deck. */
@@ -22,6 +22,10 @@ export interface SkillRef {
   attackType: AttackType | null;
   /** 0 marks an alternate skill in that slot (an awakened or transformed form). */
   copies: number;
+  /** The keywords this one skill uses — what 「[화상]을 부여하는 스킬 3」 asks about. */
+  keywords: SkillKeywords;
+  /** Every keyword the whole identity uses, for the 「…하는 인격이 사용하는 스킬 3」 shape. */
+  identityKeywords: SkillKeywords;
 }
 
 export interface GiftSkillMatch {
@@ -51,6 +55,15 @@ export function skillsOf(
       unknownSkillIdentities.push(identityId);
       continue;
     }
+    // What the identity uses anywhere, flattened once per identity: the 「…하는 인격이 사용하는
+    // 스킬 N」 shape asks about the whole kit, and `identity.keywords` is the count of exactly that.
+    const identityKeywords: SkillKeywords = { base: [], special: [] };
+    for (const [keyword, counts] of Object.entries(identity.keywords)) {
+      if (counts.skills > 0) identityKeywords.base.push(keyword as IdentityKeywordId);
+      if (counts.specialSkills > 0) identityKeywords.special.push(keyword as IdentityKeywordId);
+    }
+    identityKeywords.base.sort();
+    identityKeywords.special.sort();
     for (const skill of identity.skills) {
       skills.push({
         identityId,
@@ -58,6 +71,8 @@ export function skillsOf(
         sin: skill.sin,
         attackType: skill.attackType,
         copies: skill.copies,
+        keywords: skill.keywords,
+        identityKeywords,
       });
     }
   }
@@ -74,6 +89,16 @@ export function triggerMatches(trigger: SkillTrigger, skill: SkillRef): boolean 
   if (trigger.sin !== null && trigger.sin !== skill.sin) return false;
   if (trigger.attackType !== null && trigger.attackType !== skill.attackType) return false;
   if (trigger.slots.length > 0 && !trigger.slots.includes(skill.slot)) return false;
+  if (trigger.keywords.length > 0) {
+    // `subject` decides WHOSE keyword is asked for. 「[화상]을 부여하는 스킬 3」 wants that skill to
+    // do it; 「[진동]을 부여하는 아군이 사용하는 스킬 3」 wants the identity to do it somewhere and
+    // only uses the slot to say which skill the effect lands on. Folding the two would put a
+    // 진동 identity's unrelated slot-3 skill under the first wording, which is not what it says.
+    const owned = trigger.subject === 'identity' ? skill.identityKeywords : skill.keywords;
+    // 「또는 특수 X」 is what pulls the 특수 변형 in, the same rule `keywordSkillCount` follows.
+    const pool = trigger.includesSpecial ? [...owned.base, ...owned.special] : owned.base;
+    if (!trigger.keywords.some((keyword) => pool.includes(keyword))) return false;
+  }
   return true;
 }
 

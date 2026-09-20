@@ -207,8 +207,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "WRATH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -429,8 +433,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "WRATH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -758,8 +766,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -975,8 +987,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -1091,8 +1107,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -1311,14 +1331,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "SLOTH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -1432,8 +1460,12 @@
       {
         "attackType": "Slash",
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -1548,8 +1580,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "SLOTH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -1664,8 +1700,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "SLOTH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -1775,8 +1815,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLUTTONY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -1891,8 +1935,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLUTTONY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -2110,14 +2158,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLUTTONY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -2768,8 +2824,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -2884,8 +2944,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -2995,14 +3059,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -3222,8 +3294,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -3333,14 +3409,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -3450,8 +3534,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -3561,14 +3649,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -3682,8 +3778,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -3795,8 +3895,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -4559,14 +4663,22 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "WRATH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -4884,8 +4996,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "WRATH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -5305,8 +5421,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -5615,8 +5735,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "SLOTH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -6132,8 +6256,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLUTTONY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -6474,8 +6602,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLUTTONY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -6682,8 +6814,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -6793,8 +6929,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -6908,8 +7048,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -7581,8 +7725,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -7898,8 +8046,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -8009,8 +8161,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -8120,8 +8276,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -9881,8 +10041,12 @@
       {
         "attackType": "Slash",
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -10647,8 +10811,26 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
+      },
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [
+          "Breath"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "identity",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -11892,8 +12074,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -12774,8 +12960,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -12849,8 +13039,12 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -13355,7 +13549,22 @@
     "obtainable": true,
     "price": 254,
     "sin": "WRATH",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Charge"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "skill",
+        "verb": "any"
+      }
+    ],
     "tags": [
       "TIER_3"
     ],
@@ -13498,8 +13707,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -13575,8 +13788,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -13653,8 +13870,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -13728,8 +13949,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -13806,8 +14031,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -13885,8 +14114,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -13962,8 +14195,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14039,8 +14276,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14115,8 +14356,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14194,8 +14439,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14273,8 +14522,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14350,8 +14603,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14428,14 +14685,22 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14509,8 +14774,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14587,8 +14856,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -14666,8 +14939,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -16574,7 +16851,22 @@
     "obtainable": true,
     "price": 213,
     "sin": "GLOOM",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [
+          "Breath"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "identity",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_2"
     ],
@@ -16715,8 +17007,26 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
+      },
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [
+          "Breath"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "identity",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -17081,7 +17391,22 @@
     "obtainable": true,
     "price": 410,
     "sin": "LUST",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [
+          "Charge"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "skill",
+        "verb": "any"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -17966,8 +18291,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18039,20 +18368,32 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Penetrate",
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18126,10 +18467,14 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
         "slots": [
           1
-        ]
+        ],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18199,8 +18544,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18273,8 +18622,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18345,8 +18698,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18416,10 +18773,14 @@
       {
         "attackType": "Penetrate",
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
         "slots": [
           2
-        ]
+        ],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18489,8 +18850,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18563,8 +18928,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18635,20 +19004,32 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18718,8 +19099,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -18793,8 +19178,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -19162,8 +19551,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -19445,7 +19838,22 @@
     "obtainable": true,
     "price": 250,
     "sin": "WRATH",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Combustion"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "skill",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_3"
     ],
@@ -19511,7 +19919,22 @@
     "obtainable": true,
     "price": 398,
     "sin": "WRATH",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Combustion"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "skill",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -19740,8 +20163,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -19832,14 +20259,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -20551,8 +20986,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -20931,8 +21370,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -21307,14 +21750,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -21445,14 +21896,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLOOM",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -21839,8 +22298,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -21916,8 +22379,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -22282,8 +22749,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -22331,8 +22802,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -22401,20 +22876,32 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "WRATH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -22622,14 +23109,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "GLUTTONY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -22897,14 +23392,22 @@
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "WRATH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": null,
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "LUST",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -24059,8 +24562,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -25137,7 +25644,22 @@
     "obtainable": true,
     "price": 400,
     "sin": "LUST",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Vibration"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "identity",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -25202,7 +25724,22 @@
     "obtainable": true,
     "price": 400,
     "sin": "SLOTH",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Vibration"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "identity",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -25266,7 +25803,22 @@
     "obtainable": true,
     "price": 400,
     "sin": "ENVY",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Vibration"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "identity",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -25330,7 +25882,22 @@
     "obtainable": true,
     "price": 400,
     "sin": "GLOOM",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Vibration"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "identity",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -25468,8 +26035,26 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
+      },
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Charge"
+        ],
+        "sin": null,
+        "slots": [
+          1
+        ],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -25515,7 +26100,22 @@
     "obtainable": true,
     "price": 250,
     "sin": "PRIDE",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Charge"
+        ],
+        "sin": null,
+        "slots": [
+          1
+        ],
+        "subject": "skill",
+        "verb": "inflict"
+      }
+    ],
     "tags": [
       "TIER_3"
     ],
@@ -25824,8 +26424,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -25956,7 +26560,22 @@
     "obtainable": true,
     "price": 400,
     "sin": "PRIDE",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Charge"
+        ],
+        "sin": null,
+        "slots": [
+          3
+        ],
+        "subject": "skill",
+        "verb": "consume"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],
@@ -27015,8 +27634,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "PRIDE",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -27882,8 +28505,12 @@
       {
         "attackType": "Slash",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -27934,8 +28561,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -28227,8 +28858,12 @@
       {
         "attackType": "Hit",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -28989,8 +29624,12 @@
       {
         "attackType": "Penetrate",
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -29885,8 +30524,12 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "WRATH",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -29947,14 +30590,22 @@
       {
         "attackType": null,
         "effect": "gate",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": "ENVY",
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       },
       {
         "attackType": "Hit",
         "effect": "boost",
+        "includesSpecial": false,
+        "keywords": [],
         "sin": null,
-        "slots": []
+        "slots": [],
+        "subject": "skill",
+        "verb": "inflict"
       }
     ],
     "tags": [
@@ -30090,7 +30741,22 @@
     "obtainable": true,
     "price": 401,
     "sin": "ENVY",
-    "skillTriggers": [],
+    "skillTriggers": [
+      {
+        "attackType": null,
+        "effect": "gate",
+        "includesSpecial": true,
+        "keywords": [
+          "Charge"
+        ],
+        "sin": null,
+        "slots": [
+          1
+        ],
+        "subject": "skill",
+        "verb": "any"
+      }
+    ],
     "tags": [
       "TIER_4"
     ],

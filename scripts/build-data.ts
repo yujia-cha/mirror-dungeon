@@ -710,7 +710,7 @@ const derivedIdentities: Identity[] = rawPersonalities
       keywordSource,
       sins: [...sins].sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
       attackTypes: [...attackTypes].sort(),
-      skills: deriveIdentitySkills(raw, skills),
+      skills: deriveIdentitySkills(raw, skills, specialVariants),
     };
   });
 

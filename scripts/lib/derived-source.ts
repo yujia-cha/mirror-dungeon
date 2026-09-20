@@ -141,6 +141,11 @@ export function derivedSins(entry: DerivedIdentity): Sin[] {
  * This source states the slot outright (`type.tier`), so a backfilled identity loses nothing: the
  * four identities the static mirror never shipped answer 「몇 번 스킬이 무슨 속성인가」 as fully as
  * the other 183.
+ *
+ * Per-slot keywords are the one thing it cannot give: a `DerivedSkill` carries affinity, type and
+ * tier and nothing else, and `skillKeywordList` is stated for the identity as a whole. So the rows
+ * come back with empty keywords, which readers must take as 「모른다」 rather than 「없다」 — the
+ * 「스킬」 tab says how many identities it could not answer for instead of counting them as no.
  */
 export function derivedSkills(entry: DerivedIdentity): IdentitySkill[] {
   const rows: { skill: IdentitySkill; id: number }[] = [];
@@ -155,6 +160,7 @@ export function derivedSkills(entry: DerivedIdentity): IdentitySkill[] {
         sin: skill.type?.affinity ? (SIN_BY_AFFINITY[skill.type.affinity] ?? null) : null,
         attackType: skill.type?.type ? (ATTACK_BY_TYPE[skill.type.type] ?? null) : null,
         copies: Math.max(0, skill.num ?? 0),
+        keywords: { base: [], special: [] },
       },
     });
   }

@@ -275,6 +275,20 @@ export const STRINGS = {
   skillsSinSubject: { ko: '{sin} 속성', en: '{sin}' },
   skillsTriggerAny: { ko: '{subject} 스킬', en: '{subject} skills' },
   skillsTriggerSlot: { ko: '{slots}스킬이 {subject}', en: 'Skill {slots} is {subject}' },
+  // 스킬 단위 vs 인격 단위 — the same keyword, asked of two different things.
+  skillsTriggerKeywordSkill: {
+    ko: '{slots}스킬이 {keyword} {verb}',
+    en: 'Skill {slots} {verb} {keyword}',
+  },
+  skillsTriggerKeywordIdentity: {
+    ko: '{keyword} {verb} 인격의 {slots}스킬',
+    en: 'Skill {slots} of an identity that {verb} {keyword}',
+  },
+  skillsKeywordSpecial: { ko: '{keyword}(특수)', en: '{keyword} (incl. unique)' },
+  skillsKeywordOr: { ko: '·', en: ' or ' },
+  skillsVerbInflict: { ko: '부여', en: 'applies' },
+  skillsVerbConsume: { ko: '소모', en: 'spends' },
+  skillsVerbAny: { ko: '사용', en: 'uses' },
   skillsExcluded: {
     ko: '덱이 조건을 채우지 못하는 기프트 {n}개는 뺐습니다',
     en: 'Hid {n} gift(s) whose own condition this deck does not meet',

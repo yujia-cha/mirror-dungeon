@@ -23,11 +23,12 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, Users } from 'lucide-react';
 import type { AttackType, EffectBucket, Gift, SkillTrigger } from '../../core/schema.ts';
-import { ATTACK_TYPES, EFFECT_BUCKETS } from '../../core/schema.ts';
+import type { IdentityKeywordId } from '../../core/schema.ts';
+import { ATTACK_TYPES, EFFECT_BUCKETS, IDENTITY_KEYWORDS } from '../../core/schema.ts';
 import type { SkillRef } from '../../core/index.ts';
-import { evaluateConditions, matchSkillTriggers, skillsOf } from '../../core/index.ts';
+import { evaluateConditions, matchSkillTriggers, skillsOf, triggerMatches } from '../../core/index.ts';
 import { pick, t } from '../i18n.ts';
-import type { Lang, StringKey } from '../i18n.ts';
+import type { Lang } from '../i18n.ts';
 import { BUCKET_LABEL } from '../lib/labels.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
 import { ownerText, triggerText } from '../lib/skill-lines.ts';
@@ -37,19 +38,12 @@ import { GiftIcon } from '../components/GiftIcon.tsx';
 import { Badge, Button, Card, Notice, TagToggles } from '../components/ui.tsx';
 import { usePlan } from './PlanContext.tsx';
 
-/** 발동 before 강화: what a skill makes happen beats what it merely sharpens. */
-const EFFECTS = ['gate', 'boost'] as const;
-type Effect = (typeof EFFECTS)[number];
-
-const EFFECT_LABEL: Record<Effect, StringKey> = { gate: 'skillsGate', boost: 'skillsBoost' };
-
 interface Row {
   gift: Gift;
   /** The triggers some deployed skill satisfies, in the gift's own order. */
   triggers: SkillTrigger[];
   /** The skills that satisfied them. */
   skills: SkillRef[];
-  effect: Effect;
   buckets: EffectBucket[];
 }
 
@@ -63,7 +57,6 @@ function passes<T>(selected: ReadonlySet<T>, has: (value: T) => boolean): boolea
 export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
   const { data, indexes, stats, lang, judgements, giftTitle, giftName, openGift } = usePlan();
   const enums = useEnums();
-  const [effects, setEffects] = useState<ReadonlySet<Effect>>(new Set<Effect>(['gate']));
   const [buckets, setBuckets] = useState<ReadonlySet<EffectBucket>>(new Set<EffectBucket>(['damage']));
   const [folded, setFolded] = useState<Partial<Record<EffectBucket, boolean>>>({});
 
@@ -88,33 +81,31 @@ export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
     for (const match of matches) {
       const gift = indexes.giftById.get(match.giftId);
       if (!gift || unmet.has(match.giftId)) continue;
-      out.push({
-        gift,
-        triggers: match.triggers,
-        skills: match.skills,
-        effect: match.triggers.every((trigger) => trigger.effect === 'boost') ? 'boost' : 'gate',
-        buckets: gift.effectBuckets,
-      });
+      // Only what a skill makes HAPPEN. A gift whose every trigger merely sharpens an effect the
+      // deck would get anyway (「효과가 강화되어」) answers a different question from 「무엇이 내
+      // 스킬 때문에 켜지나」, and mixing the two buried the answer among 28 near-misses.
+      const triggers = match.triggers.filter((trigger) => trigger.effect === 'gate');
+      if (triggers.length === 0) continue;
+      // And the two lines must describe those triggers alone. `match.skills` is flat across every
+      // trigger the gift has, so on 9098 복주머니 — 「우울 속성 스킬」 (강화) beside 「[호흡]…인격이
+      // 사용하는 스킬 3」 (발동) — it would name 우울 identities under a 호흡 heading.
+      const skills = match.skills.filter((skill) =>
+        triggers.some((trigger) => triggerMatches(trigger, skill)),
+      );
+      out.push({ gift, triggers, skills, buckets: gift.effectBuckets });
     }
     return out;
   }, [matches, indexes, unmet]);
 
-  // A tag's count is what picking it would actually give you, so it answers to the OTHER axis's
-  // filter: with only 발동 on, 「E.G.O 자원 0」 is the truth and saying 1 would not be.
-  const effectOptions = EFFECTS.map((effect) => ({
-    value: effect,
-    label: t(EFFECT_LABEL[effect], lang),
-    count: rows.filter((row) => row.effect === effect && passes(buckets, (b) => row.buckets.includes(b))).length,
-  }));
+  // A tag's count is what picking it would actually give you — with one axis left, that is simply
+  // how many gifts carry it.
   const bucketOptions = EFFECT_BUCKETS.map((bucket) => ({
     value: bucket,
     label: t(BUCKET_LABEL[bucket], lang),
-    count: rows.filter((row) => row.buckets.includes(bucket) && passes(effects, (e) => row.effect === e)).length,
+    count: rows.filter((row) => row.buckets.includes(bucket)).length,
   }));
 
-  const shown = rows.filter(
-    (row) => passes(effects, (e) => row.effect === e) && passes(buckets, (b) => row.buckets.includes(b)),
-  );
+  const shown = rows.filter((row) => passes(buckets, (b) => row.buckets.includes(b)));
   // Only the 계열 the reader asked for get a section; with the row empty, every one that has gifts.
   const sections = EFFECT_BUCKETS.filter(
     (bucket) => (buckets.size === 0 || buckets.has(bucket)) && shown.some((row) => row.buckets.includes(bucket)),
@@ -131,6 +122,14 @@ export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
     const out = {} as Record<AttackType, string>;
     for (const id of ATTACK_TYPES) out[id] = enums ? keywordName(id, enums, lang) : id;
     return out;
+  }, [enums, lang]);
+
+  // Keyword display names come from the enums like the attack types do, never from i18n: they are
+  // game names, and the season file is what knows them.
+  const keywordNames = useMemo(() => {
+    const out = {} as Record<IdentityKeywordId, string>;
+    for (const id of IDENTITY_KEYWORDS) out[id] = enums ? keywordName(id as never, enums, lang) : id;
+    return (keyword: IdentityKeywordId): string => out[keyword] ?? keyword;
   }, [enums, lang]);
 
   const identityName = (identityId: number): { short: string; full: string } => {
@@ -159,25 +158,14 @@ export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
 
   return (
     <div className="flex flex-col gap-3" data-testid="skills-panel">
-      <div className="flex flex-col gap-1.5">
-        <div data-axis="effect">
-          <TagToggles
-            label={t('skillsTagsEffect', lang)}
-            options={effectOptions}
-            selected={effects}
-            onToggle={(value) => setEffects((set) => toggle(set, value))}
-            testId="skills-tags"
-          />
-        </div>
-        <div data-axis="bucket">
-          <TagToggles
-            label={t('skillsTagsBucket', lang)}
-            options={bucketOptions}
-            selected={buckets}
-            onToggle={(value) => setBuckets((set) => toggle(set, value))}
-            testId="skills-tags"
-          />
-        </div>
+      <div data-axis="bucket">
+        <TagToggles
+          label={t('skillsTagsBucket', lang)}
+          options={bucketOptions}
+          selected={buckets}
+          onToggle={(value) => setBuckets((set) => toggle(set, value))}
+          testId="skills-tags"
+        />
       </div>
       <div className="px-0.5 text-xs text-fg-3" data-testid="skills-summary">
         {t('skillsSummary', lang, { n: shown.length, m: stats.deployed.length })}
@@ -203,10 +191,7 @@ export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
           <div className="text-sm text-fg-2">{t('skillsNoneTagged', lang)}</div>
           <Button
             variant="secondary"
-            onClick={() => {
-              setEffects(new Set());
-              setBuckets(new Set());
-            }}
+            onClick={() => setBuckets(new Set())}
           >
             {t('skillsClearTags', lang)}
           </Button>
@@ -221,6 +206,7 @@ export function SkillGiftsPanel({ onOpenDeck }: { onOpenDeck?: () => void }) {
             onToggle={() => setFolded((state) => ({ ...state, [bucket]: !(state[bucket] ?? false) }))}
             lang={lang}
             attackNames={attackNames}
+            keywordNames={keywordNames}
             judgements={judgements}
             giftTitle={giftTitle}
             openGift={openGift}
@@ -239,6 +225,7 @@ function BucketSection({
   onToggle,
   lang,
   attackNames,
+  keywordNames,
   judgements,
   giftTitle,
   openGift,
@@ -250,6 +237,7 @@ function BucketSection({
   onToggle: () => void;
   lang: Lang;
   attackNames: Record<AttackType, string>;
+  keywordNames: (keyword: IdentityKeywordId) => string;
   judgements: ReturnType<typeof usePlan>['judgements'];
   giftTitle: ReturnType<typeof usePlan>['giftTitle'];
   openGift: (giftId: number) => void;
@@ -281,6 +269,7 @@ function BucketSection({
                   bucket={bucket}
                   lang={lang}
                   attackNames={attackNames}
+                  keywordNames={keywordNames}
                   judgement={judgements.get(row.gift.id) ?? null}
                   title={giftTitle(row.gift.id)}
                   openGift={openGift}
@@ -299,6 +288,7 @@ function GiftRow({
   bucket,
   lang,
   attackNames,
+  keywordNames,
   judgement,
   title,
   openGift,
@@ -308,6 +298,7 @@ function GiftRow({
   bucket: EffectBucket;
   lang: Lang;
   attackNames: Record<AttackType, string>;
+  keywordNames: (keyword: IdentityKeywordId) => string;
   judgement: ReturnType<typeof usePlan>['judgements'] extends Map<number, infer V> ? V : never;
   title: string | undefined;
   openGift: (giftId: number) => void;
@@ -318,7 +309,6 @@ function GiftRow({
     <li
       data-testid="skill-gift"
       data-gift={row.gift.id}
-      data-effect={row.effect}
       data-bucket={bucket}
       data-buckets={row.buckets.join(',')}
       className="flex items-start gap-2 px-3 py-2"
@@ -336,7 +326,6 @@ function GiftRow({
           </button>
           {/* Its own tags, so a gift listed under two 계열 says where else it sits. */}
           <span className="flex flex-wrap gap-1" data-testid="skill-gift-tags">
-            <Badge tone="neutral">{t(EFFECT_LABEL[row.effect], lang)}</Badge>
             {row.buckets.map((other) => (
               <Badge key={other} tone="neutral">
                 {t(BUCKET_LABEL[other], lang)}
@@ -345,7 +334,7 @@ function GiftRow({
           </span>
         </div>
         <span className="text-[11px] text-fg-2" data-testid="skill-gift-trigger">
-          {triggerText(row.triggers, lang, attackNames)}
+          {triggerText(row.triggers, lang, attackNames, keywordNames)}
         </span>
         <span
           className="text-[11px] text-fg-3"

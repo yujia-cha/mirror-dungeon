@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import type { SkillTrigger } from '../src/core/schema.ts';
 import {
   enumsSchema,
   giftsFileSchema,
@@ -17,6 +18,21 @@ import {
   seasonIndexSchema,
 } from '../src/core/schema.ts';
 import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../src/core/text.ts';
+
+/** An expected trigger, spelling out only the axes a case is about. */
+function trigger(partial: Partial<SkillTrigger>): SkillTrigger {
+  return {
+    sin: null,
+    attackType: null,
+    keywords: [],
+    verb: 'inflict',
+    includesSpecial: false,
+    subject: 'skill',
+    slots: [],
+    effect: 'gate',
+    ...partial,
+  };
+}
 
 const DATA = resolve(process.cwd(), 'public/data');
 const index = seasonIndexSchema.parse(JSON.parse(readFileSync(resolve(DATA, 'index.json'), 'utf8')));
@@ -124,7 +140,9 @@ describe('gifts', () => {
 
   it('reads a skill trigger out of every gift whose effect names a skill', () => {
     const triggered = gifts.filter((g) => g.skillTriggers.length > 0);
-    expect(triggered).toHaveLength(92);
+    // 92 sin/type gifts plus the 12 that only a keyword clause reaches (15 carry one, 3 of which
+    // already had a sin clause of their own).
+    expect(triggered).toHaveLength(104);
     // The same loose scan data:validate uses: a gift that plainly names one must have parsed one.
     const loose =
       /(분노|색욕|나태|탐식|우울|오만|질투|참격|관통|타격)[^\n가-힣]{0,4}(?:속성|유형)?[^\n가-힣]{0,4}(?:기본\s*)?(?:공격\s*)?스킬/;
@@ -135,26 +153,53 @@ describe('gifts', () => {
     const ascending = (values: readonly number[]) => values.every((v, i) => i === 0 || v > values[i - 1]!);
     for (const gift of gifts) {
       for (const trigger of gift.skillTriggers) {
-        expect(trigger.sin !== null || trigger.attackType !== null).toBe(true);
+        // A trigger has to state SOMETHING, or it would match every skill in the game.
+        expect(
+          trigger.sin !== null || trigger.attackType !== null || trigger.keywords.length > 0,
+        ).toBe(true);
         expect(ascending(trigger.slots)).toBe(true);
+        // The keyword axes are only meaningful alongside a keyword; left at their defaults
+        // otherwise, so nothing downstream has to ask whether they apply.
+        if (trigger.keywords.length === 0) {
+          expect([trigger.verb, trigger.includesSpecial, trigger.subject]).toEqual([
+            'inflict',
+            false,
+            'skill',
+          ]);
+        }
       }
       expect(ascending(gift.formationSlots)).toBe(true);
       expect(gift.formationSlots.every((slot) => slot >= 1 && slot <= 12)).toBe(true);
     }
-    // Only these two narrow themselves to a slot; the third such sentence (9203) is widened again
-    // by a later line, which is what the parser's subsumption rule is for.
+    // Every gift that narrows itself to a slot — two by attack type, the rest by keyword. 9203 is
+    // absent on purpose: its 「스킬 1, 스킬 2」 is widened again by a later unrestricted line, which
+    // is what the parser's subsumption rule is for.
     expect(gifts.filter((g) => g.skillTriggers.some((t) => t.slots.length > 0)).map((g) => g.id)).toEqual([
-      9195, 9199,
+      9098, 9135, 9177, 9179, 9184, 9195, 9199, 9215, 9216, 9728, 9729, 9730, 9731, 9734, 9735,
+      9743, 9841,
     ]);
     expect(gifts.filter((g) => g.formationSlots.length > 0)).toHaveLength(60);
   });
 
   it.each([
-    [9013, [{ sin: null, attackType: 'Slash', slots: [], effect: 'boost' }], []],
-    [9767, [{ sin: 'PRIDE', attackType: 'Penetrate', slots: [], effect: 'gate' }], [1]],
-    [9195, [{ sin: null, attackType: 'Slash', slots: [1], effect: 'gate' }], []],
-    [9193, [{ sin: null, attackType: 'Slash', slots: [], effect: 'gate' }], [3]],
+    [9013, [trigger({ attackType: 'Slash', effect: 'boost' })], []],
+    [9767, [trigger({ sin: 'PRIDE', attackType: 'Penetrate' })], [1]],
+    [9195, [trigger({ attackType: 'Slash', slots: [1] })], []],
+    [9193, [trigger({ attackType: 'Slash' })], [3]],
     [9761, [], [1, 2, 7, 8]],
+    // 9734 E식 차원 단검 — the gift that showed the keyword clause was being missed entirely.
+    [
+      9734,
+      [
+        trigger({ sin: 'ENVY' }),
+        trigger({ keywords: ['Charge'], includesSpecial: true, slots: [1] }),
+      ],
+      [],
+    ],
+    // 인격 단위: the identity brings 진동, the slot only says which skill is buffed.
+    [9728, [trigger({ keywords: ['Vibration'], includesSpecial: true, slots: [3], subject: 'identity' })], []],
+    // 9216 states the same clause negated and then positive; only the positive one may survive.
+    [9216, [trigger({ keywords: ['Combustion'], includesSpecial: true, slots: [3] })], []],
   ])('gift %i keys off the skills its text names', (id, triggers, formationSlots) => {
     const gift = giftById.get(id as number)!;
     expect(gift.skillTriggers).toEqual(triggers);
@@ -166,9 +211,9 @@ describe('gifts', () => {
     expect(triggered.filter((g) => g.effectBuckets.length === 0)).toEqual([]);
     const rows = triggered.flatMap((g) => g.effectBuckets);
     const count = (bucket: string) => rows.filter((b) => b === bucket).length;
-    // 138 rows over 92 gifts: a gift that helps two ways is listed under each.
+    // A gift that helps two ways is listed under each, so the rows outnumber the 104 gifts.
     expect([count('damage'), count('survival'), count('egoResource'), count('buff'), count('debuff')]).toEqual([
-      41, 12, 1, 60, 24,
+      51, 13, 1, 72, 27,
     ]);
     expect(triggered.filter((g) => g.effectBuckets.includes('egoResource')).map((g) => g.id)).toEqual([9002]);
   });
@@ -364,20 +409,49 @@ describe('identities', () => {
     }
   });
 
-  it('reads 10101 이상 LCB 수감자 slot by slot', () => {
+  it('reads 10101 이상 LCB 수감자 slot by slot, keywords included', () => {
+    // All three skills sink, which is what 「[침잠]을 부여하는 스킬 3」 has to be able to ask.
+    const sinking = { base: ['Sinking'], special: [] };
     expect(identityById.get(10101)!.skills).toEqual([
-      { slot: 1, sin: 'GLOOM', attackType: 'Slash', copies: 3 },
-      { slot: 2, sin: 'ENVY', attackType: 'Penetrate', copies: 2 },
-      { slot: 3, sin: 'SLOTH', attackType: 'Slash', copies: 1 },
+      { slot: 1, sin: 'GLOOM', attackType: 'Slash', copies: 3, keywords: sinking },
+      { slot: 2, sin: 'ENVY', attackType: 'Penetrate', copies: 2, keywords: sinking },
+      { slot: 3, sin: 'SLOTH', attackType: 'Slash', copies: 1, keywords: sinking },
     ]);
   });
 
   it('keeps an alternate skill that shares a slot but not its axes (11115 오티스)', () => {
     const skills = identityById.get(11115)!.skills;
+    const burnBleed = { base: ['Combustion', 'Laceration'], special: [] };
     expect(skills.filter((s) => s.slot === 1)).toEqual([
-      { slot: 1, sin: 'LUST', attackType: 'Hit', copies: 3 },
-      { slot: 1, sin: 'ENVY', attackType: 'Hit', copies: 0 },
+      { slot: 1, sin: 'LUST', attackType: 'Hit', copies: 3, keywords: burnBleed },
+      { slot: 1, sin: 'ENVY', attackType: 'Hit', copies: 0, keywords: burnBleed },
     ]);
+  });
+
+  it('never lets a slot claim a keyword the identity as a whole does not have', () => {
+    // The per-slot table and the identity's counts are two readings of one loop, so the slots can
+    // only ever name a subset. A slot naming more would mean the two had drifted apart.
+    for (const identity of identities) {
+      const counted = new Set(Object.keys(identity.keywords));
+      for (const skill of identity.skills) {
+        for (const keyword of [...skill.keywords.base, ...skill.keywords.special]) {
+          expect(counted.has(keyword)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('knows which slot uses a keyword for every identity a source describes', () => {
+    // Exactly the four backfilled identities, and for one reason: the derived mirror states a
+    // skill's affinity, type and tier and never its keywords, so it knows THAT they use one
+    // without knowing WHICH slot does. Readers must take an empty table as 「모른다」, not 「없다」 —
+    // so it matters that the set stays small and named.
+    const silent = identities.filter(
+      (i) =>
+        Object.keys(i.keywords).length > 0 &&
+        i.skills.every((s) => s.keywords.base.length === 0 && s.keywords.special.length === 0),
+    );
+    expect(silent.map((i) => i.id)).toEqual([10116, 10416, 10616, 10816]);
   });
 
   it('derives keywords from skills for all but a handful of identities', () => {

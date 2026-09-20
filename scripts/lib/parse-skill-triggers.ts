@@ -36,9 +36,17 @@
  * A gift whose sentence this misses is corrected in `data/curated/conditions.json`, the same file
  * that corrects conditions — and `data:validate` re-scans the text loosely so a missed one is loud.
  */
-import type { AttackType, Localized, Sin, SkillSlot, SkillTrigger } from '../../src/core/schema.ts';
-import { ATTACK_TYPES, SINS } from '../../src/core/schema.ts';
+import type {
+  AttackType,
+  IdentityKeywordId,
+  Localized,
+  Sin,
+  SkillSlot,
+  SkillTrigger,
+} from '../../src/core/schema.ts';
+import { ATTACK_TYPES, IDENTITY_KEYWORDS, SINS } from '../../src/core/schema.ts';
 import { stripRichText } from '../../src/core/text.ts';
+import { KEYWORD_KO } from './parse-conditions.ts';
 
 /** Korean sin name -> the id the app uses. */
 const SIN_BY_KO: Record<string, Sin> = {
@@ -109,6 +117,111 @@ const BOOST_RE = /효과가\s*강화|효과를\s*대신하여|효과가\s*변경
 
 const SUBJECT_RE = new RegExp(SUBJECT, 'g');
 
+// ---------------------------------------------------------------------------
+// Keyword triggers — 「[충전] 횟수 또는 특수 충전을 증가시키는 스킬 1」
+// ---------------------------------------------------------------------------
+
+/**
+ * Korean keyword name -> the id the app uses. 탄환·혈찬 are identity-only keywords and no gift
+ * sentence names them this way today, but they are the same grammar, so the table stays whole.
+ */
+const KEYWORD_BY_KO: Record<string, IdentityKeywordId> = {
+  ...Object.fromEntries(
+    Object.entries(KEYWORD_KO).map(([id, ko]) => [ko, id as IdentityKeywordId]),
+  ),
+  탄환: 'Bullet',
+  혈찬: 'BloodDinner',
+};
+
+/**
+ * The same keywords under the ids the game writes, because **this parser runs before the buff ids
+ * are localized**. The raw sentence is 「[Charge] 횟수 또는 특수 충전을 증가시키는 스킬 1」: the
+ * bracketed token is still English and only the 특수 variant is Korean prose. Matching Korean
+ * alone would start the clause at 「특수 충전」 and lose both the 특수 flag and, where the sentence
+ * never spells the keyword out in Korean (9098 복주머니, 9177·9179), the trigger entirely.
+ * `parse-conditions.ts` reads both forms for the same reason.
+ */
+const KEYWORD_BY_NAME: Record<string, IdentityKeywordId> = {
+  ...KEYWORD_BY_KO,
+  ...Object.fromEntries(IDENTITY_KEYWORDS.map((id) => [id, id])),
+};
+
+// Longest first so 「[Combustion]」 never matches as a prefix of something else.
+const KEYWORDS_ANY = Object.keys(KEYWORD_BY_NAME)
+  .sort((a, b) => b.length - a.length)
+  .join('|');
+
+/** Every verb the sentences use for touching a keyword. 얻 covers 「소모하거나 얻는」. */
+const VERB = '부여|획득|증가|감소|소모|얻';
+
+/**
+ * A keyword clause that qualifies one 스킬, with its slot.
+ *
+ * Shape: a keyword mention, the OR-list the game spells out (「위력 또는 [화상] 횟수 또는 특수
+ * 화상을」), the verb run (「부여하는」, 「증가시키는」, 「획득하거나 소모하는」), an optional
+ * 「인격이 사용하는」, then the slot. The whole match is re-read afterwards for the other keywords
+ * in the list, for 특수, and for every verb word — the regex only has to find the clause.
+ *
+ * **The slot must not be negated.** 9216 제식 복장 says 「…부여하는 스킬 3이 아닌 스킬의 피해량」 in
+ * one line and 「…부여하는 스킬 3의 더하기 코인 위력」 in the next. Reading the first would claim the
+ * opposite of what the gift does, so a slot followed by 「이 아닌」 is rejected — the second line
+ * still matches and carries the truth.
+ *
+ * **The verb must run straight into the ending**, either by itself (「부여하는」, 「증가시키는」) or
+ * through 「하거나 <verb>」 (「획득하거나 소모하는」, 「소모하거나 얻는」). Allowing any words between
+ * them lets a clause boundary through, and then 9771 근접 전술 교본's 「[탄환]을 얻으면, 이번 턴과
+ * 다음 턴에 사용하는 스킬 3」 reads as 「탄환을 얻는 스킬 3」 — but there the keyword is a separate
+ * event and the slot is only what the effect lands on, so the gift would be described backwards.
+ */
+const KEYWORD_TRIGGER_RE = new RegExp(
+  `\\[?(?:${KEYWORDS_ANY})\\]?` +
+    `[^.\\n]{0,80}?(?:${VERB})(?:\\s*하?거나\\s*(?:${VERB}))?(?:하는|시키는|는)\\s*` +
+    `((?:인격|아군)이\\s*사용하는\\s*)?` +
+    `스킬\\s*([123])(?!\\s*이?\\s*아닌)`,
+  'g',
+);
+
+const KEYWORD_MENTION_RE = new RegExp(`\\[?(${KEYWORDS_ANY})\\]?`, 'g');
+const VERB_RE = new RegExp(VERB, 'g');
+
+/**
+ * Read one matched clause into a trigger.
+ *
+ * 「또는 특수 충전」 is the only thing that makes 특수 변형 count — the same rule conditions follow,
+ * and the reason 탄환 is exempt elsewhere does not apply here because no bullet gift exists.
+ */
+function keywordTriggerOf(clause: string, identityScope: boolean, slot: SkillSlot, effect: SkillTrigger['effect']): SkillTrigger | null {
+  KEYWORD_MENTION_RE.lastIndex = 0;
+  const keywords = [
+    ...new Set([...clause.matchAll(KEYWORD_MENTION_RE)].map((m) => KEYWORD_BY_NAME[m[1]!]!)),
+  ].sort();
+  if (keywords.length === 0) return null;
+  VERB_RE.lastIndex = 0;
+  const verbs = new Set(clause.match(VERB_RE) ?? []);
+  const consumes = verbs.has('소모');
+  const gains = verbs.has('부여') || verbs.has('획득') || verbs.has('증가') || verbs.has('얻');
+  const verb = consumes && gains ? 'any' : consumes ? 'consume' : 'inflict';
+  const includesSpecial = keywords.some((kw) => {
+    const ko = KEYWORD_BY_KO_REVERSE[kw];
+    return ko ? new RegExp(`특수\\s*${ko}`).test(clause) : false;
+  });
+  return {
+    sin: null,
+    attackType: null,
+    keywords,
+    verb,
+    includesSpecial,
+    subject: identityScope ? 'identity' : 'skill',
+    slots: [slot],
+    effect,
+  };
+}
+
+/** Back to the Korean name, which is the only form 「특수 X」 is ever written in. */
+const KEYWORD_BY_KO_REVERSE: Partial<Record<IdentityKeywordId, string>> = Object.fromEntries(
+  Object.entries(KEYWORD_BY_KO).map(([ko, id]) => [id, ko]),
+);
+
 function triggerOf(
   words: string[],
   slots: SkillSlot[],
@@ -116,7 +229,16 @@ function triggerOf(
 ): SkillTrigger {
   const sin = words.map((w) => SIN_BY_KO[w]).find(Boolean) ?? null;
   const attackType = words.map((w) => ATTACK_BY_KO[w]).find(Boolean) ?? null;
-  return { sin, attackType, slots, effect };
+  return {
+    sin,
+    attackType,
+    keywords: [],
+    verb: 'inflict',
+    includesSpecial: false,
+    subject: 'skill',
+    slots,
+    effect,
+  };
 }
 
 /** The line a match sits on — the game writes one effect per line. */
@@ -133,8 +255,22 @@ function subjectRank(trigger: SkillTrigger): number {
   return SINS.length + ATTACK_TYPES.length;
 }
 
+/**
+ * What makes two triggers the same subject, and so foldable.
+ *
+ * The keyword axes join the key rather than being folded into it: 「[충전]을 획득하는 스킬 1」 and
+ * 「[충전]을 소모하는 스킬 3」 are two different demands on the deck, and 스킬 단위 vs 인격 단위 is
+ * the whole distinction the panel draws.
+ */
 function keyOf(trigger: SkillTrigger): string {
-  return `${trigger.sin ?? ''}|${trigger.attackType ?? ''}`;
+  return [
+    trigger.sin ?? '',
+    trigger.attackType ?? '',
+    trigger.keywords.join(','),
+    trigger.keywords.length > 0 ? trigger.verb : '',
+    trigger.keywords.length > 0 ? trigger.subject : '',
+    trigger.keywords.length > 0 && trigger.includesSpecial ? 'special' : '',
+  ].join('|');
 }
 
 /**
@@ -146,12 +282,15 @@ function keyOf(trigger: SkillTrigger): string {
  * effect does not also need a row saying it strengthens it.
  */
 function normalise(triggers: SkillTrigger[]): SkillTrigger[] {
-  const bySubject = new Map<string, { slots: SkillSlot[] | null; gate: boolean }>();
+  // The first trigger of a key carries the axes the key already pins down; only `slots` and
+  // `effect` are merged across the group, so it can stand for the whole of it.
+  const bySubject = new Map<string, { first: SkillTrigger; slots: SkillSlot[] | null; gate: boolean }>();
   for (const trigger of triggers) {
     const key = keyOf(trigger);
     const seen = bySubject.get(key);
     if (!seen) {
       bySubject.set(key, {
+        first: trigger,
         slots: trigger.slots.length === 0 ? null : [...trigger.slots],
         gate: trigger.effect === 'gate',
       });
@@ -162,17 +301,15 @@ function normalise(triggers: SkillTrigger[]): SkillTrigger[] {
     if (trigger.slots.length === 0) seen.slots = null;
     else for (const slot of trigger.slots) if (!seen.slots.includes(slot)) seen.slots.push(slot);
   }
-  return [...bySubject.entries()]
-    .map(([key, value]) => {
-      const [sin, attackType] = key.split('|');
-      return {
-        sin: (sin || null) as Sin | null,
-        attackType: (attackType || null) as AttackType | null,
-        slots: (value.slots ?? []).sort((a, b) => a - b),
-        effect: (value.gate ? 'gate' : 'boost') as SkillTrigger['effect'],
-      };
-    })
-    .sort((a, b) => subjectRank(a) - subjectRank(b));
+  return [...bySubject.values()]
+    .map((value) => ({
+      ...value.first,
+      slots: (value.slots ?? []).sort((a, b) => a - b),
+      effect: (value.gate ? 'gate' : 'boost') as SkillTrigger['effect'],
+    }))
+    // Keyword triggers all share the last rank, so the key breaks the tie — output order must not
+    // depend on where in the text the clauses happened to sit.
+    .sort((a, b) => subjectRank(a) - subjectRank(b) || (keyOf(a) < keyOf(b) ? -1 : keyOf(a) > keyOf(b) ? 1 : 0));
 }
 
 export interface SkillTriggerResult {
@@ -197,6 +334,14 @@ export function parseSkillTriggers(desc: Localized): SkillTriggerResult {
     // A run joined by 「,」 or 「또는」 lists alternatives; one joined by nothing narrows itself.
     if (/,|또는/.test(run)) for (const word of words) found.push(triggerOf([word], slots, effect));
     else found.push(triggerOf(words, slots, effect));
+  }
+
+  KEYWORD_TRIGGER_RE.lastIndex = 0;
+  for (const match of ko.matchAll(KEYWORD_TRIGGER_RE)) {
+    const slot = Number(match[2]) as SkillSlot;
+    const effect = BOOST_RE.test(lineAt(ko, match.index)) ? 'boost' : 'gate';
+    const trigger = keywordTriggerOf(match[0], Boolean(match[1]), slot, effect);
+    if (trigger) found.push(trigger);
   }
 
   const formationSlots = new Set<number>();

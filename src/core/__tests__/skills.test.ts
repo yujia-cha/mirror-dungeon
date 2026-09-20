@@ -32,19 +32,41 @@ function identity(id: number, skills: Identity['skills']): Identity {
   };
 }
 
+/** A trigger with only the axes a test cares about; the rest stay at their "asks nothing" value. */
+function trigger(partial: Partial<SkillTrigger>): SkillTrigger {
+  return {
+    sin: null,
+    attackType: null,
+    keywords: [],
+    verb: 'inflict',
+    includesSpecial: false,
+    subject: 'skill',
+    slots: [],
+    effect: 'gate',
+    ...partial,
+  };
+}
+
+/** A skill row; `keywords` defaults to none, which is what most of these fixtures want. */
+function skillRow(
+  partial: Partial<Identity['skills'][number]> & { slot: 1 | 2 | 3 },
+): Identity['skills'][number] {
+  return { sin: null, attackType: null, copies: 1, keywords: { base: [], special: [] }, ...partial };
+}
+
 function gift(id: number, skillTriggers: SkillTrigger[]): Gift {
   const base = live.gifts[0]!;
   return { ...base, id, name: { ko: `기프트 ${id}`, en: `Gift ${id}` }, skillTriggers, formationSlots: [] };
 }
 
 const WRATH_SLASH = identity(10101, [
-  { slot: 1, sin: 'WRATH', attackType: 'Slash', copies: 3 },
-  { slot: 2, sin: 'GLOOM', attackType: 'Hit', copies: 2 },
-  { slot: 3, sin: 'WRATH', attackType: 'Penetrate', copies: 1 },
+  skillRow({ slot: 1, sin: 'WRATH', attackType: 'Slash', copies: 3 }),
+  skillRow({ slot: 2, sin: 'GLOOM', attackType: 'Hit', copies: 2 }),
+  skillRow({ slot: 3, sin: 'WRATH', attackType: 'Penetrate', copies: 1 }),
 ]);
 const ENVY_HIT = identity(10201, [
-  { slot: 1, sin: 'ENVY', attackType: 'Hit', copies: 3 },
-  { slot: 2, sin: 'ENVY', attackType: 'Hit', copies: 0 },
+  skillRow({ slot: 1, sin: 'ENVY', attackType: 'Hit', copies: 3 }),
+  skillRow({ slot: 2, sin: 'ENVY', attackType: 'Hit', copies: 0 }),
 ]);
 const NO_SKILLS = identity(10301, []);
 
@@ -74,32 +96,71 @@ describe('skillsOf', () => {
 });
 
 describe('triggerMatches', () => {
-  const skill: SkillRef = { identityId: 1, slot: 2, sin: 'WRATH', attackType: 'Slash', copies: 2 };
+  const skill: SkillRef = {
+    identityId: 1,
+    slot: 2,
+    sin: 'WRATH',
+    attackType: 'Slash',
+    copies: 2,
+    keywords: { base: ['Combustion'], special: ['Charge'] },
+    identityKeywords: { base: ['Combustion', 'Sinking'], special: ['Charge'] },
+  };
 
   it('ignores an axis the trigger leaves null', () => {
-    expect(triggerMatches({ sin: 'WRATH', attackType: null, slots: [], effect: 'gate' }, skill)).toBe(true);
-    expect(triggerMatches({ sin: null, attackType: 'Slash', slots: [], effect: 'gate' }, skill)).toBe(true);
+    expect(triggerMatches(trigger({ sin: 'WRATH', attackType: null, slots: [], effect: 'gate' }), skill)).toBe(true);
+    expect(triggerMatches(trigger({ sin: null, attackType: 'Slash', slots: [], effect: 'gate' }), skill)).toBe(true);
   });
 
   it('needs every axis the trigger does state', () => {
-    expect(triggerMatches({ sin: 'WRATH', attackType: 'Slash', slots: [], effect: 'gate' }, skill)).toBe(true);
-    expect(triggerMatches({ sin: 'WRATH', attackType: 'Hit', slots: [], effect: 'gate' }, skill)).toBe(false);
+    expect(triggerMatches(trigger({ sin: 'WRATH', attackType: 'Slash', slots: [], effect: 'gate' }), skill)).toBe(true);
+    expect(triggerMatches(trigger({ sin: 'WRATH', attackType: 'Hit', slots: [], effect: 'gate' }), skill)).toBe(false);
+  });
+
+  it('asks the SKILL for its keyword when the trigger is 스킬 단위', () => {
+    // 「[화상]을 부여하는 스킬 2」 — the skill itself carries 화상, so it matches.
+    expect(triggerMatches(trigger({ keywords: ['Combustion'], slots: [2] }), skill)).toBe(true);
+    // 침잠 is the identity's elsewhere, never this skill's: 스킬 단위 must not borrow it.
+    expect(triggerMatches(trigger({ keywords: ['Sinking'] }), skill)).toBe(false);
+  });
+
+  it('asks the IDENTITY when the trigger is 인격 단위', () => {
+    // 「[침잠]을 부여하는 인격이 사용하는 스킬 2」 — the slot only says where the effect lands.
+    expect(triggerMatches(trigger({ keywords: ['Sinking'], subject: 'identity' }), skill)).toBe(true);
+    expect(triggerMatches(trigger({ keywords: ['Breath'], subject: 'identity' }), skill)).toBe(false);
+  });
+
+  it('counts a 특수 변형 only when the sentence said 또는 특수 X', () => {
+    expect(triggerMatches(trigger({ keywords: ['Charge'] }), skill)).toBe(false);
+    expect(triggerMatches(trigger({ keywords: ['Charge'], includesSpecial: true }), skill)).toBe(true);
+  });
+
+  it('matches any one of the keywords, and keeps the other axes binding', () => {
+    expect(triggerMatches(trigger({ keywords: ['Breath', 'Combustion'] }), skill)).toBe(true);
+    // The keyword is right but the slot is not — a trigger is an AND over what it states.
+    expect(triggerMatches(trigger({ keywords: ['Combustion'], slots: [1] }), skill)).toBe(false);
+  });
+
+  it('reads verb as wording only, never as a filter', () => {
+    // The static data names the buff, never whether the skill grants or spends it, so 소모 and
+    // 부여 must select the same skills — anything else would be a guess.
+    expect(triggerMatches(trigger({ keywords: ['Combustion'], verb: 'consume' }), skill)).toBe(true);
+    expect(triggerMatches(trigger({ keywords: ['Combustion'], verb: 'any' }), skill)).toBe(true);
   });
 
   it('limits itself to the named slots, and to no slot when none are named', () => {
-    expect(triggerMatches({ sin: null, attackType: 'Slash', slots: [2], effect: 'gate' }, skill)).toBe(true);
-    expect(triggerMatches({ sin: null, attackType: 'Slash', slots: [1, 3], effect: 'gate' }, skill)).toBe(false);
+    expect(triggerMatches(trigger({ sin: null, attackType: 'Slash', slots: [2], effect: 'gate' }), skill)).toBe(true);
+    expect(triggerMatches(trigger({ sin: null, attackType: 'Slash', slots: [1, 3], effect: 'gate' }), skill)).toBe(false);
   });
 });
 
 describe('matchSkillTriggers', () => {
-  const anySlash = gift(1, [{ sin: null, attackType: 'Slash', slots: [], effect: 'gate' }]);
-  const slot1Slash = gift(2, [{ sin: null, attackType: 'Slash', slots: [1], effect: 'gate' }]);
+  const anySlash = gift(1, [trigger({ sin: null, attackType: 'Slash', slots: [], effect: 'gate' })]);
+  const slot1Slash = gift(2, [trigger({ sin: null, attackType: 'Slash', slots: [1], effect: 'gate' })]);
   const hitOrWrath = gift(3, [
-    { sin: 'WRATH', attackType: null, slots: [], effect: 'gate' },
-    { sin: null, attackType: 'Hit', slots: [], effect: 'boost' },
+    trigger({ sin: 'WRATH', attackType: null, slots: [], effect: 'gate' }),
+    trigger({ sin: null, attackType: 'Hit', slots: [], effect: 'boost' }),
   ]);
-  const lustOnly = gift(4, [{ sin: 'LUST', attackType: null, slots: [], effect: 'gate' }]);
+  const lustOnly = gift(4, [trigger({ sin: 'LUST', attackType: null, slots: [], effect: 'gate' })]);
   const plain = gift(5, []);
   const gifts = [hitOrWrath, plain, anySlash, lustOnly, slot1Slash];
 

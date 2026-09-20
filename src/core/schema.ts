@@ -199,6 +199,29 @@ export const skillTriggerSchema = z.object({
   sin: sinSchema.nullable(),
   /** 참격/관통/타격. Null when the sentence only names a sin. */
   attackType: attackTypeSchema.nullable(),
+  /**
+   * Keywords the skill must use, as an OR list. Empty means the sentence does not ask for one —
+   * 「[충전] 횟수 또는 특수 충전을 증가시키는 스킬 1」 is the shape that fills it.
+   */
+  keywords: z.array(identityKeywordIdSchema).default([]),
+  /**
+   * How the skill uses the keyword: 부여·획득 (`inflict`), 소모 (`consume`), or both when the
+   * sentence names both (「획득하거나 소모하는」). Only read when `keywords` is non-empty.
+   */
+  verb: z.enum(['inflict', 'consume', 'any']).default('inflict'),
+  /**
+   * Whether 특수 변형 counts too — true only when the sentence says 「또는 특수 X」, the same rule
+   * `keywordSkillCount` follows. Only read when `keywords` is non-empty.
+   */
+  includesSpecial: z.boolean().default(false),
+  /**
+   * Who has to use the keyword. `skill` means the skill in that slot does it itself
+   * (「[화상]…부여하는 스킬 3」); `identity` means the identity does it somewhere and the slot only
+   * names which skill the effect lands on (「[진동]…부여하는 아군이 사용하는 스킬 3」). The game
+   * writes both, they answer 「누구의 몇 번 스킬」 differently, so they are not folded together.
+   * Only read when `keywords` is non-empty.
+   */
+  subject: z.enum(['skill', 'identity']).default('skill'),
   /** Slots the effect is limited to, ascending. Empty means any slot. */
   slots: z.array(skillSlotSchema).default([]),
   /**
@@ -355,11 +378,32 @@ export const identityKeywordSchema = z
  * `copies` is how many of that skill the slot deck holds (3/2/1). A conditional alternate skill —
  * an awakened or transformed form — is `0`, and ~20% of identities have one.
  */
+/**
+ * The keywords ONE skill uses, split the way gift sentences ask about them.
+ *
+ * `identity.keywords` counts how many of an identity's skills touch a keyword; this says which
+ * skill does, which is what 「[화상]…부여하는 스킬 3」 needs and a count cannot answer. Empty can
+ * mean 「없다」 or 「모른다」 — the identity's `keywordSource` and `skills.length` tell them apart.
+ *
+ * It records that a skill USES the keyword, not whether it grants or spends it: the static data
+ * names the buff, never the direction. So a trigger's `verb` decides how the line reads and never
+ * which skills match — the same rule `keywordSkillCount` already follows.
+ */
+export const skillKeywordsSchema = z.object({
+  /** The plain keyword, the same signal `identity.keywords[K].skills` counts. */
+  base: z.array(identityKeywordIdSchema).default([]),
+  /** The 특수 변형 (특수 충전, 특수 출혈 …), counted only when a sentence says 「또는 특수 X」. */
+  special: z.array(identityKeywordIdSchema).default([]),
+});
+
+export type SkillKeywords = z.infer<typeof skillKeywordsSchema>;
+
 export const identitySkillSchema = z.object({
   slot: skillSlotSchema,
   sin: sinSchema.nullable(),
   attackType: attackTypeSchema.nullable(),
   copies: z.number().int().nonnegative(),
+  keywords: skillKeywordsSchema.default({ base: [], special: [] }),
 });
 
 export type IdentitySkill = z.infer<typeof identitySkillSchema>;

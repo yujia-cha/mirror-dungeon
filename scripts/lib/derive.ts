@@ -273,6 +273,7 @@ function slotOf(skill: RawSkill): SkillSlot | null {
 export function deriveIdentitySkills(
   personality: RawPersonality,
   skills: Map<number, RawSkill>,
+  specialVariants: Map<string, IdentityKeywordId> = new Map(),
 ): IdentitySkill[] {
   const out: { skill: IdentitySkill; id: number }[] = [];
   for (const entry of personality.attributeList ?? []) {
@@ -282,6 +283,9 @@ export function deriveIdentitySkills(
     const slot = slotOf(skill);
     if (slot === null) continue;
     const data = skill.skillData?.[0];
+    // The same call `deriveIdentityKeywords` makes, kept per skill instead of counted: 「[화상]을
+    // 부여하는 스킬 3」 asks which slot does it, and a count cannot answer that.
+    const found = keywordsInSkill(skill, specialVariants);
     out.push({
       id: skill.id,
       skill: {
@@ -289,6 +293,7 @@ export function deriveIdentitySkills(
         sin: data?.attributeType ? (SIN_BY_COLOR[data.attributeType] ?? null) : null,
         attackType: data?.atkType ? (ATTACK_BY_ATK_TYPE[data.atkType] ?? null) : null,
         copies: Math.max(0, entry.number ?? 0),
+        keywords: { base: [...found.base].sort(), special: [...found.special].sort() },
       },
     });
   }
@@ -316,6 +321,13 @@ export function sortIdentitySkills(rows: { skill: IdentitySkill; id: number }[])
       seen.skill.copies = row.skill.copies;
       seen.id = row.id;
     }
+    // Keywords are unioned rather than taken from the surviving row: the alternate forms of one
+    // slot are all skills the identity can actually swing, so any keyword one of them uses is a
+    // keyword that slot uses. 오티스 has six slot-3 rows and only some carry the buff.
+    seen.skill.keywords = {
+      base: [...new Set([...seen.skill.keywords.base, ...row.skill.keywords.base])].sort(),
+      special: [...new Set([...seen.skill.keywords.special, ...row.skill.keywords.special])].sort(),
+    };
   }
   return [...byAxes.values()]
     .sort((a, b) => a.skill.slot - b.skill.slot || b.skill.copies - a.skill.copies || a.id - b.id)

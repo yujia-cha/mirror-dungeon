@@ -2755,17 +2755,26 @@ describe('SkillGiftsPanel', () => {
   const rows = () => screen.queryAllByTestId('skill-gift');
   const rowFor = (id: number) => rows().find((el) => el.getAttribute('data-gift') === String(id));
 
-  it('opens on 발동 + 데미지 and nothing else', () => {
+  it('opens on 데미지 and nothing else, with 계열 the only axis', () => {
     useApp.getState().setDeck(LCB_DECK, 6);
     render();
-    expect(tag('effect', 'gate')).toHaveAttribute('aria-pressed', 'true');
-    expect(tag('effect', 'boost')).toHaveAttribute('aria-pressed', 'false');
     expect(tag('bucket', 'damage')).toHaveAttribute('aria-pressed', 'true');
     for (const name of ['survival', 'egoResource', 'buff', 'debuff']) {
       expect(tag('bucket', name)).toHaveAttribute('aria-pressed', 'false');
     }
     expect(bucketNames()).toEqual(['damage']);
-    for (const row of rows()) expect(row).toHaveAttribute('data-effect', 'gate');
+    // 발동/강화 is no longer a filter: the list is 발동 gifts only, so a 강화 tag would select
+    // nothing and a 발동 tag would select all of it.
+    expect(screen.getByTestId('skills-panel').querySelector('[data-axis="effect"]')).toBeNull();
+  });
+
+  it('leaves out a gift whose triggers only strengthen an effect (9002 도착증)', () => {
+    useApp.getState().setDeck(LCB_DECK, 6);
+    render();
+    // 9002 asks for a 분노 skill and only 「효과가 강화되어」 — it answers a different question
+    // from 「무엇이 내 스킬 때문에 켜지나」, which is what this tab is for.
+    expect(rowFor(9002)).toBeUndefined();
+    expect(rowFor(9013)).toBeUndefined();
   });
 
   it('adds a section when another 계열 tag is turned on, and drops one when it is turned off', async () => {
@@ -2778,34 +2787,29 @@ describe('SkillGiftsPanel', () => {
     expect(bucketNames()).toEqual(['buff']);
   });
 
-  it('treats an empty tag row as no constraint, so clearing both shows everything', async () => {
+  it('treats an empty tag row as no constraint, so clearing it shows everything', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(LCB_DECK, 6);
     render();
     const before = new Set(rows().map((el) => el.getAttribute('data-gift')));
     await user.click(tag('bucket', 'damage'));
-    await user.click(tag('effect', 'gate'));
-    // Every 계열 that has a gift now has a section, and 강화 rows are in.
+    // Every 계열 that has a gift now has a section.
     expect(bucketNames()!.length).toBeGreaterThan(1);
     const after = new Set(rows().map((el) => el.getAttribute('data-gift')));
     expect(after.size).toBeGreaterThan(before.size);
-    expect(rows().some((el) => el.getAttribute('data-effect') === 'boost')).toBe(true);
   });
 
-  it("counts each tag against the other axis, so a tag says what picking it would give", async () => {
+  it('counts a tag as what picking it would actually give', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(LCB_DECK, 6);
     render();
-    const countOf = (axis: string, name: string) => Number(tag(axis, name).textContent!.match(/\d+$/)![0]);
-    const gateOnly = countOf('bucket', 'buff');
-    // With 발동 on, the 버프 count is the 발동 half; dropping the constraint must widen it.
-    await user.click(tag('effect', 'gate'));
-    expect(countOf('bucket', 'buff')).toBeGreaterThan(gateOnly);
-    // And it is the truth: turning 버프 on yields exactly that many gifts.
-    await user.click(tag('bucket', 'damage'));
-    const all = countOf('bucket', 'buff');
+    const countOf = (name: string) => Number(tag('bucket', name).textContent!.match(/\d+$/)![0]);
+    const buff = countOf('buff');
+    await user.click(tag('bucket', 'damage')); // clear the default
     await user.click(tag('bucket', 'buff'));
-    expect(new Set(rows().map((el) => el.getAttribute('data-gift'))).size).toBe(all);
+    expect(new Set(rows().map((el) => el.getAttribute('data-gift'))).size).toBe(buff);
+    // The count does not move when the selection does — with one axis there is nothing to answer to.
+    expect(countOf('buff')).toBe(buff);
   });
 
   it('says so and offers a way back when the tags select nothing', async () => {
@@ -2819,6 +2823,47 @@ describe('SkillGiftsPanel', () => {
     await user.click(screen.getByRole('button', { name: '태그 지우기' }));
     expect(screen.queryByTestId('skills-none-tagged')).toBeNull();
     expect(rows().length).toBeGreaterThan(0);
+  });
+
+  it('says 3스킬이 화상 부여 for a 스킬 단위 clause and 화상 인격의 3스킬 for an 인격 단위 one', async () => {
+    const user = userEvent.setup();
+    // 충전 identities: 10202 파우스트's skill 1 charges, which is what 9734 E식 차원 단검 asks for.
+    useApp.getState().setDeck([10202, 10210, 10215, 10302, 10312, 10106, ...LCB_DECK.slice(0, 6)], 6);
+    render();
+    await user.click(tag('bucket', 'damage')); // clear the default so every 계열 shows
+    const dagger = rowFor(9734)!;
+    expect(dagger).toBeDefined();
+    // 스킬 단위: that slot's own skill must charge. 「또는 특수 충전」 shows as 충전(특수).
+    expect(within(dagger).getByTestId('skill-gift-trigger')).toHaveTextContent('1스킬이 충전(특수) 부여');
+    expect(within(dagger).getByTestId('skill-gift-owners')).toHaveTextContent('파우스트 1스킬');
+  });
+
+  it('names the identity, not the skill, when the keyword belongs to the whole kit', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(LCB_DECK, 6);
+    render();
+    await user.click(tag('bucket', 'damage'));
+    // 9177 어느 날의 기억: 「[호흡]…획득하는 인격이 사용하는 스킬 3」 — the ally brings 호흡, slot 3
+    // only says which skill is buffed. Reading it like 9734 would demand a 호흡 3스킬 the game
+    // never asks for. (Its 회중시계 siblings say the same thing but need 5 진동 identities, which
+    // the LCB deck has not got, so the tab hides them.)
+    const memory = rowFor(9177)!;
+    expect(memory).toBeDefined();
+    expect(within(memory).getByTestId('skill-gift-trigger')).toHaveTextContent('호흡 부여 인격의 3스킬');
+    expect(within(memory).getByTestId('skill-gift-owners')).toHaveTextContent('3스킬');
+  });
+
+  it('describes only the triggers that activate, not ones that merely strengthen', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(LCB_DECK, 6);
+    render();
+    await user.click(tag('bucket', 'damage'));
+    // 9149 압박 붕대 gates on 타격 and merely strengthens on 우울. Only the 타격 half may reach
+    // the lines, or the gift would name 우울 identities as the ones setting it off.
+    const bandage = rowFor(9149)!;
+    expect(bandage).toBeDefined();
+    expect(within(bandage).getByTestId('skill-gift-trigger')).toHaveTextContent('타격 스킬');
+    expect(within(bandage).getByTestId('skill-gift-trigger')).not.toHaveTextContent('우울');
   });
 
   it('lists a gift that helps two ways under each 계열, with its own tags on the row', async () => {

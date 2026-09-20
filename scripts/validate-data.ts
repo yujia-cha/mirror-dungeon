@@ -79,6 +79,26 @@ const FORMATION_SIZE = SINNER_COUNT;
 const LOOSE_SKILL_SUBJECT =
   /(분노|색욕|나태|탐식|우울|오만|질투|참격|관통|타격)[^\n가-힣]{0,4}(?:속성|유형)?[^\n가-힣]{0,4}(?:기본\s*)?(?:공격\s*)?스킬/;
 
+/**
+ * The same loud reading for a keyword clause that narrows itself to a slot — 「…하는 스킬 3」. It is
+ * deliberately cruder than the parser and so it over-matches; the two gifts below are the price of
+ * that, and both are over-matches rather than misses.
+ */
+const LOOSE_KEYWORD_SLOT = /(화상|출혈|진동|파열|침잠|호흡|충전|탄환|혈찬)[^.\n]{0,80}?(?:부여|획득|증가|감소|소모|얻)[^.\n]{0,24}?스킬\s*[123]/;
+
+/**
+ * The one gift that trips `LOOSE_KEYWORD_SLOT` although no slot-limited trigger belongs: 9771
+ * 근접 전술 교본 says 「[탄환]을 얻으면, … 사용하는 스킬 3」, where the keyword is WHEN the gift
+ * fires and the slot is only what it lands on. Joining them would describe the gift backwards.
+ *
+ * What this scan does NOT reach is the mirror image — a real clause split across two of them.
+ * 9134 순찰용 손전등 says 「…하는 스킬을 보유하였다면」 and then 「대상의 스킬 1」 a clause later, so
+ * its slot-1 effect carries no trigger and nothing here complains. Catching it would need a
+ * pattern loose enough to join any two clauses in a sentence, which would cry wolf far more often
+ * than it found anything; it is written down here instead.
+ */
+const LOOSE_KEYWORD_SLOT_EXEMPT = new Set([9771]);
+
 function ascendingUnique(values: readonly number[]): boolean {
   return values.every((value, i) => i === 0 || value > values[i - 1]!);
 }
@@ -478,10 +498,35 @@ function checkInvariants(
         .join(', ')}` + ' — extend parseSkillTriggers() or add a data/curated/conditions.json entry',
     );
   }
+  // The same guard for the keyword clauses: they are the only way a gift says 「[화상]을 부여하는
+  // 스킬 3」, and a wording change upstream would take the slot with it and go unnoticed.
+  const missedKeyword = gifts.filter(
+    (g) =>
+      !LOOSE_KEYWORD_SLOT_EXEMPT.has(g.id) &&
+      LOOSE_KEYWORD_SLOT.test(g.desc.ko) &&
+      !g.skillTriggers.some((t) => t.keywords.length > 0 && t.slots.length > 0),
+  );
+  if (missedKeyword.length > 0) {
+    err(
+      'invariant',
+      `${missedKeyword.length} gift(s) name a keyword and a skill slot but parsed no keyword trigger: ${missedKeyword
+        .slice(0, 6)
+        .map((g) => g.id)
+        .join(', ')}` + ' — extend parseSkillTriggers() or add a data/curated/conditions.json entry',
+    );
+  }
   for (const gift of gifts) {
     for (const trigger of gift.skillTriggers) {
-      if (trigger.sin === null && trigger.attackType === null) {
-        err('invariant', `gift ${gift.id} has a skill trigger naming neither a sin nor an attack type`);
+      if (trigger.sin === null && trigger.attackType === null && trigger.keywords.length === 0) {
+        err('invariant', `gift ${gift.id} has a skill trigger naming neither a sin, an attack type nor a keyword`);
+      }
+      // The keyword axes only mean anything alongside a keyword. Left at their defaults otherwise,
+      // so no reader has to ask whether they apply.
+      if (
+        trigger.keywords.length === 0 &&
+        (trigger.verb !== 'inflict' || trigger.includesSpecial || trigger.subject !== 'skill')
+      ) {
+        err('invariant', `gift ${gift.id} sets a keyword axis on a trigger that names no keyword`);
       }
       if (!ascendingUnique(trigger.slots)) {
         err('invariant', `gift ${gift.id} has skill trigger slots out of order or repeated`);

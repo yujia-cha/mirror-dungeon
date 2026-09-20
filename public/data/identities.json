@@ -32,18 +32,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -89,18 +107,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -145,18 +181,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -207,18 +261,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -263,18 +338,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -324,18 +417,38 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -383,18 +496,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -439,18 +573,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -496,18 +648,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -561,18 +731,48 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet",
+            "Sinking"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet",
+            "Sinking"
+          ]
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet",
+            "Sinking"
+          ]
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -619,18 +819,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -675,18 +893,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -736,18 +972,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -798,18 +1055,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -867,24 +1145,53 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -936,18 +1243,30 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -986,18 +1305,30 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -1042,18 +1373,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -1102,18 +1451,37 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -1161,18 +1529,38 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -1212,18 +1600,30 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -1268,18 +1668,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -1324,18 +1742,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -1386,18 +1822,42 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -1444,18 +1904,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -1502,18 +1980,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -1560,18 +2056,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -1621,18 +2135,37 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -1683,24 +2216,51 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       },
       {
         "attackType": "Penetrate",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -1749,18 +2309,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -1812,18 +2393,44 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Laceration"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Laceration"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -1875,24 +2482,52 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -1938,18 +2573,34 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -1999,18 +2650,37 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -2054,18 +2724,34 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -2116,18 +2802,40 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -2166,18 +2874,30 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -2222,18 +2942,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -2279,18 +3017,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -2337,18 +3093,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -2395,18 +3169,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -2454,18 +3246,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -2515,18 +3325,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -2578,18 +3409,48 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge",
+            "Sinking"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge",
+            "Sinking"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge",
+            "Sinking"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -2640,18 +3501,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -2702,36 +3584,78 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -2778,18 +3702,34 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -2835,18 +3775,32 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -2891,18 +3845,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -2948,18 +3920,34 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -3005,18 +3993,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -3074,18 +4080,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet",
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -3130,18 +4157,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -3186,18 +4231,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -3244,18 +4307,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -3300,18 +4381,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -3357,18 +4456,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -3422,24 +4539,52 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       },
       {
         "attackType": "Penetrate",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -3488,18 +4633,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -3551,18 +4717,43 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -3617,24 +4808,52 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -3684,18 +4903,30 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -3738,18 +4969,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -3795,18 +5042,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -3855,18 +5120,37 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -3912,18 +5196,34 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -3971,18 +5271,37 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -4032,18 +5351,38 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -4087,18 +5426,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -4146,18 +5501,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -4203,18 +5579,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -4260,18 +5654,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -4320,18 +5732,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -4385,18 +5818,45 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -4450,18 +5910,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -4514,18 +5995,45 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -4576,18 +6084,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -4639,18 +6168,38 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -4695,18 +6244,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -4752,18 +6319,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -4809,18 +6394,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -4866,18 +6469,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -4926,18 +6547,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -4981,18 +6620,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -5039,18 +6696,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -5096,18 +6771,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -5152,18 +6845,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -5213,24 +6924,51 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -5279,18 +7017,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -5339,18 +7098,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -5405,24 +7185,60 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Laceration"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Laceration"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Combustion",
+            "Laceration"
+          ],
+          "special": [
+            "Charge"
+          ]
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -5474,18 +7290,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -5534,18 +7371,30 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -5588,18 +7437,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -5645,18 +7510,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -5713,18 +7596,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Bullet",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Bullet",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Bullet",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -5770,18 +7674,34 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -5830,18 +7750,37 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -5887,18 +7826,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -5946,18 +7903,38 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -6002,18 +7979,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -6059,18 +8054,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -6118,18 +8131,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -6178,18 +8209,41 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -6234,24 +8288,48 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -6300,18 +8378,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -6360,18 +8459,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -6424,18 +8544,40 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -6485,18 +8627,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -6542,18 +8705,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -6602,18 +8781,38 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -6658,18 +8857,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -6723,18 +8940,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Bullet",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Bullet",
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -6782,18 +9020,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -6838,18 +9097,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -6898,18 +9175,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -6962,18 +9260,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -7023,18 +9342,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -7080,18 +9420,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -7136,18 +9494,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -7198,18 +9574,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -7260,24 +9657,52 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -7327,18 +9752,38 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -7390,30 +9835,65 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -7460,18 +9940,30 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -7514,18 +10006,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -7574,18 +10084,38 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -7626,18 +10156,30 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -7683,18 +10225,38 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": [
+            "Laceration"
+          ]
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -7743,18 +10305,38 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -7799,18 +10381,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -7855,18 +10453,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -7912,18 +10526,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -7968,18 +10600,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -8023,18 +10673,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -8087,18 +10755,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -8150,18 +10839,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -8206,18 +10916,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -8267,18 +10995,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Charge",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -8327,18 +11076,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -8399,24 +11169,60 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Combustion",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -8467,18 +11273,34 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -8528,18 +11350,37 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -8585,18 +11426,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -8645,18 +11502,37 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -8707,18 +11583,37 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -8763,18 +11658,34 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -8820,18 +11731,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -8876,18 +11805,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -8933,24 +11880,48 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       },
       {
         "attackType": "Slash",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -8996,18 +11967,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -9052,18 +12041,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -9107,18 +12114,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -9172,18 +12197,40 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -9234,18 +12281,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -9294,18 +12362,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -9352,18 +12441,34 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -9409,18 +12514,34 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -9467,18 +12588,34 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -9523,18 +12660,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -9580,18 +12735,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -9636,18 +12809,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -9692,18 +12883,42 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": [
+            "Combustion"
+          ]
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": [
+            "Combustion"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": [
+            "Combustion"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -9749,18 +12964,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -9807,18 +13040,36 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 3
       }
@@ -9869,18 +13120,37 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -9928,18 +13198,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -9986,18 +13274,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -10042,18 +13348,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -10107,18 +13431,45 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Sinking"
+          ]
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Sinking"
+          ]
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking",
+            "Vibration"
+          ],
+          "special": [
+            "Bullet"
+          ]
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -10166,24 +13517,52 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 0,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -10232,18 +13611,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -10288,18 +13685,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 3
       }
@@ -10345,18 +13760,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -10401,18 +13834,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -10467,18 +13918,40 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -10518,18 +13991,30 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -10582,18 +14067,40 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Bullet",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -10639,18 +14146,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 3
       }
@@ -10695,18 +14220,36 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -10758,18 +14301,39 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Laceration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 3
       }
@@ -10814,18 +14378,36 @@
       {
         "attackType": "Hit",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 1
       },
       {
         "attackType": "Hit",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 2
       },
       {
         "attackType": "Hit",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }
@@ -10876,18 +14458,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Breath",
+            "Burst"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -10936,18 +14539,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "LUST",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Laceration",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -10997,18 +14621,39 @@
       {
         "attackType": "Penetrate",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 1
       },
       {
         "attackType": "Penetrate",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Penetrate",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Sinking"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 3
       }
@@ -11058,18 +14703,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLUTTONY",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "GLOOM",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Burst",
+            "Charge"
+          ],
+          "special": []
+        },
         "sin": "ENVY",
         "slot": 3
       }
@@ -11118,18 +14784,39 @@
       {
         "attackType": "Slash",
         "copies": 3,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "SLOTH",
         "slot": 1
       },
       {
         "attackType": "Slash",
         "copies": 2,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "PRIDE",
         "slot": 2
       },
       {
         "attackType": "Slash",
         "copies": 1,
+        "keywords": {
+          "base": [
+            "Combustion",
+            "Vibration"
+          ],
+          "special": []
+        },
         "sin": "WRATH",
         "slot": 3
       }

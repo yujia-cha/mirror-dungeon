@@ -14,11 +14,6 @@
         }
       ],
       "_source": "desc 원문 확인"
-    },
-    "9203": {
-      "skillTriggers": [{ "sin": null, "attackType": "Hit", "slots": [1, 2], "effect": "gate" }],
-      "formationSlots": [],
-      "_source": "desc 원문 확인"
     }
   }
 }
