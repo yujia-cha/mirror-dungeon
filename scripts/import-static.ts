@@ -18,6 +18,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { hasFlag, readJson, repoPath } from './lib/io.ts';
+import { seasonOf } from './lib/season-files.ts';
 
 interface Lock {
   sources: Record<string, { localPrefix: string; files: (string | { path: string })[] }>;
@@ -64,19 +65,6 @@ function looksLikeStaticData(path: string): string | null {
   // Some static files are a bare object of settings rather than a list, so an id-bearing object counts.
   if (!hasList && !('id' in record) && Object.keys(record).length === 0) return 'empty';
   return null;
-}
-
-/**
- * The Mirror Dungeon season a file name carries: `…-md7.json`, `…-07.json`, `…-7.json`.
- *
- * Only Mirror Dungeon files count. Plenty of unrelated static files end in a number — the identity
- * records are `personality-01.json` through `personality-12.json` — and reading those as seasons
- * would make every season look like one we already track.
- */
-function seasonOf(name: string): number | null {
-  if (!/mirror-?dungeon/i.test(name)) return null;
-  const m = /-(?:md)?0?(\d+)(?:-[a-z]+)?\.json$/.exec(name);
-  return m ? Number(m[1]) : null;
 }
 
 function main(): void {
@@ -150,7 +138,8 @@ function main(): void {
     for (const file of rejected) console.log(`    ! ${file}`);
   }
   if (newSeasonFiles.length > 0) {
-    console.log(`\n  A newer season is in this folder. Add these to data/sources.lock.json by hand:`);
+    console.log(`\n  A newer season is in this folder. Add these to data/sources.lock.json:`);
+    console.log('    npm run data:lock-next-season -- <season>   (preview; --write to apply)');
     for (const file of newSeasonFiles) console.log(`    * ${file}`);
   }
   if (!write && copied.length > 0) console.log('\nNothing was written. Re-run with --write to apply.');

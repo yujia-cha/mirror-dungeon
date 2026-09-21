@@ -2,7 +2,19 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
-export const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+/**
+ * Every path the pipeline touches hangs off this — `data/raw`, `data/curated`, `sources.lock.json`,
+ * `public/data`, `public/art`. `MD_REPO_ROOT` moves all of them at once, which is what lets
+ * `data:rehearse` run the real `data:import` → `data:build` → `data:validate` commands against a
+ * synthetic next season without touching the working tree. Nothing else reads the variable, and
+ * the scripts that honour it say so on their first line of output.
+ */
+export const repoRoot = resolve(
+  process.env.MD_REPO_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)),
+);
+
+/** True when the pipeline is pointed somewhere other than this checkout — worth printing. */
+export const rootIsOverridden = Boolean(process.env.MD_REPO_ROOT);
 
 export function repoPath(...parts: string[]): string {
   return resolve(repoRoot, ...parts);

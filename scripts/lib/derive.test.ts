@@ -77,6 +77,19 @@ describe('groupForPackId', () => {
   ])('maps %i to %s', (id, group) => {
     expect(groupForPackId(id)).toBe(group);
   });
+
+  /**
+   * Everything past 1599 reads `hidden`, and that is a cliff a new season can walk off quietly.
+   *
+   * If Mirror Dungeon 8 numbers its packs from 1601, every one of them lands here: no
+   * `keywordAffinity`, no `sinAffinity`, and `validate-data`'s "EXTREME pack without exclusives"
+   * cross-check skips itself with a warning. The packs are still *selectable* — that comes from
+   * `availability` — so the roster looks right and only the classification is wrong, which is the
+   * hardest kind of mistake to spot. Pinned here so the first md8 build has to face it.
+   */
+  it.each([1600, 1601, 1700, 9001])('reads %i as hidden, whatever it really is', (id) => {
+    expect(groupForPackId(id)).toBe('hidden');
+  });
 });
 
 describe('affinitiesFromDevName', () => {

@@ -15,7 +15,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { z } from 'zod';
-import { hasFlag, flagValue, readJson, readJsonIfExists, repoPath } from './lib/io.ts';
+import { hasFlag, flagValue, readJson, readJsonIfExists, repoPath, rootIsOverridden } from './lib/io.ts';
 import { readCommonData, readPersonalities, readThemePacks, staticDataPresent } from './lib/raw.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
 import { derivedKeywords, derivedStatuses, readDerivedFetchedAt, readDerivedIdentities } from './lib/derived-source.ts';
@@ -69,6 +69,8 @@ const KEYWORD_DISAGREEMENT_BUDGET = 15;
 const DERIVED_ONLY_PACKS = [3001] as const;
 const DERIVED_ONLY_GIFTS = [9242, 9831, 9832, 9833, 9834, 9835, 9836, 9837, 9838, 9839] as const;
 const lenient = hasFlag('--lenient');
+
+if (rootIsOverridden) console.log(`root ${repoPath('')}`);
 
 const errors: string[] = [];
 const warnings: string[] = [];

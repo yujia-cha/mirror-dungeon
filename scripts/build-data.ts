@@ -20,7 +20,7 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { flagValue, hasFlag, readJson, readJsonIfExists, repoPath, writeJsonStable } from './lib/io.ts';
+import { flagValue, hasFlag, readJson, readJsonIfExists, repoPath, rootIsOverridden, writeJsonStable } from './lib/io.ts';
 import { localizeBuffTokens } from './lib/battle-keywords.ts';
 import { stripRichText } from '../src/core/text.ts';
 import {
@@ -180,6 +180,8 @@ function applyNameOverride(base: Localized, override: Partial<Localized> | undef
 // ---------------------------------------------------------------------------
 // Load sources
 // ---------------------------------------------------------------------------
+
+if (rootIsOverridden) console.log(`root ${repoPath('')}`);
 
 const hasStatic = staticDataPresent();
 if (!hasStatic && !lenient) {
