@@ -16,10 +16,21 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { z } from 'zod';
 import { hasFlag, flagValue, readJson, readJsonIfExists, repoPath, rootIsOverridden } from './lib/io.ts';
-import { readCommonData, readPersonalities, readThemePacks, staticDataPresent } from './lib/raw.ts';
+import {
+  LOCALIZE_DIR,
+  STATIC_DIR,
+  readCommonData,
+  readObservationData,
+  readPersonalities,
+  readThemePacks,
+  staticDataPresent,
+} from './lib/raw.ts';
+import { familyOf, seasonOf } from './lib/season-files.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
 import { derivedKeywords, derivedStatuses, readDerivedFetchedAt, readDerivedIdentities } from './lib/derived-source.ts';
 import {
+  DERIVED_ONLY_GIFTS,
+  DERIVED_ONLY_PACKS,
   derivedFixedRecipes,
   derivedMdPresent,
   derivedTier,
@@ -29,6 +40,7 @@ import {
   readDerivedStartPools,
 } from './lib/derived-md.ts';
 import {
+  curatedSeasonSchema,
   CONSUMED_KEYWORDS,
   IDENTITY_KEYWORDS,
   STATUS_KEYWORDS,
@@ -58,17 +70,18 @@ const SINNER_COUNT = 12;
  * Measured at 11 of 179; the budget leaves room for a patch without hiding a broken derivation.
  */
 const KEYWORD_DISAGREEMENT_BUDGET = 15;
-/**
- * Packs and gifts the derived source lists that we deliberately leave out, so the roster checks
- * below only speak up about genuinely new content.
- *
- * 3001 is the hidden pack 「뽕.황」, which cannot be chosen or observed, and 9242 is its gift.
- * 9831-9839 belong to pack 1122 「선의의 순례」, a story-dungeon pack the game does not offer in
- * Mirror Dungeon at all.
- */
-const DERIVED_ONLY_PACKS = [3001] as const;
-const DERIVED_ONLY_GIFTS = [9242, 9831, 9832, 9833, 9834, 9835, 9836, 9837, 9838, 9839] as const;
 const lenient = hasFlag('--lenient');
+/**
+ * Treat `[season]` findings as errors.
+ *
+ * They are warnings by default because they fire on *someone else's* schedule: the derived mirror
+ * learns about a new season before we do, and a UI branch with nothing to do with Mirror Dungeon 8
+ * should not go red because limbus.tools published a pack. The weekly check and the monthly
+ * workflow pass this, so the moment we choose to look is the moment they become blocking.
+ */
+const strictSeason = hasFlag('--strict-season');
+/** The season the lock claims to hold, for a caller re-checking a snapshot by hand. */
+const expectSeason = flagValue('--expect-season') ? Number(flagValue('--expect-season')) : undefined;
 
 if (rootIsOverridden) console.log(`root ${repoPath('')}`);
 
@@ -85,6 +98,11 @@ function warn(kind: string, message: string): void {
 function strict(kind: string, message: string): void {
   if (lenient) warn(kind, message);
   else err(kind, message);
+}
+/** A sign the game moved to a new season: a warning unless `--strict-season` asked otherwise. */
+function season_(message: string): void {
+  if (strictSeason && !lenient) err('season', message);
+  else warn('season', message);
 }
 
 function parseAt<S extends z.ZodTypeAny>(path: string, label: string, schema: S): z.infer<S> | null {
@@ -130,7 +148,9 @@ if (meta && enums && rules && gifts && packs && identities) {
   checkInvariants(meta, rules, gifts, packs, identities, enums);
   checkCuratedOverrides(gifts, packs, identities);
   checkCuratedIdentities(identities);
+  checkCuratedSeason();
   checkDerivedMirrorDungeon(gifts, packs, rules);
+  checkSeasonSnapshot();
   checkFreshness();
   checkArt(gifts, packs);
 }
@@ -653,12 +673,13 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
   const theirFloors = readDerivedAvailability();
   const theirStart = readDerivedStartPools();
 
+  // The rosters are the clearest "a new season started" signal we have, so they carry the `season`
+  // grade: a warning by default, an error under `--strict-season`.
   const report = (label: string, found: number[], expected: readonly number[], hint: string): void => {
     const sorted = [...found].sort((a, b) => a - b);
     if (JSON.stringify(sorted) === JSON.stringify([...expected])) return;
     const added = sorted.filter((id) => !expected.includes(id));
-    warn(
-      'invariant',
+    season_(
       `${label}: ${sorted.length} (expected ${expected.length})` +
         `${added.length > 0 ? `, new: ${added.join(', ')}` : ''}. ${hint}`,
     );
@@ -743,6 +764,159 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
     .map((gift) => gift.id);
   if (tierDrift.length > 0) {
     warn('invariant', `${tierDrift.length} gift tier(s) disagree with the derived source: ${tierDrift.slice(0, 12).join(', ')}`);
+  }
+}
+
+/**
+ * The vendored snapshot against what the lock says it holds.
+ *
+ * This is the check for the failure `data:rehearse`'s `partial` variant found: an extraction that
+ * brings `mirror-dungeon-common-data-md8.json` and nothing else builds a season where **no gift is
+ * observable and none is classed as `event`** — because `readDropPool()` and `readObservationData()`
+ * return `null` and nothing downstream treats that as a problem. The general pool came from the
+ * static data, so the season is not `provisional` either, and it becomes `index.default`.
+ *
+ * The lock is the source of truth rather than a second list of file families: `data:lock-next-season`
+ * writes the names, so anything the lock claims for the declared season has to be on disk. That also
+ * catches a `data:fetch` that quietly skipped a file.
+ */
+function checkSeasonSnapshot(): void {
+  if (!staticDataPresent()) return;
+  interface Lock {
+    mirrorDungeonSeason?: number;
+    sources: Record<
+      string,
+      {
+        localPrefix: string;
+        /** The localization source pins a commit per language, keyed by folder name. */
+        languages?: Record<string, unknown>;
+        files: (string | { path: string; languages?: string[] })[];
+      }
+    >;
+  }
+  const lock = readJsonIfExists<Lock>(repoPath('data/sources.lock.json'));
+  if (!lock) return;
+
+  const declared = expectSeason ?? lock.mirrorDungeonSeason;
+  if (declared === undefined) {
+    warn('season', 'data/sources.lock.json has no `mirrorDungeonSeason`, so the snapshot cannot be checked against it');
+    return;
+  }
+  const onDisk = readCommonData()?.data.currentDungeonId;
+  if (onDisk !== undefined && onDisk !== declared) {
+    err(
+      'season',
+      `data/sources.lock.json declares Mirror Dungeon ${declared} but data/raw/static holds ` +
+        `${onDisk}. Run: npm run data:lock-next-season -- ${onDisk} --write (or pass --expect-season)`,
+    );
+  }
+
+  // Every file the lock lists for the declared season must actually be there. A missing one is not
+  // cosmetic: each family feeds a different part of the build, and several go absent in silence.
+  const missing: string[] = [];
+  for (const source of Object.values(lock.sources)) {
+    const root =
+      source.localPrefix === 'data/raw/static'
+        ? STATIC_DIR
+        : source.localPrefix === 'data/raw/localize'
+          ? LOCALIZE_DIR
+          : null;
+    if (!root) continue;
+    for (const entry of source.files) {
+      const path = typeof entry === 'string' ? entry : entry.path;
+      if (seasonOf(path) !== declared) continue;
+      // A per-file `languages` narrows which folders to expect; otherwise every language the
+      // source pins. A source with no languages at all is flat (the static data).
+      const all = Object.keys(source.languages ?? {});
+      const languages: (string | null)[] =
+        typeof entry === 'string'
+          ? all.length > 0
+            ? all
+            : [null]
+          : (entry.languages ?? (all.length > 0 ? all : [null]));
+      for (const language of languages) {
+        const full = language === null ? join(root, path) : join(root, language, path);
+        if (existsSync(full)) continue;
+        const shown = language === null ? path : `${language}/${path}`;
+        missing.push(`${source.localPrefix}/${shown} [${familyOf(path)}]`);
+      }
+    }
+  }
+  if (missing.length > 0) {
+    strict(
+      'season',
+      `Mirror Dungeon ${declared} is only half vendored: ${missing.length} file(s) the lock lists are ` +
+        `not on disk — ${missing.join(', ')}. ` +
+        'A season built like this ships silently wrong: without the drop pool no gift is classed as ' +
+        '`event`, without the observation list nothing is observable, and without MirrorDungeonUI ' +
+        'the dungeon name is empty. Extract the rest (npm run data:import) or fetch it.',
+    );
+  }
+}
+
+/**
+ * `data/curated/seasons/md{n}/rules.json` — a backfill, so it has to stay one.
+ *
+ * Two rules, both from CLAUDE.md. Every curated value carries its `_source`, and a lower layer
+ * never shadows a higher one: the moment the static data starts shipping a value, the curated copy
+ * is a silent override and has to go. `checkCuratedIdentities` enforces the same thing for
+ * identities; this is the season's half of it.
+ */
+function checkCuratedSeason(): void {
+  const path = repoPath(`data/curated/seasons/md${season}/rules.json`);
+  const raw = readJsonIfExists<Record<string, unknown>>(path);
+  if (!raw) return;
+  const rel = `data/curated/seasons/md${season}/rules.json`;
+
+  const parsed = curatedSeasonSchema.safeParse(raw);
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      err('schema', `${rel} ${issue.path.join('.') || '(root)'}: ${issue.message}`);
+    }
+    return;
+  }
+
+  // Every value key needs a source, either for itself or for a path inside it.
+  const sources = (parsed.data._sources ?? {}) as Record<string, string>;
+  const sourced = Object.keys(sources);
+  for (const key of Object.keys(raw)) {
+    if (key.startsWith('_')) continue;
+    if (sources[key] || sourced.some((path) => path.startsWith(`${key}.`))) continue;
+    err(
+      'invariant',
+      `${rel} sets "${key}" with no entry in "_sources". Every curated value records where it came ` +
+        'from (CLAUDE.md) — add `"_sources": { "' + key + '": "…" }`.',
+    );
+  }
+  for (const path of sourced) {
+    const head = path.split('.')[0]!;
+    if (head in raw) continue;
+    warn('invariant', `${rel} documents "_sources.${path}" but does not set "${head}"`);
+  }
+
+  // A curated value the static data now ships is an override, not a backfill.
+  if (!staticDataPresent()) return;
+  const common = readCommonData(season)?.data;
+  const shadowed: string[] = [];
+  const shadows = (key: string, present: boolean): void => {
+    if (key in raw && present) shadowed.push(key);
+  };
+  shadows('themePacksOfferedPerFloor', common?.themePoolNum !== undefined);
+  shadows('themePackRefreshCount', common?.themePoolRecreateCount !== undefined);
+  shadows('starlight', common?.starlightInfo !== undefined);
+  shadows('upgradeCostByTier', common?.egoGiftUpgradeCostTable !== undefined);
+  shadows('fusion', common?.egogiftRandomCombineProbs !== undefined);
+  shadows('giftObservation', readObservationData(season) !== null);
+  // `floors`, `name` and `provisional` are exempt: no source states the floors a season opens (the
+  // build infers them from which dungeon files exist), the name is only written while the
+  // localization has none, and `provisional` is a judgement rather than a value.
+  if (shadowed.length > 0) {
+    err(
+      'invariant',
+      `${rel} sets ${shadowed.map((key) => `"${key}"`).join(', ')}, which the static data for season ` +
+        `${season} now ships. A curated entry backfills what no source has; delete these so the ` +
+        'build stops reading a stale copy.',
+    );
   }
 }
 

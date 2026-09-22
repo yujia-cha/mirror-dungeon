@@ -6,5 +6,7 @@
     "parallel": [6, 7, 8, 9, 10],
     "extreme": [11, 12, 13, 14, 15]
   },
-  "_floors_source": "mirrordungeon/mirrordungeon-07*.json 네 파일(일반·hard·infinite·extreme)이 각각 1~5·1~5·6~10·11~15층을 담는다. 층 수는 게임 규칙이라 코드에 박지 않고 여기에 적는다(CLAUDE.md). 새 시즌이 1~5층만 열고 시작하면 그 시즌 파일에 그렇게 적는다."
+  "_sources": {
+    "floors": "mirrordungeon/mirrordungeon-07*.json 네 파일(일반·hard·infinite·extreme)이 각각 1~5·1~5·6~10·11~15층을 담는다. 층 수는 게임 규칙이라 코드에 박지 않고 여기에 적는다(CLAUDE.md). 새 시즌이 1~5층만 열고 시작하면 그 시즌 파일에 그렇게 적는다."
+  }
 }

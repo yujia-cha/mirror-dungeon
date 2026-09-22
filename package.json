@@ -27,6 +27,7 @@
     "data:import": "tsx scripts/import-static.ts",
     "data:lock-next-season": "tsx scripts/lock-next-season.ts",
     "data:rehearse": "tsx scripts/rehearse-season.ts",
+    "data:season-check": "tsx scripts/check-season.ts",
     "data:build": "tsx scripts/build-data.ts",
     "data:validate": "tsx scripts/validate-data.ts",
     "data:diff": "tsx scripts/diff-data.ts",

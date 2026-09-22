@@ -45,6 +45,16 @@ const packById = new Map(packs.map((p) => [p.id, p]));
 const identityById = new Map(identities.map((i) => [i.id, i]));
 
 describe('meta', () => {
+  /**
+   * The hardest canary in the repo, and deliberately so.
+   *
+   * This asserts on `index.default` — the season the app opens. A half-known season is marked
+   * `provisional` and never becomes the default, so it passes here; a *complete* new season does
+   * become the default and fails here. That is the right shape: a provisional md8 is something the
+   * owner published on purpose, while a season turnover is a fact a person has to read and sign
+   * off. Bumping this to 8 is part of the commit that makes md8 the default, not something to do
+   * ahead of it.
+   */
   it('describes Mirror Dungeon 7', () => {
     expect(meta.dungeon.id).toBe(7);
     expect(meta.dungeon.name.ko).toBe('이름과 거미의 거울');

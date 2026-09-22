@@ -475,6 +475,106 @@ export const artManifestSchema = z.object({
 export type ArtManifest = z.infer<typeof artManifestSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];
 
+/**
+ * `data/curated/seasons/md{n}/rules.json` — the per-season constants no source ships.
+ *
+ * Deliberately **strict**, and deliberately small. Before this schema existed the loader read the
+ * file through `{ [key: string]: unknown }`, so a typo or an invented key was silently ignored:
+ * someone could write `"starlight": {…}`, wait for it to take effect, and nothing would happen or
+ * say why.
+ *
+ * What is **not** here, and must not be added:
+ *
+ *   `egoGiftPool` / per-pack general pools — 115 selectable packs × ~190 ids. Cannot be written by
+ *   hand and cannot be checked against anything. A season missing them is `provisional`, and that
+ *   is the honest answer.
+ *   `prices` — 446 numbers that do not follow from tier (tier 4 alone spreads over 373–450 in 38
+ *   distinct values), and the app reads `price` in exactly one place: the gift filter. The planner
+ *   never does.
+ *   `observable` — 312 ids across 11 keyword buckets.
+ *
+ * The reason is not the typing effort. A schema that accepts them invites someone to fill them in
+ * halfway and switch `provisional` off, and at that moment `build-data` promotes a half-known
+ * season to `index.default` — the one thing the provisional mechanism exists to prevent. So the
+ * strict key list is a door, and the rejection message says where to go instead.
+ */
+export const curatedSeasonSchema = z
+  .object({
+    /** Set while a season is only half known; keeps it from becoming `index.default`. */
+    provisional: z.boolean().optional(),
+    /** Only while the localization has no name for the dungeon yet. */
+    name: localizedSchema.optional(),
+    floors: z
+      .object({
+        normal: z.array(floorSchema),
+        hard: z.array(floorSchema),
+        parallel: z.array(floorSchema),
+        extreme: z.array(floorSchema),
+      })
+      .optional(),
+    themePacksOfferedPerFloor: z.number().int().positive().optional(),
+    themePackRefreshCount: z.number().int().nonnegative().optional(),
+    giftObservation: z
+      .object({
+        max: z.number().int().nonnegative(),
+        fusionResultsAllowed: z.boolean(),
+        costTable: z.array(z.number().int().nonnegative()),
+      })
+      .optional(),
+    starlight: z
+      .object({
+        initial: z.number().int().nonnegative(),
+        hardClearMultiplier: z.number().positive(),
+      })
+      .optional(),
+    fusion: z
+      .object({
+        successProbabilityByIngredients: z.record(z.string(), z.number()).optional(),
+        successProbabilityWithStarlight: z.record(z.string(), z.number()).optional(),
+        maxShopSlots: z.number().int().positive().optional(),
+      })
+      .optional(),
+    upgradeCostByTier: z.record(z.string(), z.array(z.number().int())).optional(),
+    /**
+     * Where each value above came from, keyed by its path (`floors`, `giftObservation.costTable`).
+     * `validate-data` requires one per value key: CLAUDE.md asks every curated entry to carry its
+     * `_source`, and this is the first time a machine checks it.
+     */
+    _sources: z.record(z.string(), z.string()).optional(),
+  })
+  // `_`-prefixed keys are comments and examples, never data — the same convention the other
+  // curated files use.
+  .catchall(z.unknown())
+  .superRefine((value, ctx) => {
+    for (const key of Object.keys(value)) {
+      if (key.startsWith('_') || KNOWN_CURATED_SEASON_KEYS.has(key)) continue;
+      ctx.addIssue({
+        code: 'custom',
+        path: [key],
+        message:
+          `unknown key. Per-pack general gift pools, prices and observation lists are not written ` +
+          `by hand — a season without them is marked "provisional": true and the planner explains ` +
+          `what it cannot reach. See .claude/skills/update-game-data/SKILL.md §3.`,
+      });
+    }
+  });
+
+/** The value keys `curatedSeasonSchema` accepts; anything else is rejected by name. */
+export const KNOWN_CURATED_SEASON_KEYS = new Set([
+  'provisional',
+  'name',
+  'floors',
+  'themePacksOfferedPerFloor',
+  'themePackRefreshCount',
+  'giftObservation',
+  'starlight',
+  'fusion',
+  'upgradeCostByTier',
+  '_sources',
+]);
+
+export type CuratedSeason = z.infer<typeof curatedSeasonSchema>;
+
 export const giftsFileSchema = z.array(giftSchema);
 export const packsFileSchema = z.array(themePackSchema);
 export const identitiesFileSchema = z.array(identitySchema);

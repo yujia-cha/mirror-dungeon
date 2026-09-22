@@ -16,10 +16,11 @@
  *   full          it works, and the new season becomes the default.
  *   derived-only  the fallback backfills packs and floors, and validation refuses the result
  *                 because no source can supply a general gift pool. Refusing is correct.
- *   partial       the drop pool and observation list never arrived — and *nothing complains*.
- *                 The season ships with every gift unobservable and none classed as `event`.
- *                 The assertions below pin that, because it is what M47's snapshot check has to
- *                 turn red.
+ *   partial       the drop pool and observation list never arrived. The build still produces a
+ *                 season — every gift unobservable, none classed as `event`, no dungeon name —
+ *                 and until M47 nothing complained. `checkSeasonSnapshot` now refuses it by
+ *                 name, and the assertions below hold both halves: the build's silence, and the
+ *                 validator's refusal.
  */
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -136,14 +137,27 @@ describe.skipIf(!hasRaw)('a season rollover, rehearsed end to end', () => {
   });
 
   describe('partial — the drop pool and observation list never arrived', () => {
-    it('builds and validates without a single error', () => {
-      // Pinned deliberately. This is the quiet failure M47 has to make loud; when the snapshot
-      // check lands, this expectation flips to a refusal and the message below becomes the proof.
-      expect(results.partial!.validationErrors).toEqual([]);
+    it('is refused by name, listing the files that never arrived', () => {
+      // The check M46 asked for. Before it, this variant validated clean.
+      const errors = results.partial!.validationErrors.join('\n');
+      expect(errors).toMatch(/is only half vendored/);
+      expect(errors).toMatch(/mirrordungeon-egogift-droppool-\d+\.json/);
+      expect(errors).toMatch(/mirror-dungeon-egogift-observation-data-md\d+\.json/);
+      expect(errors).toMatch(/MirrorDungeonUI_\d+\.json/);
     });
 
-    it('becomes the default season anyway', () => {
+    it('explains what a season built this way would get wrong', () => {
+      // The message has to carry the symptoms, because the build itself shows none: it succeeds,
+      // and the damage is only visible as counts nobody looks at.
+      const errors = results.partial!.validationErrors.join('\n');
+      expect(errors).toMatch(/no gift is classed as `event`/);
+      expect(errors).toMatch(/nothing is observable/);
+      expect(errors).toMatch(/the dungeon name is empty/);
+    });
+
+    it('still builds and would still have become the default — the refusal is the only thing stopping it', () => {
       const result = results.partial!;
+      expect(result.steps.find((step) => step.name === 'build')!.ok).toBe(true);
       expect(result.defaultSeason).toBe(result.to);
       expect(result.provisional[result.to]).toBe(false);
     });

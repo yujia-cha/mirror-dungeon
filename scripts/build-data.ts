@@ -90,6 +90,8 @@ import {
   type Meta,
   metaSchema,
   rulesSchema,
+  curatedSeasonSchema,
+  type CuratedSeason,
   type Rules,
   type SeasonEntry,
   type Sin,
@@ -208,14 +210,24 @@ const dungeonId = common?.data.currentDungeonId ?? requestedSeason ?? 7;
  * Per-season constants no source ships. The floors a season opens live here because they are a
  * game rule, not a derivation: Mirror Dungeon 8 is expected to open 1~5 before the rest. A season
  * with no file is a full 1~15 one built entirely from its own raw data.
+ *
+ * Parsed through `curatedSeasonSchema`, which is strict: an unknown key stops the build instead of
+ * being ignored. The file used to be read as `{ [key: string]: unknown }`, so a typo — or a key
+ * this pipeline never had, like a per-pack gift pool — did nothing at all and said nothing either.
  */
-interface CuratedSeason {
-  floors?: Rules['floors'];
-  provisional?: boolean;
-  [key: string]: unknown;
-}
-const curatedSeason =
-  readJsonIfExists<CuratedSeason>(repoPath(`data/curated/seasons/md${dungeonId}/rules.json`)) ?? {};
+const curatedSeasonPath = repoPath(`data/curated/seasons/md${dungeonId}/rules.json`);
+const curatedSeason = ((): CuratedSeason => {
+  const raw = readJsonIfExists<unknown>(curatedSeasonPath);
+  if (raw === null) return {};
+  const parsed = curatedSeasonSchema.safeParse(raw);
+  if (!parsed.success) {
+    fail(
+      `data/curated/seasons/md${dungeonId}/rules.json does not match curatedSeasonSchema:\n` +
+        parsed.error.issues.map((issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`).join('\n'),
+    );
+  }
+  return parsed.data;
+})();
 
 /** What a Mirror Dungeon has opened since MD5, used when a season records nothing of its own. */
 const DEFAULT_FLOORS: Rules['floors'] = {

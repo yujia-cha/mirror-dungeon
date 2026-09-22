@@ -68,6 +68,20 @@ function file<T>(...parts: string[]): T | null {
   return existsSync(path) ? readJson<T>(path) : null;
 }
 
+/**
+ * Packs and gifts the derived mirror lists that we deliberately do not ship.
+ *
+ * Shared with `validate-data` and `check-season` so the two cannot drift: both use it to tell
+ * "ordinary upstream noise" from "a new season started", and a roster check with a stale
+ * allowlist is a canary that reports nothing.
+ *
+ * 3001 is the hidden pack 「뽕.황」, which cannot be chosen or observed, and 9242 is its gift.
+ * 9831-9839 belong to pack 1122 「선의의 순례」, a story-dungeon pack the game does not offer in
+ * Mirror Dungeon at all.
+ */
+export const DERIVED_ONLY_PACKS = [3001] as const;
+export const DERIVED_ONLY_GIFTS = [9242, 9831, 9832, 9833, 9834, 9835, 9836, 9837, 9838, 9839] as const;
+
 export function derivedMdPresent(): boolean {
   return existsSync(join(DERIVED_DIR, 'data', 'md_theme_packs.json'));
 }
