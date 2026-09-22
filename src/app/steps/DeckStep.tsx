@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Plus, Search, Users, X } from 'lucide-react';
 import type { GameData, Identity } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -9,6 +9,7 @@ import { factionName, identityKeywordLabel } from '../format.ts';
 import { identitiesFromFormationCode } from '../lib/formation-code.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { deckSummaryChips } from '../lib/deck-summary.ts';
+import { useCursor } from '../lib/use-cursor.ts';
 import { stepIndex, useDismiss } from '../lib/useDismiss.ts';
 import { Button, Chip } from '../components/ui.tsx';
 
@@ -78,11 +79,12 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   const [code, setCode] = useState('');
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
-  const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const bySinner = useMemo(() => new Map(deck.map((id) => [sinnerOf(id), id])), [deck]);
   const needle = query.trim().toLowerCase();
+  // The highlight resets itself when the query changes; see `useCursor`.
+  const [activeIndex, setActiveIndex] = useCursor(needle);
   const needles = useMemo(() => needle.split(/\s+/).filter(Boolean), [needle]);
   const globalResults = useMemo(() => {
     if (needles.length === 0) return [];
@@ -97,7 +99,6 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   const open = listOpen && needle.length > 0;
   const closeSearch = useCallback(() => setListOpen(false), []);
   useDismiss(searchRef, closeSearch, open);
-  useEffect(() => setActiveIndex(0), [needle]);
   const onSearchKey = (event: React.KeyboardEvent<HTMLInputElement>): void => {
     const next = stepIndex(event.key, activeIndex, globalResults.length);
     if (next !== null) {
@@ -356,15 +357,14 @@ function SinnerPicker({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
   const ref = useRef<HTMLDivElement | null>(null);
   const needle = query.trim().toLowerCase();
+  const [activeIndex, setActiveIndex] = useCursor(needle);
   const all = data.identities.filter((identity) => identity.sinnerId === sinner);
   const identities = all
     .filter((identity) => matches(identity, needle.split(/\s+/).filter(Boolean), data))
     .sort((a, b) => b.rank - a.rank || a.id - b.id);
   useDismiss(ref, onClose, true);
-  useEffect(() => setActiveIndex(0), [needle]);
   const onKey = (event: React.KeyboardEvent<HTMLInputElement>): void => {
     const next = stepIndex(event.key, activeIndex, identities.length);
     if (next !== null) {

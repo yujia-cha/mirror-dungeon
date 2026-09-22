@@ -50,41 +50,64 @@ export function App() {
   const adoptSeason = useApp((s) => s.adoptSeason);
 
   const [index, setIndex] = useState<SeasonIndex | null>(null);
-  const [data, setData] = useState<GameData | null>(null);
-  const [error, setError] = useState<LoadFailure | null>(null);
   const [attempt, setAttempt] = useState(0);
+  /**
+   * The load results carry what they are a result *of*.
+   *
+   * Both effects below used to open with `setError(null)` / `setData(null)` — clearing last time's
+   * answer before asking again. That is a state write from an effect: a second render pass, and an
+   * error once the React Compiler lint set is on. Storing the season and the attempt alongside the
+   * value lets the render decide instead: a result for a season we are no longer opening, or for an
+   * attempt we have since retried, simply reads as "still loading".
+   */
+  const [loaded, setLoaded] = useState<{ season: number; attempt: number; data: GameData } | null>(null);
+  const [failure, setFailure] = useState<{ attempt: number; error: LoadFailure } | null>(null);
+  const error = failure?.attempt === attempt ? failure.error : null;
   const [sharedCopied, setSharedCopied] = useState(false);
-  const [linkBroken, setLinkBroken] = useState(false);
+  /**
+   * What the URL hash was carrying, read once during the first render.
+   *
+   * A share link must win over whatever localStorage remembers, or the link would not work. Reading
+   * it in an effect meant deciding there too — `setLinkBroken`, `setPendingShared` — which is a
+   * state write from an effect. Read during the first render instead, the answer can simply *be*
+   * the initial state of both, and the effect is left with the side effects: applying the link and
+   * rewriting the URL.
+   */
+  const [incoming] = useState((): { kind: 'none' | 'broken' } | { kind: 'ask' | 'apply'; shared: SharedState } => {
+    if (!window.location.hash.startsWith('#s=')) return { kind: 'none' };
+    const shared = decodeShared(window.location.hash);
+    if (!shared) return { kind: 'broken' };
+    // A link is someone else's plan, so applying it replaces the deck, the goals and the run. On a
+    // fresh app that is what the reader wants; mid-run it destroys a record no undo can get back,
+    // so a run in progress is asked about first.
+    return runInProgress(useApp.getState().run) ? { kind: 'ask', shared } : { kind: 'apply', shared };
+  });
+  const [linkBroken, setLinkBroken] = useState(incoming.kind === 'broken');
   const [copyFailed, setCopyFailed] = useState(false);
   const [dropped, setDropped] = useState<{ gifts: number; packs: number } | null>(null);
   // Held decisions: a share link and a season change each throw the run away, so when one is
   // live the choice waits here for the confirmation below.
-  const [pendingShared, setPendingShared] = useState<SharedState | null>(null);
+  const [pendingShared, setPendingShared] = useState<SharedState | null>(
+    incoming.kind === 'ask' ? incoming.shared : null,
+  );
   const [pendingSeason, setPendingSeason] = useState<number | null>(null);
 
-  // A share link must win over whatever localStorage remembers, or the link would not work. The
-  // hash is consumed once and dropped from the URL, or a later reload would undo the user's edits.
-  // A hash that says nothing to us is left in place: dropping it silently took away the only copy
-  // of a link the reader might still want to re-open or pass on.
-  // A link is someone else's plan, so applying it replaces the deck, the goals and the run. On a
-  // fresh app that is exactly what the reader wants; mid-run it destroys a record no undo can get
-  // back (the hash is gone by then), so a run in progress is asked about first and the hash is
-  // kept until the answer comes.
+  // The hash is consumed once and dropped from the URL, or a later reload would undo the user's
+  // edits. A hash that says nothing to us is left in place: dropping it silently took away the only
+  // copy of a link the reader might still want to re-open or pass on. A run in progress keeps the
+  // hash until the question above is answered.
   useEffect(() => {
-    if (!window.location.hash.startsWith('#s=')) return;
-    const shared = decodeShared(window.location.hash);
-    if (!shared) {
-      setLinkBroken(true);
-      window.setTimeout(() => setLinkBroken(false), 6000);
-      return;
-    }
-    if (runInProgress(useApp.getState().run)) {
-      setPendingShared(shared);
-      return;
-    }
-    applyShared(shared);
+    if (incoming.kind !== 'apply') return;
+    applyShared(incoming.shared);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-  }, [applyShared]);
+  }, [applyShared, incoming]);
+
+  // The broken-link notice says its piece and goes, like the dropped-goals one below.
+  useEffect(() => {
+    if (!linkBroken) return undefined;
+    const timer = window.setTimeout(() => setLinkBroken(false), 6000);
+    return () => window.clearTimeout(timer);
+  }, [linkBroken]);
 
   const takeShared = (): void => {
     if (pendingShared) applyShared(pendingShared);
@@ -103,13 +126,12 @@ export function App() {
   // Which seasons are published is data, not a build-time constant, so the index comes first.
   useEffect(() => {
     let cancelled = false;
-    setError(null);
     loadSeasonIndex(import.meta.env.BASE_URL)
-      .then((loaded) => {
-        if (!cancelled) setIndex(loaded);
+      .then((next) => {
+        if (!cancelled) setIndex(next);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(loadFailure(cause));
+        if (!cancelled) setFailure({ attempt, error: loadFailure(cause) });
       });
     return () => {
       cancelled = true;
@@ -123,11 +145,11 @@ export function App() {
     return season !== undefined && index.seasons.some((entry) => entry.id === season) ? season : index.default;
   }, [index, season]);
 
+  const data = loaded && loaded.season === openSeason && loaded.attempt === attempt ? loaded.data : null;
+
   useEffect(() => {
     if (openSeason === null) return undefined;
     let cancelled = false;
-    setError(null);
-    setData(null);
     // The art manifest rides along with the season's data. It has to be in place *before* the
     // first render that draws tiles: `setArtManifest` is module state, so a late arrival would
     // not re-render anything. It never rejects — no manifest just means every tile draws its
@@ -136,22 +158,22 @@ export function App() {
       loadGameData(import.meta.env.BASE_URL, { validate: import.meta.env.DEV, season: openSeason }),
       loadArtManifest(import.meta.env.BASE_URL),
     ])
-      .then(([loaded, manifest]) => {
+      .then(([next, manifest]) => {
         if (cancelled) return;
         setArtManifest(manifest);
         // Goals this season never heard of cannot be drawn or planned, so they go — counted, not
         // quietly (the same rule the formation code follows for identities it does not know).
         const counts = adoptSeason({
           season: openSeason,
-          lastFloor: lastFloorOf(loaded),
-          giftIds: new Set(loaded.gifts.map((gift) => gift.id)),
-          packIds: new Set(loaded.packs.map((pack) => pack.id)),
+          lastFloor: lastFloorOf(next),
+          giftIds: new Set(next.gifts.map((gift) => gift.id)),
+          packIds: new Set(next.packs.map((pack) => pack.id)),
         });
-        setData(loaded);
+        setLoaded({ season: openSeason, attempt, data: next });
         setDropped(counts.gifts + counts.packs > 0 ? counts : null);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(loadFailure(cause));
+        if (!cancelled) setFailure({ attempt, error: loadFailure(cause) });
       });
     return () => {
       cancelled = true;

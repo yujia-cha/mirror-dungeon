@@ -11,7 +11,7 @@ import { useApp } from '../store.ts';
 import { FusionNotice } from '../components/FusionNotice.tsx';
 import { GiftTile } from '../components/GiftTile.tsx';
 import { Button, Card, SectionTitle } from '../components/ui.tsx';
-import { usePlan } from './PlanContext.tsx';
+import { usePlan } from './plan-context.ts';
 
 export function GoalsPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const { indexes, lang, judgements, giftTitle, openGift } = usePlan();

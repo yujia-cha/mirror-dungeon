@@ -8,6 +8,7 @@
  * Flags: --deck, --want, --floors, --difficulty normal|hard, --hard-from N,
  *        --must gift,gift (these are required; the rest are best-effort),
  *        --observe gift,gift (pin these for 기프트 관측), --no-observe (planner may not observe),
+ *        --assume-unvisited (price every observation as a first visit to that pack, ×1.5),
  *        --pin floor:pack,…, --ban pack,…, --prefer pack,… (must be included somewhere),
  *        --floor N (run in progress: floors below N are played; pin them to say which pack was taken),
  *        --own gift,… (already in hand), --failed gift,… (missed for good),
@@ -113,6 +114,10 @@ const input: PlanInput = share
         currentFloor: flagValue('--floor') !== undefined ? Number(flagValue('--floor')) : 1,
         ownedGifts: numbers(flagValue('--own')),
         unobtainableGifts: numbers(flagValue('--failed')),
+        // Prices every observation as if its pack had never been entered (×1.5). The app never
+        // sets this — it knows from the run which packs are new — but it is the honest price for a
+        // plan made before the run starts, so the CLI can ask for it.
+        assumeUnvisitedPacks: hasFlag('--assume-unvisited'),
       },
     };
 

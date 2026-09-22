@@ -108,11 +108,13 @@ export function expandRequirements(
     const key = requirementKey({ giftId, neededFor });
     const existing = requirements.get(key);
     if (existing) {
-      existing.count += 1;
       existing.required = existing.required || required;
       return;
     }
-    requirements.set(key, { giftId, count: 1, required, neededFor, via });
+    // One entry per `requirementKey` — a gift needed by two fusions gets two keys, and each one is
+    // a separate copy to find. A `count` field lived here for a while and was never read: the two
+    // shares are two requirements, not one requirement of size two.
+    requirements.set(key, { giftId, required, neededFor, via });
   };
 
   const visit = (giftId: number, required: boolean, neededFor: number | null, depth: number): void => {

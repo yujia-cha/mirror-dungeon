@@ -10,7 +10,7 @@ import { trackerGifts, type TrackerGroupId } from '../lib/tracker.ts';
 import { FusionNotice } from '../components/FusionNotice.tsx';
 import { GiftTile } from '../components/GiftTile.tsx';
 import { Card, SectionTitle } from '../components/ui.tsx';
-import { usePlan } from '../shell/PlanContext.tsx';
+import { usePlan } from '../shell/plan-context.ts';
 
 const GROUP_KEY: Record<TrackerGroupId, 'trackerGroupKeyword' | 'trackerGroupShard' | 'trackerGroupMemory' | 'trackerGroupAttack' | 'trackerGroupPlain'> = {
   keyword: 'trackerGroupKeyword',

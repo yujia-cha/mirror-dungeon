@@ -132,7 +132,6 @@ export type RequirementRoute =
   | 'startGift'
   | 'observation'
   | 'generalDrop'
-  | 'fusion'
   /** Already in hand (run progress). */
   | 'owned'
   /** An ingredient the plan stopped routing for because its fusion can no longer happen. */
@@ -141,8 +140,6 @@ export type RequirementRoute =
 
 export interface Requirement {
   giftId: number;
-  /** Copies needed — a recipe can call for two of the same ingredient. */
-  count: number;
   required: boolean;
   /** The fusion result this exists to feed, if any. */
   neededFor: number | null;

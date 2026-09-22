@@ -929,7 +929,6 @@ export function requirementSummary(requirements: Requirement[]): Record<Requirem
     startGift: [],
     observation: [],
     generalDrop: [],
-    fusion: [],
     owned: [],
     dropped: [],
     unresolved: [],

@@ -18,7 +18,7 @@ import { AppShell } from '../shell/AppShell.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { FloorHeader } from '../stage/FloorHeader.tsx';
 import { MetroMap } from '../components/MetroMap.tsx';
-import { usePlan } from '../shell/PlanContext.tsx';
+import { usePlan } from '../shell/plan-context.ts';
 
 /** The map with whatever the provider has, drawn at the season's own length. */
 function Metro({ lastFloor, fixedModeByFloor }: { lastFloor: number; fixedModeByFloor: Map<number, 'parallel' | 'extreme'> }) {

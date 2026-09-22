@@ -23,7 +23,7 @@ import { Badge, Button, Card, FilterSelect } from '../components/ui.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { GiftTileGrid, type GiftTileData } from '../components/GiftGrid.tsx';
 import { ObserveSlots } from '../components/ObserveSlots.tsx';
-import { usePlan } from '../shell/PlanContext.tsx';
+import { usePlan } from '../shell/plan-context.ts';
 
 interface Props {
   data: GameData;

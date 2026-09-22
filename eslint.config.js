@@ -51,7 +51,7 @@ export default tseslint.config(
        * is its own piece of work, not a dependency bump, so it is off with a receipt rather than
        * silently dropped.
        */
-      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/set-state-in-effect': 'error',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },

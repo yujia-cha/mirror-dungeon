@@ -6,12 +6,12 @@
  * name) and their pickups; a pack card opens the pack's gift list. The map explains nothing in
  * words: fill, dash and weight are the whole vocabulary.
  */
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Eye, Star } from 'lucide-react';
 import type { ObservedGift, RoutePlan } from '../../core/types.ts';
 import { pick, t } from '../i18n.ts';
 import { segmentsFor, stackBlocks, type Segment } from '../lib/metro.ts';
-import { useElementWidth } from '../lib/useElementWidth.ts';
+import { useElementWidth, useMeasuredHeights } from '../lib/useElementWidth.ts';
 import { DetailSurface, ObservedDetailBody, type DetailMode } from './BlockDetail.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { PackCard } from './PackCard.tsx';
@@ -399,18 +399,9 @@ export function MetroMap({
   const deskRef = useRef<HTMLDivElement>(null);
   const W = useElementWidth(deskRef, 1160);
   const cardRefs = useRef(new Map<string, HTMLDivElement>());
-  const [cardHeights, setCardHeights] = useState<Record<string, number>>({});
-  useLayoutEffect(() => {
-    const next: Record<string, number> = {};
-    for (const [key, el] of cardRefs.current) {
-      const h = Math.round(el.getBoundingClientRect().height);
-      if (h > 0) next[key] = h;
-    }
-    setCardHeights((prev) => {
-      const keys = Object.keys(next);
-      return keys.length === Object.keys(prev).length && keys.every((k) => prev[k] === next[k]) ? prev : next;
-    });
-  }, [plan, W]);
+  // A card's height is only knowable after layout, so this is a measurement rather than derived
+  // state; `useMeasuredHeights` is where every such read lives.
+  const cardHeights = useMeasuredHeights(cardRefs, [plan, W]);
   const LEFT = 60;
   const st = (W - LEFT - 20) / lastFloor;
   const x = (f: number): number => LEFT + (f - 1) * st + st / 2;

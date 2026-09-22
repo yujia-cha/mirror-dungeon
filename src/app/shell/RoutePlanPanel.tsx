@@ -15,7 +15,7 @@ import { GiftIcon } from '../components/GiftIcon.tsx';
 import { MetroMap } from '../components/MetroMap.tsx';
 import { PackConflicts } from '../components/PackConflicts.tsx';
 import { Badge, Button, Card, SectionTitle, Toast } from '../components/ui.tsx';
-import { usePlan } from './PlanContext.tsx';
+import { usePlan } from './plan-context.ts';
 
 export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const { data, indexes, lang, input, plan, shown, variants, variantIndex, setVariantIndex, variant, giftName, packName, keywordLabel, ctx } = usePlan();

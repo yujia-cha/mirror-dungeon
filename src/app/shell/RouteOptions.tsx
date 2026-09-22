@@ -10,7 +10,7 @@ import { useApp } from '../store.ts';
 import { PackCard } from '../components/PackCard.tsx';
 import { PackActions } from '../components/PackSheet.tsx';
 import { Card, SectionTitle } from '../components/ui.tsx';
-import { usePlan } from './PlanContext.tsx';
+import { usePlan } from './plan-context.ts';
 
 export function RouteOptions() {
   const { data, indexes, lang, ctx } = usePlan();

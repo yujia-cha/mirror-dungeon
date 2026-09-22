@@ -11,7 +11,7 @@ import { t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { stageModeFor, type StageMode } from '../lib/stage.ts';
 import { Badge } from '../components/ui.tsx';
-import { usePlan } from '../shell/PlanContext.tsx';
+import { usePlan } from '../shell/plan-context.ts';
 
 /** The entered pack is named by the caller; here only the pack-less states get a badge. */
 function modeBadge(mode: StageMode, lang: Lang, lastFloor: number) {

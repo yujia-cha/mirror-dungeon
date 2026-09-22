@@ -11,7 +11,7 @@ import { pick, t } from '../i18n.ts';
 import { DetailSurface } from '../components/BlockDetail.tsx';
 import { PackSheetBody } from '../components/PackSheet.tsx';
 import { Button, Card, Notice } from '../components/ui.tsx';
-import { usePlan } from '../shell/PlanContext.tsx';
+import { usePlan } from '../shell/plan-context.ts';
 import { OtherEntryCard, OtherPacks, StagePackCard } from './EnterablePacks.tsx';
 import { PackArea } from './EnteredPack.tsx';
 import { FloorHeader } from './FloorHeader.tsx';

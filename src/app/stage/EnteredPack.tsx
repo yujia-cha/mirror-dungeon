@@ -12,7 +12,7 @@ import { useApp } from '../store.ts';
 import { pullStyle, usePullGesture } from '../lib/usePullGesture.ts';
 import { GiftTile } from '../components/GiftTile.tsx';
 import { PackCard } from '../components/PackCard.tsx';
-import { usePlan } from '../shell/PlanContext.tsx';
+import { usePlan } from '../shell/plan-context.ts';
 
 const HANDLE_CLASS = 'flex h-9 w-full items-center justify-center gap-1 text-sm font-medium transition-colors';
 
@@ -21,15 +21,17 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
   const { indexes, lang, ctx, exclusivesOf, needed, next, leave, openGift } = usePlan();
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
-  const [open, setOpen] = useState(false);
+  /**
+   * The open state is one-way: a frame after mount it turns on, and `closing` folds it from the
+   * outside. Keeping those separate is what lets the effect run once — it used to re-run on
+   * `closing` and write `false` synchronously, which is a state write from an effect.
+   */
+  const [entered, setEntered] = useState(false);
+  const open = entered && !closing;
   useEffect(() => {
-    if (closing) {
-      setOpen(false);
-      return undefined;
-    }
-    const frame = window.requestAnimationFrame(() => setOpen(true));
+    const frame = window.requestAnimationFrame(() => setEntered(true));
     return () => window.cancelAnimationFrame(frame);
-  }, [closing]);
+  }, []);
   const pull = usePullGesture({
     directions: ['down', 'up'],
     onCommit: (direction) => (direction === 'down' ? next() : leave(packId)),

@@ -3,88 +3,26 @@
  * and the run record) and handed to the stage and both side panels, together with the pack
  * context every pack surface takes and the run actions that settle gifts as floors are left.
  */
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { evaluateConditions } from '../../core/index.ts';
 import type { GameData, Gift, Keyword } from '../../core/schema.ts';
 import { observable, planAlternatives, planRoute } from '../../core/index.ts';
-import type { DeckStats, GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
-import type { RouteVariant } from '../../core/index.ts';
+import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { keywordName } from '../format.ts';
 import { conditionText } from '../condition-text.ts';
-import { judgementsByGift, type Judgement } from '../lib/judgement.ts';
+import { judgementsByGift } from '../lib/judgement.ts';
 import { planInputFor } from '../lib/plan-input.ts';
-import { autoFailedFor, exclusivesIndex, lastFloorOf, stageModeFor, type StageMode } from '../lib/stage.ts';
-import { blockedGifts, entanglements, ingredientsOf, type Block, type Entanglement } from '../lib/entangle.ts';
+import { autoFailedFor, exclusivesIndex, lastFloorOf, stageModeFor } from '../lib/stage.ts';
+import { blockedGifts, entanglements, ingredientsOf } from '../lib/entangle.ts';
 import { carriedBy } from '../lib/goal-toggle.ts';
 import { upgradeChildren } from '../lib/upgrade-children.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
 import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
 import type { PackContext } from '../components/PackSheet.tsx';
-
-export interface PlanState {
-  data: GameData;
-  indexes: GameIndexes;
-  stats: DeckStats;
-  lang: Lang;
-  input: PlanInput;
-  /** The plan for the full goal list, or null without goals. */
-  plan: RoutePlan | null;
-  /** The plan on display: the selected alternative, or `plan`. */
-  shown: RoutePlan | null;
-  variants: RouteVariant[];
-  variantIndex: number;
-  setVariantIndex: (index: number) => void;
-  variant: RouteVariant | undefined;
-  /** Goal gifts the planner works for (given-up ones excluded). */
-  goals: ReadonlySet<number>;
-  /** 조합 계승 children of each gift (`upgradeChildren`), computed once per data set. */
-  childrenOf: ReadonlyMap<number, Gift[]>;
-  /** Goals that share an ingredient with another goal, and what they share. */
-  entangled: ReadonlyMap<number, Entanglement[]>;
-  /** Gifts the current goals rule out, and why. */
-  blocked: ReadonlyMap<number, Block>;
-  /** Make a gift a goal (or drop it), taking its children and recipe tree out of the selection. */
-  toggleGoal: (gift: Gift) => void;
-  /** The goals and everything a fusion goal consumes on the way: what the route is out to collect. */
-  needed: ReadonlySet<number>;
-  judgements: Map<number, Judgement | null>;
-  giftTitle: (id: number) => string | undefined;
-  giftName: (id: number) => string;
-  packName: (id: number) => string;
-  keywordLabel: (id: Keyword) => string;
-  ctx: PackContext;
-  exclusivesOf: (packId: number) => number[];
-  /** What the run starts with: the observed gifts and the starting gift, collected on leaving floor 1. */
-  startGifts: number[];
-  stageMode: StageMode;
-  /** Enter a pack on the stage floor. */
-  enter: (packId: number) => void;
-  /** Leave the stage floor: an undecided floor is skipped, an entered pack's unmarked goals are missed. */
-  next: () => void;
-  /**
-   * Show another floor. Looking back changes nothing; walking forward settles every floor left
-   * behind, so the floor strip and 「다음 층」 can never disagree about what was missed.
-   */
-  goTo: (floor: number) => void;
-  /**
-   * Go back from an entered pack: the entry and every status recorded for that pack's own drops
-   * are cleared; when that reopens floor 1, the start-of-run gifts recorded on leaving it go too.
-   */
-  leave: (packId: number) => void;
-  /** Open the gift detail sheet (the same one the items tab uses) from anywhere in the shell. */
-  openGift: (giftId: number) => void;
-}
-
-const PlanCtx = createContext<PlanState | null>(null);
-
-export function usePlan(): PlanState {
-  const value = useContext(PlanCtx);
-  if (!value) throw new Error('usePlan needs a PlanProvider');
-  return value;
-}
+import { PlanCtx, type PlanState } from './plan-context.ts';
 
 export function PlanProvider({ data, indexes, stats, lang, children }: { data: GameData; indexes: GameIndexes; stats: DeckStats; lang: Lang; children: ReactNode }) {
   const deck = useApp((s) => s.deck);

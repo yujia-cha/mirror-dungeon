@@ -4,7 +4,7 @@
  * right. On a desktop the panels sit beside the stage; on a phone they are drawers. The header's
  * reset puts the deck, the items, the route options and the run back to their first state.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Globe, Menu, MoreHorizontal, Moon, RotateCcw, Share2, Sun } from 'lucide-react';
 import type { GameData, SeasonEntry } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -91,14 +91,21 @@ export function AppShell({
   const setUi = useApp((s) => s.setUi);
   const resetAll = useApp((s) => s.resetAll);
   const desktop = useDesktop();
-  // Phones keep their own drawer state: only one drawer at a time, closed on every load.
-  const [drawer, setDrawer] = useState<'left' | 'right' | null>(null);
-  // Crossing the breakpoint leaves the two states disagreeing — a drawer opened on a phone would
-  // spring back open, backdrop and all, after the same panel had been closed on a desktop. The
-  // desktop layout is the one with a persistent record, so the drawer starts closed each time.
-  useEffect(() => {
-    if (desktop) setDrawer(null);
-  }, [desktop]);
+  /**
+   * Phones keep their own drawer state: only one drawer at a time, closed on every load.
+   *
+   * The layout it was opened under is stored with it. Crossing the breakpoint otherwise leaves the
+   * two states disagreeing — a drawer opened on a phone would spring back open, backdrop and all,
+   * after the same panel had been closed on a desktop — and the fix used to be an effect that
+   * cleared it. Reading it as closed whenever the layout has changed does the same thing during
+   * render, with no second pass.
+   */
+  const [drawerState, setDrawerState] = useState<{ desktop: boolean; side: 'left' | 'right' | null }>({
+    desktop,
+    side: null,
+  });
+  const drawer = drawerState.desktop === desktop ? drawerState.side : null;
+  const setDrawer = (side: 'left' | 'right' | null): void => setDrawerState({ desktop, side });
   const leftOpen = desktop ? ui.leftOpen : drawer === 'left';
   const rightOpen = desktop ? ui.rightOpen : drawer === 'right';
   // On a phone a panel is a full-screen page portalled to the body, so the shell behind it is
@@ -106,7 +113,7 @@ export function AppShell({
   const pageOpen = !desktop && drawer !== null;
   const toggle = (side: 'left' | 'right'): void => {
     if (desktop) setUi(side === 'left' ? { leftOpen: !ui.leftOpen } : { rightOpen: !ui.rightOpen });
-    else setDrawer((current) => (current === side ? null : side));
+    else setDrawer(drawer === side ? null : side);
   };
   const close = (side: 'left' | 'right'): void => {
     if (desktop) setUi(side === 'left' ? { leftOpen: false } : { rightOpen: false });
