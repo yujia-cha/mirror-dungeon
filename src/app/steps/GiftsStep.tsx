@@ -1,10 +1,12 @@
 /**
- * Pick the gifts to chase. They are grouped by whether the current deck activates them and drawn
- * as a grid of tiles; the detail sheet behind each name carries the wording the tiles leave out
- * (effect text, every condition, how it is obtained, the recipe). The sheet itself is hosted by
- * `PlanProvider`, so it survives this panel closing. Between the filters and the grid sit the
- * observation slots and the selected-gift chips: a chip opens the sheet, and can be dragged onto
- * a slot to pin the gift for observation.
+ * Pick the gifts to chase, as a grid of tiles; the detail sheet behind each name carries the
+ * wording the tiles leave out (effect text, every condition, how it is obtained, the recipe). The
+ * sheet itself is hosted by `PlanProvider`, so it survives this panel closing. Between the filters
+ * and the grid sit the observation slots and the selected-gift chips: a chip opens the sheet, and
+ * can be dragged onto a slot to pin the gift for observation.
+ *
+ * Browsing splits the tiles into 활성 / 기타 by whether the current deck activates them. **A search
+ * does not** — see `results` below — and 활성 steps aside once every gift in it is already a goal.
  */
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -21,7 +23,8 @@ import { judgementOf } from '../lib/judgement.ts';
 import { useChipDrag } from '../lib/useChipDrag.ts';
 import { Badge, Button, Card, FilterSelect } from '../components/ui.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
-import { GiftTileGrid, type GiftTileData } from '../components/GiftGrid.tsx';
+import { GiftTileGrid } from '../components/GiftGrid.tsx';
+import { isMarked, type GiftTileData } from '../lib/gift-tile.ts';
 import { ObserveSlots } from '../components/ObserveSlots.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
@@ -54,7 +57,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   const observeMax = data.rules.giftObservation.max;
   // The selection rule and the derived views over `wanted` are the shell's (`PlanProvider`), so
   // they are computed once and every surface agrees.
-  const { openGift, childrenOf, entangled, blocked, toggleGoal: toggle } = usePlan();
+  const { openGift, childrenOf, entangled, blocked, needed, toggleGoal: toggle } = usePlan();
 
   const [query, setQuery] = useState('');
   const [keyword, setKeyword] = useState<Keyword | 'all'>('all');
@@ -158,7 +161,13 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   // Observation: the slots take a selected gift from the 「+」 list or from a dragged chip. A drop
   // on a filled slot replaces its gift; a drop elsewhere, or of a gift that cannot be observed,
   // does nothing.
-  const observeCandidates = wanted.filter((id) => canObserve(id) && !observedGifts.includes(id));
+  /*
+   * `needed`, not `wanted`: a fusion goal is a promise about its ingredients too, and those are
+   * often the pin that matters — the shop has to hand a piece over before the fusion can happen,
+   * and observation is the one way to make that certain. They have no chip to drag (the selection
+   * holds the result, not its pieces), so the 「+」 list is their way in.
+   */
+  const observeCandidates = [...needed].filter((id) => canObserve(id) && !observedGifts.includes(id));
   const pin = (id: number): void => toggleObserved(id, { max: observeMax, observable: canObserve });
   const unpin = (id: number): void => {
     if (observedGifts.includes(id)) toggleObserved(id, { max: observeMax, observable: canObserve });
@@ -188,12 +197,25 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       ];
     });
 
+  const tiles: Record<GiftGroup, GiftTileData[]> = { active: tilesFor(groups.active), other: tilesFor(groups.other) };
+  const grid = (list: GiftTileData[]) => (
+    <GiftTileGrid
+      tiles={list}
+      wanted={wanted}
+      entangled={entangledIds}
+      blocked={blocked}
+      giftName={giftName}
+      enums={data.enums}
+      lang={lang}
+      onToggle={toggle}
+      onOpen={openGift}
+    />
+  );
+
   const section = (group: GiftGroup, titleKey: 'giftsActive' | 'giftsOther') => {
-    const entries = groups[group];
-    const tiles = tilesFor(entries);
     // 조합 계승 children come into the grid under their parent, so the parent count read low.
-    const shownCount = tiles.length;
-    const chosen = tiles.filter((tile) => wanted.includes(tile.entry.gift.id)).length;
+    const list = tiles[group];
+    const chosen = list.filter((tile) => wanted.includes(tile.entry.gift.id)).length;
     const shut = collapsed[group];
     return (
       <Card className="overflow-hidden" key={group}>
@@ -204,24 +226,14 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
           className="flex h-9 w-full items-center justify-between border-b border-line bg-surface-2 px-3 text-left"
         >
           <span className="flex items-center gap-2 text-sm font-semibold">
-            {t(titleKey, lang)} <span className="font-num text-xs text-fg-3">{shownCount}</span>
+            {t(titleKey, lang)} <span className="font-num text-xs text-fg-3">{list.length}</span>
             {shut && chosen > 0 ? <Badge tone="neutral">{t('giftsSelected', lang, { n: chosen })}</Badge> : null}
           </span>
           <span className="text-fg-3">{shut ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</span>
         </button>
         {shut ? null : (
           <div className={group === 'other' ? 'max-h-[60dvh] overflow-y-auto' : undefined} data-testid={group === 'other' ? 'gift-scroller' : undefined}>
-            <GiftTileGrid
-              tiles={tiles}
-              wanted={wanted}
-              entangled={entangledIds}
-              blocked={blocked}
-              giftName={giftName}
-              enums={data.enums}
-              lang={lang}
-              onToggle={toggle}
-              onOpen={openGift}
-            />
+            {grid(list)}
           </div>
         )}
       </Card>
@@ -229,6 +241,22 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   };
 
   const searching = query.trim() !== '';
+  /*
+    A query is a narrowing already, so splitting its answer into 활성 / 기타 narrows it twice: what
+    the reader typed for sat behind 「기타」, which opens shut. One list instead. 활성 still comes
+    first — that is the order `prioritiseGifts` left them in — and the tile's own ring keeps saying
+    whether the deck activates it, so the split carried nothing the tiles do not.
+  */
+  const results = [...tiles.active, ...tiles.other];
+  /*
+    「활성」 is a worklist: once nothing in it is left to decide there is no reason to keep reading it,
+    so it steps aside and 「기타」 rises to the top. 「남은 일」 is the tile's own question (`isMarked`), not
+    just membership in `wanted` — choosing 진혼 settles 요리 비법 전서 too, and the ✓ on that tile says
+    so. Not when it is the only thing on screen, though — hiding it with nothing behind it would
+    leave the tab blank.
+  */
+  const activeSettled = tiles.active.length > 0 && tiles.active.every((tile) => isMarked(tile, wanted, blocked));
+  const shownGroups = GROUPS.filter(({ group }) => !(group === 'active' && activeSettled && tiles.other.length > 0));
   let body: React.ReactNode;
   if (deck.length === 0) {
     body = (
@@ -256,8 +284,19 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
         </Button>
       </Card>
     );
+  } else if (searching) {
+    body = (
+      <Card className="overflow-hidden">
+        <div className="flex h-9 items-center gap-2 border-b border-line bg-surface-2 px-3 text-sm font-semibold">
+          {t('giftsResults', lang)} <span className="font-num text-xs text-fg-3">{results.length}</span>
+        </div>
+        <div className="max-h-[60dvh] overflow-y-auto" data-testid="gift-scroller">
+          {grid(results)}
+        </div>
+      </Card>
+    );
   } else {
-    body = <div className="flex flex-col gap-2.5">{GROUPS.map(({ group, title }) => section(group, title))}</div>;
+    body = <div className="flex flex-col gap-2.5">{shownGroups.map(({ group, title }) => section(group, title))}</div>;
   }
 
   const keywordOptions = data.enums.keywords.map((k) => ({ value: k.id as Keyword, label: pick(k.name, lang) }));

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, TriangleAlert, Hourglass } from 'lucide-react';
 import type { GameData, SeasonIndex } from '../core/schema.ts';
+import type { GameIndexes } from '../core/types.ts';
 import { analyseDeck, buildIndexes } from '../core/index.ts';
 import { DataLoadError, loadArtManifest, loadGameData, loadSeasonIndex } from '../core/data/load.ts';
 import { t, type StringKey } from './i18n.ts';
@@ -9,6 +10,7 @@ import type { SharedState } from './store.ts';
 import { defaultDeck } from './lib/default-deck.ts';
 import { setArtManifest } from './lib/assets.ts';
 import { lastFloorOf } from './lib/stage.ts';
+import { ingredientTree } from './lib/entangle.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
 import { ConfirmDialog } from './components/ConfirmDialog.tsx';
 import { AppShell } from './shell/AppShell.tsx';
@@ -60,7 +62,7 @@ export function App() {
    * value lets the render decide instead: a result for a season we are no longer opening, or for an
    * attempt we have since retried, simply reads as "still loading".
    */
-  const [loaded, setLoaded] = useState<{ season: number; attempt: number; data: GameData } | null>(null);
+  const [loaded, setLoaded] = useState<{ season: number; attempt: number; data: GameData; indexes: GameIndexes } | null>(null);
   const [failure, setFailure] = useState<{ attempt: number; error: LoadFailure } | null>(null);
   const error = failure?.attempt === attempt ? failure.error : null;
   const [sharedCopied, setSharedCopied] = useState(false);
@@ -167,13 +169,17 @@ export function App() {
         setArtManifest(manifest);
         // Goals this season never heard of cannot be drawn or planned, so they go — counted, not
         // quietly (the same rule the formation code follows for identities it does not know).
+        // Built here rather than in a memo below: `adoptSeason` needs the recipe tree to judge
+        // observation pins, and building it twice for one load would be the same work again.
+        const nextIndexes = buildIndexes(next);
         const counts = adoptSeason({
           season: openSeason,
           lastFloor: lastFloorOf(next),
           giftIds: new Set(next.gifts.map((gift) => gift.id)),
           packIds: new Set(next.packs.map((pack) => pack.id)),
+          recipes: ingredientTree(nextIndexes, next.rules.fusion.maxShopSlots),
         });
-        setLoaded({ season: openSeason, attempt, data: next });
+        setLoaded({ season: openSeason, attempt, data: next, indexes: nextIndexes });
         setDropped(counts.gifts + counts.packs > 0 ? counts : null);
       })
       .catch((cause: unknown) => {
@@ -194,7 +200,8 @@ export function App() {
   // A first visit starts from the deck everyone owns; a share link or a saved deck arrives first
   // and wins. Seeding happens once, so emptying the deck by hand is not undone on the next render.
   const seeded = useRef(false);
-  const indexes = useMemo(() => (data ? buildIndexes(data) : null), [data]);
+  // Same gate as `data` above, so the two can never disagree about which season is on screen.
+  const indexes = data && loaded ? loaded.indexes : null;
   useEffect(() => {
     if (!data || !indexes || seeded.current) return;
     seeded.current = true;

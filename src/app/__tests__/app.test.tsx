@@ -12,7 +12,7 @@ import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions } from '../../core/index.ts';
 import { conditionText, reachedTierText } from '../condition-text.ts';
 import { josa } from '../../core/text.ts';
-import { PERSIST_KEY, PERSIST_VERSION, appDefaultOptions, decodeShared, defaultUi, emptyRun, encodeShared, sanitizeOptions, sanitizePersisted, sanitizeRun, sanitizeUi, sinnerOf, useApp, withoutLegacyGot } from '../store.ts';
+import { PERSIST_KEY, PERSIST_VERSION, appDefaultOptions, decodeShared, defaultUi, emptyRun, encodeShared, forgetRecipes, sanitizeOptions, sanitizePersisted, sanitizeRun, sanitizeUi, sinnerOf, useApp, withoutLegacyGot } from '../store.ts';
 import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
@@ -31,6 +31,7 @@ import { RouteOptions } from '../shell/RouteOptions.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
 import { planToText } from '../lib/plan-text.ts';
+import { ingredientTree } from '../lib/entangle.ts';
 import { actionsFor } from '../lib/unresolved-actions.ts';
 import { keywordName } from '../format.ts';
 import { observable as observableGift, planRoute } from '../../core/index.ts';
@@ -69,6 +70,9 @@ const LCB_DECK = [10101, 10201, 10301, 10401, 10501, 10601, 10701, 10801, 10901,
 
 beforeEach(() => {
   useApp.setState({ deck: [], deployed: [], wanted: [], fusionGoal: {}, run: emptyRun(), ui: defaultUi(), options: appDefaultOptions(), lang: 'ko', dark: true });
+  // The season's recipes are not state — they arrive with the data load (`adoptSeason`). A test
+  // that never loads data starts out not knowing them, the same as a page that has not loaded yet.
+  forgetRecipes();
 });
 
 afterEach(() => {
@@ -341,6 +345,7 @@ describe('state that outlived the game data', () => {
       lastFloor: 15,
       giftIds: new Set(data.gifts.map((gift) => gift.id)),
       packIds: new Set(data.packs.map((pack) => pack.id)),
+      recipes: ingredientTree(indexes, data.rules.fusion.maxShopSlots),
     });
 
   it('drops ids this season cannot resolve, from the goals, the options and the run alike', () => {
@@ -361,8 +366,11 @@ describe('state that outlived the game data', () => {
   });
 
   it('keeps a pin only for a gift that is still a goal, from a link and from a saved state', () => {
-    // A pin is a decision about a goal — a link carrying one for anything else used to spend
-    // observation budget on it and then lose it without a word.
+    // A pin is a decision about what the route collects — a link carrying one for anything else
+    // used to spend observation budget on it and then lose it without a word. The season has to be
+    // adopted first: before the recipes land, a link's pins are left alone on purpose (an
+    // ingredient pin is legal and indistinguishable from a stale one), and `adoptSeason` judges.
+    adopt();
     useApp.getState().applyShared({ deck: LCB_DECK, deployed: LCB_DECK.slice(0, 6), wanted: [9267], options: { ...appDefaultOptions(), observedGifts: [9267, 9283] } });
     expect(useApp.getState().options.observedGifts).toEqual([9267]);
     useApp.setState({ options: { ...useApp.getState().options, observedGifts: [9267, 9283] } });
@@ -881,6 +889,16 @@ describe('GiftsStep', () => {
     return renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
   };
   const tile = (id: number) => screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
+  /** What a data load does: hand the store this season's ids and its fusion recipes. */
+  const adoptThisSeason = (): void => {
+    useApp.getState().adoptSeason({
+      season: data.meta.dungeon.id,
+      lastFloor: 15,
+      giftIds: new Set(data.gifts.map((gift) => gift.id)),
+      packIds: new Set(data.packs.map((pack) => pack.id)),
+      recipes: ingredientTree(indexes, data.rules.fusion.maxShopSlots),
+    });
+  };
 
   it('marks a condition it cannot judge as such, not as unmet', async () => {
     const user = userEvent.setup();
@@ -1145,6 +1163,9 @@ describe('GiftsStep', () => {
   it('pins observations through the slots: the 「+」 list offers only observable goals, ✕ unpins, a full row has no 「+」', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
+    // As a real load does: without the season's recipes the store defers every pin decision, so a
+    // test that skips this is testing a state the app is never in.
+    adoptThisSeason();
     for (const id of [9283, 9222, 9217, 9435, 9751]) useApp.getState().toggleWanted(id);
     const { deck, deployed } = useApp.getState();
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
@@ -1177,6 +1198,53 @@ describe('GiftsStep', () => {
     // Deselecting a pinned gift drops its pin too.
     await user.click(screen.getByRole('button', { name: '누군가의 단말기 선택 해제' }));
     expect(useApp.getState().options.observedGifts).toEqual([9435]);
+  });
+
+  /*
+   * Observation and fusion used to miss each other entirely. No fusion result is in the season's
+   * observation pool — the test below asserts it of 데스페라도 — and the 「+」 list only ever offered
+   * the selection, which holds results and never their pieces. So a fusion goal could not use
+   * observation at all, although its ingredients are exactly what a run needs handed over.
+   */
+  it('offers a fusion goal\'s ingredients for observation, which is the only way to observe one', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    // The recipes reach the store the way a data load hands them over, and no other way.
+    adoptThisSeason();
+    useApp.getState().toggleWanted(9235); // 데스페라도, fused from three pieces
+    expect(observableGift(indexes.giftById.get(9235)!, data.rules)).toBe(false);
+    const { deck, deployed } = useApp.getState();
+    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+
+    await user.click(screen.getAllByRole('button', { name: '관측 지정 추가' })[0]!);
+    const list = screen.getByTestId('observe-candidates');
+    // The three ingredients, and not the result: the route collects those, and they are observable.
+    expect(within(list).getAllByRole('button').map((el) => el.getAttribute('aria-label'))).toEqual([
+      '찢어진 밴돌리어 관측 지정',
+      '노이즈 섞인 무전기 관측 지정',
+      '부리 모양 목걸이 관측 지정',
+    ]);
+    await user.click(within(list).getByRole('button', { name: '노이즈 섞인 무전기 관측 지정' }));
+    expect(useApp.getState().options.observedGifts).toEqual([9233]);
+
+    // 「재료는 목표가 아님」 takes the pieces out of the plan, so the pin goes with them.
+    useApp.getState().setFusionGoal(9235, 'resultOnly');
+    expect(useApp.getState().options.observedGifts).toEqual([]);
+    useApp.getState().setFusionGoal(9235, 'withIngredients');
+    useApp.getState().toggleObserved(9233, { max: 3, observable: () => true });
+    expect(useApp.getState().options.observedGifts).toEqual([9233]);
+    // And dropping the fusion drops the pin: nothing is out to collect that piece any more.
+    useApp.getState().removeWanted(9235);
+    expect(useApp.getState().options.observedGifts).toEqual([]);
+  });
+
+  it('refuses a pin on a gift no goal reaches, recipes or not', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    adoptThisSeason();
+    useApp.getState().toggleWanted(9235);
+    // 9431 is an ingredient of 조그말고 근사한 바이올린, which is no goal here.
+    useApp.getState().toggleObserved(9431, { max: 3, observable: () => true });
+    expect(useApp.getState().options.observedGifts).toEqual([]);
   });
 
   it('opens the gift sheet from a selected chip instead of jumping to its tile', async () => {
@@ -1296,8 +1364,8 @@ describe('GiftsStep', () => {
     const { deck, deployed } = useApp.getState();
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
     // 「ㅈㄱㅁㄱ」 is how the name is reached on a Korean keyboard without committing to the vowels.
+    // A search answers with one list, so there is no fold to open — see the two tests below.
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), 'ㅈㄱㅁㄱ');
-    await user.click(screen.getByRole('button', { name: /기타/, expanded: false }));
     expect(within(screen.getByTestId('gift-scroller')).getByRole('button', { name: '조그맣고 근사한 바이올린 자세히' })).toBeInTheDocument();
   });
 
@@ -1308,7 +1376,6 @@ describe('GiftsStep', () => {
     const { deck, deployed } = useApp.getState();
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), '조그맣고');
-    await user.click(screen.getByRole('button', { name: /기타/, expanded: false }));
     // The chip above the grid opens the same sheet; here it is opened from the tile.
     await user.click(within(screen.getByTestId('gift-scroller')).getByRole('button', { name: '조그맣고 근사한 바이올린 자세히' }));
     await user.click(within(screen.getByTestId('gift-recipe')).getByText('조합식'));
@@ -1318,6 +1385,55 @@ describe('GiftsStep', () => {
     expect(useApp.getState().fusionGoal).toEqual({ 9249: 'resultOnly' });
     await user.click(box);
     expect(useApp.getState().fusionGoal).toEqual({});
+  });
+
+  it('answers a search with one list, not the 활성 / 기타 fold', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderGifts();
+    expect(screen.getByRole('button', { name: /지금 덱으로 활성/ })).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), '진');
+    // Both headers are gone, and with them the shut fold a match used to hide behind.
+    expect(screen.queryByRole('button', { name: /지금 덱으로 활성/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^기타/ })).toBeNull();
+    // 진혼 is active with this deck and 연성진동 is not, so they used to land in different folds —
+    // the second one behind a closed header. One list now, and 활성 still comes first.
+    const scroller = screen.getByTestId('gift-scroller');
+    expect(within(scroller).getByRole('button', { name: '진혼' })).toBeInTheDocument();
+    expect(within(scroller).getByRole('button', { name: '연성진동' })).toBeInTheDocument();
+    const order = screen.getAllByTestId('gift-tile').map((el) => el.getAttribute('data-gift'));
+    expect(order.indexOf('9088')).toBeLessThan(order.indexOf('9092'));
+    // The tile keeps saying which is which, so the split carried nothing the tiles do not.
+    expect(within(tile(9088)).getByTestId('gift-icon')).toHaveAttribute('data-judgement', 'met');
+    expect(within(tile(9092)).getByTestId('gift-icon')).toHaveAttribute('data-judgement', 'unmet');
+  });
+
+  it('hides 활성 once nothing in it is left to decide', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderGifts();
+    // 기타 starts folded, so every tile on screen is one of 활성's — five, with this deck.
+    expect(screen.getAllByTestId('gift-tile').length).toBeGreaterThan(1);
+    // The icon is the toggle. A tile stops asking anything either by being chosen or by locking:
+    // choosing 진혼 settles 요리 비법 전서 under it, and choosing 데스페라도 settles its ingredients.
+    for (let guard = 0; guard < 20; guard += 1) {
+      const header = screen.queryByRole('button', { name: /지금 덱으로 활성/ });
+      if (header === null) break;
+      const open = screen
+        .getAllByTestId('gift-tile')
+        .find((el) => !el.hasAttribute('data-selected') && !el.hasAttribute('data-locked'));
+      expect(open).toBeDefined();
+      await user.click(within(open!).getAllByRole('button')[0]!);
+    }
+    expect(screen.queryByRole('button', { name: /지금 덱으로 활성/ })).toBeNull();
+    // 기타 stays, and stays folded: the section that stepped aside took nothing with it.
+    expect(screen.getByRole('button', { name: /^기타/, expanded: false })).toBeInTheDocument();
+    // Dropping one goal brings the section straight back — it is hidden, not dismissed.
+    const chosen = useApp.getState().wanted[0]!;
+    await act(async () => {
+      useApp.getState().removeWanted(chosen);
+    });
+    expect(screen.getByRole('button', { name: /지금 덱으로 활성/ })).toBeInTheDocument();
   });
 });
 

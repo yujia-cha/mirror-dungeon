@@ -71,6 +71,7 @@ export function GiftDetailSheet({
   indexes,
   lang,
   onToggleWanted,
+  collected,
   blocked,
   onClose,
 }: {
@@ -82,6 +83,12 @@ export function GiftDetailSheet({
   lang: Lang;
   /** Selecting from here follows the same rule as the grid: what the goal carries comes along. */
   onToggleWanted: (gift: Gift) => void;
+  /**
+   * Whether the route is out to collect this gift (`PlanState.needed`): a goal, or an ingredient a
+   * fusion goal consumes. It gates the observation button — an ingredient is never in the
+   * selection, but it is very much something worth pinning.
+   */
+  collected: boolean;
   /** Why this gift cannot be made a goal right now, if the current goals already carry it. */
   blocked?: Block;
   onClose: () => void;
@@ -125,7 +132,7 @@ export function GiftDetailSheet({
             {t(selected ? 'giftUnselect' : 'giftSelect', lang)}
           </Button>
           {blockedBy ? <span className="text-xs text-fg-2">{blockedBy}</span> : null}
-          {selected ? (
+          {collected ? (
             <>
               <Button
                 variant={pinned ? 'primary' : 'secondary'}

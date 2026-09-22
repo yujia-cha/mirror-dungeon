@@ -39,6 +39,22 @@ export function ingredientsOf(gift: Gift, indexes: GameIndexes, maxShopSlots: nu
 }
 
 /**
+ * Every fusion gift in a season, mapped to everything it consumes. Built once per data set for the
+ * store, which has to answer one question without holding `GameIndexes`: is this observation pin on
+ * something the route is out to collect? Gifts with no recipe are left out, so `has` doubles as
+ * 「이것은 조합품」.
+ */
+export function ingredientTree(indexes: GameIndexes, maxShopSlots: number): Map<number, number[]> {
+  const out = new Map<number, number[]>();
+  for (const gift of indexes.giftById.values()) {
+    if (!gift.fusion) continue;
+    const ids = [...ingredientsOf(gift, indexes, maxShopSlots)];
+    if (ids.length > 0) out.set(gift.id, ids);
+  }
+  return out;
+}
+
+/**
  * Which of the chosen gifts share ingredients, keyed by gift id. A gift that is itself an
  * ingredient of another is left out: the recipe already says so, and the list would read as a
  * conflict where there is none.

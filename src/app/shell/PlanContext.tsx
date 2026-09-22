@@ -290,6 +290,7 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
           indexes={indexes}
           lang={lang}
           onToggleWanted={toggleGoal}
+          collected={value.needed.has(sheetGift.id)}
           blocked={wanted.includes(sheetGift.id) ? undefined : blocked.get(sheetGift.id)}
           onClose={closeSheet}
         />

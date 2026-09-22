@@ -106,7 +106,14 @@ interface AppState extends SharedState {
    * and stays: the planner already explains it as 미해결. Returns what was dropped so the app can
    * say so rather than letting choices disappear quietly.
    */
-  adoptSeason: (info: { season: number; lastFloor: number; giftIds: Set<number>; packIds: Set<number> }) => {
+  adoptSeason: (info: {
+    season: number;
+    lastFloor: number;
+    giftIds: Set<number>;
+    packIds: Set<number>;
+    /** This season's fusion recipes (`ingredientTree`). The store keeps it to judge pins. */
+    recipes: ReadonlyMap<number, readonly number[]>;
+  }) => {
     gifts: number;
     packs: number;
   };
@@ -191,6 +198,39 @@ export function sanitizeFusionGoal(raw: unknown, wanted: number[]): FusionGoalMa
 export interface ObserveLimits {
   max: number;
   observable: (giftId: number) => boolean;
+}
+
+/*
+ * The recipe tree, as the store's one piece of borrowed knowledge.
+ *
+ * A pin is only kept for something the route is out to collect, and that is not the goal list: a
+ * fusion goal is a promise about its ingredients too, and those are exactly the gifts a player
+ * wants to observe (they are the ones the shop has to hand over before the fusion can happen).
+ * Deciding that needs `GameIndexes`, which the store does not hold and must not, so `adoptSeason`
+ * — which runs on every data load — leaves the season's tree here. It is data, not state: it is
+ * never persisted, and an empty tree just means 「아직 모른다」 — which `withObservedIn` treats as
+ * 「판정하지 않는다」 rather than as 「모으는 것이 없다」.
+ */
+let recipeTree: ReadonlyMap<number, readonly number[]> = new Map();
+
+/** For tests: forget the season's recipes, the way a fresh page load starts out. */
+export function forgetRecipes(): void {
+  recipeTree = new Map();
+}
+
+/**
+ * The gifts a pin may sit on: the goals, and everything a fusion goal consumes on the way. It is
+ * the store's copy of `PlanState.needed`, minus the one thing only the plan knows — whether a
+ * fusion died — which core trims on its own.
+ */
+export function collectedGifts(wanted: readonly number[], fusionGoal: FusionGoalMap): Set<number> {
+  const out = new Set(wanted);
+  for (const id of wanted) {
+    // 「재료는 목표가 아님」 keeps them out of the plan, so it keeps them out of observation too.
+    if (fusionGoal[id] === 'resultOnly') continue;
+    for (const ingredient of recipeTree.get(id) ?? []) out.add(ingredient);
+  }
+  return out;
 }
 
 /**
@@ -393,15 +433,24 @@ export function sanitizePersisted(persisted: unknown, version: number): Persiste
     fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
     run,
     ui: sanitizeUi(state.ui),
-    options: withObservedIn(sanitizeOptions(state.options), wanted),
+    // At rehydrate the recipes are not known yet, so this prunes nothing; `adoptSeason` does it.
+    options: withObservedIn(sanitizeOptions(state.options), wanted, sanitizeFusionGoal(state.fusionGoal, wanted)),
     lang: state.lang === 'en' ? 'en' : 'ko',
     dark: typeof state.dark === 'boolean' ? state.dark : prefersDark(),
     season: typeof state.season === 'number' && Number.isFinite(state.season) ? state.season : undefined,
   };
 }
 
-function withObservedIn(options: PlanOptions, wanted: number[]): PlanOptions {
-  const observedGifts = options.observedGifts.filter((id) => wanted.includes(id));
+function withObservedIn(options: PlanOptions, wanted: number[], fusionGoal: FusionGoalMap): PlanOptions {
+  /*
+   * Without the season's recipes the question cannot be answered, and guessing drops the legal
+   * answer: a pin on a fusion goal's ingredient looks exactly like a stale one. This is the state
+   * a rehydrate and a share link both arrive in — both run before the data lands — so they defer,
+   * and `adoptSeason` (which always follows a load, tree in hand) prunes for them.
+   */
+  if (recipeTree.size === 0) return options;
+  const collected = collectedGifts(wanted, fusionGoal);
+  const observedGifts = options.observedGifts.filter((id) => collected.has(id));
   return observedGifts.length === options.observedGifts.length ? options : { ...options, observedGifts };
 }
 
@@ -477,10 +526,11 @@ export const useApp = create<AppState>()(
           const wanted = state.wanted.includes(giftId)
             ? state.wanted.filter((id) => id !== giftId)
             : [...state.wanted.filter((id) => !dropWithIt.includes(id)), giftId];
+          const fusionGoal = sanitizeFusionGoal(state.fusionGoal, wanted);
           return {
             wanted,
-            fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
-            options: withObservedIn(state.options, wanted),
+            fusionGoal,
+            options: withObservedIn(state.options, wanted, fusionGoal),
             run: withRunFor(state.run, wanted),
           };
         }),
@@ -488,10 +538,11 @@ export const useApp = create<AppState>()(
       removeWanted: (giftId) =>
         set((state) => {
           const wanted = state.wanted.filter((id) => id !== giftId);
+          const fusionGoal = sanitizeFusionGoal(state.fusionGoal, wanted);
           return {
             wanted,
-            fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
-            options: withObservedIn(state.options, wanted),
+            fusionGoal,
+            options: withObservedIn(state.options, wanted, fusionGoal),
             run: withRunFor(state.run, wanted),
           };
         }),
@@ -505,7 +556,9 @@ export const useApp = create<AppState>()(
           const next = { ...state.fusionGoal };
           if (goal === 'resultOnly') next[giftId] = 'resultOnly';
           else delete next[giftId];
-          return { fusionGoal: next };
+          // 「재료는 목표가 아님」 takes the ingredients out of the plan, so a pin on one has nothing
+          // left to buy — the same prune a dropped goal gets.
+          return { fusionGoal: next, options: withObservedIn(state.options, state.wanted, next) };
         }),
 
       visitPack: (packId, floor, settle) =>
@@ -595,7 +648,10 @@ export const useApp = create<AppState>()(
       toggleObserved: (giftId, limits) =>
         set((state) => {
           const has = state.options.observedGifts.includes(giftId);
-          if (!has && (state.options.observedGifts.length >= limits.max || !state.wanted.includes(giftId) || !limits.observable(giftId))) return {};
+          // A goal, or an ingredient a fusion goal has to consume — the shop hands those over too,
+          // and observing one is often the only way a fusion finishes.
+          const collected = collectedGifts(state.wanted, state.fusionGoal);
+          if (!has && (state.options.observedGifts.length >= limits.max || !collected.has(giftId) || !limits.observable(giftId))) return {};
           const observedGifts = has
             ? state.options.observedGifts.filter((id) => id !== giftId)
             : [...state.options.observedGifts, giftId];
@@ -614,12 +670,16 @@ export const useApp = create<AppState>()(
       setSeason: (season) =>
         set((state) => (state.season === season ? {} : { season, run: emptyRun() })),
 
-      adoptSeason: ({ season, lastFloor, giftIds, packIds }) => {
+      adoptSeason: ({ season, lastFloor, giftIds, packIds, recipes }) => {
+        recipeTree = recipes;
         const state = get();
         const wanted = state.wanted.filter((id) => giftIds.has(id));
-        // A pin is a decision about a goal: one left on a gift that is no longer wanted would
-        // spend observation budget and then vanish without a word at the next toggle.
-        const observed = (state.options.observedGifts ?? []).filter((id) => giftIds.has(id) && wanted.includes(id));
+        // A pin is a decision about what the route collects: one left on a gift that is neither a
+        // goal nor a goal's ingredient would spend observation budget and then vanish without a
+        // word at the next toggle. This is also where a rehydrated blob's pins are first judged —
+        // `sanitizePersisted` cannot, having no recipes yet.
+        const collected = collectedGifts(wanted, sanitizeFusionGoal(state.fusionGoal, wanted));
+        const observed = (state.options.observedGifts ?? []).filter((id) => giftIds.has(id) && collected.has(id));
         const preferredPacks = state.options.preferredPacks.filter((id) => packIds.has(id));
         const bannedPacks = state.options.bannedPacks.filter((id) => packIds.has(id));
         const pinnedPacks = Object.fromEntries(
@@ -671,7 +731,7 @@ export const useApp = create<AppState>()(
           // Pins follow the same rule priorities and fusion goals do: only a goal can be observed.
           // A link that carried a pin for something else used to spend observation budget on it and
           // then drop it without a word the next time any gift was toggled.
-          options: withObservedIn(sanitizeOptions(shared.options), shared.wanted),
+          options: withObservedIn(sanitizeOptions(shared.options), shared.wanted, sanitizeFusionGoal(shared.fusionGoal, shared.wanted)),
           run: emptyRun(),
         });
       },

@@ -88,6 +88,7 @@ export const STRINGS = {
   giftsSearch: { ko: '기프트 검색', en: 'Search gifts' },
   giftsActive: { ko: '지금 덱으로 활성', en: 'Active with this deck' },
   giftsOther: { ko: '기타', en: 'Others' },
+  giftsResults: { ko: '검색 결과', en: 'Search results' },
   giftSubOf: { ko: '{parent} 재료', en: 'Ingredient of {parent}' },
   giftMaterials: { ko: '조합식', en: 'Recipe' },
   giftSubRecipe: { ko: '{name}도 조합이다 — 그 재료', en: '{name} is a fusion too — its ingredients' },

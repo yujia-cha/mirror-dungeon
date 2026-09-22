@@ -163,7 +163,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
       ? t('actionObserveGift', lang, { name: action.giftId !== undefined ? giftName(action.giftId) : '' })
       : t('actionReleaseObservations', lang);
   const unresolvedActions = shown.unresolved.map((entry) =>
-    actionsFor(entry, indexes.giftById.get(entry.giftId), options, data.rules, ctx.wanted).map((action) => ({ ...action, label: actionLabel(action) })),
+    actionsFor(entry, indexes.giftById.get(entry.giftId), options, data.rules, ctx.needed).map((action) => ({ ...action, label: actionLabel(action) })),
   );
   const sharedLabels = new Set(
     unresolvedActions

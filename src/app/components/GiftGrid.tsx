@@ -10,17 +10,12 @@
 import { CornerDownRight, Check, Link2 } from 'lucide-react';
 import type { Enums, Gift } from '../../core/schema.ts';
 import type { Block } from '../lib/entangle.ts';
+import { isMarked, type GiftTileData } from '../lib/gift-tile.ts';
 import { t, pick, type Lang } from '../i18n.ts';
-import type { GiftEntry } from '../lib/gift-priority.ts';
 import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 
-export interface GiftTileData {
-  entry: GiftEntry;
-  /** The upgrade parent this tile hangs under, when it is a child. */
-  parent?: Gift;
-}
 
 export function GiftTileGrid({
   tiles,
@@ -49,7 +44,8 @@ export function GiftTileGrid({
       className="grid gap-1.5 p-2 [grid-template-columns:repeat(auto-fill,minmax(64px,1fr))]"
       data-testid="gift-grid"
     >
-      {tiles.map(({ entry, parent }) => {
+      {tiles.map((tile) => {
+        const { entry, parent } = tile;
         const gift = entry.gift;
         const name = pick(gift.name, lang);
         const selected = wanted.includes(gift.id);
@@ -57,7 +53,7 @@ export function GiftTileGrid({
         const held = (parent ? wanted.includes(parent.id) : false) || block !== undefined;
         const report = decidingReport(entry.reports, entry.lack);
         const condition = conditionShort(report, enums, lang);
-        const marked = selected || held;
+        const marked = isMarked(tile, wanted, blocked);
         const lockedBy =
           parent && wanted.includes(parent.id)
             ? t('giftSubOf', lang, { parent: pick(parent.name, lang) })

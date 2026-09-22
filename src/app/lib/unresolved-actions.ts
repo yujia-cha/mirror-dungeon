@@ -22,9 +22,11 @@ export function actionsFor(
   options: PlanOptions,
   rules: Rules,
   /**
-   * The chosen gifts. A pin is only ever kept for a goal (`toggleObserved`, `withObservedIn`), so an
-   * unresolved fusion ingredient gets no offer: pinning it worked for one render and was stripped,
-   * without a word, by the next toggle.
+   * What the route is out to collect (`PlanState.needed`): the goals, and the ingredients a fusion
+   * goal consumes. Ingredients belong here — they are the usual thing an unresolved fusion is
+   * missing, and since the store keeps a pin for anything the route collects, the offer sticks.
+   * (It used to be the goals alone: pinning an ingredient worked for one render and was stripped,
+   * without a word, by the next toggle.)
    */
   goals: ReadonlySet<number>,
 ): UnresolvedAction[] {
