@@ -16,9 +16,10 @@ import { MetroMap } from '../components/MetroMap.tsx';
 import { PackConflicts } from '../components/PackConflicts.tsx';
 import { Badge, Button, Card, SectionTitle, Toast } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
+import { useRovingTabs } from '../lib/useRovingTabs.ts';
 
 export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
-  const { data, indexes, lang, input, plan, shown, variants, variantIndex, setVariantIndex, variant, giftName, packName, keywordLabel, ctx } = usePlan();
+  const { data, indexes, lang, input, plan, shown, planPending, variants, variantIndex, setVariantIndex, variant, giftName, packName, keywordLabel, ctx } = usePlan();
   const options = useApp((s) => s.options);
   const run = useApp((s) => s.run);
   const lastFloor = useApp((s) => s.lastFloor);
@@ -28,6 +29,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const tabsRef = useRef<HTMLDivElement | null>(null);
+  // Declared before the early return below: hooks cannot live behind one.
+  // One Tab stop for the strip, arrows to move between the routes; see `useRovingTabs`.
+  const onVariantKey = useRovingTabs(tabsRef, variants.length + 1, variantIndex, setVariantIndex);
 
   if (!plan || !shown) {
     return (
@@ -97,6 +101,12 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           {t('routeApprox', lang)}
         </Badge>
       ) : null}
+      {/* The route below is one toggle behind while this is up; the worker is still answering. */}
+      {planPending ? (
+        <span data-testid="route-pending">
+          <Badge tone="neutral">{t('routeRecomputing', lang)}</Badge>
+        </span>
+      ) : null}
       {/* Icon only: the toast after a press says what happened, so the label lives in the tooltip. */}
       <Button variant="ghost" size="sm" className="ml-auto" onClick={copy} title={t('routeCopy', lang)} ariaLabel={t('routeCopy', lang)}>
         <Copy size={13} aria-hidden />
@@ -106,7 +116,14 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
 
   const variantTabs =
     variants.length > 0 ? (
-      <div ref={tabsRef} className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label={t('routeVariants', lang)} data-testid="variants">
+      <div
+        ref={tabsRef}
+        className="flex flex-wrap items-center gap-1.5"
+        role="tablist"
+        aria-label={t('routeVariants', lang)}
+        onKeyDown={onVariantKey}
+        data-testid="variants"
+      >
         <span className="mr-1 text-xs text-fg-3">{t('routeVariants', lang)}</span>
         {[{ dropped: [] as number[], plan }, ...variants].map((entry, i) => {
           const selected = i === variantIndex;
@@ -118,6 +135,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
               type="button"
               role="tab"
               aria-selected={selected}
+              tabIndex={selected ? 0 : -1}
               onClick={() => setVariantIndex(i)}
               className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs ${
                 selected ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong bg-surface text-fg-2 hover:bg-surface-2'

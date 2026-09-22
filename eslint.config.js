@@ -21,6 +21,20 @@ export default tseslint.config(
     },
   },
   {
+    /*
+     * `public/sw.js` is copied verbatim rather than bundled, so it is plain JS in a service-worker
+     * global scope — `self`, `caches`, `clients`. It is linted (a typo there ships straight to
+     * production with no build step to catch it) but it cannot be type-checked or tested, which is
+     * why it holds as little logic as it does. See the file's own header.
+     */
+    files: ['public/sw.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: globals.serviceworker,
+    },
+  },
+  {
     // The route planner must stay framework-free so it can run in tests and the CLI.
     files: ['src/core/**/*.ts'],
     rules: {

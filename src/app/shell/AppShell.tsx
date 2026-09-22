@@ -145,6 +145,18 @@ export function AppShell({
     <EnumsContext.Provider value={data.enums}>
       <PlanProvider data={data} indexes={indexes} stats={stats} lang={lang}>
         <div className="flex min-h-dvh flex-col" data-testid="app-shell" inert={pageOpen || undefined}>
+          {/*
+            The header carries two panel doors and a menu before the stage begins; a keyboard reader
+            had to tab past all of them on every load. Hidden until focused, so nothing changes for
+            a pointer, and it is the first thing Tab reaches.
+          */}
+          <a
+            href="#stage"
+            className="sr-only rounded-sm bg-ink px-3 py-2 text-sm font-medium text-ink-fg focus-visible:not-sr-only focus-visible:absolute focus-visible:left-3 focus-visible:top-3 focus-visible:z-40"
+            data-testid="skip-link"
+          >
+            {t('skipToStage', lang)}
+          </a>
           <header className="sticky top-0 z-30 flex h-[52px] flex-none items-center justify-between border-b border-line bg-surface px-4 lg:h-14 lg:px-6">
             {/*
             Two doors and a drawer of odds and ends. The panel buttons carry their own name, so the
@@ -259,7 +271,11 @@ export function AppShell({
               />
             ) : null}
 
-            <main className="flex min-w-0 flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:px-6 lg:pt-4">
+            <main
+              id="stage"
+              tabIndex={-1}
+              className="flex min-w-0 flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:px-6 lg:pt-4"
+            >
               <RunStage onOpenGifts={openGifts} />
               <footer className="mt-auto border-t border-line pt-3 text-xs text-fg-3">
                 <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">

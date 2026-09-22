@@ -177,6 +177,13 @@ export const STRINGS = {
   packInclude: { ko: '이 팩으로', en: 'Include this pack' },
   packIncluded: { ko: '포함 · {floor}층', en: 'Included · floor {floor}' },
   packPreferred: { ko: '포함 지정', en: 'Set to include' },
+  /**
+   * The same button once the pack is already pinned in.
+   *
+   * It has always been a toggle, but its accessible name said 「포함」 in both states, so a screen
+   * reader announced "include this pack" on the control that would in fact drop it.
+   */
+  packIncludeUndo: { ko: '포함 지정 해제', en: 'Stop including this pack' },
   packNotInRoute: { ko: '루트에 없음', en: 'Not in the route' },
   packBan: { ko: '이 팩 포기', en: 'Give up this pack' },
   packBanned: { ko: '포기한 팩', en: 'Given up' },
@@ -204,6 +211,15 @@ export const STRINGS = {
   // 루트가 팩 방문으로 더 할 일이 없는 기프트들. 목록과 개수만 말하고 확정/비확정 판단은
   // 아이템 탭의 획득 분류(`acqMaybe`)와 기프트 상세 시트가 맡는다.
   routeGeneralBadge: { ko: '범용 {n}', en: '{n} general' },
+  /**
+   * Shown while a newer route is still being computed off-thread, over the previous one.
+   *
+   * It says 「고치는 중」 rather than 「계산 중」 because what the reader sees is a route that is one
+   * toggle behind, not an empty panel — the previous answer is still on screen and still usable.
+   */
+  routeRecomputing: { ko: '갱신 중…', en: 'updating…' },
+  /** The skip link's own text. 「무대」 is what the centre column is called everywhere else. */
+  skipToStage: { ko: '무대로 건너뛰기', en: 'Skip to the stage' },
   routeGeneralTitle: { ko: '범용 드랍', en: 'General drops' },
   routeApproxHint: {
     ko: '목표가 많아 탐색을 끝까지 하지 못했습니다. 최선이 아닐 수 있고, 목표를 더 넣으면 이미 확보한 것이 빠질 수 있습니다.',

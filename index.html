@@ -15,6 +15,9 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <!-- iOS rejects an SVG here, so 「홈 화면에 추가」 needs the PNG. -->
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <!-- Relative, so it resolves under the GitHub Pages sub-path without a build-time substitution;
+         `start_url` and `scope` inside it are relative for the same reason. -->
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="canonical" href="%SITE_URL%" />
     <meta name="theme-color" content="#f7f6f4" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1c1917" media="(prefers-color-scheme: dark)" />

@@ -1,0 +1,16 @@
+{
+  "name": "거울 던전 루트 플래너",
+  "short_name": "거던 플래너",
+  "description": "덱과 원하는 E.G.O 기프트로 층별 테마팩 루트를 계산합니다.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f6f4",
+  "theme_color": "#f7f6f4",
+  "icons": [
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

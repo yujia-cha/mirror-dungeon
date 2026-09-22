@@ -142,7 +142,7 @@ export function PackActions({ packId, ctx, size = 'sm' }: { packId: number; ctx:
           size={size}
           variant={preferred ? 'primary' : 'secondary'}
           onClick={() => (preferred ? ctx.onRestore?.(packId) : ctx.onPrefer?.(packId))}
-          ariaLabel={`${name} ${t('packInclude', ctx.lang)}`}
+          ariaLabel={`${name} ${t(preferred ? 'packIncludeUndo' : 'packInclude', ctx.lang)}`}
           title={preferred ? t('packPreferred', ctx.lang) : undefined}
         >
           <Check size={12} aria-hidden />

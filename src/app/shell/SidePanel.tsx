@@ -10,6 +10,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft } from 'lucide-react';
+import { useRovingTabs } from '../lib/useRovingTabs.ts';
 import { t, type Lang } from '../i18n.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
 
@@ -19,8 +20,24 @@ export interface PanelTab<Id extends string> {
 }
 
 export function TabBar<Id extends string>({ tabs, tab, onTab, label }: { tabs: PanelTab<Id>[]; tab: Id; onTab: (id: Id) => void; label: string }) {
+  const strip = useRef<HTMLDivElement | null>(null);
+  const index = Math.max(
+    0,
+    tabs.findIndex((entry) => entry.id === tab),
+  );
+  // One Tab stop for the strip, arrows to move between the tabs; see `useRovingTabs`.
+  const onKeyDown = useRovingTabs(strip, tabs.length, index, (next) => {
+    const entry = tabs[next];
+    if (entry) onTab(entry.id);
+  });
   return (
-    <div role="tablist" aria-label={label} className="flex gap-1 border-b border-line bg-surface px-2 pt-2">
+    <div
+      ref={strip}
+      role="tablist"
+      aria-label={label}
+      onKeyDown={onKeyDown}
+      className="flex gap-1 border-b border-line bg-surface px-2 pt-2"
+    >
       {tabs.map((entry) => {
         const on = entry.id === tab;
         return (
@@ -29,6 +46,7 @@ export function TabBar<Id extends string>({ tabs, tab, onTab, label }: { tabs: P
             type="button"
             role="tab"
             aria-selected={on}
+            tabIndex={on ? 0 : -1}
             onClick={() => onTab(entry.id)}
             className={`-mb-px border-b-2 px-2.5 pb-2 pt-1 text-sm ${on ? 'border-ink font-semibold text-fg' : 'border-transparent text-fg-2 hover:text-fg'}`}
           >

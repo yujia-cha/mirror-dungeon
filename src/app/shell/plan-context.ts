@@ -26,6 +26,14 @@ export interface PlanState {
   plan: RoutePlan | null;
   /** The plan on display: the selected alternative, or `plan`. */
   shown: RoutePlan | null;
+  /**
+   * True while a newer plan is still being computed off-thread; `plan` is the previous answer.
+   *
+   * Worth showing. Before the worker the UI simply froze, which at least told the reader that
+   * something was happening; now it stays responsive while the route panel shows a route that is
+   * one toggle out of date, and that needs saying.
+   */
+  planPending: boolean;
   variants: RouteVariant[];
   variantIndex: number;
   setVariantIndex: (index: number) => void;

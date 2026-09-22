@@ -219,6 +219,16 @@ export function MetroMap({
   const { lang } = ctx;
   const bands = bandsOf(lastFloor, fixedModeByFloor);
   const metro = segmentsFor(plan);
+  /**
+   * A segment's floors in words: 「4층」 for a fixed one, 「4~10층」 for a window.
+   *
+   * A window really is a range of floors the pack may be taken on, not an uncertainty about one
+   * floor, so it reads as a range rather than a guess.
+   */
+  const floorLabel = (segment: Segment): string =>
+    segment.from === segment.to
+      ? t('packFloorRange', lang, { floors: String(segment.from) })
+      : t('routeFloorRange', lang, { from: String(segment.from), to: String(segment.to) });
   const [open, setOpen] = useState<Open | null>(null);
   const close = (): void => setOpen(null);
   const vertical = variant === 'vertical';
@@ -277,6 +287,15 @@ export function MetroMap({
         data-testid="segment-pack"
         data-pack={pack.packId}
       >
+        {/*
+          Which floor this pack sits on, for a reader who cannot see the map.
+          The lines, stations and bands are all inside an `aria-hidden` SVG — correctly, since they
+          are shape rather than content — but that left the pack names arriving with no floor
+          attached at all, which is the one thing the map exists to say. Visually unchanged.
+        */}
+        <span className="sr-only" data-testid="segment-floors">
+          {floorLabel(segment)}
+        </span>
         <PackCard
           pack={theme}
           size={compact ? 20 : 28}

@@ -121,6 +121,10 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.lang = lang;
+    // `index.html` is served in Korean — it is one static file and there is no server to vary it —
+    // so the tab title stayed Korean for a reader who had switched to English. The document is the
+    // one piece of chrome outside React, and this is the only place that knows the language.
+    document.title = t('appTitle', lang);
   }, [lang]);
 
   // Which seasons are published is data, not a build-time constant, so the index comes first.

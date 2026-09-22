@@ -6,7 +6,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { evaluateConditions } from '../../core/index.ts';
 import type { GameData, Gift, Keyword } from '../../core/schema.ts';
-import { observable, planAlternatives, planRoute } from '../../core/index.ts';
+import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
@@ -14,6 +14,7 @@ import { keywordName } from '../format.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
 import { planInputFor } from '../lib/plan-input.ts';
+import { usePlanner } from '../lib/use-planner.ts';
 import { autoFailedFor, exclusivesIndex, lastFloorOf, stageModeFor } from '../lib/stage.ts';
 import { blockedGifts, entanglements, ingredientsOf } from '../lib/entangle.ts';
 import { carriedBy } from '../lib/goal-toggle.ts';
@@ -61,11 +62,9 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     () => planInputFor({ deck, deployed, wanted, options, fusionGoal, run }, { lastFloor }),
     [deck, deployed, wanted, options, fusionGoal, run, lastFloor],
   );
-  const plan = useMemo(() => (input.wanted.length === 0 ? null : planRoute(input, data, indexes)), [input, data, indexes]);
-  const variants = useMemo(
-    () => (plan && plan.unresolved.some((u) => u.reason === 'pack-conflict') ? planAlternatives(input, data, indexes, plan) : []),
-    [plan, input, data, indexes],
-  );
+  // The route and its alternatives, off the render thread where the browser allows it. Both halves
+  // come from one round trip because the expensive one is the alternatives — see `use-planner.ts`.
+  const { plan, variants, pending: planPending } = usePlanner(data, indexes, input);
   const variantIndex = variantKey === null ? 0 : variants.findIndex((v) => v.dropped[0] === variantKey) + 1;
   const setVariantIndex = useCallback(
     (index: number) => setVariantKey(index > 0 ? (variants[index - 1]?.dropped[0] ?? null) : null),
@@ -215,6 +214,7 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
       input,
       plan,
       shown,
+      planPending,
       variants,
       variantIndex,
       setVariantIndex,
@@ -249,6 +249,7 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     input,
     plan,
     shown,
+    planPending,
     variants,
     variantIndex,
     setVariantIndex,

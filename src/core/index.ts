@@ -587,14 +587,17 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     );
     if (otherCopyPlanned) {
       const eaters = requirements
-        .filter((r) => r.giftId === giftId && r.neededFor !== null)
-        .map((r) => indexes.giftById.get(r.neededFor!)?.name.ko ?? String(r.neededFor));
+        .filter((r) => r.giftId === giftId && r.neededFor !== null);
+      const eaterName = (lang: 'ko' | 'en'): string[] =>
+        eaters.map((r) => indexes.giftById.get(r.neededFor!)?.name[lang] || String(r.neededFor));
       unresolved.push({
         giftId,
         reason: 'ingredient-shared',
         detail: {
-          ko: `${josa(String(gift?.name.ko ?? giftId), '은/는')} 한 런에서 한 번만 얻을 수 있는데 ${josa(eaters.join('·'), '이/가')} 함께 먹습니다. 두 번째 몫을 줄 팩이 더 없습니다.`,
-          en: 'Two fusions eat this ingredient, and no second pack can supply the second copy.',
+          ko: `${josa(String(gift?.name.ko ?? giftId), '은/는')} 한 런에서 한 번만 얻을 수 있는데 ${josa(eaterName('ko').join('·'), '이/가')} 함께 먹습니다. 두 번째 몫을 줄 팩이 더 없습니다.`,
+          // The English used to be a fixed sentence with no names in it, so a reader in English was
+          // told two fusions were fighting over something without being told which, or over what.
+          en: `${gift?.name.en || giftId} can only be had once per run, and ${eaterName('en').join(' and ')} both consume it. No further pack can supply a second copy.`,
         },
       });
       continue;
