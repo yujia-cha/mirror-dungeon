@@ -21,9 +21,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src", "scripts", "tests", "e2e", "playwright.config.ts", "vite.config.ts", "vitest.config.ts", "eslint.config.js"]
