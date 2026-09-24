@@ -7,9 +7,9 @@
  * Files that 404 are reported, not fatal: upstream renames files between seasons, and the
  * `update-game-data` skill explains how to fix the lock file when that happens.
  */
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { shaFromGit } from './lib/git-remote.ts';
 import { hasFlag, readJson, repoPath } from './lib/io.ts';
 
 /** One language of a source, when the upstream splits languages across branches rather than folders. */
@@ -64,21 +64,6 @@ async function shaFromApi(repo: string, ref: string): Promise<string | null> {
     if (!res.ok) return null;
     const body = (await res.json()) as { sha?: string };
     return body.sha ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** The branch tip as git itself reports it: `git ls-remote` goes over plain HTTPS, no API token needed. */
-function shaFromGit(repo: string, ref: string): string | null {
-  try {
-    const out = execFileSync('git', ['ls-remote', `https://github.com/${repo}.git`, `refs/heads/${ref}`], {
-      encoding: 'utf8',
-      timeout: 30_000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    const sha = out.split(/\s+/)[0];
-    return sha && /^[0-9a-f]{40}$/.test(sha) ? sha : null;
   } catch {
     return null;
   }
