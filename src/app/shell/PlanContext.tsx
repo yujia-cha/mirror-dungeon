@@ -62,8 +62,9 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     () => planInputFor({ deck, deployed, wanted, options, fusionGoal, run }, { lastFloor }),
     [deck, deployed, wanted, options, fusionGoal, run, lastFloor],
   );
-  // The route and its alternatives, off the render thread where the browser allows it. Both halves
-  // come from one round trip because the expensive one is the alternatives — see `use-planner.ts`.
+  // The route and its alternatives, off the render thread where the browser allows it. The route
+  // arrives first and the alternatives follow, because they are the expensive half — see
+  // `use-planner.ts`.
   const { plan, variants, pending: planPending } = usePlanner(data, indexes, input);
   const variantIndex = variantKey === null ? 0 : variants.findIndex((v) => v.dropped[0] === variantKey) + 1;
   const setVariantIndex = useCallback(

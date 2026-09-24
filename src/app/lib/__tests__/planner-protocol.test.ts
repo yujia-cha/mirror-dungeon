@@ -11,7 +11,7 @@ import { loadGameDataFromDisk } from '../../../core/data/node.ts';
 import { buildIndexes, defaultOptions } from '../../../core/index.ts';
 import { defaultDeck } from '../default-deck.ts';
 import type { RoutePlan } from '../../../core/types.ts';
-import { createPlanner, runPlan, type PlannerResponse } from '../planner-protocol.ts';
+import { createPlanner, runPlan, type PlanResponse, type PlannerResponse } from '../planner-protocol.ts';
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
@@ -37,6 +37,9 @@ function withoutTiming(plan: RoutePlan): unknown {
 }
 
 /** Gifts bound to a pack, so the planner has actual routing to do. */
+/** Six clear-reward gifts that cannot all fit one run, so the route has alternatives to offer. */
+const conflicting = [9250, 9251, 9252, 9253, 9254, 9255];
+
 const packBound = data.gifts
   .filter((gift) => gift.acquisition.kind === 'packLimited')
   .map((gift) => gift.id)
@@ -112,5 +115,53 @@ describe('createPlanner', () => {
       type: 'plan',
       id: 9,
     });
+  });
+});
+
+describe('the route and its alternatives are two answers (M52)', () => {
+  it('fixture: the conflicting set really does have alternatives', () => {
+    const { plan, variants } = runPlan(inputFor(conflicting), data, indexes);
+    expect(plan!.unresolved.some((entry) => entry.reason === 'pack-conflict')).toBe(true);
+    expect(variants.length).toBeGreaterThan(0);
+  });
+
+  it('answers the route first and says alternatives follow', () => {
+    const planner = createPlanner();
+    planner.handle({ type: 'init', data });
+    const response = planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) }) as PlanResponse;
+    expect(response).toMatchObject({ type: 'plan', id: 1, variantsPending: true });
+    expect(response).not.toHaveProperty('variants');
+
+    const variants = planner.alternatives(1);
+    const direct = runPlan(inputFor(conflicting), data, indexes);
+    expect(variants!.type).toBe('variants');
+    expect(variants!.variants.map((v) => v.dropped)).toEqual(direct.variants.map((v) => v.dropped));
+    // Answered once: the plan's alternatives are not recomputed on a second ask.
+    expect(planner.alternatives(1)).toBeNull();
+  });
+
+  it('skips the alternatives of a plan a newer request replaced', () => {
+    // The whole point: a quick second toggle must not wait behind ~900ms of work for the first.
+    const planner = createPlanner();
+    planner.handle({ type: 'init', data });
+    planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) });
+    planner.handle({ type: 'plan', id: 2, input: inputFor(conflicting) });
+    expect(planner.alternatives(1)).toBeNull();
+    expect(planner.alternatives(2)).not.toBeNull();
+  });
+
+  it('promises nothing when the route fits', () => {
+    const planner = createPlanner();
+    planner.handle({ type: 'init', data });
+    expect(planner.handle({ type: 'plan', id: 1, input: inputFor(packBound.slice(0, 3)) })).toMatchObject({ variantsPending: false });
+    expect(planner.alternatives(1)).toBeNull();
+  });
+
+  it('forgets pending alternatives on a season change', () => {
+    const planner = createPlanner();
+    planner.handle({ type: 'init', data });
+    planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) });
+    planner.handle({ type: 'init', data });
+    expect(planner.alternatives(1)).toBeNull();
   });
 });

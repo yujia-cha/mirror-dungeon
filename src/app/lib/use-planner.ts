@@ -6,9 +6,13 @@
  * the UI for about a second, and a quick series of toggles queued a second of work each time.
  * `planRoute` itself was never the problem; `planAlternatives` calling it six more times was.
  *
- * A worker fixes it without touching any of that code: the same `runPlan` runs there, the result is
+ * A worker fixes it without touching any of that code: the same planner runs there, the result is
  * plain data (`RoutePlan` holds no Map or Set), and the panel keeps showing the previous answer
  * until the new one lands.
+ *
+ * Since M52 the worker answers **twice**: the route (`plan`), then its alternatives (`variants`).
+ * `pending` is about the route only, so 「갱신 중…」 clears after ~180ms rather than ~1s, and a
+ * newer question skips the older one's alternatives altogether (`createPlanner`).
  *
  * **The fallback is not a lesser path.** Where a module worker cannot be constructed — jsdom in
  * tests, a browser that refuses — the same function runs inline and the hook answers synchronously
@@ -24,16 +28,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameData } from '../../core/schema.ts';
 import type { GameIndexes, PlanInput } from '../../core/types.ts';
-import { runPlan, type PlanResult, type PlannerResponse } from './planner-protocol.ts';
+import { runPlan, type PlanResponse, type PlanResult, type PlannerResponse } from './planner-protocol.ts';
+import type { RouteVariant } from '../../core/index.ts';
 
 export interface PlannerState extends PlanResult {
   /** True while the worker is still answering; what is on show is the previous answer. */
   pending: boolean;
+  /**
+   * True while the route on show is waiting for its alternatives (M52: they arrive after it). Until
+   * then `variants` is empty rather than the previous plan's — those answer a different question.
+   */
+  variantsPending: boolean;
   /** False when the plan is computed inline — the fallback, and what tests run on. */
   offThread: boolean;
 }
 
-const EMPTY: PlanResult = { plan: null, variants: [] };
 
 /**
  * Build the worker, or `null` when this environment cannot.
@@ -77,7 +86,8 @@ export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInpu
   // Known on the first render, so the plan never appears and then vanishes.
   const worker = plannerWorker();
 
-  const [answer, setAnswer] = useState<{ id: number; result: PlanResult } | null>(null);
+  const [answer, setAnswer] = useState<PlanResponse | null>(null);
+  const [alternatives, setAlternatives] = useState<{ id: number; variants: RouteVariant[] } | null>(null);
   const nextId = useRef(0);
   const [sentId, setSentId] = useState(0);
   /** Set when the worker reports an error; from then on the plan is computed inline. */
@@ -88,9 +98,11 @@ export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInpu
     if (!active) return undefined;
     const onMessage = (event: MessageEvent<PlannerResponse>): void => {
       const message = event.data;
-      if (message.type !== 'plan') return;
       // Answers can arrive out of order after a season change; the newest question wins.
-      setAnswer((current) => (current && current.id > message.id ? current : { id: message.id, result: message }));
+      if (message.type === 'plan') setAnswer((current) => (current && current.id > message.id ? current : message));
+      if (message.type === 'variants') {
+        setAlternatives((current) => (current && current.id > message.id ? current : { id: message.id, variants: message.variants }));
+      }
     };
     // A script that 404s, a parse error, an exception inside the planner: all arrive here, and all
     // mean the same thing — stop waiting and compute inline instead.
@@ -121,10 +133,14 @@ export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInpu
   // No worker, or a worker that failed: compute inline, once per input, as the provider used to.
   const inline = useMemo(() => (active ? null : runPlan(input, data, indexes)), [active, input, data, indexes]);
 
-  if (!active) return { ...inline!, pending: false, offThread: false };
+  if (!active) return { ...inline!, pending: false, variantsPending: false, offThread: false };
+  // Alternatives belong to one plan; shown only beside the plan they were computed for.
+  const matched = answer !== null && alternatives?.id === answer.id;
   return {
-    ...(answer?.result ?? EMPTY),
+    plan: answer?.plan ?? null,
+    variants: matched ? alternatives.variants : [],
     pending: answer === null || answer.id < sentId,
+    variantsPending: answer !== null && answer.variantsPending && !matched,
     offThread: true,
   };
 }

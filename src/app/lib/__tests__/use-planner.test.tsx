@@ -44,7 +44,19 @@ class FakeWorker implements Partial<Worker> {
   private readonly listeners = new Map<string, Set<(event: unknown) => void>>();
   private readonly planner = createPlanner();
 
-  constructor(private readonly mode: 'answers' | 'errors' | 'silent' = 'answers') {}
+  /** Alternatives held back until `release()`, to look at the moment between the two answers. */
+  private held: (() => void)[] = [];
+
+  constructor(
+    private readonly mode: 'answers' | 'errors' | 'silent' = 'answers',
+    private readonly holdAlternatives = false,
+  ) {}
+
+  release(): void {
+    const held = this.held;
+    this.held = [];
+    for (const send of held) send();
+  }
 
   addEventListener(type: string, listener: (event: unknown) => void): void {
     this.listeners.set(type, (this.listeners.get(type) ?? new Set()).add(listener));
@@ -63,7 +75,17 @@ class FakeWorker implements Partial<Worker> {
       return;
     }
     const response = this.planner.handle(request);
-    if (response) queueMicrotask(() => this.emit('message', { data: response satisfies PlannerResponse }));
+    if (!response) return;
+    queueMicrotask(() => this.emit('message', { data: response satisfies PlannerResponse }));
+    // As `planner.worker.ts` does: the alternatives follow on a later task, and only if still wanted.
+    if (response.type === 'plan' && response.variantsPending) {
+      const send = (): void => {
+        const variants = this.planner.alternatives(response.id);
+        if (variants) this.emit('message', { data: variants satisfies PlannerResponse });
+      };
+      if (this.holdAlternatives) this.held.push(send);
+      else setTimeout(send, 0);
+    }
   }
   private emit(type: string, event: unknown): void {
     for (const listener of this.listeners.get(type) ?? []) listener(event);
@@ -167,6 +189,43 @@ describe('with a worker', () => {
     first.unmount();
     renderHook(() => usePlanner(data, indexes, input));
     expect(built).toHaveLength(1);
+  });
+});
+
+describe('alternatives arrive after the route (M52)', () => {
+  const conflictInput = {
+    ...input,
+    wanted: [9250, 9251, 9252, 9253, 9254, 9255].map((giftId) => ({ giftId, required: false })),
+  };
+
+  it('shows the route as soon as it is ready, then the alternatives', async () => {
+    const { latest } = stubWorker(() => new FakeWorker('answers', true));
+    const { result } = renderHook(() => usePlanner(data, indexes, conflictInput));
+
+    await waitFor(() => expect(result.current.plan).not.toBeNull());
+    // The route is done: the panel must not keep saying 「갱신 중…」 for the alternatives.
+    expect(result.current.pending).toBe(false);
+    expect(result.current.variantsPending).toBe(true);
+    expect(result.current.variants).toEqual([]);
+
+    act(() => latest()!.release());
+    await waitFor(() => expect(result.current.variants.length).toBeGreaterThan(0));
+    expect(result.current.variantsPending).toBe(false);
+  });
+
+  it('does not show one plan\'s alternatives beside the next plan', async () => {
+    const { latest } = stubWorker(() => new FakeWorker('answers', true));
+    const { result, rerender } = renderHook(({ value }) => usePlanner(data, indexes, value), {
+      initialProps: { value: conflictInput },
+    });
+    await waitFor(() => expect(result.current.plan).not.toBeNull());
+    act(() => latest()!.release());
+    await waitFor(() => expect(result.current.variants.length).toBeGreaterThan(0));
+
+    rerender({ value: { ...conflictInput } });
+    await waitFor(() => expect(result.current.pending).toBe(false));
+    expect(result.current.variants).toEqual([]);
+    expect(result.current.variantsPending).toBe(true);
   });
 });
 
