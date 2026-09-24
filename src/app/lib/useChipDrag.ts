@@ -5,12 +5,21 @@
  * fires on release is swallowed once. The slot under the pointer is found by hit-testing when the
  * platform offers it (touch pointers are implicitly captured, so enter/leave never reach the
  * slots) and by the slots' own enter/leave callbacks otherwise.
+ *
+ * **Touch starts on a long press (M54).** The chip keeps `touch-action: pan-y` so a list of chips
+ * can still be scrolled by touching one — but that means a finger moving up toward the slots (which
+ * sit *above* the chips) is a scroll, and the browser sends `pointercancel` before the 8px start
+ * threshold is ever reached. So on touch a still finger held for `LONG_PRESS` ms picks the chip up
+ * instead, and while a drag is live a non-passive `touchmove` listener cancels the scroll the
+ * browser would otherwise start. A finger that moves first is a scroll, exactly as before.
  */
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLatest } from './useLatest.ts';
 import { swallowNextClick } from './usePullGesture.ts';
 
 const START = 8;
+/** How long a still finger holds a chip before it is picked up (touch only). */
+export const LONG_PRESS = 300;
 
 export interface ChipDragState {
   /** The gift being dragged, or null. */
@@ -40,7 +49,8 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
   setOver: (slot: number | null) => void;
 } {
   const [state, setState] = useState<ChipDragState>(IDLE);
-  const pending = useRef<{ giftId: number; x: number; y: number; pointerId: number } | null>(null);
+  const pending = useRef<{ giftId: number; x: number; y: number; pointerId: number; touch: boolean } | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const active = useRef<number | null>(null);
   const over = useRef<number | null>(null);
   const latest = useLatest(onDrop);
@@ -51,11 +61,21 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
   }, []);
 
   useEffect(() => {
+    const clearTimer = (): void => {
+      if (timer.current !== null) clearTimeout(timer.current);
+      timer.current = null;
+    };
     const onMove = (event: PointerEvent): void => {
       // A second finger must not take over a drag the first one started, nor end it on release.
       if (pending.current && event.pointerId !== pending.current.pointerId) return;
       if (pending.current && active.current === null) {
         if (Math.hypot(event.clientX - pending.current.x, event.clientY - pending.current.y) < START) return;
+        // A finger that moves before the long press is a scroll: let it go.
+        if (pending.current.touch) {
+          clearTimer();
+          pending.current = null;
+          return;
+        }
         active.current = pending.current.giftId;
       }
       if (active.current === null) return;
@@ -65,6 +85,7 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
     };
     const finish = (event: PointerEvent): void => {
       if (pending.current && event.pointerId !== pending.current.pointerId) return;
+      clearTimer();
       if (active.current !== null) {
         swallowNextClick();
         latest.current(active.current, over.current);
@@ -74,13 +95,20 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
       active.current = null;
       over.current = null;
     };
+    // While a chip is held, the finger belongs to the drag, not to the page's scroll.
+    const holdScroll = (event: TouchEvent): void => {
+      if (active.current !== null && event.cancelable) event.preventDefault();
+    };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', finish);
     window.addEventListener('pointercancel', finish);
+    window.addEventListener('touchmove', holdScroll, { passive: false });
     return () => {
+      clearTimer();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', finish);
+      window.removeEventListener('touchmove', holdScroll);
     };
   }, [latest]);
 
@@ -89,7 +117,18 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
       onPointerDown: (event: ReactPointerEvent<HTMLElement>): void => {
         if (event.button !== 0) return;
         if ((event.target as HTMLElement).closest('a, input, select, textarea')) return;
-        pending.current = { giftId, x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+        const touch = event.pointerType === 'touch';
+        const start = { giftId, x: event.clientX, y: event.clientY, pointerId: event.pointerId, touch };
+        pending.current = start;
+        if (!touch) return;
+        if (timer.current !== null) clearTimeout(timer.current);
+        timer.current = setTimeout(() => {
+          timer.current = null;
+          if (pending.current !== start) return;
+          // Picked up where the finger rests; the ghost appears so the hold has an answer.
+          active.current = giftId;
+          setState({ dragging: giftId, x: start.x, y: start.y, over: null });
+        }, LONG_PRESS);
       },
     }),
     [],

@@ -33,6 +33,7 @@ import { Tracker } from '../tracker/Tracker.tsx';
 import { planToText } from '../lib/plan-text.ts';
 import { ingredientTree } from '../lib/entangle.ts';
 import { actionsFor } from '../lib/unresolved-actions.ts';
+import { LONG_PRESS } from '../lib/useChipDrag.ts';
 import { keywordName } from '../format.ts';
 import { observable as observableGift, planRoute } from '../../core/index.ts';
 // Namespace import so the mock factory can spread the real module (the lint rule forbids an
@@ -1344,6 +1345,52 @@ describe('GiftsStep', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     await user.click(within(chip(9217)).getByRole('button', { name: '누군가의 단말기 자세히' }));
     expect(screen.getByRole('dialog', { name: '누군가의 단말기' })).toBeInTheDocument();
+  });
+
+  it('on touch, a long press picks a chip up, and a finger that moves first is a scroll (M54)', () => {
+    // The slots sit above the chips and the chips keep `pan-y`, so on a phone a move toward a slot
+    // is a scroll and the browser cancels the pointer before the 8px start. A still finger held for
+    // LONG_PRESS picks the chip up instead.
+    vi.useFakeTimers();
+    try {
+      useApp.getState().setDeck(BURN_DECK, 7);
+      for (const id of [9222, 9217]) useApp.getState().toggleWanted(id);
+      const { deck, deployed } = useApp.getState();
+      renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+      const chip = (id: number) => screen.getAllByTestId('gift-chip').find((c) => c.getAttribute('data-gift') === String(id))!;
+      const slot = (i: number) => screen.getAllByTestId('observe-slot')[i]!;
+
+      // A finger that moves before the hold is a scroll: nothing is picked up, even after the delay.
+      fireEvent.pointerDown(chip(9222), { button: 0, clientX: 10, clientY: 100, pointerType: 'touch', pointerId: 1 });
+      fireEvent.pointerMove(window, { clientX: 10, clientY: 60, pointerType: 'touch', pointerId: 1 });
+      act(() => vi.advanceTimersByTime(LONG_PRESS + 50));
+      expect(screen.queryByTestId('chip-ghost')).toBeNull();
+      fireEvent.pointerUp(window, { pointerId: 1 });
+
+      // Held still: the ghost appears without any movement, then the drop pins it.
+      fireEvent.pointerDown(chip(9222), { button: 0, clientX: 10, clientY: 100, pointerType: 'touch', pointerId: 2 });
+      expect(screen.queryByTestId('chip-ghost')).toBeNull();
+      act(() => vi.advanceTimersByTime(LONG_PRESS));
+      expect(screen.getByTestId('chip-ghost')).toBeInTheDocument();
+      // The page must not scroll under a held chip.
+      const touchmove = new Event('touchmove', { cancelable: true });
+      window.dispatchEvent(touchmove);
+      expect(touchmove.defaultPrevented).toBe(true);
+      fireEvent.pointerMove(window, { clientX: 10, clientY: 20, pointerId: 2 });
+      fireEvent.pointerEnter(slot(0));
+      fireEvent.pointerUp(window, { pointerId: 2 });
+      // A browser fires a click after the release; it is the one the hook swallows.
+      fireEvent.click(chip(9222));
+      expect(screen.queryByTestId('chip-ghost')).toBeNull();
+      expect(useApp.getState().options.observedGifts).toEqual([9222]);
+
+      // Once released, touch scrolling is the page's again.
+      const after = new Event('touchmove', { cancelable: true });
+      window.dispatchEvent(after);
+      expect(after.defaultPrevented).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('points an empty deck at the deck tab only when it is given somewhere to go', async () => {

@@ -410,8 +410,11 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
                 data-entangled={entangledIds.has(id) || undefined}
                 {...drag.handleFor(id)}
                 // `none` made every chip a dead zone: with a dozen goals the panel could not be
-                // scrolled by touching one. `pan-y` still leaves the horizontal drag to the hook.
-                style={{ touchAction: 'pan-y' }}
+                // scrolled by touching one. `pan-y` keeps scrolling; on touch the drag starts on a
+                // long press instead (`useChipDrag`), so the callout that a long press would open
+                // on iOS is turned off here.
+                style={{ touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
+                onContextMenu={(event) => event.preventDefault()}
                 className={`inline-flex h-7 select-none items-center gap-1 rounded-full border bg-surface pl-1 pr-1 text-xs text-fg ${pinned ? 'border-ink' : 'border-line-strong'} ${
                   drag.state.dragging === id ? 'opacity-40' : ''
                 }`}
