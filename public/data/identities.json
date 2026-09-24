@@ -5526,6 +5526,26 @@
     ]
   },
   {
+    "attackTypes": [],
+    "factions": [],
+    "id": 10917,
+    "keywordSource": "curated",
+    "keywords": {},
+    "rank": 1,
+    "season": 0,
+    "sinner": {
+      "en": "Rodion",
+      "ko": "로쟈"
+    },
+    "sinnerId": 9,
+    "sins": [],
+    "title": {
+      "en": "Haute Couture:: Alteration Shop",
+      "ko": "오트쿠튀르:: 수선실"
+    },
+    "traits": []
+  },
+  {
     "attackTypes": [
       "Slash"
     ],

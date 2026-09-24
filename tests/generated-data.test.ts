@@ -268,7 +268,7 @@ describe('gifts', () => {
 
 describe('identities', () => {
   it('covers the 183 the static data ships plus the ones backfilled from the other sources', () => {
-    expect(identities).toHaveLength(187);
+    expect(identities).toHaveLength(188);
     expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(4);
   });
 

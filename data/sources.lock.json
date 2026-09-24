@@ -5,8 +5,8 @@
     "openLethe": {
       "repo": "LEAGUE-OF-NINE/OpenLethe",
       "ref": "main",
-      "sha": "823129adccea571ab0b04e9e4a077d407aaaefaa",
-      "fetchedAt": "2026-09-18",
+      "sha": "2b920d134ffd319a39d3fb6416b8674ca01857da",
+      "fetchedAt": "2026-09-24",
       "note": "Game client StaticData. No license file upstream; data is Project Moon's. Vendored because the repo may disappear.",
       "remotePrefix": "src/OpenLethe.Resources/StaticData/static-data",
       "localPrefix": "data/raw/static",
@@ -100,14 +100,14 @@
       "languages": {
         "KR": {
           "ref": "Korean",
-          "sha": "1f900285a86c20196f4f6ac46849e03a39cca901"
+          "sha": "4ce3b5862486ddea823962a297f3e4deed88e260"
         },
         "EN": {
           "ref": "English",
-          "sha": "6125a5c6ad50bf566619fbf57e54d4e42a195fe0"
+          "sha": "b846631e41798454564d98ef35fe65f0743de3f5"
         }
       },
-      "fetchedAt": "2026-09-18",
+      "fetchedAt": "2026-09-24",
       "note": "Game Localize folder, mirrored verbatim (source text is Project Moon's). Languages are branches here, not folders. Chosen over LocalizeLimbusCompany because that mirror's auto-update stopped on 2026-07-23 and newer identities never arrived; this one tracks the weekly patch. The KR-only Skills_personality-* files are the evidence for identities the static data does not ship. Every BattleKeywords* file is taken, not just the base one: the per-chapter and per-season tables are where the buff names live that gift text refers to by id (혈찬, 진동 - 작열 …).",
       "remotePrefix": "",
       "localPrefix": "data/raw/localize",
@@ -278,8 +278,8 @@
     "eldritchtools": {
       "repo": "eldritchtools/limbus-assets",
       "ref": "main",
-      "sha": "7931eb20b0e90f60e06aee8754a349b75e89bd21",
-      "fetchedAt": "2026-09-18",
+      "sha": "f67976600aca9b720e7fd929606cc67ce695e3b1",
+      "fetchedAt": "2026-09-24",
       "note": "Derived, English-only data behind the limbus.tools sites, updated near-daily. Two jobs: it backfills identities the static data has not shipped, and it cross-checks the Mirror Dungeon data OpenLethe froze — packs, floors, fusion recipes, start pools. It is the only living MD source, but it has no per-pack general gift pool, no prices, no observation list and no dungeon constants, so it can supplement the static data and not replace it.",
       "remotePrefix": "",
       "localPrefix": "data/raw/derived/eldritchtools",
