@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { injectPrecache, precacheList } from './scripts/lib/precache.ts';
+import { dataPreloadPaths, preloadTags } from './scripts/lib/preload.ts';
 
 // GitHub Pages serves the app under /<repo>/, so the deploy workflow sets VITE_BASE.
 // Local dev and `vite preview` fall back to '/'.
@@ -26,6 +27,13 @@ export default defineConfig({
       // reach the client bundle, and this one must not.
       name: 'site-url',
       transformIndexHtml: (html) => html.replaceAll('%SITE_URL%', SITE_URL),
+    },
+    {
+      // M58: start the data downloads with the HTML instead of after the bundle has run.
+      name: 'data-preload',
+      apply: 'build',
+      transformIndexHtml: (html) =>
+        html.replace('</head>', `  ${preloadTags(dataPreloadPaths(fileURLToPath(new URL('./public/data', import.meta.url))))}\n  </head>`),
     },
     {
       // M55: write the shell into the copied `sw.js`, so one online visit is enough to open the

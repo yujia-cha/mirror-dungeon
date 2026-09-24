@@ -41,3 +41,22 @@ test('registers a service worker scoped to the sub-path', async ({ page }) => {
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
   expect(new URL(scope).pathname).toBe('/mirror-dungeon/');
 });
+
+test('the data preloads are the fetches the app makes, not a second copy (M58)', async ({ page }) => {
+  const dataRequests = new Map<string, number>();
+  const warnings: string[] = [];
+  page.on('request', (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path.includes('/data/')) dataRequests.set(path, (dataRequests.get(path) ?? 0) + 1);
+  });
+  page.on('console', (message) => {
+    if (/preload/i.test(message.text())) warnings.push(message.text());
+  });
+  await page.goto('./');
+  await expect(page.getByTestId('run-stage')).toBeVisible();
+  // Chrome reports an unmatched preload ("preloaded ... but not used") after a few seconds.
+  await page.waitForTimeout(3500);
+  expect(warnings).toEqual([]);
+  expect([...dataRequests.values()].every((count) => count === 1)).toBe(true);
+  expect(dataRequests.size).toBe(7);
+});

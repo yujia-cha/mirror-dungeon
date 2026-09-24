@@ -13,11 +13,13 @@ export default defineConfig({
     setupFiles: ['tests/setup.ts'],
     restoreMocks: true,
     /**
-     * Measured with `npm run test:coverage`, never enforced.
+     * Measured with `npm run test:coverage`, and since M58 **a floor, not a target**.
      *
-     * A threshold would turn a number nobody had looked at into a gate, and the honest first step
-     * is to be able to see it at all — until now there was no way to answer "how much of this is
-     * covered?" even though `coverage/` had been in `.gitignore`-adjacent lists since the start.
+     * M48 held off because a threshold would turn a number nobody had looked at into a gate. It has
+     * now been looked at three times and only ever went up (statements 65.65 → 65.91 → 66.32%). The
+     * floor sits just under the last measurement, so it catches a change that removes tests or adds
+     * a block of untested code, not the ordinary wobble of a refactor. Raise it when the numbers do;
+     * never lower it to get a change through. CI runs this; `npm run check` stays fast and does not.
      * Generated data, config and the entry point are excluded because their coverage says nothing.
      */
     coverage: {
@@ -25,6 +27,8 @@ export default defineConfig({
       reporter: ['text-summary', 'html'],
       include: ['src/**/*.{ts,tsx}', 'scripts/**/*.ts'],
       exclude: ['src/main.tsx', 'src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts', '**/*.d.ts'],
+      // Measured at M58: 66.32 / 59.76 / 72.38 / 67.75.
+      thresholds: { statements: 65.5, branches: 59, functions: 71.5, lines: 67 },
     },
     // Only the app tests need a DOM. The planner, the pipeline and the generated-data checks are
     // node code, and paying for a jsdom per worker on them was a fifth of the run; four of them
