@@ -26,6 +26,7 @@ import {
   staticDataPresent,
 } from './lib/raw.ts';
 import { familyOf, seasonOf } from './lib/season-files.ts';
+import { artKeysAcrossSeasons } from './lib/art-keys.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
 import { derivedKeywords, derivedStatuses, readDerivedFetchedAt, readDerivedIdentities } from './lib/derived-source.ts';
 import {
@@ -159,9 +160,13 @@ if (meta && enums && rules && gifts && packs && identities) {
  * The hand-drawn artwork under `public/art/` against the manifest and the season's keys.
  *
  * Missing drawings are a **warning**, never an error: the site has to build and ship with zero
- * images (every tile draws its name fallback instead), and the 558 slots fill in one at a time.
+ * images (a tile with no drawing is drawn without one), and the 558 slots fill in one at a time.
  * What is an error is an inconsistency that would make the app request a file that is not there,
  * or a file nothing will ever read — both mean the manifest and the directory have drifted apart.
+ *
+ * `public/art/` is one pool for every season (`scripts/lib/art-keys.ts`), so "nothing will ever
+ * read it" means no season in `index.json` has the key — not merely the season being validated.
+ * A frozen season is still selectable in the footer and still draws its own gifts' art.
  */
 function checkArt(gifts: Gift[], packs: ThemePack[]): void {
   const root = repoPath('public/art');
@@ -194,6 +199,11 @@ function checkArt(gifts: Gift[], packs: ThemePack[]): void {
 
   const icons = new Set(gifts.map((g) => String(g.icon)));
   const sprites = new Set(packs.map((p) => p.sprite));
+  const published = artKeysAcrossSeasons(OUT);
+  const anySeason = {
+    gifts: new Set([...published.gifts.keys(), ...gifts.map((g) => g.icon)].map(String)),
+    packs: new Set([...published.packs.keys(), ...sprites]),
+  };
   for (const [kind, keys] of [
     ['gifts', icons],
     ['packs', sprites],
@@ -205,13 +215,13 @@ function checkArt(gifts: Gift[], packs: ThemePack[]): void {
     }
     for (const key of files) {
       if (!claimed.has(key)) err('art', `public/art/${kind}/${key}.png is not in the manifest, so nothing will load it. Run: npm run art -- --write`);
-      if (!keys.has(key)) err('art', `public/art/${kind}/${key}.png is not a ${kind === 'gifts' ? 'gift icon' : 'pack sprite'} of this season, so nothing will ever read it.`);
+      if (!anySeason[kind].has(key)) err('art', `public/art/${kind}/${key}.png is not a ${kind === 'gifts' ? 'gift icon' : 'pack sprite'} of any published season, so nothing will ever read it.`);
     }
     // Only a *partly* drawn set is worth a line. Nothing drawn at all is the shipped design, not a
-    // gap — every tile falls back to its name — and saying so on every `npm run check` would just
-    // train the eye to skip warnings. `npm run art` is where the running count belongs.
+    // gap — a tile with no drawing is simply drawn without one — and saying so on every
+    // `npm run check` would just train the eye to skip warnings. `npm run art` is where the running count belongs.
     const drawn = [...keys].filter((k) => files.has(k)).length;
-    if (drawn > 0 && drawn < keys.size) warn('art', `${keys.size - drawn} of ${keys.size} ${kind} have no artwork yet; those tiles draw their name instead.`);
+    if (drawn > 0 && drawn < keys.size) warn('art', `${keys.size - drawn} of ${keys.size} ${kind} have no artwork yet; those tiles are drawn without one.`);
   }
 }
 

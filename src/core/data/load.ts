@@ -78,7 +78,7 @@ function assertShape(label: string, value: unknown, kind: 'array' | 'object'): v
  *
  * Deliberately the one loader that never throws: art is decoration, and the planner works without
  * a single image. A missing, half-written or hand-broken manifest must leave the app running with
- * name fallbacks, not send it to the error card — which is why this does not use `fetchJson`.
+ * no-art tiles, not send it to the error card — which is why this does not use `fetchJson`.
  */
 export async function loadArtManifest(baseUrl = '/'): Promise<ArtManifest | null> {
   try {

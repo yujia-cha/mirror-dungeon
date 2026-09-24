@@ -22,7 +22,7 @@
  *                 name, and the assertions below hold both halves: the build's silence, and the
  *                 validator's refusal.
  */
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { messagesFrom, rehearse, validateIn, type RehearsalResult } from '../scripts/rehearse-season.ts';
@@ -183,33 +183,59 @@ describe.skipIf(!hasRaw)('a season rollover, rehearsed end to end', () => {
       'base64',
     );
 
-    it('blocks the new season when a drawing belongs to the old one', () => {
-      // `public/art` is not season-split, and `checkArt` errors on any file that is not an icon of
-      // the season being validated. Today `manifest.json` is empty so nothing can trip it — but the
-      // moment the owner draws the first of the 558 planned pieces, a gift that md8 drops takes the
-      // season turnover down with it. Proven here rather than discovered later.
-      const sandbox = results.full!.sandbox;
-      const orphan = 9999999;
-      mkdirSync(join(sandbox, 'public/art/gifts'), { recursive: true });
-      writeFileSync(join(sandbox, 'public/art/gifts', `${orphan}.png`), PNG_1X1);
-      writeFileSync(
-        join(sandbox, 'public/art/manifest.json'),
-        `${JSON.stringify({ gifts: [orphan], packs: [] }, null, 2)}\n`,
-      );
-
-      const validate = validateIn(sandbox);
-      const errors = messagesFrom(validate.output, 'error');
-      expect(validate.ok).toBe(false);
-      expect(errors.join('\n')).toMatch(
-        new RegExp(`public/art/gifts/${orphan}\\.png is not a gift icon of this season`),
-      );
-
-      // Leave the sandbox as it was, so nothing after this reads a broken one.
+    /** Leave the sandbox as it was, so nothing after this reads a broken one. */
+    function clearArt(sandbox: string): void {
       rmSync(join(sandbox, 'public/art/gifts'), { recursive: true, force: true });
       writeFileSync(
         join(sandbox, 'public/art/manifest.json'),
         `${JSON.stringify({ gifts: [], packs: [] }, null, 2)}\n`,
       );
+    }
+
+    function draw(sandbox: string, icon: number): void {
+      mkdirSync(join(sandbox, 'public/art/gifts'), { recursive: true });
+      writeFileSync(join(sandbox, 'public/art/gifts', `${icon}.png`), PNG_1X1);
+      writeFileSync(
+        join(sandbox, 'public/art/manifest.json'),
+        `${JSON.stringify({ gifts: [icon], packs: [] }, null, 2)}\n`,
+      );
+    }
+
+    it('does not block the new season when a drawing belongs only to the frozen one', () => {
+      // `public/art` is one pool for every season (`scripts/lib/art-keys.ts`). Until M51 `checkArt`
+      // judged a drawing against the season being validated alone, so the first drawing of a gift
+      // the next season drops took the turnover down with it. The synthetic md8 keeps every md7
+      // gift, so give the frozen md7 one the new season does not have.
+      const sandbox = results.full!.sandbox;
+      const oldOnly = 9999998;
+      const md7Gifts = join(sandbox, 'public/data/md7/gifts.json');
+      const original = readFileSync(md7Gifts, 'utf8');
+      const gifts = JSON.parse(original) as { id: number; icon: number }[];
+      writeFileSync(md7Gifts, `${JSON.stringify([...gifts, { ...gifts[0]!, id: oldOnly, icon: oldOnly }], null, 2)}\n`);
+      draw(sandbox, oldOnly);
+      try {
+        const validate = validateIn(sandbox);
+        expect(messagesFrom(validate.output, 'error').filter((line) => line.includes('[art]'))).toEqual([]);
+        expect(validate.ok).toBe(true);
+      } finally {
+        writeFileSync(md7Gifts, original);
+        clearArt(sandbox);
+      }
+    });
+
+    it('still refuses a drawing no published season has', () => {
+      const sandbox = results.full!.sandbox;
+      const orphan = 9999999;
+      draw(sandbox, orphan);
+      try {
+        const validate = validateIn(sandbox);
+        expect(validate.ok).toBe(false);
+        expect(messagesFrom(validate.output, 'error').join('\n')).toMatch(
+          new RegExp(`public/art/gifts/${orphan}\\.png is not a gift icon of any published season`),
+        );
+      } finally {
+        clearArt(sandbox);
+      }
     });
   });
 

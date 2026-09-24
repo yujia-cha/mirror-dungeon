@@ -16,6 +16,10 @@
  * - Every candidate is checked *before* a byte is written, so pointing this at the wrong folder
  *   changes nothing.
  *
+ * `public/art/` is one pool for every season: a key is accepted when any season in `index.json` has
+ * it (`lib/art-keys.ts`), because a frozen season stays selectable and still draws its gifts. The
+ * counts below are about the season named by `--season` (default: the one the app opens).
+ *
  * Filenames are keyed on `Gift.icon` and `ThemePack.sprite`, never on `Gift.id`: they differ for
  * 31 of the 446 gifts, and keying on the wrong one would silently mis-file those.
  */
@@ -25,6 +29,7 @@ import { basename, extname, join, resolve } from 'node:path';
 import type { ArtManifest, Gift, ThemePack } from '../src/core/schema.ts';
 import { flagValue, hasFlag, readJson, repoPath, writeJsonStable } from './lib/io.ts';
 import { matchesRatio, readPng, type PngInfo } from './lib/png.ts';
+import { artKeysAcrossSeasons, type ArtKeys } from './lib/art-keys.ts';
 
 /** Gift icons are square; pack portraits match the card (`PackCard` draws `height = size*15/8`). */
 const KINDS = {
@@ -52,14 +57,22 @@ function usage(message: string): never {
   process.exit(1);
 }
 
-/** The keys the current season actually has, so a typo cannot create a file nothing will read. */
-function loadKeys(season: number): { gifts: Set<number>; packs: Set<string>; name: Map<string, string> } {
+/**
+ * The keys the chosen season has, plus every published season's (`any`), so a typo cannot create a
+ * file nothing will read and a gift only a frozen season has is still accepted.
+ */
+function loadKeys(season: number): { gifts: Set<number>; packs: Set<string>; name: Map<string, string>; any: ArtKeys } {
   const gifts = readJson<Gift[]>(repoPath(`public/data/md${season}/gifts.json`));
   const packs = readJson<ThemePack[]>(repoPath(`public/data/md${season}/packs.json`));
   const name = new Map<string, string>();
   for (const gift of gifts) name.set(`gifts/${gift.icon}`, gift.name.ko);
   for (const pack of packs) name.set(`packs/${pack.sprite}`, pack.name.ko);
-  return { gifts: new Set(gifts.map((g) => g.icon)), packs: new Set(packs.map((p) => p.sprite)), name };
+  return {
+    gifts: new Set(gifts.map((g) => g.icon)),
+    packs: new Set(packs.map((p) => p.sprite)),
+    name,
+    any: artKeysAcrossSeasons(repoPath('public/data')),
+  };
 }
 
 function currentSeason(): number {
@@ -81,9 +94,19 @@ type Verdict =
   | { ok: true; kind: Kind; key: string; info: PngInfo; note?: string }
   | { ok: false; reason: string };
 
+/** The published seasons that have this key; empty when none does. */
+function seasonsOf(kind: Kind, key: string, keys: ReturnType<typeof loadKeys>): number[] {
+  return (kind === 'gifts' ? keys.any.gifts.get(Number(key)) : keys.any.packs.get(key)) ?? [];
+}
+
 function judge(path: string, key: string, kind: Kind, keys: ReturnType<typeof loadKeys>): Verdict {
-  const known = kind === 'gifts' ? keys.gifts.has(Number(key)) : keys.packs.has(key);
-  if (!known) return { ok: false, reason: `${kind === 'gifts' ? 'icon' : 'sprite'} 「${key}」은 이 시즌에 없다` };
+  const inSeason = kind === 'gifts' ? keys.gifts.has(Number(key)) : keys.packs.has(key);
+  const elsewhere = seasonsOf(kind, key, keys);
+  if (!inSeason && elsewhere.length === 0) {
+    return { ok: false, reason: `${kind === 'gifts' ? 'icon' : 'sprite'} 「${key}」은 어느 시즌에도 없다` };
+  }
+  // Legal, but not what the chosen season shows — worth one word so it is not a surprise.
+  const seasonNote = inSeason ? undefined : `${elsewhere.map((n) => `md${n}`).join('·')} 전용`;
   const bytes = readFileSync(path);
   if (bytes.length > MAX_BYTES) return { ok: false, reason: `${Math.round(bytes.length / 1024)}KB — ${MAX_BYTES / 1024}KB를 넘는다` };
   const png = readPng(bytes);
@@ -96,7 +119,8 @@ function judge(path: string, key: string, kind: Kind, keys: ReturnType<typeof lo
   const size = `${png.info.width}x${png.info.height}`;
   // Advised sizes are a nudge, not a gate: 64 and 128 are both being tried out, and the choice
   // between them should not be made by this script refusing files.
-  const note = ADVISED[kind].includes(size) ? undefined : `크기 ${size} (권장 ${advise})`;
+  const sizeNote = ADVISED[kind].includes(size) ? undefined : `크기 ${size} (권장 ${advise})`;
+  const note = [seasonNote, sizeNote].filter(Boolean).join(', ') || undefined;
   return { ok: true, kind, key, info: png.info, ...(note ? { note } : {}) };
 }
 
@@ -118,10 +142,11 @@ function main(): void {
     let strays = 0;
     const report = (kind: Kind, total: number, isKnown: (key: string) => boolean): string[] => {
       const have = existing(kind);
-      const unknown = have.filter((k) => !isKnown(k));
+      const other = have.filter((k) => !isKnown(k));
+      const unknown = other.filter((k) => seasonsOf(kind, k, keys).length === 0);
       strays += unknown.length;
-      console.log(`${kind}: ${have.length - unknown.length}/${total}장`);
-      for (const k of unknown) console.log(`  ! ${k}.png — 이 시즌의 ${kind === 'gifts' ? 'icon' : 'sprite'}에 없다`);
+      console.log(`${kind}: ${have.length - other.length}/${total}장${other.length > unknown.length ? ` (+ 다른 시즌 전용 ${other.length - unknown.length}장)` : ''}`);
+      for (const k of unknown) console.log(`  ! ${k}.png — 어느 시즌의 ${kind === 'gifts' ? 'icon' : 'sprite'}에도 없다`);
       return have;
     };
     const haveGifts = report('gifts', keys.gifts.size, (k) => keys.gifts.has(Number(k)));
@@ -132,7 +157,7 @@ function main(): void {
       const sample = missing.slice(0, 10);
       console.log(`\n아직 없는 기프트 ${missing.length}장 (앞 ${sample.length}개): ${sample.join(', ')}`);
     }
-    console.log('\n없는 그림은 이름 첫 글자 폴백으로 그려진다 — 0장이어도 사이트는 동작한다.');
+    console.log('\n없는 자리는 그림 없이 그려진다 — 0장이어도 사이트는 동작한다.');
     // `--write` with no source resyncs the manifest to what is on disk. That is the one remedy for
     // a drawing removed by hand, and it is the command `data:validate` points at when it finds the
     // manifest and the directory disagreeing.
