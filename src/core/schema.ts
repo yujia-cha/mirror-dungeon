@@ -290,7 +290,9 @@ export const identitySchema = z.object({
   factions: z.array(z.string()),
   /** `unitKeywordList` — trait tags, distinct from 소속. */
   traits: z.array(z.string()),
-  keywords: z.record(identityKeywordIdSchema, identityKeywordSchema),
+  // `partialRecord`: an enum-keyed `z.record` requires every key since Zod 4, and an identity has only
+  // the keywords it has.
+  keywords: z.partialRecord(identityKeywordIdSchema, identityKeywordSchema),
   keywordSource: z.enum(['derived', 'backfilled', 'curated', 'none']),
   sins: z.array(sinSchema),
   attackTypes: z.array(attackTypeSchema),
@@ -349,7 +351,8 @@ export const rulesSchema = z.object({
   /** Starting gift chosen from a keyword pool (no starlight cost). */
   startGift: z.object({
     pickCount: z.number().int().nonnegative(),
-    poolsByKeyword: z.record(keywordSchema, z.array(z.number().int())),
+    // Partial for the same reason: not every keyword has a start pool (`None` has none).
+    poolsByKeyword: z.partialRecord(keywordSchema, z.array(z.number().int())),
     newKeywordChipCost: z.number().int().nonnegative(),
     refreshStarlightCost: z.number().int().nonnegative(),
   }),
