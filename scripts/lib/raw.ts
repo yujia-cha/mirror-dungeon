@@ -311,14 +311,17 @@ export function readFactionNames(lang: Lang): Map<string, string> {
   return out;
 }
 
-const SPECIAL_VARIANT_LINE = /^-?\s*특수 (화상|출혈|진동|파열|침잠|호흡|충전|탄환)\s*$/m;
+export const SPECIAL_VARIANT_LINE =
+  /^-?\s*특수 (화상|출혈|진동|파열|침잠|호흡|충전|탄환)(?:\s*\([^)\n]*\))?\s*$/m;
 
 /**
  * Buff ids the game declares as a 특수 variant of a keyword, e.g. `ChargeBodyArt`
  * (생체 재료 → 특수 충전) or `NailPersonality` (못 → 특수 출혈).
  *
  * The only machine-readable signal is a bullet in the buff's Korean description that reads
- * exactly 「특수 충전」; buffs that merely *mention* a 특수 variant in a longer sentence are not
+ * 「특수 충전」 on its own, optionally followed by a parenthetical — 적안·참회 (10410) and 검은 눈물
+ * (10913) write 「- 특수 충전 (위력 고정)」, and requiring the bare form silently dropped their
+ * 충전 until M60. Buffs that merely *mention* a 특수 variant in a longer sentence are not
  * variants themselves, which is why the line has to stand alone.
  *
  * Read from every `BattleKeywords*` file, like the names: the chapter tables are where

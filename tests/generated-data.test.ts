@@ -274,7 +274,7 @@ describe('gifts', () => {
 describe('identities', () => {
   it('covers the 183 the static data ships plus the ones backfilled from the other sources', () => {
     expect(identities).toHaveLength(188);
-    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(4);
+    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(5);
   });
 
   it.each([
@@ -284,6 +284,7 @@ describe('identities', () => {
     // variant only (counted under `specialSkills`), so the keyword set still names it.
     [10416, '오트쿠튀르:: 르누아르 신발관', 4, ['Charge', 'Vibration'], []],
     [10816, '오트쿠튀르:: 르루주 부티크', 8, ['Charge', 'Laceration'], []],
+    [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], []],
   ])(
     'backfills %i 「%s」, which the static data has not shipped',
     (id, title, sinnerId, keywords, factions) => {
@@ -318,6 +319,9 @@ describe('identities', () => {
     [10215, 'Charge', '거미집 약지 제자 — 생체 재료'],
     [10614, 'Charge', '거미집 약지 아비 — 생체 재료'],
     [10504, 'Laceration', 'N사 큰 망치 — 못'],
+    // Declared as 「- 특수 충전 (위력 고정)」, which a bare-line pattern missed until M60.
+    [10410, 'Charge', '로보토미 E.G.O:: 적안・참회 — 적안·참회'],
+    [10913, 'Charge', '로보토미 E.G.O:: 눈물로 벼려낸 검 — 검은 눈물'],
   ])('identity %i inflicts the 특수 variant of %s (%s)', (id, keyword) => {
     const info = identityById.get(id)!.keywords[keyword as 'Charge'];
     expect(info?.specialSkills).toBeGreaterThan(0);

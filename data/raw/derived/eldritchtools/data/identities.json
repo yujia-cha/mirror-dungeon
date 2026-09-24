@@ -6376,7 +6376,8 @@
     "statuses": [
       "Endurance",
       "Protection",
-      "Vibration"
+      "Vibration",
+      "VibrationExplosion"
     ],
     "tags": [
       "Base Identity",
@@ -9456,7 +9457,8 @@
     "statuses": [
       "AttackDmgUp",
       "Enhancement",
-      "Vibration"
+      "Vibration",
+      "VibrationExplosion"
     ],
     "tags": [
       "Base Identity",
@@ -11067,7 +11069,8 @@
     "statuses": [
       "Disarming",
       "HitTakeDamageUp",
-      "Vibration"
+      "Vibration",
+      "VibrationExplosion"
     ],
     "tags": [
       "Base Identity",
@@ -11343,6 +11346,7 @@
       "Paralysis",
       "Reduction",
       "Vibration",
+      "VibrationExplosion",
       "Vulnerable"
     ],
     "tags": [
@@ -11434,7 +11438,8 @@
     ],
     "statuses": [
       "Burst",
-      "Vibration"
+      "Vibration",
+      "VibrationExplosion"
     ],
     "tags": [
       "E.G.O Gear",
@@ -14239,6 +14244,126 @@
       "The House of Spiders",
       "The Thumb",
       "War Hero"
+    ]
+  },
+  "10917": {
+    "breakSection": [
+      70,
+      30
+    ],
+    "date": "2026-09-24",
+    "defCorrection": 3,
+    "defenseSkillTypes": [
+      {
+        "id": "1091704",
+        "type": {
+          "affinity": "sloth",
+          "atkType": "slash",
+          "clashable": true,
+          "tier": 1,
+          "type": "counter"
+        }
+      }
+    ],
+    "hp": {
+      "base": 72,
+      "level": 3.03
+    },
+    "name": "Haute Couture:: Alteration Shop",
+    "rank": 3,
+    "resists": {
+      "blunt": 1,
+      "pierce": 2,
+      "slash": 0.5
+    },
+    "season": 8,
+    "sinnerId": 9,
+    "skillKeywordList": [
+      "Charge",
+      "Tremor"
+    ],
+    "skillTypes": [
+      {
+        "id": "1091701",
+        "num": 3,
+        "type": {
+          "affinity": "pride",
+          "tier": 1,
+          "type": "slash"
+        }
+      },
+      {
+        "id": "1091702",
+        "num": 2,
+        "type": {
+          "affinity": "envy",
+          "tier": 2,
+          "type": "slash"
+        }
+      },
+      {
+        "id": "1091703",
+        "num": 1,
+        "type": {
+          "affinity": "sloth",
+          "tier": 3,
+          "type": "slash"
+        }
+      },
+      {
+        "id": "1091705",
+        "num": 0,
+        "type": {
+          "affinity": "sloth",
+          "tier": 1,
+          "type": "slash"
+        }
+      },
+      {
+        "id": "1091706",
+        "num": 0,
+        "type": {
+          "affinity": "sloth",
+          "tier": 2,
+          "type": "slash"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        2,
+        6
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        7
+      ],
+      [
+        4,
+        7
+      ]
+    ],
+    "statuses": [
+      "AmberResistDown",
+      "AttackUp",
+      "Charge",
+      "ChargeKhaki",
+      "ChargeKhakiAlly",
+      "Enhancement",
+      "NoirScissorAlly",
+      "NoirScissorCut",
+      "NoirScissorShield",
+      "PersonalityCharge",
+      "SupportAlly",
+      "Vibration",
+      "VibrationExplosion"
+    ],
+    "tags": [
+      "Sisyphe"
     ]
   },
   "11001": {
@@ -17631,7 +17756,8 @@
     "statuses": [
       "Burst",
       "Charge",
-      "Vibration"
+      "Vibration",
+      "VibrationExplosion"
     ],
     "tags": [
       "Fixer",

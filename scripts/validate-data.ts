@@ -704,6 +704,18 @@ function checkInvariants(
     const ours = new Set(Object.keys(identity.keywords).filter((k) => STATUS_SET.has(k)));
     const same = ours.size === theirs.size && [...ours].every((k) => theirs.has(k as never));
     if (!same) keywordDisagreements.push(identity.id);
+    // The other direction is not a matter of budget. Our derivation reads every skill the static
+    // data or the Korean text states, so it should know at least what the weaker reading knows; a
+    // keyword only the derived source has means a derivation silently dropped it. That is how
+    // 10410 and 10913 lost 특수 충전 to a too-strict 「특수 X」 pattern until M60.
+    const missed = [...theirs].filter((k) => STATUS_SET.has(k) && !ours.has(k));
+    if (missed.length > 0) {
+      err(
+        'invariant',
+        `identity ${identity.id} (${identity.title.ko}) lacks ${missed.join(', ')}, which the ` +
+          `derived source lists; check the keyword derivation (readSpecialVariants, deriveIdentityKeywords)`,
+      );
+    }
   }
   if (keywordDisagreements.length > KEYWORD_DISAGREEMENT_BUDGET) {
     warn(

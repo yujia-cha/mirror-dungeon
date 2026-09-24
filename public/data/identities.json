@@ -2143,6 +2143,10 @@
     "id": 10410,
     "keywordSource": "derived",
     "keywords": {
+      "Charge": {
+        "skills": 0,
+        "specialSkills": 4
+      },
       "Laceration": {
         "skills": 4,
         "specialSkills": 0
@@ -5361,6 +5365,10 @@
     "id": 10913,
     "keywordSource": "derived",
     "keywords": {
+      "Charge": {
+        "skills": 0,
+        "specialSkills": 6
+      },
       "Sinking": {
         "skills": 6,
         "specialSkills": 0
@@ -5526,19 +5534,34 @@
     ]
   },
   {
-    "attackTypes": [],
+    "attackTypes": [
+      "Slash"
+    ],
     "factions": [],
     "id": 10917,
-    "keywordSource": "curated",
-    "keywords": {},
-    "rank": 1,
-    "season": 0,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Charge": {
+        "skills": 0,
+        "specialSkills": 4
+      },
+      "Vibration": {
+        "skills": 4,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 8,
     "sinner": {
       "en": "Rodion",
       "ko": "로쟈"
     },
     "sinnerId": 9,
-    "sins": [],
+    "sins": [
+      "SLOTH",
+      "PRIDE",
+      "ENVY"
+    ],
     "title": {
       "en": "Haute Couture:: Alteration Shop",
       "ko": "오트쿠튀르:: 수선실"

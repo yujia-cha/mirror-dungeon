@@ -20,8 +20,12 @@ const MENTION = /\[([A-Za-z0-9_]+)\]|(화상|출혈|진동|파열|침잠|호흡|
 /** How much of the sentence after a mention decides whether it is an infliction. */
 const TAIL = 14;
 
-/** 「… 부여」 gives the keyword to a target, 「… 횟수 N 증가」 to oneself. Both count. */
-const GRANTS = /부여|증가/;
+/**
+ * 「… 부여」 gives the keyword to a target; 「… 횟수 N 증가」 and 「… N 얻음」 give it to oneself. All
+ * count — the static data does not tell them apart either. 「얻음」 is how 적안·참회 (10410) and
+ * 검은 눈물 (10913) state their 특수 충전; without it the text read neither (M60).
+ */
+const GRANTS = /부여|증가|얻음/;
 
 /**
  * 「[Combustion], [Laceration], [Vibration], [Burst], [Sinking] 중 무작위 1개」 lists keywords to

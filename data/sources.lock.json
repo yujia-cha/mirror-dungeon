@@ -100,11 +100,11 @@
       "languages": {
         "KR": {
           "ref": "Korean",
-          "sha": "4ce3b5862486ddea823962a297f3e4deed88e260"
+          "sha": "617d26bd6126c302d78e8300b856f5c5c1ea0c7f"
         },
         "EN": {
           "ref": "English",
-          "sha": "b846631e41798454564d98ef35fe65f0743de3f5"
+          "sha": "5b7294632741fa6db8f3d48e7965c27b8beb7122"
         }
       },
       "fetchedAt": "2026-09-24",
@@ -278,7 +278,7 @@
     "eldritchtools": {
       "repo": "eldritchtools/limbus-assets",
       "ref": "main",
-      "sha": "f67976600aca9b720e7fd929606cc67ce695e3b1",
+      "sha": "e3f03ac7c17ca3e6438d5f5f3010af53597d1d3b",
       "fetchedAt": "2026-09-24",
       "note": "Derived, English-only data behind the limbus.tools sites, updated near-daily. Two jobs: it backfills identities the static data has not shipped, and it cross-checks the Mirror Dungeon data OpenLethe froze — packs, floors, fusion recipes, start pools. It is the only living MD source, but it has no per-pack general gift pool, no prices, no observation list and no dungeon constants, so it can supplement the static data and not replace it.",
       "remotePrefix": "",
