@@ -61,6 +61,10 @@ export const STRINGS = {
   deckDefault: { ko: '기본 덱', en: 'Default deck' },
   deckSearchNone: { ko: '일치하는 인격 없음', en: 'No identity matches' },
   deckDeployedFull: { ko: '출격은 최대 {max}명입니다', en: 'Up to {max} can be deployed' },
+  deckDeployedUnverifiedWhy: {
+    ko: '출격 상한 {max}명은 게임에서 아직 확인하지 못한 값입니다',
+    en: 'The cap of {max} has not been confirmed in the game yet',
+  },
   deckDeployed: { ko: '출격', en: 'Deployed' },
   deckReserve: { ko: '대기', en: 'Reserve' },
   deckEmptySlot: { ko: '인격 선택', en: 'Pick an identity' },

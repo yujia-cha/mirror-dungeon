@@ -220,6 +220,14 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           </div>
         ) : null}
       </div>
+      {/* The cap is a curated constant nobody has confirmed in the game (`rules.deployment`). Its
+          own line: beside the counter it crushed the search field in a 336px panel, and a `title`
+          reaches neither touch nor keyboard. */}
+      {data.rules.deployment.verified ? null : (
+        <p className="-mt-1 text-xs text-fg-2" data-testid="deploy-unverified">
+          {t('deckDeployedUnverifiedWhy', lang, { max })}
+        </p>
+      )}
 
       {importOpen ? (
         <form

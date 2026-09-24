@@ -647,6 +647,19 @@ describe('DeckStep', () => {
     return render(<DeckStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
   };
 
+  it('says the deployment cap is unconfirmed while the rules say so, and only then (M56)', () => {
+    // `rules.deployment.verified` is false today: the cap of 7 is a curated guess. The counter used
+    // it silently; its own `_source` asks the UI to mark it.
+    const { unmount } = renderDeck();
+    expect(data.rules.deployment.verified).toBe(false);
+    expect(screen.getByTestId('deploy-unverified')).toHaveTextContent(`출격 상한 ${data.rules.deployment.max}명은 게임에서 아직 확인하지 못한 값입니다`);
+    unmount();
+    const verified = { ...data, rules: { ...data.rules, deployment: { ...data.rules.deployment, verified: true } } };
+    const { deck, deployed } = useApp.getState();
+    render(<DeckStep data={verified} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    expect(screen.queryByTestId('deploy-unverified')).toBeNull();
+  });
+
   it('shows twelve empty slots to start with and fills them with the LCB deck on request', async () => {
     const user = userEvent.setup();
     renderDeck();
