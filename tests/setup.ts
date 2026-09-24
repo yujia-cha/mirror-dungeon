@@ -26,18 +26,34 @@ if (typeof globalThis.Element !== 'undefined') {
         this.isPrimary = init.isPrimary ?? true;
       }
     }
-    Object.defineProperty(globalThis, 'PointerEvent', { value: PointerEventPolyfill, configurable: true, writable: true });
+    Object.defineProperty(globalThis, 'PointerEvent', {
+      value: PointerEventPolyfill,
+      configurable: true,
+      writable: true,
+    });
     // Testing Library builds events from `window[EventType]`, a separate object in vitest's jsdom.
     if (typeof window !== 'undefined' && typeof window.PointerEvent === 'undefined') {
-      Object.defineProperty(window, 'PointerEvent', { value: PointerEventPolyfill, configurable: true, writable: true });
+      Object.defineProperty(window, 'PointerEvent', {
+        value: PointerEventPolyfill,
+        configurable: true,
+        writable: true,
+      });
     }
   }
   for (const name of ['setPointerCapture', 'releasePointerCapture'] as const) {
     if (typeof Element.prototype[name] !== 'function') {
-      Object.defineProperty(Element.prototype, name, { value: () => undefined, configurable: true, writable: true });
+      Object.defineProperty(Element.prototype, name, {
+        value: () => undefined,
+        configurable: true,
+        writable: true,
+      });
     }
   }
   if (typeof Element.prototype.hasPointerCapture !== 'function') {
-    Object.defineProperty(Element.prototype, 'hasPointerCapture', { value: () => false, configurable: true, writable: true });
+    Object.defineProperty(Element.prototype, 'hasPointerCapture', {
+      value: () => false,
+      configurable: true,
+      writable: true,
+    });
   }
 }

@@ -213,7 +213,7 @@ describe('alternatives arrive after the route (M52)', () => {
     expect(result.current.variantsPending).toBe(false);
   });
 
-  it('does not show one plan\'s alternatives beside the next plan', async () => {
+  it("does not show one plan's alternatives beside the next plan", async () => {
     const { latest } = stubWorker(() => new FakeWorker('answers', true));
     const { result, rerender } = renderHook(({ value }) => usePlanner(data, indexes, value), {
       initialProps: { value: conflictInput },

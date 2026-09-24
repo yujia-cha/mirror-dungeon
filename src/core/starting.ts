@@ -34,7 +34,8 @@ export function chooseStart(
   // The picker only offers keywords that have a pool, but a saved run or a share link made before
   // that filter existed can still name one (범용 / `None`), and honouring it would hand the player
   // no starting gift without saying why.
-  const asked = requestedKeyword !== 'auto' && rules.startGift.poolsByKeyword[requestedKeyword] ? requestedKeyword : null;
+  const asked =
+    requestedKeyword !== 'auto' && rules.startGift.poolsByKeyword[requestedKeyword] ? requestedKeyword : null;
   const keyword: Keyword | null = asked ?? dominantKeyword(stats);
 
   const wantedIds = new Set(requirements.map((r) => r.giftId));

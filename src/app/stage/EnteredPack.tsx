@@ -14,7 +14,8 @@ import { GiftTile } from '../components/GiftTile.tsx';
 import { PackCard } from '../components/PackCard.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
-const HANDLE_CLASS = 'flex h-9 w-full items-center justify-center gap-1 text-sm font-medium transition-colors';
+const HANDLE_CLASS =
+  'flex h-9 w-full items-center justify-center gap-1 text-sm font-medium transition-colors';
 
 /** Opens from zero height on mount (`grid-template-rows` 0fr → 1fr) and folds the same way when `closing`. */
 export function PackArea({ packId, closing = false }: { packId: number; closing?: boolean }) {
@@ -39,7 +40,9 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
   const pack = indexes.packById.get(packId);
   if (!pack) return null;
   const name = pick(pack.name, lang);
-  const exclusives = [...exclusivesOf(packId)].sort((a, b) => Number(needed.has(b)) - Number(needed.has(a)) || a - b);
+  const exclusives = [...exclusivesOf(packId)].sort(
+    (a, b) => Number(needed.has(b)) - Number(needed.has(a)) || a - b,
+  );
   const goalCount = exclusives.filter((id) => needed.has(id)).length;
   const pastUp = pull.past === 'up';
   const pastDown = pull.past === 'down';
@@ -81,7 +84,9 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="text-sm font-semibold">{t('stageExclusives', lang)}</span>
                 <span className="font-num text-xs text-fg-3">{exclusives.length}</span>
-                {goalCount > 0 ? <span className="text-xs text-fg-2">{`${t('stageGoalsFirst', lang)} ${goalCount}`}</span> : null}
+                {goalCount > 0 ? (
+                  <span className="text-xs text-fg-2">{`${t('stageGoalsFirst', lang)} ${goalCount}`}</span>
+                ) : null}
               </div>
               {exclusives.length === 0 ? (
                 <p className="text-xs text-fg-3">{t('stageExclusivesNone', lang)}</p>

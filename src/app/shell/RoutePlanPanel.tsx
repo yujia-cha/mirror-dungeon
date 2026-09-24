@@ -19,7 +19,23 @@ import { usePlan } from './plan-context.ts';
 import { useRovingTabs } from '../lib/useRovingTabs.ts';
 
 export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
-  const { data, indexes, lang, input, plan, shown, planPending, variants, variantIndex, setVariantIndex, variant, giftName, packName, keywordLabel, ctx } = usePlan();
+  const {
+    data,
+    indexes,
+    lang,
+    input,
+    plan,
+    shown,
+    planPending,
+    variants,
+    variantIndex,
+    setVariantIndex,
+    variant,
+    giftName,
+    packName,
+    keywordLabel,
+    ctx,
+  } = usePlan();
   const options = useApp((s) => s.options);
   const run = useApp((s) => s.run);
   const lastFloor = useApp((s) => s.lastFloor);
@@ -54,7 +70,11 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   // which also names the gifts. `fusion-slots` and `search-capped` used to be in here with
   // nothing else saying them — the first was a silent failure, the second was the sentence that
   // explains what the 「근사 결과」 badge means.
-  const SILENT_WARNINGS = new Set(['parallel-requires-hard', 'condition-unmet', 'general-drop-not-guaranteed']);
+  const SILENT_WARNINGS = new Set([
+    'parallel-requires-hard',
+    'condition-unmet',
+    'general-drop-not-guaranteed',
+  ]);
   const otherWarnings = shown.warnings.filter((w) => !SILENT_WARNINGS.has(w.code));
   const generalDrops = shown.generalDrops;
   // The planner reports every miss it had to work around, ingredients included.
@@ -62,10 +82,11 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
 
   const copy = async (): Promise<void> => {
     const text = planToText(shown, giftName, packName, keywordLabel, lang, variant?.dropped ?? [], {
-        bannedPacks: options.bannedPacks,
-        ...(run.currentFloor > 1 || Object.keys(run.visits).length > 0 ? { run: { currentFloor: run.currentFloor, visits: run.visits } } : {}),
-      },
-    );
+      bannedPacks: options.bannedPacks,
+      ...(run.currentFloor > 1 || Object.keys(run.visits).length > 0
+        ? { run: { currentFloor: run.currentFloor, visits: run.visits } }
+        : {}),
+    });
     // Plain http and an unfocused document leave `navigator.clipboard` unusable; say so instead of
     // rejecting into nowhere.
     try {
@@ -93,9 +114,13 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         </span>
       ))}
       {/* How much of 「확보 M/T」 the route reaches by a general pool rather than a named pack. */}
-      {generalDrops.length > 0 ? <Badge tone="neutral">{t('routeGeneralBadge', lang, { n: generalDrops.length })}</Badge> : null}
+      {generalDrops.length > 0 ? (
+        <Badge tone="neutral">{t('routeGeneralBadge', lang, { n: generalDrops.length })}</Badge>
+      ) : null}
       {failedCount > 0 ? <Badge tone="alert">{t('runFailedCount', lang, { n: failedCount })}</Badge> : null}
-      {shown.unresolved.length > 0 ? <Badge tone="neutral">{t('routeUnresolvedCount', lang, { n: shown.unresolved.length })}</Badge> : null}
+      {shown.unresolved.length > 0 ? (
+        <Badge tone="neutral">{t('routeUnresolvedCount', lang, { n: shown.unresolved.length })}</Badge>
+      ) : null}
       {capped ? (
         <Badge tone="approx" title={t('routeApproxHint', lang)}>
           {t('routeApprox', lang)}
@@ -108,7 +133,14 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         </span>
       ) : null}
       {/* Icon only: the toast after a press says what happened, so the label lives in the tooltip. */}
-      <Button variant="ghost" size="sm" className="ml-auto" onClick={copy} title={t('routeCopy', lang)} ariaLabel={t('routeCopy', lang)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="ml-auto"
+        onClick={copy}
+        title={t('routeCopy', lang)}
+        ariaLabel={t('routeCopy', lang)}
+      >
         <Copy size={13} aria-hidden />
       </Button>
     </div>
@@ -138,11 +170,17 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
               tabIndex={selected ? 0 : -1}
               onClick={() => setVariantIndex(i)}
               className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs ${
-                selected ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong bg-surface text-fg-2 hover:bg-surface-2'
+                selected
+                  ? 'border-ink bg-ink text-ink-fg'
+                  : 'border-line-strong bg-surface text-fg-2 hover:bg-surface-2'
               }`}
             >
               {gift ? <GiftIcon gift={gift} size={20} lang={lang} /> : null}
-              <span>{gift ? t('routeVariantWithout', lang, { name: giftName(gift.id) }) : t('routeVariantAll', lang)}</span>
+              <span>
+                {gift
+                  ? t('routeVariantWithout', lang, { name: giftName(gift.id) })
+                  : t('routeVariantAll', lang)}
+              </span>
               <span className="font-num opacity-80">
                 {entry.plan.stats.coveredWanted}/{entry.plan.stats.totalWanted}
               </span>
@@ -163,7 +201,10 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
       ? t('actionObserveGift', lang, { name: action.giftId !== undefined ? giftName(action.giftId) : '' })
       : t('actionReleaseObservations', lang);
   const unresolvedActions = shown.unresolved.map((entry) =>
-    actionsFor(entry, indexes.giftById.get(entry.giftId), options, data.rules, ctx.needed).map((action) => ({ ...action, label: actionLabel(action) })),
+    actionsFor(entry, indexes.giftById.get(entry.giftId), options, data.rules, ctx.needed).map((action) => ({
+      ...action,
+      label: actionLabel(action),
+    })),
   );
   const sharedLabels = new Set(
     unresolvedActions
@@ -175,9 +216,16 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   // asked for it — with a single unresolved gift it used to belong to neither the header (not
   // shared) nor the row (not an `observeGift`) and was drawn nowhere.
   const headerActions = [
-    ...new Map(unresolvedActions.flat().filter((a) => a.kind === 'releaseObservations' || sharedLabels.has(a.label)).map((a) => [a.label, a])).values(),
+    ...new Map(
+      unresolvedActions
+        .flat()
+        .filter((a) => a.kind === 'releaseObservations' || sharedLabels.has(a.label))
+        .map((a) => [a.label, a]),
+    ).values(),
   ];
-  const shownInput = variant ? { ...input, wanted: input.wanted.filter((w) => !variant.dropped.includes(w.giftId)) } : input;
+  const shownInput = variant
+    ? { ...input, wanted: input.wanted.filter((w) => !variant.dropped.includes(w.giftId)) }
+    : input;
   const groups = conflictGroups(shown, shownInput, data, indexes);
   const others = shown.unresolved.filter((u) => u.reason !== 'pack-conflict');
   const seeVariants = (): void => {
@@ -208,13 +256,18 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         removeWanted={removeWanted}
         observeAction={(entry) => {
           const i = shown.unresolved.indexOf(entry);
-          return (unresolvedActions[i] ?? []).find((a) => a.kind === 'observeGift' && !sharedLabels.has(a.label));
+          return (unresolvedActions[i] ?? []).find(
+            (a) => a.kind === 'observeGift' && !sharedLabels.has(a.label),
+          );
         }}
         headerActions={headerActions}
         // A pin goes through the store's own guard, like the sheet's and the slots' pins do.
         onAction={(action) =>
           action.kind === 'observeGift' && action.giftId !== undefined
-            ? toggleObserved(action.giftId, { max: data.rules.giftObservation.max, observable: ctx.observable })
+            ? toggleObserved(action.giftId, {
+                max: data.rules.giftObservation.max,
+                observable: ctx.observable,
+              })
             : setOptions(action.patch)
         }
         onSeeVariants={variants.length > 0 && !variant ? seeVariants : undefined}

@@ -20,7 +20,15 @@ export interface GiftTileData {
  * ✓ and the lock draw, and `GiftsStep` asks the same question of a whole section to know when that
  * section is done.
  */
-export function isMarked(tile: GiftTileData, wanted: readonly number[], blocked: ReadonlyMap<number, Block>): boolean {
+export function isMarked(
+  tile: GiftTileData,
+  wanted: readonly number[],
+  blocked: ReadonlyMap<number, Block>,
+): boolean {
   const { entry, parent } = tile;
-  return wanted.includes(entry.gift.id) || (parent ? wanted.includes(parent.id) : false) || blocked.has(entry.gift.id);
+  return (
+    wanted.includes(entry.gift.id) ||
+    (parent ? wanted.includes(parent.id) : false) ||
+    blocked.has(entry.gift.id)
+  );
 }

@@ -10,7 +10,11 @@ import type { Unresolved } from '../../core/types.ts';
 import { withJosa } from '../format.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 
-export function unresolvedDetailText(entry: Unresolved, giftName: (id: number) => string, lang: Lang): string {
+export function unresolvedDetailText(
+  entry: Unresolved,
+  giftName: (id: number) => string,
+  lang: Lang,
+): string {
   if (entry.reason !== 'fusion-ingredient-unresolved' || !entry.missing || entry.missing.length === 0) {
     return pick(entry.detail, lang);
   }

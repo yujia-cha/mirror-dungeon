@@ -113,7 +113,9 @@ export function exclusivesIndex(data: GameData, indexes: GameIndexes): (packId: 
     const cached = cache.get(packId);
     if (cached) return cached;
     const pack = indexes.packById.get(packId);
-    const ids = [...new Set([...(pack?.exclusiveGifts ?? []), ...(rewards.get(packId) ?? [])])].sort((a, b) => a - b);
+    const ids = [...new Set([...(pack?.exclusiveGifts ?? []), ...(rewards.get(packId) ?? [])])].sort(
+      (a, b) => a - b,
+    );
     cache.set(packId, ids);
     return ids;
   };

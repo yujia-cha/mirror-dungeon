@@ -23,7 +23,10 @@ export interface LongPressHandlers {
   onPointerCancel: () => void;
 }
 
-export function useLongPress(onLongPress: (() => void) | undefined, ms = 1000): { handlers: LongPressHandlers | Record<string, never>; consume: () => boolean } {
+export function useLongPress(
+  onLongPress: (() => void) | undefined,
+  ms = 1000,
+): { handlers: LongPressHandlers | Record<string, never>; consume: () => boolean } {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fired = useRef(false);
   const from = useRef<{ x: number; y: number } | null>(null);
@@ -72,5 +75,8 @@ export function useLongPress(onLongPress: (() => void) | undefined, ms = 1000): 
   }, []);
 
   if (!onLongPress) return { handlers: {}, consume };
-  return { handlers: { onPointerDown, onPointerUp: clear, onPointerLeave: clear, onPointerCancel: clear }, consume };
+  return {
+    handlers: { onPointerDown, onPointerUp: clear, onPointerLeave: clear, onPointerCancel: clear },
+    consume,
+  };
 }

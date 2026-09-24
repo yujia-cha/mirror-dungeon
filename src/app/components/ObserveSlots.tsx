@@ -58,7 +58,13 @@ export function ObserveSlots({
         const gift = giftId !== null ? indexes.giftById.get(giftId) : undefined;
         const name = gift ? pick(gift.name, lang) : '';
         const tone =
-          over === i ? 'border-ink bg-surface-2 ring-1 ring-ink' : dragging ? 'border-dashed border-line-strong' : gift ? 'border-line bg-surface' : 'border-dashed border-line';
+          over === i
+            ? 'border-ink bg-surface-2 ring-1 ring-ink'
+            : dragging
+              ? 'border-dashed border-line-strong'
+              : gift
+                ? 'border-line bg-surface'
+                : 'border-dashed border-line';
         return (
           <div
             key={giftId ?? `empty-${i}`}
@@ -81,7 +87,12 @@ export function ObserveSlots({
                 <span className="font-num text-[10px] text-fg-3" aria-hidden>
                   {i + 1}
                 </span>
-                <button type="button" onClick={() => onUnpin(gift.id)} aria-label={t('observeSlotClear', lang, { name })} className="text-fg-3 hover:text-fg">
+                <button
+                  type="button"
+                  onClick={() => onUnpin(gift.id)}
+                  aria-label={t('observeSlotClear', lang, { name })}
+                  className="text-fg-3 hover:text-fg"
+                >
                   <X size={11} />
                 </button>
               </>
@@ -99,11 +110,20 @@ export function ObserveSlots({
               </button>
             )}
             {open === i ? (
-              <DetailSurface id={popoverId(i)} mode="popover" label={t('observeSlotAdd', lang)} closeLabel={t('routeClose', lang)} onClose={() => setOpenSlot(null)}>
+              <DetailSurface
+                id={popoverId(i)}
+                mode="popover"
+                label={t('observeSlotAdd', lang)}
+                closeLabel={t('routeClose', lang)}
+                onClose={() => setOpenSlot(null)}
+              >
                 {candidates.length === 0 ? (
                   <p className="text-xs text-fg-3">{t('observeSlotNone', lang)}</p>
                 ) : (
-                  <ul className="flex max-h-[50dvh] flex-col gap-1 overflow-y-auto" data-testid="observe-candidates">
+                  <ul
+                    className="flex max-h-[50dvh] flex-col gap-1 overflow-y-auto"
+                    data-testid="observe-candidates"
+                  >
                     {candidates.map((id) => {
                       const candidate = indexes.giftById.get(id);
                       if (!candidate) return null;

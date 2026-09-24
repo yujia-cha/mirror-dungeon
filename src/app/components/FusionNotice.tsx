@@ -33,8 +33,15 @@ export function FusionNotice({
     <Notice strong>
       <div className="flex flex-col gap-2" data-testid="fusion-notice">
         <div className="flex items-start gap-2">
-          <span className="flex-1">{t('trackerFusionNotice', lang, { a: consumption.aCount, b: consumption.bCount })}</span>
-          <button type="button" onClick={onClose} aria-label={t('routeClose', lang)} className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-full hover:bg-surface-2">
+          <span className="flex-1">
+            {t('trackerFusionNotice', lang, { a: consumption.aCount, b: consumption.bCount })}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('routeClose', lang)}
+            className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-full hover:bg-surface-2"
+          >
             <X size={13} aria-hidden />
           </button>
         </div>
@@ -47,7 +54,12 @@ export function FusionNotice({
                 <li key={id} className="flex items-center gap-2">
                   <GiftIcon gift={held} size={20} status="got" lang={lang} />
                   <span className="min-w-0 flex-1 truncate text-sm">{pick(held.name, lang)}</span>
-                  <Button size="sm" variant="secondary" onClick={() => onUnmark(id)} ariaLabel={`${pick(held.name, lang)} ${t('trackerUnmark', lang)}`}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onUnmark(id)}
+                    ariaLabel={`${pick(held.name, lang)} ${t('trackerUnmark', lang)}`}
+                  >
                     {t('trackerUnmark', lang)}
                   </Button>
                 </li>

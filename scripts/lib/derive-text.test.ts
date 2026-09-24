@@ -31,11 +31,15 @@ describe('keywordsInSkillText', () => {
     expect(base(skill(1000101, '[WhenUse] 자신의 [Charge] 횟수를 2 소모하여, 코인 위력 +1'))).toEqual([]);
     expect(base(skill(1000101, '[BeforeUse] 자신의 [Charge] 횟수가 15 이상이면 발동'))).toEqual([]);
     // An enumeration offers a choice; naming a keyword there is not inflicting it.
-    expect(base(skill(1000101, '[Combustion], [Laceration], [Sinking] 중 무작위 1개의 횟수 2 증가'))).toEqual([]);
+    expect(base(skill(1000101, '[Combustion], [Laceration], [Sinking] 중 무작위 1개의 횟수 2 증가'))).toEqual(
+      [],
+    );
   });
 
   it('reads the markup out before matching, so a highlighted level does not hide the grant', () => {
-    expect(base(skill(1000101, '', '[OnSucceedAttack] [Burst] <style="highlight">2</style> 부여'))).toEqual(['Burst']);
+    expect(base(skill(1000101, '', '[OnSucceedAttack] [Burst] <style="highlight">2</style> 부여'))).toEqual([
+      'Burst',
+    ]);
   });
 
   it('keeps 특수 variants apart from the base keyword', () => {
@@ -88,7 +92,12 @@ describe('deriveIdentityKeywordsFromText', () => {
   });
 
   it('still reads plain 탄환, whose ids carry no family prefix', () => {
-    const skills = [skill(1061101, '[WhenUse] [Bullet] 1 소모'), skill(1061102, '[WhenUse] [BulletLament] 1 소모')];
-    expect(deriveIdentityKeywordsFromText(skills, variants)).toEqual({ Bullet: { skills: 2, specialSkills: 0 } });
+    const skills = [
+      skill(1061101, '[WhenUse] [Bullet] 1 소모'),
+      skill(1061102, '[WhenUse] [BulletLament] 1 소모'),
+    ];
+    expect(deriveIdentityKeywordsFromText(skills, variants)).toEqual({
+      Bullet: { skills: 2, specialSkills: 0 },
+    });
   });
 });

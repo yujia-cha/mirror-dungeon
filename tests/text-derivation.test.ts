@@ -19,7 +19,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { identitiesFileSchema, type IdentityKeywordId } from '../src/core/schema.ts';
 import { deriveIdentityKeywords, type IdentityKeywordCounts } from '../scripts/lib/derive.ts';
-import { deriveIdentityKeywordsFromText, identityIdOfSkill, skillsOfIdentity } from '../scripts/lib/derive-text.ts';
+import {
+  deriveIdentityKeywordsFromText,
+  identityIdOfSkill,
+  skillsOfIdentity,
+} from '../scripts/lib/derive-text.ts';
 import {
   readLocalizedPersonalitySkills,
   readPersonalities,
@@ -108,7 +112,11 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
       .sort((a, b) => a - b);
     // Set equality both ways: a new identity drifting fails, and so does a pinned one that starts
     // agreeing, so the list cannot rot.
-    expect(diverging).toEqual(Object.keys(KNOWN_DIVERGENCES).map(Number).sort((a, b) => a - b));
+    expect(diverging).toEqual(
+      Object.keys(KNOWN_DIVERGENCES)
+        .map(Number)
+        .sort((a, b) => a - b),
+    );
   });
 
   // The audit trail for every identity the static data does not ship: what the app serves has to be
@@ -126,7 +134,9 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
     );
     expect(derived).toEqual(expected);
     const shipped = identities.find((identity) => identity.id === id);
-    expect(shipped?.keywords).toEqual(derived as Record<IdentityKeywordId, { skills: number; specialSkills: number }>);
+    expect(shipped?.keywords).toEqual(
+      derived as Record<IdentityKeywordId, { skills: number; specialSkills: number }>,
+    );
     expect(shipped?.keywordSource).toBe('backfilled');
   });
 

@@ -61,7 +61,10 @@ test('a long press picks a chip up and drops it on an observation slot', async (
   await page.waitForTimeout(450);
   await expect(page.getByTestId('chip-ghost')).toBeVisible();
   for (let i = 1; i <= 8; i += 1) {
-    await touch('touchMove', { x: start.x + ((end.x - start.x) * i) / 8, y: start.y + ((end.y - start.y) * i) / 8 });
+    await touch('touchMove', {
+      x: start.x + ((end.x - start.x) * i) / 8,
+      y: start.y + ((end.y - start.y) * i) / 8,
+    });
   }
   await touch('touchEnd');
 

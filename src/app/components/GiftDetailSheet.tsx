@@ -22,7 +22,8 @@ import { Button } from './ui.tsx';
 function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): string {
   const parts = [t(badgeFor(gift.acquisition.kind).label, lang)];
   const packId = gift.acquisition.exclusiveTo[0] ?? gift.acquisition.clearRewardOf ?? null;
-  if (packId !== null && packId !== undefined) parts.push(t('giftPackOnly', lang, { name: pick(indexes.packById.get(packId)?.name, lang) }));
+  if (packId !== null && packId !== undefined)
+    parts.push(t('giftPackOnly', lang, { name: pick(indexes.packById.get(packId)?.name, lang) }));
   return parts.join(' · ');
 }
 
@@ -30,14 +31,28 @@ function Pill({ id, indexes, lang }: { id: number; indexes: GameIndexes; lang: L
   const gift = indexes.giftById.get(id);
   if (!gift) return null;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pl-1 pr-2 text-xs" data-testid="recipe-item" data-gift={id}>
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pl-1 pr-2 text-xs"
+      data-testid="recipe-item"
+      data-gift={id}
+    >
       <GiftIcon gift={gift} size={20} lang={lang} />
       {pick(gift.name, lang)}
     </span>
   );
 }
 
-function Recipe({ gift, data, indexes, lang }: { gift: Gift; data: GameData; indexes: GameIndexes; lang: Lang }) {
+function Recipe({
+  gift,
+  data,
+  indexes,
+  lang,
+}: {
+  gift: Gift;
+  data: GameData;
+  indexes: GameIndexes;
+  lang: Lang;
+}) {
   const slots = data.rules.fusion.maxShopSlots;
   const ingredients = chooseRecipe(gift, indexes, slots);
   const mixed = gift.fusion?.mixed ?? null;
@@ -45,17 +60,34 @@ function Recipe({ gift, data, indexes, lang }: { gift: Gift; data: GameData; ind
   return (
     <div className="flex flex-col gap-2 px-2.5 pb-2.5 pt-2">
       {mixed && !ingredients ? (
-        <p className="text-xs text-fg-2">{t('giftMixedRecipe', lang, { a: mixed.aCount, aOf: mixed.aPool.length, b: mixed.bCount, bOf: mixed.bPool.length })}</p>
+        <p className="text-xs text-fg-2">
+          {t('giftMixedRecipe', lang, {
+            a: mixed.aCount,
+            aOf: mixed.aPool.length,
+            b: mixed.bCount,
+            bOf: mixed.bPool.length,
+          })}
+        </p>
       ) : null}
-      <div className="flex flex-wrap gap-1.5">{(ingredients ?? []).map((id, i) => <Pill key={`${id}-${i}`} id={id} indexes={indexes} lang={lang} />)}</div>
+      <div className="flex flex-wrap gap-1.5">
+        {(ingredients ?? []).map((id, i) => (
+          <Pill key={`${id}-${i}`} id={id} indexes={indexes} lang={lang} />
+        ))}
+      </div>
       {(ingredients ?? []).map((id) => {
         const child = indexes.giftById.get(id);
         const sub = child ? chooseRecipe(child, indexes, slots) : null;
         if (!child || !sub) return null;
         return (
           <div key={`sub-${id}`} className="ml-3 flex flex-col gap-1 border-l border-line pl-2.5">
-            <span className="text-[11px] text-fg-3">{t('giftSubRecipe', lang, { name: pick(child.name, lang) })}</span>
-            <div className="flex flex-wrap gap-1.5">{sub.map((subId, i) => <Pill key={`${subId}-${i}`} id={subId} indexes={indexes} lang={lang} />)}</div>
+            <span className="text-[11px] text-fg-3">
+              {t('giftSubRecipe', lang, { name: pick(child.name, lang) })}
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {sub.map((subId, i) => (
+                <Pill key={`${subId}-${i}`} id={subId} indexes={indexes} lang={lang} />
+              ))}
+            </div>
           </div>
         );
       })}
@@ -106,7 +138,10 @@ export function GiftDetailSheet({
   const canObserve = observable(gift, data.rules);
   const observeFull = !pinned && observedGifts.length >= observeMax;
   const hasRecipe = Boolean(gift.fusion && (gift.fusion.recipes.length > 0 || gift.fusion.mixed));
-  const blockedBy = blocked && !selected ? t('giftBlockedIncluded', lang, { name: pick(indexes.giftById.get(blocked.by)?.name, lang) }) : undefined;
+  const blockedBy =
+    blocked && !selected
+      ? t('giftBlockedIncluded', lang, { name: pick(indexes.giftById.get(blocked.by)?.name, lang) })
+      : undefined;
 
   return (
     <DetailSurface mode="sheet" label={name} closeLabel={t('routeClose', lang)} onClose={onClose}>
@@ -139,7 +174,13 @@ export function GiftDetailSheet({
                 onClick={() => toggleObserved(gift.id, { max: observeMax, observable: () => canObserve })}
                 disabled={!canObserve || observeFull}
                 ariaLabel={t('giftsObserve', lang, { name })}
-                title={!canObserve ? t('giftsObserveNotAllowed', lang) : observeFull ? t('giftsObserveFull', lang, { max: observeMax }) : undefined}
+                title={
+                  !canObserve
+                    ? t('giftsObserveNotAllowed', lang)
+                    : observeFull
+                      ? t('giftsObserveFull', lang, { max: observeMax })
+                      : undefined
+                }
               >
                 <Eye size={13} aria-hidden />
                 {t('settingsObserved', lang)}
@@ -149,13 +190,20 @@ export function GiftDetailSheet({
         </div>
 
         {reports.length > 0 ? (
-          <div className="flex flex-col gap-1 rounded-sm bg-surface-2 px-2.5 py-2" data-testid="gift-conditions">
+          <div
+            className="flex flex-col gap-1 rounded-sm bg-surface-2 px-2.5 py-2"
+            data-testid="gift-conditions"
+          >
             {reports.map((report, i) => {
               const met = report.satisfied;
               const extra = reachedTierText(report, lang);
               return (
                 <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
-                  <span className={`font-num font-semibold ${!report.gate ? 'text-fg-2' : met ? 'text-ok' : 'text-bad'}`}>{conditionShort(report, data.enums, lang)}</span>
+                  <span
+                    className={`font-num font-semibold ${!report.gate ? 'text-fg-2' : met ? 'text-ok' : 'text-bad'}`}
+                  >
+                    {conditionShort(report, data.enums, lang)}
+                  </span>
                   <span className="text-fg-3">{conditionText(report, data.enums, lang)}</span>
                   {extra ? <span className="text-fg-3">{extra}</span> : null}
                 </div>
@@ -167,10 +215,15 @@ export function GiftDetailSheet({
         {/* `whitespace-pre-line`: the game writes a gift as several clauses separated by blank lines,
             with 「- 」 sub-lines under some of them. Without it CSS folds all of that into one run-on
             paragraph. */}
-        <p className="whitespace-pre-line text-xs leading-relaxed text-fg-2">{renderEffect(gift.desc, data.enums, lang)}</p>
+        <p className="whitespace-pre-line text-xs leading-relaxed text-fg-2">
+          {renderEffect(gift.desc, data.enums, lang)}
+        </p>
 
         {entangled.length > 0 ? (
-          <div className="flex items-start gap-2 rounded-sm border border-line-strong px-2.5 py-2 text-xs text-fg-2" data-testid="gift-entangled">
+          <div
+            className="flex items-start gap-2 rounded-sm border border-line-strong px-2.5 py-2 text-xs text-fg-2"
+            data-testid="gift-entangled"
+          >
             <Link2 size={13} aria-hidden className="mt-0.5 flex-none" />
             <span>
               <b className="text-fg">{t('giftEntangled', lang)}</b>{' '}
@@ -190,15 +243,24 @@ export function GiftDetailSheet({
           <details className="overflow-hidden rounded-sm border border-line" data-testid="gift-recipe">
             <summary className="cursor-pointer bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-fg-2">
               {t('giftMaterials', lang)}
-              {gift.fusion?.recipes[0] ? <span className="ml-1.5 font-num text-[10px] font-normal text-fg-3">{gift.fusion.recipes[0].ingredients.length}</span> : null}
+              {gift.fusion?.recipes[0] ? (
+                <span className="ml-1.5 font-num text-[10px] font-normal text-fg-3">
+                  {gift.fusion.recipes[0].ingredients.length}
+                </span>
+              ) : null}
             </summary>
             <Recipe gift={gift} data={data} indexes={indexes} lang={lang} />
             {selected ? (
-              <label className="flex items-center gap-1.5 border-t border-line px-2.5 py-2 text-xs" title={t('fusionGoalHint', lang)}>
+              <label
+                className="flex items-center gap-1.5 border-t border-line px-2.5 py-2 text-xs"
+                title={t('fusionGoalHint', lang)}
+              >
                 <input
                   type="checkbox"
                   checked={fusionGoal[gift.id] !== 'resultOnly'}
-                  onChange={(event) => setFusionGoal(gift.id, event.target.checked ? 'withIngredients' : 'resultOnly')}
+                  onChange={(event) =>
+                    setFusionGoal(gift.id, event.target.checked ? 'withIngredients' : 'resultOnly')
+                  }
                   aria-label={`${name} ${t('fusionGoalIngredients', lang)}`}
                   className="h-[14px] w-[14px] accent-[var(--color-ink)]"
                 />

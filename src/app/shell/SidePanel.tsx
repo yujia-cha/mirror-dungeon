@@ -19,7 +19,17 @@ export interface PanelTab<Id extends string> {
   label: string;
 }
 
-export function TabBar<Id extends string>({ tabs, tab, onTab, label }: { tabs: PanelTab<Id>[]; tab: Id; onTab: (id: Id) => void; label: string }) {
+export function TabBar<Id extends string>({
+  tabs,
+  tab,
+  onTab,
+  label,
+}: {
+  tabs: PanelTab<Id>[];
+  tab: Id;
+  onTab: (id: Id) => void;
+  label: string;
+}) {
   const strip = useRef<HTMLDivElement | null>(null);
   const index = Math.max(
     0,

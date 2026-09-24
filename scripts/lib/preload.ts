@@ -27,5 +27,7 @@ export function dataPreloadPaths(dataDir: string): string[] {
 }
 
 export function preloadTags(paths: string[]): string {
-  return paths.map((path) => `<link rel="preload" href="./${path}" as="fetch" crossorigin="anonymous" />`).join('\n    ');
+  return paths
+    .map((path) => `<link rel="preload" href="./${path}" as="fetch" crossorigin="anonymous" />`)
+    .join('\n    ');
 }

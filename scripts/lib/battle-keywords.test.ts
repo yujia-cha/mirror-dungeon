@@ -9,14 +9,18 @@ const names = new Map([
 ]);
 
 describe('localizeBuffTokens', () => {
-  it('writes the game\'s own name over a bracketed buff id', () => {
+  it("writes the game's own name over a bracketed buff id", () => {
     expect(localizeBuffTokens('[Combustion] 위력 +1', names)).toBe('[화상] 위력 +1');
-    expect(localizeBuffTokens('[Switch_Vibration]과 [AttackUp]', names)).toBe('[진동 전환]과 [공격 레벨 증가]');
+    expect(localizeBuffTokens('[Switch_Vibration]과 [AttackUp]', names)).toBe(
+      '[진동 전환]과 [공격 레벨 증가]',
+    );
   });
 
   it('leaves an id the table does not name alone, and says which', () => {
     const unnamed = new Set<string>();
-    expect(localizeBuffTokens('[BloodDinner] 20 소모, [Combustion] 5', names, unnamed)).toBe('[BloodDinner] 20 소모, [화상] 5');
+    expect(localizeBuffTokens('[BloodDinner] 20 소모, [Combustion] 5', names, unnamed)).toBe(
+      '[BloodDinner] 20 소모, [화상] 5',
+    );
     expect([...unnamed]).toEqual(['BloodDinner']);
   });
 

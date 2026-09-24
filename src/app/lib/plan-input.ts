@@ -60,8 +60,12 @@ export function planInputFor(
     ? {
         pinnedPacks: { ...state.options.pinnedPacks, ...run.visits },
         currentFloor: run.currentFloor,
-        ownedGifts: Object.entries(run.giftStatus).filter(([, s]) => s === 'got').map(([id]) => Number(id)),
-        unobtainableGifts: Object.entries(run.giftStatus).filter(([, s]) => s === 'failed').map(([id]) => Number(id)),
+        ownedGifts: Object.entries(run.giftStatus)
+          .filter(([, s]) => s === 'got')
+          .map(([id]) => Number(id)),
+        unobtainableGifts: Object.entries(run.giftStatus)
+          .filter(([, s]) => s === 'failed')
+          .map(([id]) => Number(id)),
       }
     : { currentFloor: 1, ownedGifts: [], unobtainableGifts: [] };
   return {

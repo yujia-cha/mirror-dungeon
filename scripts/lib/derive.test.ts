@@ -282,7 +282,13 @@ describe('deriveUpgradeOf', () => {
 
   it('points a same-keyword, lower-tier ingredient at its single result', () => {
     const recipes = new Map([
-      [9088, [[9003, 9157], [9003, 9101, 9155]]],
+      [
+        9088,
+        [
+          [9003, 9157],
+          [9003, 9101, 9155],
+        ],
+      ],
       [9157, [[9101, 9155]]],
     ]);
     const out = deriveUpgradeOf(recipes, gifts);
@@ -304,9 +310,7 @@ describe('deriveUpgradeOf', () => {
   });
 
   it('ignores keyword mismatches, the None keyword and equal or higher tiers', () => {
-    const recipes = new Map([
-      [9088, [[9999, 9089, 9998]]],
-    ]);
+    const recipes = new Map([[9088, [[9999, 9089, 9998]]]]);
     const out = deriveUpgradeOf(recipes, gifts);
     expect(out.size).toBe(0);
   });

@@ -25,7 +25,9 @@ export function ingredientsOf(gift: Gift, indexes: GameIndexes, maxShopSlots: nu
   const seen = new Set<number>();
   const walk = (current: Gift): void => {
     // A mixed recipe (달의 기억) picks from pools, so every candidate counts as possibly consumed.
-    const direct = chooseRecipe(current, indexes, maxShopSlots) ?? (current.fusion?.mixed ? [...current.fusion.mixed.aPool, ...current.fusion.mixed.bPool] : null);
+    const direct =
+      chooseRecipe(current, indexes, maxShopSlots) ??
+      (current.fusion?.mixed ? [...current.fusion.mixed.aPool, ...current.fusion.mixed.bPool] : null);
     if (!direct) return;
     for (const id of direct) {
       if (seen.has(id)) continue;
@@ -59,7 +61,11 @@ export function ingredientTree(indexes: GameIndexes, maxShopSlots: number): Map<
  * ingredient of another is left out: the recipe already says so, and the list would read as a
  * conflict where there is none.
  */
-export function entanglements(wanted: readonly number[], indexes: GameIndexes, maxShopSlots: number): Map<number, Entanglement[]> {
+export function entanglements(
+  wanted: readonly number[],
+  indexes: GameIndexes,
+  maxShopSlots: number,
+): Map<number, Entanglement[]> {
   const sets = new Map<number, Set<number>>();
   for (const id of wanted) {
     const gift = indexes.giftById.get(id);
@@ -104,7 +110,11 @@ export interface Block {
  *
  * Only unchosen gifts are blocked: a goal the player already picked stays theirs to drop.
  */
-export function blockedGifts(wanted: readonly number[], indexes: GameIndexes, maxShopSlots: number): Map<number, Block> {
+export function blockedGifts(
+  wanted: readonly number[],
+  indexes: GameIndexes,
+  maxShopSlots: number,
+): Map<number, Block> {
   const chosen = new Set(wanted);
   const sets = new Map<number, Set<number>>();
   const ingredients = (id: number): Set<number> => {

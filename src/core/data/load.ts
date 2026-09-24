@@ -49,7 +49,8 @@ async function fetchJson(url: string, label: string): Promise<unknown> {
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   } catch (cause) {
-    const timedOut = cause instanceof DOMException && (cause.name === 'TimeoutError' || cause.name === 'AbortError');
+    const timedOut =
+      cause instanceof DOMException && (cause.name === 'TimeoutError' || cause.name === 'AbortError');
     throw new DataLoadError(timedOut ? 'timeout' : 'network', label);
   }
   if (!response.ok) throw new DataLoadError('http', label, response.status);
@@ -69,7 +70,10 @@ async function fetchJson(url: string, label: string): Promise<unknown> {
  * card. This is the cheap middle: the shape each file must have for any reader to work.
  */
 function assertShape(label: string, value: unknown, kind: 'array' | 'object'): void {
-  const ok = kind === 'array' ? Array.isArray(value) : value !== null && typeof value === 'object' && !Array.isArray(value);
+  const ok =
+    kind === 'array'
+      ? Array.isArray(value)
+      : value !== null && typeof value === 'object' && !Array.isArray(value);
   if (!ok) throw new DataLoadError('malformed', label);
 }
 
@@ -119,7 +123,9 @@ export async function loadGameData(
 
   const [[meta, rules, gifts, packs], [enums, identities]] = await Promise.all([
     Promise.all(
-      SEASON_FILES.map((name) => fetchJson(`${base}data/md${season}/${name}.json`, `md${season}/${name}.json`)),
+      SEASON_FILES.map((name) =>
+        fetchJson(`${base}data/md${season}/${name}.json`, `md${season}/${name}.json`),
+      ),
     ),
     Promise.all(SHARED_FILES.map((name) => fetchJson(`${base}data/${name}.json`, `${name}.json`))),
   ]);

@@ -60,7 +60,9 @@ const VERSION_MARKER = "const VERSION = 'dev';";
  */
 export function injectPrecache(source: string, list: string[]): string {
   if (!source.includes(LIST_MARKER) || !source.includes(VERSION_MARKER)) {
-    throw new Error('sw.js: precache markers not found — `const PRECACHE = [];` and `const VERSION = \'dev\';` must stay verbatim');
+    throw new Error(
+      "sw.js: precache markers not found — `const PRECACHE = [];` and `const VERSION = 'dev';` must stay verbatim",
+    );
   }
   const version = createHash('sha256').update(list.join('\n')).digest('hex').slice(0, 12);
   return source

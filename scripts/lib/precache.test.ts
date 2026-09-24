@@ -63,7 +63,9 @@ describe('injectPrecache', () => {
     const b = injectPrecache(source, ['./', 'assets/a-22222222.js']);
     expect(a).toContain('const PRECACHE = ["./","assets/a-11111111.js"];');
     expect(a).not.toContain("const VERSION = 'dev';");
-    expect(a.match(/const VERSION = '([0-9a-f]+)'/)![1]).not.toBe(b.match(/const VERSION = '([0-9a-f]+)'/)![1]);
+    expect(a.match(/const VERSION = '([0-9a-f]+)'/)![1]).not.toBe(
+      b.match(/const VERSION = '([0-9a-f]+)'/)![1],
+    );
   });
 
   it('refuses a source whose markers were edited away', () => {

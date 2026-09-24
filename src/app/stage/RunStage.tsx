@@ -77,7 +77,9 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
         <div className="flex flex-wrap items-baseline gap-2">
           <span className="text-sm font-semibold">{t('stageEnterable', lang)}</span>
         </div>
-        {shown && routePacks.length === 0 && stageMode === 'undecided' ? <p className="text-xs text-fg-3">{t('stageNoRoutePack', lang)}</p> : null}
+        {shown && routePacks.length === 0 && stageMode === 'undecided' ? (
+          <p className="text-xs text-fg-3">{t('stageNoRoutePack', lang)}</p>
+        ) : null}
         <div className="flex flex-wrap items-start gap-2.5 pb-3" data-testid="stage-packs">
           {routePacks.map(({ packId, alternatives }) => {
             const pack = indexes.packById.get(packId);
@@ -106,7 +108,12 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
           onEnter={enter}
         />
         {detail !== null ? (
-          <DetailSurface mode="sheet" label={pick(indexes.packById.get(detail)?.name, lang)} closeLabel={t('routeClose', lang)} onClose={() => setDetail(null)}>
+          <DetailSurface
+            mode="sheet"
+            label={pick(indexes.packById.get(detail)?.name, lang)}
+            closeLabel={t('routeClose', lang)}
+            onClose={() => setDetail(null)}
+          >
             <PackSheetBody packId={detail} ctx={ctx} />
           </DetailSurface>
         ) : null}

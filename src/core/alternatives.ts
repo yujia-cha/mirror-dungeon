@@ -39,7 +39,10 @@ export function planAlternatives(
   if (conflicts.length === 0) return [];
 
   const wantedIds = new Set(input.wanted.map((w) => w.giftId));
-  const options = base.floors.length > 0 ? { ...input.options, lastFloor: base.floors[base.floors.length - 1]!.floor } : input.options;
+  const options =
+    base.floors.length > 0
+      ? { ...input.options, lastFloor: base.floors[base.floors.length - 1]!.floor }
+      : input.options;
 
   // A fusion ingredient that lost its floor drops the wanted result it feeds, not itself.
   const roots = wantedRoots({ ...input, options }, data, indexes);
@@ -50,9 +53,11 @@ export function planAlternatives(
   for (const giftId of conflicts) {
     const packs = (indexes.packsByGift.get(giftId) ?? []).filter((id) => !banned.has(id));
     for (const floor of base.floors) {
-      const offered = indexes.packsByFloor[modeForFloor(floor.floor, options, indexes)].get(floor.floor) ?? [];
+      const offered =
+        indexes.packsByFloor[modeForFloor(floor.floor, options, indexes)].get(floor.floor) ?? [];
       const pinned = options.pinnedPacks[floor.floor];
-      if (packs.some((id) => offered.includes(id) && (pinned === undefined || pinned === id))) contested.add(floor.floor);
+      if (packs.some((id) => offered.includes(id) && (pinned === undefined || pinned === id)))
+        contested.add(floor.floor);
     }
   }
   const occupants = base.floors
@@ -71,9 +76,13 @@ export function planAlternatives(
 
   const covered = (plan: RoutePlan, wanted: number[]): string => {
     const unresolved = new Set(plan.unresolved.map((u) => u.giftId));
-    return wanted.filter((id) => !unresolved.has(id)).sort((a, b) => a - b).join(',');
+    return wanted
+      .filter((id) => !unresolved.has(id))
+      .sort((a, b) => a - b)
+      .join(',');
   };
-  const unresolvedKey = (plan: RoutePlan): string => plan.unresolved.map((u) => `${u.giftId}:${u.reason}`).join(',');
+  const unresolvedKey = (plan: RoutePlan): string =>
+    plan.unresolved.map((u) => `${u.giftId}:${u.reason}`).join(',');
   const mainCovered = covered(base, [...wantedIds]);
   const mainUnresolved = unresolvedKey(base);
 
@@ -82,7 +91,10 @@ export function planAlternatives(
   for (const giftId of candidates) {
     const wanted = input.wanted.filter((w) => w.giftId !== giftId);
     const plan = planRoute({ ...input, wanted, options }, data, indexes);
-    const key = covered(plan, wanted.map((w) => w.giftId));
+    const key = covered(
+      plan,
+      wanted.map((w) => w.giftId),
+    );
     if (key === mainCovered && unresolvedKey(plan) === mainUnresolved) continue;
     if (seenCovered.has(key)) continue;
     seenCovered.add(key);

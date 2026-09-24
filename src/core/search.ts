@@ -187,7 +187,14 @@ export function assignPacks(input: SearchInput): SearchResult {
       unresolvedKeys.push(key);
       continue;
     }
-    candidates.push({ key, giftId: requirement.giftId, packId: null, required: requirement.required, packs, freePack });
+    candidates.push({
+      key,
+      giftId: requirement.giftId,
+      packId: null,
+      required: requirement.required,
+      packs,
+      freePack,
+    });
   }
 
   /*
@@ -434,7 +441,9 @@ export function assignPacks(input: SearchInput): SearchResult {
     if (floor !== undefined) supplier.set(candidate.key!, floor);
   }
   const missedKeys = [...unresolvedKeys, ...best.missed].sort(
-    (a, b) => (giftOfKey.get(a) ?? Number(a.split(':')[0])) - (giftOfKey.get(b) ?? Number(b.split(':')[0])) || a.localeCompare(b, 'en'),
+    (a, b) =>
+      (giftOfKey.get(a) ?? Number(a.split(':')[0])) - (giftOfKey.get(b) ?? Number(b.split(':')[0])) ||
+      a.localeCompare(b, 'en'),
   );
 
   return {

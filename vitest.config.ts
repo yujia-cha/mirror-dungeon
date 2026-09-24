@@ -35,7 +35,14 @@ export default defineConfig({
     // were already opting out one file at a time with `@vitest-environment node`.
     projects: [
       { extends: true, test: { name: 'app', environment: 'jsdom', include: ['src/app/**/*.test.{ts,tsx}'] } },
-      { extends: true, test: { name: 'node', environment: 'node', include: ['src/core/**/*.test.ts', 'scripts/**/*.test.ts', 'tests/**/*.test.{ts,tsx}'] } },
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          environment: 'node',
+          include: ['src/core/**/*.test.ts', 'scripts/**/*.test.ts', 'tests/**/*.test.{ts,tsx}'],
+        },
+      },
     ],
   },
 });

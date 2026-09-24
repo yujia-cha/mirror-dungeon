@@ -21,7 +21,10 @@ import type { ArtManifest } from '../../core/schema.ts';
 
 export const ASSET_BASE: string | null = import.meta.env.VITE_ASSET_BASE?.replace(/\/$/, '') || null;
 
-let localArt: { gifts: ReadonlySet<number>; packs: ReadonlySet<string> } = { gifts: new Set(), packs: new Set() };
+let localArt: { gifts: ReadonlySet<number>; packs: ReadonlySet<string> } = {
+  gifts: new Set(),
+  packs: new Set(),
+};
 
 /** Hand the app the manifest it loaded. Absent or unreadable simply means no local art. */
 export function setArtManifest(manifest: ArtManifest | null): void {

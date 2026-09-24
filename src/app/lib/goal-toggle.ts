@@ -22,5 +22,8 @@ export interface CarryIndex {
 
 /** The gift ids a selection of `gift` takes out of the goal list with it. */
 export function carriedBy(gift: Gift, { indexes, childrenOf, maxShopSlots }: CarryIndex): number[] {
-  return [...(childrenOf.get(gift.id) ?? []).map((g) => g.id), ...(gift.fusion ? ingredientsOf(gift, indexes, maxShopSlots) : [])];
+  return [
+    ...(childrenOf.get(gift.id) ?? []).map((g) => g.id),
+    ...(gift.fusion ? ingredientsOf(gift, indexes, maxShopSlots) : []),
+  ];
 }

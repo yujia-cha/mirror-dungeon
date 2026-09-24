@@ -1,9 +1,9 @@
-# Prettier is available as `npm run format`, but it is NOT a gate — `npm run check` does not run
-# `format:check`, and CI does not either. The repository has never been formatted with it: running
-# it today rewrites 142 files (+4347/-1712), and much of that is hand-aligned comment prose, tables
-# and code samples that the tool reflows into something harder to read. Adopting it would be a
-# deliberate, separate change with its own review, not a side effect of a cleanup milestone.
-# See docs/review/M48.md.
+# Prettier formats **code only** (M58b): `npm run format` / `format:check` pass the globs
+# `**/*.{ts,tsx,js,mjs}`, and `npm run check` and CI run the check.
+#
+# M48 held adoption back because the tool reflowed hand-aligned prose, tables and code samples into
+# something harder to read. That was the Markdown (docs/review alone was 32 files). Prettier does not
+# rewrap code comments, so formatting code loses none of that; Markdown and JSON are left as written.
 dist
 node_modules
 data/raw

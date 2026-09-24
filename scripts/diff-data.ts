@@ -84,11 +84,7 @@ if (prevMeta) {
   }
 }
 
-diffSet(
-  'gifts',
-  fromGit<Gift[]>(outRelPath('gifts', season)),
-  readJson<Gift[]>(outPath('gifts', season)),
-);
+diffSet('gifts', fromGit<Gift[]>(outRelPath('gifts', season)), readJson<Gift[]>(outPath('gifts', season)));
 diffSet(
   'packs',
   fromGit<ThemePack[]>(outRelPath('packs', season)),

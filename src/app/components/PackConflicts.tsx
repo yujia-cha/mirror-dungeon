@@ -34,11 +34,22 @@ export interface PackConflictsProps {
   detailMode?: DetailMode;
 }
 
-export function PackConflicts({ groups, others, ctx, removeWanted, observeAction, headerActions, onAction, onSeeVariants, detailMode = 'sheet' }: PackConflictsProps) {
+export function PackConflicts({
+  groups,
+  others,
+  ctx,
+  removeWanted,
+  observeAction,
+  headerActions,
+  onAction,
+  onSeeVariants,
+  detailMode = 'sheet',
+}: PackConflictsProps) {
   const { lang } = ctx;
   const [openPack, setOpenPack] = useState<number | null>(null);
   const banned = [...ctx.banned].sort((a, b) => a - b);
-  const total = groups.reduce((n, g) => n + g.candidates.filter((c) => c.assignedAt === null).length, 0) + others.length;
+  const total =
+    groups.reduce((n, g) => n + g.candidates.filter((c) => c.assignedAt === null).length, 0) + others.length;
   if (groups.length === 0 && others.length === 0 && banned.length === 0) return null;
 
   const iconButton = (label: string, onClick: () => void, icon: ReactNode, pressed?: boolean) => (
@@ -57,7 +68,12 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
 
   const packSheet = (packId: number): ReactNode =>
     openPack === packId ? (
-      <DetailSurface mode={detailMode} label={ctx.packName(packId)} closeLabel={t('routeClose', lang)} onClose={() => setOpenPack(null)}>
+      <DetailSurface
+        mode={detailMode}
+        label={ctx.packName(packId)}
+        closeLabel={t('routeClose', lang)}
+        onClose={() => setOpenPack(null)}
+      >
         <PackSheetBody packId={packId} ctx={ctx} />
       </DetailSurface>
     ) : null;
@@ -69,7 +85,9 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
         <span className="text-sm font-semibold">
           {t('routeUnresolved', lang)} <span className="font-num text-xs text-fg-3">{total}</span>
         </span>
-        {groups.length > 0 ? <span className="text-xs text-fg-3">· {t('routeConflicts', lang, { n: groups.length })}</span> : null}
+        {groups.length > 0 ? (
+          <span className="text-xs text-fg-3">· {t('routeConflicts', lang, { n: groups.length })}</span>
+        ) : null}
         <span className="ml-auto flex flex-wrap gap-1.5">
           {headerActions.map((action) => (
             <Button key={action.label} size="sm" onClick={() => onAction(action)}>
@@ -90,10 +108,23 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
         const from = group.floors[0]!;
         const to = group.floors[group.floors.length - 1]!;
         return (
-          <div key={from} className="flex flex-col gap-2 border-b border-line px-3 py-2.5" data-testid="conflict-group" data-from={from} data-to={to}>
+          <div
+            key={from}
+            className="flex flex-col gap-2 border-b border-line px-3 py-2.5"
+            data-testid="conflict-group"
+            data-from={from}
+            data-to={to}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <Chip on>{`${from}~${to}`}</Chip>
-              <span className="text-sm font-semibold">{t('conflictHeader', lang, { from, to, slots: group.floors.length, packs: group.candidates.length })}</span>
+              <span className="text-sm font-semibold">
+                {t('conflictHeader', lang, {
+                  from,
+                  to,
+                  slots: group.floors.length,
+                  packs: group.candidates.length,
+                })}
+              </span>
             </div>
             <ul className="grid grid-cols-1 gap-2">
               {group.candidates.map((candidate) => {
@@ -108,7 +139,14 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
                     data-pack={candidate.packId}
                     data-included={included || undefined}
                   >
-                    <PackCard pack={pack} size={64} caption onOpen={setOpenPack} lang={lang} selected={ctx.preferred.has(candidate.packId)} />
+                    <PackCard
+                      pack={pack}
+                      size={64}
+                      caption
+                      onOpen={setOpenPack}
+                      lang={lang}
+                      selected={ctx.preferred.has(candidate.packId)}
+                    />
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <PackStateBadge packId={candidate.packId} ctx={ctx} />
                       <ul className="flex flex-col gap-1">
@@ -116,7 +154,12 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
                           const gift = ctx.indexes.giftById.get(giftId);
                           return gift ? (
                             <li key={giftId} className="flex items-center gap-1.5 text-xs">
-                              <GiftIcon gift={gift} size={20} judgement={ctx.judgements.get(giftId) ?? null} lang={lang} />
+                              <GiftIcon
+                                gift={gift}
+                                size={20}
+                                judgement={ctx.judgements.get(giftId) ?? null}
+                                lang={lang}
+                              />
                               <span className="truncate">{ctx.giftName(giftId)}</span>
                             </li>
                           ) : null;
@@ -137,15 +180,28 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
 
       {others.length > 0 ? (
         <div className="border-b border-line">
-          {groups.length > 0 ? <div className="px-3 pt-2 text-sm font-semibold">{t('routeOtherUnresolved', lang)}</div> : null}
+          {groups.length > 0 ? (
+            <div className="px-3 pt-2 text-sm font-semibold">{t('routeOtherUnresolved', lang)}</div>
+          ) : null}
           <ul>
             {others.map((entry) => {
               const gift = ctx.indexes.giftById.get(entry.giftId);
               const observe = observeAction(entry);
               const name = ctx.giftName(entry.giftId);
               return (
-                <li key={`${entry.giftId}-${entry.reason}`} className="flex items-start gap-2.5 border-b border-line px-3 py-2 last:border-b-0" data-testid="unresolved-row">
-                  {gift ? <GiftIcon gift={gift} size={32} judgement={ctx.judgements.get(entry.giftId) ?? null} lang={lang} /> : null}
+                <li
+                  key={`${entry.giftId}-${entry.reason}`}
+                  className="flex items-start gap-2.5 border-b border-line px-3 py-2 last:border-b-0"
+                  data-testid="unresolved-row"
+                >
+                  {gift ? (
+                    <GiftIcon
+                      gift={gift}
+                      size={32}
+                      judgement={ctx.judgements.get(entry.giftId) ?? null}
+                      lang={lang}
+                    />
+                  ) : null}
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">{name}</span>
@@ -155,7 +211,11 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
                   </div>
                   <span className="flex flex-none gap-1">
                     {observe ? iconButton(observe.label, () => onAction(observe), <Eye size={13} />) : null}
-                    {iconButton(t('removeFromSelection', lang, { name }), () => removeWanted(entry.giftId), <X size={13} />)}
+                    {iconButton(
+                      t('removeFromSelection', lang, { name }),
+                      () => removeWanted(entry.giftId),
+                      <X size={13} />,
+                    )}
                   </span>
                 </li>
               );
@@ -166,12 +226,19 @@ export function PackConflicts({ groups, others, ctx, removeWanted, observeAction
 
       {banned.length > 0 ? (
         <details className="px-3 py-2" data-testid="banned" open={groups.length === 0 && others.length === 0}>
-          <summary className="cursor-pointer text-xs font-medium text-fg-2">{t('routeBannedList', lang, { n: banned.length })}</summary>
+          <summary className="cursor-pointer text-xs font-medium text-fg-2">
+            {t('routeBannedList', lang, { n: banned.length })}
+          </summary>
           <ul className="mt-1.5 flex flex-col gap-1.5">
             {banned.map((packId) => {
               const pack = ctx.indexes.packById.get(packId);
               return (
-                <li key={`pack-${packId}`} className="flex items-center gap-2 text-xs text-fg-2" data-testid="banned-pack" data-pack={packId}>
+                <li
+                  key={`pack-${packId}`}
+                  className="flex items-center gap-2 text-xs text-fg-2"
+                  data-testid="banned-pack"
+                  data-pack={packId}
+                >
                   {pack ? <PackCard pack={pack} size={20} lang={lang} /> : null}
                   <span className="line-through">{ctx.packName(packId)}</span>
                   <span className="ml-auto">

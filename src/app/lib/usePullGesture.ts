@@ -14,7 +14,14 @@
  * while `pulling` is false). A direction the caller does not allow moves with resistance and
  * never commits.
  */
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { useLatest } from './useLatest.ts';
 
 export type PullDirection = 'down' | 'up';
@@ -61,7 +68,13 @@ export function usePullGesture({
   resistance?: number;
 }): PullState & { handlers: PullHandlers } {
   const [state, setState] = useState<PullState>({ offset: 0, pulling: false, past: null });
-  const pending = useRef<{ pointerId: number; x: number; y: number; dragging: boolean; past: PullDirection | null } | null>(null);
+  const pending = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    dragging: boolean;
+    past: PullDirection | null;
+  } | null>(null);
   const commitRef = useLatest(onCommit);
   const directionsRef = useLatest(directions);
 
@@ -117,7 +130,13 @@ export function usePullGesture({
       // A release outside the window (a second monitor, another app) never reaches these
       // listeners, so a leftover candidate used to refuse every later press. A fresh press simply
       // replaces it — the abandoned one can no longer commit anything.
-      pending.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false, past: null };
+      pending.current = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        dragging: false,
+        past: null,
+      };
       setState({ offset: 0, pulling: false, past: null });
     },
   };
@@ -127,7 +146,11 @@ export function usePullGesture({
 
 /** True while the reader has asked for less motion; read live, so a change mid-session is honoured. */
 function reduceMotion(): boolean {
-  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 }
 
 /** The transform a pulled element carries, springing back when the pointer lets go short of the threshold. */

@@ -86,7 +86,8 @@ function packFloorsText(pack: ThemePack, lang: Lang): string {
 export function PackStateBadge({ packId, ctx }: { packId: number; ctx: PackContext }) {
   const at = ctx.assignedAt(packId);
   const visited = ctx.run?.visitedAt(packId) ?? null;
-  if (visited !== null) return <Badge tone="sure">{t('runVisitedShort', ctx.lang, { floor: visited })}</Badge>;
+  if (visited !== null)
+    return <Badge tone="sure">{t('runVisitedShort', ctx.lang, { floor: visited })}</Badge>;
   if (ctx.banned.has(packId)) return <Badge tone="neutral">{t('packBanned', ctx.lang)}</Badge>;
   if (at !== null)
     return (
@@ -99,12 +100,25 @@ export function PackStateBadge({ packId, ctx }: { packId: number; ctx: PackConte
 }
 
 /** Include / give up / restore for one pack. */
-export function PackActions({ packId, ctx, size = 'sm' }: { packId: number; ctx: PackContext; size?: 'sm' | 'md' }) {
+export function PackActions({
+  packId,
+  ctx,
+  size = 'sm',
+}: {
+  packId: number;
+  ctx: PackContext;
+  size?: 'sm' | 'md';
+}) {
   const [confirming, setConfirming] = useState(false);
   const name = ctx.packName(packId);
   if (ctx.banned.has(packId)) {
     return ctx.onRestore ? (
-      <Button size={size} variant="ghost" onClick={() => ctx.onRestore?.(packId)} ariaLabel={`${name} ${t('packRestore', ctx.lang)}`}>
+      <Button
+        size={size}
+        variant="ghost"
+        onClick={() => ctx.onRestore?.(packId)}
+        ariaLabel={`${name} ${t('packRestore', ctx.lang)}`}
+      >
         <RotateCcw size={12} aria-hidden />
         {t('packRestore', ctx.lang)}
       </Button>
@@ -158,7 +172,9 @@ export function PackActions({ packId, ctx, size = 'sm' }: { packId: number; ctx:
       {confirming ? (
         <ConfirmDialog
           title={t('packBan', ctx.lang)}
-          message={t('packBanConfirm', ctx.lang, { gift: withJosa(exclusiveWanted.map(ctx.giftName).join(', '), '은/는', ctx.lang) })}
+          message={t('packBanConfirm', ctx.lang, {
+            gift: withJosa(exclusiveWanted.map(ctx.giftName).join(', '), '은/는', ctx.lang),
+          })}
           confirmLabel={t('packBan', ctx.lang)}
           onConfirm={() => {
             setConfirming(false);
@@ -185,16 +201,40 @@ function GiftRow({ giftId, exclusive, ctx }: { giftId: number; exclusive: boolea
   const wanted = ctx.wanted.has(giftId);
   const pinned = ctx.observed.has(giftId);
   // Observation happens at the start of a run, so the toggle only makes sense before floor 1 is left.
-  const canObserve = wanted && ctx.onToggleObserved !== undefined && ctx.observable(giftId) && (ctx.run?.currentFloor ?? 1) === 1;
+  const canObserve =
+    wanted &&
+    ctx.onToggleObserved !== undefined &&
+    ctx.observable(giftId) &&
+    (ctx.run?.currentFloor ?? 1) === 1;
   const condition = ctx.giftTitle(giftId);
   const status = ctx.run?.giftStatus(giftId) ?? null;
   return (
-    <li className="flex flex-col gap-1.5 py-1.5" data-testid="pack-gift" data-gift={giftId} data-wanted={wanted || undefined} data-status={status ?? undefined}>
+    <li
+      className="flex flex-col gap-1.5 py-1.5"
+      data-testid="pack-gift"
+      data-gift={giftId}
+      data-wanted={wanted || undefined}
+      data-status={status ?? undefined}
+    >
       <div className="flex items-start gap-2.5">
         {ctx.run ? (
-          <GiftTile gift={gift} size={44} status={status} wanted={wanted} judgement={ctx.judgements.get(giftId) ?? null} onToggle={(next) => ctx.run?.onGiftStatus(giftId, next)} lang={ctx.lang} />
+          <GiftTile
+            gift={gift}
+            size={44}
+            status={status}
+            wanted={wanted}
+            judgement={ctx.judgements.get(giftId) ?? null}
+            onToggle={(next) => ctx.run?.onGiftStatus(giftId, next)}
+            lang={ctx.lang}
+          />
         ) : (
-          <GiftIcon gift={gift} size={44} judgement={ctx.judgements.get(giftId) ?? null} status={status} lang={ctx.lang} />
+          <GiftIcon
+            gift={gift}
+            size={44}
+            judgement={ctx.judgements.get(giftId) ?? null}
+            status={status}
+            lang={ctx.lang}
+          />
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -205,13 +245,23 @@ function GiftRow({ giftId, exclusive, ctx }: { giftId: number; exclusive: boolea
           {condition ? <span className="text-xs text-fg-2">{condition}</span> : null}
         </div>
         {canObserve ? (
-          <Button size="sm" variant={pinned ? 'primary' : 'ghost'} onClick={() => ctx.onToggleObserved?.(giftId)} ariaLabel={t('routeObservedToggle', ctx.lang, { name })}>
+          <Button
+            size="sm"
+            variant={pinned ? 'primary' : 'ghost'}
+            onClick={() => ctx.onToggleObserved?.(giftId)}
+            ariaLabel={t('routeObservedToggle', ctx.lang, { name })}
+          >
             <Eye size={12} aria-hidden />
             {pinned ? t('routeObservedPinned', ctx.lang) : t('routeObserved', ctx.lang)}
           </Button>
         ) : null}
         {ctx.onToggleWanted ? (
-          <Button size="sm" variant={wanted ? 'ghost' : 'secondary'} onClick={() => ctx.onToggleWanted?.(giftId)} ariaLabel={`${name} ${wanted ? t('giftRemoveGoal', ctx.lang) : t('giftAddGoal', ctx.lang)}`}>
+          <Button
+            size="sm"
+            variant={wanted ? 'ghost' : 'secondary'}
+            onClick={() => ctx.onToggleWanted?.(giftId)}
+            ariaLabel={`${name} ${wanted ? t('giftRemoveGoal', ctx.lang) : t('giftAddGoal', ctx.lang)}`}
+          >
             {wanted ? <X size={12} aria-hidden /> : <Plus size={12} aria-hidden />}
             {wanted ? t('giftRemoveGoal', ctx.lang) : t('giftAddGoal', ctx.lang)}
           </Button>
@@ -229,19 +279,32 @@ function EnterActions({ packId, ctx }: { packId: number; ctx: PackContext }) {
   // A floor holds one pack. The stage hides every way in once a floor is entered; the sheet used
   // to keep offering one, and taking it silently replaced the record already there.
   const offeredHere =
-    ctx.run.enteredHere === null && (ctx.indexes.packsByFloor[bandMode(ctx.indexes, ctx.run.stageFloor)].get(ctx.run.stageFloor) ?? []).includes(packId);
+    ctx.run.enteredHere === null &&
+    (
+      ctx.indexes.packsByFloor[bandMode(ctx.indexes, ctx.run.stageFloor)].get(ctx.run.stageFloor) ?? []
+    ).includes(packId);
   return (
     <span className="flex flex-wrap items-center gap-1.5" data-testid="enter-actions">
       {visited !== null ? (
         <>
           <Badge tone="sure">{t('stageEntered', ctx.lang, { floor: visited })}</Badge>
-          <Button size="sm" variant="ghost" onClick={() => ctx.run?.onUnvisit(packId)} ariaLabel={`${name} ${t('stageUnenter', ctx.lang)}`}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => ctx.run?.onUnvisit(packId)}
+            ariaLabel={`${name} ${t('stageUnenter', ctx.lang)}`}
+          >
             <RotateCcw size={12} aria-hidden />
             {t('stageUnenter', ctx.lang)}
           </Button>
         </>
       ) : ctx.run.onEnter && offeredHere ? (
-        <Button size="sm" variant="primary" onClick={() => ctx.run?.onEnter?.(packId)} ariaLabel={t('stageEnterPack', ctx.lang, { name })}>
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => ctx.run?.onEnter?.(packId)}
+          ariaLabel={t('stageEnterPack', ctx.lang, { name })}
+        >
           <LogIn size={12} aria-hidden />
           {t('stageEnter', ctx.lang)} · {t('stageFloor', ctx.lang, { floor: ctx.run.stageFloor })}
         </Button>
@@ -255,9 +318,9 @@ export function PackSheetBody({ packId, ctx }: { packId: number; ctx: PackContex
   const pack = ctx.indexes.packById.get(packId);
   if (!pack) return null;
   const exclusives = new Set(pack.exclusiveGifts);
-  const gifts = [...new Set([...pack.exclusiveGifts, ...pack.giftPool.filter((id) => ctx.wanted.has(id))])].sort(
-    (a, b) => Number(ctx.wanted.has(b)) - Number(ctx.wanted.has(a)) || a - b,
-  );
+  const gifts = [
+    ...new Set([...pack.exclusiveGifts, ...pack.giftPool.filter((id) => ctx.wanted.has(id))]),
+  ].sort((a, b) => Number(ctx.wanted.has(b)) - Number(ctx.wanted.has(a)) || a - b);
   return (
     <div className="flex flex-col gap-2.5" data-testid="pack-sheet-body">
       <div className="flex items-start gap-3">

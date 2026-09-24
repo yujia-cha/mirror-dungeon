@@ -73,7 +73,11 @@ function fromShare(hash: string): PlanInput | null {
     return {
       deck: parsed.deck ?? [],
       wanted: plannedGifts(parsed.wanted ?? [], parsed.fusionGoal ?? {}),
-      options: { ...defaultOptions(), ...parsed.options, ...(parsed.deployed ? { deployed: parsed.deployed } : {}) },
+      options: {
+        ...defaultOptions(),
+        ...parsed.options,
+        ...(parsed.deployed ? { deployed: parsed.deployed } : {}),
+      },
     };
   } catch {
     return null;
@@ -147,7 +151,9 @@ if (input.deck.length > 0) {
 
 if ((input.options.currentFloor ?? 1) > 1) {
   const owned = input.options.ownedGifts ?? [];
-  console.log(`진행 중: 현재 ${input.options.currentFloor}층${owned.length > 0 ? `, 보유 ${owned.map(giftName).join(', ')}` : ''}`);
+  console.log(
+    `진행 중: 현재 ${input.options.currentFloor}층${owned.length > 0 ? `, 보유 ${owned.map(giftName).join(', ')}` : ''}`,
+  );
 }
 
 console.log('\n시작');
@@ -178,7 +184,9 @@ for (const floor of plan.floors) {
         : floor.reason === 'pinned'
           ? ' [고정(핀)]'
           : '';
-  console.log(`  ${String(floor.floor).padStart(2)}층 (${floor.mode}) ${floor.passed && floor.packId === null ? '지남' : pack}${window}${obs}`);
+  console.log(
+    `  ${String(floor.floor).padStart(2)}층 (${floor.mode}) ${floor.passed && floor.packId === null ? '지남' : pack}${window}${obs}`,
+  );
   for (const pickup of floor.pickups) {
     const tag = pickup.kind === 'exclusive' ? '전용' : '풀';
     const why = pickup.neededFor ? ` → ${giftName(pickup.neededFor)} 재료` : '';
@@ -230,11 +238,15 @@ console.log(
 if (variants.length > 0) {
   console.log('\n대안 루트');
   for (const variant of variants) {
-    const packs = variant.plan.floors.filter((f) => f.packId !== null).map((f) => `${f.floor}층 ${packName(f.packId!)}`);
+    const packs = variant.plan.floors
+      .filter((f) => f.packId !== null)
+      .map((f) => `${f.floor}층 ${packName(f.packId!)}`);
     console.log(
       `  ${variant.dropped.map(giftName).join(', ')} 제외 → ${variant.plan.stats.coveredWanted}/${variant.plan.stats.totalWanted} 확보, ` +
         `${packs.join(' · ') || '자유'}` +
-        (variant.plan.unresolved.length > 0 ? ` (미해결 ${variant.plan.unresolved.map((u) => giftName(u.giftId)).join(', ')})` : ''),
+        (variant.plan.unresolved.length > 0
+          ? ` (미해결 ${variant.plan.unresolved.map((u) => giftName(u.giftId)).join(', ')})`
+          : ''),
     );
   }
 }

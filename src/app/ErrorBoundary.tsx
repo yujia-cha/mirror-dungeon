@@ -58,7 +58,11 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
     const text = TEXT[fallbackLang()];
     return (
       <div className="flex min-h-dvh items-center justify-center px-4 py-10">
-        <Card variant="strong" className="flex max-w-[360px] flex-col items-center gap-2.5 px-6 py-6 text-center" testId="crash">
+        <Card
+          variant="strong"
+          className="flex max-w-[360px] flex-col items-center gap-2.5 px-6 py-6 text-center"
+          testId="crash"
+        >
           <TriangleAlert size={28} aria-hidden />
           <div className="text-sm font-semibold">{text.title}</div>
           <div className="text-xs text-fg-3">

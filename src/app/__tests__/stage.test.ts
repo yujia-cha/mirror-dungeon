@@ -2,18 +2,43 @@ import { describe, expect, it } from 'vitest';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { buildIndexes, planRoute } from '../../core/index.ts';
 import { appDefaultOptions } from '../store.ts';
-import { autoFailedFor, bandMode, enterablePacks, exclusivesIndex, packsOfferedOn, stageModeFor } from '../lib/stage.ts';
+import {
+  autoFailedFor,
+  bandMode,
+  enterablePacks,
+  exclusivesIndex,
+  packsOfferedOn,
+  stageModeFor,
+} from '../lib/stage.ts';
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
 const DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715];
-const noObservation = { ...data, rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } } };
+const noObservation = {
+  ...data,
+  rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
+};
 const plan = (wanted: number[], extra = {}) =>
-  planRoute({ deck: DECK, wanted: wanted.map((giftId) => ({ giftId, required: true })), options: { ...appDefaultOptions(), ...extra } }, noObservation, indexes);
+  planRoute(
+    {
+      deck: DECK,
+      wanted: wanted.map((giftId) => ({ giftId, required: true })),
+      options: { ...appDefaultOptions(), ...extra },
+    },
+    noObservation,
+    indexes,
+  );
 
 describe('stage', () => {
   it('maps floors to the run mode the app plays them in', () => {
-    expect([1, 5, 6, 10, 11, 15].map((f) => bandMode(indexes, f))).toEqual(['hard', 'hard', 'parallel', 'parallel', 'extreme', 'extreme']);
+    expect([1, 5, 6, 10, 11, 15].map((f) => bandMode(indexes, f))).toEqual([
+      'hard',
+      'hard',
+      'parallel',
+      'parallel',
+      'extreme',
+      'extreme',
+    ]);
   });
 
   it('offers a route pack on every floor of its window and marks the planned floor as recommended', () => {
@@ -74,7 +99,7 @@ describe('stage', () => {
     expect(packsOfferedOn(indexes, 11)).not.toContain(1402);
   });
 
-  it('counts a boss clear reward among an EXTREME pack\'s exclusives', () => {
+  it("counts a boss clear reward among an EXTREME pack's exclusives", () => {
     const exclusivesOf = exclusivesIndex(data, indexes);
     expect(exclusivesOf(1511)).toContain(9250); // 코드 퍼플 → 보급형 K사 앰플
     expect(exclusivesOf(1402)).toEqual([9267, 9282]);
@@ -85,13 +110,21 @@ describe('stage', () => {
   it('fails the goal exclusives the player never marked, and nothing else', () => {
     const exclusivesOf = exclusivesIndex(data, indexes);
     expect(autoFailedFor(1402, new Set([9267, 9282, 9754]), {}, exclusivesOf)).toEqual([9267, 9282]);
-    expect(autoFailedFor(1402, new Set([9267, 9282]), { 9267: 'got', 9282: 'failed' }, exclusivesOf)).toEqual([]);
+    expect(autoFailedFor(1402, new Set([9267, 9282]), { 9267: 'got', 9282: 'failed' }, exclusivesOf)).toEqual(
+      [],
+    );
     expect(autoFailedFor(1402, new Set([9754]), {}, exclusivesOf)).toEqual([]);
   });
 
   it('tells an entered, undecided, skipped and finished floor apart', () => {
     const run = { currentFloor: 4, visits: { 2: 1008 } };
-    expect([1, 2, 3, 4, 5].map((f) => stageModeFor(run, f, 15))).toEqual(['skipped', 'entered', 'skipped', 'undecided', 'undecided']);
+    expect([1, 2, 3, 4, 5].map((f) => stageModeFor(run, f, 15))).toEqual([
+      'skipped',
+      'entered',
+      'skipped',
+      'undecided',
+      'undecided',
+    ]);
     // 'done' is the floor past the season's end, so the last floor keeps telling the truth about itself.
     expect(stageModeFor({ currentFloor: 16, visits: {} }, 16, 15)).toBe('done');
     expect(stageModeFor({ currentFloor: 16, visits: {} }, 15, 15)).toBe('skipped');

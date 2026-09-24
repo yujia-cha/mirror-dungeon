@@ -39,7 +39,11 @@ export function actionsFor(
     !options.observedGifts.includes(gift.id)
   ) {
     if (options.observedGifts.length < rules.giftObservation.max) {
-      out.push({ kind: 'observeGift', giftId: gift.id, patch: { observedGifts: [...options.observedGifts, gift.id] } });
+      out.push({
+        kind: 'observeGift',
+        giftId: gift.id,
+        patch: { observedGifts: [...options.observedGifts, gift.id] },
+      });
     } else if (options.observedGifts.length > 0) {
       out.push({ kind: 'releaseObservations', patch: { observedGifts: [] } });
     }

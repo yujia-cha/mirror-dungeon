@@ -60,7 +60,6 @@ export function availabilityFor(pack: RawThemePack): Record<Difficulty, number[]
   return out;
 }
 
-
 /** Korean keyword names as the game's own text writes them (pack dev names, 특수 variant lines). */
 export const STATUS_KEYWORD_BY_KO: Record<string, StatusKeyword> = {
   화상: 'Combustion',

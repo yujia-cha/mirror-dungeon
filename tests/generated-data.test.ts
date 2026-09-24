@@ -139,7 +139,8 @@ describe('gifts', () => {
     const leftovers = new Map<string, number>();
     for (const gift of gifts) {
       const ko = [gift.desc.ko, ...gift.conditions.flatMap((c) => (c.text ? [c.text.ko] : []))].join('\n');
-      for (const m of ko.matchAll(/\[([A-Za-z][A-Za-z0-9_]*)\]/g)) leftovers.set(m[1]!, (leftovers.get(m[1]!) ?? 0) + 1);
+      for (const m of ko.matchAll(/\[([A-Za-z][A-Za-z0-9_]*)\]/g))
+        leftovers.set(m[1]!, (leftovers.get(m[1]!) ?? 0) + 1);
     }
     expect([...leftovers.keys()]).toEqual([]);
     // The ids that used to leak, now named from the season and chapter tables.
@@ -153,7 +154,11 @@ describe('gifts', () => {
     // runtime `{0}` counter. What it cannot name (identity-only buffs like `BloodDinner`) keeps its
     // bracketed id on purpose — a guessed name would be worse.
     for (const gift of gifts) {
-      const texts = [gift.desc.ko, gift.desc.en, ...gift.conditions.flatMap((c) => (c.text ? [c.text.ko, c.text.en] : []))];
+      const texts = [
+        gift.desc.ko,
+        gift.desc.en,
+        ...gift.conditions.flatMap((c) => (c.text ? [c.text.ko, c.text.en] : [])),
+      ];
       for (const text of texts) {
         const where = `${gift.id} ${gift.name.ko}`;
         // `AttackDown` arrives from the game as 「공격 레벨 감소 」 / 「Offense Level Down 」.
@@ -399,7 +404,11 @@ describe('rules', () => {
     expect(byKind('hiddenBattle')).toEqual([9256, 9257, 9258, 9259]);
     expect(byKind('event')).toHaveLength(10);
     expect(giftById.get(9828)!.acquisition.clearRewardOf).toBe(1519);
-    expect(rules.hiddenBattle).toEqual({ gifts: [9256, 9257, 9258, 9259], floors: [11, 12, 13, 14, 15], probabilityPerFloor: 0.1 });
+    expect(rules.hiddenBattle).toEqual({
+      gifts: [9256, 9257, 9258, 9259],
+      floors: [11, 12, 13, 14, 15],
+      probabilityPerFloor: 0.1,
+    });
   });
 
   it('carries an icon key per gift and a sprite key per pack', () => {

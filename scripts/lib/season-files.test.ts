@@ -68,7 +68,9 @@ describe('renameToSeason', () => {
   });
 
   it('widens past the padding when the season needs the digits', () => {
-    expect(renameToSeason('mirrordungeon/mirrordungeon-07.json', 10)).toBe('mirrordungeon/mirrordungeon-10.json');
+    expect(renameToSeason('mirrordungeon/mirrordungeon-07.json', 10)).toBe(
+      'mirrordungeon/mirrordungeon-10.json',
+    );
   });
 
   it('returns null for a name that carries no season', () => {

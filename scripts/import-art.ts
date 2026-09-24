@@ -61,7 +61,12 @@ function usage(message: string): never {
  * The keys the chosen season has, plus every published season's (`any`), so a typo cannot create a
  * file nothing will read and a gift only a frozen season has is still accepted.
  */
-function loadKeys(season: number): { gifts: Set<number>; packs: Set<string>; name: Map<string, string>; any: ArtKeys } {
+function loadKeys(season: number): {
+  gifts: Set<number>;
+  packs: Set<string>;
+  name: Map<string, string>;
+  any: ArtKeys;
+} {
   const gifts = readJson<Gift[]>(repoPath(`public/data/md${season}/gifts.json`));
   const packs = readJson<ThemePack[]>(repoPath(`public/data/md${season}/packs.json`));
   const name = new Map<string, string>();
@@ -91,8 +96,7 @@ function existing(kind: Kind): string[] {
 
 /** What a candidate file is, and whether it may be written. */
 type Verdict =
-  | { ok: true; kind: Kind; key: string; info: PngInfo; note?: string }
-  | { ok: false; reason: string };
+  { ok: true; kind: Kind; key: string; info: PngInfo; note?: string } | { ok: false; reason: string };
 
 /** The published seasons that have this key; empty when none does. */
 function seasonsOf(kind: Kind, key: string, keys: ReturnType<typeof loadKeys>): number[] {
@@ -108,7 +112,8 @@ function judge(path: string, key: string, kind: Kind, keys: ReturnType<typeof lo
   // Legal, but not what the chosen season shows — worth one word so it is not a surprise.
   const seasonNote = inSeason ? undefined : `${elsewhere.map((n) => `md${n}`).join('·')} 전용`;
   const bytes = readFileSync(path);
-  if (bytes.length > MAX_BYTES) return { ok: false, reason: `${Math.round(bytes.length / 1024)}KB — ${MAX_BYTES / 1024}KB를 넘는다` };
+  if (bytes.length > MAX_BYTES)
+    return { ok: false, reason: `${Math.round(bytes.length / 1024)}KB — ${MAX_BYTES / 1024}KB를 넘는다` };
   const png = readPng(bytes);
   if (!png.ok) return { ok: false, reason: png.reason };
   const { ratio, advise } = KINDS[kind];
@@ -145,8 +150,11 @@ function main(): void {
       const other = have.filter((k) => !isKnown(k));
       const unknown = other.filter((k) => seasonsOf(kind, k, keys).length === 0);
       strays += unknown.length;
-      console.log(`${kind}: ${have.length - other.length}/${total}장${other.length > unknown.length ? ` (+ 다른 시즌 전용 ${other.length - unknown.length}장)` : ''}`);
-      for (const k of unknown) console.log(`  ! ${k}.png — 어느 시즌의 ${kind === 'gifts' ? 'icon' : 'sprite'}에도 없다`);
+      console.log(
+        `${kind}: ${have.length - other.length}/${total}장${other.length > unknown.length ? ` (+ 다른 시즌 전용 ${other.length - unknown.length}장)` : ''}`,
+      );
+      for (const k of unknown)
+        console.log(`  ! ${k}.png — 어느 시즌의 ${kind === 'gifts' ? 'icon' : 'sprite'}에도 없다`);
       return have;
     };
     const haveGifts = report('gifts', keys.gifts.size, (k) => keys.gifts.has(Number(k)));
@@ -187,7 +195,11 @@ function main(): void {
     // a flat folder works too because the key itself says which kind it is.
     const walk = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-        e.isDirectory() ? walk(join(dir, e.name)) : extname(e.name).toLowerCase() === '.png' ? [join(dir, e.name)] : [],
+        e.isDirectory()
+          ? walk(join(dir, e.name))
+          : extname(e.name).toLowerCase() === '.png'
+            ? [join(dir, e.name)]
+            : [],
       );
     const files = readdirSync(from, { withFileTypes: true }).length > 0 ? walk(from) : [];
     if (files.length === 0) usage(`${source}에 .png가 없다.`);

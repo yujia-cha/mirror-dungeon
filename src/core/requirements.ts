@@ -104,7 +104,12 @@ export function expandRequirements(
   const unresolved: Unresolved[] = [];
   const seenFusions = new Set<number>();
 
-  const addRequirement = (giftId: number, required: boolean, neededFor: number | null, via: Requirement['via'] = 'route'): void => {
+  const addRequirement = (
+    giftId: number,
+    required: boolean,
+    neededFor: number | null,
+    via: Requirement['via'] = 'route',
+  ): void => {
     const key = requirementKey({ giftId, neededFor });
     const existing = requirements.get(key);
     if (existing) {

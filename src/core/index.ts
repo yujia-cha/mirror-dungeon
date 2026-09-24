@@ -20,7 +20,13 @@ import type {
 } from './types.ts';
 import { analyseDeck, evaluateConditions } from './deck.ts';
 import { expandRequirements, scarcity } from './requirements.ts';
-import { alternativePacksOn, assignPacks, modeForFloor, observationCost, type SearchResult } from './search.ts';
+import {
+  alternativePacksOn,
+  assignPacks,
+  modeForFloor,
+  observationCost,
+  type SearchResult,
+} from './search.ts';
 import { requirementKey } from './requirements.ts';
 import { chooseStart, observable } from './starting.ts';
 import { josa } from './text.ts';
@@ -77,7 +83,11 @@ function normaliseOptions(
   const droppedObservations = (next.observedGifts ?? []).filter((id) => !kept.includes(id));
   next = { ...next, observedGifts: kept };
 
-  const maxFloor = Math.max(...data.rules.floors.normal, ...data.rules.floors.parallel, ...data.rules.floors.extreme);
+  const maxFloor = Math.max(
+    ...data.rules.floors.normal,
+    ...data.rules.floors.parallel,
+    ...data.rules.floors.extreme,
+  );
   const lastFloor = Math.min(maxFloor, Math.max(1, Math.round(next.lastFloor)));
   if (lastFloor !== next.lastFloor) next = { ...next, lastFloor };
 
@@ -87,7 +97,11 @@ function normaliseOptions(
   // plan exactly because the plan is Hard from floor 1. Checking pins first dropped such a pin
   // with a warning and then placed the same pack on the same floor as a recommendation.
   const parallelFrom = Math.min(...data.rules.floors.parallel);
-  if (lastFloor >= parallelFrom && data.rules.difficulty.parallelRequiresAllHard && next.hardFromFloor !== 1) {
+  if (
+    lastFloor >= parallelFrom &&
+    data.rules.difficulty.parallelRequiresAllHard &&
+    next.hardFromFloor !== 1
+  ) {
     next = { ...next, hardFromFloor: 1 };
     warnings.push({
       code: 'parallel-requires-hard',
@@ -98,18 +112,23 @@ function normaliseOptions(
     });
   }
 
-
   // Run progress: the floor about to be entered stays within the plan, and a gift is either in
   // hand or missed, never both (in hand wins).
-  const currentFloor = Number.isFinite(next.currentFloor) ? Math.min(lastFloor, Math.max(1, Math.round(next.currentFloor as number))) : 1;
+  const currentFloor = Number.isFinite(next.currentFloor)
+    ? Math.min(lastFloor, Math.max(1, Math.round(next.currentFloor as number)))
+    : 1;
   const knownGift = (id: unknown): id is number => typeof id === 'number' && indexes.giftById.has(id);
   const ownedGifts = [...new Set((next.ownedGifts ?? []).filter(knownGift))];
-  const unobtainableGifts = [...new Set((next.unobtainableGifts ?? []).filter(knownGift))].filter((id) => !ownedGifts.includes(id));
+  const unobtainableGifts = [...new Set((next.unobtainableGifts ?? []).filter(knownGift))].filter(
+    (id) => !ownedGifts.includes(id),
+  );
   next = { ...next, currentFloor, ownedGifts, unobtainableGifts };
 
   if (next.deployed) {
     const inDeck = new Set(deck);
-    const deployed = [...new Set(next.deployed)].filter((id) => inDeck.has(id)).slice(0, data.rules.deployment.max);
+    const deployed = [...new Set(next.deployed)]
+      .filter((id) => inDeck.has(id))
+      .slice(0, data.rules.deployment.max);
     next = { ...next, deployed };
   }
 
@@ -118,14 +137,17 @@ function normaliseOptions(
   const known = (id: unknown): id is number => typeof id === 'number' && indexes.packById.has(id);
   const bannedPacks = [...new Set((next.bannedPacks ?? []).filter(known))];
   const bannedSet = new Set(bannedPacks);
-  const preferredPacks = [...new Set((next.preferredPacks ?? []).filter(known))].filter((id) => !bannedSet.has(id));
+  const preferredPacks = [...new Set((next.preferredPacks ?? []).filter(known))].filter(
+    (id) => !bannedSet.has(id),
+  );
   const pinnedPacks: Record<number, number> = {};
   const dropped: number[] = [];
   for (const [floorText, packId] of Object.entries(next.pinnedPacks ?? {})) {
     const floor = Number(floorText);
-    const offered = Number.isInteger(floor) && floor >= 1 && floor <= lastFloor
-      ? (indexes.packsByFloor[modeForFloor(floor, next, indexes)].get(floor) ?? [])
-      : [];
+    const offered =
+      Number.isInteger(floor) && floor >= 1 && floor <= lastFloor
+        ? (indexes.packsByFloor[modeForFloor(floor, next, indexes)].get(floor) ?? [])
+        : [];
     if (known(packId) && offered.includes(packId) && !bannedSet.has(packId)) pinnedPacks[floor] = packId;
     else if (typeof packId === 'number') dropped.push(packId);
   }
@@ -226,7 +248,12 @@ function floorsFor(options: PlanOptions, data: GameData): { rows: number[]; plan
 
 export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes): RoutePlan {
   const startedAt = Date.now();
-  const { options, warnings, droppedObservations } = normaliseOptions(input.options, data, indexes, input.deck);
+  const { options, warnings, droppedObservations } = normaliseOptions(
+    input.options,
+    data,
+    indexes,
+    input.deck,
+  );
   const { rows, plannable: floors } = floorsFor(options, data);
   const currentFloor = options.currentFloor ?? 1;
   const midRun = currentFloor > 1;
@@ -267,8 +294,14 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     if (gift.acquisition.kind === 'hiddenBattle') {
       // A random extra battle on EXTREME floors drops it; no pack choice makes that certain.
       const hidden = data.rules.hiddenBattle;
-      const floorsText = hidden && hidden.floors.length > 0 ? `${hidden.floors[0]}~${hidden.floors[hidden.floors.length - 1]}` : '11~15';
-      const pct = hidden?.probabilityPerFloor !== null && hidden?.probabilityPerFloor !== undefined ? Math.round(hidden.probabilityPerFloor * 100) : null;
+      const floorsText =
+        hidden && hidden.floors.length > 0
+          ? `${hidden.floors[0]}~${hidden.floors[hidden.floors.length - 1]}`
+          : '11~15';
+      const pct =
+        hidden?.probabilityPerFloor !== null && hidden?.probabilityPerFloor !== undefined
+          ? Math.round(hidden.probabilityPerFloor * 100)
+          : null;
       requirement.via = 'unresolved';
       unresolved.push({
         giftId: requirement.giftId,
@@ -413,7 +446,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   // b) rescue: what the search had to leave out
   if (!midRun && search.unresolvedGiftIds.length > 0 && observed.length < budget) {
     // Required gifts are rescued first; among equals the scarcer one, then the lower id.
-    const isRequired = (giftId: number): number => (requirements.some((r) => r.giftId === giftId && r.required) ? 1 : 0);
+    const isRequired = (giftId: number): number =>
+      requirements.some((r) => r.giftId === giftId && r.required) ? 1 : 0;
     const missed = search.unresolvedKeys
       .map((key, i) => ({ key, giftId: search.unresolvedGiftIds[i]! }))
       .sort(
@@ -444,15 +478,25 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   // c) flexibility: free a forced pack whose only job is one observable gift
   while (!midRun && observed.length < budget) {
     const forced = [...search.assignment.entries()]
-      .filter(([floor, packId]) => options.pinnedPacks[floor] === undefined && !options.preferredPacks.includes(packId))
+      .filter(
+        ([floor, packId]) =>
+          options.pinnedPacks[floor] === undefined && !options.preferredPacks.includes(packId),
+      )
       .map(([floor, packId]) => {
-        const pickups = requirements.filter((r) => r.via === 'route' && search.supplier.get(requirementKey(r)) === floor);
+        const pickups = requirements.filter(
+          (r) => r.via === 'route' && search.supplier.get(requirementKey(r)) === floor,
+        );
         return { floor, packId, pickups };
       })
       .filter(({ pickups }) => pickups.length === 1 && canObserve(pickups[0]!.giftId))
       .map((entry) => {
         const window = windowFor(entry.packId, entry.floor, floors, options, search.assignment, indexes);
-        return { ...entry, width: window.to - window.from, giftId: entry.pickups[0]!.giftId, key: requirementKey(entry.pickups[0]!) };
+        return {
+          ...entry,
+          width: window.to - window.from,
+          giftId: entry.pickups[0]!.giftId,
+          key: requirementKey(entry.pickups[0]!),
+        };
       })
       .sort(
         (a, b) =>
@@ -474,18 +518,27 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     ...observed.filter((o) => o.pinned),
     ...observed.filter((o) => !o.pinned).sort((a, b) => a.giftId - b.giftId),
   ];
-  const startStarlight = observed.length === 0 ? 0 : (data.rules.giftObservation.costTable[observed.length - 1] ?? 0);
+  const startStarlight =
+    observed.length === 0 ? 0 : (data.rules.giftObservation.costTable[observed.length - 1] ?? 0);
 
   // What is still left to ordinary drops, now that observation and the start gift have had their say.
   const generalDrops = requirements.filter((r) => r.via === 'generalDrop').map((r) => r.giftId);
 
   // ---- 7. Fusions, and ingredients no longer worth routing for ------------
-  const schedule = (): { fusions: FusionStep[]; obtainedAtFloor: Map<string, number>; resultFloor: Map<number, number> } => {
+  const schedule = (): {
+    fusions: FusionStep[];
+    obtainedAtFloor: Map<string, number>;
+    resultFloor: Map<number, number>;
+  } => {
     // Keyed by `requirementKey`: two fusions eating the same ingredient get one floor each.
     const obtainedAtFloor = new Map<string, number>();
     for (const requirement of requirements) {
       const key = requirementKey(requirement);
-      if (requirement.via === 'startGift' || requirement.via === 'observation' || requirement.via === 'owned') {
+      if (
+        requirement.via === 'startGift' ||
+        requirement.via === 'observation' ||
+        requirement.via === 'owned'
+      ) {
         obtainedAtFloor.set(key, 0);
       } else if (requirement.via === 'generalDrop') {
         obtainedAtFloor.set(key, currentFloor);
@@ -498,7 +551,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     // A fusion result is not a requirement of its own, so a parent recipe reads it from here.
     const resultFloor = new Map<number, number>();
     const floorOf = (ingredient: number, result: number): number | undefined =>
-      obtainedAtFloor.get(requirementKey({ giftId: ingredient, neededFor: result })) ?? resultFloor.get(ingredient);
+      obtainedAtFloor.get(requirementKey({ giftId: ingredient, neededFor: result })) ??
+      resultFloor.get(ingredient);
     for (const fusion of expansion.fusions) {
       const floorsNeeded = fusion.ingredients.map((id) => floorOf(id, fusion.result));
       const unreachable = floorsNeeded.some((floor) => floor === undefined);
@@ -557,7 +611,11 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         requirement.via = 'dropped';
         ids.push(requirement.giftId);
       }
-      if (ids.length > 0) droppedFor.set(result, ids.sort((a, b) => a - b));
+      if (ids.length > 0)
+        droppedFor.set(
+          result,
+          ids.sort((a, b) => a - b),
+        );
     }
     if (droppedFor.size > 0) {
       search = searchWithFallback();
@@ -571,7 +629,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     const gift = indexes.giftById.get(giftId);
     const packs = indexes.packsByGift.get(giftId) ?? [];
     const offeredSomewhere = (packId: number): boolean =>
-      floors.some((floor) => (indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? []).includes(packId));
+      floors.some((floor) =>
+        (indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? []).includes(packId),
+      );
     const anySlot = packs.some((packId) => !bannedPacks.has(packId) && offeredSomewhere(packId));
     const onlyBanned = !anySlot && packs.length > 0 && packs.some(offeredSomewhere);
     /*
@@ -586,8 +646,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         (r.via !== 'route' || search.supplier.has(requirementKey(r))),
     );
     if (otherCopyPlanned) {
-      const eaters = requirements
-        .filter((r) => r.giftId === giftId && r.neededFor !== null);
+      const eaters = requirements.filter((r) => r.giftId === giftId && r.neededFor !== null);
       const eaterName = (lang: 'ko' | 'en'): string[] =>
         eaters.map((r) => indexes.giftById.get(r.neededFor!)?.name[lang] || String(r.neededFor));
       unresolved.push({
@@ -641,7 +700,10 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       if (requirement.via === 'route' && !search.supplier.has(requirementKey(requirement))) continue;
       copies.set(requirement.giftId, (copies.get(requirement.giftId) ?? 0) + 1);
     }
-    const shared = [...copies].filter(([, n]) => n > 1).map(([giftId]) => giftId).sort((a, b) => a - b);
+    const shared = [...copies]
+      .filter(([, n]) => n > 1)
+      .map(([giftId]) => giftId)
+      .sort((a, b) => a - b);
     if (shared.length > 0) {
       warnings.push({
         code: 'shared-ingredient',
@@ -686,7 +748,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     pickupsByFloor.set(floor, list);
   }
 
-  const forcedFloors = [...search.assignment.keys()].filter((floor) => floor >= currentFloor).sort((a, b) => a - b);
+  const forcedFloors = [...search.assignment.keys()]
+    .filter((floor) => floor >= currentFloor)
+    .sort((a, b) => a - b);
   let observationIndex = 0;
 
   const floorPlans: FloorPlan[] = rows.map((floor): FloorPlan => {

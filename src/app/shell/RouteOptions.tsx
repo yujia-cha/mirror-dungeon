@@ -54,9 +54,16 @@ export function RouteOptions() {
               const pack = indexes.packById.get(packId);
               if (!pack) return null;
               return (
-                <li key={packId} className="flex items-center gap-2" data-testid="settings-pack" data-pack={packId}>
+                <li
+                  key={packId}
+                  className="flex items-center gap-2"
+                  data-testid="settings-pack"
+                  data-pack={packId}
+                >
                   <PackCard pack={pack} size={28} lang={lang} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg-3 line-through">{pick(pack.name, lang)}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-fg-3 line-through">
+                    {pick(pack.name, lang)}
+                  </span>
                   <PackActions packId={packId} ctx={ctx} />
                 </li>
               );

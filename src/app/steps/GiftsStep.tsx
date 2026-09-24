@@ -39,7 +39,12 @@ interface Props {
 
 type TierFilter = '1' | '2' | '3' | '4' | '5' | 'EX';
 type PriceFilter = 'p1' | 'p2' | 'p3' | 'p4';
-const PRICE_BANDS: Record<PriceFilter, [number, number]> = { p1: [0, 150], p2: [151, 250], p3: [251, 400], p4: [401, Infinity] };
+const PRICE_BANDS: Record<PriceFilter, [number, number]> = {
+  p1: [0, 150],
+  p2: [151, 250],
+  p3: [251, 400],
+  p4: [401, Infinity],
+};
 
 const GROUPS: { group: GiftGroup; title: 'giftsActive' | 'giftsOther' }[] = [
   { group: 'active', title: 'giftsActive' },
@@ -73,7 +78,13 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   const [chipPack, setChipPack] = useState<string>('all');
   // 「기타」 is the long tail, so it starts folded; 「활성」 opens with the panel.
   const [collapsed, setCollapsed] = useState<Record<GiftGroup, boolean>>({ active: false, other: true });
-  const filtersOn = keyword !== 'all' || tier !== 'all' || acquisition !== 'all' || sin !== 'all' || price !== 'all' || query.trim() !== '';
+  const filtersOn =
+    keyword !== 'all' ||
+    tier !== 'all' ||
+    acquisition !== 'all' ||
+    sin !== 'all' ||
+    price !== 'all' ||
+    query.trim() !== '';
   const resetFilters = (): void => {
     setQuery('');
     setKeyword('all');
@@ -147,7 +158,8 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     return [...kept].sort((a, b) =>
       chipSort === 'name'
         ? name(a).localeCompare(name(b), lang === 'ko' ? 'ko' : 'en')
-        : (keywordOrder.get(indexes.giftById.get(a)!.keyword) ?? 99) - (keywordOrder.get(indexes.giftById.get(b)!.keyword) ?? 99) ||
+        : (keywordOrder.get(indexes.giftById.get(a)!.keyword) ?? 99) -
+            (keywordOrder.get(indexes.giftById.get(b)!.keyword) ?? 99) ||
           name(a).localeCompare(name(b), lang === 'ko' ? 'ko' : 'en'),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,7 +168,6 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     const gift = indexes.giftById.get(id);
     return gift ? observable(gift, data.rules) : false;
   };
-
 
   // Observation: the slots take a selected gift from the 「+」 list or from a dragged chip. A drop
   // on a filled slot replaces its gift; a drop elsewhere, or of a gift that cannot be observed,
@@ -183,7 +194,8 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       return;
     }
     const occupant = observedGifts[slot];
-    if (occupant !== undefined) setOptions({ observedGifts: observedGifts.map((id) => (id === occupant ? giftId : id)) });
+    if (occupant !== undefined)
+      setOptions({ observedGifts: observedGifts.map((id) => (id === occupant ? giftId : id)) });
     else pin(giftId);
   });
   const draggedGift = drag.state.dragging !== null ? indexes.giftById.get(drag.state.dragging) : undefined;
@@ -193,11 +205,17 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       const kids = (childrenOf.get(entry.gift.id) ?? []).filter((g) => g.obtainable || wanted.includes(g.id));
       return [
         { entry },
-        ...kids.map((g) => ({ entry: { ...entry, gift: g, reports: conditionByGift.get(g.id) ?? [] }, parent: entry.gift })),
+        ...kids.map((g) => ({
+          entry: { ...entry, gift: g, reports: conditionByGift.get(g.id) ?? [] },
+          parent: entry.gift,
+        })),
       ];
     });
 
-  const tiles: Record<GiftGroup, GiftTileData[]> = { active: tilesFor(groups.active), other: tilesFor(groups.other) };
+  const tiles: Record<GiftGroup, GiftTileData[]> = {
+    active: tilesFor(groups.active),
+    other: tilesFor(groups.other),
+  };
   const grid = (list: GiftTileData[]) => (
     <GiftTileGrid
       tiles={list}
@@ -227,12 +245,17 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
         >
           <span className="flex items-center gap-2 text-sm font-semibold">
             {t(titleKey, lang)} <span className="font-num text-xs text-fg-3">{list.length}</span>
-            {shut && chosen > 0 ? <Badge tone="neutral">{t('giftsSelected', lang, { n: chosen })}</Badge> : null}
+            {shut && chosen > 0 ? (
+              <Badge tone="neutral">{t('giftsSelected', lang, { n: chosen })}</Badge>
+            ) : null}
           </span>
           <span className="text-fg-3">{shut ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</span>
         </button>
         {shut ? null : (
-          <div className={group === 'other' ? 'max-h-[60dvh] overflow-y-auto' : undefined} data-testid={group === 'other' ? 'gift-scroller' : undefined}>
+          <div
+            className={group === 'other' ? 'max-h-[60dvh] overflow-y-auto' : undefined}
+            data-testid={group === 'other' ? 'gift-scroller' : undefined}
+          >
             {grid(list)}
           </div>
         )}
@@ -255,8 +278,11 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     so. Not when it is the only thing on screen, though — hiding it with nothing behind it would
     leave the tab blank.
   */
-  const activeSettled = tiles.active.length > 0 && tiles.active.every((tile) => isMarked(tile, wanted, blocked));
-  const shownGroups = GROUPS.filter(({ group }) => !(group === 'active' && activeSettled && tiles.other.length > 0));
+  const activeSettled =
+    tiles.active.length > 0 && tiles.active.every((tile) => isMarked(tile, wanted, blocked));
+  const shownGroups = GROUPS.filter(
+    ({ group }) => !(group === 'active' && activeSettled && tiles.other.length > 0),
+  );
   let body: React.ReactNode;
   if (deck.length === 0) {
     body = (
@@ -296,13 +322,22 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       </Card>
     );
   } else {
-    body = <div className="flex flex-col gap-2.5">{shownGroups.map(({ group, title }) => section(group, title))}</div>;
+    body = (
+      <div className="flex flex-col gap-2.5">
+        {shownGroups.map(({ group, title }) => section(group, title))}
+      </div>
+    );
   }
 
-  const keywordOptions = data.enums.keywords.map((k) => ({ value: k.id as Keyword, label: pick(k.name, lang) }));
+  const keywordOptions = data.enums.keywords.map((k) => ({
+    value: k.id as Keyword,
+    label: pick(k.name, lang),
+  }));
   // The tray's own filters only offer what the selection actually holds — a keyword or a pack with
   // no chip behind it would filter to nothing.
-  const chipKeywordOptions = keywordOptions.filter((option) => wanted.some((id) => indexes.giftById.get(id)?.keyword === option.value));
+  const chipKeywordOptions = keywordOptions.filter((option) =>
+    wanted.some((id) => indexes.giftById.get(id)?.keyword === option.value),
+  );
   const chipPackOptions = [...new Set(wanted.flatMap(boundPacks))]
     .map((packId) => ({ value: String(packId), label: pick(indexes.packById.get(packId)?.name, lang) }))
     .filter((option) => option.label !== '')
@@ -312,7 +347,17 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     { value: 'name' as const, label: t('giftsSortName', lang) },
   ];
   const sinOptions = data.enums.sins.map((s) => ({ value: s as Sin, label: t(SIN_LABEL[s as Sin], lang) }));
-  const acqOptions = (['general', 'packLimited', 'fusionOnly', 'startOnly', 'clearReward', 'hiddenBattle', 'event'] as AcquisitionKind[]).map((k) => ({
+  const acqOptions = (
+    [
+      'general',
+      'packLimited',
+      'fusionOnly',
+      'startOnly',
+      'clearReward',
+      'hiddenBattle',
+      'event',
+    ] as AcquisitionKind[]
+  ).map((k) => ({
     value: k,
     label: t(badgeFor(k).label, lang),
   }));
@@ -344,17 +389,44 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       */}
       {searching ? body : null}
       <div className="flex flex-wrap gap-1.5">
-        <FilterSelect label={t('filterKeyword', lang)} value={keyword} options={keywordOptions} onChange={setKeyword} allLabel={t('filterAll', lang)} />
+        <FilterSelect
+          label={t('filterKeyword', lang)}
+          value={keyword}
+          options={keywordOptions}
+          onChange={setKeyword}
+          allLabel={t('filterAll', lang)}
+        />
         <FilterSelect
           label={t('filterTier', lang)}
           value={tier}
-          options={(['1', '2', '3', '4', '5', 'EX'] as TierFilter[]).map((v) => ({ value: v, label: tierLabel(v === 'EX' ? 'EX' : (Number(v) as 1 | 2 | 3 | 4 | 5)) }))}
+          options={(['1', '2', '3', '4', '5', 'EX'] as TierFilter[]).map((v) => ({
+            value: v,
+            label: tierLabel(v === 'EX' ? 'EX' : (Number(v) as 1 | 2 | 3 | 4 | 5)),
+          }))}
           onChange={setTier}
           allLabel={t('filterAll', lang)}
         />
-        <FilterSelect label={t('filterAcquisition', lang)} value={acquisition} options={acqOptions} onChange={setAcquisition} allLabel={t('filterAll', lang)} />
-        <FilterSelect label={t('filterSin', lang)} value={sin} options={sinOptions} onChange={setSin} allLabel={t('filterAll', lang)} />
-        <FilterSelect label={t('filterPrice', lang)} value={price} options={priceOptions} onChange={setPrice} allLabel={t('filterAll', lang)} />
+        <FilterSelect
+          label={t('filterAcquisition', lang)}
+          value={acquisition}
+          options={acqOptions}
+          onChange={setAcquisition}
+          allLabel={t('filterAll', lang)}
+        />
+        <FilterSelect
+          label={t('filterSin', lang)}
+          value={sin}
+          options={sinOptions}
+          onChange={setSin}
+          allLabel={t('filterAll', lang)}
+        />
+        <FilterSelect
+          label={t('filterPrice', lang)}
+          value={price}
+          options={priceOptions}
+          onChange={setPrice}
+          allLabel={t('filterAll', lang)}
+        />
         {filtersOn ? (
           <Button size="sm" variant="ghost" onClick={resetFilters}>
             <RefreshCw size={12} aria-hidden />
@@ -378,7 +450,10 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       />
 
       {wanted.length > 0 ? (
-        <div className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2 px-2.5 py-2" aria-label={t('giftsSelected', lang, { n: wanted.length })}>
+        <div
+          className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2 px-2.5 py-2"
+          aria-label={t('giftsSelected', lang, { n: wanted.length })}
+        >
           {/*
             Sorting and filtering are a view over the tray, not over the store: 「선택 순서」 is the
             order things were chosen in, and a filter hides chips without unselecting anything.
@@ -386,50 +461,81 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-0.5 text-xs font-medium text-fg-2">
               {t('giftsSelected', lang, { n: wanted.length })}
-              {shownChips.length !== wanted.length ? <span className="ml-1 font-num text-fg-3">{`· ${shownChips.length}`}</span> : null}
+              {shownChips.length !== wanted.length ? (
+                <span className="ml-1 font-num text-fg-3">{`· ${shownChips.length}`}</span>
+              ) : null}
             </span>
-            <FilterSelect label={t('giftsSort', lang)} value={chipSort} options={sortOptions} onChange={setChipSort} allLabel={t('giftsSortPicked', lang)} />
-            <FilterSelect label={t('filterKeyword', lang)} value={chipKeyword} options={chipKeywordOptions} onChange={setChipKeyword} allLabel={t('filterAll', lang)} />
+            <FilterSelect
+              label={t('giftsSort', lang)}
+              value={chipSort}
+              options={sortOptions}
+              onChange={setChipSort}
+              allLabel={t('giftsSortPicked', lang)}
+            />
+            <FilterSelect
+              label={t('filterKeyword', lang)}
+              value={chipKeyword}
+              options={chipKeywordOptions}
+              onChange={setChipKeyword}
+              allLabel={t('filterAll', lang)}
+            />
             {chipPackOptions.length > 0 ? (
-              <FilterSelect label={t('giftsPack', lang)} value={chipPack} options={chipPackOptions} onChange={setChipPack} allLabel={t('filterAll', lang)} />
+              <FilterSelect
+                label={t('giftsPack', lang)}
+                value={chipPack}
+                options={chipPackOptions}
+                onChange={setChipPack}
+                allLabel={t('filterAll', lang)}
+              />
             ) : null}
             <button type="button" onClick={clearWanted} className="ml-auto text-xs text-fg-3 underline">
               {t('giftsClear', lang)}
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-1.5" data-testid="gift-chips">
-          {shownChips.map((id) => {
-            const gift = indexes.giftById.get(id);
-            const pinned = observedGifts.includes(id);
-            return (
-              <span
-                key={id}
-                data-testid="gift-chip"
-                data-gift={id}
-                data-pinned={pinned || undefined}
-                data-entangled={entangledIds.has(id) || undefined}
-                {...drag.handleFor(id)}
-                // `none` made every chip a dead zone: with a dozen goals the panel could not be
-                // scrolled by touching one. `pan-y` keeps scrolling; on touch the drag starts on a
-                // long press instead (`useChipDrag`), so the callout that a long press would open
-                // on iOS is turned off here.
-                style={{ touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
-                onContextMenu={(event) => event.preventDefault()}
-                className={`inline-flex h-7 select-none items-center gap-1 rounded-full border bg-surface pl-1 pr-1 text-xs text-fg ${pinned ? 'border-ink' : 'border-line-strong'} ${
-                  drag.state.dragging === id ? 'opacity-40' : ''
-                }`}
-              >
-                {gift ? <GiftIcon gift={gift} size={20} judgement={judgementFor(id)} lang={lang} /> : null}
-                <button type="button" onClick={() => openGift(id)} aria-haspopup="dialog" aria-label={t('giftDetail', lang, { name: giftName(id) })} className="hover:underline">
-                  {giftName(id)}
-                </button>
-                {entangledIds.has(id) ? <Link2 size={11} aria-hidden className="text-fg-2" /> : null}
-                <button type="button" onClick={() => removeWanted(id)} aria-label={t('removeFromSelection', lang, { name: giftName(id) })} className="text-fg-3">
-                  <X size={11} />
-                </button>
-              </span>
-            );
-          })}
+            {shownChips.map((id) => {
+              const gift = indexes.giftById.get(id);
+              const pinned = observedGifts.includes(id);
+              return (
+                <span
+                  key={id}
+                  data-testid="gift-chip"
+                  data-gift={id}
+                  data-pinned={pinned || undefined}
+                  data-entangled={entangledIds.has(id) || undefined}
+                  {...drag.handleFor(id)}
+                  // `none` made every chip a dead zone: with a dozen goals the panel could not be
+                  // scrolled by touching one. `pan-y` keeps scrolling; on touch the drag starts on a
+                  // long press instead (`useChipDrag`), so the callout that a long press would open
+                  // on iOS is turned off here.
+                  style={{ touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
+                  onContextMenu={(event) => event.preventDefault()}
+                  className={`inline-flex h-7 select-none items-center gap-1 rounded-full border bg-surface pl-1 pr-1 text-xs text-fg ${pinned ? 'border-ink' : 'border-line-strong'} ${
+                    drag.state.dragging === id ? 'opacity-40' : ''
+                  }`}
+                >
+                  {gift ? <GiftIcon gift={gift} size={20} judgement={judgementFor(id)} lang={lang} /> : null}
+                  <button
+                    type="button"
+                    onClick={() => openGift(id)}
+                    aria-haspopup="dialog"
+                    aria-label={t('giftDetail', lang, { name: giftName(id) })}
+                    className="hover:underline"
+                  >
+                    {giftName(id)}
+                  </button>
+                  {entangledIds.has(id) ? <Link2 size={11} aria-hidden className="text-fg-2" /> : null}
+                  <button
+                    type="button"
+                    onClick={() => removeWanted(id)}
+                    aria-label={t('removeFromSelection', lang, { name: giftName(id) })}
+                    className="text-fg-3"
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         </div>
       ) : null}

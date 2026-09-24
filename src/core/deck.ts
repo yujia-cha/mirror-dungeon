@@ -60,7 +60,9 @@ export function analyseDeck(
   }
 
   const sizes = <K extends string>(members: Partial<Record<K, number[]>>): Partial<Record<K, number>> =>
-    Object.fromEntries(Object.entries(members).map(([k, ids]) => [k, (ids as number[]).length])) as Partial<Record<K, number>>;
+    Object.fromEntries(Object.entries(members).map(([k, ids]) => [k, (ids as number[]).length])) as Partial<
+      Record<K, number>
+    >;
 
   return {
     keywordCounts: {
@@ -116,7 +118,9 @@ function conditionCount(condition: Condition, stats: DeckStats): number | null {
         // declares none), and 7 of the 13 ammo identities are 특수-only, so leaving them out
         // would read 데스페라도 as 6/2 on a full ammo deck.
         const withSpecial = condition.includesSpecial || !STATUS_SET.has(keyword);
-        const members = (withSpecial ? stats.keywordMembers : stats.baseKeywordMembers)[condition.scope][keyword];
+        const members = (withSpecial ? stats.keywordMembers : stats.baseKeywordMembers)[condition.scope][
+          keyword
+        ];
         for (const id of members ?? []) union.add(id);
       }
       return union.size;

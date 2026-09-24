@@ -33,7 +33,9 @@ import { defaultSeason, outPath } from '../scripts/lib/out.ts';
 /** Whatever season `index.json` opens: the one the vendored raw data describes. */
 const season = defaultSeason() ?? 7;
 const read = (name: string): unknown =>
-  JSON.parse(readFileSync(outPath(name.replace(/\.json$/, '') as Parameters<typeof outPath>[0], season), 'utf8'));
+  JSON.parse(
+    readFileSync(outPath(name.replace(/\.json$/, '') as Parameters<typeof outPath>[0], season), 'utf8'),
+  );
 const packs = packsFileSchema.parse(read('packs.json'));
 const gifts = giftsFileSchema.parse(read('gifts.json'));
 const rules = rulesSchema.parse(read('rules.json'));
@@ -62,7 +64,9 @@ describe.skipIf(!hasRaw)('Mirror Dungeon fallback, rebuilt from the derived sour
       .filter((pack) => floors.has(pack.id))
       .filter((pack) => {
         // Round-trip: synthesise the raw record, then read it back with the production derivation.
-        const rebuilt = availabilityFor(derivedPackAsRaw(pack.id, derivedPacks.get(pack.id) ?? {}, floors.get(pack.id)!));
+        const rebuilt = availabilityFor(
+          derivedPackAsRaw(pack.id, derivedPacks.get(pack.id) ?? {}, floors.get(pack.id)!),
+        );
         return JSON.stringify(rebuilt) !== JSON.stringify(pack.availability);
       })
       .map((pack) => pack.id);
@@ -74,8 +78,12 @@ describe.skipIf(!hasRaw)('Mirror Dungeon fallback, rebuilt from the derived sour
     expect(fusions.length).toBeGreaterThanOrEqual(59);
     const wrong = fusions
       .filter((gift) => {
-        const ours = gift.fusion!.recipes.map((r) => [...r.ingredients].sort((a, b) => a - b).join(',')).sort();
-        const theirs = derivedFixedRecipes(derivedGifts.get(gift.id) ?? {}).map((r) => r.join(',')).sort();
+        const ours = gift
+          .fusion!.recipes.map((r) => [...r.ingredients].sort((a, b) => a - b).join(','))
+          .sort();
+        const theirs = derivedFixedRecipes(derivedGifts.get(gift.id) ?? {})
+          .map((r) => r.join(','))
+          .sort();
         return JSON.stringify(ours) !== JSON.stringify(theirs);
       })
       .map((gift) => gift.id);
@@ -94,7 +102,9 @@ describe.skipIf(!hasRaw)('Mirror Dungeon fallback, rebuilt from the derived sour
   it('reproduces gift tiers through the same encoding the static data uses', () => {
     const wrong = gifts
       .filter((gift) => derivedGifts.has(gift.id))
-      .filter((gift) => tierFromTags(derivedGiftAsRaw(gift.id, derivedGifts.get(gift.id)!).tag ?? []) !== gift.tier)
+      .filter(
+        (gift) => tierFromTags(derivedGiftAsRaw(gift.id, derivedGifts.get(gift.id)!).tag ?? []) !== gift.tier,
+      )
       .map((gift) => gift.id);
     expect(wrong).toEqual([]);
   });
@@ -118,7 +128,11 @@ describe.skipIf(!hasRaw)('Mirror Dungeon fallback, rebuilt from the derived sour
     const anyPool = [...derivedPacks.values()].some((pack) => 'egoGiftPool' in pack || 'giftPool' in pack);
     const anyPrice = [...derivedGifts.values()].some((gift) => 'price' in gift || 'cost' in gift);
     const anyObservable = [...derivedGifts.values()].some((gift) => 'observable' in gift);
-    expect({ anyPool, anyPrice, anyObservable }).toEqual({ anyPool: false, anyPrice: false, anyObservable: false });
+    expect({ anyPool, anyPrice, anyObservable }).toEqual({
+      anyPool: false,
+      anyPrice: false,
+      anyObservable: false,
+    });
     // Meanwhile the static data does carry them, which is why it stays the source of truth.
     expect(gifts.filter((gift) => gift.price !== null).length).toBeGreaterThan(300);
     expect(gifts.filter((gift) => gift.observable).length).toBeGreaterThan(300);

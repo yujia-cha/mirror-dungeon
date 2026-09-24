@@ -24,7 +24,13 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { flagValue, hasFlag, readJson, repoPath } from './lib/io.ts';
 import { familyOf, renameToSeason, seasonOf } from './lib/season-files.ts';
-import { DERIVED_ONLY_GIFTS, DERIVED_ONLY_PACKS, derivedMdPresent, readDerivedGifts, readDerivedPacks } from './lib/derived-md.ts';
+import {
+  DERIVED_ONLY_GIFTS,
+  DERIVED_ONLY_PACKS,
+  derivedMdPresent,
+  readDerivedGifts,
+  readDerivedPacks,
+} from './lib/derived-md.ts';
 import { OUT, outPath } from './lib/out.ts';
 
 const RAW = 'https://raw.githubusercontent.com';
@@ -113,15 +119,17 @@ async function exists(url: string): Promise<boolean> {
 /** Packs and gifts the mirror knows and the built season does not ship. */
 function unshippedFromMirror(season: number): { packs: number[]; gifts: number[] } {
   if (!derivedMdPresent() || !existsSync(join(OUT, `md${season}`))) return { packs: [], gifts: [] };
-  const ourPacks = new Set(
-    readJson<{ id: number }[]>(outPath('packs', season)).map((pack) => pack.id),
-  );
+  const ourPacks = new Set(readJson<{ id: number }[]>(outPath('packs', season)).map((pack) => pack.id));
   const ourGifts = new Set(readJson<{ id: number }[]>(outPath('gifts', season)).map((gift) => gift.id));
   const allowedPacks = new Set<number>(DERIVED_ONLY_PACKS);
   const allowedGifts = new Set<number>(DERIVED_ONLY_GIFTS);
   return {
-    packs: [...readDerivedPacks().keys()].filter((id) => !ourPacks.has(id) && !allowedPacks.has(id)).sort((a, b) => a - b),
-    gifts: [...readDerivedGifts().keys()].filter((id) => !ourGifts.has(id) && !allowedGifts.has(id)).sort((a, b) => a - b),
+    packs: [...readDerivedPacks().keys()]
+      .filter((id) => !ourPacks.has(id) && !allowedPacks.has(id))
+      .sort((a, b) => a - b),
+    gifts: [...readDerivedGifts().keys()]
+      .filter((id) => !ourGifts.has(id) && !allowedGifts.has(id))
+      .sort((a, b) => a - b),
   };
 }
 
@@ -169,13 +177,17 @@ async function main(): Promise<void> {
       hits.push(`the derived mirror lists ${mirror.packs.length} unshipped pack(s)`);
     }
     if (mirror.gifts.length > 0) {
-      console.log(`    HIT ${mirror.gifts.length} gift(s) we do not ship: ${mirror.gifts.slice(0, 12).join(', ')}`);
+      console.log(
+        `    HIT ${mirror.gifts.length} gift(s) we do not ship: ${mirror.gifts.slice(0, 12).join(', ')}`,
+      );
       hits.push(`the derived mirror lists ${mirror.gifts.length} unshipped gift(s)`);
     }
   }
 
   if (hits.length === 0) {
-    console.log(`\nNo sign of Mirror Dungeon ${to}. Season: MD${from} (declared ${from} / snapshot ${from} / upstream ${to} not detected).`);
+    console.log(
+      `\nNo sign of Mirror Dungeon ${to}. Season: MD${from} (declared ${from} / snapshot ${from} / upstream ${to} not detected).`,
+    );
     return;
   }
   console.log(`\n⚠️  Mirror Dungeon ${to} may have started:`);

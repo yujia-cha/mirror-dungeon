@@ -53,25 +53,25 @@ describe.skipIf(!hasRaw)('a season rollover, rehearsed end to end', () => {
     it('runs every command the runbook lists', () => {
       const result = results.full!;
       const failed = result.steps.filter((step) => !step.ok);
-      expect(failed.map((step) => `${step.name}: ${step.output.split('\n').slice(-3).join(' | ')}`)).toEqual([]);
+      expect(failed.map((step) => `${step.name}: ${step.output.split('\n').slice(-3).join(' | ')}`)).toEqual(
+        [],
+      );
     });
 
     it('validates with no errors', () => {
       expect(results.full!.validationErrors).toEqual([]);
     });
 
-    it('names the new season\'s files before the lock knows them, and writes nothing while previewing', () => {
+    it("names the new season's files before the lock knows them, and writes nothing while previewing", () => {
       const result = results.full!;
       // The preview step asserts "nothing written" inside the rehearsal; it shows up as a failed
       // step if it ever does, which the first test would catch. Here: it recognised the season.
       expect(result.detectedNewSeasonFiles.length).toBeGreaterThan(0);
-      expect(result.detectedNewSeasonFiles).toContain(
-        `mirror-dungeon-common-data-md${result.to}.json`,
-      );
+      expect(result.detectedNewSeasonFiles).toContain(`mirror-dungeon-common-data-md${result.to}.json`);
       expect(result.detectedNewSeasonFiles).toContain(`mirrordungeon-egogift-droppool-${result.to}.json`);
     });
 
-    it('leaves the previous season\'s generated output untouched', () => {
+    it("leaves the previous season's generated output untouched", () => {
       expect(results.full!.previousSeasonUntouched).toBe(true);
     });
 
@@ -211,7 +211,10 @@ describe.skipIf(!hasRaw)('a season rollover, rehearsed end to end', () => {
       const md7Gifts = join(sandbox, 'public/data/md7/gifts.json');
       const original = readFileSync(md7Gifts, 'utf8');
       const gifts = JSON.parse(original) as { id: number; icon: number }[];
-      writeFileSync(md7Gifts, `${JSON.stringify([...gifts, { ...gifts[0]!, id: oldOnly, icon: oldOnly }], null, 2)}\n`);
+      writeFileSync(
+        md7Gifts,
+        `${JSON.stringify([...gifts, { ...gifts[0]!, id: oldOnly, icon: oldOnly }], null, 2)}\n`,
+      );
       draw(sandbox, oldOnly);
       try {
         const validate = validateIn(sandbox);

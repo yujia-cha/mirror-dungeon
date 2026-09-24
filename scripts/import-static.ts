@@ -80,7 +80,9 @@ function main(): void {
 
   const wanted = entry.files.map((file) => (typeof file === 'string' ? file : file.path));
   const available = indexByName(source);
-  const seasonsWanted = new Set(wanted.map((file) => seasonOf(basename(file))).filter((n): n is number => n !== null));
+  const seasonsWanted = new Set(
+    wanted.map((file) => seasonOf(basename(file))).filter((n): n is number => n !== null),
+  );
 
   const copied: string[] = [];
   const missing: string[] = [];

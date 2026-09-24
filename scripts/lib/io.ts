@@ -9,9 +9,7 @@ import { fileURLToPath, URL } from 'node:url';
  * synthetic next season without touching the working tree. Nothing else reads the variable, and
  * the scripts that honour it say so on their first line of output.
  */
-export const repoRoot = resolve(
-  process.env.MD_REPO_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)),
-);
+export const repoRoot = resolve(process.env.MD_REPO_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 
 /** True when the pipeline is pointed somewhere other than this checkout — worth printing. */
 export const rootIsOverridden = Boolean(process.env.MD_REPO_ROOT);

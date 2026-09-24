@@ -23,8 +23,8 @@
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs}\"",
     "data:fetch": "tsx scripts/fetch-sources.ts",
     "data:import": "tsx scripts/import-static.ts",
     "data:lock-next-season": "tsx scripts/lock-next-season.ts",
@@ -37,7 +37,7 @@
     "art": "tsx scripts/import-art.ts",
     "data:update": "tsx scripts/fetch-sources.ts --update && tsx scripts/build-data.ts && tsx scripts/validate-data.ts",
     "route": "tsx scripts/route-cli.ts",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run data:validate"
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run data:validate"
   },
   "dependencies": {
     "limbus-formation-deck": "^1.0.1",

@@ -88,9 +88,12 @@ describe('upgradeChildren', () => {
 
   it('holds every gift that names a parent, and only those', () => {
     const withParent = data.gifts.filter((gift) => gift.upgradeOf !== null);
-    expect([...children.values()].flat().map((gift) => gift.id).sort((a, b) => a - b)).toEqual(
-      withParent.map((gift) => gift.id).sort((a, b) => a - b),
-    );
+    expect(
+      [...children.values()]
+        .flat()
+        .map((gift) => gift.id)
+        .sort((a, b) => a - b),
+    ).toEqual(withParent.map((gift) => gift.id).sort((a, b) => a - b));
   });
 
   it('never lists a gift as its own child', () => {
@@ -107,9 +110,7 @@ describe('carriedBy', () => {
     carriedBy(indexes.giftById.get(giftId)!, { indexes, childrenOf, maxShopSlots });
 
   it('takes nothing for a gift with no children and no recipe', () => {
-    const plain = data.gifts.find(
-      (gift) => !gift.fusion?.recipes?.length && !childrenOf.has(gift.id),
-    );
+    const plain = data.gifts.find((gift) => !gift.fusion?.recipes?.length && !childrenOf.has(gift.id));
     expect(plain).toBeDefined();
     expect(carry(plain!.id)).toEqual([]);
   });
@@ -169,8 +170,8 @@ describe('deckSummaryChips', () => {
   });
 
   it('is empty for an empty deck', () => {
-    expect(
-      deckSummaryChips(analyseDeck([], indexes, data.rules.deployment, []), data.enums, 'ko'),
-    ).toEqual([]);
+    expect(deckSummaryChips(analyseDeck([], indexes, data.rules.deployment, []), data.enums, 'ko')).toEqual(
+      [],
+    );
   });
 });

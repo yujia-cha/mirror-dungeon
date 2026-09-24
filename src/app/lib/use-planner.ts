@@ -43,7 +43,6 @@ export interface PlannerState extends PlanResult {
   offThread: boolean;
 }
 
-
 /**
  * Build the worker, or `null` when this environment cannot.
  *
@@ -99,9 +98,12 @@ export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInpu
     const onMessage = (event: MessageEvent<PlannerResponse>): void => {
       const message = event.data;
       // Answers can arrive out of order after a season change; the newest question wins.
-      if (message.type === 'plan') setAnswer((current) => (current && current.id > message.id ? current : message));
+      if (message.type === 'plan')
+        setAnswer((current) => (current && current.id > message.id ? current : message));
       if (message.type === 'variants') {
-        setAlternatives((current) => (current && current.id > message.id ? current : { id: message.id, variants: message.variants }));
+        setAlternatives((current) =>
+          current && current.id > message.id ? current : { id: message.id, variants: message.variants },
+        );
       }
     };
     // A script that 404s, a parse error, an exception inside the planner: all arrive here, and all
@@ -131,7 +133,10 @@ export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInpu
   }, [active, input, data]);
 
   // No worker, or a worker that failed: compute inline, once per input, as the provider used to.
-  const inline = useMemo(() => (active ? null : runPlan(input, data, indexes)), [active, input, data, indexes]);
+  const inline = useMemo(
+    () => (active ? null : runPlan(input, data, indexes)),
+    [active, input, data, indexes],
+  );
 
   if (!active) return { ...inline!, pending: false, variantsPending: false, offThread: false };
   // Alternatives belong to one plan; shown only beside the plan they were computed for.

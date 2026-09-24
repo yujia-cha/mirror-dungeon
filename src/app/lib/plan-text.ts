@@ -22,20 +22,25 @@ export function planToText(
   // The app says 「4층」 everywhere else; the copied plan used to be the one place writing `4F` at a
   // Korean reader. `routeFreeRange` already held the range form and was going unused.
   const at = (floor: number): string => t('stageFloor', lang, { floor });
-  const range = (from: number, to: number): string => (from === to ? at(from) : t('routeFloorRange', lang, { from, to }));
+  const range = (from: number, to: number): string =>
+    from === to ? at(from) : t('routeFloorRange', lang, { from, to });
   const name = giftName;
-  if (dropped.length > 0) lines.push(t('routeVariantWithout', lang, { name: dropped.map(giftName).join(', ') }));
+  if (dropped.length > 0)
+    lines.push(t('routeVariantWithout', lang, { name: dropped.map(giftName).join(', ') }));
   if (marks.run) {
     const visits = Object.entries(marks.run.visits)
       .sort(([a], [b]) => Number(a) - Number(b))
       .map(([floor, packId]) => `${at(Number(floor))} ${packName(packId)}`);
-    lines.push(`${t('runActive', lang)} · ${t('runCurrentFloor', lang)} ${at(marks.run.currentFloor)}${visits.length > 0 ? ` · ${visits.join(', ')}` : ''}`);
+    lines.push(
+      `${t('runActive', lang)} · ${t('runCurrentFloor', lang)} ${at(marks.run.currentFloor)}${visits.length > 0 ? ` · ${visits.join(', ')}` : ''}`,
+    );
   }
   lines.push(`${t('routeStart', lang)}: ${plan.start.keyword ? keywordLabel(plan.start.keyword) : '—'}`);
   if (plan.start.startGift) lines.push(`  ${t('routeStartGift', lang)}: ${giftName(plan.start.startGift)}`);
   if (plan.start.observed.length > 0) {
     const observed = plan.start.observed.map(
-      (o) => `${name(o.giftId)} (${o.pinned ? t('routeObservedPinned', lang) : t('routeObservedRecommended', lang)})`,
+      (o) =>
+        `${name(o.giftId)} (${o.pinned ? t('routeObservedPinned', lang) : t('routeObservedRecommended', lang)})`,
     );
     lines.push(`  ${t('routeObserved', lang)}: ${observed.join(', ')}`);
   }
@@ -55,9 +60,13 @@ export function planToText(
     const text = [`${head}: ${segment.packs.map((p) => packName(p.packId)).join(' · ')}`];
     for (const pack of segment.packs) {
       for (const giftId of pack.gifts) {
-        const pickup = plan.floors.find((f) => f.floor === pack.floor)?.pickups.find((p) => p.giftId === giftId);
+        const pickup = plan.floors
+          .find((f) => f.floor === pack.floor)
+          ?.pickups.find((p) => p.giftId === giftId);
         const why = pickup?.neededFor ? ` -> ${giftName(pickup.neededFor)}` : '';
-        text.push(`  - ${name(giftId)}${segment.packs.length > 1 ? ` (${packName(pack.packId)})` : ''}${why}`);
+        text.push(
+          `  - ${name(giftId)}${segment.packs.length > 1 ? ` (${packName(pack.packId)})` : ''}${why}`,
+        );
       }
     }
     rows.push({ at: segment.from, text });
@@ -67,7 +76,8 @@ export function planToText(
   if (plan.unresolved.length > 0) {
     lines.push('');
     lines.push(t('routeUnresolved', lang));
-    for (const entry of plan.unresolved) lines.push(`  ${name(entry.giftId)}: ${unresolvedDetailText(entry, giftName, lang)}`);
+    for (const entry of plan.unresolved)
+      lines.push(`  ${name(entry.giftId)}: ${unresolvedDetailText(entry, giftName, lang)}`);
   }
   // Which goals no pack is fetching — the copied plan carries the same list the panel shows.
   if (plan.generalDrops.length > 0) {

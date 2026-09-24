@@ -14,6 +14,8 @@ describe('data preload', () => {
   });
 
   it('writes relative fetch preloads with crossorigin, so the app’s fetch() reuses them', () => {
-    expect(preloadTags(['data/index.json'])).toBe('<link rel="preload" href="./data/index.json" as="fetch" crossorigin="anonymous" />');
+    expect(preloadTags(['data/index.json'])).toBe(
+      '<link rel="preload" href="./data/index.json" as="fetch" crossorigin="anonymous" />',
+    );
   });
 });

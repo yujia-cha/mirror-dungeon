@@ -20,7 +20,9 @@ import { AppShell } from './shell/AppShell.tsx';
  * core names; anything else (a Zod failure on `index.json`, say) keeps its raw message, which is
  * developer-facing but better than an empty card.
  */
-type LoadFailure = { code: StringKey; params: Record<string, string | number>; text?: undefined } | { code?: undefined; params?: undefined; text: string };
+type LoadFailure =
+  | { code: StringKey; params: Record<string, string | number>; text?: undefined }
+  | { code?: undefined; params?: undefined; text: string };
 
 const FAILURE_KEY = {
   http: 'loadFailedHttp',
@@ -62,7 +64,12 @@ export function App() {
    * value lets the render decide instead: a result for a season we are no longer opening, or for an
    * attempt we have since retried, simply reads as "still loading".
    */
-  const [loaded, setLoaded] = useState<{ season: number; attempt: number; data: GameData; indexes: GameIndexes } | null>(null);
+  const [loaded, setLoaded] = useState<{
+    season: number;
+    attempt: number;
+    data: GameData;
+    indexes: GameIndexes;
+  } | null>(null);
   const [failure, setFailure] = useState<{ attempt: number; error: LoadFailure } | null>(null);
   const error = failure?.attempt === attempt ? failure.error : null;
   const [sharedCopied, setSharedCopied] = useState(false);
@@ -75,15 +82,17 @@ export function App() {
    * the initial state of both, and the effect is left with the side effects: applying the link and
    * rewriting the URL.
    */
-  const [incoming] = useState((): { kind: 'none' | 'broken' } | { kind: 'ask' | 'apply'; shared: SharedState } => {
-    if (!window.location.hash.startsWith('#s=')) return { kind: 'none' };
-    const shared = decodeShared(window.location.hash);
-    if (!shared) return { kind: 'broken' };
-    // A link is someone else's plan, so applying it replaces the deck, the goals and the run. On a
-    // fresh app that is what the reader wants; mid-run it destroys a record no undo can get back,
-    // so a run in progress is asked about first.
-    return runInProgress(useApp.getState().run) ? { kind: 'ask', shared } : { kind: 'apply', shared };
-  });
+  const [incoming] = useState(
+    (): { kind: 'none' | 'broken' } | { kind: 'ask' | 'apply'; shared: SharedState } => {
+      if (!window.location.hash.startsWith('#s=')) return { kind: 'none' };
+      const shared = decodeShared(window.location.hash);
+      if (!shared) return { kind: 'broken' };
+      // A link is someone else's plan, so applying it replaces the deck, the goals and the run. On a
+      // fresh app that is what the reader wants; mid-run it destroys a record no undo can get back,
+      // so a run in progress is asked about first.
+      return runInProgress(useApp.getState().run) ? { kind: 'ask', shared } : { kind: 'apply', shared };
+    },
+  );
   const [linkBroken, setLinkBroken] = useState(incoming.kind === 'broken');
   const [copyFailed, setCopyFailed] = useState(false);
   const [dropped, setDropped] = useState<{ gifts: number; packs: number } | null>(null);
@@ -148,7 +157,9 @@ export function App() {
   // the index opens. A season that has been withdrawn must not leave the app with nothing to read.
   const openSeason = useMemo(() => {
     if (!index) return null;
-    return season !== undefined && index.seasons.some((entry) => entry.id === season) ? season : index.default;
+    return season !== undefined && index.seasons.some((entry) => entry.id === season)
+      ? season
+      : index.default;
   }, [index, season]);
 
   const data = loaded && loaded.season === openSeason && loaded.attempt === attempt ? loaded.data : null;
@@ -233,7 +244,10 @@ export function App() {
   if (error) {
     return (
       <div className="flex min-h-dvh items-center justify-center px-4 py-10">
-        <Card variant="strong" className="flex max-w-[360px] flex-col items-center gap-2.5 px-6 py-6 text-center">
+        <Card
+          variant="strong"
+          className="flex max-w-[360px] flex-col items-center gap-2.5 px-6 py-6 text-center"
+        >
           <TriangleAlert size={28} aria-hidden />
           <div className="text-sm font-semibold">{t('loadFailed', lang)}</div>
           <div className="text-xs text-fg-3">
@@ -259,7 +273,10 @@ export function App() {
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="flex h-[96px] flex-col gap-2 rounded-md border border-line bg-surface p-3">
+            <div
+              key={i}
+              className="flex h-[96px] flex-col gap-2 rounded-md border border-line bg-surface p-3"
+            >
               <Skeleton className="h-2.5 w-2/5" />
               <Skeleton className="h-3.5 w-3/4" />
               <Skeleton className="h-4 w-1/2" />

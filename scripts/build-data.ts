@@ -20,7 +20,15 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { flagValue, hasFlag, readJson, readJsonIfExists, repoPath, rootIsOverridden, writeJsonStable } from './lib/io.ts';
+import {
+  flagValue,
+  hasFlag,
+  readJson,
+  readJsonIfExists,
+  repoPath,
+  rootIsOverridden,
+  writeJsonStable,
+} from './lib/io.ts';
 import { localizeBuffTokens } from './lib/battle-keywords.ts';
 import { stripRichText } from '../src/core/text.ts';
 import {
@@ -59,7 +67,11 @@ import {
 } from './lib/derive.ts';
 import { OUT, seasonDir } from './lib/out.ts';
 import { parseConditions } from './lib/parse-conditions.ts';
-import { deriveConsumedKeywordsFromText, deriveIdentityKeywordsFromText, skillsOfIdentity } from './lib/derive-text.ts';
+import {
+  deriveConsumedKeywordsFromText,
+  deriveIdentityKeywordsFromText,
+  skillsOfIdentity,
+} from './lib/derive-text.ts';
 import { DERIVED_DIR } from './lib/derived-source.ts';
 import {
   derivedGiftAsRaw,
@@ -149,10 +161,11 @@ const curated = {
     readJsonIfExists<Record<string, { ko?: string; en?: string }>>(repoPath('data/curated/factions.json')) ??
     {},
   identityKeywords:
-    readJsonIfExists<Record<string, { keywords?: Record<string, { skills: number; specialSkills: number }> }>>(
-      repoPath('data/curated/identity-keywords.json'),
-    ) ?? {},
-  identities: readJsonIfExists<Record<string, CuratedIdentity>>(repoPath('data/curated/identities.json')) ?? {},
+    readJsonIfExists<
+      Record<string, { keywords?: Record<string, { skills: number; specialSkills: number }> }>
+    >(repoPath('data/curated/identity-keywords.json')) ?? {},
+  identities:
+    readJsonIfExists<Record<string, CuratedIdentity>>(repoPath('data/curated/identities.json')) ?? {},
   conditions:
     readJsonIfExists<Record<string, { conditions?: Condition[] }>>(
       repoPath('data/curated/conditions.json'),
@@ -223,7 +236,9 @@ const curatedSeason = ((): CuratedSeason => {
   if (!parsed.success) {
     fail(
       `data/curated/seasons/md${dungeonId}/rules.json does not match curatedSeasonSchema:\n` +
-        parsed.error.issues.map((issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`).join('\n'),
+        parsed.error.issues
+          .map((issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`)
+          .join('\n'),
     );
   }
   return parsed.data;
@@ -459,7 +474,9 @@ for (const pack of selectablePacks) {
 /** 히든 전투: a random battle on EXTREME floors whose stages drop their own gifts. */
 const hiddenBattleInfo = common?.data.hiddenBattleInfo;
 const hiddenBattleGifts = new Set(
-  (hiddenBattleInfo?.pool ?? []).flatMap((stageId) => stageRewardGifts(stageId)).filter((id) => giftTextKo.has(id)),
+  (hiddenBattleInfo?.pool ?? [])
+    .flatMap((stageId) => stageRewardGifts(stageId))
+    .filter((id) => giftTextKo.has(id)),
 );
 
 /** What 기프트 관측 can offer this season; the data lists eligible gifts explicitly. */
@@ -637,68 +654,67 @@ const localizedSkills = readLocalizedPersonalitySkills('KR');
 /** 특수 variant buff ids (생체 재료 → 특수 충전 …), read off the game's own buff descriptions. */
 const specialVariants = readSpecialVariants();
 
-const derivedIdentities: Identity[] = rawPersonalities
-  .map((raw): Identity => {
-    const sinnerId = sinnerIdFromIdentityId(raw.id);
-    const curatedKeywords = curated.identityKeywords[String(raw.id)]?.keywords;
-    // 혈찬 is spent, never inflicted, and the static data says nothing machine-readable about it —
-    // only the Korean sentence does. So it is read separately and merged over what the skill data
-    // gives; a curated entry still wins outright.
-    const derived = {
-      ...deriveIdentityKeywords(raw, skills, specialVariants),
-      ...deriveConsumedKeywordsFromText(
-        skillsOfIdentity(raw.id, localizedSkills),
-        (raw.attributeList ?? []).map((entry) => entry.skillId),
-      ),
-    };
-    const keywords = (curatedKeywords ?? derived) as Identity['keywords'];
-    const keywordSource: Identity['keywordSource'] = curatedKeywords
-      ? 'curated'
-      : Object.keys(derived).length > 0
-        ? 'derived'
-        : 'none';
+const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
+  const sinnerId = sinnerIdFromIdentityId(raw.id);
+  const curatedKeywords = curated.identityKeywords[String(raw.id)]?.keywords;
+  // 혈찬 is spent, never inflicted, and the static data says nothing machine-readable about it —
+  // only the Korean sentence does. So it is read separately and merged over what the skill data
+  // gives; a curated entry still wins outright.
+  const derived = {
+    ...deriveIdentityKeywords(raw, skills, specialVariants),
+    ...deriveConsumedKeywordsFromText(
+      skillsOfIdentity(raw.id, localizedSkills),
+      (raw.attributeList ?? []).map((entry) => entry.skillId),
+    ),
+  };
+  const keywords = (curatedKeywords ?? derived) as Identity['keywords'];
+  const keywordSource: Identity['keywordSource'] = curatedKeywords
+    ? 'curated'
+    : Object.keys(derived).length > 0
+      ? 'derived'
+      : 'none';
 
-    const sins = new Set<Identity['sins'][number]>();
-    const attackTypes = new Set<Identity['attackTypes'][number]>();
-    for (const entry of raw.attributeList ?? []) {
-      const data = skills.get(entry.skillId)?.skillData?.[0];
-      const sin = data?.attributeType ? SIN_BY_COLOR[data.attributeType] : undefined;
-      if (sin) sins.add(sin);
-      switch (data?.atkType) {
-        case 'SLASH':
-          attackTypes.add('Slash');
-          break;
-        case 'PENETRATE':
-          attackTypes.add('Penetrate');
-          break;
-        case 'HIT':
-          attackTypes.add('Hit');
-          break;
-        default:
-          break;
-      }
+  const sins = new Set<Identity['sins'][number]>();
+  const attackTypes = new Set<Identity['attackTypes'][number]>();
+  for (const entry of raw.attributeList ?? []) {
+    const data = skills.get(entry.skillId)?.skillData?.[0];
+    const sin = data?.attributeType ? SIN_BY_COLOR[data.attributeType] : undefined;
+    if (sin) sins.add(sin);
+    switch (data?.atkType) {
+      case 'SLASH':
+        attackTypes.add('Slash');
+        break;
+      case 'PENETRATE':
+        attackTypes.add('Penetrate');
+        break;
+      case 'HIT':
+        attackTypes.add('Hit');
+        break;
+      default:
+        break;
     }
+  }
 
-    const title = loc(
-      personalityKo.get(raw.id)?.title?.replace(/\s*\n\s*/g, ' '),
-      personalityEn.get(raw.id)?.title?.replace(/\s*\n\s*/g, ' '),
-    );
+  const title = loc(
+    personalityKo.get(raw.id)?.title?.replace(/\s*\n\s*/g, ' '),
+    personalityEn.get(raw.id)?.title?.replace(/\s*\n\s*/g, ' '),
+  );
 
-    return {
-      id: raw.id,
-      sinnerId,
-      sinner: SINNER_NAMES[sinnerId] ?? loc('', ''),
-      title: applyNameOverride(title, curated.names.identities?.[String(raw.id)]),
-      rank: Math.min(3, Math.max(1, raw.rank ?? 1)) as 1 | 2 | 3,
-      season: raw.season ?? 0,
-      factions: [...(raw.associationList ?? [])].sort(),
-      traits: [...(raw.unitKeywordList ?? [])].sort(),
-      keywords,
-      keywordSource,
-      sins: [...sins].sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
-      attackTypes: [...attackTypes].sort(),
-    };
-  });
+  return {
+    id: raw.id,
+    sinnerId,
+    sinner: SINNER_NAMES[sinnerId] ?? loc('', ''),
+    title: applyNameOverride(title, curated.names.identities?.[String(raw.id)]),
+    rank: Math.min(3, Math.max(1, raw.rank ?? 1)) as 1 | 2 | 3,
+    season: raw.season ?? 0,
+    factions: [...(raw.associationList ?? [])].sort(),
+    traits: [...(raw.unitKeywordList ?? [])].sort(),
+    keywords,
+    keywordSource,
+    sins: [...sins].sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
+    attackTypes: [...attackTypes].sort(),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Identities the static data does not ship
@@ -714,9 +730,12 @@ const derivedSource = readDerivedIdentities();
 
 /** English faction names inverted, so a derived tag can be read back as the id the app uses. */
 const factionIdByEnglishName = new Map<string, string>();
-for (const [id, name] of readFactionNames('EN')) if (!factionIdByEnglishName.has(name)) factionIdByEnglishName.set(name, id);
+for (const [id, name] of readFactionNames('EN'))
+  if (!factionIdByEnglishName.has(name)) factionIdByEnglishName.set(name, id);
 const knownFactionIds = new Set<string>(
-  rawPersonalities.flatMap((raw) => raw.associationList ?? []).concat(curatedEntries(curated.factions).map(([id]) => id)),
+  rawPersonalities
+    .flatMap((raw) => raw.associationList ?? [])
+    .concat(curatedEntries(curated.factions).map(([id]) => id)),
 );
 
 function titleFor(id: number): Localized {
@@ -737,7 +756,10 @@ function titleFor(id: number): Localized {
  * mirror's own list is the weaker of the two.
  */
 const backfilledIdentities: Identity[] = [...derivedSource.entries()]
-  .filter(([id]) => !staticIdentityIds.has(id) && sinnerIdFromIdentityId(id) >= 1 && sinnerIdFromIdentityId(id) <= 12)
+  .filter(
+    ([id]) =>
+      !staticIdentityIds.has(id) && sinnerIdFromIdentityId(id) >= 1 && sinnerIdFromIdentityId(id) <= 12,
+  )
   .filter(([id]) => personalityKo.has(id))
   .map(([id, entry]): Identity => {
     const sinnerId = entry.sinnerId ?? sinnerIdFromIdentityId(id);
@@ -789,7 +811,8 @@ const curatedIdentities: Identity[] = curatedEntries(curated.identities).map(([k
     personalityKo.get(id)?.title?.replace(/\s*\n\s*/g, ' '),
     personalityEn.get(id)?.title?.replace(/\s*\n\s*/g, ' '),
   );
-  if (!title.ko) fail(`curated identity ${id} is not in the localization either; there is nothing to name it`);
+  if (!title.ko)
+    fail(`curated identity ${id} is not in the localization either; there is nothing to name it`);
   return {
     id,
     sinnerId,
@@ -801,7 +824,9 @@ const curatedIdentities: Identity[] = curatedEntries(curated.identities).map(([k
     traits: [...(entry.traits ?? [])].sort(),
     keywords: (entry.keywords ?? {}) as Identity['keywords'],
     keywordSource: 'curated',
-    sins: [...(entry.sins ?? [])].sort((a, b) => SINS.indexOf(a as Sin) - SINS.indexOf(b as Sin)) as Identity['sins'],
+    sins: [...(entry.sins ?? [])].sort(
+      (a, b) => SINS.indexOf(a as Sin) - SINS.indexOf(b as Sin),
+    ) as Identity['sins'],
     attackTypes: [...(entry.attackTypes ?? [])].sort() as Identity['attackTypes'],
   };
 });
@@ -914,7 +939,9 @@ const rules: Rules = {
   hiddenBattle: hiddenBattleInfo
     ? {
         gifts: sortNums(hiddenBattleGifts),
-        floors: sortNums((hiddenBattleInfo.probInfo ?? []).map((row) => row.floor)).filter((f) => f >= 1 && f <= 15),
+        floors: sortNums((hiddenBattleInfo.probInfo ?? []).map((row) => row.floor)).filter(
+          (f) => f >= 1 && f <= 15,
+        ),
         probabilityPerFloor: hiddenBattleInfo.probInfo?.[0]?.prob ?? null,
       }
     : null,
@@ -998,7 +1025,9 @@ const meta: Meta = {
           repo: s.repo,
           ...(s.sha ? { sha: s.sha } : {}),
           ...(branches
-            ? { languages: Object.fromEntries(Object.entries(branches).map(([lang, pin]) => [lang, pin.sha])) }
+            ? {
+                languages: Object.fromEntries(Object.entries(branches).map(([lang, pin]) => [lang, pin.sha])),
+              }
             : {}),
           fetchedAt: s.fetchedAt,
         },
@@ -1133,7 +1162,9 @@ console.log(
 );
 if (unnamedBuffIds.size > 0) {
   // Not an error: these are identity- or gift-specific buffs the game names nowhere we can read.
-  console.log(`  ${unnamedBuffIds.size} buff id(s) left as ids in the text: ${[...unnamedBuffIds].sort().slice(0, 8).join(', ')}…`);
+  console.log(
+    `  ${unnamedBuffIds.size} buff id(s) left as ids in the text: ${[...unnamedBuffIds].sort().slice(0, 8).join(', ')}…`,
+  );
 }
 if (missingText.length > 0) {
   console.log(`  ${missingText.length} gift(s) without Korean text: ${missingText.slice(0, 10).join(', ')}`);

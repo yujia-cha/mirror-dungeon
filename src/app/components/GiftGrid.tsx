@@ -16,7 +16,6 @@ import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 
-
 export function GiftTileGrid({
   tiles,
   wanted,

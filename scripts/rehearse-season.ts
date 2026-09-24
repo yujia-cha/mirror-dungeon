@@ -195,7 +195,11 @@ export function rehearse(variant: SynthVariant, options: { keep?: boolean } = {}
     } else {
       // 1. The first import, before anyone touches the lock. It must change nothing on disk and
       //    name the season's files instead.
-      const preview = run('import (before the lock knows the season)', ['data:import', '--', synth.staticDir], sandbox);
+      const preview = run(
+        'import (before the lock knows the season)',
+        ['data:import', '--', synth.staticDir],
+        sandbox,
+      );
       steps.push(preview);
       detectedNewSeasonFiles = newSeasonFilesFrom(preview.output);
       if (treeHash(join(sandbox, 'data/raw/static')) !== rawBefore) {
@@ -208,7 +212,9 @@ export function rehearse(variant: SynthVariant, options: { keep?: boolean } = {}
       }
 
       // 2. Teach the lock the new season's file names, then import for real.
-      steps.push(run('lock the next season', ['data:lock-next-season', '--', String(to), '--write'], sandbox));
+      steps.push(
+        run('lock the next season', ['data:lock-next-season', '--', String(to), '--write'], sandbox),
+      );
       steps.push(run('import', ['data:import', '--', synth.staticDir, '--write'], sandbox));
 
       // 3. What `data:fetch` would have brought down. The localization mirror does keep up with
@@ -312,9 +318,13 @@ function report(result: RehearsalResult): void {
     if (!step.ok) for (const line of step.output.split('\n').slice(-12)) console.log(`         ${line}`);
   }
   if (result.detectedNewSeasonFiles.length > 0) {
-    console.log(`  import named ${result.detectedNewSeasonFiles.length} file(s) of the new season before the lock knew it`);
+    console.log(
+      `  import named ${result.detectedNewSeasonFiles.length} file(s) of the new season before the lock knew it`,
+    );
   }
-  console.log(`  seasons on disk: ${result.seasons.join(', ') || 'none'}; default ${result.defaultSeason ?? 'none'}`);
+  console.log(
+    `  seasons on disk: ${result.seasons.join(', ') || 'none'}; default ${result.defaultSeason ?? 'none'}`,
+  );
   console.log(`  provisional: ${JSON.stringify(result.provisional)}`);
   console.log(`  md${result.from} output untouched: ${result.previousSeasonUntouched}`);
   if (result.built) {
@@ -323,7 +333,9 @@ function report(result: RehearsalResult): void {
       `  built md${b.season}: ${b.gifts} gifts (${b.observable} observable, ${b.event} event), ` +
         `${b.packs} packs (${b.selectablePacks} selectable), name ${JSON.stringify(b.dungeonNameKo)}`,
     );
-    console.log(`  new content present: packs ${b.newPacksPresent.join(',') || 'none'}, gifts ${b.newGiftsPresent.length}`);
+    console.log(
+      `  new content present: packs ${b.newPacksPresent.join(',') || 'none'}, gifts ${b.newGiftsPresent.length}`,
+    );
   }
   for (const error of result.validationErrors) console.log(`  validate error  ${error}`);
   for (const warning of result.validationWarnings) console.log(`  validate warn   ${warning}`);

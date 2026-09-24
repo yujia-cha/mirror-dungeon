@@ -196,10 +196,7 @@ export function deriveIdentityKeywordsFromText(
 }
 
 /** The localized skills of one identity, newest-level text included, sorted by skill id. */
-export function skillsOfIdentity(
-  identityId: number,
-  skills: Map<number, LocalizedSkill>,
-): LocalizedSkill[] {
+export function skillsOfIdentity(identityId: number, skills: Map<number, LocalizedSkill>): LocalizedSkill[] {
   return [...skills.values()]
     .filter((s) => identityIdOfSkill(s.id) === identityId)
     .sort((a, b) => a.id - b.id);

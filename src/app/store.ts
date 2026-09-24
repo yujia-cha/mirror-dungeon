@@ -163,7 +163,8 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   if ('deployed' in source) out.deployed = source.deployed;
   const observed = Array.isArray(out.observedGifts) ? out.observedGifts : [];
   out.observedGifts = [...new Set(observed.filter((n): n is number => typeof n === 'number'))];
-  const ids = (value: unknown): number[] => (Array.isArray(value) ? [...new Set(value.filter((n): n is number => typeof n === 'number'))] : []);
+  const ids = (value: unknown): number[] =>
+    Array.isArray(value) ? [...new Set(value.filter((n): n is number => typeof n === 'number'))] : [];
   const bannedPacks = ids(out.bannedPacks);
   out.bannedPacks = bannedPacks;
   out.preferredPacks = ids(out.preferredPacks).filter((id) => !bannedPacks.includes(id));
@@ -246,7 +247,14 @@ export function emptyRun(): RunState {
 }
 
 export function defaultUi(): UiState {
-  return { leftOpen: true, leftTab: 'gifts', rightOpen: true, rightTab: 'plan', leftWidth: PANEL_WIDTH.default, rightWidth: PANEL_WIDTH.default };
+  return {
+    leftOpen: true,
+    leftTab: 'gifts',
+    rightOpen: true,
+    rightTab: 'plan',
+    leftWidth: PANEL_WIDTH.default,
+    rightWidth: PANEL_WIDTH.default,
+  };
 }
 
 /** A stored or dragged width, rounded and held inside the allowed band. */
@@ -264,7 +272,8 @@ export function sanitizeUi(raw: unknown): UiState {
   // The old 「루트 설정」 tab folded into the items tab.
   if (source.leftTab === 'deck' || source.leftTab === 'gifts') out.leftTab = source.leftTab;
   else if (source.leftTab === 'settings') out.leftTab = 'gifts';
-  if (source.rightTab === 'plan' || source.rightTab === 'goals' || source.rightTab === 'tracker') out.rightTab = source.rightTab;
+  if (source.rightTab === 'plan' || source.rightTab === 'goals' || source.rightTab === 'tracker')
+    out.rightTab = source.rightTab;
   out.leftWidth = clampPanelWidth(source.leftWidth);
   out.rightWidth = clampPanelWidth(source.rightWidth);
   return out;
@@ -289,18 +298,29 @@ export function sanitizeRun(raw: unknown): RunState {
   if (source.visits && typeof source.visits === 'object') {
     for (const [floor, packId] of Object.entries(source.visits as Record<string, unknown>)) {
       const f = Number(floor);
-      if (!Number.isInteger(f) || f < 1 || f > MAX_FLOOR_EVER || typeof packId !== 'number' || seen.has(packId)) continue;
+      if (
+        !Number.isInteger(f) ||
+        f < 1 ||
+        f > MAX_FLOOR_EVER ||
+        typeof packId !== 'number' ||
+        seen.has(packId)
+      )
+        continue;
       seen.add(packId);
       out.visits[f] = packId;
     }
   }
   if (source.giftStatus && typeof source.giftStatus === 'object') {
     for (const [id, status] of Object.entries(source.giftStatus as Record<string, unknown>)) {
-      if (Number.isInteger(Number(id)) && (status === 'got' || status === 'failed')) out.giftStatus[Number(id)] = status;
+      if (Number.isInteger(Number(id)) && (status === 'got' || status === 'failed'))
+        out.giftStatus[Number(id)] = status;
     }
   }
   const floor = typeof source.currentFloor === 'number' ? Math.round(source.currentFloor) : 1;
-  out.currentFloor = Math.min(MAX_RUN_DONE_FLOOR, Math.max(1, floor, ...Object.keys(out.visits).map((f) => Number(f) + 1)));
+  out.currentFloor = Math.min(
+    MAX_RUN_DONE_FLOOR,
+    Math.max(1, floor, ...Object.keys(out.visits).map((f) => Number(f) + 1)),
+  );
   const stage = typeof source.stageFloor === 'number' ? Math.round(source.stageFloor) : out.currentFloor;
   // Up to the done floor, never past it: the stage stands one beyond the last floor when the run
   // is over, and that is where the done card lives.
@@ -308,7 +328,13 @@ export function sanitizeRun(raw: unknown): RunState {
   // The start-of-run record only means something once floor 1 is behind, and only for gifts
   // still marked as collected.
   if (out.currentFloor > 1 && Array.isArray(source.startGifts)) {
-    out.startGifts = [...new Set(source.startGifts.filter((id): id is number => Number.isInteger(id) && out.giftStatus[id as number] === 'got'))];
+    out.startGifts = [
+      ...new Set(
+        source.startGifts.filter(
+          (id): id is number => Number.isInteger(id) && out.giftStatus[id as number] === 'got',
+        ),
+      ),
+    ];
   }
   return out;
 }
@@ -320,7 +346,10 @@ export function sanitizeRun(raw: unknown): RunState {
  * already visited still supplies its own drops through the played floor), at the cost of tracker
  * marks on non-goal gifts, which the player can set again.
  */
-export function withoutLegacyGot(giftStatus: RunState['giftStatus'], wanted: number[]): RunState['giftStatus'] {
+export function withoutLegacyGot(
+  giftStatus: RunState['giftStatus'],
+  wanted: number[],
+): RunState['giftStatus'] {
   const out: RunState['giftStatus'] = {};
   for (const [id, status] of Object.entries(giftStatus)) {
     if (status === 'got' && !wanted.includes(Number(id))) continue;
@@ -336,8 +365,13 @@ export function withoutLegacyGot(giftStatus: RunState['giftStatus'], wanted: num
  * `unobtainableGifts` — a fusion that eats it stays unresolvable with nothing on screen to undo.
  * Collected marks are left alone: the tracker and the stage set those on non-goal gifts on purpose.
  */
-export function withoutStaleFailures(giftStatus: RunState['giftStatus'], wanted: number[]): RunState['giftStatus'] {
-  const stale = Object.entries(giftStatus).filter(([id, status]) => status === 'failed' && !wanted.includes(Number(id)));
+export function withoutStaleFailures(
+  giftStatus: RunState['giftStatus'],
+  wanted: number[],
+): RunState['giftStatus'] {
+  const stale = Object.entries(giftStatus).filter(
+    ([id, status]) => status === 'failed' && !wanted.includes(Number(id)),
+  );
   if (stale.length === 0) return giftStatus;
   const out = { ...giftStatus };
   for (const [id] of stale) delete out[Number(id)];
@@ -378,7 +412,10 @@ function moveFrontier(
   return { currentFloor, giftStatus, startGifts };
 }
 
-function withStatus(giftStatus: RunState['giftStatus'], settle?: { got?: number[]; failed?: number[] }): RunState['giftStatus'] {
+function withStatus(
+  giftStatus: RunState['giftStatus'],
+  settle?: { got?: number[]; failed?: number[] },
+): RunState['giftStatus'] {
   if (!settle) return giftStatus;
   const next = { ...giftStatus };
   for (const id of settle.got ?? []) next[id] = 'got';
@@ -410,14 +447,17 @@ export type PersistedState = Pick<
  * a run saved by an earlier build may still hold a recommended observation as collected.
  */
 export function sanitizePersisted(persisted: unknown, version: number): PersistedState {
-  let state = (persisted && typeof persisted === 'object' ? persisted : {}) as Partial<AppState> & { step?: unknown };
+  let state = (persisted && typeof persisted === 'object' ? persisted : {}) as Partial<AppState> & {
+    step?: unknown;
+  };
   if (version < 2) {
     const legacyDeck = Array.isArray(state.deck) ? state.deck : [];
     state = { ...state, deck: legacyDeck, deployed: legacyDeck.slice(0, LEGACY_DEPLOYED) };
   }
   // An id list is the one shape a share link and a hand-edited blob both get wrong, so the
   // elements are filtered too — `deck: "abc"` used to survive as a string and break every reader.
-  const ids = (raw: unknown): number[] => (Array.isArray(raw) ? raw.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : []);
+  const ids = (raw: unknown): number[] =>
+    Array.isArray(raw) ? raw.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : [];
   // One identity per sinner and at most twelve, as `setDeck` enforces: a blob with two of one
   // sinner made the deck builder show one and the planner count both.
   const deck = uniqueDeck(ids(state.deck));
@@ -434,7 +474,11 @@ export function sanitizePersisted(persisted: unknown, version: number): Persiste
     run,
     ui: sanitizeUi(state.ui),
     // At rehydrate the recipes are not known yet, so this prunes nothing; `adoptSeason` does it.
-    options: withObservedIn(sanitizeOptions(state.options), wanted, sanitizeFusionGoal(state.fusionGoal, wanted)),
+    options: withObservedIn(
+      sanitizeOptions(state.options),
+      wanted,
+      sanitizeFusionGoal(state.fusionGoal, wanted),
+    ),
     lang: state.lang === 'en' ? 'en' : 'ko',
     dark: typeof state.dark === 'boolean' ? state.dark : prefersDark(),
     season: typeof state.season === 'number' && Number.isFinite(state.season) ? state.season : undefined,
@@ -548,7 +592,12 @@ export const useApp = create<AppState>()(
         }),
 
       clearWanted: () =>
-        set((state) => ({ wanted: [], fusionGoal: {}, options: { ...state.options, observedGifts: [] }, run: withRunFor(state.run, []) })),
+        set((state) => ({
+          wanted: [],
+          fusionGoal: {},
+          options: { ...state.options, observedGifts: [] },
+          run: withRunFor(state.run, []),
+        })),
 
       setFusionGoal: (giftId, goal) =>
         set((state) => {
@@ -567,7 +616,11 @@ export const useApp = create<AppState>()(
           const visits = withoutPack(state.run.visits, packId);
           visits[floor] = packId;
           return {
-            run: { ...state.run, visits, ...moveFrontier(state.run, Math.max(state.run.currentFloor, floor + 1), settle) },
+            run: {
+              ...state.run,
+              visits,
+              ...moveFrontier(state.run, Math.max(state.run.currentFloor, floor + 1), settle),
+            },
           };
         }),
       unvisitPack: (packId, opts) =>
@@ -585,7 +638,15 @@ export const useApp = create<AppState>()(
           // ordinary). `moveFrontier` holds the same line for statuses the player set by hand.
           const fromStart = new Set(moved.startGifts);
           for (const id of opts?.reset ?? []) if (!fromStart.has(id)) delete giftStatus[id];
-          return { run: { ...state.run, visits, ...moved, stageFloor: Math.min(state.run.stageFloor, currentFloor), giftStatus } };
+          return {
+            run: {
+              ...state.run,
+              visits,
+              ...moved,
+              stageFloor: Math.min(state.run.stageFloor, currentFloor),
+              giftStatus,
+            },
+          };
         }),
       nextFloor: (settle) =>
         set((state) => {
@@ -593,7 +654,12 @@ export const useApp = create<AppState>()(
           // Only a run that is over *and* holds nothing left to settle on the last floor is done.
           // An entry made on the last floor pushes the frontier past it while that floor is still
           // on stage, and it has to settle its misses before the run can close.
-          if (run.currentFloor >= runDoneFloor(state.lastFloor) && run.stageFloor >= state.lastFloor && run.visits[run.stageFloor] === undefined) return {};
+          if (
+            run.currentFloor >= runDoneFloor(state.lastFloor) &&
+            run.stageFloor >= state.lastFloor &&
+            run.visits[run.stageFloor] === undefined
+          )
+            return {};
           const skipping = run.stageFloor === run.currentFloor;
           const currentFloor = skipping ? run.currentFloor + 1 : run.currentFloor;
           // Never past the frontier — which is the done floor once the last floor is decided, so
@@ -607,9 +673,18 @@ export const useApp = create<AppState>()(
           const { run } = state;
           const stageFloor = Math.min(state.lastFloor, run.currentFloor, Math.max(1, floor));
           // A skip right before the frontier holds no record, so stepping back onto it takes it back.
-          const currentFloor = stageFloor === run.currentFloor - 1 && run.visits[stageFloor] === undefined ? stageFloor : run.currentFloor;
+          const currentFloor =
+            stageFloor === run.currentFloor - 1 && run.visits[stageFloor] === undefined
+              ? stageFloor
+              : run.currentFloor;
           // Walking forward off a floor settles it, exactly as 「다음 층」 does; walking back never does.
-          return { run: { ...run, stageFloor, ...moveFrontier(run, currentFloor, stageFloor > run.stageFloor ? settle : undefined) } };
+          return {
+            run: {
+              ...run,
+              stageFloor,
+              ...moveFrontier(run, currentFloor, stageFloor > run.stageFloor ? settle : undefined),
+            },
+          };
         }),
       resetRun: () => set({ run: emptyRun() }),
       setGiftStatus: (giftId, status) =>
@@ -651,7 +726,13 @@ export const useApp = create<AppState>()(
           // A goal, or an ingredient a fusion goal has to consume — the shop hands those over too,
           // and observing one is often the only way a fusion finishes.
           const collected = collectedGifts(state.wanted, state.fusionGoal);
-          if (!has && (state.options.observedGifts.length >= limits.max || !collected.has(giftId) || !limits.observable(giftId))) return {};
+          if (
+            !has &&
+            (state.options.observedGifts.length >= limits.max ||
+              !collected.has(giftId) ||
+              !limits.observable(giftId))
+          )
+            return {};
           const observedGifts = has
             ? state.options.observedGifts.filter((id) => id !== giftId)
             : [...state.options.observedGifts, giftId];
@@ -661,14 +742,20 @@ export const useApp = create<AppState>()(
       setOptions: (patch) => set((state) => ({ options: { ...state.options, ...patch } })),
       resetAll: (deck, deployedDefault) => {
         const next = uniqueDeck(deck);
-        set({ deck: next, deployed: next.slice(0, deployedDefault), wanted: [], fusionGoal: {}, options: appDefaultOptions(), run: emptyRun() });
+        set({
+          deck: next,
+          deployed: next.slice(0, deployedDefault),
+          wanted: [],
+          fusionGoal: {},
+          options: appDefaultOptions(),
+          run: emptyRun(),
+        });
       },
       setUi: (patch) => set((state) => ({ ui: sanitizeUi({ ...state.ui, ...patch }) })),
       setLang: (lang) => set({ lang }),
       toggleDark: () => set((state) => ({ dark: !state.dark })),
 
-      setSeason: (season) =>
-        set((state) => (state.season === season ? {} : { season, run: emptyRun() })),
+      setSeason: (season) => set((state) => (state.season === season ? {} : { season, run: emptyRun() })),
 
       adoptSeason: ({ season, lastFloor, giftIds, packIds, recipes }) => {
         recipeTree = recipes;
@@ -679,7 +766,9 @@ export const useApp = create<AppState>()(
         // word at the next toggle. This is also where a rehydrated blob's pins are first judged —
         // `sanitizePersisted` cannot, having no recipes yet.
         const collected = collectedGifts(wanted, sanitizeFusionGoal(state.fusionGoal, wanted));
-        const observed = (state.options.observedGifts ?? []).filter((id) => giftIds.has(id) && collected.has(id));
+        const observed = (state.options.observedGifts ?? []).filter(
+          (id) => giftIds.has(id) && collected.has(id),
+        );
         const preferredPacks = state.options.preferredPacks.filter((id) => packIds.has(id));
         const bannedPacks = state.options.bannedPacks.filter((id) => packIds.has(id));
         const pinnedPacks = Object.fromEntries(
@@ -704,8 +793,12 @@ export const useApp = create<AppState>()(
             ? emptyRun()
             : {
                 ...state.run,
-                visits: Object.fromEntries(Object.entries(state.run.visits).filter(([, packId]) => packIds.has(packId))),
-                giftStatus: Object.fromEntries(Object.entries(state.run.giftStatus).filter(([id]) => giftIds.has(Number(id)))),
+                visits: Object.fromEntries(
+                  Object.entries(state.run.visits).filter(([, packId]) => packIds.has(packId)),
+                ),
+                giftStatus: Object.fromEntries(
+                  Object.entries(state.run.giftStatus).filter(([id]) => giftIds.has(Number(id))),
+                ),
                 startGifts: state.run.startGifts.filter((id) => giftIds.has(id)),
               };
         set({
@@ -731,7 +824,11 @@ export const useApp = create<AppState>()(
           // Pins follow the same rule priorities and fusion goals do: only a goal can be observed.
           // A link that carried a pin for something else used to spend observation budget on it and
           // then drop it without a word the next time any gift was toggled.
-          options: withObservedIn(sanitizeOptions(shared.options), shared.wanted, sanitizeFusionGoal(shared.fusionGoal, shared.wanted)),
+          options: withObservedIn(
+            sanitizeOptions(shared.options),
+            shared.wanted,
+            sanitizeFusionGoal(shared.fusionGoal, shared.wanted),
+          ),
           run: emptyRun(),
         });
       },

@@ -94,7 +94,14 @@ export function GiftTile({
           which keyword an uncollected gift has. The name stays outside it either way: at 10px it
           would sit at 3.93:1 on the light ground, under the 4.5:1 the floor strip is careful about.
         */}
-        <GiftIcon gift={gift} size={size} judgement={judgement} status={status} dim={status === null} lang={lang} />
+        <GiftIcon
+          gift={gift}
+          size={size}
+          judgement={judgement}
+          status={status}
+          dim={status === null}
+          lang={lang}
+        />
         <span className="line-clamp-2 w-full break-keep text-[10px] leading-tight text-fg" aria-hidden>
           {name}
         </span>

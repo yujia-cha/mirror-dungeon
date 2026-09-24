@@ -154,11 +154,18 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
             aria-expanded={open}
             aria-controls="deck-search-listbox"
             aria-autocomplete="list"
-            aria-activedescendant={open && globalResults[activeIndex] ? `deck-option-${globalResults[activeIndex].id}` : undefined}
+            aria-activedescendant={
+              open && globalResults[activeIndex] ? `deck-option-${globalResults[activeIndex].id}` : undefined
+            }
             className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
           />
           {query ? (
-            <button type="button" onClick={() => setQuery('')} aria-label={t('deckClose', lang)} className="text-fg-3">
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label={t('deckClose', lang)}
+              className="text-fg-3"
+            >
               <X size={14} />
             </button>
           ) : null}
@@ -167,9 +174,16 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-line bg-surface-2 px-3 text-sm font-medium"
           title={full ? t('deckDeployedFull', lang, { max }) : undefined}
         >
-          {t('deckDeployed', lang)} <span className="font-num">{deployed.length}/{max}</span>
+          {t('deckDeployed', lang)}{' '}
+          <span className="font-num">
+            {deployed.length}/{max}
+          </span>
         </span>
-        <Button onClick={() => setDeck(defaultDeck(data), data.rules.deployment.default)} ariaLabel={t('deckDefault', lang)} className="h-9">
+        <Button
+          onClick={() => setDeck(defaultDeck(data), data.rules.deployment.default)}
+          ariaLabel={t('deckDefault', lang)}
+          className="h-9"
+        >
           <Users size={14} aria-hidden />
           <span className="hidden @sm:inline">{t('deckDefault', lang)}</span>
         </Button>
@@ -185,36 +199,52 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
             className="absolute left-0 top-10 z-20 flex max-h-[420px] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-line-strong bg-surface shadow-pop"
           >
             <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs text-fg-3">
-              <span>{globalResults.length > 0 ? t('deckSearchHint', lang, { n: globalResults.length }) : t('deckSearchNone', lang)}</span>
-              {globalResults.length > 0 ? <span>{t('deckSearchPicked', lang, { n: globalResults.filter((identity) => bySinner.get(identity.sinnerId) === identity.id).length })}</span> : null}
+              <span>
+                {globalResults.length > 0
+                  ? t('deckSearchHint', lang, { n: globalResults.length })
+                  : t('deckSearchNone', lang)}
+              </span>
+              {globalResults.length > 0 ? (
+                <span>
+                  {t('deckSearchPicked', lang, {
+                    n: globalResults.filter((identity) => bySinner.get(identity.sinnerId) === identity.id)
+                      .length,
+                  })}
+                </span>
+              ) : null}
             </div>
             {globalResults.map((identity, i) => {
               const held = bySinner.get(identity.sinnerId) === identity.id;
               return (
-              <button
-                key={identity.id}
-                id={`deck-option-${identity.id}`}
-                type="button"
-                role="option"
-                aria-selected={i === activeIndex}
-                aria-pressed={held}
-                data-picked={held || undefined}
-                onClick={() => pickIdentity(identity)}
-                onPointerMove={() => setActiveIndex(i)}
-                className={`flex h-11 items-center gap-3 border-b border-line px-3 text-left hover:bg-surface-2 ${i === activeIndex ? 'bg-surface-2' : ''}`}
-              >
-                <span className={`inline-flex h-4 w-4 flex-none items-center justify-center rounded-[4px] border ${held ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong'}`} aria-hidden>
-                  {held ? <Check size={11} strokeWidth={3} /> : null}
-                </span>
-                <span className="w-16 flex-none text-xs font-medium text-fg-2">{pick(identity.sinner, lang)}</span>
-                <span className="min-w-0 flex-1 truncate text-sm text-fg">
-                  {pick(identity.title, lang)}
-                  <span className="text-xs text-fg-3"> · {t('deckRank', lang, { n: identity.rank })}</span>
-                </span>
-                <span className="hidden gap-1 @sm:flex">
-                  <KeywordChips identity={identity} data={data} lang={lang} />
-                </span>
-              </button>
+                <button
+                  key={identity.id}
+                  id={`deck-option-${identity.id}`}
+                  type="button"
+                  role="option"
+                  aria-selected={i === activeIndex}
+                  aria-pressed={held}
+                  data-picked={held || undefined}
+                  onClick={() => pickIdentity(identity)}
+                  onPointerMove={() => setActiveIndex(i)}
+                  className={`flex h-11 items-center gap-3 border-b border-line px-3 text-left hover:bg-surface-2 ${i === activeIndex ? 'bg-surface-2' : ''}`}
+                >
+                  <span
+                    className={`inline-flex h-4 w-4 flex-none items-center justify-center rounded-[4px] border ${held ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong'}`}
+                    aria-hidden
+                  >
+                    {held ? <Check size={11} strokeWidth={3} /> : null}
+                  </span>
+                  <span className="w-16 flex-none text-xs font-medium text-fg-2">
+                    {pick(identity.sinner, lang)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                    {pick(identity.title, lang)}
+                    <span className="text-xs text-fg-3"> · {t('deckRank', lang, { n: identity.rank })}</span>
+                  </span>
+                  <span className="hidden gap-1 @sm:flex">
+                    <KeywordChips identity={identity} data={data} lang={lang} />
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -251,7 +281,10 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
         </form>
       ) : null}
 
-      <ul className="grid grid-cols-1 gap-2 @min-[300px]:grid-cols-2 @min-[640px]:grid-cols-4" aria-label={t('tabDeck', lang)}>
+      <ul
+        className="grid grid-cols-1 gap-2 @min-[300px]:grid-cols-2 @min-[640px]:grid-cols-4"
+        aria-label={t('tabDeck', lang)}
+      >
         {data.enums.sinners.map((sinner) => {
           const id = bySinner.get(sinner.id) ?? null;
           const identity = id !== null ? indexes.identityById.get(id) : undefined;
@@ -298,8 +331,12 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                 {identity ? (
                   <>
                     <span className="flex min-w-0 max-w-full items-baseline gap-1.5">
-                      <span className="truncate text-sm font-medium text-fg">{pick(identity.title, lang)}</span>
-                      <span className="flex-none text-xs text-fg-3">{t('deckRank', lang, { n: identity.rank })}</span>
+                      <span className="truncate text-sm font-medium text-fg">
+                        {pick(identity.title, lang)}
+                      </span>
+                      <span className="flex-none text-xs text-fg-3">
+                        {t('deckRank', lang, { n: identity.rank })}
+                      </span>
                     </span>
                     <span className="flex flex-wrap gap-1">
                       <KeywordChips identity={identity} data={data} lang={lang} />
@@ -342,7 +379,6 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           <span className="text-xs text-fg-3">{t('deckSummaryBasis', lang)}</span>
         </div>
       )}
-
     </div>
   );
 }
@@ -399,7 +435,9 @@ function SinnerPicker({
           aria-expanded="true"
           aria-controls={`sinner-listbox-${sinner}`}
           aria-autocomplete="list"
-          aria-activedescendant={identities[activeIndex] ? `sinner-option-${identities[activeIndex].id}` : undefined}
+          aria-activedescendant={
+            identities[activeIndex] ? `sinner-option-${identities[activeIndex].id}` : undefined
+          }
           placeholder={t('deckSinnerSearch', lang, { sinner: sinnerName })}
           aria-label={t('deckSinnerSearch', lang, { sinner: sinnerName })}
           className="h-8 min-w-0 flex-1 rounded-sm border border-line-strong bg-surface px-2 text-xs outline-none"
@@ -411,13 +449,22 @@ function SinnerPicker({
       <ul className="max-h-64 overflow-y-auto" role="listbox" id={`sinner-listbox-${sinner}`}>
         {selected !== null ? (
           <li>
-            <button type="button" onClick={() => onPick(null)} className="flex h-9 w-full items-center px-3 text-left text-xs text-fg-2 hover:bg-surface-2">
+            <button
+              type="button"
+              onClick={() => onPick(null)}
+              className="flex h-9 w-full items-center px-3 text-left text-xs text-fg-2 hover:bg-surface-2"
+            >
               {t('deckClearSlot', lang)}
             </button>
           </li>
         ) : null}
         {identities.map((identity, i) => (
-          <li key={identity.id} role="option" id={`sinner-option-${identity.id}`} aria-selected={i === activeIndex}>
+          <li
+            key={identity.id}
+            role="option"
+            id={`sinner-option-${identity.id}`}
+            aria-selected={i === activeIndex}
+          >
             <button
               type="button"
               onClick={() => onPick(identity.id)}

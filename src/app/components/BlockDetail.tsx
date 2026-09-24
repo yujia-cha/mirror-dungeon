@@ -109,7 +109,12 @@ export function DetailSurface({
     >
       {variant === 'menu' ? null : (
         <div className="mb-1 flex justify-end">
-          <button type="button" onClick={onClose} aria-label={closeLabel} className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-2 hover:bg-surface-2">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={closeLabel}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-2 hover:bg-surface-2"
+          >
             <X size={13} aria-hidden />
           </button>
         </div>
@@ -131,7 +136,12 @@ export function ObservedDetailBody({ entry, ctx }: { entry: ObservedGift; ctx: P
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2.5">
-        <GiftIcon gift={gift} size={44} judgement={ctx.judgements.get(entry.giftId) ?? null} lang={ctx.lang} />
+        <GiftIcon
+          gift={gift}
+          size={44}
+          judgement={ctx.judgements.get(entry.giftId) ?? null}
+          lang={ctx.lang}
+        />
         <div className="flex min-w-0 flex-col">
           <span className="text-sm font-semibold">{pick(gift.name, ctx.lang)}</span>
           <span className="text-xs text-fg-2">
@@ -139,9 +149,15 @@ export function ObservedDetailBody({ entry, ctx }: { entry: ObservedGift; ctx: P
           </span>
         </div>
       </div>
-      {ctx.giftTitle(entry.giftId) ? <span className="text-xs text-fg-2">{ctx.giftTitle(entry.giftId)}</span> : null}
+      {ctx.giftTitle(entry.giftId) ? (
+        <span className="text-xs text-fg-2">{ctx.giftTitle(entry.giftId)}</span>
+      ) : null}
       {ctx.onToggleObserved ? (
-        <Button variant={entry.pinned ? 'primary' : 'secondary'} onClick={() => ctx.onToggleObserved?.(entry.giftId)} ariaLabel={t('routeObservedToggle', ctx.lang, { name: pick(gift.name, ctx.lang) })}>
+        <Button
+          variant={entry.pinned ? 'primary' : 'secondary'}
+          onClick={() => ctx.onToggleObserved?.(entry.giftId)}
+          ariaLabel={t('routeObservedToggle', ctx.lang, { name: pick(gift.name, ctx.lang) })}
+        >
           <Eye size={12} aria-hidden />
           {entry.pinned ? t('routeObservedPinned', ctx.lang) : t('routeObservedRecommended', ctx.lang)}
         </Button>

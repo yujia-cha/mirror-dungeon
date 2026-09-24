@@ -24,17 +24,25 @@ function subjectShort(report: ConditionReport, enums: Enums, lang: Lang): string
 }
 
 /** 「진동 3/5」, or 「?」 when the deck cannot decide it. Null when the gift has no condition. */
-export function conditionShort(report: ConditionReport | null | undefined, enums: Enums, lang: Lang): string | null {
+export function conditionShort(
+  report: ConditionReport | null | undefined,
+  enums: Enums,
+  lang: Lang,
+): string | null {
   if (!report) return null;
   const subject = subjectShort(report, enums, lang);
   // No bar to clear — 「혈찬 3」, just how many the formation has.
-  if (!report.gate && report.have !== null) return subject ? `${subject} ${report.have}` : String(report.have);
+  if (!report.gate && report.have !== null)
+    return subject ? `${subject} ${report.have}` : String(report.have);
   if (report.have === null || report.need === null) return subject ? `${subject} ?` : '?';
   const count = `${report.have}/${report.need}`;
   return subject ? `${subject} ${count}` : count;
 }
 
 /** The one report a tile shows: the condition still short, else the first. */
-export function decidingReport(reports: ConditionReport[], lack: ConditionReport | null): ConditionReport | null {
+export function decidingReport(
+  reports: ConditionReport[],
+  lack: ConditionReport | null,
+): ConditionReport | null {
   return lack ?? reports[0] ?? null;
 }

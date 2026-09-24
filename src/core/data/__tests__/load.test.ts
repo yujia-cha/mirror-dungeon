@@ -37,7 +37,10 @@ function filesUnder(base: string): Record<string, unknown> {
 }
 
 /** Serve a fixed set of URLs; anything else is a 404, which is what a wrong base path looks like. */
-function serve(files: Record<string, unknown>, overrides: Record<string, () => Promise<Response>> = {}): string[] {
+function serve(
+  files: Record<string, unknown>,
+  overrides: Record<string, () => Promise<Response>> = {},
+): string[] {
   const asked: string[] = [];
   vi.stubGlobal('fetch', async (url: string | URL): Promise<Response> => {
     const key = String(url);
@@ -45,7 +48,10 @@ function serve(files: Record<string, unknown>, overrides: Record<string, () => P
     const override = overrides[key];
     if (override) return override();
     if (!(key in files)) return new Response('not found', { status: 404 });
-    return new Response(JSON.stringify(files[key]), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify(files[key]), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
   });
   return asked;
 }

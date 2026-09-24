@@ -49,7 +49,9 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
   setOver: (slot: number | null) => void;
 } {
   const [state, setState] = useState<ChipDragState>(IDLE);
-  const pending = useRef<{ giftId: number; x: number; y: number; pointerId: number; touch: boolean } | null>(null);
+  const pending = useRef<{ giftId: number; x: number; y: number; pointerId: number; touch: boolean } | null>(
+    null,
+  );
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const active = useRef<number | null>(null);
   const over = useRef<number | null>(null);
@@ -57,7 +59,8 @@ export function useChipDrag(onDrop: (giftId: number, slot: number | null) => voi
 
   const setOver = useCallback((slot: number | null): void => {
     over.current = slot;
-    if (active.current !== null) setState((current) => (current.over === slot ? current : { ...current, over: slot }));
+    if (active.current !== null)
+      setState((current) => (current.over === slot ? current : { ...current, over: slot }));
   }, []);
 
   useEffect(() => {

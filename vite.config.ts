@@ -15,7 +15,10 @@ import { dataPreloadPaths, preloadTags } from './scripts/lib/preload.ts';
 // `??` would have kept it. That put `og:url="/"` and `og:image="/og.png"` in the deployed page
 // (verified by building with VITE_SITE_URL=""), which crawlers do not resolve, silently undoing
 // the share card these variables exist for.
-const SITE_URL = (process.env.VITE_SITE_URL || 'https://yujia-cha.github.io/mirror-dungeon/').replace(/\/?$/, '/');
+const SITE_URL = (process.env.VITE_SITE_URL || 'https://yujia-cha.github.io/mirror-dungeon/').replace(
+  /\/?$/,
+  '/',
+);
 
 export default defineConfig({
   base: process.env.VITE_BASE || '/',
@@ -33,7 +36,10 @@ export default defineConfig({
       name: 'data-preload',
       apply: 'build',
       transformIndexHtml: (html) =>
-        html.replace('</head>', `  ${preloadTags(dataPreloadPaths(fileURLToPath(new URL('./public/data', import.meta.url))))}\n  </head>`),
+        html.replace(
+          '</head>',
+          `  ${preloadTags(dataPreloadPaths(fileURLToPath(new URL('./public/data', import.meta.url))))}\n  </head>`,
+        ),
     },
     {
       // M55: write the shell into the copied `sw.js`, so one online visit is enough to open the

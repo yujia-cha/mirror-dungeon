@@ -78,7 +78,9 @@ async function networkFirst(request) {
     return response;
   } catch (error) {
     // A navigation with a query string still gets the app shell precached as `./`.
-    const cached = (await cache.match(request, { ...MATCH, ignoreSearch: true })) ?? (await cache.match(new URL('./', self.registration.scope).href, MATCH));
+    const cached =
+      (await cache.match(request, { ...MATCH, ignoreSearch: true })) ??
+      (await cache.match(new URL('./', self.registration.scope).href, MATCH));
     if (cached) return cached;
     throw error;
   }

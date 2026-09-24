@@ -21,7 +21,12 @@ export interface DismissOptions {
 }
 
 /** Close a popover on Escape or on a pointer press outside `ref`, while `active` and topmost. */
-export function useDismiss(ref: RefObject<HTMLElement | null>, onDismiss: () => void, active: boolean, options: DismissOptions = {}): void {
+export function useDismiss(
+  ref: RefObject<HTMLElement | null>,
+  onDismiss: () => void,
+  active: boolean,
+  options: DismissOptions = {},
+): void {
   // `onDismiss` is read through a ref rather than depended on: every caller passes an inline
   // closure, so a dependency on it would re-run the effect on each render of the owning tree and
   // push this layer back on top of a sheet that opened above it — the very pile-up the stack is

@@ -25,7 +25,19 @@ import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
 import type { PackContext } from '../components/PackSheet.tsx';
 import { PlanCtx, type PlanState } from './plan-context.ts';
 
-export function PlanProvider({ data, indexes, stats, lang, children }: { data: GameData; indexes: GameIndexes; stats: DeckStats; lang: Lang; children: ReactNode }) {
+export function PlanProvider({
+  data,
+  indexes,
+  stats,
+  lang,
+  children,
+}: {
+  data: GameData;
+  indexes: GameIndexes;
+  stats: DeckStats;
+  lang: Lang;
+  children: ReactNode;
+}) {
   const deck = useApp((s) => s.deck);
   const deployed = useApp((s) => s.deployed);
   const wanted = useApp((s) => s.wanted);
@@ -75,14 +87,23 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
   const shown = variant?.plan ?? plan;
   const exclusivesOf = useMemo(() => exclusivesIndex(data, indexes), [data, indexes]);
   const childrenOf = useMemo(() => upgradeChildren(data), [data]);
-  const entangled = useMemo(() => entanglements(wanted, indexes, data.rules.fusion.maxShopSlots), [wanted, indexes, data]);
-  const blocked = useMemo(() => blockedGifts(wanted, indexes, data.rules.fusion.maxShopSlots), [wanted, indexes, data]);
+  const entangled = useMemo(
+    () => entanglements(wanted, indexes, data.rules.fusion.maxShopSlots),
+    [wanted, indexes, data],
+  );
+  const blocked = useMemo(
+    () => blockedGifts(wanted, indexes, data.rules.fusion.maxShopSlots),
+    [wanted, indexes, data],
+  );
   // One selection rule for every surface: see `lib/goal-toggle.ts`.
   const carryIndex = useMemo(
     () => ({ indexes, childrenOf, maxShopSlots: data.rules.fusion.maxShopSlots }),
     [indexes, childrenOf, data],
   );
-  const toggleGoal = useCallback((gift: Gift): void => toggleWanted(gift.id, carriedBy(gift, carryIndex)), [toggleWanted, carryIndex]);
+  const toggleGoal = useCallback(
+    (gift: Gift): void => toggleWanted(gift.id, carriedBy(gift, carryIndex)),
+    [toggleWanted, carryIndex],
+  );
 
   const value = useMemo<PlanState>(() => {
     const giftName = (id: number): string => pick(indexes.giftById.get(id)?.name, lang);
@@ -139,7 +160,12 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
     }
     // The plan on screen decides, not the base one: entering a pack while an alternative route is
     // selected must hand over that route's observations, never the ones it replaced.
-    const startGifts = shown ? [...shown.start.observed.map((o) => o.giftId), ...(shown.start.startGift ? [shown.start.startGift] : [])] : [];
+    const startGifts = shown
+      ? [
+          ...shown.start.observed.map((o) => o.giftId),
+          ...(shown.start.startGift ? [shown.start.startGift] : []),
+        ]
+      : [];
     // Leaving floor 1 for the first time is when the start-of-run gifts land in hand.
     const startSettle = run.currentFloor === 1 ? startGifts : [];
     /**
@@ -149,7 +175,10 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
      */
     const settleFor = (floor: number): { got: number[]; failed: number[] } => {
       const entered = run.visits[floor];
-      return { got: startSettle, failed: entered !== undefined ? autoFailedFor(entered, goals, run.giftStatus, exclusivesOf) : [] };
+      return {
+        got: startSettle,
+        failed: entered !== undefined ? autoFailedFor(entered, goals, run.giftStatus, exclusivesOf) : [],
+      };
     };
     const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: startSettle });
     const next = (): void => nextFloor(settleFor(run.stageFloor));
@@ -179,11 +208,14 @@ export function PlanProvider({ data, indexes, stats, lang, children }: { data: G
       needed,
       preferred: new Set(options.preferredPacks),
       banned: new Set(options.bannedPacks),
-      assignedAt: (packId) => shown?.floors.find((f) => f.packId === packId && f.reason !== 'free')?.floor ?? null,
+      assignedAt: (packId) =>
+        shown?.floors.find((f) => f.packId === packId && f.reason !== 'free')?.floor ?? null,
       onPrefer: variant ? undefined : preferPack,
       onBan: variant ? undefined : banPack,
       onRestore: variant ? undefined : restorePack,
-      onToggleObserved: variant ? undefined : (giftId) => toggleObserved(giftId, { max: data.rules.giftObservation.max, observable: canObserve }),
+      onToggleObserved: variant
+        ? undefined
+        : (giftId) => toggleObserved(giftId, { max: data.rules.giftObservation.max, observable: canObserve }),
       onToggleWanted: variant
         ? undefined
         : (giftId) => {

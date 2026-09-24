@@ -119,12 +119,16 @@ async function revisionFor(
   if (tip) {
     const moved = tip.sha !== pin.sha;
     const via = tip.via === 'git' ? ' (GitHub API unreachable; sha from git ls-remote)' : '';
-    console.log(`  ${label}: ${moved ? `${pin.sha.slice(0, 8)} -> ${tip.sha.slice(0, 8)}` : `${pin.sha.slice(0, 8)} unchanged`}${via}`);
+    console.log(
+      `  ${label}: ${moved ? `${pin.sha.slice(0, 8)} -> ${tip.sha.slice(0, 8)}` : `${pin.sha.slice(0, 8)} unchanged`}${via}`,
+    );
     pin.sha = tip.sha;
     entry.fetchedAt = new Date().toISOString().slice(0, 10);
     return tip.sha;
   }
-  console.log(`  ${label}: neither the GitHub API nor git ls-remote answered; downloading from ref "${pin.ref}" and leaving the recorded sha ${pin.sha.slice(0, 8)} as it is`);
+  console.log(
+    `  ${label}: neither the GitHub API nor git ls-remote answered; downloading from ref "${pin.ref}" and leaving the recorded sha ${pin.sha.slice(0, 8)} as it is`,
+  );
   return pin.ref;
 }
 
@@ -144,7 +148,9 @@ async function fetchSource(name: string, entry: SourceEntry, update: boolean): P
   const targets = entry.files.flatMap((item) => {
     const file = typeof item === 'string' ? item : item.path;
     const only = typeof item === 'string' ? languages : (item.languages ?? languages);
-    return only ? only.map((lang) => ({ lang: lang as string | null, file })) : [{ lang: null as string | null, file }];
+    return only
+      ? only.map((lang) => ({ lang: lang as string | null, file }))
+      : [{ lang: null as string | null, file }];
   });
 
   let written = 0;

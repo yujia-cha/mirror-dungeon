@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Unresolved } from '../../core/types.ts';
 import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../../core/text.ts';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
-import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions, planRoute } from '../../core/index.ts';
+import {
+  analyseDeck,
+  buildIndexes,
+  defaultOptions,
+  evaluateConditions,
+  planRoute,
+} from '../../core/index.ts';
 import { planToText } from '../lib/plan-text.ts';
 import { unresolvedDetailText } from '../lib/unresolved-text.ts';
 import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
@@ -102,7 +108,9 @@ describe('effect text', () => {
     // Unity's tag names are an allowlist, not "anything in angle brackets".
     expect(desc(9213)).toContain('<혈귀>');
     expect(desc(9440)).toContain('아군에 <혈귀>가 있다면');
-    expect(renderEffect(indexes.giftById.get(9416)!.desc, data.enums, 'en')).toContain('<Mechanical Amalgam>');
+    expect(renderEffect(indexes.giftById.get(9416)!.desc, data.enums, 'en')).toContain(
+      '<Mechanical Amalgam>',
+    );
   });
 
   it('strips the rich-text tags and the runtime counter the game leaves behind', () => {
@@ -122,11 +130,12 @@ describe('effect text', () => {
     // The game ships `AttackDown` as 「공격 레벨 감소 」; the trailing space used to reach the screen.
     for (const gift of data.gifts) {
       for (const lang of ['ko', 'en'] as const) {
-        expect(renderEffect(gift.desc, data.enums, lang), `${gift.id} ${gift.name.ko}`).not.toMatch(PADDED_BRACKET);
+        expect(renderEffect(gift.desc, data.enums, lang), `${gift.id} ${gift.name.ko}`).not.toMatch(
+          PADDED_BRACKET,
+        );
       }
     }
   });
-
 });
 
 describe('identity keyword chips', () => {
@@ -177,14 +186,20 @@ describe('unresolved detail text', () => {
       indexes,
     );
     expect(plan.unresolved.some((u) => u.reason === 'fusion-ingredient-unresolved')).toBe(true);
-    const text = planToText(plan, giftName, (id) => indexes.packById.get(id)?.name.ko ?? '', () => '', 'ko');
+    const text = planToText(
+      plan,
+      giftName,
+      (id) => indexes.packById.get(id)?.name.ko ?? '',
+      () => '',
+      'ko',
+    );
     expect(text).toContain('재료 ' + giftName(9408));
     expect(text).not.toMatch(/재료 \d+/);
   });
 });
 
 describe('korean particles', () => {
-  it('follows the name\'s final consonant, and leaves English alone', () => {
+  it("follows the name's final consonant, and leaves English alone", () => {
     expect(withJosa('진혼', '을/를', 'ko')).toBe('진혼을');
     expect(withJosa('미니어처 대관람차', '을/를', 'ko')).toBe('미니어처 대관람차를');
     expect(withJosa('부동', '과/와', 'ko')).toBe('부동과');
@@ -199,13 +214,20 @@ describe('korean particles', () => {
 
 describe('special keyword conditions', () => {
   const laManchaland = data.identities.filter((i) => i.keywords.BloodDinner).map((i) => i.id);
-  const withBloodfiends = analyseDeck([...laManchaland, ...BURN_DECK].slice(0, 12), indexes, data.rules.deployment, laManchaland);
+  const withBloodfiends = analyseDeck(
+    [...laManchaland, ...BURN_DECK].slice(0, 12),
+    indexes,
+    data.rules.deployment,
+    laManchaland,
+  );
   const reportFor = (id: number) => evaluateConditions([id], withBloodfiends, indexes)[0]!;
 
   it('writes the 소모 verb, and 「또는」 between two keywords', () => {
     expect(conditionText(reportFor(9795), data.enums, 'ko')).toMatch(/^혈찬을 소모하는 스킬 보유 인격/);
     expect(conditionText(reportFor(9795), data.enums, 'en')).toMatch(/identities consume Bloodfeast/);
-    expect(conditionText(reportFor(9802), data.enums, 'ko')).toMatch(/^파열 또는 충전을 부여하는 공격 스킬 보유 인격/);
+    expect(conditionText(reportFor(9802), data.enums, 'ko')).toMatch(
+      /^파열 또는 충전을 부여하는 공격 스킬 보유 인격/,
+    );
   });
 
   it('puts several keywords on one chip, the way factions already read', () => {
@@ -220,7 +242,10 @@ describe('special keyword conditions', () => {
     expect(conditionText(report, data.enums, 'ko')).toContain('수에 따라 강화');
     expect(judgementOf([report])).toBeNull();
     // and it neither activates the gift nor holds it back
-    expect(classifyGift(indexes.giftById.get(9842)!, [report])).toMatchObject({ group: 'other', ratio: null });
+    expect(classifyGift(indexes.giftById.get(9842)!, [report])).toMatchObject({
+      group: 'other',
+      ratio: null,
+    });
   });
 
   it('judges every gate a deck can decide, leaving only 완전 공명 unjudgeable', () => {

@@ -31,32 +31,54 @@ export interface ConflictGroup {
  * Map a requirement back to the wanted gift(s) it serves: a wanted gift is its own root, a fusion
  * ingredient's root is the wanted result it feeds.
  */
-export function wantedRoots(input: PlanInput, data: GameData, indexes: GameIndexes): (giftId: number) => number[] {
+export function wantedRoots(
+  input: PlanInput,
+  data: GameData,
+  indexes: GameIndexes,
+): (giftId: number) => number[] {
   const wantedIds = new Set(input.wanted.map((w) => w.giftId));
   const stats = analyseDeck(input.deck, indexes, data.rules.deployment, input.options.deployed);
-  const requirements = expandRequirements(input.wanted, indexes, stats, data.rules.fusion.maxShopSlots).requirements;
+  const requirements = expandRequirements(
+    input.wanted,
+    indexes,
+    stats,
+    data.rules.fusion.maxShopSlots,
+  ).requirements;
   const roots = (giftId: number, seen = new Set<number>()): number[] => {
     if (wantedIds.has(giftId)) return [giftId];
     if (seen.has(giftId)) return [];
     seen.add(giftId);
-    return requirements.filter((r) => r.giftId === giftId && r.neededFor !== null).flatMap((r) => roots(r.neededFor!, seen));
+    return requirements
+      .filter((r) => r.giftId === giftId && r.neededFor !== null)
+      .flatMap((r) => roots(r.neededFor!, seen));
   };
   return roots;
 }
 
-export function conflictGroups(plan: RoutePlan, input: PlanInput, data: GameData, indexes: GameIndexes): ConflictGroup[] {
+export function conflictGroups(
+  plan: RoutePlan,
+  input: PlanInput,
+  data: GameData,
+  indexes: GameIndexes,
+): ConflictGroup[] {
   const conflicts = plan.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId);
   if (conflicts.length === 0) return [];
   const options = input.options;
   const banned = new Set(options.bannedPacks);
   const preferred = new Set(options.preferredPacks);
   const roots = wantedRoots(input, data, indexes);
-  const offeredOn = (floor: number): number[] => indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? [];
+  const offeredOn = (floor: number): number[] =>
+    indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? [];
   const wantedIds = new Set(input.wanted.map((w) => w.giftId));
 
   // Requirements the wanted set actually routes for, so a pack's gift list stays to the point.
   const stats = analyseDeck(input.deck, indexes, data.rules.deployment, options.deployed);
-  const routed = expandRequirements(input.wanted, indexes, stats, data.rules.fusion.maxShopSlots).requirements.map((r) => r.giftId);
+  const routed = expandRequirements(
+    input.wanted,
+    indexes,
+    stats,
+    data.rules.fusion.maxShopSlots,
+  ).requirements.map((r) => r.giftId);
   const giftsOf = (packId: number): number[] => {
     const out = new Set<number>();
     for (const giftId of routed) {
@@ -73,7 +95,8 @@ export function conflictGroups(plan: RoutePlan, input: PlanInput, data: GameData
     const packs = (indexes.packsByGift.get(giftId) ?? []).filter((id) => !banned.has(id));
     for (const floor of plan.floors) {
       const pinned = options.pinnedPacks[floor.floor];
-      if (packs.some((id) => offeredOn(floor.floor).includes(id) && (pinned === undefined || pinned === id))) contested.add(floor.floor);
+      if (packs.some((id) => offeredOn(floor.floor).includes(id) && (pinned === undefined || pinned === id)))
+        contested.add(floor.floor);
     }
   }
 
@@ -90,11 +113,13 @@ export function conflictGroups(plan: RoutePlan, input: PlanInput, data: GameData
     const candidateIds = new Set<number>();
     for (const giftId of conflicts) {
       for (const packId of indexes.packsByGift.get(giftId) ?? []) {
-        if (!banned.has(packId) && floors.some((f) => offeredOn(f).includes(packId))) candidateIds.add(packId);
+        if (!banned.has(packId) && floors.some((f) => offeredOn(f).includes(packId)))
+          candidateIds.add(packId);
       }
     }
     for (const floor of plan.floors) {
-      if (floors.includes(floor.floor) && floor.packId !== null && floor.reason !== 'free') candidateIds.add(floor.packId);
+      if (floors.includes(floor.floor) && floor.packId !== null && floor.reason !== 'free')
+        candidateIds.add(floor.packId);
     }
     const candidates: ConflictCandidate[] = [...candidateIds]
       .map((packId) => {

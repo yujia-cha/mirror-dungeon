@@ -12,12 +12,18 @@ export const STRINGS = {
   appTitle: { ko: '거울 던전 루트', en: 'Mirror Dungeon Route' },
   share: { ko: '링크 복사', en: 'Copy link' },
   shared: { ko: '링크를 복사했습니다', en: 'Link copied' },
-  copyFailed: { ko: '복사하지 못했습니다 · 주소창에서 복사하세요', en: 'Could not copy · copy it from the address bar' },
+  copyFailed: {
+    ko: '복사하지 못했습니다 · 주소창에서 복사하세요',
+    en: 'Could not copy · copy it from the address bar',
+  },
   linkBroken: { ko: '공유 링크를 읽지 못했습니다', en: 'This share link could not be read' },
   moreActions: { ko: '더 보기', en: 'More' },
   resetAll: { ko: '초기화', en: 'Reset' },
   confirmCancel: { ko: '취소', en: 'Cancel' },
-  resetAllConfirm: { ko: '덱·아이템·루트 설정·런 기록을 모두 처음 상태로 되돌립니다.', en: 'Resets the deck, items, route settings and run record.' },
+  resetAllConfirm: {
+    ko: '덱·아이템·루트 설정·런 기록을 모두 처음 상태로 되돌립니다.',
+    en: 'Resets the deck, items, route settings and run record.',
+  },
   langToggle: { ko: 'English', en: '한국어' },
   themeToggle: { ko: '화면 전환', en: 'Toggle theme' },
   loading: { ko: '게임 데이터를 불러오는 중', en: 'Loading game data' },
@@ -26,10 +32,19 @@ export const STRINGS = {
   retry: { ko: '다시 시도', en: 'Retry' },
   // `DataLoadError` carries a cause, not a sentence, so both languages are written here instead
   // of one Korean string reaching an English reader from core. `{label}` is the file that failed.
-  loadFailedHttp: { ko: '{label}을(를) 받지 못했습니다 ({status}).', en: 'Could not fetch {label} ({status}).' },
-  loadFailedTimeout: { ko: '{label} 요청이 시간을 넘겼습니다. 연결을 확인해 주세요.', en: 'The request for {label} timed out; check your connection.' },
+  loadFailedHttp: {
+    ko: '{label}을(를) 받지 못했습니다 ({status}).',
+    en: 'Could not fetch {label} ({status}).',
+  },
+  loadFailedTimeout: {
+    ko: '{label} 요청이 시간을 넘겼습니다. 연결을 확인해 주세요.',
+    en: 'The request for {label} timed out; check your connection.',
+  },
   loadFailedNetwork: { ko: '{label}에 연결할 수 없습니다.', en: 'Could not reach {label}.' },
-  loadFailedMalformed: { ko: '{label}의 내용을 읽을 수 없습니다.', en: 'Could not read the contents of {label}.' },
+  loadFailedMalformed: {
+    ko: '{label}의 내용을 읽을 수 없습니다.',
+    en: 'Could not read the contents of {label}.',
+  },
   dataVersion: { ko: '데이터', en: 'Data' },
   season: { ko: '시즌', en: 'Season' },
   seasonProvisional: {
@@ -40,8 +55,14 @@ export const STRINGS = {
     ko: '이 시즌은 아직 팩별 범용 기프트 풀을 확인하지 못했습니다. 전용 기프트와 조합은 계획할 수 있지만, 범용 기프트가 어느 팩에서 나오는지는 알 수 없습니다.',
     en: 'This season has no per-pack general gift pool yet. Exclusive gifts and fusions can be planned; which pack a general gift can drop from is unknown.',
   },
-  seasonDroppedGifts: { ko: '이번 시즌에 없는 기프트 {n}개를 뺐습니다', en: 'Dropped {n} gift(s) this season does not have' },
-  seasonDroppedPacks: { ko: '이번 시즌에 없는 팩 설정 {n}개를 뺐습니다', en: 'Dropped {n} pack setting(s) this season does not have' },
+  seasonDroppedGifts: {
+    ko: '이번 시즌에 없는 기프트 {n}개를 뺐습니다',
+    en: 'Dropped {n} gift(s) this season does not have',
+  },
+  seasonDroppedPacks: {
+    ko: '이번 시즌에 없는 팩 설정 {n}개를 뺐습니다',
+    en: 'Dropped {n} pack setting(s) this season does not have',
+  },
   // Still one line, per the rule that the screen carries exactly two sentences of prose (this and
   // the data version). 「제휴하거나 승인받지 않았습니다」 is the part the repo's LICENSE/NOTICE said
   // and the app did not; the credits themselves are too long for a footer and live in NOTICE,
@@ -55,7 +76,10 @@ export const STRINGS = {
   toDeck: { ko: '덱 탭으로', en: 'To the deck tab' },
 
   // Step 1 — deck
-  deckSearchAll: { ko: '전체 인격 검색 · 이름 · 소속 · 키워드(여러 개 가능)', en: 'Search all identities · name · faction · keywords (several allowed)' },
+  deckSearchAll: {
+    ko: '전체 인격 검색 · 이름 · 소속 · 키워드(여러 개 가능)',
+    en: 'Search all identities · name · faction · keywords (several allowed)',
+  },
   deckSearchHint: { ko: '{n}명', en: '{n} found' },
   deckSearchPicked: { ko: '덱에 {n}명', en: '{n} in the deck' },
   deckDefault: { ko: '기본 덱', en: 'Default deck' },
@@ -73,17 +97,26 @@ export const STRINGS = {
   deckImportPlaceholder: { ko: '편성 코드를 붙여넣으세요', en: 'Paste a formation code' },
   deckImportApply: { ko: '불러오기', en: 'Import' },
   deckImportFailed: { ko: '편성 코드를 읽을 수 없습니다', en: 'Could not read that formation code' },
-  deckImportPartial: { ko: '일부 인격을 찾을 수 없어 건너뛰었습니다', en: 'Some identities were not found and were skipped' },
+  deckImportPartial: {
+    ko: '일부 인격을 찾을 수 없어 건너뛰었습니다',
+    en: 'Some identities were not found and were skipped',
+  },
   deckSummaryBasis: { ko: '출격 / 편성 12인', en: 'deployed / all 12' },
   deckChipBasis: { ko: '출격 {n}명 · 편성 전체 {total}명', en: '{n} deployed · {total} in the formation' },
   deckRank: { ko: '{n}성', en: '{n}★' },
   deckKeywordSkills: { ko: '{keyword} 부여 공격 스킬 보유', en: 'Has attack skills that inflict {keyword}' },
   deckKeywordSpecial: { ko: '{keyword}(특수)', en: '{keyword} (Unique)' },
-  deckKeywordSpecialHint: { ko: '{keyword} 또는 특수 {keyword} 부여·획득 공격 스킬 보유', en: 'Has attack skills that inflict or gain {keyword} or Unique {keyword}' },
+  deckKeywordSpecialHint: {
+    ko: '{keyword} 또는 특수 {keyword} 부여·획득 공격 스킬 보유',
+    en: 'Has attack skills that inflict or gain {keyword} or Unique {keyword}',
+  },
   deckKeywordSpecialOnly: { ko: '특수 {keyword}', en: 'Unique {keyword}' },
   // 탄환 is spent, not inflicted, and always reads plainly — there is no 특수 form of this line.
   deckKeywordUses: { ko: '{keyword} 소모 공격 스킬 보유', en: 'Has attack skills that spend {keyword}' },
-  deckKeywordSpecialOnlyHint: { ko: '특수 {keyword}만 부여·획득 — 「또는 특수 {keyword}」 조건에만 셈', en: 'Only Unique {keyword} — counts only for conditions that say "or Unique {keyword}"' },
+  deckKeywordSpecialOnlyHint: {
+    ko: '특수 {keyword}만 부여·획득 — 「또는 특수 {keyword}」 조건에만 셈',
+    en: 'Only Unique {keyword} — counts only for conditions that say "or Unique {keyword}"',
+  },
   deckSinnerSearch: { ko: '{sinner} 인격 검색', en: 'Search {sinner} identities' },
   deckShowing: { ko: '{total}명 중 {n}명', en: '{n} of {total}' },
   deckClose: { ko: '닫기', en: 'Close' },
@@ -96,7 +129,10 @@ export const STRINGS = {
   giftSubOf: { ko: '{parent} 재료', en: 'Ingredient of {parent}' },
   giftMaterials: { ko: '조합식', en: 'Recipe' },
   giftSubRecipe: { ko: '{name}도 조합이다 — 그 재료', en: '{name} is a fusion too — its ingredients' },
-  giftMixedRecipe: { ko: '키워드 상위 {aOf}종 중 {a}개 + 공격 유형 {bOf}종 중 {b}개', en: '{a} of {aOf} keyword capstones + {b} of {bOf} attack-type ones' },
+  giftMixedRecipe: {
+    ko: '키워드 상위 {aOf}종 중 {a}개 + 공격 유형 {bOf}종 중 {b}개',
+    en: '{a} of {aOf} keyword capstones + {b} of {bOf} attack-type ones',
+  },
   giftPackOnly: { ko: '{name} 전용', en: 'only from {name}' },
   giftSelect: { ko: '목표로 삼기', en: 'Make it a goal' },
   giftUnselect: { ko: '목표에서 빼기', en: 'Drop the goal' },
@@ -106,7 +142,10 @@ export const STRINGS = {
   giftEntangledWith: { ko: '{name} 재료가 겹칩니다: {list}', en: 'shares ingredients with {name}: {list}' },
   giftDetail: { ko: '{name} 자세히', en: '{name} details' },
   giftsDeckEmpty: { ko: '덱이 비어 있습니다', en: 'The deck is empty' },
-  giftsDeckEmptyHint: { ko: '조건부 기프트를 판정하려면 인격이 필요합니다.', en: 'Conditional gifts need identities to judge.' },
+  giftsDeckEmptyHint: {
+    ko: '조건부 기프트를 판정하려면 인격이 필요합니다.',
+    en: 'Conditional gifts need identities to judge.',
+  },
   giftsNoMatch: { ko: '일치하는 기프트 없음', en: 'No gift matches' },
   giftsSelected: { ko: '선택 {n}', en: 'Selected {n}' },
   giftsClear: { ko: '선택 비우기', en: 'Clear selection' },
@@ -198,11 +237,17 @@ export const STRINGS = {
   giftExclusive: { ko: '전용', en: 'Exclusive' },
   giftWanted: { ko: '원함', en: 'Wanted' },
   routeConflicts: { ko: '팩 충돌 {n}건', en: '{n} pack conflicts' },
-  conflictHeader: { ko: '{from}~{to}층 · 자리 {slots}개에 팩 {packs}개', en: 'Floors {from}–{to} · {packs} packs for {slots} floors' },
+  conflictHeader: {
+    ko: '{from}~{to}층 · 자리 {slots}개에 팩 {packs}개',
+    en: 'Floors {from}–{to} · {packs} packs for {slots} floors',
+  },
   routeOtherUnresolved: { ko: '그 외 미해결', en: 'Other unresolved' },
   routeBannedList: { ko: '포기한 팩 {n}', en: '{n} packs given up' },
   // `{gift}` is a list of gift names; the particle is picked by `josa` at the call site.
-  packBanConfirm: { ko: '{gift} 이 팩에서만 나옵니다. 포기하면 목표에서도 뺍니다.', en: '{gift} comes only from this pack. Giving it up removes it from your goals too.' },
+  packBanConfirm: {
+    ko: '{gift} 이 팩에서만 나옵니다. 포기하면 목표에서도 뺍니다.',
+    en: '{gift} comes only from this pack. Giving it up removes it from your goals too.',
+  },
   routeFree: { ko: '자유', en: 'Free' },
   routeFloorRange: { ko: '{from}~{to}층', en: 'Floors {from}–{to}' },
   giftUnjudgeable: { ko: '판정 불가', en: 'Cannot judge' },
@@ -240,7 +285,10 @@ export const STRINGS = {
   unresolvedBanned: { ko: '포기한 팩', en: 'Pack given up' },
   unresolvedShared: { ko: '재료 겹침', en: 'Ingredient shared' },
   unresolvedFailed: { ko: '수집 실패', en: 'Missed' },
-  unresolvedDropped: { ko: '나머지 재료({names})만을 위한 방문은 취소했습니다.', en: 'Visits for the remaining ingredients ({names}) alone were dropped.' },
+  unresolvedDropped: {
+    ko: '나머지 재료({names})만을 위한 방문은 취소했습니다.',
+    en: 'Visits for the remaining ingredients ({names}) alone were dropped.',
+  },
 
   runActive: { ko: '진행 중', en: 'In progress' },
   runCurrentFloor: { ko: '현재 층', en: 'Current floor' },
@@ -252,14 +300,23 @@ export const STRINGS = {
   giftStatusFailed: { ko: '실패', en: 'Missed' },
   giftAddGoal: { ko: '목표에 추가', en: 'Add as goal' },
   giftRemoveGoal: { ko: '목표에서 빼기', en: 'Remove goal' },
-  giftFusionDead: { ko: '조합 불가 — {result} 재료를 구할 수 없습니다', en: 'Fusion lost — {result} cannot get its ingredients' },
+  giftFusionDead: {
+    ko: '조합 불가 — {result} 재료를 구할 수 없습니다',
+    en: 'Fusion lost — {result} cannot get its ingredients',
+  },
   fusionGoalIngredients: { ko: '재료도 목표', en: 'Ingredients are goals too' },
-  fusionGoalHint: { ko: '끄면 조합이 불가능해졌을 때 남은 재료만을 위한 방문을 취소합니다.', en: 'Off: when the fusion becomes impossible, visits for the remaining ingredients alone are dropped.' },
+  fusionGoalHint: {
+    ko: '끄면 조합이 불가능해졌을 때 남은 재료만을 위한 방문을 취소합니다.',
+    en: 'Off: when the fusion becomes impossible, visits for the remaining ingredients alone are dropped.',
+  },
 
   panelLeft: { ko: '설정 패널', en: 'Setup panel' },
   panelRight: { ko: '루트 패널', en: 'Route panel' },
   panelResize: { ko: '패널 너비', en: 'Panel width' },
-  panelResizeHint: { ko: '끌어서 너비 조절 · 두 번 눌러 기본값 · 화살표 키로 조금씩', en: 'Drag to resize · double-click to reset · arrow keys nudge' },
+  panelResizeHint: {
+    ko: '끌어서 너비 조절 · 두 번 눌러 기본값 · 화살표 키로 조금씩',
+    en: 'Drag to resize · double-click to reset · arrow keys nudge',
+  },
   panelBack: { ko: '뒤로', en: 'Back' },
   tabDeck: { ko: '덱', en: 'Deck' },
   tabGifts: { ko: '아이템', en: 'Items' },
@@ -284,7 +341,10 @@ export const STRINGS = {
   stageOtherEntry: { ko: '넘기기', en: 'Skip' },
   stageReleaseNext: { ko: '놓으면 다음 층', en: 'Release for the next floor' },
   stageBack: { ko: '돌아가기', en: 'Go back' },
-  stageReleaseBack: { ko: '놓으면 돌아가기 · 표시한 기프트 초기화', en: 'Release to go back · marked gifts reset' },
+  stageReleaseBack: {
+    ko: '놓으면 돌아가기 · 표시한 기프트 초기화',
+    en: 'Release to go back · marked gifts reset',
+  },
   stageBackPack: { ko: '{name} 돌아가기', en: 'Go back from {name}' },
   stageExclusiveMore: { ko: '+{n}', en: '+{n}' },
   stagePackDetail: { ko: '{name} 자세히', en: '{name} details' },
@@ -299,13 +359,19 @@ export const STRINGS = {
   stageNewRun: { ko: '같은 목표로 새 런', en: 'New run, same goals' },
   // Both of these throw a run away and neither can be undone, so both ask first — but only while
   // a run is actually in progress.
-  confirmSharedTitle: { ko: '진행 중인 런을 버리고 링크를 열까요?', en: 'Discard the run in progress and open the link?' },
+  confirmSharedTitle: {
+    ko: '진행 중인 런을 버리고 링크를 열까요?',
+    en: 'Discard the run in progress and open the link?',
+  },
   confirmSharedMessage: {
     ko: '공유 링크는 보낸 사람의 덱·목표·설정으로 덮어씁니다. 지금 런의 기록은 되돌릴 수 없습니다.',
     en: "The link replaces your deck, goals and settings with the sender's. The current run record cannot be recovered.",
   },
   confirmSharedConfirm: { ko: '링크 열기', en: 'Open the link' },
-  confirmSeasonTitle: { ko: '진행 중인 런을 버리고 시즌을 바꿀까요?', en: 'Discard the run in progress and change season?' },
+  confirmSeasonTitle: {
+    ko: '진행 중인 런을 버리고 시즌을 바꿀까요?',
+    en: 'Discard the run in progress and change season?',
+  },
   confirmSeasonMessage: {
     ko: '시즌을 바꾸면 런을 버리고, 새 시즌이 모르는 기프트·팩 설정도 빠집니다.',
     en: 'Changing season discards the run and drops any gift or pack setting the new season does not know.',
@@ -319,7 +385,10 @@ export const STRINGS = {
   trackerGroupMemory: { ko: '기억', en: 'Memories' },
   trackerGroupAttack: { ko: '공격 유형', en: 'Attack type' },
   trackerGroupPlain: { ko: '범용', en: 'General' },
-  trackerFusionNotice: { ko: '합성으로 소모한 조각 {a}개·기억 {b}개는 미획득으로 표시하세요.', en: 'Mark the {a} shards and {b} memories the fusion consumed as not got.' },
+  trackerFusionNotice: {
+    ko: '합성으로 소모한 조각 {a}개·기억 {b}개는 미획득으로 표시하세요.',
+    en: 'Mark the {a} shards and {b} memories the fusion consumed as not got.',
+  },
   trackerFusionHeld: { ko: '지금 획득으로 표시된 재료', en: 'Ingredients marked as got' },
   trackerUnmark: { ko: '미획득으로', en: 'Not got' },
   routeUnresolvedCount: { ko: '미해결 {n}', en: '{n} unresolved' },
@@ -327,7 +396,10 @@ export const STRINGS = {
   settingsObserved: { ko: '관측 지정', en: 'Pinned observations' },
   settingsNone: { ko: '없음', en: 'None' },
   // `{names}` is a list of gift names, so the particle is picked by `josa` at the call site.
-  unresolvedMissing: { ko: '재료 {names} 구할 수 없어 조합할 수 없습니다.', en: 'Cannot be fused: {names} cannot be obtained in this plan.' },
+  unresolvedMissing: {
+    ko: '재료 {names} 구할 수 없어 조합할 수 없습니다.',
+    en: 'Cannot be fused: {names} cannot be obtained in this plan.',
+  },
   actionObserveGift: { ko: '{name} 관측 지정', en: 'Observe {name}' },
   actionReleaseObservations: { ko: '관측 지정 해제', en: 'Release pinned observations' },
 } as const satisfies Record<string, Localized>;
@@ -336,7 +408,8 @@ export type StringKey = keyof typeof STRINGS;
 
 export function t(key: StringKey, lang: Lang, params?: Record<string, string | number>): string {
   let out: string = STRINGS[key][lang];
-  if (params) for (const [name, value] of Object.entries(params)) out = out.split(`{${name}}`).join(String(value));
+  if (params)
+    for (const [name, value] of Object.entries(params)) out = out.split(`{${name}}`).join(String(value));
   return out;
 }
 

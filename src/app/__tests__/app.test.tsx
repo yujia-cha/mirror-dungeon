@@ -12,7 +12,23 @@ import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions } from '../../core/index.ts';
 import { conditionText, reachedTierText } from '../condition-text.ts';
 import { josa } from '../../core/text.ts';
-import { PERSIST_KEY, PERSIST_VERSION, appDefaultOptions, decodeShared, defaultUi, emptyRun, encodeShared, forgetRecipes, sanitizeOptions, sanitizePersisted, sanitizeRun, sanitizeUi, sinnerOf, useApp, withoutLegacyGot } from '../store.ts';
+import {
+  PERSIST_KEY,
+  PERSIST_VERSION,
+  appDefaultOptions,
+  decodeShared,
+  defaultUi,
+  emptyRun,
+  encodeShared,
+  forgetRecipes,
+  sanitizeOptions,
+  sanitizePersisted,
+  sanitizeRun,
+  sanitizeUi,
+  sinnerOf,
+  useApp,
+  withoutLegacyGot,
+} from '../store.ts';
 import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
@@ -40,7 +56,6 @@ import { observable as observableGift, planRoute } from '../../core/index.ts';
 // inline `import()` type annotation).
 import type * as LoadModule from '../../core/data/load.ts';
 
-
 // The real module fetches; tests read the generated files off disk instead. Spread the real module
 // so anything it exports but this factory does not name (`DataLoadError`, which `App` needs for
 // `instanceof`) still resolves — a partial mock of it used to be a latent crash.
@@ -59,7 +74,8 @@ vi.mock('../../core/data/load.ts', async (importOriginal) => {
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
-const statsFor = (deck: number[], deployed?: number[]) => analyseDeck(deck, indexes, data.rules.deployment, deployed);
+const statsFor = (deck: number[], deployed?: number[]) =>
+  analyseDeck(deck, indexes, data.rules.deployment, deployed);
 
 /** A combustion-heavy formation, one identity per sinner. */
 /** The six EXTREME clear rewards: five floors cannot hold them all, and none can be observed. */
@@ -70,7 +86,17 @@ const BURN_DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916
 const LCB_DECK = [10101, 10201, 10301, 10401, 10501, 10601, 10701, 10801, 10901, 11001, 11101, 11201];
 
 beforeEach(() => {
-  useApp.setState({ deck: [], deployed: [], wanted: [], fusionGoal: {}, run: emptyRun(), ui: defaultUi(), options: appDefaultOptions(), lang: 'ko', dark: true });
+  useApp.setState({
+    deck: [],
+    deployed: [],
+    wanted: [],
+    fusionGoal: {},
+    run: emptyRun(),
+    ui: defaultUi(),
+    options: appDefaultOptions(),
+    lang: 'ko',
+    dark: true,
+  });
   // The season's recipes are not state — they arrive with the data load (`adoptSeason`). A test
   // that never loads data starts out not knowing them, the same as a page that has not loaded yet.
   forgetRecipes();
@@ -98,7 +124,12 @@ const stubMatchMedia = (desktop: boolean): void => {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     writable: true,
-    value: (query: string) => ({ matches: desktop, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }),
+    value: (query: string) => ({
+      matches: desktop,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }),
   });
 };
 
@@ -117,32 +148,67 @@ describe('share links', () => {
 
   it('carries fusion goals but never the run in progress, and strips run options from any link', () => {
     useApp.getState().visitPack(1402, 4, { got: [9283] });
-    const hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9088], fusionGoal: { 9088: 'resultOnly' }, options: { ...appDefaultOptions(), currentFloor: 4, ownedGifts: [9283] } });
-    const raw = JSON.parse(lzString.decompressFromEncodedURIComponent(hash.slice(3))!) as Record<string, unknown>;
+    const hash = encodeShared({
+      deck: [10101],
+      deployed: [10101],
+      wanted: [9088],
+      fusionGoal: { 9088: 'resultOnly' },
+      options: { ...appDefaultOptions(), currentFloor: 4, ownedGifts: [9283] },
+    });
+    const raw = JSON.parse(lzString.decompressFromEncodedURIComponent(hash.slice(3))!) as Record<
+      string,
+      unknown
+    >;
     expect(raw.v).toBe(5);
     expect('run' in raw).toBe(false);
     expect(raw.fusionGoal).toEqual({ 9088: 'resultOnly' });
     const decoded = decodeShared(hash)!;
     expect(decoded.fusionGoal).toEqual({ 9088: 'resultOnly' });
     expect(decoded.options).toMatchObject({ currentFloor: 1, ownedGifts: [], unobtainableGifts: [] });
-    expect(sanitizeOptions({ currentFloor: 9, unobtainableGifts: [1] })).toMatchObject({ currentFloor: 1, unobtainableGifts: [] });
+    expect(sanitizeOptions({ currentFloor: 9, unobtainableGifts: [1] })).toMatchObject({
+      currentFloor: 1,
+      unobtainableGifts: [],
+    });
   });
 
   it('carries the season, and reads a link made before seasons as Mirror Dungeon 7', () => {
-    const hash = encodeShared({ season: 8, deck: [10101], deployed: [10101], wanted: [9088], fusionGoal: {}, options: appDefaultOptions() });
-    const raw = JSON.parse(lzString.decompressFromEncodedURIComponent(hash.slice(3))!) as Record<string, unknown>;
+    const hash = encodeShared({
+      season: 8,
+      deck: [10101],
+      deployed: [10101],
+      wanted: [9088],
+      fusionGoal: {},
+      options: appDefaultOptions(),
+    });
+    const raw = JSON.parse(lzString.decompressFromEncodedURIComponent(hash.slice(3))!) as Record<
+      string,
+      unknown
+    >;
     expect(raw.s).toBe(8);
     expect(decodeShared(hash)!.season).toBe(8);
     // A v4 link could only have been MD7; the version field, written since v1, is what says so.
     const old = lzString.compressToEncodedURIComponent(
-      JSON.stringify({ v: 4, deck: [10101], deployed: [10101], wanted: [9283], options: appDefaultOptions() }),
+      JSON.stringify({
+        v: 4,
+        deck: [10101],
+        deployed: [10101],
+        wanted: [9283],
+        options: appDefaultOptions(),
+      }),
     );
     expect(decodeShared(`#s=${old}`)!.season).toBe(7);
   });
 
   it('plans every link for floors 1-15 on Hard and ignores the priority map an old link carries', () => {
     const old = lzString.compressToEncodedURIComponent(
-      JSON.stringify({ v: 2, deck: [10101], deployed: [10101], wanted: [9283], priority: { 9283: 'must', 9088: 'skip' }, options: { ...defaultOptions(), lastFloor: 5, hardFromFloor: 3 } }),
+      JSON.stringify({
+        v: 2,
+        deck: [10101],
+        deployed: [10101],
+        wanted: [9283],
+        priority: { 9283: 'must', 9088: 'skip' },
+        options: { ...defaultOptions(), lastFloor: 5, hardFromFloor: 3 },
+      }),
     );
     const decoded = decodeShared(`#s=${old}`)!;
     expect(decoded.options).toMatchObject({ lastFloor: 15, hardFromFloor: 1 });
@@ -154,7 +220,12 @@ describe('share links', () => {
     const v1 =
       '#s=' +
       lzString.compressToEncodedURIComponent(
-        JSON.stringify({ v: 1, deck: [10101, 10203, 10312, 10403, 10505, 10601, 10707], wanted: [], options: defaultOptions() }),
+        JSON.stringify({
+          v: 1,
+          deck: [10101, 10203, 10312, 10403, 10505, 10601, 10707],
+          wanted: [],
+          options: defaultOptions(),
+        }),
       );
     const decoded = decodeShared(v1);
     expect(decoded?.deck).toEqual([10101, 10203, 10312, 10403, 10505, 10601, 10707]);
@@ -163,7 +234,13 @@ describe('share links', () => {
 
   it('drops option keys the planner no longer knows, such as the old observation count', () => {
     const stale = lzString.compressToEncodedURIComponent(
-      JSON.stringify({ v: 2, deck: [10101], deployed: [10101], wanted: [9283], options: { ...defaultOptions(), giftObservationMax: 2, observedGifts: [9222, 9222] } }),
+      JSON.stringify({
+        v: 2,
+        deck: [10101],
+        deployed: [10101],
+        wanted: [9283],
+        options: { ...defaultOptions(), giftObservationMax: 2, observedGifts: [9222, 9222] },
+      }),
     );
     const decoded = decodeShared(`#s=${stale}`)!;
     expect('giftObservationMax' in decoded.options).toBe(false);
@@ -186,13 +263,20 @@ describe('share links', () => {
   it('starts a recipient on a fresh run, whatever this device had recorded', () => {
     useApp.getState().visitPack(1402, 4);
     useApp.getState().setGiftStatus(9267, 'got');
-    useApp.getState().applyShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
+    useApp
+      .getState()
+      .applyShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
     expect(useApp.getState().run).toEqual(emptyRun());
     expect(useApp.getState().wanted).toEqual([9283]);
   });
 
   it('consumes the hash once so a reload keeps later edits', async () => {
-    window.location.hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
+    window.location.hash = encodeShared({
+      deck: [10101],
+      deployed: [10101],
+      wanted: [9283],
+      options: defaultOptions(),
+    });
     render(<App />);
     await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
     expect(window.location.hash).toBe('');
@@ -204,7 +288,12 @@ describe('share links', () => {
     const user = userEvent.setup();
     useApp.getState().visitPack(1402, 1);
     useApp.getState().setStageFloor(4);
-    const hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
+    const hash = encodeShared({
+      deck: [10101],
+      deployed: [10101],
+      wanted: [9283],
+      options: defaultOptions(),
+    });
     window.location.hash = hash;
     render(<App />);
     const dialog = await screen.findByTestId('confirm-dialog');
@@ -223,7 +312,12 @@ describe('share links', () => {
   });
 
   it('applies a link with no question when no run is under way', async () => {
-    window.location.hash = encodeShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
+    window.location.hash = encodeShared({
+      deck: [10101],
+      deployed: [10101],
+      wanted: [9283],
+      options: defaultOptions(),
+    });
     render(<App />);
     await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
     expect(screen.queryByTestId('confirm-dialog')).toBeNull();
@@ -249,7 +343,10 @@ describe('a saved state that cannot be trusted', () => {
   // the current version is the one that used to reach state unchecked — and that is what a
   // truncated write or a partial eviction leaves behind.
   it('sanitizes a blob that claims the current version, instead of merging it as it stands', () => {
-    const state = sanitizePersisted({ deck: 'abc', deployed: 5, wanted: [9267, 'x', null], run: 42, ui: 'nope' }, PERSIST_VERSION);
+    const state = sanitizePersisted(
+      { deck: 'abc', deployed: 5, wanted: [9267, 'x', null], run: 42, ui: 'nope' },
+      PERSIST_VERSION,
+    );
     expect(state.deck).toEqual([]);
     expect(state.deployed).toEqual([]);
     expect(state.wanted).toEqual([9267]);
@@ -269,27 +366,54 @@ describe('a saved state that cannot be trusted', () => {
     const saved = sanitizePersisted({ deck: doubled, deployed: [10102, 10203] }, PERSIST_VERSION);
     expect(saved.deck).toEqual([10101, 10203]);
     expect(saved.deployed).toEqual([10203]);
-    const link = decodeShared(encodeShared({ deck: doubled, deployed: [10102, 10203], wanted: [], options: appDefaultOptions() }))!;
+    const link = decodeShared(
+      encodeShared({ deck: doubled, deployed: [10102, 10203], wanted: [], options: appDefaultOptions() }),
+    )!;
     expect(link.deck).toEqual([10101, 10203]);
     expect(link.deployed).toEqual([10203]);
     // Fourteen ids of fourteen different "sinners" come back as twelve.
     const fourteen = [...LCB_DECK, 11301, 11401];
-    expect(decodeShared(encodeShared({ deck: fourteen, deployed: [], wanted: [], options: appDefaultOptions() }))!.deck).toHaveLength(12);
-    useApp.getState().applyShared({ deck: doubled, deployed: [10102], wanted: [], options: appDefaultOptions() });
+    expect(
+      decodeShared(encodeShared({ deck: fourteen, deployed: [], wanted: [], options: appDefaultOptions() }))!
+        .deck,
+    ).toHaveLength(12);
+    useApp
+      .getState()
+      .applyShared({ deck: doubled, deployed: [10102], wanted: [], options: appDefaultOptions() });
     expect(useApp.getState()).toMatchObject({ deck: [10101, 10203], deployed: [] });
   });
 
   it('lets nothing through that partialize never wrote, so a blob cannot overwrite an action or the floor count', async () => {
-    const state = sanitizePersisted({ deck: [10101], resetRun: 1, lastFloor: 3, step: 'deck' }, PERSIST_VERSION);
-    expect(Object.keys(state).sort()).toEqual(['dark', 'deck', 'deployed', 'fusionGoal', 'lang', 'options', 'run', 'season', 'ui', 'wanted']);
-    window.localStorage.setItem(PERSIST_KEY, JSON.stringify({ version: PERSIST_VERSION, state: { deck: [10101], resetRun: 1, lastFloor: 3 } }));
+    const state = sanitizePersisted(
+      { deck: [10101], resetRun: 1, lastFloor: 3, step: 'deck' },
+      PERSIST_VERSION,
+    );
+    expect(Object.keys(state).sort()).toEqual([
+      'dark',
+      'deck',
+      'deployed',
+      'fusionGoal',
+      'lang',
+      'options',
+      'run',
+      'season',
+      'ui',
+      'wanted',
+    ]);
+    window.localStorage.setItem(
+      PERSIST_KEY,
+      JSON.stringify({ version: PERSIST_VERSION, state: { deck: [10101], resetRun: 1, lastFloor: 3 } }),
+    );
     await useApp.persist.rehydrate();
     expect(typeof useApp.getState().resetRun).toBe('function');
     expect(useApp.getState().lastFloor).toBe(15);
   });
 
   it('renders the app from defaults when the stored blob is nonsense', async () => {
-    window.localStorage.setItem(PERSIST_KEY, JSON.stringify({ version: PERSIST_VERSION, state: { deck: 'abc', run: 42 } }));
+    window.localStorage.setItem(
+      PERSIST_KEY,
+      JSON.stringify({ version: PERSIST_VERSION, state: { deck: 'abc', run: 42 } }),
+    );
     useApp.persist.rehydrate();
     render(<App />);
     // The first visit's LCB deck, not a crash: the sanitizer emptied the deck and `App` filled it.
@@ -353,14 +477,31 @@ describe('state that outlived the game data', () => {
     useApp.setState({
       wanted: [9267, 999999],
       fusionGoal: { 999999: 'resultOnly' },
-      options: { ...appDefaultOptions(), observedGifts: [9267, 999999], bannedPacks: [1402, 888888], preferredPacks: [888888], pinnedPacks: { 3: 888888, 4: 1402 } },
-      run: { currentFloor: 3, stageFloor: 2, visits: { 1: 888888, 2: 1402 }, giftStatus: { 9267: 'got', 999999: 'got' }, startGifts: [999999] },
+      options: {
+        ...appDefaultOptions(),
+        observedGifts: [9267, 999999],
+        bannedPacks: [1402, 888888],
+        preferredPacks: [888888],
+        pinnedPacks: { 3: 888888, 4: 1402 },
+      },
+      run: {
+        currentFloor: 3,
+        stageFloor: 2,
+        visits: { 1: 888888, 2: 1402 },
+        giftStatus: { 9267: 'got', 999999: 'got' },
+        startGifts: [999999],
+      },
     });
     const counts = adopt();
     const state = useApp.getState();
     expect(state.wanted).toEqual([9267]);
     expect(state.fusionGoal).toEqual({});
-    expect(state.options).toMatchObject({ observedGifts: [9267], bannedPacks: [1402], preferredPacks: [], pinnedPacks: { 4: 1402 } });
+    expect(state.options).toMatchObject({
+      observedGifts: [9267],
+      bannedPacks: [1402],
+      preferredPacks: [],
+      pinnedPacks: { 4: 1402 },
+    });
     // The run is kept — it still fits the season — but nothing unresolvable rides along in it.
     expect(state.run).toMatchObject({ visits: { 2: 1402 }, giftStatus: { 9267: 'got' }, startGifts: [] });
     expect(counts.gifts).toBe(1);
@@ -372,7 +513,12 @@ describe('state that outlived the game data', () => {
     // adopted first: before the recipes land, a link's pins are left alone on purpose (an
     // ingredient pin is legal and indistinguishable from a stale one), and `adoptSeason` judges.
     adopt();
-    useApp.getState().applyShared({ deck: LCB_DECK, deployed: LCB_DECK.slice(0, 6), wanted: [9267], options: { ...appDefaultOptions(), observedGifts: [9267, 9283] } });
+    useApp.getState().applyShared({
+      deck: LCB_DECK,
+      deployed: LCB_DECK.slice(0, 6),
+      wanted: [9267],
+      options: { ...appDefaultOptions(), observedGifts: [9267, 9283] },
+    });
     expect(useApp.getState().options.observedGifts).toEqual([9267]);
     useApp.setState({ options: { ...useApp.getState().options, observedGifts: [9267, 9283] } });
     adopt();
@@ -386,7 +532,12 @@ describe('run store', () => {
     useApp.getState().toggleWanted(9249);
     expect(useApp.getState().run).toMatchObject({ currentFloor: 1, stageFloor: 1 });
     useApp.getState().visitPack(1016, 1, { got: [9222] });
-    expect(useApp.getState().run).toMatchObject({ visits: { 1: 1016 }, currentFloor: 2, stageFloor: 1, giftStatus: { 9222: 'got' } });
+    expect(useApp.getState().run).toMatchObject({
+      visits: { 1: 1016 },
+      currentFloor: 2,
+      stageFloor: 1,
+      giftStatus: { 9222: 'got' },
+    });
     // A pack is entered once per run: a new floor replaces the old one.
     useApp.getState().visitPack(1016, 3);
     expect(useApp.getState().run.visits).toEqual({ 3: 1016 });
@@ -394,7 +545,12 @@ describe('run store', () => {
     useApp.getState().setGiftStatus(9431, 'failed');
     useApp.getState().setFusionGoal(9249, 'resultOnly');
     const input = planInputFor(useApp.getState());
-    expect(input.options).toMatchObject({ currentFloor: 4, pinnedPacks: { 3: 1016 }, ownedGifts: [9222], unobtainableGifts: [9431] });
+    expect(input.options).toMatchObject({
+      currentFloor: 4,
+      pinnedPacks: { 3: 1016 },
+      ownedGifts: [9222],
+      unobtainableGifts: [9431],
+    });
     expect(input.wanted).toEqual([{ giftId: 9249, required: false, ingredientsAsGoals: false }]);
     // Undoing an entry can take the statuses recorded for that pack's own drops with it.
     useApp.getState().setGiftStatus(9267, 'got');
@@ -403,7 +559,11 @@ describe('run store', () => {
     expect(useApp.getState().run.giftStatus).toEqual({ 9222: 'got' });
     useApp.getState().resetRun();
     expect(useApp.getState().run).toEqual(emptyRun());
-    expect(planInputFor(useApp.getState()).options).toMatchObject({ currentFloor: 1, ownedGifts: [], pinnedPacks: {} });
+    expect(planInputFor(useApp.getState()).options).toMatchObject({
+      currentFloor: 1,
+      ownedGifts: [],
+      pinnedPacks: {},
+    });
   });
 
   it('walks the floors: entering, skipping, looking back, and taking a decision back', () => {
@@ -413,10 +573,19 @@ describe('run store', () => {
     expect(run()).toMatchObject({ currentFloor: 2, stageFloor: 2, giftStatus: { 9423: 'got' } });
     // Entering keeps the stage on the entered floor so its gifts can be marked.
     useApp.getState().visitPack(1008, 2, { got: [9415] });
-    expect(run()).toMatchObject({ currentFloor: 3, stageFloor: 2, visits: { 2: 1008 }, giftStatus: { 9423: 'got', 9415: 'got' } });
+    expect(run()).toMatchObject({
+      currentFloor: 3,
+      stageFloor: 2,
+      visits: { 2: 1008 },
+      giftStatus: { 9423: 'got', 9415: 'got' },
+    });
     // Leaving an entered floor never skips: the frontier is already past it; a recorded gift is never overridden by a miss.
     useApp.getState().nextFloor({ failed: [9415, 9419] });
-    expect(run()).toMatchObject({ currentFloor: 3, stageFloor: 3, giftStatus: { 9423: 'got', 9415: 'got', 9419: 'failed' } });
+    expect(run()).toMatchObject({
+      currentFloor: 3,
+      stageFloor: 3,
+      giftStatus: { 9423: 'got', 9415: 'got', 9419: 'failed' },
+    });
     useApp.getState().nextFloor();
     expect(run()).toMatchObject({ currentFloor: 4, stageFloor: 4 });
     // Stepping back onto the skip right before the frontier takes it back, but not an older one.
@@ -449,7 +618,14 @@ describe('run store', () => {
   });
 
   it('keeps a saved run only where it still makes sense', () => {
-    expect(sanitizeRun({ visits: { 2: 1102, 5: 1102, 99: 1016, x: 1 }, giftStatus: { 9431: 'failed', 9706: 'odd' }, currentFloor: 1, stageFloor: 7 })).toEqual({
+    expect(
+      sanitizeRun({
+        visits: { 2: 1102, 5: 1102, 99: 1016, x: 1 },
+        giftStatus: { 9431: 'failed', 9706: 'odd' },
+        currentFloor: 1,
+        stageFloor: 7,
+      }),
+    ).toEqual({
       currentFloor: 3,
       stageFloor: 3,
       visits: { 2: 1102 },
@@ -457,22 +633,53 @@ describe('run store', () => {
       startGifts: [],
     });
     // The stage may stand on the done floor (16), never past it.
-    expect(sanitizeRun({ currentFloor: 20, stageFloor: 20, visits: {}, giftStatus: {} })).toMatchObject({ currentFloor: 16, stageFloor: 16 });
-    expect(sanitizeRun({ currentFloor: 16, stageFloor: 15, visits: {}, giftStatus: {} })).toMatchObject({ currentFloor: 16, stageFloor: 15 });
+    expect(sanitizeRun({ currentFloor: 20, stageFloor: 20, visits: {}, giftStatus: {} })).toMatchObject({
+      currentFloor: 16,
+      stageFloor: 16,
+    });
+    expect(sanitizeRun({ currentFloor: 16, stageFloor: 15, visits: {}, giftStatus: {} })).toMatchObject({
+      currentFloor: 16,
+      stageFloor: 15,
+    });
     // A record saved before the run-first shell, while no run was on: nothing to keep.
     expect(sanitizeRun({ active: false, visits: { 2: 1102 } })).toEqual(emptyRun());
-    expect(sanitizeRun({ active: true, visits: { 2: 1102 }, currentFloor: 3 })).toMatchObject({ visits: { 2: 1102 }, currentFloor: 3, stageFloor: 3 });
+    expect(sanitizeRun({ active: true, visits: { 2: 1102 }, currentFloor: 3 })).toMatchObject({
+      visits: { 2: 1102 },
+      currentFloor: 3,
+      stageFloor: 3,
+    });
     expect(sanitizeRun(null)).toEqual(emptyRun());
   });
 
   it('drops the collected marks an earlier build left on non-goal gifts when upgrading a saved run', async () => {
     const wanted = [9191, 9410, 9419, 9423];
-    const giftStatus: Record<number, 'got' | 'failed'> = { 9419: 'got', 9423: 'got', 9409: 'got', 9431: 'failed' };
+    const giftStatus: Record<number, 'got' | 'failed'> = {
+      9419: 'got',
+      9423: 'got',
+      9409: 'got',
+      9431: 'failed',
+    };
     expect(withoutLegacyGot(giftStatus, wanted)).toEqual({ 9419: 'got', 9423: 'got', 9431: 'failed' });
     const migrate = useApp.persist.getOptions().migrate!;
-    const saved = { deck: LCB_DECK, deployed: LCB_DECK.slice(0, 6), wanted, fusionGoal: {}, options: { ...appDefaultOptions(), observedGifts: [9191, 9419, 9423] }, run: { currentFloor: 2, stageFloor: 2, visits: { 1: 1004 }, giftStatus }, ui: defaultUi(), lang: 'ko', dark: true };
+    const saved = {
+      deck: LCB_DECK,
+      deployed: LCB_DECK.slice(0, 6),
+      wanted,
+      fusionGoal: {},
+      options: { ...appDefaultOptions(), observedGifts: [9191, 9419, 9423] },
+      run: { currentFloor: 2, stageFloor: 2, visits: { 1: 1004 }, giftStatus },
+      ui: defaultUi(),
+      lang: 'ko',
+      dark: true,
+    };
     const upgraded = (await migrate(saved, 6)) as ReturnType<typeof useApp.getState>;
-    expect(upgraded.run).toEqual({ currentFloor: 2, stageFloor: 2, visits: { 1: 1004 }, giftStatus: { 9419: 'got', 9423: 'got', 9431: 'failed' }, startGifts: [] });
+    expect(upgraded.run).toEqual({
+      currentFloor: 2,
+      stageFloor: 2,
+      visits: { 1: 1004 },
+      giftStatus: { 9419: 'got', 9423: 'got', 9431: 'failed' },
+      startGifts: [],
+    });
     // The phantom ingredient is gone, so the plan routes for it again.
     const plan = planRoute(planInputFor({ ...upgraded, run: upgraded.run }), data, indexes);
     expect(plan.stats.requiredPacks).toBe(1);
@@ -481,7 +688,10 @@ describe('run store', () => {
     const same = (await migrate(saved, 7)) as ReturnType<typeof useApp.getState>;
     expect(same.run.giftStatus).toEqual(giftStatus);
     // A run still on floor 1 has nothing to clean.
-    const fresh = (await migrate({ ...saved, run: { currentFloor: 1, stageFloor: 1, visits: {}, giftStatus } }, 6)) as ReturnType<typeof useApp.getState>;
+    const fresh = (await migrate(
+      { ...saved, run: { currentFloor: 1, stageFloor: 1, visits: {}, giftStatus } },
+      6,
+    )) as ReturnType<typeof useApp.getState>;
     expect(fresh.run.giftStatus).toEqual(giftStatus);
   });
 
@@ -501,7 +711,9 @@ describe('run store · statuses that outlive their goal', () => {
     const app = useApp.getState();
     app.toggleWanted(9267);
     app.toggleWanted(9088);
-    useApp.setState({ run: { ...useApp.getState().run, giftStatus: { 9267: 'failed', 9088: 'got', 9400: 'got' } } });
+    useApp.setState({
+      run: { ...useApp.getState().run, giftStatus: { 9267: 'failed', 9088: 'got', 9400: 'got' } },
+    });
     // 9400 is nobody's goal but the tracker and the stage mark such gifts on purpose.
     useApp.getState().removeWanted(9267);
     expect(useApp.getState().run.giftStatus).toEqual({ 9088: 'got', 9400: 'got' });
@@ -581,7 +793,10 @@ describe('gift priority', () => {
     const reports = evaluateConditions([9088, 9092, 9208], stats, indexes);
     const byGift = new Map<number, typeof reports>();
     for (const r of reports) byGift.set(r.giftId, [...(byGift.get(r.giftId) ?? []), r]);
-    const groups = prioritiseGifts([9088, 9092, 9208].map((id) => indexes.giftById.get(id)!), byGift);
+    const groups = prioritiseGifts(
+      [9088, 9092, 9208].map((id) => indexes.giftById.get(id)!),
+      byGift,
+    );
     // 진혼 needs 5 combustion inflictors among the deployed 7 — every one of them qualifies.
     expect(groups.active.map((e) => e.gift.id)).toContain(9088);
     // 인연 얽힘 is a full-resonance condition: it cannot be judged from a deck.
@@ -590,8 +805,12 @@ describe('gift priority', () => {
   });
 
   it('puts pack-bound gifts ahead of 범용 ones inside a group', () => {
-    const packBound = data.gifts.find((g) => g.acquisition.kind === 'packLimited' && g.conditions.length === 0)!;
-    const general = data.gifts.find((g) => g.acquisition.kind === 'general' && g.conditions.length === 0 && g.id < packBound.id)!;
+    const packBound = data.gifts.find(
+      (g) => g.acquisition.kind === 'packLimited' && g.conditions.length === 0,
+    )!;
+    const general = data.gifts.find(
+      (g) => g.acquisition.kind === 'general' && g.conditions.length === 0 && g.id < packBound.id,
+    )!;
     const a = classifyGift(packBound, []);
     const b = classifyGift(general, []);
     // Both sit in "other" with no condition; the pack-bound one wins even with the larger id.
@@ -617,7 +836,8 @@ describe('gift priority', () => {
 });
 
 describe('condition wording', () => {
-  const reportFor = (giftId: number, deck: number[]) => evaluateConditions([giftId], statsFor(deck), indexes)[0]!;
+  const reportFor = (giftId: number, deck: number[]) =>
+    evaluateConditions([giftId], statsFor(deck), indexes)[0]!;
 
   it('picks the object particle by the final consonant', () => {
     expect(josa('화상', '을/를')).toBe('화상을');
@@ -652,9 +872,14 @@ describe('DeckStep', () => {
     // it silently; its own `_source` asks the UI to mark it.
     const { unmount } = renderDeck();
     expect(data.rules.deployment.verified).toBe(false);
-    expect(screen.getByTestId('deploy-unverified')).toHaveTextContent(`출격 상한 ${data.rules.deployment.max}명은 게임에서 아직 확인하지 못한 값입니다`);
+    expect(screen.getByTestId('deploy-unverified')).toHaveTextContent(
+      `출격 상한 ${data.rules.deployment.max}명은 게임에서 아직 확인하지 못한 값입니다`,
+    );
     unmount();
-    const verified = { ...data, rules: { ...data.rules, deployment: { ...data.rules.deployment, verified: true } } };
+    const verified = {
+      ...data,
+      rules: { ...data.rules, deployment: { ...data.rules.deployment, verified: true } },
+    };
     const { deck, deployed } = useApp.getState();
     render(<DeckStep data={verified} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
     expect(screen.queryByTestId('deploy-unverified')).toBeNull();
@@ -668,7 +893,9 @@ describe('DeckStep', () => {
     expect(useApp.getState().deck).toEqual(defaultDeck(data));
     expect(useApp.getState().deck).toHaveLength(12);
     expect(useApp.getState().deployed).toHaveLength(6);
-    expect(new Set(useApp.getState().deck.map((id) => indexes.identityById.get(id)!.title.ko))).toEqual(new Set(['LCB 수감자']));
+    expect(new Set(useApp.getState().deck.map((id) => indexes.identityById.get(id)!.title.ko))).toEqual(
+      new Set(['LCB 수감자']),
+    );
   });
 
   it('finds identities across every sinner from the global search', async () => {
@@ -770,7 +997,12 @@ describe('DeckStep', () => {
     // 특수 shows in the search too.
     await user.type(screen.getByLabelText(/전체 인격 검색/), '특수 충전');
     const options = within(screen.getByRole('listbox')).getAllByRole('option');
-    expect(options.map((o) => o.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('거미집 약지 제자'), expect.stringContaining('거미집 약지 아비')]));
+    expect(options.map((o) => o.textContent)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('거미집 약지 제자'),
+        expect.stringContaining('거미집 약지 아비'),
+      ]),
+    );
     for (const option of options) expect(option.textContent).not.toMatch(/충전\s*\d/);
   });
 
@@ -818,7 +1050,9 @@ describe('DeckStep', () => {
 describe('GiftIcon', () => {
   it('puts the keyword in a corner badge (hue, or one ink with a shape for an attack type), the tier opposite it, and the judgement as a ring', () => {
     const icon = (id: number, judgement: 'met' | 'unmet' | null = null) => {
-      const { unmount } = render(<GiftIcon gift={indexes.giftById.get(id)!} size={32} judgement={judgement} lang="ko" />);
+      const { unmount } = render(
+        <GiftIcon gift={indexes.giftById.get(id)!} size={32} judgement={judgement} lang="ko" />,
+      );
       const el = screen.getByTestId('gift-icon');
       return { el, badge: screen.queryByTestId('gift-keyword'), unmount };
     };
@@ -866,11 +1100,15 @@ describe('text the screen gets wrong', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     const { deck, deployed } = useApp.getState();
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
-    const tiers = within(screen.getByLabelText('등급')).getAllByRole('option').map((o) => o.textContent);
+    const tiers = within(screen.getByLabelText('등급'))
+      .getAllByRole('option')
+      .map((o) => o.textContent);
     expect(tiers).toContain('EX');
     expect(tiers).not.toContain('TEX');
     // The price bands do not overlap, so each label names the band it keeps.
-    const prices = within(screen.getByLabelText('가격')).getAllByRole('option').map((o) => o.textContent);
+    const prices = within(screen.getByLabelText('가격'))
+      .getAllByRole('option')
+      .map((o) => o.textContent);
     expect(prices).toContain('151~250');
   });
 
@@ -900,9 +1138,12 @@ describe('GiftsStep', () => {
   // The detail sheet is hosted by the provider, not by the tab, so the tab needs the shell context.
   const renderGifts = () => {
     const { deck, deployed } = useApp.getState();
-    return renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    return renderPlanned(
+      <GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />,
+    );
   };
-  const tile = (id: number) => screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
+  const tile = (id: number) =>
+    screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
   /** What a data load does: hand the store this season's ids and its fusion recipes. */
   const adoptThisSeason = (): void => {
     useApp.getState().adoptSeason({
@@ -1220,7 +1461,7 @@ describe('GiftsStep', () => {
    * the selection, which holds results and never their pieces. So a fusion goal could not use
    * observation at all, although its ingredients are exactly what a run needs handed over.
    */
-  it('offers a fusion goal\'s ingredients for observation, which is the only way to observe one', async () => {
+  it("offers a fusion goal's ingredients for observation, which is the only way to observe one", async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     // The recipes reach the store the way a data load hands them over, and no other way.
@@ -1233,11 +1474,11 @@ describe('GiftsStep', () => {
     await user.click(screen.getAllByRole('button', { name: '관측 지정 추가' })[0]!);
     const list = screen.getByTestId('observe-candidates');
     // The three ingredients, and not the result: the route collects those, and they are observable.
-    expect(within(list).getAllByRole('button').map((el) => el.getAttribute('aria-label'))).toEqual([
-      '찢어진 밴돌리어 관측 지정',
-      '노이즈 섞인 무전기 관측 지정',
-      '부리 모양 목걸이 관측 지정',
-    ]);
+    expect(
+      within(list)
+        .getAllByRole('button')
+        .map((el) => el.getAttribute('aria-label')),
+    ).toEqual(['찢어진 밴돌리어 관측 지정', '노이즈 섞인 무전기 관측 지정', '부리 모양 목걸이 관측 지정']);
     await user.click(within(list).getByRole('button', { name: '노이즈 섞인 무전기 관측 지정' }));
     expect(useApp.getState().options.observedGifts).toEqual([9233]);
 
@@ -1296,7 +1537,10 @@ describe('GiftsStep', () => {
     // Picked in an order that is neither alphabetical nor keyword order.
     for (const id of [9267, 9088, 9211]) useApp.getState().toggleWanted(id);
     renderGifts();
-    const chips = () => within(screen.getByTestId('gift-chips')).getAllByTestId('gift-chip').map((el) => el.getAttribute('data-gift'));
+    const chips = () =>
+      within(screen.getByTestId('gift-chips'))
+        .getAllByTestId('gift-chip')
+        .map((el) => el.getAttribute('data-gift'));
     expect(chips()).toEqual(['9267', '9088', '9211']);
     await user.selectOptions(screen.getByRole('combobox', { name: '정렬' }), 'name');
     expect(chips()).toEqual(['9267', '9211', '9088']); // 달궈진 놋쇠 · 먹장구름 · 진혼
@@ -1312,8 +1556,12 @@ describe('GiftsStep', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of [9267, 9088, 9211]) useApp.getState().toggleWanted(id);
     renderGifts();
-    const chips = () => within(screen.getByTestId('gift-chips')).getAllByTestId('gift-chip').map((el) => el.getAttribute('data-gift'));
-    const trayFilters = () => within(screen.getByTestId('gift-chips').parentElement!).getAllByRole('combobox');
+    const chips = () =>
+      within(screen.getByTestId('gift-chips'))
+        .getAllByTestId('gift-chip')
+        .map((el) => el.getAttribute('data-gift'));
+    const trayFilters = () =>
+      within(screen.getByTestId('gift-chips').parentElement!).getAllByRole('combobox');
     // The tray's keyword filter offers only the keywords its own chips carry.
     const keyword = trayFilters().find((el) => el.getAttribute('aria-label') === '키워드')!;
     await user.selectOptions(keyword, 'Sinking');
@@ -1322,7 +1570,10 @@ describe('GiftsStep', () => {
     await user.selectOptions(keyword, 'all');
     // 달궈진 놋쇠 is 화왕지절's alone, so the pack filter keeps it and nothing else.
     const pack = trayFilters().find((el) => el.getAttribute('aria-label') === '팩')!;
-    await user.selectOptions(pack, within(pack).getByRole('option', { name: '화왕지절' }).getAttribute('value')!);
+    await user.selectOptions(
+      pack,
+      within(pack).getByRole('option', { name: '화왕지절' }).getAttribute('value')!,
+    );
     expect(chips()).toEqual(['9267']);
     expect(useApp.getState().wanted).toEqual([9267, 9088, 9211]);
   });
@@ -1333,7 +1584,8 @@ describe('GiftsStep', () => {
     for (const id of [9283, 9222, 9217]) useApp.getState().toggleWanted(id);
     const { deck, deployed } = useApp.getState();
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
-    const chip = (id: number) => screen.getAllByTestId('gift-chip').find((c) => c.getAttribute('data-gift') === String(id))!;
+    const chip = (id: number) =>
+      screen.getAllByTestId('gift-chip').find((c) => c.getAttribute('data-gift') === String(id))!;
     const slot = (i: number) => screen.getAllByTestId('observe-slot')[i]!;
     const drag = (id: number, i: number) => {
       fireEvent.pointerDown(chip(id), { button: 0, clientX: 10, clientY: 10 });
@@ -1370,18 +1622,31 @@ describe('GiftsStep', () => {
       for (const id of [9222, 9217]) useApp.getState().toggleWanted(id);
       const { deck, deployed } = useApp.getState();
       renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
-      const chip = (id: number) => screen.getAllByTestId('gift-chip').find((c) => c.getAttribute('data-gift') === String(id))!;
+      const chip = (id: number) =>
+        screen.getAllByTestId('gift-chip').find((c) => c.getAttribute('data-gift') === String(id))!;
       const slot = (i: number) => screen.getAllByTestId('observe-slot')[i]!;
 
       // A finger that moves before the hold is a scroll: nothing is picked up, even after the delay.
-      fireEvent.pointerDown(chip(9222), { button: 0, clientX: 10, clientY: 100, pointerType: 'touch', pointerId: 1 });
+      fireEvent.pointerDown(chip(9222), {
+        button: 0,
+        clientX: 10,
+        clientY: 100,
+        pointerType: 'touch',
+        pointerId: 1,
+      });
       fireEvent.pointerMove(window, { clientX: 10, clientY: 60, pointerType: 'touch', pointerId: 1 });
       act(() => vi.advanceTimersByTime(LONG_PRESS + 50));
       expect(screen.queryByTestId('chip-ghost')).toBeNull();
       fireEvent.pointerUp(window, { pointerId: 1 });
 
       // Held still: the ghost appears without any movement, then the drop pins it.
-      fireEvent.pointerDown(chip(9222), { button: 0, clientX: 10, clientY: 100, pointerType: 'touch', pointerId: 2 });
+      fireEvent.pointerDown(chip(9222), {
+        button: 0,
+        clientX: 10,
+        clientY: 100,
+        pointerType: 'touch',
+        pointerId: 2,
+      });
       expect(screen.queryByTestId('chip-ghost')).toBeNull();
       act(() => vi.advanceTimersByTime(LONG_PRESS));
       expect(screen.getByTestId('chip-ghost')).toBeInTheDocument();
@@ -1409,11 +1674,15 @@ describe('GiftsStep', () => {
   it('points an empty deck at the deck tab only when it is given somewhere to go', async () => {
     const user = userEvent.setup();
     const onGoDeck = vi.fn();
-    const { unmount } = renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor([])} lang="ko" />);
+    const { unmount } = renderPlanned(
+      <GiftsStep data={data} indexes={indexes} stats={statsFor([])} lang="ko" />,
+    );
     expect(screen.getByText('덱이 비어 있습니다')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '덱 탭으로' })).toBeNull();
     unmount();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor([])} lang="ko" onGoDeck={onGoDeck} />);
+    renderPlanned(
+      <GiftsStep data={data} indexes={indexes} stats={statsFor([])} lang="ko" onGoDeck={onGoDeck} />,
+    );
     await user.click(screen.getByRole('button', { name: '덱 탭으로' }));
     expect(onGoDeck).toHaveBeenCalledTimes(1);
   });
@@ -1426,7 +1695,11 @@ describe('GiftsStep', () => {
     // 「ㅈㄱㅁㄱ」 is how the name is reached on a Korean keyboard without committing to the vowels.
     // A search answers with one list, so there is no fold to open — see the two tests below.
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), 'ㅈㄱㅁㄱ');
-    expect(within(screen.getByTestId('gift-scroller')).getByRole('button', { name: '조그맣고 근사한 바이올린 자세히' })).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('gift-scroller')).getByRole('button', {
+        name: '조그맣고 근사한 바이올린 자세히',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('lets a chosen fusion result decide whether its ingredients are goals too', async () => {
@@ -1437,7 +1710,11 @@ describe('GiftsStep', () => {
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), '조그맣고');
     // The chip above the grid opens the same sheet; here it is opened from the tile.
-    await user.click(within(screen.getByTestId('gift-scroller')).getByRole('button', { name: '조그맣고 근사한 바이올린 자세히' }));
+    await user.click(
+      within(screen.getByTestId('gift-scroller')).getByRole('button', {
+        name: '조그맣고 근사한 바이올린 자세히',
+      }),
+    );
     await user.click(within(screen.getByTestId('gift-recipe')).getByText('조합식'));
     const box = screen.getByRole('checkbox', { name: '조그맣고 근사한 바이올린 재료도 목표' });
     expect(box).toBeChecked();
@@ -1497,7 +1774,6 @@ describe('GiftsStep', () => {
   });
 });
 
-
 describe('RouteOptions', () => {
   it('shows the start keyword and the pack choices, with no difficulty text, observation list or resets', async () => {
     const user = userEvent.setup();
@@ -1508,7 +1784,9 @@ describe('RouteOptions', () => {
     const startKeyword = screen.getByRole('combobox', { name: '시작 키워드' });
     // Only keywords the season has a starting pool for. 범용 (`None`) is a gift keyword with no
     // pool, so offering it handed the player no starting gift at all, silently.
-    const starts = within(startKeyword).getAllByRole('option').map((o) => o.textContent);
+    const starts = within(startKeyword)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
     expect(starts).toContain('화상');
     expect(starts).not.toContain('범용');
     expect(screen.getByTestId('route-options').textContent).not.toMatch(/Hard|1~15/);
@@ -1611,7 +1889,10 @@ describe('RoutePlanPanel', () => {
     // none of the three is offered in 평행중첩 — so the first two fill 2 and 3 and 1014 has only
     // floor 4 left. Observation is off because all three gifts are observable and the planner
     // would otherwise buy them instead of the packs.
-    const noObservation = { ...data, rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } } };
+    const noObservation = {
+      ...data,
+      rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
+    };
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of [9415, 9419, 9427]) useApp.getState().toggleWanted(id);
     renderPlanned(<RoutePlanPanel onOpenGifts={() => undefined} />, noObservation);
@@ -1632,8 +1913,14 @@ describe('RoutePlanPanel', () => {
     expect(segments).toHaveLength(2);
     expect(segments.every((s) => s.hasAttribute('data-partial'))).toBe(true);
     expect(new Set(segments.map((s) => s.getAttribute('data-lane'))).size).toBe(2);
-    expect(within(rows()).getAllByTestId('suggested').map((c) => c.getAttribute('data-floor'))).toEqual(['2', '3']);
-    const overlapped = within(rows()).getAllByTestId('station').filter((el) => el.hasAttribute('data-overlap'));
+    expect(
+      within(rows())
+        .getAllByTestId('suggested')
+        .map((c) => c.getAttribute('data-floor')),
+    ).toEqual(['2', '3']);
+    const overlapped = within(rows())
+      .getAllByTestId('station')
+      .filter((el) => el.hasAttribute('data-overlap'));
     expect(overlapped.map((el) => el.getAttribute('data-floor'))).toEqual(['3']);
     expect(segments[0]).not.toHaveTextContent('추천');
   });
@@ -1656,7 +1943,9 @@ describe('RoutePlanPanel', () => {
     expect(screen.queryByTestId('legend')).toBeNull();
     // Scoped to the map: fill, dash and weight are its whole vocabulary. The panel around it does
     // carry prose where the plan has to explain itself (the general-drops card, the 「참고」 list).
-    expect(rows().textContent).not.toMatch(/고정|한 층|추천|어느 층|Hard|EXTREME|평행중첩|범례|별빛|합성|범용 드랍|나올 수 있음/);
+    expect(rows().textContent).not.toMatch(
+      /고정|한 층|추천|어느 층|Hard|EXTREME|평행중첩|범례|별빛|합성|범용 드랍|나올 수 있음/,
+    );
   });
 
   it('rides no gift on a route block: the map is packs and floors alone', () => {
@@ -1722,7 +2011,9 @@ describe('RoutePlanPanel', () => {
     useApp.getState().toggleWanted(9423); // the planner recommends observing this one
     renderRoute();
     const line = () => within(rows()).getByTestId('observed-line');
-    const cells = () => within(line()).queryAllByTestId('observed-tile').length + within(line()).queryAllByTestId('observed-empty').length;
+    const cells = () =>
+      within(line()).queryAllByTestId('observed-tile').length +
+      within(line()).queryAllByTestId('observed-empty').length;
     // Three slots this season funds, however many the plan spends.
     expect(cells()).toBe(3);
     expect(within(line()).getAllByTestId('observed-tile')).toHaveLength(1);
@@ -1746,7 +2037,9 @@ describe('RoutePlanPanel', () => {
     expect(sheet).toHaveTextContent('4~5층');
     expect(sheet).not.toHaveTextContent('Hard');
     expect(within(sheet).getAllByTestId('pack-gift').length).toBeGreaterThan(1);
-    const wantedRow = within(sheet).getAllByTestId('pack-gift').find((el) => el.hasAttribute('data-wanted'))!;
+    const wantedRow = within(sheet)
+      .getAllByTestId('pack-gift')
+      .find((el) => el.hasAttribute('data-wanted'))!;
     expect(wantedRow).toHaveTextContent('달궈진 놋쇠');
     expect(wantedRow).toHaveTextContent('전용');
     // The run context is on: each gift is a pressable tile, and floor 4 is not on stage so no entry button.
@@ -1804,7 +2097,9 @@ describe('RoutePlanPanel', () => {
     expect(useApp.getState().options.observedGifts).toEqual([9423]);
     await user.click(within(observed).getByRole('button', { name: '닫기' }));
     expect(screen.queryByTestId('block-sheet')).toBeNull();
-    expect(within(within(rows()).getByTestId('start-cell')).getByTestId('observed-tile')).toHaveAttribute('data-pinned');
+    expect(within(within(rows()).getByTestId('start-cell')).getByTestId('observed-tile')).toHaveAttribute(
+      'data-pinned',
+    );
   });
 
   it('groups a pack conflict by its floors and lets a pack be included or given up as a whole', async () => {
@@ -1830,7 +2125,9 @@ describe('RoutePlanPanel', () => {
     expect(after.find((c) => c.getAttribute('data-pack') === '1516')).toHaveAttribute('data-included');
     expect(after.filter((c) => !c.hasAttribute('data-included'))).toHaveLength(1);
     // Give up an included pack: it leaves the plan and shows in the given-up list until restored.
-    const included = after.find((c) => c.hasAttribute('data-included') && c.getAttribute('data-pack') !== '1516')!;
+    const included = after.find(
+      (c) => c.hasAttribute('data-included') && c.getAttribute('data-pack') !== '1516',
+    )!;
     await user.click(within(included).getByRole('button', { name: /이 팩 포기$/ }));
     expect(useApp.getState().options.bannedPacks).toHaveLength(1);
     const banned = screen.getByTestId('banned');
@@ -1871,7 +2168,11 @@ describe('RoutePlanPanel', () => {
   });
 
   it('offers an observation for an unresolved gift only while it is observable and a slot is free', () => {
-    const conflict = (giftId: number) => ({ giftId, reason: 'pack-conflict' as const, detail: { ko: '', en: '' } });
+    const conflict = (giftId: number) => ({
+      giftId,
+      reason: 'pack-conflict' as const,
+      detail: { ko: '', en: '' },
+    });
     const free = appDefaultOptions();
     const goals = new Set([9423, 9255, 9283]);
     expect(actionsFor(conflict(9423), indexes.giftById.get(9423), free, data.rules, goals)).toEqual([
@@ -1880,12 +2181,18 @@ describe('RoutePlanPanel', () => {
     // EXTREME clear rewards cannot be observed.
     expect(actionsFor(conflict(9255), indexes.giftById.get(9255), free, data.rules, goals)).toEqual([]);
     const full = { ...free, observedGifts: [9283, 9222, 9217] };
-    expect(actionsFor(conflict(9423), indexes.giftById.get(9423), full, data.rules, goals)).toEqual([{ kind: 'releaseObservations', patch: { observedGifts: [] } }]);
+    expect(actionsFor(conflict(9423), indexes.giftById.get(9423), full, data.rules, goals)).toEqual([
+      { kind: 'releaseObservations', patch: { observedGifts: [] } },
+    ]);
     expect(actionsFor(conflict(9283), indexes.giftById.get(9283), full, data.rules, goals)).toEqual([]);
     // An ingredient the plan chases (녹슨 칼자루 for 장관) is not a goal: only a goal can hold a pin,
     // so offering one here would be undone by the next toggle.
-    expect(actionsFor(conflict(9713), indexes.giftById.get(9713), free, data.rules, new Set([9717]))).toEqual([]);
-    expect(actionsFor(conflict(9713), indexes.giftById.get(9713), free, data.rules, new Set([9713]))).toHaveLength(1);
+    expect(actionsFor(conflict(9713), indexes.giftById.get(9713), free, data.rules, new Set([9717]))).toEqual(
+      [],
+    );
+    expect(
+      actionsFor(conflict(9713), indexes.giftById.get(9713), free, data.rules, new Set([9713])),
+    ).toHaveLength(1);
   });
 
   it('keeps the chosen alternative on screen when a gift is marked during the run', async () => {
@@ -1904,13 +2211,15 @@ describe('RoutePlanPanel', () => {
     expect(screen.queryByRole('tablist')).toBeNull();
   });
 
-  it('offers no priority in a goal\'s sheet — 반드시/보통 is gone and 포기 is a deselection', async () => {
+  it("offers no priority in a goal's sheet — 반드시/보통 is gone and 포기 is a deselection", async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9283);
     const { deck, deployed } = useApp.getState();
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
-    await user.click(within(screen.getByTestId('gift-chip')).getByRole('button', { name: '상납된 시가 자세히' }));
+    await user.click(
+      within(screen.getByTestId('gift-chip')).getByRole('button', { name: '상납된 시가 자세히' }),
+    );
     const sheet = screen.getByRole('dialog', { name: '상납된 시가' });
     for (const word of [/우선순위/, /반드시/, /보통/, /포기/]) {
       expect(within(sheet).queryByRole('button', { name: word })).toBeNull();
@@ -1921,11 +2230,18 @@ describe('RoutePlanPanel', () => {
 
   it('copies the plan by segment with localized names instead of raw ids', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
-    const oneSlot = { ...data, rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 1 } } };
+    const oneSlot = {
+      ...data,
+      rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 1 } },
+    };
     const plan = planRoute(
       {
         deck: BURN_DECK,
-        wanted: [{ giftId: 9423, required: true }, { giftId: 9415, required: true }, { giftId: 9419, required: true }],
+        wanted: [
+          { giftId: 9423, required: true },
+          { giftId: 9415, required: true },
+          { giftId: 9419, required: true },
+        ],
         options: { ...defaultOptions(), lastFloor: 15, hardFromFloor: 1, observedGifts: [9423] },
       },
       oneSlot,
@@ -1948,9 +2264,24 @@ describe('RoutePlanPanel', () => {
     expect(text).toContain('  - 불결함 (마주하지 않는)');
     expect(text).toContain('4~15층: 자유');
     for (const word of ['별빛', '조합', '범용']) expect(text).not.toContain(word);
-    const without = planToText(plan, (id) => indexes.giftById.get(id)?.name.ko ?? '', () => '', () => '', 'ko', [9283]);
+    const without = planToText(
+      plan,
+      (id) => indexes.giftById.get(id)?.name.ko ?? '',
+      () => '',
+      () => '',
+      'ko',
+      [9283],
+    );
     expect(without.split('\n')[0]).toBe('상납된 시가 제외');
-    const marked = planToText(plan, (id) => indexes.giftById.get(id)?.name.ko ?? '', (id) => indexes.packById.get(id)?.name.ko ?? '', () => '', 'ko', [], { bannedPacks: [1402] });
+    const marked = planToText(
+      plan,
+      (id) => indexes.giftById.get(id)?.name.ko ?? '',
+      (id) => indexes.packById.get(id)?.name.ko ?? '',
+      () => '',
+      'ko',
+      [],
+      { bannedPacks: [1402] },
+    );
     // No 반드시 mark any more — every goal is best-effort, so a name is just a name.
     expect(marked).toContain('깨진 안경');
     expect(marked).not.toContain('(반드시)');
@@ -1962,9 +2293,15 @@ describe('RoutePlanPanel', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9249); // ← 9431 (1016, Hard 1) + 9706·9707 (1102, Hard 2-3)
     // Observation off, or the planner would simply observe the ingredients instead of visiting.
-    const noObservation = { ...data, rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } } };
+    const noObservation = {
+      ...data,
+      rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
+    };
     renderPlanned(<RoutePlanPanel />, noObservation);
-    const packs = () => within(rows()).getAllByTestId('segment-pack').map((el) => el.getAttribute('data-pack'));
+    const packs = () =>
+      within(rows())
+        .getAllByTestId('segment-pack')
+        .map((el) => el.getAttribute('data-pack'));
     expect(packs()).toEqual(['1016', '1102']);
     act(() => useApp.getState().setGiftStatus(9707, 'failed'));
     // Ingredients stay goals by default, so both packs are still on the map.
@@ -1985,9 +2322,25 @@ describe('AppShell', () => {
     lastFloor: 15,
     provisional: false,
   });
-  const renderShell = (seasons = [seasonEntry(data.meta.dungeon.id, data.meta.dungeon.name.ko)], onSeason = () => undefined) => {
+  const renderShell = (
+    seasons = [seasonEntry(data.meta.dungeon.id, data.meta.dungeon.name.ko)],
+    onSeason = () => undefined,
+  ) => {
     const { deck, deployed } = useApp.getState();
-    return render(<AppShell data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" dark seasons={seasons} onSeason={onSeason} onShare={() => undefined} onToggleLang={() => undefined} onToggleDark={() => undefined} />);
+    return render(
+      <AppShell
+        data={data}
+        indexes={indexes}
+        stats={statsFor(deck, deployed)}
+        lang="ko"
+        dark
+        seasons={seasons}
+        onSeason={onSeason}
+        onShare={() => undefined}
+        onToggleLang={() => undefined}
+        onToggleDark={() => undefined}
+      />,
+    );
   };
 
   it('opens each panel as its own full-screen page on a phone, one at a time, and remembers the tab', async () => {
@@ -2008,7 +2361,11 @@ describe('AppShell', () => {
     // The default tab is the items tab; the deck tab shows the twelve slots.
     expect(within(page).getByRole('tab', { name: '아이템' })).toHaveAttribute('aria-selected', 'true');
     // Two tabs only: the route options (start keyword, chosen packs) sit under the items tab.
-    expect(within(page).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['덱', '아이템']);
+    expect(
+      within(page)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['덱', '아이템']);
     expect(within(page).getByRole('combobox', { name: '시작 키워드' })).toBeInTheDocument();
     expect(within(page).getByTestId('settings-packs')).toBeInTheDocument();
     await user.click(within(page).getByRole('tab', { name: '덱' }));
@@ -2025,7 +2382,10 @@ describe('AppShell', () => {
     // One page hands over to the other from inside: the empty state opens the items tab.
     await user.click(within(right).getByRole('button', { name: '아이템' }));
     expect(screen.queryByTestId('page-right')).toBeNull();
-    expect(within(screen.getByTestId('page-left')).getByRole('tab', { name: '아이템' })).toHaveAttribute('aria-selected', 'true');
+    expect(within(screen.getByTestId('page-left')).getByRole('tab', { name: '아이템' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await user.click(screen.getByRole('button', { name: '뒤로' }));
     expect(screen.queryByTestId('page-left')).toBeNull();
     // The tracker tab lives in the right page.
@@ -2047,7 +2407,9 @@ describe('AppShell', () => {
     renderShell();
     await user.click(screen.getByRole('button', { name: '덱' }));
     const page = screen.getByTestId('page-left');
-    const tile = within(page).getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === '9088')!;
+    const tile = within(page)
+      .getAllByTestId('gift-tile')
+      .find((el) => el.getAttribute('data-gift') === '9088')!;
     await user.click(within(tile).getByRole('button', { name: '진혼 자세히' }));
     expect(screen.getByTestId('gift-detail')).toBeInTheDocument();
 
@@ -2063,7 +2425,9 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: '덱' }));
     const openSheet = async () => {
       const page = screen.getByTestId('page-left');
-      const tile = within(page).getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === '9088')!;
+      const tile = within(page)
+        .getAllByTestId('gift-tile')
+        .find((el) => el.getAttribute('data-gift') === '9088')!;
       await user.click(within(tile).getByRole('button', { name: '진혼 자세히' }));
       expect(screen.getByTestId('gift-detail')).toBeInTheDocument();
     };
@@ -2101,7 +2465,11 @@ describe('AppShell', () => {
       await user.click(within(screen.getByTestId('header-menu')).getByRole('button', { name: '초기화' }));
     };
     await openMenu();
-    expect(within(screen.getByTestId('header-menu')).getAllByRole('button').map((b) => b.textContent)).toEqual(['초기화', '링크 복사', 'English', '화면 전환']);
+    expect(
+      within(screen.getByTestId('header-menu'))
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['초기화', '링크 복사', 'English', '화면 전환']);
     // A menu, not a detail: no close row above the first item (it drew an empty band on a phone,
     // where the fixed-width popover ran off the right edge and hid the ✕), and anchored to the
     // header's right edge so it stays on screen.
@@ -2116,7 +2484,9 @@ describe('AppShell', () => {
     expect(useApp.getState().wanted).toEqual([9267, 9423, 9249]); // as picked, not by id
     expect(screen.queryByTestId('confirm-dialog')).toBeNull();
     await reset();
-    await user.click(within(screen.getByTestId('confirm-dialog')).getAllByRole('button', { name: '초기화' })[0]!);
+    await user.click(
+      within(screen.getByTestId('confirm-dialog')).getAllByRole('button', { name: '초기화' })[0]!,
+    );
     const state = useApp.getState();
     expect(state.deck).toEqual(defaultDeck(data));
     expect(state.deployed).toEqual(defaultDeck(data).slice(0, data.rules.deployment.default));
@@ -2128,10 +2498,22 @@ describe('AppShell', () => {
     expect(screen.getByTestId('run-stage')).toHaveAttribute('data-mode', 'undecided');
     expect(screen.getByTestId('stage-floor')).toHaveTextContent('1');
     // The same button starts over after a finished run, where the old 「새 런」 used to be.
-    act(() => useApp.setState({ run: { currentFloor: 16, stageFloor: 16, visits: { 4: 1402 }, giftStatus: { 9267: 'got' }, startGifts: [] } }));
+    act(() =>
+      useApp.setState({
+        run: {
+          currentFloor: 16,
+          stageFloor: 16,
+          visits: { 4: 1402 },
+          giftStatus: { 9267: 'got' },
+          startGifts: [],
+        },
+      }),
+    );
     expect(screen.getByTestId('run-stage')).toHaveAttribute('data-mode', 'done');
     await reset();
-    await user.click(within(screen.getByTestId('confirm-dialog')).getAllByRole('button', { name: '초기화' })[0]!);
+    await user.click(
+      within(screen.getByTestId('confirm-dialog')).getAllByRole('button', { name: '초기화' })[0]!,
+    );
     expect(useApp.getState().run).toEqual(emptyRun());
     expect(screen.getByTestId('run-stage')).toHaveAttribute('data-mode', 'undecided');
   });
@@ -2180,7 +2562,11 @@ describe('AppShell', () => {
     await user.dblClick(divider);
     expect(useApp.getState().ui.leftWidth).toBe(336);
     // The right panel mirrors the direction: dragging left widens it.
-    fireEvent.pointerDown(screen.getByTestId('panel-resizer-right'), { pointerId: 2, button: 0, clientX: 900 });
+    fireEvent.pointerDown(screen.getByTestId('panel-resizer-right'), {
+      pointerId: 2,
+      button: 0,
+      clientX: 900,
+    });
     fireEvent.pointerMove(window, { pointerId: 2, clientX: 850 });
     expect(useApp.getState().ui.rightWidth).toBe(386);
     fireEvent.pointerUp(window, { pointerId: 2, clientX: 850 });
@@ -2211,7 +2597,10 @@ describe('gestures that used to run into each other', () => {
       vi.useRealTimers();
     }
     // A hold that stays put still opens it.
-    await user.pointer({ keys: '[MouseLeft>]', target: within(screen.getByTestId('route-goal')).getByTestId('gift-tile') });
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: within(screen.getByTestId('route-goal')).getByTestId('gift-tile'),
+    });
     await waitFor(() => expect(screen.getByTestId('gift-detail')).toBeInTheDocument(), { timeout: 2000 });
   });
 
@@ -2254,7 +2643,14 @@ describe('overlays that used to fight each other', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9222);
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(useApp.getState().deck, useApp.getState().deployed)} lang="ko" />);
+    renderPlanned(
+      <GiftsStep
+        data={data}
+        indexes={indexes}
+        stats={statsFor(useApp.getState().deck, useApp.getState().deployed)}
+        lang="ko"
+      />,
+    );
     const plus = () => screen.getAllByRole('button', { name: '관측 지정 추가' })[0]!;
     await user.click(plus());
     expect(screen.getByTestId('observe-candidates')).toBeInTheDocument();
@@ -2271,7 +2667,14 @@ describe('overlays that used to fight each other', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9283);
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(useApp.getState().deck, useApp.getState().deployed)} lang="ko" />);
+    renderPlanned(
+      <GiftsStep
+        data={data}
+        indexes={indexes}
+        stats={statsFor(useApp.getState().deck, useApp.getState().deployed)}
+        lang="ko"
+      />,
+    );
     const name = within(screen.getByTestId('gift-chip')).getByRole('button', { name: '상납된 시가 자세히' });
     name.focus();
     await user.click(name);
@@ -2294,9 +2697,14 @@ describe('RunStage', () => {
       </>,
     );
   const header = () => screen.getByTestId('floor-header');
-  const skipFloor = async (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: '넘기기' }));
+  const skipFloor = async (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole('button', { name: '넘기기' }));
   const lookBack = async (user: ReturnType<typeof userEvent.setup>, floor: number) =>
-    user.click(within(header()).getAllByTestId('floor-cell').find((cell) => cell.getAttribute('data-floor') === String(floor))!);
+    user.click(
+      within(header())
+        .getAllByTestId('floor-cell')
+        .find((cell) => cell.getAttribute('data-floor') === String(floor))!,
+    );
   const pointer = { pointerId: 1, button: 0, clientX: 60, clientY: 200 };
   /** Pull an element vertically by `dy` and let go. */
   const pull = (el: HTMLElement, dy: number) => {
@@ -2349,9 +2757,14 @@ describe('RunStage', () => {
     expect(within(card).getByRole('button', { name: '화왕지절 자세히' })).toBeInTheDocument();
     const icons = within(screen.getByTestId('stage-pack-gifts')).getAllByTestId('gift-icon');
     expect(icons.length).toBeGreaterThan(1);
-    expect(within(screen.getByTestId('stage-pack-gifts')).getAllByRole('img', { name: /달궈진 놋쇠/ })[0]!.parentElement).toHaveAttribute('data-wanted');
+    expect(
+      within(screen.getByTestId('stage-pack-gifts')).getAllByRole('img', { name: /달궈진 놋쇠/ })[0]!
+        .parentElement,
+    ).toHaveAttribute('data-wanted');
     expect(within(card).getByRole('button', { name: '화왕지절 입장' })).toHaveTextContent('입장');
-    expect(screen.getAllByTestId('floor-cell').filter((c) => c.getAttribute('data-state') === 'skipped')).toHaveLength(3);
+    expect(
+      screen.getAllByTestId('floor-cell').filter((c) => c.getAttribute('data-state') === 'skipped'),
+    ).toHaveLength(3);
     await user.click(within(card).getByRole('button', { name: '화왕지절 입장' }));
     expect(useApp.getState().run).toMatchObject({ visits: { 4: 1402 }, currentFloor: 5, stageFloor: 4 });
     // The pack area: the pack on the left, its exclusive drops on the right, goals first and ringed.
@@ -2451,7 +2864,9 @@ describe('RunStage', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9267);
     renderStage(true);
-    expect(within(screen.getByTestId('other-entry-card')).getByRole('button', { name: '넘기기' })).toHaveTextContent('다음 층');
+    expect(
+      within(screen.getByTestId('other-entry-card')).getByRole('button', { name: '넘기기' }),
+    ).toHaveTextContent('다음 층');
     pull(screen.getByTestId('other-entry-card'), 90);
     expect(useApp.getState().run).toMatchObject({ currentFloor: 2, stageFloor: 2, visits: {} });
     for (let i = 0; i < 2; i += 1) await skipFloor(user);
@@ -2464,7 +2879,11 @@ describe('RunStage', () => {
     expect(area).toHaveAttribute('data-past', 'down');
     expect(within(area).getByTestId('area-next')).toHaveTextContent('놓으면 다음 층');
     fireEvent.pointerUp(window, { ...pointer, clientY: 290 });
-    expect(useApp.getState().run).toMatchObject({ currentFloor: 5, stageFloor: 5, giftStatus: { 9267: 'failed' } });
+    expect(useApp.getState().run).toMatchObject({
+      currentFloor: 5,
+      stageFloor: 5,
+      giftStatus: { 9267: 'failed' },
+    });
     expect(screen.getByTestId('route-summary')).toHaveTextContent('실패 1');
     expect(screen.getByTestId('unresolved-row')).toHaveTextContent('수집 실패');
     expect(screen.getByText(/^확보/).parentElement).toHaveTextContent('0/1');
@@ -2566,7 +2985,9 @@ describe('RunStage', () => {
     expect(within(row).getByRole('img', { name: /^굴레 ·/ })).toBeInTheDocument();
     expect(row).not.toHaveTextContent('원함');
     // A row with exclusives but nothing wanted has icons and no ring; a pack without exclusives has neither.
-    const other = rows.find((r) => r.getAttribute('data-pack') !== '1109' && within(r).queryAllByTestId('gift-icon').length > 0)!;
+    const other = rows.find(
+      (r) => r.getAttribute('data-pack') !== '1109' && within(r).queryAllByTestId('gift-icon').length > 0,
+    )!;
     expect(other).toBeDefined();
     expect(other.querySelector('[data-wanted]')).toBeNull();
     for (const r of rows) expect(within(r).getByTestId('other-pack-gifts')).toBeInTheDocument();
@@ -2587,7 +3008,11 @@ describe('RunStage', () => {
     // The same pack answers to the 초성 of its name.
     await user.clear(search);
     await user.type(search, 'ㅎㅅ');
-    expect(within(others).getAllByTestId('other-pack').map((el) => el.getAttribute('data-pack'))).toContain('1109');
+    expect(
+      within(others)
+        .getAllByTestId('other-pack')
+        .map((el) => el.getAttribute('data-pack')),
+    ).toContain('1109');
     await user.clear(search);
     await user.type(search, '2호선');
     await user.click(within(packs[0]!).getByRole('button', { name: '2호선' }));
@@ -2610,7 +3035,9 @@ describe('RunStage', () => {
     for (let i = 0; i < 15; i += 1) await skipFloor(user);
     // The done card is its own floor past the end; floor 15 keeps reading as the skip it was.
     expect(useApp.getState().run).toMatchObject({ currentFloor: 16, stageFloor: 16 });
-    expect(screen.getAllByTestId('floor-cell').filter((c) => c.getAttribute('data-state') === 'skipped')).toHaveLength(15);
+    expect(
+      screen.getAllByTestId('floor-cell').filter((c) => c.getAttribute('data-state') === 'skipped'),
+    ).toHaveLength(15);
     expect(screen.getByTestId('run-stage')).toHaveAttribute('data-mode', 'done');
     // Nothing in the header moves the run any more: the cards and the pack area do.
     expect(within(header()).queryByRole('button', { name: /넘기기|다음 층|이전 층/ })).toBeNull();
@@ -2654,7 +3081,8 @@ describe('RunStage', () => {
     useApp.getState().toggleWanted(9235);
     renderStage();
     for (let i = 0; i < 3; i += 1) await skipFloor(user);
-    const iconOf = (root: HTMLElement, name: RegExp) => within(root).getAllByRole('img', { name })[0]!.parentElement!;
+    const iconOf = (root: HTMLElement, name: RegExp) =>
+      within(root).getAllByRole('img', { name })[0]!.parentElement!;
     const cardIcons = () => screen.getByTestId('stage-pack-gifts');
     expect(iconOf(cardIcons(), /노이즈 섞인 무전기/)).toHaveAttribute('data-wanted');
     expect(iconOf(cardIcons(), /부리 모양 목걸이/)).toHaveAttribute('data-wanted');
@@ -2737,7 +3165,9 @@ describe('RunStage', () => {
     for (let i = 0; i < 3; i += 1) await skipFloor(user);
     // On the frontier the sheet offers the way in, as the cards do.
     await user.click(within(screen.getByTestId('metro-rows')).getByRole('button', { name: '화왕지절' }));
-    expect(within(await screen.findByTestId('enter-actions')).getByRole('button', { name: '화왕지절 입장' })).toBeInTheDocument();
+    expect(
+      within(await screen.findByTestId('enter-actions')).getByRole('button', { name: '화왕지절 입장' }),
+    ).toBeInTheDocument();
     await user.keyboard('{Escape}');
     await user.click(within(screen.getByTestId('stage-pack')).getByRole('button', { name: '화왕지절 입장' }));
     expect(useApp.getState().run.visits).toEqual({ 4: 1402 });
@@ -2770,7 +3200,11 @@ describe('RunStage · start-of-run gifts', () => {
   const currentPlan = () => planRoute(planInputFor(useApp.getState()), data, indexes);
   const header = () => screen.getByTestId('floor-header');
   const lookBack = async (user: ReturnType<typeof userEvent.setup>, floor: number) =>
-    user.click(within(header()).getAllByTestId('floor-cell').find((cell) => cell.getAttribute('data-floor') === String(floor))!);
+    user.click(
+      within(header())
+        .getAllByTestId('floor-cell')
+        .find((cell) => cell.getAttribute('data-floor') === String(floor))!,
+    );
   const got = (ids: number[]) => Object.fromEntries(ids.map((id) => [id, 'got']));
 
   it('plans the ingredient packs on floors 1-2 around the three pins', () => {
@@ -2778,7 +3212,10 @@ describe('RunStage · start-of-run gifts', () => {
     const plan = currentPlan();
     expect(plan.start.observed.map((o) => [o.giftId, o.pinned])).toEqual(PINS.map((id) => [id, true]));
     expect(plan.stats.requiredPacks).toBe(2);
-    expect(screen.getAllByTestId('stage-pack').map((c) => c.getAttribute('data-pack'))).toEqual(['1004', '1005']);
+    expect(screen.getAllByTestId('stage-pack').map((c) => c.getAttribute('data-pack'))).toEqual([
+      '1004',
+      '1005',
+    ]);
     expect(screen.getByText(/^필요 팩/).parentElement).toHaveTextContent('2');
     expect(screen.getByText(/^확보/).parentElement).toHaveTextContent('4/4');
     expect(screen.getAllByTestId('observed-tile')).toHaveLength(3);
@@ -2789,16 +3226,30 @@ describe('RunStage · start-of-run gifts', () => {
     setup();
     for (let round = 0; round < 3; round += 1) {
       await user.click(screen.getByRole('button', { name: '공장 자동화 입장' }));
-      expect(useApp.getState().run).toMatchObject({ visits: { 1: 1004 }, currentFloor: 2, giftStatus: got(PINS), startGifts: PINS });
+      expect(useApp.getState().run).toMatchObject({
+        visits: { 1: 1004 },
+        currentFloor: 2,
+        giftStatus: got(PINS),
+        startGifts: PINS,
+      });
       expect(currentPlan().stats.requiredPacks).toBe(1);
       await user.click(screen.getByRole('button', { name: '공장 자동화 돌아가기' }));
-      expect(useApp.getState().run).toMatchObject({ visits: {}, currentFloor: 1, stageFloor: 1, giftStatus: {}, startGifts: [] });
+      expect(useApp.getState().run).toMatchObject({
+        visits: {},
+        currentFloor: 1,
+        stageFloor: 1,
+        giftStatus: {},
+        startGifts: [],
+      });
       const plan = currentPlan();
       expect(plan.stats.requiredPacks).toBe(2);
       expect(plan.start.observed.map((o) => o.giftId)).toEqual(PINS);
       await waitFor(() => expect(screen.queryByTestId('pack-area-closing')).toBeNull());
     }
-    expect(screen.getAllByTestId('stage-pack').map((c) => c.getAttribute('data-pack'))).toEqual(['1004', '1005']);
+    expect(screen.getAllByTestId('stage-pack').map((c) => c.getAttribute('data-pack'))).toEqual([
+      '1004',
+      '1005',
+    ]);
     expect(screen.getByText(/^필요 팩/).parentElement).toHaveTextContent('2');
     expect(screen.getByText(/^확보/).parentElement).toHaveTextContent('4/4');
   });
@@ -2809,7 +3260,12 @@ describe('RunStage · start-of-run gifts', () => {
     await user.click(screen.getByRole('button', { name: '넘기기' }));
     expect(useApp.getState().run).toMatchObject({ currentFloor: 2, giftStatus: got(PINS), startGifts: PINS });
     await lookBack(user, 1);
-    expect(useApp.getState().run).toMatchObject({ currentFloor: 1, stageFloor: 1, giftStatus: {}, startGifts: [] });
+    expect(useApp.getState().run).toMatchObject({
+      currentFloor: 1,
+      stageFloor: 1,
+      giftStatus: {},
+      startGifts: [],
+    });
     expect(currentPlan().stats.requiredPacks).toBe(2);
   });
 
@@ -2818,12 +3274,22 @@ describe('RunStage · start-of-run gifts', () => {
     setup();
     await user.click(screen.getByRole('button', { name: '공장 자동화 입장' }));
     await user.click(screen.getByTestId('area-next'));
-    expect(useApp.getState().run).toMatchObject({ currentFloor: 2, stageFloor: 2, giftStatus: got(PINS), startGifts: PINS });
+    expect(useApp.getState().run).toMatchObject({
+      currentFloor: 2,
+      stageFloor: 2,
+      giftStatus: got(PINS),
+      startGifts: PINS,
+    });
     expect(currentPlan().stats.requiredPacks).toBe(1);
     await user.click(screen.getByRole('button', { name: '사랑할 수 없는 입장' }));
     expect(useApp.getState().run).toMatchObject({ visits: { 1: 1004, 2: 1005 }, currentFloor: 3 });
     await user.click(screen.getByRole('button', { name: '사랑할 수 없는 돌아가기' }));
-    expect(useApp.getState().run).toMatchObject({ visits: { 1: 1004 }, currentFloor: 2, giftStatus: got(PINS), startGifts: PINS });
+    expect(useApp.getState().run).toMatchObject({
+      visits: { 1: 1004 },
+      currentFloor: 2,
+      giftStatus: got(PINS),
+      startGifts: PINS,
+    });
   });
 
   it('leaves a status the player changed by hand alone when the record is taken back', async () => {
@@ -2843,8 +3309,18 @@ describe('RunStage · start-of-run gifts', () => {
     expect(useApp.getState().options.observedGifts).toEqual([]);
     useApp.getState().toggleObserved(9423, { max: 3, observable });
     expect(useApp.getState().options.observedGifts).toEqual([9423]);
-    expect(sanitizeRun({ currentFloor: 1, visits: {}, giftStatus: { 9423: 'got' }, startGifts: [9423] }).startGifts).toEqual([]);
-    expect(sanitizeRun({ currentFloor: 2, visits: {}, giftStatus: { 9423: 'got', 9419: 'failed' }, startGifts: [9423, 9419, 9423, 'x'] }).startGifts).toEqual([9423]);
+    expect(
+      sanitizeRun({ currentFloor: 1, visits: {}, giftStatus: { 9423: 'got' }, startGifts: [9423] })
+        .startGifts,
+    ).toEqual([]);
+    expect(
+      sanitizeRun({
+        currentFloor: 2,
+        visits: {},
+        giftStatus: { 9423: 'got', 9419: 'failed' },
+        startGifts: [9423, 9419, 9423, 'x'],
+      }).startGifts,
+    ).toEqual([9423]);
     expect(sanitizeRun({ currentFloor: 2, visits: {}, giftStatus: { 9423: 'got' } }).startGifts).toEqual([]);
   });
 });
@@ -2859,10 +3335,14 @@ describe('GoalsPanel', () => {
       override,
     );
   const goals = () => screen.getByTestId('route-goals');
-  const tileIn = (root: HTMLElement, id: number) => within(root).getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
+  const tileIn = (root: HTMLElement, id: number) =>
+    within(root)
+      .getAllByTestId('gift-tile')
+      .find((el) => el.getAttribute('data-gift') === String(id))!;
   const goalTile = (id: number) => tileIn(goals(), id);
   const stageTile = (id: number) => tileIn(screen.getByTestId('exclusive-gifts'), id);
-  const skipFloor = async (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: '넘기기' }));
+  const skipFloor = async (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole('button', { name: '넘기기' }));
   /** Walk to floor 4 and enter 화왕지절 (1402), whose exclusive 9267 is the goal. */
   const enter1402 = async (user: ReturnType<typeof userEvent.setup>) => {
     for (let i = 0; i < 3; i += 1) await skipFloor(user);
@@ -2880,7 +3360,11 @@ describe('GoalsPanel', () => {
     expect(goalTile(9267)).toHaveAttribute('data-wanted');
     expect(goalTile(9283)).toHaveAttribute('data-wanted');
     // Only the chosen gifts: a fusion goal does not drag its ingredients in.
-    expect(within(goals()).getAllByTestId('gift-tile').map((el) => el.getAttribute('data-gift'))).toEqual(['9267', '9283', '9410']);
+    expect(
+      within(goals())
+        .getAllByTestId('gift-tile')
+        .map((el) => el.getAttribute('data-gift')),
+    ).toEqual(['9267', '9283', '9410']);
     expect(screen.getByTestId('goals-panel')).toBeInTheDocument();
   });
 
@@ -2913,9 +3397,15 @@ describe('GoalsPanel', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of [9419, 9423]) useApp.getState().toggleWanted(id); // 낙화 (1010, Hard 2-3) and 변하지 않는 (1012, Hard 4-5)
     // Observation off, or the planner would observe both instead of visiting.
-    const noObservation = { ...data, rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } } };
+    const noObservation = {
+      ...data,
+      rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
+    };
     renderBoth(noObservation);
-    const packs = () => planRoute(planInputFor(useApp.getState()), noObservation, indexes).floors.filter((f) => f.packId !== null).map((f) => f.packId);
+    const packs = () =>
+      planRoute(planInputFor(useApp.getState()), noObservation, indexes)
+        .floors.filter((f) => f.packId !== null)
+        .map((f) => f.packId);
     expect(packs()).toEqual([1010, 1012]);
     await user.click(goalTile(9419));
     expect(useApp.getState().run.giftStatus).toEqual({ 9419: 'got' });
@@ -3007,13 +3497,15 @@ describe('GoalsPanel', () => {
 });
 
 describe('Tracker', () => {
-  const tile = (id: number) => screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
+  const tile = (id: number) =>
+    screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
 
   it('lists the twenty-five pack-independent T4 gifts in five groups and marks them by a press', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderPlanned(<Tracker />);
-    for (const group of ['keyword', 'shard', 'memory', 'attack', 'plain']) expect(screen.getByTestId(`tracker-${group}`)).toBeInTheDocument();
+    for (const group of ['keyword', 'shard', 'memory', 'attack', 'plain'])
+      expect(screen.getByTestId(`tracker-${group}`)).toBeInTheDocument();
     expect(screen.getAllByTestId('gift-tile')).toHaveLength(25);
     expect(screen.getByTestId('tracker-keyword')).toHaveTextContent('0/7');
     await user.click(screen.getByRole('button', { name: /^불꽃의 편린 획득 표시/ }));

@@ -83,8 +83,16 @@ describe('keyword conditions', () => {
 
   it('reads the 소모 form, with no 「공격」 in the sentence', () => {
     // 9795 떨어진 한 방울. 혈찬 is spent by a skill, not inflicted on anyone.
-    const [c] = parse('턴 시작 시, [BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)');
-    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['BloodDinner'], verb: 'consume', min: 3, scope: 'deployed' });
+    const [c] = parse(
+      '턴 시작 시, [BloodDinner]을 소모하는 스킬을 보유한 인격이 3인 이상이면, 이번 전투 동안 발동 (E.G.O 스킬 제외. 대기 인원 제외)',
+    );
+    expect(c).toMatchObject({
+      type: 'keywordSkillCount',
+      keywords: ['BloodDinner'],
+      verb: 'consume',
+      min: 3,
+      scope: 'deployed',
+    });
   });
 
   it('reads a two-keyword gate, either of them counting', () => {
@@ -92,7 +100,13 @@ describe('keyword conditions', () => {
     const [c] = parse(
       '[Burst], [Charge]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함).\n\n- 6인 이상\n\n- 8인 이상',
     );
-    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['Burst', 'Charge'], verb: 'inflict', min: 6, scope: 'formation' });
+    expect(c).toMatchObject({
+      type: 'keywordSkillCount',
+      keywords: ['Burst', 'Charge'],
+      verb: 'inflict',
+      min: 6,
+      scope: 'formation',
+    });
     expect((c as { tiers: { min: number }[] }).tiers.map((t) => t.min)).toEqual([8]);
   });
 
@@ -101,14 +115,29 @@ describe('keyword conditions', () => {
     const [c] = parse(
       '[Bullet]을 얻거나 소모하는 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함)\n\n- 2인 이상\n\n- 5인 이상\n\n- 8인 이상',
     );
-    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['Bullet'], verb: 'consume', min: 2, scope: 'formation' });
+    expect(c).toMatchObject({
+      type: 'keywordSkillCount',
+      keywords: ['Bullet'],
+      verb: 'consume',
+      min: 2,
+      scope: 'formation',
+    });
     expect((c as { tiers: { min: number }[] }).tiers.map((t) => t.min)).toEqual([5, 8]);
   });
 
   it('leaves min null when 「편성된 수에 따라」 lists no step', () => {
     // 9842. The gift is always on and only scales, so there is no bar — a count, not a gate.
-    const [c] = parse('[BloodDinner]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)');
-    expect(c).toMatchObject({ type: 'keywordSkillCount', keywords: ['BloodDinner'], verb: 'consume', min: null, scope: 'formation', tiers: [] });
+    const [c] = parse(
+      '[BloodDinner]을 소모하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외. 편성 인원 포함)',
+    );
+    expect(c).toMatchObject({
+      type: 'keywordSkillCount',
+      keywords: ['BloodDinner'],
+      verb: 'consume',
+      min: null,
+      scope: 'formation',
+      tiers: [],
+    });
   });
 });
 

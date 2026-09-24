@@ -11,12 +11,27 @@ const BADGE_BASE =
   'inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-full px-2 text-xs font-medium flex-none';
 const BADGE_TONE: Record<BadgeTone, { className: string; icon: ReactNode }> = {
   sure: { className: 'bg-ink text-ink-fg border border-ink', icon: <Check size={11} aria-hidden /> },
-  maybe: { className: 'border border-dashed border-line-strong text-fg-2', icon: <Waves size={11} aria-hidden /> },
-  fuse: { className: 'border border-line-strong bg-surface text-fg-2', icon: <Combine size={11} aria-hidden /> },
-  start: { className: 'border border-line-strong bg-surface text-fg-2', icon: <Star size={11} aria-hidden /> },
+  maybe: {
+    className: 'border border-dashed border-line-strong text-fg-2',
+    icon: <Waves size={11} aria-hidden />,
+  },
+  fuse: {
+    className: 'border border-line-strong bg-surface text-fg-2',
+    icon: <Combine size={11} aria-hidden />,
+  },
+  start: {
+    className: 'border border-line-strong bg-surface text-fg-2',
+    icon: <Star size={11} aria-hidden />,
+  },
   hard: { className: 'border border-line bg-surface-2 text-fg-2', icon: <Lock size={11} aria-hidden /> },
-  alert: { className: 'border-[1.5px] border-fg bg-surface text-fg', icon: <TriangleAlert size={11} aria-hidden /> },
-  approx: { className: 'border border-line-strong bg-surface-2 text-fg', icon: <Hourglass size={11} aria-hidden /> },
+  alert: {
+    className: 'border-[1.5px] border-fg bg-surface text-fg',
+    icon: <TriangleAlert size={11} aria-hidden />,
+  },
+  approx: {
+    className: 'border border-line-strong bg-surface-2 text-fg',
+    icon: <Hourglass size={11} aria-hidden />,
+  },
   neutral: { className: 'border border-line bg-surface-2 text-fg-2', icon: null },
 };
 
@@ -160,7 +175,15 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
   );
 }
 
-export function Notice({ children, icon, strong = false }: { children: ReactNode; icon?: ReactNode; strong?: boolean }) {
+export function Notice({
+  children,
+  icon,
+  strong = false,
+}: {
+  children: ReactNode;
+  icon?: ReactNode;
+  strong?: boolean;
+}) {
   return (
     <div
       role="status"
@@ -248,7 +271,11 @@ export function Segmented<T extends string | number>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex overflow-hidden rounded-sm border border-line-strong">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="inline-flex overflow-hidden rounded-sm border border-line-strong"
+    >
       {options.map((option) => {
         const on = option.value === value;
         return (

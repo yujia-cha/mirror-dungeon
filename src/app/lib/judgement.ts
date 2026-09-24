@@ -9,7 +9,8 @@ export function judgementOf(reports: ConditionReport[] | undefined): Judgement |
   // A count with no threshold says how many, not whether — it is shown and draws no ring.
   const gates = reports.filter((r) => r.gate);
   if (gates.length === 0) return null;
-  if (gates.some((r) => r.have === null || r.need === null)) return gates.every((r) => r.satisfied) ? 'met' : 'unknown';
+  if (gates.some((r) => r.have === null || r.need === null))
+    return gates.every((r) => r.satisfied) ? 'met' : 'unknown';
   return gates.every((r) => r.satisfied) ? 'met' : 'unmet';
 }
 

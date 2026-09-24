@@ -12,7 +12,14 @@ import { GiftTile } from '../components/GiftTile.tsx';
 import { Card, SectionTitle } from '../components/ui.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
-const GROUP_KEY: Record<TrackerGroupId, 'trackerGroupKeyword' | 'trackerGroupShard' | 'trackerGroupMemory' | 'trackerGroupAttack' | 'trackerGroupPlain'> = {
+const GROUP_KEY: Record<
+  TrackerGroupId,
+  | 'trackerGroupKeyword'
+  | 'trackerGroupShard'
+  | 'trackerGroupMemory'
+  | 'trackerGroupAttack'
+  | 'trackerGroupPlain'
+> = {
   keyword: 'trackerGroupKeyword',
   shard: 'trackerGroupShard',
   memory: 'trackerGroupMemory',
@@ -31,10 +38,23 @@ export function Tracker() {
   return (
     <div className="flex flex-col gap-3" data-testid="tracker">
       <div className="text-sm font-semibold">{t('trackerTitle', lang)}</div>
-      {noticeGift ? <FusionNotice gift={noticeGift} giftStatus={giftStatus} indexes={indexes} onUnmark={(id) => setGiftStatus(id, null)} onClose={() => setNotice(null)} lang={lang} /> : null}
+      {noticeGift ? (
+        <FusionNotice
+          gift={noticeGift}
+          giftStatus={giftStatus}
+          indexes={indexes}
+          onUnmark={(id) => setGiftStatus(id, null)}
+          onClose={() => setNotice(null)}
+          lang={lang}
+        />
+      ) : null}
       {groups.map((group) => (
         <Card key={group.id} className="px-3 py-2.5" testId={`tracker-${group.id}`}>
-          <SectionTitle right={<span className="font-num text-xs text-fg-3">{`${group.gifts.filter((g) => giftStatus[g.id] === 'got').length}/${group.gifts.length}`}</span>}>
+          <SectionTitle
+            right={
+              <span className="font-num text-xs text-fg-3">{`${group.gifts.filter((g) => giftStatus[g.id] === 'got').length}/${group.gifts.length}`}</span>
+            }
+          >
             {t(GROUP_KEY[group.id], lang)}
           </SectionTitle>
           <div className="mt-2 flex flex-wrap gap-1.5">

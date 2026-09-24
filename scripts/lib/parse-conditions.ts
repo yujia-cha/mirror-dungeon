@@ -12,7 +12,13 @@
  * Anything that looks like a threshold but does not match becomes an `unparsed` condition so the
  * UI can still show the sentence and `data/curated/conditions.json` can correct it.
  */
-import type { Condition, ConditionScope, IdentityKeywordId, Localized, StatusKeyword } from '../../src/core/schema.ts';
+import type {
+  Condition,
+  ConditionScope,
+  IdentityKeywordId,
+  Localized,
+  StatusKeyword,
+} from '../../src/core/schema.ts';
 import { IDENTITY_KEYWORDS } from '../../src/core/schema.ts';
 import { stripRichText } from '../../src/core/text.ts';
 
@@ -169,14 +175,18 @@ export function parseConditions(desc: Localized, ctx: ParseContext): ParseResult
     // the gift always works and only scales, so the condition is a count, not a gate.
     const bullets = bulletTiers(ko, after);
     const min = m[4] ? Number(m[4]) : (bullets[0] ?? null);
-    const rest = m[4] ? tiersAfter(ko, after, Number(m[4])) : bullets.slice(1).map((n) => ({ min: n, label: `${n}인 이상` }));
+    const rest = m[4]
+      ? tiersAfter(ko, after, Number(m[4]))
+      : bullets.slice(1).map((n) => ({ min: n, label: `${n}인 이상` }));
     push({
       type: 'keywordSkillCount',
       keywords,
       verb,
       min,
       scope: scopeFrom(clause, tail),
-      includesSpecial: keywords.some((k) => k in KEYWORD_KO && clause.includes(`특수 ${KEYWORD_KO[k as StatusKeyword]}`)),
+      includesSpecial: keywords.some(
+        (k) => k in KEYWORD_KO && clause.includes(`특수 ${KEYWORD_KO[k as StatusKeyword]}`),
+      ),
       tiers: rest,
       text: { ko: clause.trim(), en: en.trim().slice(0, 400) },
     });

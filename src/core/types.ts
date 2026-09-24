@@ -89,7 +89,10 @@ export interface DeckStats {
    * union has to be taken over ids and never by adding the counts above, which are these lengths.
    */
   keywordMembers: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number[]>>>;
-  baseKeywordMembers: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number[]>>>;
+  baseKeywordMembers: Record<
+    'deployed' | 'formation' | 'reserve',
+    Partial<Record<IdentityKeywordId, number[]>>
+  >;
   factionMembers: Record<'deployed' | 'formation' | 'reserve', Record<string, number[]>>;
   deployed: number[];
   reserve: number[];

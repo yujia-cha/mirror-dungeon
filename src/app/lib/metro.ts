@@ -37,7 +37,8 @@ export interface Metro {
   freeRuns: { from: number; to: number; passed: boolean }[];
 }
 
-const floorsOf = (s: { from: number; to: number }): number[] => Array.from({ length: s.to - s.from + 1 }, (_, i) => s.from + i);
+const floorsOf = (s: { from: number; to: number }): number[] =>
+  Array.from({ length: s.to - s.from + 1 }, (_, i) => s.from + i);
 
 /** First-fit lanes over arbitrary extents; used for floors (phone) and for card pixels (desktop). */
 export function assignLanes<T>(items: T[], extent: (item: T) => [number, number], gap = 0): number[] {
@@ -58,12 +59,18 @@ export function assignLanes<T>(items: T[], extent: (item: T) => [number, number]
  * without touching a block already placed that it overlaps horizontally (with `gap` around it).
  * Returns the distance from the baseline to each block's bottom edge.
  */
-export function stackBlocks<T>(items: T[], extent: (item: T) => [number, number], height: (item: T) => number, gap = 0): number[] {
+export function stackBlocks<T>(
+  items: T[],
+  extent: (item: T) => [number, number],
+  height: (item: T) => number,
+  gap = 0,
+): number[] {
   const placed: { start: number; end: number; top: number }[] = [];
   return items.map((item) => {
     const [start, end] = extent(item);
     let offset = 0;
-    for (const p of placed) if (start <= p.end + gap && p.start <= end + gap) offset = Math.max(offset, p.top + gap);
+    for (const p of placed)
+      if (start <= p.end + gap && p.start <= end + gap) offset = Math.max(offset, p.top + gap);
     placed.push({ start, end, top: offset + height(item) });
     return offset;
   });
@@ -76,7 +83,16 @@ export function segmentsFor(plan: RoutePlan): Metro {
     const from = floor.window?.from ?? floor.floor;
     const to = floor.window?.to ?? floor.floor;
     const key = `${from}-${to}`;
-    const segment = groups.get(key) ?? { key, from, to, fixed: from === to, packs: [], partial: false, lane: 0, passed: floor.passed };
+    const segment = groups.get(key) ?? {
+      key,
+      from,
+      to,
+      fixed: from === to,
+      packs: [],
+      partial: false,
+      lane: 0,
+      passed: floor.passed,
+    };
     segment.packs.push({
       packId: floor.packId,
       floor: floor.floor,
@@ -89,7 +105,11 @@ export function segmentsFor(plan: RoutePlan): Metro {
     if (segment.fixed) continue;
     const mine = new Set(floorsOf(segment));
     segment.partial = segments.some(
-      (other) => other !== segment && !other.fixed && other.key !== segment.key && floorsOf(other).some((f) => mine.has(f)),
+      (other) =>
+        other !== segment &&
+        !other.fixed &&
+        other.key !== segment.key &&
+        floorsOf(other).some((f) => mine.has(f)),
     );
   }
   const lanes = assignLanes(segments, (s) => [s.from, s.to]);

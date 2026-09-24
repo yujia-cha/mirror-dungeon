@@ -20,7 +20,13 @@ const GROUP_ORDER: TrackerGroupId[] = ['keyword', 'shard', 'memory', 'attack', '
 /** Pack-independent, condition-free, tier 4 and up: the gifts any run can pick up. */
 export function isTrackerGift(gift: Gift, indexes: GameIndexes): boolean {
   const tier = gift.tier === null ? 0 : gift.tier === 'EX' ? 6 : gift.tier;
-  return tier >= 4 && gift.obtainable && gift.acquisition.kind === 'general' && gift.conditions.length === 0 && indexes.freelyAvailableGifts.has(gift.id);
+  return (
+    tier >= 4 &&
+    gift.obtainable &&
+    gift.acquisition.kind === 'general' &&
+    gift.conditions.length === 0 &&
+    indexes.freelyAvailableGifts.has(gift.id)
+  );
 }
 
 export function trackerGifts(data: GameData, indexes: GameIndexes): TrackerGroup[] {
@@ -42,7 +48,9 @@ export function trackerGifts(data: GameData, indexes: GameIndexes): TrackerGroup
   for (const gift of gifts) groups.set(groupOf(gift), [...(groups.get(groupOf(gift)) ?? []), gift]);
   return GROUP_ORDER.filter((id) => groups.has(id)).map((id) => ({
     id,
-    gifts: groups.get(id)!.sort((a, b) => (keywordRank.get(a.keyword) ?? 99) - (keywordRank.get(b.keyword) ?? 99) || a.id - b.id),
+    gifts: groups
+      .get(id)!
+      .sort((a, b) => (keywordRank.get(a.keyword) ?? 99) - (keywordRank.get(b.keyword) ?? 99) || a.id - b.id),
   }));
 }
 
@@ -55,7 +63,10 @@ export interface FusionConsumption {
 }
 
 /** For a gift made by the mixed fusion: how many of each pool it eats, and which of those the player holds. */
-export function fusionConsumption(gift: Gift, giftStatus: Record<number, GiftStatus>): FusionConsumption | null {
+export function fusionConsumption(
+  gift: Gift,
+  giftStatus: Record<number, GiftStatus>,
+): FusionConsumption | null {
   const mixed = gift.fusion?.mixed;
   if (!mixed) return null;
   const got = (ids: number[]): number[] => ids.filter((id) => giftStatus[id] === 'got').sort((a, b) => a - b);

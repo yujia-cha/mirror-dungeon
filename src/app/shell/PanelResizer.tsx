@@ -10,12 +10,23 @@ import { t, type Lang } from '../i18n.ts';
 
 const STEP = 16;
 
-export function PanelResizer({ side, width, onWidth, lang }: { side: 'left' | 'right'; width: number; onWidth: (width: number) => void; lang: Lang }) {
+export function PanelResizer({
+  side,
+  width,
+  onWidth,
+  lang,
+}: {
+  side: 'left' | 'right';
+  width: number;
+  onWidth: (width: number) => void;
+  lang: Lang;
+}) {
   const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; width: number } | null>(null);
   const onWidthRef = useLatest(onWidth);
 
-  const clamp = (value: number): number => Math.min(PANEL_WIDTH.max, Math.max(PANEL_WIDTH.min, Math.round(value)));
+  const clamp = (value: number): number =>
+    Math.min(PANEL_WIDTH.max, Math.max(PANEL_WIDTH.min, Math.round(value)));
 
   useEffect(() => {
     if (!dragging) return undefined;

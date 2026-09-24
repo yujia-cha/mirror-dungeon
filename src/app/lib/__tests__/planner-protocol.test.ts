@@ -92,7 +92,11 @@ describe('createPlanner', () => {
     const planner = createPlanner();
     planner.handle({ type: 'init', data });
     for (const id of [1, 2, 7]) {
-      const response = planner.handle({ type: 'plan', id, input: inputFor(packBound.slice(0, 2)) }) as PlannerResponse;
+      const response = planner.handle({
+        type: 'plan',
+        id,
+        input: inputFor(packBound.slice(0, 2)),
+      }) as PlannerResponse;
       expect(response).toMatchObject({ type: 'plan', id });
     }
   });
@@ -153,7 +157,9 @@ describe('the route and its alternatives are two answers (M52)', () => {
   it('promises nothing when the route fits', () => {
     const planner = createPlanner();
     planner.handle({ type: 'init', data });
-    expect(planner.handle({ type: 'plan', id: 1, input: inputFor(packBound.slice(0, 3)) })).toMatchObject({ variantsPending: false });
+    expect(planner.handle({ type: 'plan', id: 1, input: inputFor(packBound.slice(0, 3)) })).toMatchObject({
+      variantsPending: false,
+    });
     expect(planner.alternatives(1)).toBeNull();
   });
 

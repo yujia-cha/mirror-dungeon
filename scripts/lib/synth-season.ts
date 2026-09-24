@@ -15,7 +15,15 @@
  * Determinism: no clock, no randomness. Donors are taken from the front of a sorted list, so the
  * same `data/raw` always produces byte-identical output.
  */
-import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { readJson, repoPath } from './io.ts';
 import { LOCALIZE_DIR, STATIC_DIR, type RawGift, type RawThemePack } from './raw.ts';
@@ -200,13 +208,25 @@ export function synthesiseSeason({ outDir, from, to, variant }: SynthOptions): S
     if (family === 'common-data') {
       const items = listOf<Record<string, unknown>>(raw);
       if (items.length > 0) {
-        writeJson(dst, reWrap(raw, items.map((item) => ({ ...item, currentDungeonId: to }))));
+        writeJson(
+          dst,
+          reWrap(
+            raw,
+            items.map((item) => ({ ...item, currentDungeonId: to })),
+          ),
+        );
       } else {
         writeJson(dst, { ...raw, currentDungeonId: to });
       }
     } else if (family === 'droppool') {
       const items = listOf<Record<string, unknown>>(raw);
-      writeJson(dst, reWrap(raw, items.map((item) => ({ ...item, dungeonId: to }))));
+      writeJson(
+        dst,
+        reWrap(
+          raw,
+          items.map((item) => ({ ...item, dungeonId: to })),
+        ),
+      );
     } else if (family === 'observation') {
       const items = listOf<Record<string, unknown>>(raw).map((item) => ({ ...item, mirrordungeonId: to }));
       // The new pack-bound gifts are observable, like every other pack-limited gift.
@@ -223,7 +243,11 @@ export function synthesiseSeason({ outDir, from, to, variant }: SynthOptions): S
   // Theme packs are not season-named — a new season replaces the same `t{k}` files. That is
   // exactly why an older season can never be rebuilt once md8 lands, and the rehearsal proves it.
   const themeDir = join(STATIC_DIR, 'mirrordungeon-theme-floor');
-  const themeFiles = existsSync(themeDir) ? readdirSync(themeDir).filter((f) => f.endsWith('.json')).sort() : [];
+  const themeFiles = existsSync(themeDir)
+    ? readdirSync(themeDir)
+        .filter((f) => f.endsWith('.json'))
+        .sort()
+    : [];
   const allPacks = themeFiles.flatMap((f) => listOf<RawThemePack>(readJson(join(themeDir, f))));
   for (const name of themeFiles) {
     const src = join(themeDir, name);
@@ -231,7 +255,9 @@ export function synthesiseSeason({ outDir, from, to, variant }: SynthOptions): S
     const packs = listOf<RawThemePack>(raw);
     const additions: RawThemePack[] = [];
     if (/-t5\.json$/.test(name)) {
-      additions.push(...NEW_KEYWORD_PACKS.map((id) => clonePack(donorPack(allPacks, 'keyword'), id, giftsOfPack)));
+      additions.push(
+        ...NEW_KEYWORD_PACKS.map((id) => clonePack(donorPack(allPacks, 'keyword'), id, giftsOfPack)),
+      );
     }
     if (/-t6\.json$/.test(name)) {
       additions.push(
@@ -244,7 +270,9 @@ export function synthesiseSeason({ outDir, from, to, variant }: SynthOptions): S
   }
   // The tier file the lock has never heard of; `data:import` must leave it alone.
   const unlisted = join(staticOut, 'mirrordungeon-theme-floor', 'mirrordungeon-theme-floor-t7.json');
-  writeJson(unlisted, { list: [clonePack(donorPack(allPacks, 'longBattle'), UNLISTED_TIER_PACK, new Map())] });
+  writeJson(unlisted, {
+    list: [clonePack(donorPack(allPacks, 'longBattle'), UNLISTED_TIER_PACK, new Map())],
+  });
   record(unlisted);
 
   // -------------------------------------------------------------------------

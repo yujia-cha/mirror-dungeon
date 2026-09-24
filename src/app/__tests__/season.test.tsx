@@ -22,7 +22,13 @@ import { MetroMap } from '../components/MetroMap.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
 /** The map with whatever the provider has, drawn at the season's own length. */
-function Metro({ lastFloor, fixedModeByFloor }: { lastFloor: number; fixedModeByFloor: Map<number, 'parallel' | 'extreme'> }) {
+function Metro({
+  lastFloor,
+  fixedModeByFloor,
+}: {
+  lastFloor: number;
+  fixedModeByFloor: Map<number, 'parallel' | 'extreme'>;
+}) {
   const { ctx, keywordLabel, plan } = usePlan();
   const empty = {
     start: { keyword: null, startGift: null, observed: [] },
@@ -31,7 +37,14 @@ function Metro({ lastFloor, fixedModeByFloor }: { lastFloor: number; fixedModeBy
     unresolved: [],
     warnings: [],
     generalDrops: [],
-    stats: { requiredPacks: 0, starlight: 0, coveredWanted: 0, totalWanted: 0, searchCapped: false, elapsedMs: 0 },
+    stats: {
+      requiredPacks: 0,
+      starlight: 0,
+      coveredWanted: 0,
+      totalWanted: 0,
+      searchCapped: false,
+      elapsedMs: 0,
+    },
   };
   return (
     <MetroMap
@@ -124,7 +137,12 @@ beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     writable: true,
-    value: (query: string) => ({ matches: true, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }),
+    value: (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }),
   });
 });
 
@@ -190,7 +208,10 @@ describe('adopting a season', () => {
 
   it('drops a run recorded on floors the new season does not open', () => {
     act(() => {
-      useApp.setState({ lastFloor: 15, run: { ...emptyRun(), currentFloor: 9, stageFloor: 8, visits: { 7: 1402 } } });
+      useApp.setState({
+        lastFloor: 15,
+        run: { ...emptyRun(), currentFloor: 9, stageFloor: 8, visits: { 7: 1402 } },
+      });
     });
     act(() => {
       adopt(short);
@@ -200,7 +221,13 @@ describe('adopting a season', () => {
 
   it('keeps a finished run: the done floor is one past the last, and that is where the done card lives', () => {
     // The done state used to fail the "stage past the last floor" test and be wiped on every load.
-    const done = { ...emptyRun(), currentFloor: 16, stageFloor: 16, visits: { 15: 1511 }, giftStatus: { 9250: 'got' as const } };
+    const done = {
+      ...emptyRun(),
+      currentFloor: 16,
+      stageFloor: 16,
+      visits: { 15: 1511 },
+      giftStatus: { 9250: 'got' as const },
+    };
     act(() => useApp.setState({ lastFloor: 15, run: done }));
     act(() => {
       adopt(md7);
@@ -225,7 +252,12 @@ describe('the metro map', () => {
       adopt(short);
     });
     render(
-      <PlanProvider data={short} indexes={shortIndexes} stats={analyseDeck([], shortIndexes, short.rules.deployment, [])} lang="ko">
+      <PlanProvider
+        data={short}
+        indexes={shortIndexes}
+        stats={analyseDeck([], shortIndexes, short.rules.deployment, [])}
+        lang="ko"
+      >
         <ShortMetro />
       </PlanProvider>,
     );
@@ -238,7 +270,12 @@ describe('the metro map', () => {
       adopt(md7);
     });
     render(
-      <PlanProvider data={md7} indexes={md7Indexes} stats={analyseDeck([], md7Indexes, md7.rules.deployment, [])} lang="ko">
+      <PlanProvider
+        data={md7}
+        indexes={md7Indexes}
+        stats={analyseDeck([], md7Indexes, md7.rules.deployment, [])}
+        lang="ko"
+      >
         <FullMetro />
       </PlanProvider>,
     );
@@ -252,7 +289,12 @@ describe('the floor strip', () => {
       adopt(short);
     });
     render(
-      <PlanProvider data={short} indexes={shortIndexes} stats={analyseDeck([], shortIndexes, short.rules.deployment, [])} lang="ko">
+      <PlanProvider
+        data={short}
+        indexes={shortIndexes}
+        stats={analyseDeck([], shortIndexes, short.rules.deployment, [])}
+        lang="ko"
+      >
         <FloorHeader mode="undecided" />
       </PlanProvider>,
     );

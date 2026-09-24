@@ -119,7 +119,8 @@ export function readDerivedAvailability(): Map<number, PackAvailability> {
         if (!Number.isFinite(id)) continue;
         const entry = out.get(id) ?? { normal: [], hard: [], parallel: [], extreme: [] };
         for (const floor of expandSpan(span)) {
-          const bucket = floor >= 11 ? 'extreme' : floor >= 6 ? 'parallel' : difficulty === 'normal' ? 'normal' : 'hard';
+          const bucket =
+            floor >= 11 ? 'extreme' : floor >= 6 ? 'parallel' : difficulty === 'normal' ? 'normal' : 'hard';
           if (!entry[bucket].includes(floor)) entry[bucket].push(floor);
         }
         out.set(id, entry);
@@ -144,7 +145,10 @@ export function readDerivedStartPools(): Map<string, number[]> {
   const out = new Map<string, number[]>();
   for (const [name, ids] of Object.entries(raw?.startGiftPool ?? {})) {
     const keyword = KEYWORD_BY_EN[name] ?? ATTACK_TYPE_BY_EN[name] ?? name;
-    out.set(keyword, [...ids].sort((a, b) => a - b));
+    out.set(
+      keyword,
+      [...ids].sort((a, b) => a - b),
+    );
   }
   return out;
 }
@@ -218,6 +222,11 @@ export function derivedGiftAsRaw(id: number, gift: DerivedGift): RawGift {
     tag: tier === null ? [] : [tier === 'EX' ? 'TIER_EX' : `TIER_${tier}`],
     // `upgradeLevels` counts entries minus one, so two entries mean a single `+` step. The source
     // only says whether a gift is enhanceable at all, so the finer 1-vs-2 split is lost.
-    upgradeDataList: gift.enhanceable ? [{ upgradeLevel: 0, localizeID: id }, { upgradeLevel: 1, localizeID: id }] : null,
+    upgradeDataList: gift.enhanceable
+      ? [
+          { upgradeLevel: 0, localizeID: id },
+          { upgradeLevel: 1, localizeID: id },
+        ]
+      : null,
   };
 }

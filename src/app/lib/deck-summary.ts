@@ -18,7 +18,11 @@ export interface SummaryChip {
 export function deckSummaryChips(stats: DeckStats, enums: Enums, lang: Lang): SummaryChip[] {
   const chips: SummaryChip[] = [];
   const keywords = Object.entries(stats.keywordCounts.formation)
-    .map(([keyword, total]) => ({ keyword, total: total ?? 0, deployed: stats.keywordCounts.deployed[keyword as never] ?? 0 }))
+    .map(([keyword, total]) => ({
+      keyword,
+      total: total ?? 0,
+      deployed: stats.keywordCounts.deployed[keyword as never] ?? 0,
+    }))
     .filter(({ total }) => total > 0)
     .sort((a, b) => b.deployed - a.deployed || b.total - a.total || a.keyword.localeCompare(b.keyword));
   for (const { keyword, total, deployed } of keywords) {

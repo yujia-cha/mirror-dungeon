@@ -28,7 +28,12 @@ import {
 import { familyOf, seasonOf } from './lib/season-files.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
-import { derivedKeywords, derivedStatuses, readDerivedFetchedAt, readDerivedIdentities } from './lib/derived-source.ts';
+import {
+  derivedKeywords,
+  derivedStatuses,
+  readDerivedFetchedAt,
+  readDerivedIdentities,
+} from './lib/derived-source.ts';
 import {
   DERIVED_ONLY_GIFTS,
   DERIVED_ONLY_PACKS,
@@ -124,7 +129,11 @@ function parseAt<S extends z.ZodTypeAny>(path: string, label: string, schema: S)
   return result.data;
 }
 
-const index: SeasonIndex | null = parseAt(join(OUT, 'index.json'), 'public/data/index.json', seasonIndexSchema);
+const index: SeasonIndex | null = parseAt(
+  join(OUT, 'index.json'),
+  'public/data/index.json',
+  seasonIndexSchema,
+);
 const requestedSeason = flagValue('--season') ? Number(flagValue('--season')) : undefined;
 /**
  * The season the raw snapshot describes, and so the one the domain checks below can speak about.
@@ -185,14 +194,20 @@ function checkArt(gifts: Gift[], packs: ThemePack[]): void {
   // silently leaves every tile without art, so it fails here instead.
   const parsedManifest = rawManifest === null ? null : artManifestSchema.safeParse(rawManifest);
   if (parsedManifest && !parsedManifest.success) {
-    err('art', `public/art/manifest.json does not match artManifestSchema: ${parsedManifest.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
+    err(
+      'art',
+      `public/art/manifest.json does not match artManifestSchema: ${parsedManifest.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`,
+    );
     return;
   }
   const manifest: ArtManifest | null = parsedManifest ? parsedManifest.data : null;
 
   if (!manifest) {
     if (onDisk.gifts.length + onDisk.packs.length > 0) {
-      err('art', `public/art has ${onDisk.gifts.length + onDisk.packs.length} file(s) but no manifest.json, so the app will not request any of them. Run: npm run art -- --write`);
+      err(
+        'art',
+        `public/art has ${onDisk.gifts.length + onDisk.packs.length} file(s) but no manifest.json, so the app will not request any of them. Run: npm run art -- --write`,
+      );
     }
     return;
   }
@@ -211,17 +226,33 @@ function checkArt(gifts: Gift[], packs: ThemePack[]): void {
     const files = new Set(onDisk[kind]);
     const claimed = new Set((kind === 'gifts' ? manifest.gifts.map(String) : manifest.packs) as string[]);
     for (const key of claimed) {
-      if (!files.has(key)) err('art', `manifest lists ${kind}/${key} but public/art/${kind}/${key}.png is missing. Run: npm run art -- --write`);
+      if (!files.has(key))
+        err(
+          'art',
+          `manifest lists ${kind}/${key} but public/art/${kind}/${key}.png is missing. Run: npm run art -- --write`,
+        );
     }
     for (const key of files) {
-      if (!claimed.has(key)) err('art', `public/art/${kind}/${key}.png is not in the manifest, so nothing will load it. Run: npm run art -- --write`);
-      if (!anySeason[kind].has(key)) err('art', `public/art/${kind}/${key}.png is not a ${kind === 'gifts' ? 'gift icon' : 'pack sprite'} of any published season, so nothing will ever read it.`);
+      if (!claimed.has(key))
+        err(
+          'art',
+          `public/art/${kind}/${key}.png is not in the manifest, so nothing will load it. Run: npm run art -- --write`,
+        );
+      if (!anySeason[kind].has(key))
+        err(
+          'art',
+          `public/art/${kind}/${key}.png is not a ${kind === 'gifts' ? 'gift icon' : 'pack sprite'} of any published season, so nothing will ever read it.`,
+        );
     }
     // Only a *partly* drawn set is worth a line. Nothing drawn at all is the shipped design, not a
     // gap — a tile with no drawing is simply drawn without one — and saying so on every
     // `npm run check` would just train the eye to skip warnings. `npm run art` is where the running count belongs.
     const drawn = [...keys].filter((k) => files.has(k)).length;
-    if (drawn > 0 && drawn < keys.size) warn('art', `${keys.size - drawn} of ${keys.size} ${kind} have no artwork yet; those tiles are drawn without one.`);
+    if (drawn > 0 && drawn < keys.size)
+      warn(
+        'art',
+        `${keys.size - drawn} of ${keys.size} ${kind} have no artwork yet; those tiles are drawn without one.`,
+      );
   }
 }
 
@@ -270,10 +301,16 @@ function checkReferences(gifts: Gift[], packs: ThemePack[], identities: Identity
         if (!(parent.fusion?.recipes ?? []).some((r) => r.ingredients.includes(gift.id)))
           err('invariant', `gift ${gift.id} upgradeOf ${parent.id} but no recipe of ${parent.id} uses it`);
         if (parent.keyword !== gift.keyword || gift.keyword === 'None')
-          err('invariant', `gift ${gift.id} upgradeOf ${parent.id} crosses keywords (${gift.keyword} → ${parent.keyword})`);
+          err(
+            'invariant',
+            `gift ${gift.id} upgradeOf ${parent.id} crosses keywords (${gift.keyword} → ${parent.keyword})`,
+          );
         const rank = (t: Gift['tier']): number => (t === null ? -1 : t === 'EX' ? 6 : t);
         if (rank(gift.tier) >= rank(parent.tier))
-          err('invariant', `gift ${gift.id} (T${gift.tier}) upgradeOf ${parent.id} (T${parent.tier}) is not a lower tier`);
+          err(
+            'invariant',
+            `gift ${gift.id} (T${gift.tier}) upgradeOf ${parent.id} (T${parent.tier}) is not a lower tier`,
+          );
       }
     }
     for (const condition of gift.conditions) {
@@ -392,21 +429,31 @@ function checkInvariants(
       const pack = clearRewardOf !== null ? packById.get(clearRewardOf) : undefined;
       if (!pack) err('invariant', `clear-reward gift ${gift.id} (${gift.name.ko}) names no pack`);
       else {
-        if (pack.availability.extreme.length === 0) err('invariant', `clear-reward gift ${gift.id} pack ${pack.id} is not an EXTREME pack`);
-        if (giftPacks.length !== 1 || giftPacks[0] !== pack.id) err('invariant', `clear-reward gift ${gift.id} must list only pack ${pack.id}`);
+        if (pack.availability.extreme.length === 0)
+          err('invariant', `clear-reward gift ${gift.id} pack ${pack.id} is not an EXTREME pack`);
+        if (giftPacks.length !== 1 || giftPacks[0] !== pack.id)
+          err('invariant', `clear-reward gift ${gift.id} must list only pack ${pack.id}`);
       }
     } else if (clearRewardOf !== null) {
       err('invariant', `gift ${gift.id} has clearRewardOf but kind ${kind}`);
     }
-    if (kind === 'hiddenBattle' && giftPacks.length > 0) err('invariant', `hidden-battle gift ${gift.id} must not list packs`);
+    if (kind === 'hiddenBattle' && giftPacks.length > 0)
+      err('invariant', `hidden-battle gift ${gift.id} must not list packs`);
     if ((kind === 'clearReward' || kind === 'hiddenBattle') && gift.observable) {
-      err('invariant', `gift ${gift.id} (${kind}) is in the observation pool, which the planner does not expect`);
+      err(
+        'invariant',
+        `gift ${gift.id} (${kind}) is in the observation pool, which the planner does not expect`,
+      );
     }
   }
   const dropPoolFile = readJsonIfExists<{ list?: { dungeonId: number; globalExcludeEgoGifts?: number[] }[] }>(
-    repoPath(`data/raw/static/mirrordungeon-egogift-droppool/mirrordungeon-egogift-droppool-${rules.dungeonId}.json`),
+    repoPath(
+      `data/raw/static/mirrordungeon-egogift-droppool/mirrordungeon-egogift-droppool-${rules.dungeonId}.json`,
+    ),
   );
-  const globalExclude = dropPoolFile?.list?.find((p) => p.dungeonId === rules.dungeonId)?.globalExcludeEgoGifts;
+  const globalExclude = dropPoolFile?.list?.find(
+    (p) => p.dungeonId === rules.dungeonId,
+  )?.globalExcludeEgoGifts;
   if (globalExclude) {
     const offPath = gifts
       .filter((g) => ['event', 'clearReward', 'hiddenBattle'].includes(g.acquisition.kind))
@@ -415,12 +462,16 @@ function checkInvariants(
       .join(',');
     const expected = [...globalExclude].sort((a, b) => a - b).join(',');
     if (offPath !== expected) {
-      strict('invariant', `event ∪ clearReward ∪ hiddenBattle (${offPath}) differs from globalExcludeEgoGifts (${expected})`);
+      strict(
+        'invariant',
+        `event ∪ clearReward ∪ hiddenBattle (${offPath}) differs from globalExcludeEgoGifts (${expected})`,
+      );
     }
   }
   if (rules.hiddenBattle) {
     for (const id of rules.hiddenBattle.gifts) {
-      if (gifts.find((g) => g.id === id)?.acquisition.kind !== 'hiddenBattle') err('invariant', `rules.hiddenBattle lists ${id}, which is not a hidden-battle gift`);
+      if (gifts.find((g) => g.id === id)?.acquisition.kind !== 'hiddenBattle')
+        err('invariant', `rules.hiddenBattle lists ${id}, which is not a hidden-battle gift`);
     }
   }
 
@@ -488,7 +539,10 @@ function checkInvariants(
   // new shape arrived that the build does not clean.
   const messyText = gifts.filter((g) =>
     [g.desc.ko, g.desc.en, ...g.conditions.flatMap((c) => (c.text ? [c.text.ko, c.text.en] : []))].some(
-      (text) => PADDED_BRACKET.test(text) || new RegExp(RICH_TEXT_TAG.source).test(text) || RUNTIME_PLACEHOLDER.test(text),
+      (text) =>
+        PADDED_BRACKET.test(text) ||
+        new RegExp(RICH_TEXT_TAG.source).test(text) ||
+        RUNTIME_PLACEHOLDER.test(text),
     ),
   );
   if (messyText.length > 0) {
@@ -504,7 +558,10 @@ function checkInvariants(
   // The 특수 variants (특수 충전 …) are read off BattleKeywords.json; losing them all means the
   // description format changed, not that the game dropped the mechanic.
   if (!identities.some((i) => Object.values(i.keywords).some((k) => k.specialSkills > 0))) {
-    strict('invariant', 'no identity inflicts a 특수 keyword variant; check readSpecialVariants() against BattleKeywords.json');
+    strict(
+      'invariant',
+      'no identity inflicts a 특수 keyword variant; check readSpecialVariants() against BattleKeywords.json',
+    );
   }
 
   // 탄환 is read off the `[necessary:Bullet:n]` requirement tokens in skill scripts. None at all
@@ -515,7 +572,10 @@ function checkInvariants(
 
   // 혈찬 is read off the Korean 「…을 소모하는」 sentence — the game declares nothing else for it.
   if (!identities.some((i) => i.keywords.BloodDinner)) {
-    strict('invariant', 'no identity consumes 혈찬; check deriveConsumedKeywordsFromText() against Skills_personality-*.json');
+    strict(
+      'invariant',
+      'no identity consumes 혈찬; check deriveConsumedKeywordsFromText() against Skills_personality-*.json',
+    );
   }
 
   // The consumed keywords, against the one source that knows them independently. KR skill text
@@ -524,10 +584,15 @@ function checkInvariants(
   const derivedById = readDerivedIdentities();
   for (const keyword of CONSUMED_KEYWORDS) {
     const ours = new Set(identities.filter((i) => i.keywords[keyword]).map((i) => i.id));
-    const theirs = new Set([...derivedById].filter(([, e]) => derivedStatuses(e).has(keyword)).map(([id]) => id));
+    const theirs = new Set(
+      [...derivedById].filter(([, e]) => derivedStatuses(e).has(keyword)).map(([id]) => id),
+    );
     for (const id of theirs) {
       if (!ours.has(id)) {
-        strict('invariant', `${id} uses ${keyword} per the derived source but we ship none; add data/curated/identity-keywords.json`);
+        strict(
+          'invariant',
+          `${id} uses ${keyword} per the derived source but we ship none; add data/curated/identity-keywords.json`,
+        );
       }
     }
     for (const id of ours) {
@@ -652,7 +717,8 @@ function checkInvariants(
   // Every sinner must be represented: a whole file dropping out of the fetch would otherwise pass
   // the total-count floor while leaving one of the twelve deck slots with nothing to put in it.
   const bySinner = new Map<number, number>();
-  for (const identity of identities) bySinner.set(identity.sinnerId, (bySinner.get(identity.sinnerId) ?? 0) + 1);
+  for (const identity of identities)
+    bySinner.set(identity.sinnerId, (bySinner.get(identity.sinnerId) ?? 0) + 1);
   for (let sinner = 1; sinner <= SINNER_COUNT; sinner += 1) {
     const count = bySinner.get(sinner) ?? 0;
     // The thinnest sinner has 14 today, so a floor of 10 catches a lost file without tripping on a
@@ -731,7 +797,8 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
   );
 
   // Floors, fusion and start pools all agreed exactly when measured, so any drift is real news.
-  const sameFloors = (a: number[], b: number[]): boolean => JSON.stringify([...a].sort((x, y) => x - y)) === JSON.stringify([...b].sort((x, y) => x - y));
+  const sameFloors = (a: number[], b: number[]): boolean =>
+    JSON.stringify([...a].sort((x, y) => x - y)) === JSON.stringify([...b].sort((x, y) => x - y));
   const floorDrift = packs
     .filter((pack) => pack.selectable && theirFloors.has(pack.id))
     .filter((pack) => {
@@ -742,19 +809,27 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
     })
     .map((pack) => pack.id);
   if (floorDrift.length > 0) {
-    warn('invariant', `${floorDrift.length} pack(s) disagree with the derived source on floors: ${floorDrift.join(', ')}`);
+    warn(
+      'invariant',
+      `${floorDrift.length} pack(s) disagree with the derived source on floors: ${floorDrift.join(', ')}`,
+    );
   }
 
   const recipeDrift = gifts
     .filter((gift) => (gift.fusion?.recipes?.length ?? 0) > 0 && theirGifts.has(gift.id))
     .filter((gift) => {
       const ours = gift.fusion!.recipes.map((r) => [...r.ingredients].sort((a, b) => a - b).join(',')).sort();
-      const theirs = derivedFixedRecipes(theirGifts.get(gift.id)!).map((r) => r.join(',')).sort();
+      const theirs = derivedFixedRecipes(theirGifts.get(gift.id)!)
+        .map((r) => r.join(','))
+        .sort();
       return JSON.stringify(ours) !== JSON.stringify(theirs);
     })
     .map((gift) => gift.id);
   if (recipeDrift.length > 0) {
-    warn('invariant', `${recipeDrift.length} fusion recipe(s) disagree with the derived source: ${recipeDrift.join(', ')}`);
+    warn(
+      'invariant',
+      `${recipeDrift.length} fusion recipe(s) disagree with the derived source: ${recipeDrift.join(', ')}`,
+    );
   }
 
   const startDrift = [...theirStart].filter(([keyword, ids]) => {
@@ -762,7 +837,10 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
     return !ours || JSON.stringify([...ours].sort((a, b) => a - b)) !== JSON.stringify(ids);
   });
   if (startDrift.length > 0) {
-    warn('invariant', `${startDrift.length} start gift pool(s) disagree with the derived source: ${startDrift.map(([k]) => k).join(', ')}`);
+    warn(
+      'invariant',
+      `${startDrift.length} start gift pool(s) disagree with the derived source: ${startDrift.map(([k]) => k).join(', ')}`,
+    );
   }
 
   const tierDrift = gifts
@@ -773,7 +851,10 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
     })
     .map((gift) => gift.id);
   if (tierDrift.length > 0) {
-    warn('invariant', `${tierDrift.length} gift tier(s) disagree with the derived source: ${tierDrift.slice(0, 12).join(', ')}`);
+    warn(
+      'invariant',
+      `${tierDrift.length} gift tier(s) disagree with the derived source: ${tierDrift.slice(0, 12).join(', ')}`,
+    );
   }
 }
 
@@ -809,7 +890,10 @@ function checkSeasonSnapshot(): void {
 
   const declared = expectSeason ?? lock.mirrorDungeonSeason;
   if (declared === undefined) {
-    warn('season', 'data/sources.lock.json has no `mirrorDungeonSeason`, so the snapshot cannot be checked against it');
+    warn(
+      'season',
+      'data/sources.lock.json has no `mirrorDungeonSeason`, so the snapshot cannot be checked against it',
+    );
     return;
   }
   const onDisk = readCommonData()?.data.currentDungeonId;
@@ -895,7 +979,9 @@ function checkCuratedSeason(): void {
     err(
       'invariant',
       `${rel} sets "${key}" with no entry in "_sources". Every curated value records where it came ` +
-        'from (CLAUDE.md) — add `"_sources": { "' + key + '": "…" }`.',
+        'from (CLAUDE.md) — add `"_sources": { "' +
+        key +
+        '": "…" }`.',
     );
   }
   for (const path of sourced) {
@@ -960,7 +1046,8 @@ function checkCuratedIdentities(identities: Identity[]): void {
         `curated identity ${id} now has static data; delete it from data/curated/identities.json`,
       );
     }
-    if (!shipped.has(id)) err('invariant', `curated identity ${id} did not reach public/data/identities.json`);
+    if (!shipped.has(id))
+      err('invariant', `curated identity ${id} did not reach public/data/identities.json`);
   }
 }
 
@@ -1054,17 +1141,26 @@ function checkSeasonIndex(): void {
       if (rules) {
         const lastFloor = Math.max(...Object.values(rules.floors).flat());
         if (entry.lastFloor !== lastFloor) {
-          err('invariant', `index.json says season ${entry.id} ends at floor ${entry.lastFloor}, rules.json says ${lastFloor}`);
+          err(
+            'invariant',
+            `index.json says season ${entry.id} ends at floor ${entry.lastFloor}, rules.json says ${lastFloor}`,
+          );
         }
       }
       if (meta && entry.provisional !== meta.provisional) {
-        err('invariant', `index.json and ${outRelPath('meta', entry.id)} disagree on whether season ${entry.id} is provisional`);
+        err(
+          'invariant',
+          `index.json and ${outRelPath('meta', entry.id)} disagree on whether season ${entry.id} is provisional`,
+        );
       }
     } else {
       const frozenMeta = parseAt(outPath('meta', entry.id), outRelPath('meta', entry.id), metaSchema);
       parseAt(outPath('rules', entry.id), outRelPath('rules', entry.id), rulesSchema);
       if (frozenMeta && frozenMeta.dataVersion !== entry.dataVersion) {
-        err('invariant', `index.json says season ${entry.id} is ${entry.dataVersion}, its meta.json says ${frozenMeta.dataVersion}`);
+        err(
+          'invariant',
+          `index.json says season ${entry.id} is ${entry.dataVersion}, its meta.json says ${frozenMeta.dataVersion}`,
+        );
       }
     }
     if (entry.provisional) {

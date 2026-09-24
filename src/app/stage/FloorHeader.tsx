@@ -43,7 +43,11 @@ export function FloorHeader({ mode }: { mode: StageMode }) {
           </span>
           <span className="font-num text-sm text-fg-3">{t('stageOf', lang, { last: lastFloor })}</span>
         </div>
-        {entered !== undefined ? <Badge tone="sure">{packName(entered)}</Badge> : modeBadge(mode, lang, lastFloor)}
+        {entered !== undefined ? (
+          <Badge tone="sure">{packName(entered)}</Badge>
+        ) : (
+          modeBadge(mode, lang, lastFloor)
+        )}
       </div>
       <ol className="flex gap-1" aria-label={t('tabRoutePlan', lang)} data-testid="floor-strip">
         {floors.map((f) => {

@@ -5,10 +5,21 @@ import { assignLanes, segmentsFor, stackBlocks } from '../lib/metro.ts';
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
-const noObservation = { ...data, rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } } };
+const noObservation = {
+  ...data,
+  rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
+};
 const DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715];
 const plan = (...gifts: number[]) =>
-  planRoute({ deck: DECK, wanted: gifts.map((giftId) => ({ giftId, required: true })), options: { ...defaultOptions(), lastFloor: 15, hardFromFloor: 1 } }, noObservation, indexes);
+  planRoute(
+    {
+      deck: DECK,
+      wanted: gifts.map((giftId) => ({ giftId, required: true })),
+      options: { ...defaultOptions(), lastFloor: 15, hardFromFloor: 1 },
+    },
+    noObservation,
+    indexes,
+  );
 
 describe('metro segments', () => {
   it('keeps partly overlapping windows apart, with suggested floors and the shared station marked', () => {
@@ -68,11 +79,33 @@ describe('metro segments', () => {
   it('stacks a card only over the cards it overlaps, by their height', () => {
     // A tall two-row card (250) climbs over the first; the third overlaps the tall one and so
     // climbs above it, while the card past its end stays on the baseline.
-    const blocks: [number, number, number][] = [[0, 100, 140], [90, 200, 250], [150, 220, 140], [230, 300, 140]];
-    expect(stackBlocks(blocks, (b) => [b[0], b[1]], (b) => b[2], 8)).toEqual([0, 148, 406, 0]);
+    const blocks: [number, number, number][] = [
+      [0, 100, 140],
+      [90, 200, 250],
+      [150, 220, 140],
+      [230, 300, 140],
+    ];
+    expect(
+      stackBlocks(
+        blocks,
+        (b) => [b[0], b[1]],
+        (b) => b[2],
+        8,
+      ),
+    ).toEqual([0, 148, 406, 0]);
   });
 
   it('assigns lanes first-fit over any extent', () => {
-    expect(assignLanes([[0, 100], [50, 120], [110, 200]] as [number, number][], (e) => e, 8)).toEqual([0, 1, 0]); // the third starts after lane 0 plus the gap
+    expect(
+      assignLanes(
+        [
+          [0, 100],
+          [50, 120],
+          [110, 200],
+        ] as [number, number][],
+        (e) => e,
+        8,
+      ),
+    ).toEqual([0, 1, 0]); // the third starts after lane 0 plus the gap
   });
 });

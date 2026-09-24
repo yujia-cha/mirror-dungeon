@@ -16,7 +16,9 @@
 export function registerServiceWorker(): void {
   if (import.meta.env.DEV) return;
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
-  const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+  const base = import.meta.env.BASE_URL.endsWith('/')
+    ? import.meta.env.BASE_URL
+    : `${import.meta.env.BASE_URL}/`;
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register(`${base}sw.js`, { scope: base }).catch(() => {
       // Deliberately silent: see above.

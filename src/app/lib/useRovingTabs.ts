@@ -26,7 +26,15 @@ export function useRovingTabs(
     (event: KeyboardEvent) => {
       if (count === 0) return;
       const step =
-        event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'Home' ? -Infinity : event.key === 'End' ? Infinity : null;
+        event.key === 'ArrowRight'
+          ? 1
+          : event.key === 'ArrowLeft'
+            ? -1
+            : event.key === 'Home'
+              ? -Infinity
+              : event.key === 'End'
+                ? Infinity
+                : null;
       if (step === null) return;
       event.preventDefault();
       // Wrapping is what the pattern specifies: from the last tab, → returns to the first.

@@ -40,10 +40,21 @@ export function GoalsPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   return (
     <div className="flex flex-col gap-3" data-testid="goals-panel">
       <Card className="px-3 py-2.5" testId="route-goals">
-        <SectionTitle right={<span className="font-num text-xs text-fg-3">{`${gotCount}/${wanted.length}`}</span>}>{t('routeGoals', lang)}</SectionTitle>
+        <SectionTitle
+          right={<span className="font-num text-xs text-fg-3">{`${gotCount}/${wanted.length}`}</span>}
+        >
+          {t('routeGoals', lang)}
+        </SectionTitle>
         {noticeGift ? (
           <div className="mt-2">
-            <FusionNotice gift={noticeGift} giftStatus={giftStatus} indexes={indexes} onUnmark={(id) => setGiftStatus(id, null)} onClose={() => setNotice(null)} lang={lang} />
+            <FusionNotice
+              gift={noticeGift}
+              giftStatus={giftStatus}
+              indexes={indexes}
+              onUnmark={(id) => setGiftStatus(id, null)}
+              onClose={() => setNotice(null)}
+              lang={lang}
+            />
           </div>
         ) : null}
         <div className="mt-2 flex flex-wrap gap-1.5">
