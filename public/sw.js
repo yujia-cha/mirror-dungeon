@@ -7,11 +7,11 @@
  * logic to a decision a reader can check by eye, and put nothing in it that the app depends on for
  * correctness. Everything still works with the service worker absent or disabled.
  *
- * Why runtime caching rather than a precache manifest: a precache list needs the build's hashed
- * asset names, which is what `vite-plugin-pwa` exists to generate. The cost is a dependency and a
- * build step; the benefit is that a *first* visit works offline. This app is opened online, then
- * consulted during a run — so caching what the first visit fetched is enough, and the honest
- * limitation is stated in `docs/review/M49.md`: the very first load needs the network.
+ * **Precache (M55).** The worker takes control only after the first load, so everything that load
+ * fetched went around it; before M55 an offline open failed after one online visit because the
+ * page, its scripts and `data/index.json` were never cached. The build now writes the shell into
+ * `PRECACHE` (`scripts/lib/precache.ts`, via the `precache` plugin in `vite.config.ts`), and
+ * install fetches it. The very first visit still needs the network — nothing can change that.
  *
  * Three strategies, by what the URL is:
  *
@@ -19,17 +19,43 @@
  *                   cached shell, and offline must still open the app.
  *   hashed asset    cache first. `index-D3cfCpYc.js` never changes content; a new build is a new
  *                   name, so there is nothing to revalidate.
- *   everything else stale-while-revalidate. `data/md7/gifts.json` and `art/*.png` keep their names
+ *   everything else stale-while-revalidate.
+ *
+ * Every lookup ignores `Vary`. A module script is a CORS request carrying `Origin`; a precached
+ * copy was fetched without one, and a server that answers `Vary: Origin` (Vite's preview does)
+ * makes the two never match — the page opened offline and every script failed. The files are
+ * static, so no header can make one response wrong for another request. `data/md7/gifts.json` and `art/*.png` keep their names
  *                   across deploys, so serve what we have and refresh in the background.
  */
-const CACHE = 'md-planner-v1';
+/** Filled in by the build; the source keeps these two lines verbatim (`injectPrecache` checks). */
+const PRECACHE = [];
+const VERSION = 'dev';
+const CACHE = `md-planner-${VERSION}`;
+const MATCH = { ignoreVary: true };
 
 /** `name-8charhash.ext` — what Vite emits for a bundled asset. */
 const HASHED = /-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/;
 
-self.addEventListener('install', () => {
-  // No precache, so there is nothing to wait for; take over as soon as possible.
-  self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE);
+      // One file at a time rather than `addAll`: one failed fetch must not keep the worker from
+      // installing, and a file missed here is still cached the first time it is used.
+      await Promise.all(
+        PRECACHE.map(async (path) => {
+          try {
+            const request = new Request(path, { cache: 'reload' });
+            const response = await fetch(request);
+            if (response.ok) await cache.put(request, response);
+          } catch {
+            // Offline mid-install, or a file gone: the runtime strategies below still apply.
+          }
+        }),
+      );
+      await self.skipWaiting();
+    })(),
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -51,7 +77,8 @@ async function networkFirst(request) {
     if (response.ok) cache.put(request, response.clone());
     return response;
   } catch (error) {
-    const cached = await cache.match(request);
+    // A navigation with a query string still gets the app shell precached as `./`.
+    const cached = (await cache.match(request, { ...MATCH, ignoreSearch: true })) ?? (await cache.match(new URL('./', self.registration.scope).href, MATCH));
     if (cached) return cached;
     throw error;
   }
@@ -59,7 +86,7 @@ async function networkFirst(request) {
 
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE);
-  const cached = await cache.match(request);
+  const cached = await cache.match(request, MATCH);
   if (cached) return cached;
   const response = await fetch(request);
   if (response.ok) cache.put(request, response.clone());
@@ -68,7 +95,7 @@ async function cacheFirst(request) {
 
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE);
-  const cached = await cache.match(request);
+  const cached = await cache.match(request, MATCH);
   const fresh = fetch(request)
     .then((response) => {
       if (response.ok) cache.put(request, response.clone());
