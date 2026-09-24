@@ -10,3 +10,5 @@ tsconfig.tsbuildinfo
 
 # dev-server logs
 *.log
+test-results/
+playwright-report/
