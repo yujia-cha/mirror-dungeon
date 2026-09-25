@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { FormationDeckCode, createFormationDetailInfo } from 'limbus-formation-deck';
 import { shareHash } from './share.ts';
 
 /** Six clear-reward gifts that cannot all fit one run: the route has alternatives to offer. */
@@ -59,4 +60,38 @@ test('the data preloads are the fetches the app makes, not a second copy (M58)',
   expect(warnings).toEqual([]);
   expect([...dataRequests.values()].every((count) => count === 1)).toBe(true);
   expect(dataRequests.size).toBe(7);
+});
+
+test('a formation code imports in the browser (M62)', async ({ page }) => {
+  // The old decoder used Node's `Buffer`, so every code failed here while unit tests under Node passed.
+  const deployed = new Map([
+    [10101, 1],
+    [10301, 2],
+    [10501, 3],
+  ]);
+  const code = FormationDeckCode.encode(
+    [10101, 10201, 10301, 10401, 10501].map((personalityId, index) =>
+      createFormationDetailInfo({
+        slot: index + 1,
+        personalityId,
+        slotType: deployed.get(personalityId) ?? 0,
+      }),
+    ),
+  );
+  await page.goto('./');
+  await page.getByRole('tab', { name: '덱' }).click();
+  await page.getByRole('button', { name: '코드 가져오기' }).click();
+  await page.getByLabel('편성 코드를 붙여넣으세요').fill(code);
+  await page.getByRole('button', { name: '불러오기' }).click();
+  await expect(page.getByText('편성 코드를 읽을 수 없습니다')).toHaveCount(0);
+  await expect(page.getByLabel('편성 코드를 붙여넣으세요')).toHaveCount(0);
+  const state = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem('md-route-planner') ?? '{}').state as {
+        deck: number[];
+        deployed: number[];
+      },
+  );
+  expect(state.deck).toEqual([10101, 10201, 10301, 10401, 10501]);
+  expect(state.deployed).toEqual([10101, 10301, 10501]);
 });

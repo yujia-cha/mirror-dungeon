@@ -7,7 +7,7 @@ import { matchesQuery } from '../lib/hangul.ts';
 import { sinnerOf, useApp } from '../store.ts';
 import { factionName, identityKeywordLabel } from '../format.ts';
 import { identitiesFromFormationCode } from '../lib/formation-code.ts';
-import { defaultDeck } from '../lib/default-deck.ts';
+import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { deckSummaryChips } from '../lib/deck-summary.ts';
 import { useCursor } from '../lib/use-cursor.ts';
 import { stepIndex, useDismiss } from '../lib/useDismiss.ts';
@@ -118,7 +118,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   /** Take an identity into its sinner's slot, or out of it when that slot already holds it. */
   const pickIdentity = (identity: Identity): void => {
     const held = bySinner.get(identity.sinnerId) === identity.id;
-    setDeckSlot(identity.sinnerId, held ? null : identity.id, data.rules.deployment.default);
+    setDeckSlot(identity.sinnerId, held ? null : identity.id, DEPLOYED_AT_START);
     setOpenSinner(null);
   };
 
@@ -128,7 +128,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
       setImportMessage(t('deckImportFailed', lang));
       return;
     }
-    setDeck(result.ids, data.rules.deployment.default);
+    setDeck(result.ids, DEPLOYED_AT_START, result.deployed.slice(0, max));
     setImportMessage(result.skipped > 0 ? t('deckImportPartial', lang) : null);
     if (result.skipped === 0) setImportOpen(false);
   };
@@ -180,7 +180,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           </span>
         </span>
         <Button
-          onClick={() => setDeck(defaultDeck(data), data.rules.deployment.default)}
+          onClick={() => setDeck(defaultDeck(data), DEPLOYED_AT_START)}
           ariaLabel={t('deckDefault', lang)}
           className="h-9"
         >
@@ -250,15 +250,6 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           </div>
         ) : null}
       </div>
-      {/* The cap is a curated constant nobody has confirmed in the game (`rules.deployment`). Its
-          own line: beside the counter it crushed the search field in a 336px panel, and a `title`
-          reaches neither touch nor keyboard. */}
-      {data.rules.deployment.verified ? null : (
-        <p className="-mt-1 text-xs text-fg-2" data-testid="deploy-unverified">
-          {t('deckDeployedUnverifiedWhy', lang, { max })}
-        </p>
-      )}
-
       {importOpen ? (
         <form
           className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface p-2"
@@ -357,7 +348,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                   lang={lang}
                   selected={id}
                   onPick={(picked) => {
-                    setDeckSlot(sinner.id, picked, data.rules.deployment.default);
+                    setDeckSlot(sinner.id, picked, DEPLOYED_AT_START);
                     setOpenSinner(null);
                   }}
                   onClose={() => setOpenSinner(null)}
@@ -376,7 +367,6 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
               <span className="text-fg-3">/{chip.formation}</span>
             </Chip>
           ))}
-          <span className="text-xs text-fg-3">{t('deckSummaryBasis', lang)}</span>
         </div>
       )}
     </div>

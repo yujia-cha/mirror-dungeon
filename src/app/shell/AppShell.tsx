@@ -10,7 +10,7 @@ import type { GameData, SeasonEntry } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp, type LeftTab, type RightTab } from '../store.ts';
-import { defaultDeck } from '../lib/default-deck.ts';
+import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { DetailSurface } from '../components/BlockDetail.tsx';
@@ -127,7 +127,7 @@ export function AppShell({
   const [menu, setMenu] = useState(false);
   const reset = (): void => {
     setConfirmReset(false);
-    resetAll(defaultDeck(data), data.rules.deployment.default);
+    resetAll(defaultDeck(data), DEPLOYED_AT_START);
   };
   const leftTabs: { id: LeftTab; label: string }[] = [
     { id: 'deck', label: t('tabDeck', lang) },

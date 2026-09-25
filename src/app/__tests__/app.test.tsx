@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import lzString from 'lz-string';
+import { FormationDeckCode, createFormationDetailInfo } from 'limbus-formation-deck';
 import userEvent from '@testing-library/user-event';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions } from '../../core/index.ts';
@@ -867,22 +868,40 @@ describe('DeckStep', () => {
     return render(<DeckStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
   };
 
-  it('says the deployment cap is unconfirmed while the rules say so, and only then (M56)', () => {
-    // `rules.deployment.verified` is false today: the cap of 7 is a curated guess. The counter used
-    // it silently; its own `_source` asks the UI to mark it.
-    const { unmount } = renderDeck();
-    expect(data.rules.deployment.verified).toBe(false);
-    expect(screen.getByTestId('deploy-unverified')).toHaveTextContent(
-      `출격 상한 ${data.rules.deployment.max}명은 게임에서 아직 확인하지 못한 값입니다`,
+  it("imports a formation code in the browser and deploys in the code's own order (M62)", async () => {
+    // The import used to go through a library that decodes base64 with Node's `Buffer`, which the
+    // browser does not have: every code failed there while tests under Node passed. `Buffer` is
+    // stubbed away here so this test runs the path the browser runs.
+    const deck = defaultDeck(data).slice(0, 8);
+    // Slot 8 deploys first, slot 2 second, slot 5 third; the rest sit in reserve.
+    const order = new Map([
+      [deck[7]!, 1],
+      [deck[1]!, 2],
+      [deck[4]!, 3],
+    ]);
+    const code = FormationDeckCode.encode(
+      deck.map((personalityId, index) =>
+        createFormationDetailInfo({
+          slot: index + 1,
+          personalityId,
+          slotType: order.get(personalityId) ?? 0,
+        }),
+      ),
     );
-    unmount();
-    const verified = {
-      ...data,
-      rules: { ...data.rules, deployment: { ...data.rules.deployment, verified: true } },
-    };
-    const { deck, deployed } = useApp.getState();
-    render(<DeckStep data={verified} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
-    expect(screen.queryByTestId('deploy-unverified')).toBeNull();
+    vi.stubGlobal('Buffer', undefined);
+    try {
+      const user = userEvent.setup();
+      renderDeck();
+      expect(screen.queryByText(/게임에서 아직 확인하지 못한/)).toBeNull();
+      await user.click(screen.getByRole('button', { name: '코드 가져오기' }));
+      fireEvent.change(screen.getByLabelText('편성 코드를 붙여넣으세요'), { target: { value: code } });
+      await user.click(screen.getByRole('button', { name: '불러오기' }));
+      expect(screen.queryByText('편성 코드를 읽을 수 없습니다')).toBeNull();
+      expect(useApp.getState().deck).toEqual(deck);
+      expect(useApp.getState().deployed).toEqual([deck[7], deck[1], deck[4]]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('shows twelve empty slots to start with and fills them with the LCB deck on request', async () => {
@@ -892,7 +911,8 @@ describe('DeckStep', () => {
     await user.click(screen.getByRole('button', { name: '기본 덱' }));
     expect(useApp.getState().deck).toEqual(defaultDeck(data));
     expect(useApp.getState().deck).toHaveLength(12);
-    expect(useApp.getState().deployed).toHaveLength(6);
+    // Nobody is deployed until the player says so.
+    expect(useApp.getState().deployed).toEqual([]);
     expect(new Set(useApp.getState().deck.map((id) => indexes.identityById.get(id)!.title.ko))).toEqual(
       new Set(['LCB 수감자']),
     );
@@ -968,7 +988,8 @@ describe('DeckStep', () => {
     // The keyword chips count the deployed seven and the whole formation of twelve.
     const chip = screen.getAllByTitle(/출격 \d+명 · 편성 전체 \d+명/)[0]!;
     expect(chip.textContent).toMatch(/\d+\/\d+$/);
-    expect(screen.getByText('출격 / 편성 12인')).toBeInTheDocument();
+    // The chip's own title explains the numbers; the old visible caption beside them is gone.
+    expect(screen.queryByText('출격 / 편성 12인')).toBeNull();
   });
 
   it('says nothing at all for an identity whose skills inflict no keyword', () => {
@@ -2489,7 +2510,7 @@ describe('AppShell', () => {
     );
     const state = useApp.getState();
     expect(state.deck).toEqual(defaultDeck(data));
-    expect(state.deployed).toEqual(defaultDeck(data).slice(0, data.rules.deployment.default));
+    expect(state.deployed).toEqual([]);
     expect(state.wanted).toEqual([]);
     expect(state.fusionGoal).toEqual({});
     expect(state.options).toEqual(appDefaultOptions());

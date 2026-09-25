@@ -7,7 +7,7 @@ import { DataLoadError, loadArtManifest, loadGameData, loadSeasonIndex } from '.
 import { t, type StringKey } from './i18n.ts';
 import { decodeShared, encodeShared, runInProgress, useApp } from './store.ts';
 import type { SharedState } from './store.ts';
-import { defaultDeck } from './lib/default-deck.ts';
+import { DEPLOYED_AT_START, defaultDeck } from './lib/default-deck.ts';
 import { setArtManifest } from './lib/assets.ts';
 import { lastFloorOf } from './lib/stage.ts';
 import { ingredientTree } from './lib/entangle.ts';
@@ -218,7 +218,7 @@ export function App() {
     seeded.current = true;
     // Ids this season cannot resolve are already gone: `adoptSeason` runs on every load, counts
     // what it dropped and reports it above.
-    if (useApp.getState().deck.length === 0) setDeck(defaultDeck(data), data.rules.deployment.default);
+    if (useApp.getState().deck.length === 0) setDeck(defaultDeck(data), DEPLOYED_AT_START);
   }, [data, indexes, setDeck]);
 
   const stats = useMemo(
@@ -252,8 +252,6 @@ export function App() {
           <div className="text-sm font-semibold">{t('loadFailed', lang)}</div>
           <div className="text-xs text-fg-3">
             {error.code ? t(error.code, lang, error.params) : error.text}
-            <br />
-            {t('loadFailedHint', lang)}
           </div>
           <Button variant="primary" onClick={() => setAttempt((n) => n + 1)}>
             <RefreshCw size={14} aria-hidden />

@@ -28,7 +28,6 @@ export const STRINGS = {
   themeToggle: { ko: '화면 전환', en: 'Toggle theme' },
   loading: { ko: '게임 데이터를 불러오는 중', en: 'Loading game data' },
   loadFailed: { ko: '게임 데이터를 불러오지 못했습니다', en: 'Could not load the game data' },
-  loadFailedHint: { ko: 'Pages 경로 설정을 확인하세요.', en: 'Check the Pages base path.' },
   retry: { ko: '다시 시도', en: 'Retry' },
   // `DataLoadError` carries a cause, not a sentence, so both languages are written here instead
   // of one Korean string reaching an English reader from core. `{label}` is the file that failed.
@@ -85,10 +84,6 @@ export const STRINGS = {
   deckDefault: { ko: '기본 덱', en: 'Default deck' },
   deckSearchNone: { ko: '일치하는 인격 없음', en: 'No identity matches' },
   deckDeployedFull: { ko: '출격은 최대 {max}명입니다', en: 'Up to {max} can be deployed' },
-  deckDeployedUnverifiedWhy: {
-    ko: '출격 상한 {max}명은 게임에서 아직 확인하지 못한 값입니다',
-    en: 'The cap of {max} has not been confirmed in the game yet',
-  },
   deckDeployed: { ko: '출격', en: 'Deployed' },
   deckReserve: { ko: '대기', en: 'Reserve' },
   deckEmptySlot: { ko: '인격 선택', en: 'Pick an identity' },
@@ -101,7 +96,6 @@ export const STRINGS = {
     ko: '일부 인격을 찾을 수 없어 건너뛰었습니다',
     en: 'Some identities were not found and were skipped',
   },
-  deckSummaryBasis: { ko: '출격 / 편성 12인', en: 'deployed / all 12' },
   deckChipBasis: { ko: '출격 {n}명 · 편성 전체 {total}명', en: '{n} deployed · {total} in the formation' },
   deckRank: { ko: '{n}성', en: '{n}★' },
   deckKeywordSkills: { ko: '{keyword} 부여 공격 스킬 보유', en: 'Has attack skills that inflict {keyword}' },
@@ -142,10 +136,6 @@ export const STRINGS = {
   giftEntangledWith: { ko: '{name} 재료가 겹칩니다: {list}', en: 'shares ingredients with {name}: {list}' },
   giftDetail: { ko: '{name} 자세히', en: '{name} details' },
   giftsDeckEmpty: { ko: '덱이 비어 있습니다', en: 'The deck is empty' },
-  giftsDeckEmptyHint: {
-    ko: '조건부 기프트를 판정하려면 인격이 필요합니다.',
-    en: 'Conditional gifts need identities to judge.',
-  },
   giftsNoMatch: { ko: '일치하는 기프트 없음', en: 'No gift matches' },
   giftsSelected: { ko: '선택 {n}', en: 'Selected {n}' },
   giftsClear: { ko: '선택 비우기', en: 'Clear selection' },

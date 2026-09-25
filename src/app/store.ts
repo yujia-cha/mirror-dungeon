@@ -58,7 +58,8 @@ interface AppState extends SharedState {
 
   /** Fill a sinner's slot; a newcomer is deployed while fewer than `autoDeployUpTo` fight. */
   setDeckSlot: (sinnerId: number, identityId: number | null, autoDeployUpTo?: number) => void;
-  setDeck: (deck: number[], deployedDefault: number) => void;
+  /** Replace the deck; `deployed` (a formation code's own order) wins over the first `deployedDefault`. */
+  setDeck: (deck: number[], deployedDefault: number, deployed?: number[]) => void;
   clearDeck: () => void;
   toggleDeployed: (identityId: number, max: number) => void;
   toggleWanted: (giftId: number, dropWithIt?: number[]) => void;
@@ -543,10 +544,11 @@ export const useApp = create<AppState>()(
           return { deck, deployed };
         }),
 
-      setDeck: (deck, deployedDefault) =>
+      setDeck: (deck, deployedDefault, deployed) =>
         set(() => {
           const next = uniqueDeck(deck);
-          return { deck: next, deployed: next.slice(0, deployedDefault) };
+          const given = deployed ? [...new Set(deployed)].filter((id) => next.includes(id)) : [];
+          return { deck: next, deployed: given.length > 0 ? given : next.slice(0, deployedDefault) };
         }),
 
       clearDeck: () => set({ deck: [], deployed: [] }),

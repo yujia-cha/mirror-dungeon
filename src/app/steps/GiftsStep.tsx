@@ -289,7 +289,6 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       <Card className="flex flex-col items-center gap-2.5 px-4 py-8 text-center">
         <User size={28} className="text-fg-3" aria-hidden />
         <div className="text-sm font-semibold">{t('giftsDeckEmpty', lang)}</div>
-        <div className="text-xs text-fg-3">{t('giftsDeckEmptyHint', lang)}</div>
         {onGoDeck ? (
           <Button variant="primary" onClick={onGoDeck}>
             <ChevronLeft size={14} aria-hidden />

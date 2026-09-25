@@ -8,7 +8,7 @@
  *
  * `formation-code.ts` is first because it is the only one parsing a format we do not own.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FormationDeckCode, createFormationDetailInfo } from 'limbus-formation-deck';
 import { buildIndexes } from '../../../core/index.ts';
 import { analyseDeck } from '../../../core/index.ts';
@@ -52,6 +52,35 @@ describe('identitiesFromFormationCode', () => {
   it('tolerates surrounding whitespace, because a pasted code carries it', () => {
     const deck = defaultDeck(data).slice(0, 3);
     expect(identitiesFromFormationCode(`  ${encode(deck)}\n`, indexes)?.ids).toEqual(deck);
+  });
+
+  it('tolerates line breaks inside the code, which a chat app inserts when it wraps', () => {
+    const deck = defaultDeck(data).slice(0, 6);
+    const wrapped = encode(deck).replace(/(.{20})/g, '$1\n');
+    expect(identitiesFromFormationCode(wrapped, indexes)?.ids).toEqual(deck);
+  });
+
+  it("decodes without Node's Buffer, which the browser does not have", () => {
+    // The previous decoder called `Buffer.from` and failed every code in the browser.
+    const deck = defaultDeck(data).slice(0, 6);
+    const code = encode(deck);
+    vi.stubGlobal('Buffer', undefined);
+    try {
+      expect(identitiesFromFormationCode(code, indexes)?.ids).toEqual(deck);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('reads the deploy order from the code, reserves (0) left out', () => {
+    const deck = defaultDeck(data).slice(0, 5);
+    const order = [0, 3, 1, 0, 2];
+    const code = FormationDeckCode.encode(
+      deck.map((personalityId, index) =>
+        createFormationDetailInfo({ slot: index + 1, personalityId, slotType: order[index]! }),
+      ),
+    );
+    expect(identitiesFromFormationCode(code, indexes)?.deployed).toEqual([deck[2], deck[4], deck[1]]);
   });
 });
 
