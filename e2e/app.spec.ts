@@ -95,3 +95,36 @@ test('a formation code imports in the browser (M62)', async ({ page }) => {
   expect(state.deck).toEqual([10101, 10201, 10301, 10401, 10501]);
   expect(state.deployed).toEqual([10101, 10301, 10501]);
 });
+
+test('a sinner picker opened from the right column stays inside the panel (M63)', async ({ page }) => {
+  // It was pinned to the slot's left edge at 340px, so a right-column slot ran past the panel's
+  // right edge and the panel body clipped the search field.
+  for (const width of [420, 490, 560]) {
+    await page.addInitScript((w) => {
+      localStorage.setItem(
+        'md-route-planner',
+        JSON.stringify({ state: { ui: { leftOpen: true, leftTab: 'deck', leftWidth: w } }, version: 7 }),
+      );
+    }, width);
+    await page.goto('./');
+    const panel = page.getByTestId('panel-left');
+    const body = panel.locator('.\\@container').first();
+    const slots = panel.locator('li button[aria-expanded]');
+    await expect(slots.first()).toBeVisible();
+    // Every slot, so whichever column ends up rightmost at this width is covered.
+    const count = await slots.count();
+    for (let i = 0; i < count; i++) {
+      await slots.nth(i).click();
+      const picker = page.getByTestId('sinner-picker');
+      await expect(picker).toBeVisible();
+      const [box, bounds] = [await picker.boundingBox(), await body.boundingBox()];
+      expect(box!.x).toBeGreaterThanOrEqual(bounds!.x);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(bounds!.x + bounds!.width);
+      await expect(picker.getByRole('combobox')).toBeFocused();
+      // Focusing the field must not scroll the panel body sideways either.
+      expect(await body.evaluate((el) => el.scrollLeft)).toBe(0);
+      await page.keyboard.press('Escape');
+      await expect(picker).toHaveCount(0);
+    }
+  }
+});

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Plus, Search, Users, X } from 'lucide-react';
 import type { GameData, Identity } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -9,6 +9,7 @@ import { factionName, identityKeywordLabel } from '../format.ts';
 import { identitiesFromFormationCode } from '../lib/formation-code.ts';
 import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { deckSummaryChips } from '../lib/deck-summary.ts';
+import { fitShift } from '../lib/fit-inside.ts';
 import { useCursor } from '../lib/use-cursor.ts';
 import { stepIndex, useDismiss } from '../lib/useDismiss.ts';
 import { Button, Chip } from '../components/ui.tsx';
@@ -373,6 +374,9 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   );
 }
 
+/** The panel body's own horizontal padding (`px-3`), kept clear on both sides. */
+const PICKER_PAD = 12;
+
 function SinnerPicker({
   sinner,
   sinnerName,
@@ -392,6 +396,7 @@ function SinnerPicker({
 }) {
   const [query, setQuery] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const needle = query.trim().toLowerCase();
   const [activeIndex, setActiveIndex] = useCursor(needle);
   const all = data.identities.filter((identity) => identity.sinnerId === sinner);
@@ -399,6 +404,26 @@ function SinnerPicker({
     .filter((identity) => matches(identity, needle.split(/\s+/).filter(Boolean), data))
     .sort((a, b) => b.rank - a.rank || a.id - b.id);
   useDismiss(ref, onClose, true);
+  // From `@sm` up the picker floats under its slot, and a slot in the right column has less room to
+  // the panel's edge than the picker is wide: the panel body clipped it. Measure and slide it left.
+  const [shift, setShift] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = (): void => {
+      const bounds = el.parentElement?.closest('.\\@container');
+      if (!bounds || getComputedStyle(el).position !== 'absolute') return setShift(0);
+      const box = el.getBoundingClientRect();
+      const base = box.left - (Number.parseFloat(el.style.left) || 0);
+      setShift(fitShift({ left: base, right: base + box.width }, bounds.getBoundingClientRect(), PICKER_PAD));
+    };
+    fit();
+    // Not `autoFocus`: that scrolls the panel body sideways to the field before the shift lands,
+    // and the panel stays scrolled after the picker closes.
+    inputRef.current?.focus({ preventScroll: true });
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
   const onKey = (event: React.KeyboardEvent<HTMLInputElement>): void => {
     const next = stepIndex(event.key, activeIndex, identities.length);
     if (next !== null) {
@@ -412,12 +437,13 @@ function SinnerPicker({
   return (
     <div
       ref={ref}
-      className="mt-1 flex flex-col overflow-hidden rounded-md border border-line-strong bg-surface shadow-pop @sm:absolute @sm:left-0 @sm:top-full @sm:z-20 @sm:mt-0 @sm:w-[340px]"
+      className="mt-1 flex flex-col overflow-hidden rounded-md border border-line-strong bg-surface shadow-pop @sm:absolute @sm:left-0 @sm:top-full @sm:z-20 @sm:mt-0 @sm:w-[min(340px,calc(100cqw-1.5rem))]"
+      style={shift ? { left: shift } : undefined}
       data-testid="sinner-picker"
     >
       <div className="flex items-center gap-2 border-b border-line px-2.5 py-2">
         <input
-          autoFocus
+          ref={inputRef}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onKey}
