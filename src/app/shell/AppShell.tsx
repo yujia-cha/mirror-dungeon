@@ -32,6 +32,10 @@ import { EnumsContext } from '../lib/useEnums.ts';
  */
 const NOTICE_URL = 'https://github.com/yujia-cha/mirror-dungeon/blob/main/NOTICE';
 import { SidePanel } from './SidePanel.tsx';
+import { GiftBrowser } from './GiftBrowser.tsx';
+
+/** What covers the shell on a phone, or (for `browser`) the stage on a desktop. */
+type Drawer = 'left' | 'right' | 'browser' | null;
 
 /**
  * A door to one of the side panels: the same three-bar mark on both sides, named by the panel it
@@ -92,7 +96,9 @@ export function AppShell({
   const resetAll = useApp((s) => s.resetAll);
   const desktop = useDesktop();
   /**
-   * Phones keep their own drawer state: only one drawer at a time, closed on every load.
+   * Phones keep their own drawer state: only one drawer at a time, closed on every load. The
+   * 「모두 보기」 gift browser is the third drawer, and the one that both layouts share — on a
+   * desktop the panels are `ui` state, but the browser is as unsaved as a phone's page.
    *
    * The layout it was opened under is stored with it. Crossing the breakpoint otherwise leaves the
    * two states disagreeing — a drawer opened on a phone would spring back open, backdrop and all,
@@ -100,17 +106,22 @@ export function AppShell({
    * cleared it. Reading it as closed whenever the layout has changed does the same thing during
    * render, with no second pass.
    */
-  const [drawerState, setDrawerState] = useState<{ desktop: boolean; side: 'left' | 'right' | null }>({
+  const [drawerState, setDrawerState] = useState<{ desktop: boolean; side: Drawer }>({
     desktop,
     side: null,
   });
   const drawer = drawerState.desktop === desktop ? drawerState.side : null;
-  const setDrawer = (side: 'left' | 'right' | null): void => setDrawerState({ desktop, side });
+  const setDrawer = (side: Drawer): void => setDrawerState({ desktop, side });
   const leftOpen = desktop ? ui.leftOpen : drawer === 'left';
   const rightOpen = desktop ? ui.rightOpen : drawer === 'right';
+  const browserOpen = drawer === 'browser';
   // On a phone a panel is a full-screen page portalled to the body, so the shell behind it is
   // inert: nothing under the page takes focus or a press, and it leaves the accessibility tree.
   const pageOpen = !desktop && drawer !== null;
+  // The browser opens from the items tab. On a phone that tab is the left page, which the browser
+  // page replaces; closing the browser brings the tab back rather than the stage.
+  const openBrowser = (): void => setDrawer('browser');
+  const closeBrowser = (): void => setDrawer(desktop ? null : 'left');
   const toggle = (side: 'left' | 'right'): void => {
     if (desktop) setUi(side === 'left' ? { leftOpen: !ui.leftOpen } : { rightOpen: !ui.rightOpen });
     else setDrawer(drawer === side ? null : side);
@@ -256,6 +267,7 @@ export function AppShell({
                     stats={stats}
                     lang={lang}
                     onGoDeck={() => setUi({ leftTab: 'deck' })}
+                    onBrowse={openBrowser}
                   />
                   <RouteOptions />
                 </div>
@@ -271,64 +283,72 @@ export function AppShell({
               />
             ) : null}
 
-            <main
-              id="stage"
-              tabIndex={-1}
-              className="flex min-w-0 flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:px-6 lg:pt-4"
-            >
-              <RunStage onOpenGifts={openGifts} />
-              <footer className="mt-auto border-t border-line pt-3 text-xs text-fg-3">
-                <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                  <span>
-                    {t('dataVersion', lang)} {data.meta.dataVersion}
-                  </span>
-                  <span aria-hidden>·</span>
-                  {/*
+            <main id="stage" tabIndex={-1} className="relative flex min-w-0 flex-1 flex-col">
+              {/*
+                On a desktop the gift browser takes the stage's column. The stage stays mounted
+                underneath so nothing it holds is lost, but hidden and inert: it neither shows
+                through nor takes a Tab while covered.
+              */}
+              {desktop && browserOpen ? <GiftBrowser page={false} onClose={closeBrowser} /> : null}
+              <div
+                className={`flex flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:px-6 lg:pt-4 ${desktop && browserOpen ? 'hidden' : ''}`}
+                inert={(desktop && browserOpen) || undefined}
+                data-testid="stage-body"
+              >
+                <RunStage onOpenGifts={openGifts} />
+                <footer className="mt-auto border-t border-line pt-3 text-xs text-fg-3">
+                  <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <span>
+                      {t('dataVersion', lang)} {data.meta.dataVersion}
+                    </span>
+                    <span aria-hidden>·</span>
+                    {/*
                   The season is named here already, so this is where it is chosen. Until a second
                   season is published there is nothing to choose and the line reads as it always
                   has — no control appears for a list of one.
                 */}
-                  {seasons.length > 1 ? (
-                    <select
-                      className="rounded border border-line bg-surface px-1.5 py-0.5 text-xs text-fg-2"
-                      aria-label={t('season', lang)}
-                      data-testid="season-select"
-                      value={data.meta.dungeon.id}
-                      onChange={(event) => onSeason(Number(event.target.value))}
-                    >
-                      {seasons.map((entry) => (
-                        <option key={entry.id} value={entry.id}>
-                          {pick(entry.name, lang) || `MD${entry.id}`}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span>{pick(data.meta.dungeon.name, lang)}</span>
-                  )}
-                  {data.meta.provisional ? (
-                    <span
-                      className="text-warn"
-                      title={t('seasonProvisionalHint', lang)}
-                      data-testid="season-provisional"
-                    >
-                      {t('seasonProvisional', lang)}
-                    </span>
-                  ) : null}
-                </p>
-                <p className="mt-1">
-                  {t('aboutData', lang)}{' '}
-                  {/* The credits and the takedown path are too long for a footer, so the notice
+                    {seasons.length > 1 ? (
+                      <select
+                        className="rounded border border-line bg-surface px-1.5 py-0.5 text-xs text-fg-2"
+                        aria-label={t('season', lang)}
+                        data-testid="season-select"
+                        value={data.meta.dungeon.id}
+                        onChange={(event) => onSeason(Number(event.target.value))}
+                      >
+                        {seasons.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {pick(entry.name, lang) || `MD${entry.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span>{pick(data.meta.dungeon.name, lang)}</span>
+                    )}
+                    {data.meta.provisional ? (
+                      <span
+                        className="text-warn"
+                        title={t('seasonProvisionalHint', lang)}
+                        data-testid="season-provisional"
+                      >
+                        {t('seasonProvisional', lang)}
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="mt-1">
+                    {t('aboutData', lang)}{' '}
+                    {/* The credits and the takedown path are too long for a footer, so the notice
                     links to the file that holds them rather than growing a third line. */}
-                  <a
-                    className="underline hover:text-fg-2"
-                    href={NOTICE_URL}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    {t('aboutSource', lang)}
-                  </a>
-                </p>
-              </footer>
+                    <a
+                      className="underline hover:text-fg-2"
+                      href={NOTICE_URL}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      {t('aboutSource', lang)}
+                    </a>
+                  </p>
+                </footer>
+              </div>
             </main>
 
             {desktop && rightOpen ? (
@@ -362,6 +382,7 @@ export function AppShell({
               )}
             </SidePanel>
           </div>
+          {!desktop && browserOpen ? <GiftBrowser page onClose={closeBrowser} /> : null}
           {confirmReset ? (
             <ConfirmDialog
               title={t('resetAll', lang)}

@@ -35,10 +35,21 @@ const BADGE_TONE: Record<BadgeTone, { className: string; icon: ReactNode }> = {
   neutral: { className: 'border border-line bg-surface-2 text-fg-2', icon: null },
 };
 
-export function Badge({ tone, children, title }: { tone: BadgeTone; children: ReactNode; title?: string }) {
+export function Badge({
+  tone,
+  children,
+  title,
+  ariaLabel,
+}: {
+  tone: BadgeTone;
+  children: ReactNode;
+  title?: string;
+  /** For a badge whose visible text is a bare number: the sentence it stands for. */
+  ariaLabel?: string;
+}) {
   const { className, icon } = BADGE_TONE[tone];
   return (
-    <span className={`${BADGE_BASE} ${className}`} title={title}>
+    <span className={`${BADGE_BASE} ${className}`} title={title} aria-label={ariaLabel}>
       {icon}
       {children}
     </span>

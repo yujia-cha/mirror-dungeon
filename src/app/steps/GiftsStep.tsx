@@ -2,30 +2,40 @@
  * Pick the gifts to chase, as a grid of tiles; the detail sheet behind each name carries the
  * wording the tiles leave out (effect text, every condition, how it is obtained, the recipe). The
  * sheet itself is hosted by `PlanProvider`, so it survives this panel closing. Between the filters
- * and the grid sit the observation slots and the selected-gift chips: a chip opens the sheet, and
- * can be dragged onto a slot to pin the gift for observation.
+ * and the grid sit the observation slots and the selected-gift tiles (`SelectedTiles`, the same
+ * tiles as the grid): a tile's name opens the sheet, and the tile can be dragged onto a slot to pin
+ * the gift for observation.
  *
  * Browsing splits the tiles into 활성 / 기타 by whether the current deck activates them. **A search
  * does not** — see `results` below — and 활성 steps aside once every gift in it is already a goal.
+ * The 「기타」 header also opens the 「모두 보기」 browser (`onBrowse`), which lays every gift out
+ * over the stage with the same filters.
  */
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, ChevronLeft, ChevronRight, Link2, RefreshCw, Search, User, X } from 'lucide-react';
-import type { AcquisitionKind, GameData, Gift, Keyword, Sin } from '../../core/schema.ts';
-import { evaluateConditions, observable } from '../../core/index.ts';
-import type { ConditionReport, DeckStats, GameIndexes } from '../../core/types.ts';
+import { ChevronDown, ChevronLeft, ChevronRight, Maximize2, Search, User } from 'lucide-react';
+import type { GameData, Keyword } from '../../core/schema.ts';
+import { observable } from '../../core/index.ts';
+import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
-import { matchesQuery } from '../lib/hangul.ts';
 import { observationClosed } from '../lib/plan-input.ts';
-import { SIN_LABEL, badgeFor, tierLabel } from '../lib/labels.ts';
-import { prioritiseGifts, type GiftEntry, type GiftGroup } from '../lib/gift-priority.ts';
+import { prioritiseGifts, type GiftGroup } from '../lib/gift-priority.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { useChipDrag } from '../lib/useChipDrag.ts';
+import { useGiftFilters } from '../lib/useGiftFilters.ts';
 import { Badge, Button, Card, FilterSelect } from '../components/ui.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
+import { GiftFilterBar, GiftNoMatch } from '../components/GiftFilterBar.tsx';
 import { GiftTileGrid } from '../components/GiftGrid.tsx';
-import { isMarked, type GiftTileData } from '../lib/gift-tile.ts';
+import { SelectedTiles } from '../components/SelectedTiles.tsx';
+import {
+  browsableParents,
+  conditionReportsByGift,
+  isMarked,
+  tilesFor,
+  type GiftTileData,
+} from '../lib/gift-tile.ts';
 import { ObserveSlots } from '../components/ObserveSlots.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
@@ -36,23 +46,16 @@ interface Props {
   lang: Lang;
   /** Where to send the player when the deck is empty (the deck tab). */
   onGoDeck?: () => void;
+  /** Open the 「모두 보기」 browser. Without it the 「기타」 header has no such button. */
+  onBrowse?: () => void;
 }
-
-type TierFilter = '1' | '2' | '3' | '4' | '5' | 'EX';
-type PriceFilter = 'p1' | 'p2' | 'p3' | 'p4';
-const PRICE_BANDS: Record<PriceFilter, [number, number]> = {
-  p1: [0, 150],
-  p2: [151, 250],
-  p3: [251, 400],
-  p4: [401, Infinity],
-};
 
 const GROUPS: { group: GiftGroup; title: 'giftsActive' | 'giftsOther' }[] = [
   { group: 'active', title: 'giftsActive' },
   { group: 'other', title: 'giftsOther' },
 ];
 
-export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
+export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Props) {
   const deck = useApp((s) => s.deck);
   const wanted = useApp((s) => s.wanted);
   const removeWanted = useApp((s) => s.removeWanted);
@@ -67,12 +70,9 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   // they are computed once and every surface agrees.
   const { openGift, childrenOf, entangled, blocked, needed, toggleGoal: toggle } = usePlan();
 
-  const [query, setQuery] = useState('');
-  const [keyword, setKeyword] = useState<Keyword | 'all'>('all');
-  const [tier, setTier] = useState<TierFilter | 'all'>('all');
-  const [acquisition, setAcquisition] = useState<AcquisitionKind | 'all'>('all');
-  const [sin, setSin] = useState<Sin | 'all'>('all');
-  const [price, setPrice] = useState<PriceFilter | 'all'>('all');
+  const filterState = useGiftFilters();
+  const { filters, matcher, searching } = filterState;
+  const query = filters.query;
   // The selection tray's own view: how the chips are ordered, and which of them are shown. It is
   // a view over `wanted`, never a reordering of it — the store keeps the order things were chosen
   // in, which is what 「선택 순서」 means and what the share link carries.
@@ -81,61 +81,28 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   const [chipPack, setChipPack] = useState<string>('all');
   // 「기타」 is the long tail, so it starts folded; 「활성」 opens with the panel.
   const [collapsed, setCollapsed] = useState<Record<GiftGroup, boolean>>({ active: false, other: true });
-  const filtersOn =
-    keyword !== 'all' ||
-    tier !== 'all' ||
-    acquisition !== 'all' ||
-    sin !== 'all' ||
-    price !== 'all' ||
-    query.trim() !== '';
-  const resetFilters = (): void => {
-    setQuery('');
-    setKeyword('all');
-    setTier('all');
-    setAcquisition('all');
-    setSin('all');
-    setPrice('all');
+  /*
+    The 「조건」 filter answers a question the split does not: 「조건 없음」 is by definition all 「기타」
+    (nothing there can be active), so a reader who set it would find the answer behind the shut
+    fold. Setting the filter opens the fold — once, on the change; the header still folds it back.
+  */
+  const filterBarState = {
+    ...filterState,
+    set: <K extends keyof typeof filters>(key: K, value: (typeof filters)[K]): void => {
+      filterState.set(key, value);
+      if (key === 'condition' && value !== 'all') setCollapsed((state) => ({ ...state, other: false }));
+    },
   };
 
-  const conditionByGift = useMemo(() => {
-    const reports = evaluateConditions(
-      data.gifts.filter((gift) => gift.conditions.length > 0).map((gift) => gift.id),
-      stats,
-      indexes,
-    );
-    const map = new Map<number, ConditionReport[]>();
-    for (const report of reports) map.set(report.giftId, [...(map.get(report.giftId) ?? []), report]);
-    return map;
-  }, [data, stats, indexes]);
+  const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
 
   // Two fusion goals can eat the same ingredient; a state that already holds both still says so.
   const entangledIds = useMemo(() => new Set(entangled.keys()), [entangled]);
 
-  const matchesFilters = (gift: Gift): boolean => {
-    const needle = query.trim().toLowerCase();
-    if (!matchesQuery(`${gift.name.ko} ${gift.name.en}`.toLowerCase(), needle)) return false;
-    if (keyword !== 'all' && gift.keyword !== keyword) return false;
-    if (tier !== 'all' && String(gift.tier) !== tier) return false;
-    if (acquisition !== 'all' && gift.acquisition.kind !== acquisition) return false;
-    if (sin !== 'all' && gift.sin !== sin) return false;
-    if (price !== 'all') {
-      const [lo, hi] = PRICE_BANDS[price];
-      if (gift.price === null || gift.price < lo || gift.price > hi) return false;
-    }
-    return true;
-  };
-
-  const groups = useMemo(() => {
-    const candidates = data.gifts.filter((gift) => gift.obtainable || wanted.includes(gift.id));
-    const parents = candidates.filter((gift) => {
-      const isChild = gift.upgradeOf !== null && indexes.giftById.has(gift.upgradeOf);
-      if (isChild) return false;
-      const kids = childrenOf.get(gift.id) ?? [];
-      return matchesFilters(gift) || kids.some(matchesFilters);
-    });
-    return prioritiseGifts(parents, conditionByGift);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, indexes, wanted, conditionByGift, childrenOf, query, keyword, tier, acquisition, sin, price]);
+  const groups = useMemo(
+    () => prioritiseGifts(browsableParents(data, indexes, wanted, childrenOf, matcher), conditionByGift),
+    [data, indexes, wanted, conditionByGift, childrenOf, matcher],
+  );
 
   const total = groups.active.length + groups.other.length;
   const giftName = (id: number): string => pick(indexes.giftById.get(id)?.name, lang);
@@ -205,21 +172,9 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   });
   const draggedGift = drag.state.dragging !== null ? indexes.giftById.get(drag.state.dragging) : undefined;
 
-  const tilesFor = (entries: GiftEntry[]): GiftTileData[] =>
-    entries.flatMap((entry) => {
-      const kids = (childrenOf.get(entry.gift.id) ?? []).filter((g) => g.obtainable || wanted.includes(g.id));
-      return [
-        { entry },
-        ...kids.map((g) => ({
-          entry: { ...entry, gift: g, reports: conditionByGift.get(g.id) ?? [] },
-          parent: entry.gift,
-        })),
-      ];
-    });
-
   const tiles: Record<GiftGroup, GiftTileData[]> = {
-    active: tilesFor(groups.active),
-    other: tilesFor(groups.other),
+    active: tilesFor(groups.active, childrenOf, wanted, conditionByGift, matcher.attrs),
+    other: tilesFor(groups.other, childrenOf, wanted, conditionByGift, matcher.attrs),
   };
   const grid = (list: GiftTileData[]) => (
     <GiftTileGrid
@@ -242,20 +197,39 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     const shut = collapsed[group];
     return (
       <Card className="overflow-hidden" key={group}>
-        <button
-          type="button"
-          onClick={() => setCollapsed((state) => ({ ...state, [group]: !state[group] }))}
-          aria-expanded={!shut}
-          className="flex h-9 w-full items-center justify-between border-b border-line bg-surface-2 px-3 text-left"
-        >
-          <span className="flex items-center gap-2 text-sm font-semibold">
-            {t(titleKey, lang)} <span className="font-num text-xs text-fg-3">{list.length}</span>
-            {shut && chosen > 0 ? (
-              <Badge tone="neutral">{t('giftsSelected', lang, { n: chosen })}</Badge>
-            ) : null}
-          </span>
-          <span className="text-fg-3">{shut ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</span>
-        </button>
+        {/*
+          The fold toggle and the browser door sit side by side rather than nested: a button
+          inside a button is not HTML, and a press on the door must not fold the section.
+        */}
+        <div className="flex h-9 items-stretch border-b border-line bg-surface-2">
+          <button
+            type="button"
+            onClick={() => setCollapsed((state) => ({ ...state, [group]: !state[group] }))}
+            aria-expanded={!shut}
+            className="flex min-w-0 flex-1 items-center justify-between px-3 text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              {t(titleKey, lang)} <span className="font-num text-xs text-fg-3">{list.length}</span>
+              {shut && chosen > 0 ? (
+                <Badge tone="neutral">{t('giftsSelected', lang, { n: chosen })}</Badge>
+              ) : null}
+            </span>
+            <span className="text-fg-3">{shut ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</span>
+          </button>
+          {group === 'other' && onBrowse ? (
+            <button
+              type="button"
+              onClick={onBrowse}
+              aria-label={t('giftsBrowseAll', lang)}
+              title={t('giftsBrowseAll', lang)}
+              className="inline-flex flex-none items-center gap-1 border-l border-line px-2.5 text-xs font-medium text-fg-2 hover:bg-surface hover:text-fg"
+              data-testid="gift-browse-all"
+            >
+              <Maximize2 size={12} aria-hidden />
+              {t('giftsBrowseAll', lang)}
+            </button>
+          ) : null}
+        </div>
         {shut ? null : (
           <div
             className={group === 'other' ? 'max-h-[60dvh] overflow-y-auto' : undefined}
@@ -268,7 +242,6 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     );
   };
 
-  const searching = query.trim() !== '';
   /*
     A query is a narrowing already, so splitting its answer into 활성 / 기타 narrows it twice: what
     the reader typed for sat behind 「기타」, which opens shut. One list instead. 활성 still comes
@@ -303,17 +276,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
       </Card>
     );
   } else if (total === 0) {
-    body = (
-      <Card className="flex flex-col items-center gap-2.5 px-4 py-8 text-center">
-        <Search size={28} className="text-fg-3" aria-hidden />
-        <div className="text-sm font-semibold">{t('giftsNoMatch', lang)}</div>
-        {query.trim() ? <div className="text-xs text-fg-3">「{query.trim()}」</div> : null}
-        <Button onClick={resetFilters}>
-          <RefreshCw size={14} aria-hidden />
-          {t('filterReset', lang)}
-        </Button>
-      </Card>
-    );
+    body = <GiftNoMatch state={filterState} lang={lang} />;
   } else if (searching) {
     body = (
       <Card className="overflow-hidden">
@@ -350,29 +313,6 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     { value: 'keyword' as const, label: t('filterKeyword', lang) },
     { value: 'name' as const, label: t('giftsSortName', lang) },
   ];
-  const sinOptions = data.enums.sins.map((s) => ({ value: s as Sin, label: t(SIN_LABEL[s as Sin], lang) }));
-  const acqOptions = (
-    [
-      'general',
-      'packLimited',
-      'fusionOnly',
-      'startOnly',
-      'clearReward',
-      'hiddenBattle',
-      'event',
-    ] as AcquisitionKind[]
-  ).map((k) => ({
-    value: k,
-    label: t(badgeFor(k).label, lang),
-  }));
-  // The bands do not overlap, so 「~250」 read as a promise the filter broke: a 100-cost gift is not
-  // in `p2`. Each label now names the band it actually keeps.
-  const priceOptions: { value: PriceFilter; label: string }[] = [
-    { value: 'p1', label: t('priceUpTo', lang, { n: 150 }) },
-    { value: 'p2', label: t('priceBand', lang, { from: 151, to: 250 }) },
-    { value: 'p3', label: t('priceBand', lang, { from: 251, to: 400 }) },
-    { value: 'p4', label: t('priceOver', lang, { n: 400 }) },
-  ];
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -380,7 +320,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
         <Search size={14} aria-hidden className="flex-none text-fg-3" />
         <input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => filterState.setQuery(event.target.value)}
           placeholder={t('giftsSearch', lang)}
           aria-label={t('giftsSearch', lang)}
           className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
@@ -392,52 +332,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
         down. With no query the grid goes back to the foot of the tab.
       */}
       {searching ? body : null}
-      <div className="flex flex-wrap gap-1.5">
-        <FilterSelect
-          label={t('filterKeyword', lang)}
-          value={keyword}
-          options={keywordOptions}
-          onChange={setKeyword}
-          allLabel={t('filterAll', lang)}
-        />
-        <FilterSelect
-          label={t('filterTier', lang)}
-          value={tier}
-          options={(['1', '2', '3', '4', '5', 'EX'] as TierFilter[]).map((v) => ({
-            value: v,
-            label: tierLabel(v === 'EX' ? 'EX' : (Number(v) as 1 | 2 | 3 | 4 | 5)),
-          }))}
-          onChange={setTier}
-          allLabel={t('filterAll', lang)}
-        />
-        <FilterSelect
-          label={t('filterAcquisition', lang)}
-          value={acquisition}
-          options={acqOptions}
-          onChange={setAcquisition}
-          allLabel={t('filterAll', lang)}
-        />
-        <FilterSelect
-          label={t('filterSin', lang)}
-          value={sin}
-          options={sinOptions}
-          onChange={setSin}
-          allLabel={t('filterAll', lang)}
-        />
-        <FilterSelect
-          label={t('filterPrice', lang)}
-          value={price}
-          options={priceOptions}
-          onChange={setPrice}
-          allLabel={t('filterAll', lang)}
-        />
-        {filtersOn ? (
-          <Button size="sm" variant="ghost" onClick={resetFilters}>
-            <RefreshCw size={12} aria-hidden />
-            {t('filterReset', lang)}
-          </Button>
-        ) : null}
-      </div>
+      <GiftFilterBar state={filterBarState} enums={data.enums} lang={lang} />
 
       <ObserveSlots
         slots={observedGifts}
@@ -497,51 +392,19 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
               {t('giftsClear', lang)}
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5" data-testid="gift-chips">
-            {shownChips.map((id) => {
-              const gift = indexes.giftById.get(id);
-              const pinned = observedGifts.includes(id);
-              return (
-                <span
-                  key={id}
-                  data-testid="gift-chip"
-                  data-gift={id}
-                  data-pinned={pinned || undefined}
-                  data-entangled={entangledIds.has(id) || undefined}
-                  {...drag.handleFor(id)}
-                  // `none` made every chip a dead zone: with a dozen goals the panel could not be
-                  // scrolled by touching one. `pan-y` keeps scrolling; on touch the drag starts on a
-                  // long press instead (`useChipDrag`), so the callout that a long press would open
-                  // on iOS is turned off here.
-                  style={{ touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
-                  onContextMenu={(event) => event.preventDefault()}
-                  className={`inline-flex h-7 select-none items-center gap-1 rounded-full border bg-surface pl-1 pr-1 text-xs text-fg ${pinned ? 'border-ink' : 'border-line-strong'} ${
-                    drag.state.dragging === id ? 'opacity-40' : ''
-                  }`}
-                >
-                  {gift ? <GiftIcon gift={gift} size={20} judgement={judgementFor(id)} lang={lang} /> : null}
-                  <button
-                    type="button"
-                    onClick={() => openGift(id)}
-                    aria-haspopup="dialog"
-                    aria-label={t('giftDetail', lang, { name: giftName(id) })}
-                    className="hover:underline"
-                  >
-                    {giftName(id)}
-                  </button>
-                  {entangledIds.has(id) ? <Link2 size={11} aria-hidden className="text-fg-2" /> : null}
-                  <button
-                    type="button"
-                    onClick={() => removeWanted(id)}
-                    aria-label={t('removeFromSelection', lang, { name: giftName(id) })}
-                    className="text-fg-3"
-                  >
-                    <X size={11} />
-                  </button>
-                </span>
-              );
-            })}
-          </div>
+          <SelectedTiles
+            ids={shownChips}
+            indexes={indexes}
+            pinned={observedGifts}
+            entangled={entangledIds}
+            dragging={drag.state.dragging}
+            handleFor={drag.handleFor}
+            judgementOf={judgementFor}
+            giftName={giftName}
+            lang={lang}
+            onOpen={openGift}
+            onRemove={removeWanted}
+          />
         </div>
       ) : null}
 

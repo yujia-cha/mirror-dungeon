@@ -3,15 +3,19 @@
  * cannot all fit one run, the metro map in its vertical form, and the unresolved card with what
  * fails for other reasons. Condition judgements are not repeated here — the item grid's tiles and
  * the gift sheet already carry them. Wide enough for a phone page or a 336px desktop panel.
+ *
+ * A preview from the decision card scrolls the panel to the map, which is what the preview
+ * changed and sits below the card. The scroll is the panel's own container's (`SidePanel`'s
+ * `overflow-y-auto` body), not the window's — `scrollIntoView` would drag the document behind the
+ * sticky aside along with it.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Copy, Star } from 'lucide-react';
 import { conflictGroups } from '../../core/index.ts';
 import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { observationClosed } from '../lib/plan-input.ts';
 import { planToText } from '../lib/plan-text.ts';
-import { routeSourceOf, routeSourceText } from '../lib/route-source.ts';
 import { actionsFor, type UnresolvedAction } from '../lib/unresolved-actions.ts';
 import { warningText } from '../lib/unresolved-text.ts';
 import { GiftIcon } from '../components/GiftIcon.tsx';
@@ -48,6 +52,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const removeWanted = useApp((s) => s.removeWanted);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   if (!plan || !shown) {
     return (
@@ -67,14 +72,14 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   // A warning stays out of the 「참고」 list only when another surface already carries it: the app
   // always plans Hard so `parallel-requires-hard` can never apply, `condition-unmet` is what the
   // tiles' outer ring says, and `general-drop-not-guaranteed` is the general-drops card below,
-  // which also names the gifts, and `fusion-slots` is the 「하위 재료부터」 badge on the fusion card's
-  // row. `search-capped` used to be in here with nothing else saying it — it is the sentence that
-  // explains what the 「근사 결과」 badge means.
+  // which also names the gifts. `fusion-slots` is listed like any other note (`warningText` names
+  // the fusion) — the fusion card that used to carry it as a badge is gone. `search-capped` used
+  // to be in here with nothing else saying it — it is the sentence that explains what the
+  // 「근사 결과」 badge means.
   const SILENT_WARNINGS = new Set([
     'parallel-requires-hard',
     'condition-unmet',
     'general-drop-not-guaranteed',
-    'fusion-slots',
   ]);
   const otherWarnings = shown.warnings.filter((w) => !SILENT_WARNINGS.has(w.code));
   const generalDrops = shown.generalDrops;
@@ -112,6 +117,17 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     }
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
+  };
+
+  const scrollToMap = (): void => {
+    const mapEl = mapRef.current;
+    if (!mapEl) return;
+    const container = mapEl.closest<HTMLElement>('.overflow-y-auto');
+    if (container && typeof container.scrollTo === 'function') {
+      container.scrollTo({ top: mapEl.offsetTop - container.offsetTop, behavior: 'smooth' });
+    } else if (typeof mapEl.scrollIntoView === 'function') {
+      mapEl.scrollIntoView({ block: 'start' });
+    }
   };
 
   const summary = (
@@ -217,21 +233,24 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           baseGroups={baseGroups}
           ctx={ctx}
           removeWanted={removeWanted}
+          onPreview={scrollToMap}
           detailMode="sheet"
         />
       ) : null}
-      <MetroMap
-        plan={shown}
-        ctx={ctx}
-        keywordLabel={keywordLabel}
-        lastFloor={lastFloor}
-        fixedModeByFloor={indexes.fixedModeByFloor}
-        run={{ currentFloor: run.currentFloor }}
-        slots={data.rules.giftObservation.max}
-        startHeld={run.startGifts}
-        variant="vertical"
-        detailMode="sheet"
-      />
+      <div ref={mapRef} className="scroll-mt-3">
+        <MetroMap
+          plan={shown}
+          ctx={ctx}
+          keywordLabel={keywordLabel}
+          lastFloor={lastFloor}
+          fixedModeByFloor={indexes.fixedModeByFloor}
+          run={{ currentFloor: run.currentFloor }}
+          slots={data.rules.giftObservation.max}
+          startHeld={run.startGifts}
+          variant="vertical"
+          detailMode="sheet"
+        />
+      </div>
       <PackConflicts
         others={others}
         ctx={ctx}
@@ -253,58 +272,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
             : setOptions(action.patch)
         }
       />
-      {/* The fusion steps, in the planner's dependency order (a fusion that feeds another comes
-          first). Each ingredient says where the route gets it; the row's verdict is the floor from
-          which every ingredient is in hand, or 「불가」 — the unresolved card says why, so the row
-          only dims. 「하위 재료부터」: more ingredients than the shop fuses at once. */}
-      {shown.fusions.length > 0 ? (
-        <Card className="p-3.5" testId="route-fusions">
-          <SectionTitle>{t('routeFusionsTitle', lang)}</SectionTitle>
-          <ul className="mt-2 flex flex-col gap-2">
-            {shown.fusions.map((fusion) => {
-              const result = indexes.giftById.get(fusion.result);
-              const tone = fusion.unreachable ? 'text-fg-3' : 'text-fg-2';
-              return (
-                <li
-                  key={fusion.result}
-                  className={`flex flex-col gap-1 text-xs ${tone}`}
-                  data-testid="route-fusion"
-                  data-gift={fusion.result}
-                  data-unreachable={fusion.unreachable ? '' : undefined}
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {result ? <GiftIcon gift={result} size={20} lang={lang} /> : null}
-                    <span className="font-semibold">{giftName(fusion.result)}</span>
-                    <span className="font-num">
-                      {fusion.unreachable
-                        ? t('routeFusionUnreachable', lang)
-                        : t('routeFusionFrom', lang, { floor: fusion.earliestFloor })}
-                    </span>
-                    {fusion.exceedsShopSlots ? (
-                      <Badge tone="neutral">{t('routeFusionSlots', lang)}</Badge>
-                    ) : null}
-                  </div>
-                  <ul className="ml-2 flex flex-col gap-1 border-l border-line pl-2.5">
-                    {fusion.ingredients.map((giftId, i) => {
-                      const gift = indexes.giftById.get(giftId);
-                      const source = routeSourceOf(shown, giftId);
-                      return (
-                        <li key={`${giftId}-${i}`} className="flex flex-wrap items-center gap-1.5">
-                          {gift ? <GiftIcon gift={gift} size={20} lang={lang} /> : null}
-                          <span>{giftName(giftId)}</span>
-                          {source ? (
-                            <span className="text-fg-3">({routeSourceText(source, { packName, lang })})</span>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      ) : null}
       {/* The planner counts these as covered because no pack visit can improve them — the route has
           nothing left to do for them. The list is the useful part: which goals no pack is fetching. */}
       {generalDrops.length > 0 ? (

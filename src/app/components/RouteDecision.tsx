@@ -5,14 +5,16 @@
  * It sits under the summary and above the metro map, because that is the decision the rest of
  * the panel waits on. One row per option: 「전부 유지」 (the plan as it is, with what stays
  * unresolved), then each alternative the planner tried with what changes — which packs come in,
- * and whether a conflict remains. 「이 기프트 포기」 is a deselection (`removeWanted`), as
- * everywhere else in the app; 「루트 미리 보기」 only switches the map and the stage to that route
- * and keeps the decision open, which the header says while it lasts.
+ * and whether a conflict remains. The row's two buttons are symbols — ✕ 「이 기프트 포기」 is a
+ * deselection (`removeWanted`), as everywhere else in the app; the route icon 「루트 미리 보기」 only
+ * switches the map and the stage to that route and keeps the decision open, which the header says
+ * while it lasts. The badge 「그래도 n개 미해결」 shows the number alone; the sentence is its
+ * tooltip and accessible name.
  *
  * The pack-level choice (「이 팩으로 / 이 팩 포기」 on the contested floors) stays available under
  * 「팩으로 고르기」, folded — it is the same decision from the other side.
  */
-import { TriangleAlert } from 'lucide-react';
+import { Route, TriangleAlert, X } from 'lucide-react';
 import type { ConflictGroup } from '../../core/conflicts.ts';
 import type { RouteVariant } from '../../core/index.ts';
 import type { RoutePlan } from '../../core/types.ts';
@@ -24,6 +26,10 @@ import { GiftIcon } from './GiftIcon.tsx';
 import { PackConflictGroups } from './PackConflicts.tsx';
 import type { PackContext } from './PackSheet.tsx';
 import { Badge, Button, Card, Chip, Skeleton } from './ui.tsx';
+
+/** The row's two icon buttons: 28px square, the label in `aria-label` and `title`. */
+const ICON_BUTTON =
+  'inline-flex h-7 w-7 flex-none items-center justify-center rounded-sm border transition-colors';
 
 export interface RouteDecisionProps {
   /** The plan for the full goal list — the 「전부 유지」 option and the base every variant is diffed against. */
@@ -39,6 +45,8 @@ export interface RouteDecisionProps {
   baseGroups: ConflictGroup[];
   ctx: PackContext;
   removeWanted: (giftId: number) => void;
+  /** After a preview starts (not when it ends): the panel scrolls to the map that just changed. */
+  onPreview?: () => void;
   detailMode?: DetailMode;
 }
 
@@ -52,6 +60,7 @@ export function RouteDecision({
   baseGroups,
   ctx,
   removeWanted,
+  onPreview,
   detailMode = 'sheet',
 }: RouteDecisionProps) {
   const { lang, giftName, packName, indexes } = ctx;
@@ -161,8 +170,12 @@ export function RouteDecision({
                   {t('routeCovered', lang)} <span className="font-num text-fg">{covered(entry.plan)}</span>
                 </span>
                 {diff.stillUnresolved.length > 0 ? (
-                  <Badge tone="alert">
-                    {t('routeDecisionStillUnresolved', lang, { n: diff.stillUnresolved.length })}
+                  <Badge
+                    tone="alert"
+                    title={t('routeDecisionStillUnresolved', lang, { n: diff.stillUnresolved.length })}
+                    ariaLabel={t('routeDecisionStillUnresolved', lang, { n: diff.stillUnresolved.length })}
+                  >
+                    <span className="font-num">{diff.stillUnresolved.length}</span>
                   </Badge>
                 ) : null}
               </div>
@@ -174,26 +187,35 @@ export function RouteDecision({
                 </div>
               ) : null}
               <div className="flex flex-wrap gap-1.5">
-                <Button
-                  size="sm"
-                  variant="primary"
+                <button
+                  type="button"
                   onClick={() => removeWanted(dropped)}
-                  ariaLabel={`${name} ${t('routeDecisionDrop', lang)}`}
+                  aria-label={`${name} ${t('routeDecisionDrop', lang)}`}
+                  title={t('routeDecisionDrop', lang)}
+                  className={`${ICON_BUTTON} border-ink bg-ink text-ink-fg hover:opacity-90`}
                 >
-                  {t('routeDecisionDrop', lang)}
-                </Button>
+                  <X size={14} aria-hidden />
+                </button>
                 <button
                   type="button"
                   aria-pressed={shownHere}
                   aria-label={`${name} ${t('routeDecisionPreview', lang)}`}
-                  onClick={() => setVariantIndex(shownHere ? 0 : i + 1)}
-                  className={`inline-flex h-7 flex-none items-center gap-1.5 whitespace-nowrap rounded-sm border px-2.5 text-xs font-medium transition-colors ${
+                  title={t('routeDecisionPreview', lang)}
+                  onClick={() => {
+                    if (shownHere) {
+                      setVariantIndex(0);
+                      return;
+                    }
+                    setVariantIndex(i + 1);
+                    onPreview?.();
+                  }}
+                  className={`${ICON_BUTTON} ${
                     shownHere
                       ? 'border-ink bg-ink text-ink-fg'
                       : 'border-line-strong bg-surface text-fg hover:bg-surface-2'
                   }`}
                 >
-                  {t('routeDecisionPreview', lang)}
+                  <Route size={14} aria-hidden />
                 </button>
               </div>
             </li>

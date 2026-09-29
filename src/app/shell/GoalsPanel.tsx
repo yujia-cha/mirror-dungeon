@@ -2,7 +2,9 @@
  * The 「목표」 tab of the right panel: every goal the player set, as the same pressable tiles
  * the stage's entered pack and the T4 tracker use — one record (`run.giftStatus`) behind all
  * three, so a mark made anywhere shows everywhere and re-plans the route. Only the chosen gifts
- * appear; what a fusion needs is the route's business, not this list's.
+ * appear; what a fusion needs is the route's business, not this list's. Every tile here is a goal,
+ * so none carries the goal ring (`wanted`) — it would say nothing, and the tracker draws the
+ * same tiles with the plain border.
  */
 import { useState } from 'react';
 import { Star } from 'lucide-react';
@@ -67,7 +69,6 @@ export function GoalsPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
                   gift={gift}
                   size={32}
                   status={giftStatus[id] ?? null}
-                  wanted
                   judgement={judgements.get(id) ?? null}
                   title={giftTitle(id)}
                   onToggle={(next) => {

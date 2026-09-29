@@ -32,6 +32,7 @@ import {
 } from '../store.ts';
 import { planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
+import { hasDeckCondition } from '../lib/gift-filters.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { tierLabel } from '../lib/labels.ts';
 import { DeckStep } from '../steps/DeckStep.tsx';
@@ -1341,6 +1342,55 @@ describe('GiftsStep', () => {
     expect(labels).not.toContain('탄환');
   });
 
+  it('「조건」 → 조건 없음 keeps only the gifts the deck cannot fail, and opens 「기타」 to show them', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderGifts();
+    expect(screen.getByRole('button', { name: /^기타/, expanded: false })).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('조건'), 'none');
+    // Nothing in 「조건 없음」 can be active, so the answer would have sat behind the shut fold.
+    expect(screen.getByRole('button', { name: /^기타/, expanded: true })).toBeInTheDocument();
+    const shown = screen.getAllByTestId('gift-tile').map((el) => Number(el.getAttribute('data-gift')));
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown.every((id) => !hasDeckCondition(indexes.giftById.get(id)!))).toBe(true);
+    // A threshold-less keyword count is not a deck condition; a threshold is.
+    expect(shown).toContain(9842);
+    expect(shown).not.toContain(9235);
+    // The header still folds it back.
+    await user.click(screen.getByRole('button', { name: /^기타/, expanded: true }));
+    expect(screen.getByRole('button', { name: /^기타/, expanded: false })).toBeInTheDocument();
+    // And the other half is exactly the gated gifts.
+    await user.selectOptions(screen.getByLabelText('조건'), 'gated');
+    expect(screen.getByRole('button', { name: /^기타/, expanded: true })).toBeInTheDocument();
+    const gated = screen.getAllByTestId('gift-tile').map((el) => Number(el.getAttribute('data-gift')));
+    expect(gated).toContain(9235);
+    expect(gated).not.toContain(9842);
+    expect(gated.every((id) => hasDeckCondition(indexes.giftById.get(id)!))).toBe(true);
+  });
+
+  it('shows the 「모두 보기」 door on the 「기타」 header only when given somewhere to go', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    const { unmount } = renderGifts();
+    expect(screen.queryByRole('button', { name: '모두 보기' })).toBeNull();
+    unmount();
+    const onBrowse = vi.fn();
+    const { deck, deployed } = useApp.getState();
+    renderPlanned(
+      <GiftsStep
+        data={data}
+        indexes={indexes}
+        stats={statsFor(deck, deployed)}
+        lang="ko"
+        onBrowse={onBrowse}
+      />,
+    );
+    const door = screen.getByRole('button', { name: '모두 보기' });
+    // Beside the fold toggle, not inside it: pressing it must not fold 「기타」 open.
+    fireEvent.click(door);
+    expect(onBrowse).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /^기타/, expanded: false })).toBeInTheDocument();
+  });
+
   it('shows the deciding condition as a count and folds every section', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -1603,6 +1653,33 @@ describe('GiftsStep', () => {
     expect(chip).toHaveAttribute('data-gift', '9283');
     await user.click(within(chip).getByRole('button', { name: '상납된 시가 자세히' }));
     expect(screen.getByRole('dialog', { name: '상납된 시가' })).toBeInTheDocument();
+  });
+
+  it('lays the selection tray out as a grid of tiles, with a corner ✕ that unselects and a name that opens the sheet (M70)', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    for (const id of [9283, 9267]) useApp.getState().toggleWanted(id);
+    renderGifts();
+    // The tray is the same grid as the item tiles — one container, the tiles its direct children.
+    const tray = screen.getByTestId('gift-chips');
+    expect(tray.className).toContain('grid');
+    expect(tray.className).toContain('[grid-template-columns:repeat(auto-fill,minmax(64px,1fr))]');
+    const tiles = within(tray).getAllByTestId('gift-chip');
+    expect(tiles.map((el) => el.parentElement)).toEqual([tray, tray]);
+    // Each tile carries the 32px icon and a name button, like a grid tile.
+    const first = tiles[0]!;
+    expect(within(first).getByRole('img', { name: /상납된 시가/ })).toBeInTheDocument();
+    await user.click(within(first).getByRole('button', { name: '상납된 시가 자세히' }));
+    expect(screen.getByRole('dialog', { name: '상납된 시가' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    // The ✕ in the corner takes the gift out of the selection; the other tile stays.
+    await user.click(within(first).getByRole('button', { name: '상납된 시가 선택 해제' }));
+    expect(useApp.getState().wanted).toEqual([9267]);
+    expect(
+      within(screen.getByTestId('gift-chips'))
+        .getAllByTestId('gift-chip')
+        .map((el) => el.getAttribute('data-gift')),
+    ).toEqual(['9267']);
   });
 
   it('puts the search results under the box that asked for them, and back at the foot when the query goes', async () => {
@@ -2029,11 +2106,12 @@ describe('RoutePlanPanel', () => {
   };
 
   /*
-   * `plan.fusions` used to reach no screen at all: a goal that is only a fusion result was on the
-   * map as its ingredients' packs and nowhere as itself. The card is the CLI's 「조합」 block with
-   * the source of every ingredient beside it — the same `routeSourceOf` the gift sheet uses.
+   * The route panel is about packs: a fusion is said by the gift sheet (「이 루트에서는 …」) and
+   * by the item tiles' rings, not by a card of its own. The one thing the old card carried alone —
+   * 「하위 재료부터」 when a recipe outgrows the shop — is the `fusion-slots` warning, which now
+   * sits in 「참고」 like any other note, with the fusion named.
    */
-  it('lists the fusion steps with where each ingredient comes from, and keeps 조합 out of the map', () => {
+  it('draws no fusion card even when the plan fuses, and lets the 참고 card carry fusion-slots', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9249); // ← 9431 (1016, Hard 1) + 9706·9707 (1102, Hard 2-3)
     // Observation off, or the planner observes 9431 instead of visiting 1016 for it.
@@ -2042,36 +2120,23 @@ describe('RoutePlanPanel', () => {
       rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
     };
     const { unmount } = renderPlanned(<RoutePlanPanel />, noObservation);
-    const card = screen.getByTestId('route-fusions');
-    expect(card).toHaveTextContent('조합');
-    const row = within(card).getByTestId('route-fusion');
-    expect(row).toHaveAttribute('data-gift', '9249');
-    expect(row).not.toHaveAttribute('data-unreachable');
-    expect(row).toHaveTextContent('조그맣고 근사한 바이올린');
-    expect(row).toHaveTextContent('2층 이후');
-    expect(row).toHaveTextContent('부서진 바이올린(1층 저택의 부산물)');
-    expect(row).toHaveTextContent('기름때 찌든 스패너(2층 우.미.다)');
-    expect(row).toHaveTextContent('반짝이는 폐품(2층 우.미.다)');
-    expect(row).not.toHaveTextContent('하위 재료부터');
-    expect(row).not.toHaveTextContent('불가');
-    // The map is about packs only; the card is where 조합 is said.
-    expect(rows().textContent).not.toMatch(/조합|합성/);
-    expect(screen.getByTestId('route-plan').textContent).not.toMatch(/확정/);
-    unmount();
-    // With observation on, the floor-1 ingredient is observed, and the row says so.
-    renderRoute();
-    expect(within(screen.getByTestId('route-fusions')).getByTestId('route-fusion')).toHaveTextContent(
-      '부서진 바이올린(관측)',
-    );
-    expect(rows().textContent).not.toMatch(/조합|합성/);
-  });
-
-  it('draws no fusion card when nothing is fused', () => {
-    useApp.getState().setDeck(BURN_DECK, 7);
-    useApp.getState().toggleWanted(9267);
-    renderRoute();
     expect(screen.queryByTestId('route-fusions')).toBeNull();
-    expect(screen.getByTestId('route-plan').textContent).not.toMatch(/조합/);
+    expect(screen.queryByTestId('route-fusion')).toBeNull();
+    expect(screen.getByTestId('route-plan').textContent).not.toMatch(/조합|합성|확정/);
+    expect(rows().textContent).not.toMatch(/조합|합성/);
+    unmount();
+    // A shop too small for the recipe: the note names the fusion, and there is still no card.
+    const tinyShop = {
+      ...noObservation,
+      rules: { ...noObservation.rules, fusion: { ...noObservation.rules.fusion, maxShopSlots: 2 } },
+    };
+    renderPlanned(<RoutePlanPanel />, tinyShop);
+    expect(screen.queryByTestId('route-fusions')).toBeNull();
+    expect(screen.getByTestId('route-plan')).toHaveTextContent('참고');
+    expect(screen.getByTestId('route-plan')).toHaveTextContent(
+      '하위 재료부터 조합하세요. — 조그맣고 근사한 바이올린',
+    );
+    expect(screen.getByTestId('route-plan').textContent).not.toMatch(/확정/);
   });
 
   // Core fills `giftIds` on the warnings that have targets but writes the sentence without them,
@@ -2461,6 +2526,64 @@ describe('RoutePlanPanel', () => {
     expect(screen.queryByTestId('route-decision')).toBeNull();
   });
 
+  it('scrolls the panel to the map when a preview starts, and not when it ends', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
+    // The panel body is the scroll container (`SidePanel`'s `overflow-y-auto`), not the window.
+    const { deck, deployed } = useApp.getState();
+    render(
+      <div className="overflow-y-auto">
+        <PlanProvider data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko">
+          <RoutePlanPanel onOpenGifts={() => undefined} />
+        </PlanProvider>
+      </div>,
+    );
+    const container = screen.getByTestId('route-plan').closest('.overflow-y-auto') as HTMLElement;
+    const scrollTo = vi.fn();
+    Object.defineProperty(container, 'scrollTo', { configurable: true, value: scrollTo });
+    const preview = () => screen.getByRole('button', { name: '불타는 운명 루트 미리 보기' });
+    await user.click(preview());
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }));
+    // The map, not the card: the wrapper right after the decision card is the scroll target.
+    expect(screen.getByTestId('route-decision').nextElementSibling).toHaveClass('scroll-mt-3');
+    expect(screen.getByTestId('route-decision').nextElementSibling).toContainElement(rows());
+    // Turning the preview off, and 「원래대로」, do not scroll.
+    await user.click(preview());
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    await user.click(preview());
+    expect(scrollTo).toHaveBeenCalledTimes(2);
+    await user.click(screen.getByRole('button', { name: '원래대로' }));
+    expect(scrollTo).toHaveBeenCalledTimes(2);
+  });
+
+  it('says the row actions with symbols and keeps the sentence in the tooltip and name', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    // 9228 is event-only (`no-pack-path`), so it stays unresolved in every alternative and each
+    // row wears the 「그래도 1개 미해결」 badge.
+    for (const id of [...CLEAR_REWARDS, 9228]) useApp.getState().toggleWanted(id);
+    renderRoute();
+    const options = within(screen.getByTestId('variants')).getAllByTestId('route-option');
+    const first = options[1]!;
+    const drop = within(first).getByRole('button', { name: '보급형 K사 앰플 이 기프트 포기' });
+    const preview = within(first).getByRole('button', { name: '보급형 K사 앰플 루트 미리 보기' });
+    for (const button of [drop, preview]) {
+      expect(button).toHaveTextContent('');
+      expect(button.querySelector('svg')).not.toBeNull();
+      expect(button).toHaveClass('h-7', 'w-7');
+    }
+    expect(drop).toHaveAttribute('title', '이 기프트 포기');
+    expect(preview).toHaveAttribute('title', '루트 미리 보기');
+    expect(first.textContent).not.toMatch(/이 기프트 포기|루트 미리 보기/);
+    // A row that still leaves something unresolved says the count alone; the sentence is its
+    // tooltip and accessible name (the ⚠ is the alert badge's own icon).
+    const badge = within(first).getByLabelText('그래도 1개 미해결');
+    expect(badge).toHaveAttribute('title', '그래도 1개 미해결');
+    expect(badge).toHaveTextContent(/^1$/);
+    expect(first.textContent).not.toMatch(/그래도|미해결/);
+  });
+
   it('draws a placeholder row while the alternatives are still being computed', async () => {
     // A worker that answers the route and never sends the alternatives: the moment between the
     // two answers, which the inline fallback the other tests run on cannot show.
@@ -2719,7 +2842,7 @@ describe('RoutePlanPanel', () => {
     expect(planToText(plan, giftName, packName, () => '', 'ko')).not.toContain('포기 후보');
   });
 
-  it('copies the goals first and the fusion steps between the general drops and the given-up packs', () => {
+  it('copies the goals first, no 조합 block, and the fusion-slots note when the shop is too small', () => {
     const giftName = (id: number) => indexes.giftById.get(id)?.name.ko ?? '';
     const packName = (id: number) => indexes.packById.get(id)?.name.ko ?? '';
     const noObservation = {
@@ -2745,20 +2868,32 @@ describe('RoutePlanPanel', () => {
     // The goals as chosen, first of all — a result-only goal is in the text even though no floor
     // names it.
     expect(lines[0]).toBe('목표: 조그맣고 근사한 바이올린, 진혼');
-    // The CLI's block, in the planner's dependency order: the sub-fusion before what eats it.
-    const at = lines.indexOf('조합');
-    expect(at).toBeGreaterThan(
-      lines.indexOf('범용 드랍: 재에서 재로, 먼지에서 먼지로, 융해된 파라핀, 만 년 동안 끓는 솥'),
-    );
-    expect(lines.slice(at + 1, at + 4)).toEqual([
-      '  요리 비법 전서 ← 융해된 파라핀 + 만 년 동안 끓는 솥 (1층 이후)',
-      '  진혼 ← 재에서 재로 + 먼지에서 먼지로 + 요리 비법 전서 (1층 이후)',
-      '  조그맣고 근사한 바이올린 ← 부서진 바이올린 + 기름때 찌든 스패너 + 반짝이는 폐품 (2층 이후)',
-    ]);
+    // The general drops are listed; the fusion steps are not — the text says what the panel says.
+    expect(lines).toContain('범용 드랍: 재에서 재로, 먼지에서 먼지로, 융해된 파라핀, 만 년 동안 끓는 솥');
+    expect(lines).not.toContain('조합');
+    expect(text).not.toMatch(/←/);
     expect(text.trim().split('\n').at(-1)).toBe('포기한 팩: 화왕지절');
     expect(text).not.toMatch(/확정|불가/);
     // Without the goals the text starts where it used to.
     expect(planToText(plan, giftName, packName, () => '', 'ko').split('\n')[0]).toMatch(/^시작: /);
+    // A shop too small for a recipe: `fusion-slots` is a 참고 line like any other, fusion named.
+    const tinyShop = planRoute(
+      {
+        deck: BURN_DECK,
+        wanted: wanted.map((giftId) => ({ giftId, required: false })),
+        options: { ...defaultOptions(), lastFloor: 15, hardFromFloor: 1, deployed: BURN_DECK.slice(0, 7) },
+      },
+      {
+        ...noObservation,
+        rules: { ...noObservation.rules, fusion: { ...noObservation.rules.fusion, maxShopSlots: 2 } },
+      },
+      indexes,
+    );
+    expect(tinyShop.warnings.map((w) => w.code)).toContain('fusion-slots');
+    const noted = planToText(tinyShop, giftName, packName, () => '', 'ko');
+    expect(noted).toContain('참고');
+    expect(noted).toMatch(/하위 재료부터 조합하세요\. — .*조그맣고 근사한 바이올린/);
+    expect(noted).not.toContain('조합\n');
   });
 
   it('marks an unresolved goal in the goals line and names the gift a note is about', () => {
@@ -3084,6 +3219,72 @@ describe('AppShell', () => {
     fireEvent.pointerMove(window, { pointerId: 2, clientX: 850 });
     expect(useApp.getState().ui.rightWidth).toBe(386);
     fireEvent.pointerUp(window, { pointerId: 2, clientX: 850 });
+  });
+
+  it('opens 「모두 보기」 in the stage on a desktop, picks a goal there, and closes by ✕ and by Escape', async () => {
+    stubMatchMedia(true);
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderShell();
+    expect(screen.queryByTestId('gift-browser')).toBeNull();
+    await user.click(screen.getByRole('button', { name: '모두 보기' }));
+    const browser = screen.getByTestId('gift-browser');
+    // In the stage's column, between the panels, which both stay where they are.
+    expect(document.getElementById('stage')).toContainElement(browser);
+    expect(screen.getByTestId('panel-left')).toBeInTheDocument();
+    expect(screen.getByTestId('panel-right')).toBeInTheDocument();
+    // The covered stage takes no focus and shows nothing through.
+    expect(screen.getByTestId('stage-body')).toHaveAttribute('inert');
+    expect(screen.getByTestId('stage-body')).toHaveClass('hidden');
+    // One grid, no 활성 / 기타 fold, and the box takes focus.
+    expect(within(browser).queryByRole('button', { name: /^기타/ })).toBeNull();
+    expect(within(browser).getByRole('textbox', { name: '기프트 검색' })).toHaveFocus();
+    expect(within(browser).getAllByTestId('gift-tile').length).toBeGreaterThan(100);
+    await user.type(within(browser).getByRole('textbox', { name: '기프트 검색' }), '진혼');
+    const shown = within(browser)
+      .getAllByTestId('gift-tile')
+      .map((el) => el.getAttribute('data-gift'));
+    expect(shown[0]).toBe('9088');
+    await user.click(within(browser).getByRole('button', { name: '진혼' }));
+    expect(useApp.getState().wanted).toEqual([9088]);
+    expect(within(browser).getByText('선택 1')).toBeInTheDocument();
+    // The 「조건」 filter is here too: 진혼 asks the deck for 화상 skills, so it is a deck condition.
+    await user.selectOptions(within(browser).getByLabelText('조건'), 'none');
+    expect(within(browser).queryAllByTestId('gift-tile')).toHaveLength(0);
+    expect(within(browser).getByText('일치하는 기프트 없음')).toBeInTheDocument();
+    await user.selectOptions(within(browser).getByLabelText('조건'), 'gated');
+    expect(within(browser).getAllByTestId('gift-tile')[0]).toHaveAttribute('data-gift', '9088');
+    await user.click(within(browser).getByRole('button', { name: '닫기' }));
+    expect(screen.queryByTestId('gift-browser')).toBeNull();
+    expect(screen.getByTestId('stage-body')).not.toHaveAttribute('inert');
+    expect(screen.getByTestId('run-stage')).toBeInTheDocument();
+    // Reopened, Escape closes it; the goal picked in it stayed.
+    await user.click(screen.getByRole('button', { name: '모두 보기' }));
+    expect(screen.getByTestId('gift-browser')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('gift-browser')).toBeNull();
+    expect(useApp.getState().wanted).toEqual([9088]);
+  });
+
+  it('opens 「모두 보기」 as its own page on a phone, and its ← returns to the items page', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderShell();
+    await user.click(screen.getByRole('button', { name: '덱' }));
+    const page = screen.getByTestId('page-left');
+    await user.click(within(page).getByRole('button', { name: '모두 보기' }));
+    // The items page steps aside for the browser page; the shell stays inert behind it.
+    expect(screen.queryByTestId('page-left')).toBeNull();
+    const browser = screen.getByTestId('gift-browser');
+    expect(browser.parentElement).toBe(document.body);
+    expect(screen.getByTestId('app-shell')).toHaveAttribute('inert');
+    expect(within(browser).getByRole('heading', { level: 1 })).toHaveTextContent('모든 기프트');
+    expect(within(browser).queryByRole('button', { name: '닫기' })).toBeNull();
+    await user.click(within(browser).getByRole('button', { name: '뒤로' }));
+    expect(screen.queryByTestId('gift-browser')).toBeNull();
+    expect(screen.getByTestId('page-left')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '아이템', selected: true })).toBeInTheDocument();
+    expect(screen.getByTestId('app-shell')).toHaveAttribute('inert');
   });
 });
 
@@ -4037,8 +4238,11 @@ describe('GoalsPanel', () => {
     const rows = within(goals()).getAllByTestId('route-goal');
     expect(rows.map((r) => r.getAttribute('data-gift'))).toEqual(['9267', '9283', '9410']);
     expect(goals()).toHaveTextContent('0/3');
-    expect(goalTile(9267)).toHaveAttribute('data-wanted');
-    expect(goalTile(9283)).toHaveAttribute('data-wanted');
+    // Every tile here is a goal, so none wears the goal ring — the tracker's plain border instead.
+    expect(goalTile(9267)).not.toHaveAttribute('data-wanted');
+    expect(goalTile(9283)).not.toHaveAttribute('data-wanted');
+    expect(goalTile(9267)).toHaveClass('border-line');
+    expect(goalTile(9267)).not.toHaveClass('ring-ink');
     // Only the chosen gifts: a fusion goal does not drag its ingredients in.
     expect(
       within(goals())

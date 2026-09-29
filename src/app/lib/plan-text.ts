@@ -107,31 +107,15 @@ export function planToText(
     lines.push('');
     lines.push(`${t('routeGeneralTitle', lang)}: ${plan.generalDrops.map(name).join(', ')}`);
   }
-  // The fusion steps in the planner's dependency order, the CLI's shape: 「결과 ← 재료 + 재료 (N층 이후)」.
-  if (plan.fusions.length > 0) {
-    lines.push('');
-    lines.push(t('routeFusionsTitle', lang));
-    for (const fusion of plan.fusions) {
-      const when = fusion.unreachable
-        ? t('routeFusionUnreachable', lang)
-        : t('routeFusionFrom', lang, { floor: fusion.earliestFloor });
-      const slots = fusion.exceedsShopSlots ? ` · ${t('routeFusionSlots', lang)}` : '';
-      lines.push(`  ${name(fusion.result)} ← ${fusion.ingredients.map(name).join(' + ')} (${when}${slots})`);
-    }
-  }
   if (marks.bannedPacks && marks.bannedPacks.length > 0) {
     lines.push('');
     lines.push(`${t('packBanned', lang)}: ${marks.bannedPacks.map(packName).join(', ')}`);
   }
   // Same rule as the panel: a warning another line already carries stays out. The general-drop
-  // one is deliberately dropped everywhere — the 「범용 드랍」 list is what the route has to say —
-  // and `fusion-slots` is the 「하위 재료부터」 mark on the fusion row.
-  const CARRIED = new Set([
-    'parallel-requires-hard',
-    'condition-unmet',
-    'general-drop-not-guaranteed',
-    'fusion-slots',
-  ]);
+  // one is deliberately dropped everywhere — the 「범용 드랍」 list is what the route has to say.
+  // `fusion-slots` is a note like any other: nothing else in the text says it, and `warningText`
+  // names the fusion it is about.
+  const CARRIED = new Set(['parallel-requires-hard', 'condition-unmet', 'general-drop-not-guaranteed']);
   const notes = plan.warnings.filter((w) => !CARRIED.has(w.code));
   if (notes.length > 0) {
     lines.push('');

@@ -128,3 +128,24 @@ test('a sinner picker opened from the right column stays inside the panel (M63)'
     }
   }
 });
+
+test('「모두 보기」 opens the gift browser over the stage, and a tile picked there is a goal (M71)', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await page.getByRole('tab', { name: '아이템' }).click();
+  await page.getByRole('button', { name: '모두 보기' }).click();
+  const browser = page.getByTestId('gift-browser');
+  await expect(browser).toBeVisible();
+  // It takes the stage's column: the panels stay on either side, and the stage is not on screen.
+  await expect(page.getByTestId('panel-left')).toBeVisible();
+  await expect(page.getByTestId('panel-right')).toBeVisible();
+  await expect(page.getByTestId('run-stage')).toBeHidden();
+  // Two search boxes exist now (the tab's and the browser's); this one is the browser's.
+  await browser.getByRole('textbox', { name: '기프트 검색' }).fill('진혼');
+  await browser.getByRole('button', { name: '진혼', exact: true }).click();
+  await expect(page.getByTestId('gift-chip')).toHaveCount(1);
+  await browser.getByRole('button', { name: '닫기' }).click();
+  await expect(browser).toHaveCount(0);
+  await expect(page.getByTestId('run-stage')).toBeVisible();
+});

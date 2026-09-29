@@ -144,6 +144,11 @@ export const STRINGS = {
   giftsNoMatch: { ko: '일치하는 기프트 없음', en: 'No gift matches' },
   giftsSelected: { ko: '선택 {n}', en: 'Selected {n}' },
   giftsClear: { ko: '선택 비우기', en: 'Clear selection' },
+  // The 「모두 보기」 browser: every gift in one grid, over the stage on a desktop and as its own
+  // page on a phone.
+  giftsBrowseAll: { ko: '모두 보기', en: 'Browse all' },
+  giftsBrowseTitle: { ko: '모든 기프트', en: 'All gifts' },
+  giftsBrowseClose: { ko: '닫기', en: 'Close' },
   giftsSort: { ko: '정렬', en: 'Sort' },
   giftsSortPicked: { ko: '선택 순서', en: 'As picked' },
   giftsSortName: { ko: '이름', en: 'Name' },
@@ -161,6 +166,11 @@ export const STRINGS = {
   observeSlotNone: { ko: '관측할 수 있는 선택 기프트가 없습니다', en: 'No selected gift can be observed' },
   filterReset: { ko: '필터 초기화', en: 'Reset filters' },
   filterKeyword: { ko: '키워드', en: 'Keyword' },
+  // 「조건」 asks whether the deck decides the gift (`hasDeckCondition`): a threshold keyword count
+  // or a faction count. Effect scaling and full resonance are not deck conditions.
+  filterCondition: { ko: '조건', en: 'Condition' },
+  condNone: { ko: '조건 없음', en: 'No condition' },
+  condGated: { ko: '덱 조건', en: 'Deck condition' },
   filterTier: { ko: '등급', en: 'Tier' },
   filterAcquisition: { ko: '획득', en: 'Source' },
   filterSin: { ko: '죄악', en: 'Sin' },
@@ -283,13 +293,6 @@ export const STRINGS = {
   /** The skip link's own text. 「무대」 is what the centre column is called everywhere else. */
   skipToStage: { ko: '무대로 건너뛰기', en: 'Skip to the stage' },
   routeGeneralTitle: { ko: '범용 드랍', en: 'General drops' },
-  // The fusion card and the copied plan's 「조합」 block: one row per fusion step, in the planner's
-  // dependency order. 「불가」 is the row's whole verdict — the unresolved card says why.
-  routeFusionsTitle: { ko: '조합', en: 'Fusions' },
-  routeFusionFrom: { ko: '{floor}층 이후', en: 'from floor {floor}' },
-  routeFusionUnreachable: { ko: '불가', en: 'not possible' },
-  /** More ingredients than the shop fuses at once: fuse the sub-recipes first. */
-  routeFusionSlots: { ko: '하위 재료부터', en: 'sub-ingredients first' },
   /** The copied plan's first line: every goal, the unresolved ones marked. */
   routeGoalsLabel: { ko: '목표', en: 'Goals' },
   // Where this route gets one gift (`routeSourceText`): a floor and pack, the observation, the
