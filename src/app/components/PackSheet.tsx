@@ -9,7 +9,7 @@ import type { ThemePack } from '../../core/schema.ts';
 import type { GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
-import type { GiftStatus } from '../lib/plan-input.ts';
+import { observationClosed, type GiftStatus } from '../lib/plan-input.ts';
 import { bandMode } from '../lib/stage.ts';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
@@ -205,7 +205,7 @@ function GiftRow({ giftId, exclusive, ctx }: { giftId: number; exclusive: boolea
     wanted &&
     ctx.onToggleObserved !== undefined &&
     ctx.observable(giftId) &&
-    (ctx.run?.currentFloor ?? 1) === 1;
+    !observationClosed(ctx.run ?? { currentFloor: 1 });
   const condition = ctx.giftTitle(giftId);
   const status = ctx.run?.giftStatus(giftId) ?? null;
   return (
@@ -318,9 +318,12 @@ export function PackSheetBody({ packId, ctx }: { packId: number; ctx: PackContex
   const pack = ctx.indexes.packById.get(packId);
   if (!pack) return null;
   const exclusives = new Set(pack.exclusiveGifts);
+  // Pool gifts are listed when the route collects them — a fusion goal's ingredients included, so
+  // the pack that drops one says so here as it does on the stage. The rows' toggles and badges
+  // still speak of the chosen goals only.
   const gifts = [
-    ...new Set([...pack.exclusiveGifts, ...pack.giftPool.filter((id) => ctx.wanted.has(id))]),
-  ].sort((a, b) => Number(ctx.wanted.has(b)) - Number(ctx.wanted.has(a)) || a - b);
+    ...new Set([...pack.exclusiveGifts, ...pack.giftPool.filter((id) => ctx.needed.has(id))]),
+  ].sort((a, b) => Number(ctx.needed.has(b)) - Number(ctx.needed.has(a)) || a - b);
   return (
     <div className="flex flex-col gap-2.5" data-testid="pack-sheet-body">
       <div className="flex items-start gap-3">

@@ -1,0 +1,227 @@
+/**
+ * The 「포기 결정」 card: the one place for the choice the planner cannot make for the user — which
+ * gift to give up when the wanted gifts cannot all fit one run (`pack-conflict`).
+ *
+ * It sits under the summary and above the metro map, because that is the decision the rest of
+ * the panel waits on. One row per option: 「전부 유지」 (the plan as it is, with what stays
+ * unresolved), then each alternative the planner tried with what changes — which packs come in,
+ * and whether a conflict remains. 「이 기프트 포기」 is a deselection (`removeWanted`), as
+ * everywhere else in the app; 「루트 미리 보기」 only switches the map and the stage to that route
+ * and keeps the decision open, which the header says while it lasts.
+ *
+ * The pack-level choice (「이 팩으로 / 이 팩 포기」 on the contested floors) stays available under
+ * 「팩으로 고르기」, folded — it is the same decision from the other side.
+ */
+import { TriangleAlert } from 'lucide-react';
+import type { ConflictGroup } from '../../core/conflicts.ts';
+import type { RouteVariant } from '../../core/index.ts';
+import type { RoutePlan } from '../../core/types.ts';
+import { withJosa } from '../format.ts';
+import { t } from '../i18n.ts';
+import { variantDiff } from '../lib/variants.ts';
+import type { DetailMode } from './BlockDetail.tsx';
+import { GiftIcon } from './GiftIcon.tsx';
+import { PackConflictGroups } from './PackConflicts.tsx';
+import type { PackContext } from './PackSheet.tsx';
+import { Badge, Button, Card, Chip, Skeleton } from './ui.tsx';
+
+export interface RouteDecisionProps {
+  /** The plan for the full goal list — the 「전부 유지」 option and the base every variant is diffed against. */
+  plan: RoutePlan;
+  variants: RouteVariant[];
+  /** 0 for `plan`, `i + 1` for `variants[i]`. */
+  variantIndex: number;
+  setVariantIndex: (index: number) => void;
+  variantsPending: boolean;
+  /** Contested floors of the plan on show, for the 「팩으로 고르기」 fold. */
+  groups: ConflictGroup[];
+  /** Contested floors of `plan`, for the header chips. */
+  baseGroups: ConflictGroup[];
+  ctx: PackContext;
+  removeWanted: (giftId: number) => void;
+  detailMode?: DetailMode;
+}
+
+export function RouteDecision({
+  plan,
+  variants,
+  variantIndex,
+  setVariantIndex,
+  variantsPending,
+  groups,
+  baseGroups,
+  ctx,
+  removeWanted,
+  detailMode = 'sheet',
+}: RouteDecisionProps) {
+  const { lang, giftName, packName, indexes } = ctx;
+  const conflicting = [
+    ...new Set(plan.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId)),
+  ];
+  const unresolved = [...new Set(plan.unresolved.map((u) => u.giftId))];
+  const previewed = variantIndex > 0 ? variants[variantIndex - 1] : undefined;
+  const previewedName = previewed ? previewed.dropped.map(giftName).join(', ') : '';
+  const covered = (p: RoutePlan): string => `${p.stats.coveredWanted}/${p.stats.totalWanted}`;
+
+  return (
+    <Card variant="strong" className="overflow-visible" testId="route-decision">
+      <div className="flex flex-col gap-1.5 border-b border-line px-3 py-2">
+        <div className="flex items-start gap-1.5">
+          <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden />
+          <h2 className="text-sm font-semibold">
+            {t('routeDecisionTitle', lang, { names: conflicting.map(giftName).join(' · ') })}
+          </h2>
+        </div>
+        {baseGroups.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {baseGroups.map((group) => {
+              const from = group.floors[0]!;
+              const to = group.floors[group.floors.length - 1]!;
+              return (
+                <Chip key={from} on>
+                  {from === to
+                    ? t('stageFloor', lang, { floor: from })
+                    : t('routeFloorRange', lang, { from, to })}
+                </Chip>
+              );
+            })}
+          </div>
+        ) : null}
+        {/* Always in the tree so the announcement lands when a preview starts or ends. */}
+        <div
+          aria-live="polite"
+          className={previewed ? 'flex flex-wrap items-center gap-1.5 pt-1' : undefined}
+          data-testid="route-decision-preview"
+          data-dropped={previewed?.dropped.join(',')}
+        >
+          {previewed ? (
+            <>
+              <span className="text-xs font-medium">
+                {t('routeDecisionPreviewing', lang, { name: previewedName })}
+              </span>
+              <span className="ml-auto flex gap-1.5">
+                <Button size="sm" variant="primary" onClick={() => removeWanted(previewed.dropped[0]!)}>
+                  {t('routeDecisionConfirm', lang)}
+                </Button>
+                <Button size="sm" onClick={() => setVariantIndex(0)}>
+                  {t('routeDecisionBack', lang)}
+                </Button>
+              </span>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <ul className="flex flex-col" data-testid={variants.length > 0 ? 'variants' : undefined}>
+        <li
+          className="flex flex-col gap-1 border-b border-line px-3 py-2"
+          data-testid="route-option"
+          data-option="all"
+          aria-current={variantIndex === 0 ? 'true' : undefined}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">{t('routeDecisionKeep', lang)}</span>
+            <span className="text-xs text-fg-3">
+              {t('routeCovered', lang)} <span className="font-num text-fg">{covered(plan)}</span>
+            </span>
+          </div>
+          {unresolved.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {unresolved.map((giftId) => (
+                <Chip key={giftId}>{giftName(giftId)}</Chip>
+              ))}
+            </div>
+          ) : null}
+        </li>
+        {variants.map((entry, i) => {
+          const dropped = entry.dropped[0]!;
+          const gift = indexes.giftById.get(dropped);
+          const name = giftName(dropped);
+          const diff = variantDiff(plan, entry.plan);
+          const shownHere = variantIndex === i + 1;
+          return (
+            <li
+              key={dropped}
+              className="flex flex-col gap-1.5 border-b border-line px-3 py-2 last:border-b-0"
+              data-testid="route-option"
+              data-option={dropped}
+              aria-current={shownHere ? 'true' : undefined}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {gift ? (
+                  <GiftIcon
+                    gift={gift}
+                    size={20}
+                    judgement={ctx.judgements.get(dropped) ?? null}
+                    lang={lang}
+                  />
+                ) : null}
+                <span className="text-sm font-medium">{name}</span>
+                <span className="text-xs text-fg-3">
+                  {t('routeCovered', lang)} <span className="font-num text-fg">{covered(entry.plan)}</span>
+                </span>
+                {diff.stillUnresolved.length > 0 ? (
+                  <Badge tone="alert">
+                    {t('routeDecisionStillUnresolved', lang, { n: diff.stillUnresolved.length })}
+                  </Badge>
+                ) : null}
+              </div>
+              {diff.added.length > 0 ? (
+                <div className="text-xs text-fg-2">
+                  {t('routeDecisionPacksChange', lang, {
+                    packs: withJosa(diff.added.map((a) => packName(a.packId)).join(', '), '이/가', lang),
+                  })}
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => removeWanted(dropped)}
+                  ariaLabel={`${name} ${t('routeDecisionDrop', lang)}`}
+                >
+                  {t('routeDecisionDrop', lang)}
+                </Button>
+                <button
+                  type="button"
+                  aria-pressed={shownHere}
+                  aria-label={`${name} ${t('routeDecisionPreview', lang)}`}
+                  onClick={() => setVariantIndex(shownHere ? 0 : i + 1)}
+                  className={`inline-flex h-7 flex-none items-center gap-1.5 whitespace-nowrap rounded-sm border px-2.5 text-xs font-medium transition-colors ${
+                    shownHere
+                      ? 'border-ink bg-ink text-ink-fg'
+                      : 'border-line-strong bg-surface text-fg hover:bg-surface-2'
+                  }`}
+                >
+                  {t('routeDecisionPreview', lang)}
+                </button>
+              </div>
+            </li>
+          );
+        })}
+        {variantsPending ? (
+          <li
+            className="flex items-center gap-2 px-3 py-2 text-xs text-fg-3"
+            data-testid="route-decision-pending"
+            role="status"
+          >
+            <Skeleton className="h-5 w-5 flex-none rounded-sm" />
+            <span>{t('routeDecisionPending', lang)}</span>
+            <Skeleton className="h-2.5 flex-1" />
+          </li>
+        ) : null}
+      </ul>
+
+      {groups.length > 0 ? (
+        <details className="border-t border-line px-3 py-2" data-testid="route-decision-packs">
+          <summary className="cursor-pointer text-xs font-medium text-fg-2">
+            {t('routeDecisionPackPick', lang)} · {t('routeConflicts', lang, { n: groups.length })}
+          </summary>
+          <div className="-mx-3 mt-1.5">
+            <PackConflictGroups groups={groups} ctx={ctx} detailMode={detailMode} />
+          </div>
+        </details>
+      ) : null}
+    </Card>
+  );
+}

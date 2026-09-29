@@ -45,6 +45,7 @@ export const UNRESOLVED_LABEL: Record<UnresolvedReason, StringKey> = {
   'fusion-ingredient-unresolved': 'unresolvedIngredient',
   'not-obtainable': 'unresolvedNotObtainable',
   'chance-only': 'unresolvedChance',
+  'no-pack-path': 'unresolvedNoPackPath',
   'pack-banned': 'unresolvedBanned',
   'ingredient-shared': 'unresolvedShared',
   failed: 'unresolvedFailed',

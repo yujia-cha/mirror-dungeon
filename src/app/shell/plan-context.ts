@@ -35,6 +35,11 @@ export interface PlanState {
    */
   planPending: boolean;
   variants: RouteVariant[];
+  /**
+   * True while the route on show is still waiting for its alternatives (they follow the route by
+   * about a second). The decision card draws a placeholder row so the options do not pop in.
+   */
+  variantsPending: boolean;
   variantIndex: number;
   setVariantIndex: (index: number) => void;
   variant: RouteVariant | undefined;
@@ -57,6 +62,17 @@ export interface PlanState {
   keywordLabel: (id: Keyword) => string;
   ctx: PackContext;
   exclusivesOf: (packId: number) => number[];
+  /**
+   * What the route expects a pack entered on `floor` to hand over: the plan's pickups there
+   * (ingredients and pool pickups included) plus the pack's exclusives the route collects. Leaving
+   * the floor fails whatever of this the player never marked.
+   */
+  expectedIn: (floor: number, packId: number) => number[];
+  /**
+   * The gifts a recorded entry answers for — `expectedIn` on its floor, the pack's exclusives and a
+   * pool pickup already missed here: what the entered pack tiles, and what `leave` clears.
+   */
+  entryGiftsOf: (packId: number) => number[];
   /** What the run starts with: the observed gifts and the starting gift, collected on leaving floor 1. */
   startGifts: number[];
   stageMode: StageMode;
@@ -70,8 +86,9 @@ export interface PlanState {
    */
   goTo: (floor: number) => void;
   /**
-   * Go back from an entered pack: the entry and every status recorded for that pack's own drops
-   * are cleared; when that reopens floor 1, the start-of-run gifts recorded on leaving it go too.
+   * Go back from an entered pack: the entry and every status recorded for what it answered for
+   * (`entryGiftsOf`) are cleared; when that reopens floor 1, the start-of-run gifts recorded on
+   * leaving it go too.
    */
   leave: (packId: number) => void;
   /** Open the gift detail sheet (the same one the items tab uses) from anywhere in the shell. */

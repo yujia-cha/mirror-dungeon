@@ -11,11 +11,19 @@ export interface ExpandResult {
   unresolved: Unresolved[];
 }
 
-/** Gifts the run already settled: in hand, or missed for good. */
+/**
+ * What the run has settled so far. `owned` gifts are in hand. `failed` gifts were not marked as
+ * obtained before the player left the floor of the pack that was to supply them — a miss on that
+ * pack, not on the run: any other pack on a floor still ahead may supply them again. `visited` is
+ * the packs taken on played floors, which cannot be entered a second time.
+ */
 export interface RunState {
   owned: Set<number>;
   failed: Set<number>;
+  visited: Set<number>;
 }
+
+const EMPTY_RUN: RunState = { owned: new Set(), failed: new Set(), visited: new Set() };
 
 /**
  * How hard a gift is to obtain, as a rough count of the opportunities to pick it up. Lower is
@@ -97,7 +105,7 @@ export function expandRequirements(
   indexes: GameIndexes,
   stats: DeckStats,
   maxShopSlots: number,
-  run: RunState = { owned: new Set(), failed: new Set() },
+  run: RunState = EMPTY_RUN,
 ): ExpandResult {
   const requirements = new Map<string, Requirement>();
   const fusions: { result: number; ingredients: number[] }[] = [];
@@ -133,23 +141,34 @@ export function expandRequirements(
       return;
     }
 
-    // Run progress settles a gift before any routing: in hand, or missed for good. A fusion result
-    // in hand needs none of its ingredients; a missed one is reported, not re-planned.
+    const isFusion = gift.acquisition.kind === 'fusionOnly' || Boolean(gift.fusion);
+
+    // Run progress settles a gift before any routing. One in hand needs no route (a fusion result
+    // in hand needs none of its ingredients). One missed on a played floor is only lost when no
+    // pack the player has not yet taken carries it: a pack-bound gift whose every pack was visited,
+    // or a fusion result (never re-planned). Anything else is routed again from the floors ahead —
+    // the search never re-enters a visited pack, so a second copy has to come from elsewhere.
     if (run.owned.has(giftId)) {
       addRequirement(giftId, required, neededFor, 'owned');
       return;
     }
     if (run.failed.has(giftId)) {
-      addRequirement(giftId, required, neededFor, 'unresolved');
-      unresolved.push({
-        giftId,
-        reason: 'failed',
-        detail: { ko: '이번 런에서 수집 실패로 표시한 기프트입니다.', en: 'Marked as missed in this run.' },
-      });
-      return;
+      const packBound = gift.acquisition.exclusiveTo.length > 0 || gift.acquisition.clearRewardOf !== null;
+      const elsewhere = (indexes.packsByGift.get(giftId) ?? []).some((packId) => !run.visited.has(packId));
+      if (isFusion || (packBound && !elsewhere)) {
+        addRequirement(giftId, required, neededFor, 'unresolved');
+        unresolved.push({
+          giftId,
+          reason: 'failed',
+          detail: {
+            ko: '층을 떠날 때까지 획득으로 표시하지 않아 이 런에서는 얻을 수 없는 기프트입니다.',
+            en: 'Not marked as obtained before leaving its floor, so it cannot be had this run.',
+          },
+        });
+        return;
+      }
     }
 
-    const isFusion = gift.acquisition.kind === 'fusionOnly' || Boolean(gift.fusion);
     if (!isFusion) {
       addRequirement(giftId, required, neededFor);
       return;

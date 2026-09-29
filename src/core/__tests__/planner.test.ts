@@ -890,6 +890,40 @@ describe('clear rewards and hidden battles', () => {
     ]);
   });
 
+  it('reports event and material gifts as having no pack path, not as out of range', () => {
+    // 9227 (귀기 서린 환도) comes from a choice event and 9991 (어두운 잔영) is a fusion/sale
+    // material. Neither sits in any pack pool, so the search would otherwise blame the floor range.
+    expect(indexes.giftById.get(9227)!.acquisition).toMatchObject({ kind: 'event', packs: [] });
+    expect(indexes.giftById.get(9991)!.acquisition).toMatchObject({ kind: 'material', packs: [] });
+    expect(indexes.packsByGift.get(9227) ?? []).toEqual([]);
+    expect(indexes.packsByGift.get(9991) ?? []).toEqual([]);
+
+    const result = plan({ wanted: want(9227, 9991), options: options({ lastFloor: 15 }) });
+    expect(result.unresolved).toEqual([
+      {
+        giftId: 9227,
+        reason: 'no-pack-path',
+        detail: {
+          ko: '선택지·이벤트로만 얻는 기프트라 팩 루트로 계획할 수 없습니다.',
+          en: 'Only obtained through a choice event, so no pack route can plan for it.',
+        },
+      },
+      {
+        giftId: 9991,
+        reason: 'no-pack-path',
+        detail: {
+          ko: '잔영은 조합·판매용 재료라 팩 루트로 계획할 수 없습니다.',
+          en: 'A fusion/sale material; no pack route can plan for it.',
+        },
+      },
+    ]);
+    expect(result.unresolved.filter((u) => u.giftId === 9227)).toHaveLength(1);
+    expect(result.unresolved.filter((u) => u.giftId === 9991)).toHaveLength(1);
+    expect(result.stats.coveredWanted).toBe(0);
+    expect(result.stats.requiredPacks).toBe(0);
+    expect(result.floors.every((f) => f.packId === null)).toBe(true);
+  });
+
   it('never plans for a hidden-battle gift', () => {
     const result = plan({ wanted: want(9256), options: options({ lastFloor: 15 }) });
     expect(result.unresolved).toEqual([expect.objectContaining({ giftId: 9256, reason: 'chance-only' })]);
@@ -1172,21 +1206,161 @@ describe('run progress', () => {
     expect(plan.stats).toMatchObject({ requiredPacks: 0, coveredWanted: 1 });
   });
 
-  it('reports a missed ingredient as failed and drops the rest only when the result alone is the goal', () => {
-    const asGoals = violin({ unobtainableGifts: [9707] });
+  // 기쁜 봉제인형(9765) = 털방울 모자(9709) + 거대한 선물 보따리(9710) + 슬픈 봉제인형(9711), all three
+  // carried by 크리스마스 파티 1103 (Hard 3-4) and its 복각 1113 (Hard 4-5, 평행중첩 6-10).
+  const plush = (extra: Partial<PlanOptions>) =>
+    planWithout({
+      wanted: [{ giftId: 9765, required: true }],
+      options: options({ lastFloor: 15, hardFromFloor: 1, ...extra }),
+    });
+  const FAILED_KO = '층을 떠날 때까지 획득으로 표시하지 않아 이 런에서는 얻을 수 없는 기프트입니다.';
+
+  it('routes a gift missed on a visited pack again from a later pack, and the fusion waits for it', () => {
+    const plan = plush({
+      currentFloor: 4,
+      pinnedPacks: { 3: 1103 },
+      ownedGifts: [9710, 9711],
+      unobtainableGifts: [9709],
+    });
+    const third = plan.floors.find((f) => f.floor === 3)!;
+    expect(third).toMatchObject({ passed: true, packId: 1103 });
+    expect(third.pickups).toEqual([]);
+    const again = plan.floors.find((f) => f.packId === 1113)!;
+    expect(again.floor).toBeGreaterThanOrEqual(4);
+    expect(again.pickups.map((p) => p.giftId)).toEqual([9709]);
+    expect(plan.floors.filter((f) => f.packId === 1103)).toHaveLength(1);
+    expect(plan.unresolved).toEqual([]);
+    expect(plan.fusions[0]).toMatchObject({ unreachable: false, earliestFloor: again.floor });
+    expect(plan.stats).toMatchObject({ requiredPacks: 1, coveredWanted: 1 });
+  });
+
+  it('routes a missed pool gift from any later pack that carries it', () => {
+    // 파란 별조각(9817) is in the pool of 1017 (Hard 3-4), 1018, 1123, 1410 and every EXTREME pack.
+    const plan = planWithout({
+      wanted: [{ giftId: 9817, required: true }],
+      options: options({
+        lastFloor: 15,
+        hardFromFloor: 1,
+        currentFloor: 4,
+        pinnedPacks: { 3: 1017 },
+        unobtainableGifts: [9817],
+      }),
+    });
+    expect(plan.floors.find((f) => f.floor === 3)!.pickups).toEqual([]);
+    const supplier = plan.floors.find((f) => f.pickups.some((p) => p.giftId === 9817))!;
+    expect(supplier.floor).toBeGreaterThanOrEqual(4);
+    expect(indexes.packsByGift.get(9817)).toContain(supplier.packId);
+    expect(supplier.packId).not.toBe(1017);
+    expect(plan.unresolved).toEqual([]);
+    expect(plan.generalDrops).toEqual([]);
+    expect(plan.stats.coveredWanted).toBe(1);
+  });
+
+  it('takes a missed gift for free from a pack pinned on a floor still ahead', () => {
+    const plan = plush({
+      currentFloor: 4,
+      pinnedPacks: { 3: 1103, 5: 1113 },
+      ownedGifts: [9710, 9711],
+      unobtainableGifts: [9709],
+    });
+    expect(plan.floors.find((f) => f.floor === 5)).toMatchObject({ packId: 1113, reason: 'pinned' });
+    expect(plan.floors.find((f) => f.floor === 5)!.pickups.map((p) => p.giftId)).toEqual([9709]);
+    expect(plan.unresolved).toEqual([]);
+    expect(plan.floors.filter((f) => f.packId !== null).map((f) => f.packId)).toEqual([1103, 1113]);
+    expect(plan.fusions[0]).toMatchObject({ unreachable: false, earliestFloor: 5 });
+  });
+
+  it('reports a missed gift as out of range when no floor ahead offers another supplier', () => {
+    const plan = plush({
+      currentFloor: 11,
+      pinnedPacks: { 10: 1113 },
+      ownedGifts: [9710, 9711],
+      unobtainableGifts: [9709],
+    });
+    expect(plan.floors.every((f) => f.passed || f.packId === null)).toBe(true);
+    expect(plan.unresolved.map((u) => [u.giftId, u.reason])).toEqual([
+      [9709, 'no-pack-in-range'],
+      [9765, 'fusion-ingredient-unresolved'],
+    ]);
+    expect(plan.unresolved[0]!.detail.ko).toContain('남은 층에 없습니다');
+    expect(plan.unresolved[1]!.missing).toEqual([9709]);
+
+    // 도시를 사랑하는 당신을 위한(9209): 1316 (Hard 3-4) or 1504 (EXTREME). Missed on 1316, it is
+    // out of reach in a 10-floor run and back on the table when the run goes to 15.
+    const city = (lastFloor: number) =>
+      planWithout({
+        wanted: [{ giftId: 9209, required: true }],
+        options: options({
+          lastFloor,
+          hardFromFloor: 1,
+          currentFloor: 4,
+          pinnedPacks: { 3: 1316 },
+          unobtainableGifts: [9209],
+        }),
+      });
+    expect(city(10).unresolved.map((u) => [u.giftId, u.reason])).toEqual([[9209, 'no-pack-in-range']]);
+    expect(city(15).floors.find((f) => f.packId === 1504)).toMatchObject({
+      floor: 11,
+      pickups: [{ giftId: 9209, kind: 'exclusive', neededFor: null }],
+    });
+  });
+
+  it('gives up on a gift missed on the only pack that carries it, and drops the rest only when the result alone is the goal', () => {
+    const asGoals = violin({ currentFloor: 2, pinnedPacks: { 1: 1016 }, unobtainableGifts: [9431] });
     expect(asGoals.floors.filter((f) => f.packId !== null).map((f) => f.packId)).toEqual([1016, 1102]);
     expect(asGoals.unresolved.map((u) => [u.giftId, u.reason])).toEqual([
       [9249, 'fusion-ingredient-unresolved'],
-      [9707, 'failed'],
+      [9431, 'failed'],
     ]);
+    expect(asGoals.unresolved[1]!.detail.ko).toBe(FAILED_KO);
     expect(asGoals.unresolved[0]!.droppedIngredients).toBeUndefined();
 
-    const resultOnly = violin({ unobtainableGifts: [9707] }, false);
-    expect(resultOnly.floors.every((f) => f.packId === null)).toBe(true);
+    const resultOnly = violin(
+      { currentFloor: 2, pinnedPacks: { 1: 1016 }, unobtainableGifts: [9431] },
+      false,
+    );
+    expect(resultOnly.floors.every((f) => f.passed || f.packId === null)).toBe(true);
     expect(resultOnly.unresolved.find((u) => u.giftId === 9249)).toMatchObject({
-      missing: [9707],
-      droppedIngredients: [9431, 9706],
+      missing: [9431],
+      droppedIngredients: [9706, 9707],
     });
+
+    // A clear reward comes from one pack only, too.
+    const reward = planWithout({
+      wanted: [{ giftId: 9250, required: true }],
+      options: options({
+        lastFloor: 15,
+        hardFromFloor: 1,
+        currentFloor: 12,
+        pinnedPacks: { 11: 1511 },
+        unobtainableGifts: [9250],
+      }),
+    });
+    expect(reward.unresolved.map((u) => [u.giftId, u.reason])).toEqual([[9250, 'failed']]);
+    expect(reward.floors.every((f) => f.passed || f.packId === null)).toBe(true);
+  });
+
+  it('never plans a missed fusion result again', () => {
+    const plan = violin({ currentFloor: 3, pinnedPacks: { 1: 1016, 2: 1102 }, unobtainableGifts: [9249] });
+    expect(plan.unresolved.map((u) => [u.giftId, u.reason])).toEqual([[9249, 'failed']]);
+    expect(plan.fusions).toEqual([]);
+    expect(plan.floors.every((f) => f.passed || f.packId === null)).toBe(true);
+  });
+
+  it('leaves a missed general drop to the general pool', () => {
+    // 재에서 재로(9003) can drop from any pack, so missing it on one floor settles nothing.
+    const plan = planWithout({
+      wanted: [{ giftId: 9003, required: true }],
+      options: options({
+        lastFloor: 15,
+        hardFromFloor: 1,
+        currentFloor: 2,
+        pinnedPacks: { 1: 1016 },
+        unobtainableGifts: [9003],
+      }),
+    });
+    expect(plan.generalDrops).toEqual([9003]);
+    expect(plan.unresolved).toEqual([]);
   });
 
   it('plans only the floors ahead, reports every row, and stops recommending observations mid-run', () => {
@@ -1333,6 +1507,62 @@ describe('observation pins', () => {
     expect(packAt(result, 2)).toMatchObject({ packId: 1005, reason: 'required' });
     expect(result.stats).toMatchObject({ requiredPacks: 1, coveredWanted: 4 });
     expect(result.unresolved).toEqual([]);
+  });
+
+  it('mid-run, does not apply a pin on a gift still to be found, and reports it as observation-after-start', () => {
+    // Observation is spent when floor 1 is left. On floor 11 a pin on 9423 (not in hand) cannot
+    // become a certainty any more; the owned pin on 9419 stays silent, and a pin on 9191 (no goal
+    // of this plan) is still trimmed as before.
+    const result = plan({
+      deck: LCB_DECK,
+      wanted: want(9419, 9423),
+      options: hard15({ observedGifts: [9191, 9423, 9419], ownedGifts: [9419], currentFloor: 11 }),
+    });
+    expect(result.start.observed).toEqual([]);
+    expect(result.start.starlight).toBe(0);
+    const afterStart = result.warnings.find((w) => w.code === 'observation-after-start');
+    expect(afterStart?.giftIds).toEqual([9423]);
+    expect(afterStart?.detail.ko).toBe(
+      '기프트 관측은 1층을 떠나기 전에만 할 수 있어, 그 뒤에 지정한 관측은 적용하지 않았습니다.',
+    );
+    expect(result.warnings.find((w) => w.code === 'observation-trimmed')?.giftIds).toEqual([9191]);
+    // 9423 is neither observed nor covered through observation: it is routed or unresolved, honestly.
+    expect(result.stats.coveredWanted).toBe(1 + (result.unresolved.length === 0 ? 1 : 0));
+    const later = result.floors.filter((f) => f.floor >= 11 && f.packId !== null);
+    if (result.unresolved.length === 0) {
+      expect(later.some((f) => f.pickups.some((p) => p.giftId === 9423))).toBe(true);
+    } else {
+      expect(result.unresolved).toEqual([expect.objectContaining({ giftId: 9423 })]);
+    }
+  });
+
+  it('mid-run, the pins scenario with one pin not yet owned: that pin alone is reported, nothing observed', () => {
+    const result = plan({
+      deck: LCB_DECK,
+      wanted: want(...SCENARIO),
+      options: hard15({
+        observedGifts: PINS,
+        ownedGifts: [9191, 9419, 9410],
+        currentFloor: 11,
+      }),
+    });
+    expect(result.start.observed).toEqual([]);
+    expect(codes(result)).not.toContain('observation-trimmed');
+    expect(result.warnings.find((w) => w.code === 'observation-after-start')?.giftIds).toEqual([9423]);
+    expect(result.floors.filter((f) => f.floor < 11).every((f) => f.passed && f.packId === null)).toBe(true);
+  });
+
+  it('at floor 1, a pin still applies (the observation window is open until floor 1 is left)', () => {
+    const result = plan({
+      deck: LCB_DECK,
+      wanted: want(9419, 9423),
+      options: hard15({ observedGifts: [9423], currentFloor: 1 }),
+    });
+    expect(result.start.observed.filter((o) => o.pinned)).toEqual([
+      { giftId: 9423, pinned: true, freedPack: null },
+    ]);
+    expect(codes(result)).not.toContain('observation-after-start');
+    expect(result.stats.coveredWanted).toBe(2);
   });
 
   it('takes the free starting gift for a wanted general drop, and a pinned one is not taken twice', () => {

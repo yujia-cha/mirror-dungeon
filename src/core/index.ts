@@ -19,7 +19,7 @@ import type {
   Unresolved,
 } from './types.ts';
 import { analyseDeck, evaluateConditions } from './deck.ts';
-import { expandRequirements, scarcity } from './requirements.ts';
+import { expandRequirements, scarcity, type RunState } from './requirements.ts';
 import {
   alternativePacksOn,
   assignPacks,
@@ -264,7 +264,11 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     const packId = options.pinnedPacks[floor];
     if (packId !== undefined) passed.set(floor, packId);
   }
-  const run = { owned: new Set(options.ownedGifts ?? []), failed: new Set(options.unobtainableGifts ?? []) };
+  const run: RunState = {
+    owned: new Set(options.ownedGifts ?? []),
+    failed: new Set(options.unobtainableGifts ?? []),
+    visited: new Set(passed.values()),
+  };
 
   const stats = analyseDeck(input.deck, indexes, data.rules.deployment, options.deployed);
   const unresolved: Unresolved[] = [];
@@ -310,6 +314,30 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
           ko: `${floorsText}층 히든 전투 보상${pct !== null ? `(층당 ${pct}%)` : ''}으로만 나오는 기프트입니다. 루트로 확정할 수 없습니다.`,
           en: `Only a random hidden-battle reward on floors ${floorsText.replace('~', '-')}${pct !== null ? ` (${pct}% per floor)` : ''}; no route can guarantee it.`,
         },
+      });
+      continue;
+    }
+    if (
+      (gift.acquisition.kind === 'event' || gift.acquisition.kind === 'material') &&
+      (indexes.packsByGift.get(requirement.giftId)?.length ?? 0) === 0
+    ) {
+      // In the season pool but reachable through no pack: a choice event hands it over, or it is a
+      // 잔영 that only exists to be fused or sold. Letting it reach the search would blame the floor
+      // range (`no-pack-in-range`), which is false — no range would help.
+      requirement.via = 'unresolved';
+      unresolved.push({
+        giftId: requirement.giftId,
+        reason: 'no-pack-path',
+        detail:
+          gift.acquisition.kind === 'event'
+            ? {
+                ko: '선택지·이벤트로만 얻는 기프트라 팩 루트로 계획할 수 없습니다.',
+                en: 'Only obtained through a choice event, so no pack route can plan for it.',
+              }
+            : {
+                ko: '잔영은 조합·판매용 재료라 팩 루트로 계획할 수 없습니다.',
+                en: 'A fusion/sale material; no pack route can plan for it.',
+              },
       });
       continue;
     }
@@ -364,12 +392,34 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
 
   // A pin on a gift already in hand, or one the plan already gave up on, is skipped without a
   // word: the run made it moot (the app keeps pins after floor 1, when they are owned) or the
-  // unresolved list already explains it. Only a pin on a gift that is no goal at all is reported.
+  // unresolved list already explains it. A pin on a gift that is no goal at all is reported as
+  // trimmed. And once floor 1 is left the observation is spent, so a pin on a gift still to be
+  // found cannot be applied any more: it is reported as `observation-after-start` instead of
+  // turning a gift the run has yet to find into a certainty.
   const notPlanned: number[] = [];
+  const afterStart: number[] = [];
   for (const giftId of options.observedGifts) {
+    if (!known(giftId)) {
+      notPlanned.push(giftId);
+      continue;
+    }
+    if (!plannable(giftId)) continue;
+    if (midRun) {
+      afterStart.push(giftId);
+      continue;
+    }
     if (observed.length >= budget) break;
-    if (plannable(giftId) && canObserve(giftId)) observe(giftId, true, null);
-    else if (!known(giftId)) notPlanned.push(giftId);
+    if (canObserve(giftId)) observe(giftId, true, null);
+  }
+  if (afterStart.length > 0) {
+    warnings.push({
+      code: 'observation-after-start',
+      giftIds: [...new Set(afterStart)].sort((a, b) => a - b),
+      detail: {
+        ko: '기프트 관측은 1층을 떠나기 전에만 할 수 있어, 그 뒤에 지정한 관측은 적용하지 않았습니다.',
+        en: 'Gift observation only happens before floor 1 is left, so pins added later were not applied.',
+      },
+    });
   }
   const trimmed = [...new Set([...droppedObservations, ...notPlanned])];
   if (trimmed.length > 0) {
@@ -410,6 +460,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       rules: data.rules,
       indexes,
       passed,
+      failed: run.failed,
     });
 
   /**
@@ -442,7 +493,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
    */
   let search = searchWithFallback();
 
-  // Observation happens at run start, so mid-run only the pins the player reports still apply.
+  // Observation happens at run start, so mid-run nothing is observed: pins were settled above.
   // b) rescue: what the search had to leave out
   if (!midRun && search.unresolvedGiftIds.length > 0 && observed.length < budget) {
     // Required gifts are rescued first; among equals the scarcer one, then the lower id.
@@ -627,7 +678,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   const bannedPacks = new Set(options.bannedPacks);
   for (const [i, giftId] of search.unresolvedGiftIds.entries()) {
     const gift = indexes.giftById.get(giftId);
-    const packs = indexes.packsByGift.get(giftId) ?? [];
+    // A pack taken on a played floor cannot be entered again, so it is no source any more even
+    // where its window still reaches a floor ahead.
+    const packs = (indexes.packsByGift.get(giftId) ?? []).filter((packId) => !run.visited.has(packId));
     const offeredSomewhere = (packId: number): boolean =>
       floors.some((floor) =>
         (indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? []).includes(packId),

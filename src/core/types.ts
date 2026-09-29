@@ -54,8 +54,10 @@ export interface PlanOptions {
   /**
    * Run progress. `currentFloor` is the floor the player is about to enter (1 = a fresh run):
    * floors below it are played and only their `pinnedPacks` entry says which pack was taken there.
-   * `ownedGifts` are already in hand and need no routing; `unobtainableGifts` were missed and are
-   * reported as failed rather than planned for again.
+   * `ownedGifts` are already in hand and need no routing. `unobtainableGifts` were not picked up
+   * from the pack visited on a played floor: they are routed again from the floors ahead, and only
+   * one no other pack can supply (a pack-bound gift whose every pack was visited, or a fusion
+   * result) is reported as failed.
    */
   currentFloor?: number;
   ownedGifts?: number[];
@@ -199,6 +201,11 @@ export type UnresolvedReason =
   | 'hard-only'
   /** Only a random hidden-battle reward; no route can guarantee it. */
   | 'chance-only'
+  /**
+   * Obtainable this season but through no pack: a choice event (`event`) or a fusion/sale
+   * material (`material`). The floor range is not to blame, so this is not `no-pack-in-range`.
+   */
+  | 'no-pack-path'
   /** Every pack that supplies it is one the user gave up. */
   | 'pack-banned'
   /** Two fusions eat the same ingredient and no second pack can hand over a second copy. */
@@ -229,6 +236,12 @@ export type WarningCode =
   | 'gift-observation-unverified'
   /** Pinned observations that were dropped: unknown, not observable, or over the limit. */
   | 'observation-trimmed'
+  /**
+   * Pinned observations on gifts still to be found, made after floor 1 was left. Observation is
+   * spent at run start, so mid-run they are reported instead of applied; pins on gifts already in
+   * hand stay silent.
+   */
+  | 'observation-after-start'
   /** A pinned, banned or preferred pack that could not be honoured: unknown, not offered there, contradictory, or no floor left. */
   | 'pack-option-dropped'
   /** Two fusions eat the same ingredient, so the first has to be fused before the second copy drops. */

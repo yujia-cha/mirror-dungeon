@@ -1,22 +1,25 @@
 /**
- * The whole route, as the right panel shows it: the counts, the alternative routes, the metro map
- * in its vertical form, and the unresolved card with its pack-level choices. Condition judgements
- * are not repeated here — the item grid's tiles and the gift sheet already carry them. Wide enough
- * for a phone page or a 336px desktop panel.
+ * The whole route, as the right panel shows it: the counts, the 「포기 결정」 card when the goals
+ * cannot all fit one run, the metro map in its vertical form, and the unresolved card with what
+ * fails for other reasons. Condition judgements are not repeated here — the item grid's tiles and
+ * the gift sheet already carry them. Wide enough for a phone page or a 336px desktop panel.
  */
-import { useRef, useState } from 'react';
-import { Copy, Star, X } from 'lucide-react';
+import { useState } from 'react';
+import { Copy, Star } from 'lucide-react';
 import { conflictGroups } from '../../core/index.ts';
-import { pick, t } from '../i18n.ts';
+import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
+import { observationClosed } from '../lib/plan-input.ts';
 import { planToText } from '../lib/plan-text.ts';
+import { routeSourceOf, routeSourceText } from '../lib/route-source.ts';
 import { actionsFor, type UnresolvedAction } from '../lib/unresolved-actions.ts';
+import { warningText } from '../lib/unresolved-text.ts';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { MetroMap } from '../components/MetroMap.tsx';
 import { PackConflicts } from '../components/PackConflicts.tsx';
+import { RouteDecision } from '../components/RouteDecision.tsx';
 import { Badge, Button, Card, SectionTitle, Toast } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
-import { useRovingTabs } from '../lib/useRovingTabs.ts';
 
 export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const {
@@ -28,6 +31,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     shown,
     planPending,
     variants,
+    variantsPending,
     variantIndex,
     setVariantIndex,
     variant,
@@ -44,10 +48,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const removeWanted = useApp((s) => s.removeWanted);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
-  const tabsRef = useRef<HTMLDivElement | null>(null);
-  // Declared before the early return below: hooks cannot live behind one.
-  // One Tab stop for the strip, arrows to move between the routes; see `useRovingTabs`.
-  const onVariantKey = useRovingTabs(tabsRef, variants.length + 1, variantIndex, setVariantIndex);
 
   if (!plan || !shown) {
     return (
@@ -67,13 +67,14 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   // A warning stays out of the 「참고」 list only when another surface already carries it: the app
   // always plans Hard so `parallel-requires-hard` can never apply, `condition-unmet` is what the
   // tiles' outer ring says, and `general-drop-not-guaranteed` is the general-drops card below,
-  // which also names the gifts. `fusion-slots` and `search-capped` used to be in here with
-  // nothing else saying them — the first was a silent failure, the second was the sentence that
+  // which also names the gifts, and `fusion-slots` is the 「하위 재료부터」 badge on the fusion card's
+  // row. `search-capped` used to be in here with nothing else saying it — it is the sentence that
   // explains what the 「근사 결과」 badge means.
   const SILENT_WARNINGS = new Set([
     'parallel-requires-hard',
     'condition-unmet',
     'general-drop-not-guaranteed',
+    'fusion-slots',
   ]);
   const otherWarnings = shown.warnings.filter((w) => !SILENT_WARNINGS.has(w.code));
   const generalDrops = shown.generalDrops;
@@ -81,8 +82,21 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const failedCount = shown.unresolved.filter((u) => u.reason === 'failed').length;
 
   const copy = async (): Promise<void> => {
-    const text = planToText(shown, giftName, packName, keywordLabel, lang, variant?.dropped ?? [], {
+    const dropped = variant?.dropped ?? [];
+    const text = planToText(shown, giftName, packName, keywordLabel, lang, dropped, {
       bannedPacks: options.bannedPacks,
+      // Every goal, so a result-only fusion goal is in the text even though no floor names it.
+      goals: input.wanted.map((w) => w.giftId).filter((id) => !dropped.includes(id)),
+      // The candidates belong to the full plan; a previewed alternative has already picked one.
+      ...(variant
+        ? {}
+        : {
+            variants: variants.map((v) => ({
+              name: v.dropped.map(giftName).join(', '),
+              covered: v.plan.stats.coveredWanted,
+              total: v.plan.stats.totalWanted,
+            })),
+          }),
       ...(run.currentFloor > 1 || Object.keys(run.visits).length > 0
         ? { run: { currentFloor: run.currentFloor, visits: run.visits } }
         : {}),
@@ -146,65 +160,21 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     </div>
   );
 
-  const variantTabs =
-    variants.length > 0 ? (
-      <div
-        ref={tabsRef}
-        className="flex flex-wrap items-center gap-1.5"
-        role="tablist"
-        aria-label={t('routeVariants', lang)}
-        onKeyDown={onVariantKey}
-        data-testid="variants"
-      >
-        <span className="mr-1 text-xs text-fg-3">{t('routeVariants', lang)}</span>
-        {[{ dropped: [] as number[], plan }, ...variants].map((entry, i) => {
-          const selected = i === variantIndex;
-          const dropped = entry.dropped[0];
-          const gift = dropped !== undefined ? indexes.giftById.get(dropped) : undefined;
-          return (
-            <button
-              key={dropped ?? 'all'}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => setVariantIndex(i)}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs ${
-                selected
-                  ? 'border-ink bg-ink text-ink-fg'
-                  : 'border-line-strong bg-surface text-fg-2 hover:bg-surface-2'
-              }`}
-            >
-              {gift ? <GiftIcon gift={gift} size={20} lang={lang} /> : null}
-              <span>
-                {gift
-                  ? t('routeVariantWithout', lang, { name: giftName(gift.id) })
-                  : t('routeVariantAll', lang)}
-              </span>
-              <span className="font-num opacity-80">
-                {entry.plan.stats.coveredWanted}/{entry.plan.stats.totalWanted}
-              </span>
-            </button>
-          );
-        })}
-        {variant ? (
-          <Button size="sm" variant="ghost" onClick={() => removeWanted(variant.dropped[0]!)}>
-            <X size={12} aria-hidden />
-            {t('routeVariantConfirm', lang)}
-          </Button>
-        ) : null}
-      </div>
-    ) : null;
-
   const actionLabel = (action: UnresolvedAction): string =>
     action.kind === 'observeGift'
       ? t('actionObserveGift', lang, { name: action.giftId !== undefined ? giftName(action.giftId) : '' })
       : t('actionReleaseObservations', lang);
+  const observeClosed = observationClosed(run);
   const unresolvedActions = shown.unresolved.map((entry) =>
-    actionsFor(entry, indexes.giftById.get(entry.giftId), options, data.rules, ctx.needed).map((action) => ({
-      ...action,
-      label: actionLabel(action),
-    })),
+    actionsFor(
+      entry,
+      indexes.giftById.get(entry.giftId),
+      options,
+      data.rules,
+      ctx.needed,
+      observeClosed,
+      (id) => indexes.giftById.get(id),
+    ).map((action) => ({ ...action, label: actionLabel(action) })),
   );
   const sharedLabels = new Set(
     unresolvedActions
@@ -228,15 +198,28 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     : input;
   const groups = conflictGroups(shown, shownInput, data, indexes);
   const others = shown.unresolved.filter((u) => u.reason !== 'pack-conflict');
-  const seeVariants = (): void => {
-    tabsRef.current?.scrollIntoView?.({ block: 'center' });
-    tabsRef.current?.querySelectorAll<HTMLButtonElement>('[role=tab]')[1]?.focus();
-  };
+  // The decision is the full plan's: it stays on screen while an alternative is previewed, so the
+  // header chips and the 「전부 유지」 row read the plan itself, not the preview.
+  const conflicted = plan.unresolved.some((u) => u.reason === 'pack-conflict');
+  const baseGroups = variant ? conflictGroups(plan, input, data, indexes) : groups;
 
   return (
     <div className="flex flex-col gap-3" data-testid="route-plan">
       {summary}
-      {variantTabs}
+      {conflicted || variants.length > 0 || variantsPending ? (
+        <RouteDecision
+          plan={plan}
+          variants={variants}
+          variantIndex={variantIndex}
+          setVariantIndex={setVariantIndex}
+          variantsPending={variantsPending}
+          groups={groups}
+          baseGroups={baseGroups}
+          ctx={ctx}
+          removeWanted={removeWanted}
+          detailMode="sheet"
+        />
+      ) : null}
       <MetroMap
         plan={shown}
         ctx={ctx}
@@ -250,7 +233,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         detailMode="sheet"
       />
       <PackConflicts
-        groups={groups}
         others={others}
         ctx={ctx}
         removeWanted={removeWanted}
@@ -270,9 +252,59 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
               })
             : setOptions(action.patch)
         }
-        onSeeVariants={variants.length > 0 && !variant ? seeVariants : undefined}
-        detailMode="sheet"
       />
+      {/* The fusion steps, in the planner's dependency order (a fusion that feeds another comes
+          first). Each ingredient says where the route gets it; the row's verdict is the floor from
+          which every ingredient is in hand, or 「불가」 — the unresolved card says why, so the row
+          only dims. 「하위 재료부터」: more ingredients than the shop fuses at once. */}
+      {shown.fusions.length > 0 ? (
+        <Card className="p-3.5" testId="route-fusions">
+          <SectionTitle>{t('routeFusionsTitle', lang)}</SectionTitle>
+          <ul className="mt-2 flex flex-col gap-2">
+            {shown.fusions.map((fusion) => {
+              const result = indexes.giftById.get(fusion.result);
+              const tone = fusion.unreachable ? 'text-fg-3' : 'text-fg-2';
+              return (
+                <li
+                  key={fusion.result}
+                  className={`flex flex-col gap-1 text-xs ${tone}`}
+                  data-testid="route-fusion"
+                  data-gift={fusion.result}
+                  data-unreachable={fusion.unreachable ? '' : undefined}
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {result ? <GiftIcon gift={result} size={20} lang={lang} /> : null}
+                    <span className="font-semibold">{giftName(fusion.result)}</span>
+                    <span className="font-num">
+                      {fusion.unreachable
+                        ? t('routeFusionUnreachable', lang)
+                        : t('routeFusionFrom', lang, { floor: fusion.earliestFloor })}
+                    </span>
+                    {fusion.exceedsShopSlots ? (
+                      <Badge tone="neutral">{t('routeFusionSlots', lang)}</Badge>
+                    ) : null}
+                  </div>
+                  <ul className="ml-2 flex flex-col gap-1 border-l border-line pl-2.5">
+                    {fusion.ingredients.map((giftId, i) => {
+                      const gift = indexes.giftById.get(giftId);
+                      const source = routeSourceOf(shown, giftId);
+                      return (
+                        <li key={`${giftId}-${i}`} className="flex flex-wrap items-center gap-1.5">
+                          {gift ? <GiftIcon gift={gift} size={20} lang={lang} /> : null}
+                          <span>{giftName(giftId)}</span>
+                          {source ? (
+                            <span className="text-fg-3">({routeSourceText(source, { packName, lang })})</span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : null}
       {/* The planner counts these as covered because no pack visit can improve them — the route has
           nothing left to do for them. The list is the useful part: which goals no pack is fetching. */}
       {generalDrops.length > 0 ? (
@@ -297,7 +329,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           <ul className="mt-2 flex flex-col gap-1 text-xs text-fg-2">
             {/* One code can come twice (`pack-option-dropped` for unknown pins and for unplaced preferences). */}
             {otherWarnings.map((w, i) => (
-              <li key={`${w.code}:${i}`}>{pick(w.detail, lang)}</li>
+              <li key={`${w.code}:${i}`}>{warningText(w, giftName, packName, lang)}</li>
             ))}
           </ul>
         </Card>

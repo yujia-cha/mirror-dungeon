@@ -1,8 +1,8 @@
 import type { Keyword } from '../../core/schema.ts';
 import type { RoutePlan } from '../../core/types.ts';
-import { pick, t, type Lang } from '../i18n.ts';
+import { t, type Lang } from '../i18n.ts';
 import { segmentsFor } from './metro.ts';
-import { unresolvedDetailText } from './unresolved-text.ts';
+import { unresolvedDetailText, warningText } from './unresolved-text.ts';
 
 /**
  * A Discord-friendly plain-text rendering of the plan, one line per metro segment: packs that
@@ -16,7 +16,17 @@ export function planToText(
   keywordLabel: (id: Keyword) => string,
   lang: Lang,
   dropped: number[] = [],
-  marks: { bannedPacks?: number[]; run?: { currentFloor: number; visits: Record<number, number> } } = {},
+  marks: {
+    bannedPacks?: number[];
+    run?: { currentFloor: number; visits: Record<number, number> };
+    /** The alternatives the planner tried: the gift each gives up and what it then covers. */
+    variants?: { name: string; covered: number; total: number }[];
+    /**
+     * Every goal of the plan, in the order chosen. The plan itself only names the gifts it
+     * routes, so a goal that is nothing but a fusion result used to be absent from the text.
+     */
+    goals?: number[];
+  } = {},
 ): string {
   const lines: string[] = [];
   // The app says 「4층」 everywhere else; the copied plan used to be the one place writing `4F` at a
@@ -34,6 +44,14 @@ export function planToText(
     lines.push(
       `${t('runActive', lang)} · ${t('runCurrentFloor', lang)} ${at(marks.run.currentFloor)}${visits.length > 0 ? ` · ${visits.join(', ')}` : ''}`,
     );
+  }
+  // 「목표: A, B, C(미해결)」 — the goals as chosen, each unresolved one marked as such.
+  if (marks.goals && marks.goals.length > 0) {
+    const unresolved = new Set(plan.unresolved.map((u) => u.giftId));
+    const goals = marks.goals.map((id) =>
+      unresolved.has(id) ? `${name(id)}(${t('routeUnresolved', lang)})` : name(id),
+    );
+    lines.push(`${t('routeGoalsLabel', lang)}: ${goals.join(', ')}`);
   }
   lines.push(`${t('routeStart', lang)}: ${plan.start.keyword ? keywordLabel(plan.start.keyword) : '—'}`);
   if (plan.start.startGift) lines.push(`  ${t('routeStartGift', lang)}: ${giftName(plan.start.startGift)}`);
@@ -78,24 +96,47 @@ export function planToText(
     lines.push(t('routeUnresolved', lang));
     for (const entry of plan.unresolved)
       lines.push(`  ${name(entry.giftId)}: ${unresolvedDetailText(entry, giftName, lang)}`);
+    // The same options the 「포기 결정」 card lists, one line: who to give up and what that buys.
+    if (marks.variants && marks.variants.length > 0) {
+      const candidates = marks.variants.map((v) => `${v.name}(→ ${v.covered}/${v.total})`);
+      lines.push(`  ${t('routeDecisionCandidates', lang)}: ${candidates.join(', ')}`);
+    }
   }
   // Which goals no pack is fetching — the copied plan carries the same list the panel shows.
   if (plan.generalDrops.length > 0) {
     lines.push('');
     lines.push(`${t('routeGeneralTitle', lang)}: ${plan.generalDrops.map(name).join(', ')}`);
   }
+  // The fusion steps in the planner's dependency order, the CLI's shape: 「결과 ← 재료 + 재료 (N층 이후)」.
+  if (plan.fusions.length > 0) {
+    lines.push('');
+    lines.push(t('routeFusionsTitle', lang));
+    for (const fusion of plan.fusions) {
+      const when = fusion.unreachable
+        ? t('routeFusionUnreachable', lang)
+        : t('routeFusionFrom', lang, { floor: fusion.earliestFloor });
+      const slots = fusion.exceedsShopSlots ? ` · ${t('routeFusionSlots', lang)}` : '';
+      lines.push(`  ${name(fusion.result)} ← ${fusion.ingredients.map(name).join(' + ')} (${when}${slots})`);
+    }
+  }
   if (marks.bannedPacks && marks.bannedPacks.length > 0) {
     lines.push('');
     lines.push(`${t('packBanned', lang)}: ${marks.bannedPacks.map(packName).join(', ')}`);
   }
   // Same rule as the panel: a warning another line already carries stays out. The general-drop
-  // one is deliberately dropped everywhere — the 「범용 드랍」 list is what the route has to say.
-  const CARRIED = new Set(['parallel-requires-hard', 'condition-unmet', 'general-drop-not-guaranteed']);
+  // one is deliberately dropped everywhere — the 「범용 드랍」 list is what the route has to say —
+  // and `fusion-slots` is the 「하위 재료부터」 mark on the fusion row.
+  const CARRIED = new Set([
+    'parallel-requires-hard',
+    'condition-unmet',
+    'general-drop-not-guaranteed',
+    'fusion-slots',
+  ]);
   const notes = plan.warnings.filter((w) => !CARRIED.has(w.code));
   if (notes.length > 0) {
     lines.push('');
     lines.push(t('routeWarnings', lang));
-    for (const note of notes) lines.push(`  - ${pick(note.detail, lang)}`);
+    for (const note of notes) lines.push(`  - ${warningText(note, giftName, packName, lang)}`);
   }
   return lines.join('\n');
 }

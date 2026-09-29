@@ -6,7 +6,9 @@ import {
   autoFailedFor,
   bandMode,
   enterablePacks,
+  entryGifts,
   exclusivesIndex,
+  expectedFrom,
   packsOfferedOn,
   stageModeFor,
 } from '../lib/stage.ts';
@@ -107,13 +109,40 @@ describe('stage', () => {
     expect(exclusivesOf(1511)).toBe(exclusivesOf(1511)); // cached
   });
 
-  it('fails the goal exclusives the player never marked, and nothing else', () => {
+  it('expects of an entered pack what the plan picks up there plus the exclusives the route collects', () => {
     const exclusivesOf = exclusivesIndex(data, indexes);
-    expect(autoFailedFor(1402, new Set([9267, 9282, 9754]), {}, exclusivesOf)).toEqual([9267, 9282]);
-    expect(autoFailedFor(1402, new Set([9267, 9282]), { 9267: 'got', 9282: 'failed' }, exclusivesOf)).toEqual(
-      [],
-    );
-    expect(autoFailedFor(1402, new Set([9754]), {}, exclusivesOf)).toEqual([]);
+    // 9249 조그맣고 근사한 바이올린 = 9431 (1016, floor 1) + 9706·9707 (1102, floor 2). Once 1016 is
+    // entered the floor is passed, and its pickup — an ingredient, not a chosen goal — is what
+    // core now counts as in hand. The pack's other exclusive (9432) is nobody's business.
+    const needed = new Set([9249, 9431, 9706, 9707]);
+    const entered = plan([9249], { currentFloor: 2, pinnedPacks: { 1: 1016 } });
+    expect(entered.floors[0]).toMatchObject({ packId: 1016, passed: true });
+    expect(expectedFrom(entered, 1, 1016, needed, exclusivesOf)).toEqual([9431]);
+    // A pool pickup counts too: 9817 파란 별조각 is general, routed here from 어느 세계's pool.
+    const pool = plan([9817], { currentFloor: 4, pinnedPacks: { 3: 1017 } });
+    expect(pool.floors[2]!.pickups).toEqual([{ giftId: 9817, kind: 'pool', neededFor: null }]);
+    expect(expectedFrom(pool, 3, 1017, new Set([9817]), exclusivesOf)).toEqual([9817]);
+    // No entry for the floor (a plan a step behind, or none): the collected exclusives stand alone.
+    expect(expectedFrom(entered, 4, 1402, new Set([9267, 9754]), exclusivesOf)).toEqual([9267]);
+    expect(expectedFrom(null, 1, 1016, needed, exclusivesOf)).toEqual([9431]);
+    expect(expectedFrom(null, 1, 1016, new Set(), exclusivesOf)).toEqual([]);
+  });
+
+  it('fails what was expected and never marked, and nothing else', () => {
+    expect(autoFailedFor([9267, 9282], {})).toEqual([9267, 9282]);
+    expect(autoFailedFor([9267, 9282], { 9267: 'got', 9282: 'failed' })).toEqual([]);
+    expect(autoFailedFor([], { 9267: 'got' })).toEqual([]);
+  });
+
+  it('makes an entry answer for its exclusives, what was expected of it, and a pool pickup already missed', () => {
+    const exclusivesOf = exclusivesIndex(data, indexes);
+    expect(entryGifts(1016, [9431], {}, indexes, exclusivesOf)).toEqual([9431, 9432]);
+    // Once 9817 is recorded as missed the planner stops naming it on this floor, so the expected
+    // list no longer carries it; the miss is still this entry's, so its tile and its undo are too.
+    expect(entryGifts(1017, [], { 9817: 'failed' }, indexes, exclusivesOf)).toEqual([9433, 9817]);
+    // A pool gift marked 'got' by the tracker is no business of the entry.
+    expect(entryGifts(1017, [], { 9817: 'got' }, indexes, exclusivesOf)).toEqual([9433]);
+    expect(entryGifts(1017, [9817], {}, indexes, exclusivesOf)).toEqual([9433, 9817]);
   });
 
   it('tells an entered, undecided, skipped and finished floor apart', () => {

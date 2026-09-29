@@ -1,9 +1,11 @@
 /**
- * The area a pulled pack opens: the pack on the left, every gift only it drops on the right
- * (goals first, each a tile pressed when in hand), a handle above to go back and one below to
- * move on. Pulling the whole area down moves on; pushing it up goes back — the entry and every
- * status marked for this pack's drops are cleared and the area folds away. Holding a tile (or its
- * ⓘ) opens the gift's details.
+ * The area a pulled pack opens: the pack on the left, every gift the entry answers for on the
+ * right — what the route expects the pack to hand over (ingredients and pool pickups included)
+ * and everything only it drops, goals first, each a tile pressed when in hand — a handle above to
+ * go back and one below to move on. Pulling the whole area down moves on: whatever of the expected
+ * list is still unmarked is then missed. Pushing it up goes back — the entry and every status
+ * marked for these gifts are cleared and the area folds away. Holding a tile (or its ⓘ) opens
+ * the gift's details.
  */
 import { useEffect, useState } from 'react';
 import { ChevronsDown, ChevronsUp } from 'lucide-react';
@@ -19,7 +21,7 @@ const HANDLE_CLASS =
 
 /** Opens from zero height on mount (`grid-template-rows` 0fr → 1fr) and folds the same way when `closing`. */
 export function PackArea({ packId, closing = false }: { packId: number; closing?: boolean }) {
-  const { indexes, lang, ctx, exclusivesOf, needed, next, leave, openGift } = usePlan();
+  const { indexes, lang, ctx, needed, entryGiftsOf, next, leave, openGift } = usePlan();
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
   /**
@@ -40,10 +42,9 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
   const pack = indexes.packById.get(packId);
   if (!pack) return null;
   const name = pick(pack.name, lang);
-  const exclusives = [...exclusivesOf(packId)].sort(
-    (a, b) => Number(needed.has(b)) - Number(needed.has(a)) || a - b,
-  );
-  const goalCount = exclusives.filter((id) => needed.has(id)).length;
+  // The same list `leave` clears, so the tiles and the undo can never disagree about the entry.
+  const gifts = entryGiftsOf(packId).sort((a, b) => Number(needed.has(b)) - Number(needed.has(a)) || a - b);
+  const goalCount = gifts.filter((id) => needed.has(id)).length;
   const pastUp = pull.past === 'up';
   const pastDown = pull.past === 'down';
 
@@ -83,16 +84,16 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
             <div className="flex min-w-0 flex-col gap-2">
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="text-sm font-semibold">{t('stageExclusives', lang)}</span>
-                <span className="font-num text-xs text-fg-3">{exclusives.length}</span>
+                <span className="font-num text-xs text-fg-3">{gifts.length}</span>
                 {goalCount > 0 ? (
                   <span className="text-xs text-fg-2">{`${t('stageGoalsFirst', lang)} ${goalCount}`}</span>
                 ) : null}
               </div>
-              {exclusives.length === 0 ? (
+              {gifts.length === 0 ? (
                 <p className="text-xs text-fg-3">{t('stageExclusivesNone', lang)}</p>
               ) : (
                 <div className="flex flex-wrap gap-2" data-testid="exclusive-gifts">
-                  {exclusives.map((id) => {
+                  {gifts.map((id) => {
                     const gift = indexes.giftById.get(id);
                     return gift ? (
                       <GiftTile

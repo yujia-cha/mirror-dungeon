@@ -38,6 +38,21 @@ function loadFailure(cause: unknown): LoadFailure {
   return { text: cause instanceof Error ? cause.message : String(cause) };
 }
 
+type Incoming = { kind: 'none' | 'broken' } | { kind: 'ask' | 'apply'; shared: SharedState };
+
+/**
+ * What the URL hash is carrying right now. A share link must win over whatever localStorage
+ * remembers, or the link would not work; a link is someone else's plan, so applying it replaces
+ * the deck, the goals and the run. On a fresh app that is what the reader wants; mid-run it
+ * destroys a record no undo can get back, so a run in progress is asked about first.
+ */
+function readIncoming(): Incoming {
+  if (!window.location.hash.startsWith('#s=')) return { kind: 'none' };
+  const shared = decodeShared(window.location.hash);
+  if (!shared) return { kind: 'broken' };
+  return runInProgress(useApp.getState().run) ? { kind: 'ask', shared } : { kind: 'apply', shared };
+}
+
 export function App() {
   const lang = useApp((s) => s.lang);
   const dark = useApp((s) => s.dark);
@@ -74,25 +89,13 @@ export function App() {
   const error = failure?.attempt === attempt ? failure.error : null;
   const [sharedCopied, setSharedCopied] = useState(false);
   /**
-   * What the URL hash was carrying, read once during the first render.
-   *
-   * A share link must win over whatever localStorage remembers, or the link would not work. Reading
-   * it in an effect meant deciding there too — `setLinkBroken`, `setPendingShared` — which is a
-   * state write from an effect. Read during the first render instead, the answer can simply *be*
-   * the initial state of both, and the effect is left with the side effects: applying the link and
-   * rewriting the URL.
+   * What the URL hash was carrying, read during the first render (`readIncoming`) and again on
+   * `hashchange`. Reading it in an effect meant deciding there too — `setLinkBroken`,
+   * `setPendingShared` — which is a state write from an effect. Read during the first render
+   * instead, the answer can simply *be* the initial state of both, and the effect is left with the
+   * side effects: applying the link and rewriting the URL.
    */
-  const [incoming] = useState(
-    (): { kind: 'none' | 'broken' } | { kind: 'ask' | 'apply'; shared: SharedState } => {
-      if (!window.location.hash.startsWith('#s=')) return { kind: 'none' };
-      const shared = decodeShared(window.location.hash);
-      if (!shared) return { kind: 'broken' };
-      // A link is someone else's plan, so applying it replaces the deck, the goals and the run. On a
-      // fresh app that is what the reader wants; mid-run it destroys a record no undo can get back,
-      // so a run in progress is asked about first.
-      return runInProgress(useApp.getState().run) ? { kind: 'ask', shared } : { kind: 'apply', shared };
-    },
-  );
+  const [incoming, setIncoming] = useState(readIncoming);
   const [linkBroken, setLinkBroken] = useState(incoming.kind === 'broken');
   const [copyFailed, setCopyFailed] = useState(false);
   const [dropped, setDropped] = useState<{ gifts: number; packs: number } | null>(null);
@@ -112,6 +115,23 @@ export function App() {
     applyShared(incoming.shared);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   }, [applyShared, incoming]);
+
+  // A link pasted into the address bar of a tab that already shows the app is a same-document
+  // navigation: the page does not reload, so the first-render read above never runs again and the
+  // link did nothing. `hashchange` is the only signal, and it goes through the same decision (a run
+  // in progress is asked about first). `replaceState` below does not fire it, so consuming a link
+  // never loops back here.
+  useEffect(() => {
+    const onHashChange = (): void => {
+      const next = readIncoming();
+      if (next.kind === 'none') return;
+      setIncoming(next);
+      setLinkBroken(next.kind === 'broken');
+      setPendingShared(next.kind === 'ask' ? next.shared : null);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   // The broken-link notice says its piece and goes, like the dropped-goals one below.
   useEffect(() => {

@@ -13,8 +13,8 @@ export const STRINGS = {
   share: { ko: '링크 복사', en: 'Copy link' },
   shared: { ko: '링크를 복사했습니다', en: 'Link copied' },
   copyFailed: {
-    ko: '복사하지 못했습니다 · 주소창에서 복사하세요',
-    en: 'Could not copy · copy it from the address bar',
+    ko: '복사하지 못했습니다 · 화면을 한 번 누른 뒤 다시 시도하세요',
+    en: 'Could not copy · tap the page once and try again',
   },
   linkBroken: { ko: '공유 링크를 읽지 못했습니다', en: 'This share link could not be read' },
   moreActions: { ko: '더 보기', en: 'More' },
@@ -128,6 +128,11 @@ export const STRINGS = {
     en: '{a} of {aOf} keyword capstones + {b} of {bOf} attack-type ones',
   },
   giftPackOnly: { ko: '{name} 전용', en: 'only from {name}' },
+  // Three or more exclusive packs (53 gifts have several; 인연 얽힘 has seven): the first is named
+  // and the rest counted, so the line stays one line.
+  giftPackOnlyMany: { ko: '{name} 외 {n}개 팩 전용', en: 'only from {name} and {n} other packs' },
+  /** `{source}` is a `routeSourceText` — where this route gets the gift. */
+  giftRouteSource: { ko: '이 루트에서는 {source}', en: 'In this route: {source}' },
   giftSelect: { ko: '목표로 삼기', en: 'Make it a goal' },
   giftUnselect: { ko: '목표에서 빼기', en: 'Drop the goal' },
   giftBlockedIncluded: { ko: '{name} 조합에 이미 포함됨', en: 'Already part of {name}' },
@@ -146,6 +151,10 @@ export const STRINGS = {
   giftsObserve: { ko: '{name} 관측 지정', en: 'Observe {name}' },
   giftsObserveNotAllowed: { ko: '관측할 수 없는 기프트', en: 'Cannot be observed' },
   giftsObserveFull: { ko: '관측은 최대 {max}개', en: 'Up to {max} observations' },
+  giftsObserveClosed: {
+    ko: '1층을 떠난 뒤에는 관측을 바꿀 수 없습니다',
+    en: 'Observations cannot change after floor 1 is left',
+  },
   observeSlots: { ko: '관측', en: 'Observation' },
   observeSlotAdd: { ko: '관측 지정 추가', en: 'Pin an observation' },
   observeSlotClear: { ko: '{name} 관측 해제', en: 'Stop observing {name}' },
@@ -202,11 +211,25 @@ export const STRINGS = {
   routeObservedFrees: { ko: '{pack} 안 가도 됨', en: 'No need to visit {pack}' },
   routeObservedRescue: { ko: '루트로는 얻을 수 없어 관측', en: 'Unreachable by route, so observe it' },
   routeObservedToggle: { ko: '{name} 관측 지정 전환', en: 'Toggle observing {name}' },
-  routeVariants: { ko: '대안 루트', en: 'Alternative routes' },
-  routeVariantAll: { ko: '전부', en: 'All' },
   routeVariantWithout: { ko: '{name} 제외', en: 'Without {name}' },
-  routeVariantConfirm: { ko: '이 기프트 선택 해제', en: 'Deselect this gift' },
-  routeVariantSee: { ko: '대안 루트 보기', en: 'See alternatives' },
+  // The 「포기 결정」 card: one place for the choice the route cannot make — which gift to give up
+  // when they cannot all fit one run. `{names}` is the list of conflicting gift names.
+  routeDecisionTitle: {
+    ko: '전부 얻을 수 없습니다 · {names} 중 하나를 포기해야 합니다',
+    en: 'They do not all fit one run · give up one of {names}',
+  },
+  routeDecisionKeep: { ko: '전부 유지', en: 'Keep all' },
+  routeDecisionDrop: { ko: '이 기프트 포기', en: 'Give up this gift' },
+  routeDecisionPreview: { ko: '루트 미리 보기', en: 'Preview route' },
+  routeDecisionPreviewing: { ko: '미리 보기: {name} 제외', en: 'Preview: without {name}' },
+  routeDecisionConfirm: { ko: '이대로 포기', en: 'Give it up' },
+  routeDecisionBack: { ko: '원래대로', en: 'Back to all' },
+  // `{packs}` is a list of pack names; the particle is picked by `josa` at the call site.
+  routeDecisionPacksChange: { ko: '{packs} 들어옵니다', en: '{packs} come in' },
+  routeDecisionStillUnresolved: { ko: '그래도 {n}개 미해결', en: 'Still {n} unresolved' },
+  routeDecisionPending: { ko: '대안 계산 중…', en: 'Computing alternatives…' },
+  routeDecisionPackPick: { ko: '팩으로 고르기', en: 'Choose by pack' },
+  routeDecisionCandidates: { ko: '포기 후보', en: 'Candidates to give up' },
   routeClose: { ko: '닫기', en: 'Close' },
   packInclude: { ko: '이 팩으로', en: 'Include this pack' },
   packIncluded: { ko: '포함 · {floor}층', en: 'Included · floor {floor}' },
@@ -231,7 +254,6 @@ export const STRINGS = {
     ko: '{from}~{to}층 · 자리 {slots}개에 팩 {packs}개',
     en: 'Floors {from}–{to} · {packs} packs for {slots} floors',
   },
-  routeOtherUnresolved: { ko: '그 외 미해결', en: 'Other unresolved' },
   routeBannedList: { ko: '포기한 팩 {n}', en: '{n} packs given up' },
   // `{gift}` is a list of gift names; the particle is picked by `josa` at the call site.
   packBanConfirm: {
@@ -261,6 +283,23 @@ export const STRINGS = {
   /** The skip link's own text. 「무대」 is what the centre column is called everywhere else. */
   skipToStage: { ko: '무대로 건너뛰기', en: 'Skip to the stage' },
   routeGeneralTitle: { ko: '범용 드랍', en: 'General drops' },
+  // The fusion card and the copied plan's 「조합」 block: one row per fusion step, in the planner's
+  // dependency order. 「불가」 is the row's whole verdict — the unresolved card says why.
+  routeFusionsTitle: { ko: '조합', en: 'Fusions' },
+  routeFusionFrom: { ko: '{floor}층 이후', en: 'from floor {floor}' },
+  routeFusionUnreachable: { ko: '불가', en: 'not possible' },
+  /** More ingredients than the shop fuses at once: fuse the sub-recipes first. */
+  routeFusionSlots: { ko: '하위 재료부터', en: 'sub-ingredients first' },
+  /** The copied plan's first line: every goal, the unresolved ones marked. */
+  routeGoalsLabel: { ko: '목표', en: 'Goals' },
+  // Where this route gets one gift (`routeSourceText`): a floor and pack, the observation, the
+  // starting gift, the general pool no pack fetches, or a fusion after a floor.
+  routeSourcePack: { ko: '{floor}층 {name}', en: 'floor {floor}, {name}' },
+  routeSourceObserved: { ko: '관측', en: 'observation' },
+  routeSourceStart: { ko: '시작 기프트', en: 'starting gift' },
+  routeSourceGeneral: { ko: '범용 (팩 없음)', en: 'general drop (no pack)' },
+  routeSourceFusion: { ko: '{floor}층 이후 조합', en: 'fused after floor {floor}' },
+  routeSourceFusionUnreachable: { ko: '조합 불가', en: 'cannot be fused' },
   routeApproxHint: {
     ko: '목표가 많아 탐색을 끝까지 하지 못했습니다. 최선이 아닐 수 있고, 목표를 더 넣으면 이미 확보한 것이 빠질 수 있습니다.',
     en: 'Too many goals to search exhaustively. This may not be optimal, and adding goals can drop ones already secured.',
@@ -271,6 +310,7 @@ export const STRINGS = {
   unresolvedHardOnly: { ko: '난이도 제한', en: 'Difficulty-locked' },
   unresolvedIngredient: { ko: '재료 미해결', en: 'Ingredient unresolved' },
   unresolvedNotObtainable: { ko: '획득 불가', en: 'Not obtainable' },
+  unresolvedNoPackPath: { ko: '팩 경로 없음', en: 'No pack path' },
   unresolvedChance: { ko: '확률 보상', en: 'Chance only' },
   unresolvedBanned: { ko: '포기한 팩', en: 'Pack given up' },
   unresolvedShared: { ko: '재료 겹침', en: 'Ingredient shared' },
@@ -339,8 +379,8 @@ export const STRINGS = {
   stageExclusiveMore: { ko: '+{n}', en: '+{n}' },
   stagePackDetail: { ko: '{name} 자세히', en: '{name} details' },
   stageEntered: { ko: '{floor}층에 입장', en: 'Entered on floor {floor}' },
-  stageExclusives: { ko: '이 팩에서만 나오는 기프트', en: 'Gifts only this pack drops' },
-  stageExclusivesNone: { ko: '전용 기프트 없음', en: 'No exclusive gifts' },
+  stageExclusives: { ko: '이 팩에서 챙길 기프트', en: 'Gifts to collect in this pack' },
+  stageExclusivesNone: { ko: '챙길 기프트 없음', en: 'Nothing to collect here' },
   stageGoalsFirst: { ko: '목표', en: 'Goals' },
   stageNext: { ko: '다음 층', en: 'Next floor' },
   stageDone: { ko: '{last}층까지 마쳤습니다', en: 'Floor {last} is done' },

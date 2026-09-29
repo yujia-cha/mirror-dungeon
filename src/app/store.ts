@@ -4,7 +4,7 @@ import lzString from 'lz-string';
 import type { PlanOptions } from '../core/types.ts';
 import { defaultOptions } from '../core/index.ts';
 import type { Lang } from './i18n.ts';
-import type { FusionGoalMap, RunState } from './lib/plan-input.ts';
+import { observationClosed, type FusionGoalMap, type RunState } from './lib/plan-input.ts';
 
 export type LeftTab = 'deck' | 'gifts';
 export type RightTab = 'plan' | 'goals' | 'tracker';
@@ -360,18 +360,21 @@ export function withoutLegacyGot(
 }
 
 /**
- * Misses only ever land on goal gifts (`autoFailedFor` filters by the goal list), and only the
- * goals panel and the entered pack can take one back. So a gift dropped from the goals carrying a
- * 「실패」 becomes unreachable while `planInputFor` keeps handing it to the planner as
- * `unobtainableGifts` — a fusion that eats it stays unresolvable with nothing on screen to undo.
- * Collected marks are left alone: the tracker and the stage set those on non-goal gifts on purpose.
+ * Misses only ever land on what the route collects (`autoFailedFor` fails what a visited pack
+ * was expected to drop), and only the goals panel and the entered pack can take one back. So a
+ * gift no longer collected that carries a 「실패」 becomes unreachable while `planInputFor` keeps
+ * handing it to the planner as `unobtainableGifts` — a fusion that eats it stays unresolvable with
+ * nothing on screen to undo. `collected` is `collectedGifts`, the goals plus what a fusion goal
+ * consumes: an ingredient's miss has to outlive toggles of the other goals, or the planner would
+ * quietly count the ingredient as in hand again. Collected marks are left alone: the tracker and
+ * the stage set those on non-goal gifts on purpose.
  */
 export function withoutStaleFailures(
   giftStatus: RunState['giftStatus'],
-  wanted: number[],
+  collected: ReadonlySet<number>,
 ): RunState['giftStatus'] {
   const stale = Object.entries(giftStatus).filter(
-    ([id, status]) => status === 'failed' && !wanted.includes(Number(id)),
+    ([id, status]) => status === 'failed' && !collected.has(Number(id)),
   );
   if (stale.length === 0) return giftStatus;
   const out = { ...giftStatus };
@@ -380,8 +383,8 @@ export function withoutStaleFailures(
 }
 
 /** The run with every unreachable miss dropped; the same object when nothing was stale. */
-function withRunFor(run: RunState, wanted: number[]): RunState {
-  const giftStatus = withoutStaleFailures(run.giftStatus, wanted);
+function withRunFor(run: RunState, wanted: number[], fusionGoal: FusionGoalMap): RunState {
+  const giftStatus = withoutStaleFailures(run.giftStatus, collectedGifts(wanted, fusionGoal));
   return giftStatus === run.giftStatus ? run : { ...run, giftStatus };
 }
 
@@ -577,7 +580,7 @@ export const useApp = create<AppState>()(
             wanted,
             fusionGoal,
             options: withObservedIn(state.options, wanted, fusionGoal),
-            run: withRunFor(state.run, wanted),
+            run: withRunFor(state.run, wanted, fusionGoal),
           };
         }),
 
@@ -589,7 +592,7 @@ export const useApp = create<AppState>()(
             wanted,
             fusionGoal,
             options: withObservedIn(state.options, wanted, fusionGoal),
-            run: withRunFor(state.run, wanted),
+            run: withRunFor(state.run, wanted, fusionGoal),
           };
         }),
 
@@ -598,7 +601,7 @@ export const useApp = create<AppState>()(
           wanted: [],
           fusionGoal: {},
           options: { ...state.options, observedGifts: [] },
-          run: withRunFor(state.run, []),
+          run: withRunFor(state.run, [], {}),
         })),
 
       setFusionGoal: (giftId, goal) =>
@@ -728,9 +731,12 @@ export const useApp = create<AppState>()(
           // A goal, or an ingredient a fusion goal has to consume — the shop hands those over too,
           // and observing one is often the only way a fusion finishes.
           const collected = collectedGifts(state.wanted, state.fusionGoal);
+          // Once floor 1 is left the starlight is spent: a new pin would make the plan count a
+          // gift as secured that the run can no longer observe. Taking a pin off stays allowed.
           if (
             !has &&
-            (state.options.observedGifts.length >= limits.max ||
+            (observationClosed(state.run) ||
+              state.options.observedGifts.length >= limits.max ||
               !collected.has(giftId) ||
               !limits.observable(giftId))
           )

@@ -17,6 +17,7 @@ import type { ConditionReport, DeckStats, GameIndexes } from '../../core/types.t
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { matchesQuery } from '../lib/hangul.ts';
+import { observationClosed } from '../lib/plan-input.ts';
 import { SIN_LABEL, badgeFor, tierLabel } from '../lib/labels.ts';
 import { prioritiseGifts, type GiftEntry, type GiftGroup } from '../lib/gift-priority.ts';
 import { judgementOf } from '../lib/judgement.ts';
@@ -59,6 +60,8 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
   const observedGifts = useApp((s) => s.options.observedGifts);
   const toggleObserved = useApp((s) => s.toggleObserved);
   const setOptions = useApp((s) => s.setOptions);
+  // Floor 1 left: the starlight is spent, and no slot takes or moves a pin any more.
+  const observeClosed = useApp((s) => observationClosed(s.run));
   const observeMax = data.rules.giftObservation.max;
   // The selection rule and the derived views over `wanted` are the shell's (`PlanProvider`), so
   // they are computed once and every surface agrees.
@@ -184,7 +187,9 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
     if (observedGifts.includes(id)) toggleObserved(id, { max: observeMax, observable: canObserve });
   };
   const drag = useChipDrag((giftId, slot) => {
-    if (slot === null || !canObserve(giftId)) return;
+    // The replace and reorder paths below write the options directly, so the store's own refusal
+    // of a pin after floor 1 does not reach them: the drop is ignored here instead.
+    if (slot === null || observeClosed || !canObserve(giftId)) return;
     // The slot order is what the run pays (`costTable`), so moving a pin between cells is a real
     // choice — dropping an already-pinned chip used to light the target up and then do nothing.
     if (observedGifts.includes(giftId)) {
@@ -443,6 +448,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck }: Props) {
         lang={lang}
         onPin={pin}
         onUnpin={unpin}
+        closed={observeClosed}
         dragging={drag.state.dragging !== null}
         over={drag.state.over}
         onHover={drag.setOver}

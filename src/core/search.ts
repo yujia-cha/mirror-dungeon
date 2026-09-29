@@ -60,6 +60,11 @@ export interface SearchInput {
    * be visited again, and the gifts those packs supply count as picked up there.
    */
   passed?: Map<number, number>;
+  /**
+   * Gifts the player left a played floor without picking up. The pack visited there hands every
+   * other gift of its own over for free, but not these: a copy has to come from a pack still ahead.
+   */
+  failed?: ReadonlySet<number>;
 }
 
 export interface SearchResult {
@@ -122,6 +127,8 @@ export function assignPacks(input: SearchInput): SearchResult {
 
   // Floors already settled — played floors and pins — keep their pack and are not up for grabs.
   const passed = input.passed ?? new Map<number, number>();
+  const visitedPacks = new Set(passed.values());
+  const failed = input.failed ?? new Set<number>();
   const settled = new Map<number, number>(passed);
   for (const [floorText, packId] of Object.entries(options.pinnedPacks)) {
     const floor = Number(floorText);
@@ -175,8 +182,11 @@ export function assignPacks(input: SearchInput): SearchResult {
     const supplying = (indexes.packsByGift.get(requirement.giftId) ?? []).filter((p) => !banned.has(p));
     let pool = freeLeft.get(requirement.giftId);
     if (!pool) {
-      // A pack already settled on a played or pinned floor hands the gift over at no cost.
-      pool = supplying.filter((packId) => settledPacks.has(packId));
+      // A pack already settled on a played or pinned floor hands the gift over at no cost — unless
+      // the player already left that pack's floor without it. A pack pinned on a floor still ahead
+      // is not the one it was missed on, so that one still counts.
+      const missedOn = failed.has(requirement.giftId) ? visitedPacks : null;
+      pool = supplying.filter((packId) => settledPacks.has(packId) && !missedOn?.has(packId));
       freeLeft.set(requirement.giftId, pool);
     }
     const freePack = pool.shift() ?? null;

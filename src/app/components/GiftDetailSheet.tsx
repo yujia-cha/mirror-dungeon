@@ -5,7 +5,7 @@
 import { Check, Eye, Link2 } from 'lucide-react';
 import type { GameData, Gift } from '../../core/schema.ts';
 import { chooseRecipe, observable } from '../../core/index.ts';
-import type { ConditionReport, GameIndexes } from '../../core/types.ts';
+import type { ConditionReport, GameIndexes, RoutePlan } from '../../core/types.ts';
 import { conditionText, reachedTierText } from '../condition-text.ts';
 import { renderEffect, withJosa } from '../format.ts';
 import { pick, t, type Lang } from '../i18n.ts';
@@ -13,17 +13,29 @@ import { conditionShort } from '../lib/gift-condition.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { badgeFor } from '../lib/labels.ts';
+import { observationClosed } from '../lib/plan-input.ts';
+import { routeSourceOf, routeSourceText } from '../lib/route-source.ts';
 import { useApp } from '../store.ts';
 import { DetailSurface } from './BlockDetail.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { Button } from './ui.tsx';
 
-/** 「조합으로만 · 화왕지절 전용」 — the badges of the old list row, said as a sentence. */
+/**
+ * 「조합으로만 · 화왕지절 전용」 — the badges of the old list row, said as a sentence. A gift with
+ * several exclusive packs (53 of them; 인연 얽힘 has seven) names two and counts the rest: the
+ * first pack alone used to read as the only source.
+ */
 function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): string {
   const parts = [t(badgeFor(gift.acquisition.kind).label, lang)];
-  const packId = gift.acquisition.exclusiveTo[0] ?? gift.acquisition.clearRewardOf ?? null;
-  if (packId !== null && packId !== undefined)
-    parts.push(t('giftPackOnly', lang, { name: pick(indexes.packById.get(packId)?.name, lang) }));
+  const packName = (id: number): string => pick(indexes.packById.get(id)?.name, lang);
+  const exclusive = gift.acquisition.exclusiveTo;
+  if (exclusive.length >= 3) {
+    parts.push(t('giftPackOnlyMany', lang, { name: packName(exclusive[0]!), n: exclusive.length - 1 }));
+  } else if (exclusive.length > 0) {
+    parts.push(t('giftPackOnly', lang, { name: exclusive.map(packName).join(' · ') }));
+  } else if (gift.acquisition.clearRewardOf !== null && gift.acquisition.clearRewardOf !== undefined) {
+    parts.push(t('giftPackOnly', lang, { name: packName(gift.acquisition.clearRewardOf) }));
+  }
   return parts.join(' · ');
 }
 
@@ -105,6 +117,7 @@ export function GiftDetailSheet({
   onToggleWanted,
   collected,
   blocked,
+  plan = null,
   onClose,
 }: {
   gift: Gift;
@@ -123,6 +136,11 @@ export function GiftDetailSheet({
   collected: boolean;
   /** Why this gift cannot be made a goal right now, if the current goals already carry it. */
   blocked?: Block;
+  /**
+   * The route on show, for the 「이 루트에서는 …」 line: where this plan gets the gift. The host
+   * (`PlanProvider`) passes its `shown` plan; without one the line is simply absent.
+   */
+  plan?: RoutePlan | null;
   onClose: () => void;
 }) {
   const wanted = useApp((s) => s.wanted);
@@ -130,6 +148,9 @@ export function GiftDetailSheet({
   const toggleObserved = useApp((s) => s.toggleObserved);
   const fusionGoal = useApp((s) => s.fusionGoal);
   const setFusionGoal = useApp((s) => s.setFusionGoal);
+  // Floor 1 left: the starlight is spent, and the sheet cannot pin any more (the store refuses
+  // too; the button says why instead of doing nothing).
+  const observeClosed = useApp((s) => observationClosed(s.run));
   const observeMax = data.rules.giftObservation.max;
 
   const name = pick(gift.name, lang);
@@ -138,6 +159,7 @@ export function GiftDetailSheet({
   const canObserve = observable(gift, data.rules);
   const observeFull = !pinned && observedGifts.length >= observeMax;
   const hasRecipe = Boolean(gift.fusion && (gift.fusion.recipes.length > 0 || gift.fusion.mixed));
+  const routeSource = routeSourceOf(plan, gift.id);
   const blockedBy =
     blocked && !selected
       ? t('giftBlockedIncluded', lang, { name: pick(indexes.giftById.get(blocked.by)?.name, lang) })
@@ -151,6 +173,18 @@ export function GiftDetailSheet({
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-base font-bold">{name}</span>
             <span className="text-xs text-fg-3">{acquisitionLine(gift, indexes, lang)}</span>
+            {/* Where this route gets the gift — the plan's own answer, not the acquisition class.
+                Absent for a gift the route says nothing about (not needed, in hand, unresolved). */}
+            {routeSource ? (
+              <span className="text-xs text-fg-2" data-testid="gift-route-source">
+                {t('giftRouteSource', lang, {
+                  source: routeSourceText(routeSource, {
+                    packName: (id) => pick(indexes.packById.get(id)?.name, lang),
+                    lang,
+                  }),
+                })}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -172,14 +206,16 @@ export function GiftDetailSheet({
               <Button
                 variant={pinned ? 'primary' : 'secondary'}
                 onClick={() => toggleObserved(gift.id, { max: observeMax, observable: () => canObserve })}
-                disabled={!canObserve || observeFull}
+                disabled={observeClosed || !canObserve || observeFull}
                 ariaLabel={t('giftsObserve', lang, { name })}
                 title={
-                  !canObserve
-                    ? t('giftsObserveNotAllowed', lang)
-                    : observeFull
-                      ? t('giftsObserveFull', lang, { max: observeMax })
-                      : undefined
+                  observeClosed
+                    ? t('giftsObserveClosed', lang)
+                    : !canObserve
+                      ? t('giftsObserveNotAllowed', lang)
+                      : observeFull
+                        ? t('giftsObserveFull', lang, { max: observeMax })
+                        : undefined
                 }
               >
                 <Eye size={13} aria-hidden />

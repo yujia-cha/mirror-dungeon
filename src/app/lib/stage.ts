@@ -1,7 +1,8 @@
 /**
  * What the run stage shows for a floor, derived from the plan and the run record. Pure, so the
  * stage can be reasoned about without a DOM: which packs the route lets the player enter here,
- * what a pack drops that nothing else does, and which goal gifts count as missed on leaving.
+ * what a pack drops that nothing else does, what the route expects of an entered pack, and which
+ * of those gifts count as missed on leaving.
  */
 import type { Difficulty, GameData } from '../../core/schema.ts';
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
@@ -122,14 +123,52 @@ export function exclusivesIndex(data: GameData, indexes: GameIndexes): (packId: 
 }
 
 /**
- * Goal gifts an entered pack should have dropped but which the player never marked: they are
- * missed once the floor is left. Gifts already recorded either way are left alone.
+ * The gifts the route expects a pack entered on `floor` to hand over, sorted by id: the plan's
+ * pickups for that floor (exclusive and pool alike, ingredients included — once entered, the floor
+ * is `passed` and its pickups are exactly what core now assumes is in hand), plus the pack's
+ * exclusives the route is out to collect. The exclusives are always added, since the plan on show
+ * can be a step behind the entry (the worker still answering, an alternative selected); with no
+ * entry for the floor they are the whole answer.
  */
-export function autoFailedFor(
+export function expectedFrom(
+  plan: RoutePlan | null,
+  floor: number,
   packId: number,
-  goals: ReadonlySet<number>,
-  giftStatus: Record<number, GiftStatus>,
+  needed: ReadonlySet<number>,
   exclusivesOf: (packId: number) => number[],
 ): number[] {
-  return exclusivesOf(packId).filter((id) => goals.has(id) && giftStatus[id] === undefined);
+  const entry = plan?.floors.find((f) => f.floor === floor && f.packId === packId);
+  const ids = new Set(exclusivesOf(packId).filter((id) => needed.has(id)));
+  for (const pickup of entry?.pickups ?? []) ids.add(pickup.giftId);
+  return [...ids].sort((a, b) => a - b);
+}
+
+/**
+ * Gifts an entered pack should have dropped but which the player never marked: they are missed
+ * once the floor is left. Gifts already recorded either way are left alone.
+ */
+export function autoFailedFor(expected: readonly number[], giftStatus: Record<number, GiftStatus>): number[] {
+  return expected.filter((id) => giftStatus[id] === undefined);
+}
+
+/**
+ * The gifts an entry answers for, sorted by id — what its tiles offer and what going back clears:
+ * the pack's exclusives, what the route expected of it, and a pool gift of the pack already
+ * missed. The last is not redundant: once a pool pickup is recorded as missed the planner routes
+ * it from another pack (or gives it up) and the passed floor stops naming it, so the expected list
+ * alone would neither show the miss nor take it back with the entry. Only a settle writes
+ * 'failed', so such a miss is an entry's doing.
+ */
+export function entryGifts(
+  packId: number,
+  expected: readonly number[],
+  giftStatus: Record<number, GiftStatus>,
+  indexes: GameIndexes,
+  exclusivesOf: (packId: number) => number[],
+): number[] {
+  const ids = new Set([...exclusivesOf(packId), ...expected]);
+  for (const id of indexes.packById.get(packId)?.giftPool ?? []) {
+    if (giftStatus[id] === 'failed') ids.add(id);
+  }
+  return [...ids].sort((a, b) => a - b);
 }

@@ -33,6 +33,15 @@ export interface RunState {
   startGifts: number[];
 }
 
+/**
+ * Whether 기프트 관측 can still be changed: the window closes the moment floor 1 is left, since
+ * the starlight is spent there. `runInProgress` is not the test — it turns true as soon as a pack is
+ * entered on floor 1, which is before the decision is spent.
+ */
+export function observationClosed(run: Pick<RunState, 'currentFloor'>): boolean {
+  return run.currentFloor > 1;
+}
+
 export function plannedGifts(wanted: number[], fusionGoal: FusionGoalMap = {}): WantedGift[] {
   return wanted.map((id) => ({
     giftId: id,

@@ -11,7 +11,7 @@
  *        --assume-unvisited (price every observation as a first visit to that pack, ×1.5),
  *        --pin floor:pack,…, --ban pack,…, --prefer pack,… (must be included somewhere),
  *        --floor N (run in progress: floors below N are played; pin them to say which pack was taken),
- *        --own gift,… (already in hand), --failed gift,… (missed for good),
+ *        --own gift,… (already in hand), --failed gift,… (not taken from the pack pinned on a played floor; routed again elsewhere),
  *        --result-only gift,… (fusion results whose ingredients are not goals of their own),
  *        --alternatives, --json, --explain, --trace
  */

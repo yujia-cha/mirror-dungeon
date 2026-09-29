@@ -15,7 +15,14 @@ import { conditionText } from '../condition-text.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
 import { planInputFor } from '../lib/plan-input.ts';
 import { usePlanner } from '../lib/use-planner.ts';
-import { autoFailedFor, exclusivesIndex, lastFloorOf, stageModeFor } from '../lib/stage.ts';
+import {
+  autoFailedFor,
+  entryGifts,
+  exclusivesIndex,
+  expectedFrom,
+  lastFloorOf,
+  stageModeFor,
+} from '../lib/stage.ts';
 import { blockedGifts, entanglements, ingredientsOf } from '../lib/entangle.ts';
 import { carriedBy } from '../lib/goal-toggle.ts';
 import { upgradeChildren } from '../lib/upgrade-children.ts';
@@ -77,7 +84,7 @@ export function PlanProvider({
   // The route and its alternatives, off the render thread where the browser allows it. The route
   // arrives first and the alternatives follow, because they are the expensive half — see
   // `use-planner.ts`.
-  const { plan, variants, pending: planPending } = usePlanner(data, indexes, input);
+  const { plan, variants, pending: planPending, variantsPending } = usePlanner(data, indexes, input);
   const variantIndex = variantKey === null ? 0 : variants.findIndex((v) => v.dropped[0] === variantKey) + 1;
   const setVariantIndex = useCallback(
     (index: number) => setVariantKey(index > 0 ? (variants[index - 1]?.dropped[0] ?? null) : null),
@@ -169,15 +176,29 @@ export function PlanProvider({
     // Leaving floor 1 for the first time is when the start-of-run gifts land in hand.
     const startSettle = run.currentFloor === 1 ? startGifts : [];
     /**
+     * What the route expects a pack entered on `floor` to hand over — the plan on show decides, so
+     * an alternative route's pickups are what its entries answer for. This is what the entered
+     * pack tiles and what leaving the floor settles: 「표시하지 않으면 실패」 has to mean the same
+     * list on screen and in the record, ingredients and pool pickups included.
+     */
+    const expectedIn = (floor: number, packId: number): number[] =>
+      expectedFrom(shown, floor, packId, needed, exclusivesOf);
+    /** The gifts a recorded entry answers for: its tiles, and what going back clears. */
+    const entryGiftsOf = (packId: number): number[] => {
+      const entry = Object.entries(run.visits).find(([, id]) => id === packId);
+      const expected = entry ? expectedIn(Number(entry[0]), packId) : [];
+      return entryGifts(packId, expected, run.giftStatus, indexes, exclusivesOf);
+    };
+    /**
      * What leaving `floor` records: the start-of-run gifts when floor 1 is behind for the first
-     * time, and the goal drops of a pack entered there that the player never marked. Every way off
-     * a floor settles the same — 「다음 층」 and a forward step on the floor strip alike.
+     * time, and the drops the route expected of a pack entered there that the player never marked.
+     * Every way off a floor settles the same — 「다음 층」 and a forward step on the floor strip alike.
      */
     const settleFor = (floor: number): { got: number[]; failed: number[] } => {
       const entered = run.visits[floor];
       return {
         got: startSettle,
-        failed: entered !== undefined ? autoFailedFor(entered, goals, run.giftStatus, exclusivesOf) : [],
+        failed: entered !== undefined ? autoFailedFor(expectedIn(floor, entered), run.giftStatus) : [],
       };
     };
     const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: startSettle });
@@ -191,7 +212,7 @@ export function PlanProvider({
       for (let f = from; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
       return setStageFloor(floor, { got, failed: [...failed] });
     };
-    const leave = (packId: number): void => unvisitPack(packId, { reset: exclusivesOf(packId) });
+    const leave = (packId: number): void => unvisitPack(packId, { reset: entryGiftsOf(packId) });
     const canObserve = (id: number): boolean => {
       const gift = indexes.giftById.get(id);
       return gift ? observable(gift, data.rules) : false;
@@ -249,6 +270,7 @@ export function PlanProvider({
       shown,
       planPending,
       variants,
+      variantsPending,
       variantIndex,
       setVariantIndex,
       variant,
@@ -265,6 +287,8 @@ export function PlanProvider({
       keywordLabel,
       ctx,
       exclusivesOf,
+      expectedIn,
+      entryGiftsOf,
       startGifts,
       stageMode: stageModeFor(run, run.stageFloor, lastFloor),
       enter,
@@ -284,6 +308,7 @@ export function PlanProvider({
     shown,
     planPending,
     variants,
+    variantsPending,
     variantIndex,
     setVariantIndex,
     variant,
@@ -325,6 +350,7 @@ export function PlanProvider({
           onToggleWanted={toggleGoal}
           collected={value.needed.has(sheetGift.id)}
           blocked={wanted.includes(sheetGift.id) ? undefined : blocked.get(sheetGift.id)}
+          plan={shown}
           onClose={closeSheet}
         />
       ) : null}
