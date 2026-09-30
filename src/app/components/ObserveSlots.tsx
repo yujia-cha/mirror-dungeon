@@ -3,6 +3,11 @@
  * cell is a 「+」 that opens a list of the selected gifts that can be observed; a filled one shows
  * the gift with a ✕. A selected-gift chip dragged over a cell (see `useChipDrag`) highlights it
  * and lands there on release.
+ *
+ * An empty cell also shows what the planner would observe there (`suggested`, the unpinned part of
+ * `plan.start.observed`), drawn dim with 「추천」: the route panel already counted those, and a row of
+ * bare 「+」 beside a route that uses three observations read as if nothing were planned. Pressing
+ * it opens the same list with the suggestion first — one way in, and a stray press pins nothing.
  */
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
@@ -22,6 +27,7 @@ export function ObserveSlots({
   slots,
   max,
   candidates,
+  suggested,
   indexes,
   judgementOf,
   lang,
@@ -37,6 +43,8 @@ export function ObserveSlots({
   max: number;
   /** Selected gifts that can still be pinned. */
   candidates: number[];
+  /** What the planner would observe in the empty cells, in order (none once `closed`). */
+  suggested: number[];
   indexes: GameIndexes;
   judgementOf: (giftId: number) => Judgement | null;
   lang: Lang;
@@ -68,6 +76,9 @@ export function ObserveSlots({
       data-closed={closed || undefined}
       aria-label={t('observeSlots', lang)}
     >
+      <p className="font-num text-xs text-fg-2" data-testid="observe-slots-count">
+        {t('observeSlotsCount', lang, { n: slots.length, max })}
+      </p>
       <div className="flex flex-wrap gap-1.5">
         {cells.map((giftId, i) => {
           const gift = giftId !== null ? indexes.giftById.get(giftId) : undefined;
@@ -76,10 +87,14 @@ export function ObserveSlots({
             over === i
               ? 'border-ink bg-surface-2 ring-1 ring-ink'
               : dragging
-                ? 'border-dashed border-line-strong'
+                ? 'border-dashed border-line-control'
                 : gift
                   ? 'border-line bg-surface'
-                  : 'border-dashed border-line';
+                  : 'border-dashed border-line-control';
+          // The empty cells take the suggestions in order, after the pins.
+          const hintId = gift ? undefined : suggested[i - slots.length];
+          const hint = hintId !== undefined ? indexes.giftById.get(hintId) : undefined;
+          const hintName = hint ? pick(hint.name, lang) : '';
           return (
             <div
               key={giftId ?? `empty-${i}`}
@@ -99,14 +114,14 @@ export function ObserveSlots({
                 <>
                   <GiftIcon gift={gift} size={32} judgement={judgementOf(gift.id)} lang={lang} />
                   <span className="min-w-0 flex-1 truncate text-xs">{name}</span>
-                  <span className="font-num text-[10px] text-fg-3" aria-hidden>
+                  <span className="font-num text-2xs text-fg-3" aria-hidden>
                     {i + 1}
                   </span>
                   <button
                     type="button"
                     onClick={() => onUnpin(gift.id)}
                     aria-label={t('observeSlotClear', lang, { name })}
-                    className="text-fg-3 hover:text-fg"
+                    className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-sm text-fg-3 hover:bg-surface-2 hover:text-fg"
                   >
                     <X size={11} />
                   </button>
@@ -118,10 +133,24 @@ export function ObserveSlots({
                   aria-haspopup="dialog"
                   aria-expanded={open === i}
                   aria-controls={popoverId(i)}
-                  aria-label={t('observeSlotAdd', lang)}
-                  className="flex h-full w-full items-center justify-center rounded-md text-fg-3 hover:bg-surface-2 hover:text-fg"
+                  aria-label={
+                    hint ? t('observeSlotAddSuggested', lang, { name: hintName }) : t('observeSlotAdd', lang)
+                  }
+                  data-suggested={hint?.id}
+                  className={`flex h-full w-full items-center rounded-md text-fg-3 hover:bg-surface-2 hover:text-fg ${hint ? 'gap-1.5 text-left' : 'justify-center'}`}
                 >
-                  <Plus size={16} />
+                  {hint ? (
+                    <>
+                      <GiftIcon gift={hint} size={32} judgement={judgementOf(hint.id)} dim lang={lang} />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate text-xs text-fg-2">{hintName}</span>
+                        <span className="text-2xs text-fg-3">{t('routeObservedRecommended', lang)}</span>
+                      </span>
+                      <Plus size={14} aria-hidden className="flex-none" />
+                    </>
+                  ) : (
+                    <Plus size={16} />
+                  )}
                 </button>
               )}
               {open === i ? (
@@ -156,6 +185,11 @@ export function ObserveSlots({
                             >
                               <GiftIcon gift={candidate} size={32} judgement={judgementOf(id)} lang={lang} />
                               <span className="min-w-0 flex-1 truncate">{candidateName}</span>
+                              {suggested.includes(id) ? (
+                                <span className="flex-none text-2xs text-fg-3">
+                                  {t('routeObservedRecommended', lang)}
+                                </span>
+                              ) : null}
                             </button>
                           </li>
                         );

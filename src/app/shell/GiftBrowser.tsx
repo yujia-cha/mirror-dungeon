@@ -96,7 +96,7 @@ export function GiftBrowser({
         )}
       </div>
       <div className="flex flex-none flex-col gap-2 border-b border-line px-3 py-2">
-        <label className="flex h-9 items-center gap-2 rounded-sm border border-line-strong bg-surface px-2.5 text-sm">
+        <label className="flex h-9 items-center gap-2 rounded-sm border border-line-control bg-surface px-2.5 text-sm">
           <Search size={14} aria-hidden className="flex-none text-fg-3" />
           <input
             ref={(el) => {

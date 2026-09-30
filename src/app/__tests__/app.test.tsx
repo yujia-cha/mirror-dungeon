@@ -1635,7 +1635,7 @@ describe('GiftsStep', () => {
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
     const slots = () => within(screen.getByTestId('observe-slots')).getAllByTestId('observe-slot');
     // Pins fill from the cheapest cell outward, so the 「+」 no longer claims a numbered slot.
-    const plus = () => screen.queryAllByRole('button', { name: '관측 지정 추가' });
+    const plus = () => screen.queryAllByRole('button', { name: /^관측 지정 추가/ });
     expect(slots()).toHaveLength(3);
     expect(plus()).toHaveLength(3);
     // The chips carry no star or eye buttons any more.
@@ -1680,7 +1680,7 @@ describe('GiftsStep', () => {
     const { deck, deployed } = useApp.getState();
     renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
 
-    await user.click(screen.getAllByRole('button', { name: '관측 지정 추가' })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^관측 지정 추가/ })[0]!);
     const list = screen.getByTestId('observe-candidates');
     // The three ingredients, and not the result: the route collects those, and they are observable.
     expect(
@@ -3479,7 +3479,7 @@ describe('overlays that used to fight each other', () => {
         lang="ko"
       />,
     );
-    const plus = () => screen.getAllByRole('button', { name: '관측 지정 추가' })[0]!;
+    const plus = () => screen.getAllByRole('button', { name: /^관측 지정 추가/ })[0]!;
     await user.click(plus());
     expect(screen.getByTestId('observe-candidates')).toBeInTheDocument();
     expect(plus()).toHaveAttribute('aria-expanded', 'true');
@@ -4274,7 +4274,7 @@ describe('RunStage · start-of-run gifts', () => {
     expect(useApp.getState().run.currentFloor).toBe(2);
     expect(slots()).toHaveLength(3);
     expect(slots().map((s) => s.getAttribute('data-gift'))).toEqual(PINS.map(String));
-    expect(screen.queryAllByRole('button', { name: '관측 지정 추가' })).toHaveLength(0);
+    expect(screen.queryAllByRole('button', { name: /^관측 지정 추가/ })).toHaveLength(0);
     expect(closedNote()).toBeInTheDocument();
     // A drop that would reorder the pins goes around the store: ignored just the same.
     dragToSlot(9423, 0);
@@ -4288,12 +4288,12 @@ describe('RunStage · start-of-run gifts', () => {
     await user.click(screen.getByRole('button', { name: '깨진 안경 지정 해제' }));
     expect(useApp.getState().options.observedGifts).toEqual([9191, 9419]);
     expect(slots()).toHaveLength(2);
-    expect(screen.queryAllByRole('button', { name: '관측 지정 추가' })).toHaveLength(0);
+    expect(screen.queryAllByRole('button', { name: /^관측 지정 추가/ })).toHaveLength(0);
 
     await user.click(screen.getByRole('button', { name: '공장 자동화 입장 취소' }));
     expect(useApp.getState().run.currentFloor).toBe(1);
     expect(closedNote()).toBeNull();
-    expect(screen.queryAllByRole('button', { name: '관측 지정 추가' })).toHaveLength(1);
+    expect(screen.queryAllByRole('button', { name: /^관측 지정 추가/ })).toHaveLength(1);
     sheet = await openSheet(9191, '프레스티지 카드');
     expect(within(sheet).getByRole('button', { name: '프레스티지 카드 지정 해제' })).toBeEnabled();
   });
@@ -4511,5 +4511,137 @@ describe('Tracker', () => {
     await user.click(within(tile(9083)).getByTestId('gift-tile-toggle'));
     expect(screen.queryByTestId('fusion-notice')).toBeNull();
     expect(useApp.getState().run.giftStatus).toEqual({ 9142: 'got' });
+  });
+});
+
+describe('M78 · guide, header doors, clear confirm, observation suggestions', () => {
+  const renderShell = () => {
+    const { deck, deployed } = useApp.getState();
+    return render(
+      <AppShell
+        data={data}
+        indexes={indexes}
+        stats={statsFor(deck, deployed)}
+        lang="ko"
+        dark
+        seasons={[
+          {
+            id: data.meta.dungeon.id,
+            name: data.meta.dungeon.name,
+            dataVersion: '1',
+            lastFloor: 15,
+            provisional: false,
+          },
+        ]}
+        onSeason={() => undefined}
+        onShare={() => undefined}
+        onToggleLang={() => undefined}
+        onToggleDark={() => undefined}
+      />,
+    );
+  };
+  const adopt = (): void => {
+    useApp.getState().adoptSeason({
+      season: data.meta.dungeon.id,
+      lastFloor: 15,
+      giftIds: new Set(data.gifts.map((gift) => gift.id)),
+      packIds: new Set(data.packs.map((pack) => pack.id)),
+      recipes: ingredientTree(indexes, data.rules.fusion.maxShopSlots),
+    });
+  };
+
+  it('opens the guide from the header and turns its cards with the buttons and the arrow keys', async () => {
+    const user = userEvent.setup();
+    renderShell();
+    await user.click(screen.getByRole('button', { name: '설명서' }));
+    const guide = screen.getByTestId('guide');
+    const current = () =>
+      within(guide)
+        .getAllByTestId('guide-card')
+        .findIndex((c) => c.dataset.current);
+    const cards = within(guide).getAllByTestId('guide-card');
+    expect(cards.map((c) => c.querySelector('h3')!.textContent)).toEqual([
+      '무엇을 해 주나',
+      '덱',
+      '기프트',
+      '루트',
+      '런',
+      '데이터와 권리',
+    ]);
+    expect(current()).toBe(0);
+    // Only the card on show takes focus; the rest are inert.
+    expect(cards[1]).toHaveAttribute('inert');
+    expect(within(guide).getByRole('button', { name: '이전 카드' })).toBeDisabled();
+    await user.click(within(guide).getByRole('button', { name: '다음 카드' }));
+    expect(current()).toBe(1);
+    expect(screen.getByTestId('guide-live')).toHaveTextContent('2 / 6 · 덱');
+    fireEvent.keyDown(guide, { key: 'ArrowRight' });
+    expect(current()).toBe(2);
+    fireEvent.keyDown(guide, { key: 'ArrowLeft' });
+    expect(current()).toBe(1);
+    for (let i = 0; i < 4; i++) fireEvent.keyDown(guide, { key: 'ArrowRight' });
+    expect(current()).toBe(5);
+    // The last card links the notice and its forward button closes the guide.
+    expect(within(cards[5]!).getByRole('link')).toHaveAttribute('href', expect.stringMatching(/NOTICE$/));
+    await user.click(within(guide).getByTestId('guide-done'));
+    expect(screen.queryByTestId('guide')).toBeNull();
+    // Escape closes it too.
+    await user.click(screen.getByRole('button', { name: '설명서' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('guide')).toBeNull();
+  });
+
+  it('draws each panel door with its own side’s mark and says when it is open', async () => {
+    const user = userEvent.setup();
+    renderShell();
+    const left = screen.getByTestId('toggle-panel-left');
+    expect(left).toHaveAttribute('aria-expanded', 'false');
+    expect(left).not.toHaveAttribute('data-open');
+    expect(left.querySelector('svg')!.getAttribute('class')).toMatch(/panel-left(?!-close)/);
+    await user.click(left);
+    expect(left).toHaveAttribute('aria-expanded', 'true');
+    expect(left).toHaveAttribute('data-open');
+    expect(left.querySelector('svg')!.getAttribute('class')).toMatch(/panel-left-close/);
+  });
+
+  it('asks before clearing every goal', async () => {
+    const user = userEvent.setup();
+    adopt();
+    for (const id of [9267, 9423]) useApp.getState().toggleWanted(id);
+    const { deck, deployed } = useApp.getState();
+    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    await user.click(screen.getByTestId('gifts-clear'));
+    const dialog = screen.getByTestId('confirm-dialog');
+    expect(dialog).toHaveTextContent('목표 2개');
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    expect(useApp.getState().wanted).toEqual([9267, 9423]);
+    await user.click(screen.getByTestId('gifts-clear'));
+    await user.click(
+      within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '목표 비우기' }),
+    );
+    expect(useApp.getState().wanted).toEqual([]);
+  });
+
+  it('shows the planner’s observation in an empty cell and puts it first in the list', async () => {
+    const user = userEvent.setup();
+    adopt();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267);
+    useApp.getState().toggleWanted(9423); // observable; the planner recommends observing it
+    const { deck, deployed } = useApp.getState();
+    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    expect(screen.getByTestId('observe-slots-count')).toHaveTextContent('관측 0/3');
+    const cell = await screen.findByRole('button', { name: /^관측 지정 추가 · 추천 / });
+    expect(cell).toHaveAttribute('data-suggested', '9423');
+    expect(cell).toHaveTextContent('추천');
+    // Pressing it pins nothing by itself: it opens the list, the suggestion on top.
+    await user.click(cell);
+    expect(useApp.getState().options.observedGifts).toEqual([]);
+    const first = within(screen.getByTestId('observe-candidates')).getAllByRole('button')[0]!;
+    expect(first).toHaveTextContent('추천');
+    await user.click(first);
+    expect(useApp.getState().options.observedGifts).toEqual([9423]);
+    expect(screen.getByTestId('observe-slots-count')).toHaveTextContent('관측 1/3');
+    expect(screen.queryByRole('button', { name: /추천 / })).toBeNull();
   });
 });

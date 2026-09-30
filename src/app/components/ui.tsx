@@ -129,6 +129,7 @@ export function IconButton({
   className = '',
   expanded,
   controls,
+  testId,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -137,6 +138,7 @@ export function IconButton({
   /** For a button that opens a panel: its open state and the panel's id. */
   expanded?: boolean;
   controls?: string;
+  testId?: string;
 }) {
   return (
     <button
@@ -146,6 +148,7 @@ export function IconButton({
       title={label}
       aria-expanded={expanded}
       aria-controls={controls}
+      data-testid={testId}
       className={`inline-flex h-8 w-8 flex-none items-center justify-center rounded-sm border ${expanded ? 'border-ink bg-ink text-ink-fg' : 'border-line bg-surface text-fg-2 hover:bg-surface-2'} ${className}`}
     >
       {children}
@@ -248,7 +251,7 @@ export function FilterSelect<T extends string>({
   return (
     <label
       className={`relative inline-flex h-7 flex-none items-center gap-1 rounded-full border px-2.5 text-xs font-medium ${
-        on ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong bg-surface text-fg-2'
+        on ? 'border-ink bg-ink text-ink-fg' : 'border-line-control bg-surface text-fg-2'
       }`}
     >
       <span>{on ? `${label} · ${current}` : label}</span>

@@ -66,7 +66,7 @@ export function DetailSurface({
     // has to cover the page it was opened from, or the page's back button stays pressable under it.
     return createPortal(
       <>
-        <div className="fixed inset-0 z-50 bg-black/40" aria-hidden />
+        <div className="fixed inset-0 z-50 bg-scrim" aria-hidden />
         <div
           ref={ref}
           id={id}

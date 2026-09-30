@@ -84,7 +84,9 @@ export function SelectedTiles({
               onClick={() => onRemove(id)}
               aria-label={t('removeFromSelection', lang, { name })}
               title={t('removeFromSelection', lang, { name })}
-              className="absolute -right-1 -top-1 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full border border-line bg-surface text-fg-3 hover:bg-surface-2 hover:text-fg"
+              // The circle stays 16px so it does not cover the icon; the pseudo-element around it
+              // makes the press area 24px (WCAG 2.5.8) — it was the 16px circle alone.
+              className="absolute -right-1 -top-1 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full border border-line bg-surface text-fg-3 after:absolute after:-inset-[5px] after:content-[''] hover:bg-surface-2 hover:text-fg"
             >
               <X size={11} aria-hidden />
             </button>
@@ -94,7 +96,7 @@ export function SelectedTiles({
               onClick={() => onOpen(id)}
               aria-haspopup="dialog"
               aria-label={t('giftDetail', lang, { name })}
-              className="line-clamp-2 h-[24px] w-full break-keep text-center text-[10px] font-medium leading-tight text-fg underline-offset-2 hover:underline"
+              className="line-clamp-2 h-[28px] w-full break-keep text-center text-xs font-medium leading-tight text-fg underline-offset-2 hover:underline"
             >
               {name}
             </button>

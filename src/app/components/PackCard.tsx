@@ -57,7 +57,7 @@ export function PackCard({
       {image}
       {caption ? (
         <span
-          className={`line-clamp-2 w-full break-keep text-center leading-tight text-fg ${size >= 64 ? 'text-xs' : 'text-[10px]'}`}
+          className={`line-clamp-2 w-full break-keep text-center leading-tight text-fg ${size >= 64 ? 'text-xs' : 'text-2xs'}`}
           style={{ width: Math.max(size, 52) }}
         >
           {name}

@@ -46,6 +46,7 @@ import {
   type GiftTileData,
 } from '../lib/gift-tile.ts';
 import { ObserveSlots } from '../components/ObserveSlots.tsx';
+import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
 interface Props {
@@ -86,7 +87,7 @@ export function GiftsStep({
   const observeMax = data.rules.giftObservation.max;
   // The selection rule and the derived views over `wanted` are the shell's (`PlanProvider`), so
   // they are computed once and every surface agrees.
-  const { openGift, childrenOf, entangled, blocked, needed, toggleGoal: toggle } = usePlan();
+  const { plan, openGift, childrenOf, entangled, blocked, needed, toggleGoal: toggle } = usePlan();
 
   // Only the query: the filters live in the 「모두 보기」 browser.
   const filterState = useGiftFilters();
@@ -99,6 +100,9 @@ export function GiftsStep({
   const [chipKeyword, setChipKeyword] = useState<Keyword | 'all'>('all');
   const [chipPack, setChipPack] = useState<string>('all');
   const [collapsed, setCollapsed] = useState(false);
+  // Clearing drops every goal, their fusion settings and the observation pins in one press, and
+  // nothing brings them back — so it asks first, like the header's reset.
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
 
@@ -153,7 +157,22 @@ export function GiftsStep({
    * and observation is the one way to make that certain. They have no chip to drag (the selection
    * holds the result, not its pieces), so the 「+」 list is their way in.
    */
-  const observeCandidates = [...needed].filter((id) => canObserve(id) && !observedGifts.includes(id));
+  // What the planner would observe in the cells still empty. Gone once floor 1 is left: core stops
+  // recommending then, and the cells are no longer drawn.
+  const observeSuggested = observeClosed
+    ? []
+    : (plan?.start.observed ?? [])
+        .filter((entry) => !entry.pinned && !observedGifts.includes(entry.giftId))
+        .map((entry) => entry.giftId)
+        // Only what a pin could hold: the store drops a pin outside the goals' tree.
+        .filter((id) => needed.has(id) && canObserve(id));
+  // The suggestions lead the list an empty cell opens, in the planner's order.
+  const observeCandidates = [
+    ...observeSuggested,
+    ...[...needed].filter(
+      (id) => canObserve(id) && !observedGifts.includes(id) && !observeSuggested.includes(id),
+    ),
+  ];
   const pin = (id: number): void => toggleObserved(id, { max: observeMax, observable: canObserve });
   const unpin = (id: number): void => {
     if (observedGifts.includes(id)) toggleObserved(id, { max: observeMax, observable: canObserve });
@@ -311,7 +330,7 @@ export function GiftsStep({
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center gap-1.5">
-        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-sm border border-line-strong bg-surface px-2.5 text-sm">
+        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-sm border border-line-control bg-surface px-2.5 text-sm">
           <Search size={14} aria-hidden className="flex-none text-fg-3" />
           <input
             value={query}
@@ -332,7 +351,7 @@ export function GiftsStep({
             aria-label={t(browseOpen ? 'giftsBrowseHide' : 'giftsBrowseAll', lang)}
             title={t(browseOpen ? 'giftsBrowseHide' : 'giftsBrowseAll', lang)}
             aria-expanded={browseOpen}
-            className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-sm border border-line-strong bg-surface text-fg-2 hover:bg-surface-2 hover:text-fg"
+            className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-sm border border-line-control bg-surface text-fg-2 hover:bg-surface-2 hover:text-fg"
             data-testid="gift-browse-all"
           >
             {browseOpen ? <ChevronsLeft size={16} aria-hidden /> : <ChevronsRight size={16} aria-hidden />}
@@ -350,6 +369,7 @@ export function GiftsStep({
         slots={observedGifts}
         max={observeMax}
         candidates={observeCandidates}
+        suggested={observeSuggested}
         indexes={indexes}
         judgementOf={judgementFor}
         lang={lang}
@@ -400,7 +420,13 @@ export function GiftsStep({
                 allLabel={t('filterAll', lang)}
               />
             ) : null}
-            <button type="button" onClick={clearWanted} className="ml-auto text-xs text-fg-3 underline">
+            <button
+              type="button"
+              onClick={() => setConfirmClear(true)}
+              aria-haspopup="dialog"
+              className="-my-1 ml-auto px-1 py-1.5 text-xs text-fg-3 underline hover:text-fg"
+              data-testid="gifts-clear"
+            >
               {t('giftsClear', lang)}
             </button>
           </div>
@@ -418,6 +444,19 @@ export function GiftsStep({
             onRemove={removeWanted}
           />
         </div>
+      ) : null}
+      {confirmClear ? (
+        <ConfirmDialog
+          title={t('giftsClear', lang)}
+          message={t('giftsClearConfirm', lang, { n: wanted.length })}
+          confirmLabel={t('giftsClear', lang)}
+          onConfirm={() => {
+            setConfirmClear(false);
+            clearWanted();
+          }}
+          onCancel={() => setConfirmClear(false)}
+          lang={lang}
+        />
       ) : null}
 
       {draggedGift

@@ -72,7 +72,7 @@ export function FloorHeader({ mode }: { mode: StageMode }) {
                 // takes the accent; entered and skipped floors keep saying what they already said.
                 // A floor still out of reach is drawn in `fg-3` rather than faded: `opacity-60`
                 // put 11px text at about 3.0:1, and this is 5.02:1.
-                className={`flex h-9 w-full flex-col items-center justify-center rounded-sm border text-[11px] leading-none transition-colors ${
+                className={`flex h-9 w-full flex-col items-center justify-center rounded-sm border text-xs leading-none transition-colors ${
                   f === floor ? 'border-accent ring-1 ring-accent' : 'border-line'
                 } ${state === 'entered' ? 'bg-ink text-ink-fg' : state === 'skipped' ? 'bg-surface-3 text-fg-3' : 'bg-surface text-fg-2'} disabled:cursor-default disabled:bg-bg disabled:text-fg-3`}
               >

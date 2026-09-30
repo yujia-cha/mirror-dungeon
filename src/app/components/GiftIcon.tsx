@@ -163,7 +163,7 @@ export function GiftIcon({
         ) : null}
         {size >= 32 && gift.tier !== null ? (
           // 'EX' is a tier of its own; 'TEX' was a number template applied to a word.
-          <span className="absolute left-0 top-0 rounded-br-sm bg-surface px-0.5 font-num text-[9px] leading-[11px] text-fg-2">
+          <span className="absolute left-0 top-0 rounded-br-sm bg-surface px-0.5 font-num text-2xs leading-[12px] text-fg-2">
             {tierLabel(gift.tier)}
           </span>
         ) : null}
@@ -183,10 +183,7 @@ export function GiftIcon({
   return (
     <span className="flex min-w-0 flex-col items-center gap-0.5" style={{ width: Math.max(size, 52) }}>
       {tile}
-      <span
-        className="line-clamp-2 w-full break-keep text-center text-[10px] leading-tight text-fg"
-        aria-hidden
-      >
+      <span className="line-clamp-2 w-full break-keep text-center text-xs leading-tight text-fg" aria-hidden>
         {label}
       </span>
     </span>

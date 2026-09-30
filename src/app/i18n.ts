@@ -146,6 +146,10 @@ export const STRINGS = {
   giftsNoMatch: { ko: '일치하는 기프트 없음', en: 'No gift matches' },
   giftsSelected: { ko: '목표 {n}', en: 'Goals {n}' },
   giftsClear: { ko: '목표 비우기', en: 'Clear goals' },
+  giftsClearConfirm: {
+    ko: '목표 {n}개와 조합 설정·관측 지정을 모두 뺍니다.',
+    en: 'Removes all {n} goals with their fusion settings and observation pins.',
+  },
   // The 「모두 보기」 browser (the >> at the end of the tab's search row): every gift in one grid with
   // the filters, over the stage on a desktop and as its own page on a phone.
   giftsBrowseAll: { ko: '모두 보기', en: 'Browse all' },
@@ -165,6 +169,11 @@ export const STRINGS = {
   },
   observeSlots: { ko: '관측', en: 'Observation' },
   observeSlotAdd: { ko: '관측 지정 추가', en: 'Add an observation' },
+  observeSlotAddSuggested: {
+    ko: '관측 지정 추가 · 추천 {name}',
+    en: 'Add an observation · suggested {name}',
+  },
+  observeSlotsCount: { ko: '관측 {n}/{max}', en: 'Observation {n}/{max}' },
   // The observation toggle reads the same everywhere it appears (pack sheet row, start-row detail,
   // gift sheet, slots): 「관측 지정」 off, 「지정됨」 on, and 「{name} 지정 해제」 to release it.
   observePinned: { ko: '지정됨', en: 'Pinned' },
@@ -420,6 +429,12 @@ export const STRINGS = {
   },
   actionObserveGift: { ko: '{name} 관측 지정', en: 'Observe {name}' },
   actionReleaseObservations: { ko: '관측 지정 해제', en: 'Unpin observations' },
+  guide: { ko: '설명서', en: 'Guide' },
+  guidePrev: { ko: '이전 카드', en: 'Previous card' },
+  guideNext: { ko: '다음 카드', en: 'Next card' },
+  guideDone: { ko: '닫기', en: 'Close' },
+  guideCard: { ko: '{n} / {total} · {title}', en: '{n} / {total} · {title}' },
+  guideNotice: { ko: '출처와 라이선스 (NOTICE)', en: 'Sources and licences (NOTICE)' },
 } as const satisfies Record<string, Localized>;
 
 export type StringKey = keyof typeof STRINGS;
@@ -435,3 +450,127 @@ export function pick(value: Localized | undefined, lang: Lang): string {
   if (!value) return '';
   return value[lang] || value.ko || value.en;
 }
+
+/**
+ * The guide the header's 「?」 opens, one card per section. It follows the visitor-facing sections
+ * of `README.md` — same titles, same order — so a reader who met the README on GitHub finds the
+ * same map here; `src/app/__tests__/guide.test.ts` holds every Korean title to a README heading.
+ * The development section is left out: it is for someone cloning the repository, not using the
+ * site. Each card says the least that gets a first-time visitor through that part of the page.
+ */
+export interface GuideCard {
+  title: Localized;
+  lines: Localized[];
+  /** The card ends with the link to `NOTICE`. */
+  notice?: true;
+}
+
+export const GUIDE_CARDS = [
+  {
+    title: { ko: '무엇을 해 주나', en: 'What it does' },
+    lines: [
+      {
+        ko: '덱과 목표 E.G.O 기프트를 고르면, 그 기프트를 모으려면 몇 층에서 어느 테마팩에 들어가야 하는지 계산합니다.',
+        en: 'Pick a deck and the E.G.O gifts you want, and it works out which theme pack to enter on which floor to collect them.',
+      },
+      {
+        ko: '계산 순서: 조합 기프트를 재료로 펼치고 → 팩이 필요 없는 범용 드랍을 빼고 → 관측·시작 기프트를 정한 뒤 → 기프트마다 그것을 주는 팩을 골라 층에 앉힙니다.',
+        en: 'In order: fusions are unfolded into ingredients → general drops, which need no pack, are set aside → observation and the starting gift are chosen → each gift gets a pack that gives it, seated on a floor.',
+      },
+      {
+        ko: '전부 얻을 수 없으면 무엇을 목표에서 빼야 하는지, 왜 얻을 수 없는지 알려 줍니다.',
+        en: 'When not everything fits, it says which goal to drop and why a gift cannot be had.',
+      },
+      {
+        ko: '덱과 목표는 ⋯ 메뉴의 「링크 복사」로 공유할 수 있습니다.',
+        en: 'Share the deck and goals with 「Copy link」 in the ⋯ menu.',
+      },
+    ],
+  },
+  {
+    title: { ko: '덱', en: 'Deck' },
+    lines: [
+      {
+        ko: '왼쪽 위 「덱」 버튼이 덱과 기프트 패널을 엽니다.',
+        en: 'The 「Deck」 button at the top left opens the deck and gift panel.',
+      },
+      {
+        ko: '수감자 칸을 눌러 인격을 고르거나, 게임의 편성 코드를 「코드 가져오기」에 붙여 넣습니다.',
+        en: 'Press a sinner’s slot to pick an identity, or paste the game’s formation code into 「Import code」.',
+      },
+      {
+        ko: '조건부 기프트는 대부분 출격한 인격만 셉니다. 칸의 「대기」를 눌러 「출격」으로 바꿔야 조건 판정이 맞습니다.',
+        en: 'Most conditional gifts count deployed identities only. Switch a slot from 「Reserve」 to 「Deployed」 for the conditions to read right.',
+      },
+    ],
+  },
+  {
+    title: { ko: '기프트', en: 'Gifts' },
+    lines: [
+      {
+        ko: '기프트 탭에서 아이콘을 누르면 목표에 추가, 이름을 누르면 상세입니다.',
+        en: 'In the Gifts tab, press an icon to add it as a goal, its name for the details.',
+      },
+      {
+        ko: '탭에는 지금 덱으로 활성인 기프트만 나옵니다. 나머지는 검색하거나 검색창 끝의 >>(모두 보기)로 찾습니다. 초성 검색도 됩니다.',
+        en: 'The tab lists the gifts your deck activates. Find the rest by search or with >> (Browse all) at the end of the search box.',
+      },
+      {
+        ko: '아이콘의 바깥 링은 조건 판정(초록 충족 · 빨강 미충족), 오른쪽 아래 배지는 키워드입니다.',
+        en: 'The ring around an icon is the condition (green met · red not met); the bottom-right badge is the keyword.',
+      },
+      {
+        ko: '검색창 아래 관측 칸에 기프트를 넣으면 기프트 관측으로 받습니다. 조합 결과는 관측할 수 없으니 재료를 넣습니다. 1층을 떠나면 바꿀 수 없습니다.',
+        en: 'Put a gift in an observation cell below the search box to take it through Gift Observation. A fusion cannot be observed — pin its ingredients. It locks once you leave floor 1.',
+      },
+    ],
+  },
+  {
+    title: { ko: '루트', en: 'Route' },
+    lines: [
+      {
+        ko: '오른쪽 위 「전체 루트」가 층별 테마팩을 노선도로 보여 줍니다.',
+        en: '「Full route」 at the top right draws the packs floor by floor as a route map.',
+      },
+      {
+        ko: '「획득 M/T」는 목표 중 루트가 가져다주는 수이고, 「범용 드랍」은 어느 팩에서나 나올 수 있지만 반드시 나오지는 않는 것입니다.',
+        en: '「Got M/T」 counts the goals the route brings; 「General drops」 can come from any pack but are never guaranteed.',
+      },
+      {
+        ko: '전부 얻을 수 없으면 요약 아래 카드가 어떤 기프트를 빼면 무엇이 달라지는지 한 줄씩 보여 줍니다. ✕는 목표에서 빼기, 경로 아이콘은 미리 보기입니다.',
+        en: 'When not everything fits, a card under the summary lists what dropping each goal changes. ✕ removes it, the route icon previews it.',
+      },
+    ],
+  },
+  {
+    title: { ko: '런', en: 'Run' },
+    lines: [
+      {
+        ko: '가운데 무대에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.',
+        en: 'On the stage in the middle, press 「Enter」 on a pack card or pull the card down.',
+      },
+      {
+        ko: '얻은 기프트는 아이콘을 눌러 획득으로 표시하세요. 표시하지 않고 층을 떠나면 「미획득」으로 남고, 다른 팩이 주는 것은 남은 층에서 다시 찾습니다.',
+        en: 'Mark what you got by pressing its icon. Leaving a floor without marking records it as 「Not got」, and what another pack gives is routed again on the floors left.',
+      },
+      {
+        ko: '「다음 층」으로 넘어가고 「입장 취소」로 되돌립니다. 층 칸을 눌러 지난 층을 다시 볼 수 있습니다.',
+        en: '「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.',
+      },
+    ],
+  },
+  {
+    title: { ko: '데이터와 권리', en: 'Data and rights' },
+    lines: [
+      {
+        ko: '게임 데이터와 텍스트의 권리는 Project Moon에 있습니다. 비상업 팬 프로젝트이며 Project Moon과 제휴하거나 승인받지 않았습니다.',
+        en: 'Game data and text belong to Project Moon. This is a non-commercial fan project, not affiliated with or endorsed by Project Moon.',
+      },
+      {
+        ko: '코드는 MIT 라이선스이고, 게임 데이터와 텍스트에는 적용되지 않습니다.',
+        en: 'The code is MIT-licensed; that does not extend to the game data and text.',
+      },
+    ],
+    notice: true,
+  },
+] as const satisfies readonly GuideCard[];

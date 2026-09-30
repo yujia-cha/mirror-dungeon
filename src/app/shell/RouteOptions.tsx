@@ -43,7 +43,7 @@ export function RouteOptions() {
             aria-label={t('optionStartKeyword', lang)}
             value={options.startKeyword}
             onChange={(event) => setOptions({ startKeyword: event.target.value as Keyword | 'auto' })}
-            className="h-[30px] rounded-full border border-line bg-surface-2 px-2.5 text-xs text-fg-2"
+            className="h-[30px] rounded-full border border-line-control bg-surface-2 px-2.5 text-xs text-fg-2"
           >
             <option value="auto">
               {start?.autoKeyword

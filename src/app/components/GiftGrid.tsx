@@ -117,7 +117,7 @@ export function GiftTileGrid({
               onClick={() => onOpen(gift.id)}
               aria-haspopup="dialog"
               aria-label={t('giftDetail', lang, { name })}
-              className="line-clamp-2 h-[24px] w-full break-keep text-center text-[10px] font-medium leading-tight text-fg underline-offset-2 hover:underline"
+              className="line-clamp-2 h-[28px] w-full break-keep text-center text-xs font-medium leading-tight text-fg underline-offset-2 hover:underline"
             >
               {name}
             </button>
@@ -128,12 +128,12 @@ export function GiftTileGrid({
               besides the name.
             */}
             {held ? (
-              <span className="line-clamp-2 min-h-[13px] break-keep text-center text-[10px] leading-[13px] text-fg-2">
+              <span className="line-clamp-2 min-h-[13px] break-keep text-center text-2xs leading-[13px] text-fg-2">
                 {blockedBy ?? lockedBy}
               </span>
             ) : (
               <span
-                className={`min-h-[13px] font-num text-[10px] leading-[13px] ${report?.satisfied ? 'text-fg' : 'text-fg-3'}`}
+                className={`min-h-[13px] font-num text-2xs leading-[13px] ${report?.satisfied ? 'text-fg' : 'text-fg-3'}`}
               >
                 {condition ?? ''}
               </span>

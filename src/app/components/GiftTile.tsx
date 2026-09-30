@@ -94,13 +94,13 @@ export function GiftTile({
           onClick={onOpen}
           aria-haspopup="dialog"
           aria-label={t('giftDetail', lang, { name })}
-          className="line-clamp-2 w-full break-keep text-[10px] leading-tight text-fg underline-offset-2 hover:underline"
+          className="line-clamp-2 w-full break-keep text-xs leading-tight text-fg underline-offset-2 hover:underline"
         >
           {name}
         </button>
       ) : (
         // The toggle's label already says the name.
-        <span className="line-clamp-2 w-full break-keep text-[10px] leading-tight text-fg" aria-hidden>
+        <span className="line-clamp-2 w-full break-keep text-xs leading-tight text-fg" aria-hidden>
           {name}
         </span>
       )}

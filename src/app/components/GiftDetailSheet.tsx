@@ -123,7 +123,7 @@ function Recipe({
         if (!child || !sub) return null;
         return (
           <div key={`sub-${id}`} className="ml-3 flex flex-col gap-1 border-l border-line pl-2.5">
-            <span className="text-[11px] text-fg-3">
+            <span className="text-xs text-fg-3">
               {t('giftSubRecipe', lang, { name: pick(child.name, lang) })}
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -348,7 +348,7 @@ export function GiftDetailSheet({
             <summary className="cursor-pointer bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-fg-2">
               {t('giftMaterials', lang)}
               {gift.fusion?.recipes[0] ? (
-                <span className="ml-1.5 font-num text-[10px] font-normal text-fg-3">
+                <span className="ml-1.5 font-num text-2xs font-normal text-fg-3">
                   {gift.fusion.recipes[0].ingredients.length}
                 </span>
               ) : null}

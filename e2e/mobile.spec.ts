@@ -71,3 +71,22 @@ test('a long press picks a chip up and drops it on an observation slot', async (
   await expect(page.getByTestId('chip-ghost')).toHaveCount(0);
   await expect(page.getByTestId('observe-slot').first()).toHaveAttribute('data-gift', '9222');
 });
+
+/**
+ * The guide's cards are a scroll-snap track (M78): a swipe is the browser's own scroll, which jsdom
+ * has no layout for. Scrolling the track one card over has to move the counter, and the device's
+ * back has to close the sheet rather than leave the page.
+ */
+test('the guide turns its cards by scrolling and closes on back', async ({ page }) => {
+  await page.goto('./');
+  await page.getByTestId('guide-open').click();
+  const live = page.getByTestId('guide-live');
+  await expect(live).toHaveText('1 / 6 · 무엇을 해 주나');
+  await page.getByTestId('guide-track').evaluate((el) => el.scrollTo({ left: el.clientWidth * 2 }));
+  await expect(live).toHaveText('3 / 6 · 기프트');
+  // No card spills past the viewport: the page itself never scrolls sideways.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  await page.goBack();
+  await expect(page.getByTestId('guide')).toHaveCount(0);
+  await expect(page.getByTestId('stage-floor')).toBeVisible();
+});

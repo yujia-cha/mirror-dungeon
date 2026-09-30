@@ -5,7 +5,19 @@
  * reset puts the deck, the items, the route options and the run back to their first state.
  */
 import { useState } from 'react';
-import { Globe, Menu, MoreHorizontal, Moon, RotateCcw, Share2, Sun } from 'lucide-react';
+import {
+  CircleHelp,
+  Globe,
+  MoreHorizontal,
+  Moon,
+  PanelLeft,
+  PanelLeftClose,
+  PanelRight,
+  PanelRightClose,
+  RotateCcw,
+  Share2,
+  Sun,
+} from 'lucide-react';
 import type { GameData, SeasonEntry } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
@@ -33,25 +45,34 @@ import { EnumsContext } from '../lib/useEnums.ts';
 const NOTICE_URL = 'https://github.com/yujia-cha/mirror-dungeon/blob/main/NOTICE';
 import { SidePanel } from './SidePanel.tsx';
 import { GiftBrowser } from './GiftBrowser.tsx';
+import { GuideSheet } from './GuideSheet.tsx';
+import { usePageHistory } from '../lib/usePageHistory.ts';
 
 /** What covers the shell on a phone, or (for `browser`) the stage on a desktop. */
 type Drawer = 'left' | 'right' | 'browser' | null;
 
 /**
- * A door to one of the side panels: the same three-bar mark on both sides, named by the panel it
- * opens. The name is the button's accessible name too, so no `aria-label` competes with it.
+ * A door to one of the side panels, named by the panel it opens. The name is the button's
+ * accessible name too, so no `aria-label` competes with it.
+ *
+ * The mark is a panel on the side it opens, not the three-bar 「menu」 it used to be: three bars
+ * promise a navigation menu, and they looked the same with the panel open or shut. Open, the mark
+ * turns to its 「close」 form and the button sits on `surface-2`, so the state is on the button.
  */
 function PanelToggle({
+  side,
   label,
   open,
   controls,
   onClick,
 }: {
+  side: 'left' | 'right';
   label: string;
   open: boolean;
   controls: string;
   onClick: () => void;
 }) {
+  const Mark = side === 'left' ? (open ? PanelLeftClose : PanelLeft) : open ? PanelRightClose : PanelRight;
   return (
     <button
       type="button"
@@ -59,9 +80,10 @@ function PanelToggle({
       aria-expanded={open}
       aria-controls={controls}
       data-testid={`toggle-${controls}`}
-      className="inline-flex h-9 items-center gap-2 rounded-sm px-2 text-sm font-semibold text-fg hover:bg-surface-2"
+      data-open={open || undefined}
+      className={`inline-flex h-9 items-center gap-2 rounded-sm px-2 text-sm font-semibold text-fg hover:bg-surface-2 ${open ? 'bg-surface-2' : ''}`}
     >
-      <Menu size={17} aria-hidden />
+      <Mark size={17} aria-hidden />
       {label}
     </button>
   );
@@ -142,6 +164,10 @@ export function AppShell({
   };
   const [confirmReset, setConfirmReset] = useState(false);
   const [menu, setMenu] = useState(false);
+  // The guide is a sheet over whatever is open, so on a phone it takes a history entry of its own:
+  // the device's back closes the guide first, as it does a gift sheet.
+  const [guide, setGuide] = useState(false);
+  usePageHistory(guide, () => setGuide(false), !desktop);
   const reset = (): void => {
     setConfirmReset(false);
     resetAll(defaultDeck(data), DEPLOYED_AT_START);
@@ -181,12 +207,16 @@ export function AppShell({
             rather than competing with the doors for the eye.
           */}
             <PanelToggle
+              side="left"
               label={t('tabDeck', lang)}
               open={leftOpen}
               controls="panel-left"
               onClick={() => toggle('left')}
             />
             <div className="relative flex items-center gap-1.5">
+              <IconButton onClick={() => setGuide(true)} label={t('guide', lang)} testId="guide-open">
+                <CircleHelp size={15} />
+              </IconButton>
               <IconButton
                 onClick={() => setMenu((open) => !open)}
                 label={t('moreActions', lang)}
@@ -240,6 +270,7 @@ export function AppShell({
                 </DetailSurface>
               ) : null}
               <PanelToggle
+                side="right"
                 label={t('tabRoutePlan', lang)}
                 open={rightOpen}
                 controls="panel-right"
@@ -341,7 +372,7 @@ export function AppShell({
                     )}
                     {data.meta.provisional ? (
                       <span
-                        className="text-warn"
+                        className="font-semibold text-fg-2"
                         title={t('seasonProvisionalHint', lang)}
                         data-testid="season-provisional"
                       >
@@ -400,6 +431,7 @@ export function AppShell({
           {!desktop && browserOpen ? (
             <GiftBrowser key={browserSeed.n} page initialQuery={browserSeed.query} onClose={closeBrowser} />
           ) : null}
+          {guide ? <GuideSheet lang={lang} noticeUrl={NOTICE_URL} onClose={() => setGuide(false)} /> : null}
           {confirmReset ? (
             <ConfirmDialog
               title={t('resetAll', lang)}

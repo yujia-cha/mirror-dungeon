@@ -139,7 +139,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="relative flex flex-wrap items-center gap-2" ref={searchRef}>
-        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-sm border border-line-strong bg-surface px-2.5 text-sm">
+        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-sm border border-line-control bg-surface px-2.5 text-sm">
           <Search size={14} aria-hidden className="flex-none text-fg-3" />
           <input
             value={query}
@@ -264,7 +264,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
             onChange={(event) => setCode(event.target.value)}
             aria-label={t('deckImportPlaceholder', lang)}
             placeholder={t('deckImportPlaceholder', lang)}
-            className="h-8 min-w-0 flex-1 rounded-sm border border-line-strong bg-surface px-2 font-num text-xs outline-none"
+            className="h-8 min-w-0 flex-1 rounded-sm border border-line-control bg-surface px-2 font-num text-xs outline-none"
           />
           <Button type="submit" variant="primary">
             {t('deckImportApply', lang)}
