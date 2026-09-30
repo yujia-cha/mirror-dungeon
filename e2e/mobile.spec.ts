@@ -44,7 +44,7 @@ test('a short pull springs back and changes nothing', async ({ page }) => {
 test('a long press picks a chip up and drops it on an observation slot', async ({ page }) => {
   await page.goto(`./${shareHash([9222])}`);
   await page.getByRole('button', { name: '덱' }).click();
-  await page.getByRole('tab', { name: '아이템' }).click();
+  await page.getByRole('tab', { name: '기프트' }).click();
   const chip = page.getByTestId('gift-chip').first();
   const slot = page.getByTestId('observe-slot').first();
   await chip.scrollIntoViewIfNeeded();

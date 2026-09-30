@@ -175,6 +175,7 @@ const curated = {
       gifts?: Record<string, Partial<Localized>>;
       packs?: Record<string, Partial<Localized>>;
       identities?: Record<string, Partial<Localized>>;
+      keywords?: Record<string, Partial<Localized>>;
     }>(repoPath('data/curated/names-override.json')) ?? {},
   notes:
     readJsonIfExists<{ gifts?: Record<string, Localized>; packs?: Record<string, Localized> }>(
@@ -848,7 +849,12 @@ const battleKeywordEn = readBattleKeywordNames('EN');
 const enums: Enums = {
   keywords: KEYWORDS.map((id) => ({
     id,
-    name: loc(categoryKo.get(id) ?? id, categoryEn.get(id) ?? id),
+    // `None` is 「범용」 in the game, which the app keeps for the general drop; the curated label
+    // (「키워드 없음」) keeps one word from naming two things.
+    name: applyNameOverride(
+      loc(categoryKo.get(id) ?? id, categoryEn.get(id) ?? id),
+      curated.names.keywords?.[id],
+    ),
     status: statusSet.has(id),
   })),
   identityOnlyKeywords: IDENTITY_KEYWORDS.filter((id) => !giftKeywordSet.has(id)).map((id) => ({

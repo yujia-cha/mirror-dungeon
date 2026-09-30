@@ -178,7 +178,7 @@ describe('adopting a season', () => {
       useApp.setState({
         wanted: [kept, gone],
         fusionGoal: { [gone]: 'resultOnly' },
-        options: { ...appDefaultOptions(), observedGifts: [gone], bannedPacks: [unknownPack] },
+        options: { ...appDefaultOptions(), observedGifts: [gone], pinnedPacks: { 3: unknownPack } },
       });
     });
     let counts!: { gifts: number; packs: number };
@@ -190,7 +190,7 @@ describe('adopting a season', () => {
     expect(state.wanted).toEqual([kept]);
     expect(state.fusionGoal).toEqual({});
     expect(state.options.observedGifts).toEqual([]);
-    expect(state.options.bannedPacks).toEqual([]);
+    expect(state.options.pinnedPacks).toEqual({});
     expect(state.season).toBe(8);
     expect(state.lastFloor).toBe(5);
   });

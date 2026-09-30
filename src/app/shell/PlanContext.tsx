@@ -51,12 +51,8 @@ export function PlanProvider({
   const options = useApp((s) => s.options);
   const fusionGoal = useApp((s) => s.fusionGoal);
   const run = useApp((s) => s.run);
-  const preferPack = useApp((s) => s.preferPack);
-  const banPack = useApp((s) => s.banPack);
-  const restorePack = useApp((s) => s.restorePack);
   const toggleObserved = useApp((s) => s.toggleObserved);
   const toggleWanted = useApp((s) => s.toggleWanted);
-  const removeWanted = useApp((s) => s.removeWanted);
   const visitPack = useApp((s) => s.visitPack);
   const unvisitPack = useApp((s) => s.unvisitPack);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
@@ -67,11 +63,21 @@ export function PlanProvider({
   // resolved, the gift deselected) means back to the main plan. An index reset on every input
   // change used to flip the panel back to the main plan on any gift mark.
   const [variantKey, setVariantKey] = useState<number | null>(null);
-  const [detailGift, setDetailGift] = useState<number | null>(null);
+  // The gift sheet's trail: the top is on show, and each gift below it is one a recipe was
+  // followed from (「← 이전 기프트」). Opening from anywhere else starts a fresh trail.
+  const [detailStack, setDetailStack] = useState<number[]>([]);
+  const detailGift = detailStack.length > 0 ? detailStack[detailStack.length - 1]! : null;
+  const openGift = useCallback((giftId: number) => setDetailStack([giftId]), []);
+  const followGift = useCallback(
+    (giftId: number) =>
+      setDetailStack((stack) => (stack[stack.length - 1] === giftId ? stack : [...stack, giftId])),
+    [],
+  );
+  const backGift = useCallback(() => setDetailStack((stack) => stack.slice(0, -1)), []);
   const desktop = useDesktop();
-  const closeSheet = useCallback(() => setDetailGift(null), []);
+  const closeSheet = useCallback(() => setDetailStack([]), []);
   // On a phone the sheet owns a history entry of its own, above the panel page's, so one back
-  // gesture closes the sheet and the next one the page.
+  // gesture closes the sheet (the whole trail) and the next one the page.
   usePageHistory(detailGift !== null, closeSheet, !desktop);
 
   // How far the run goes is the season's, not the app's: `options.lastFloor` only bounds what a
@@ -227,13 +233,6 @@ export function PlanProvider({
       observed: new Set((shown?.start.observed ?? []).filter((o) => o.pinned).map((o) => o.giftId)),
       wanted: goals,
       needed,
-      preferred: new Set(options.preferredPacks),
-      banned: new Set(options.bannedPacks),
-      assignedAt: (packId) =>
-        shown?.floors.find((f) => f.packId === packId && f.reason !== 'free')?.floor ?? null,
-      onPrefer: variant ? undefined : preferPack,
-      onBan: variant ? undefined : banPack,
-      onRestore: variant ? undefined : restorePack,
       onToggleObserved: variant
         ? undefined
         : (giftId) => toggleObserved(giftId, { max: data.rules.giftObservation.max, observable: canObserve }),
@@ -243,7 +242,6 @@ export function PlanProvider({
             const gift = indexes.giftById.get(giftId);
             if (gift) toggleGoal(gift);
           },
-      onGiveUpGift: variant ? undefined : removeWanted,
       run: {
         currentFloor: run.currentFloor,
         stageFloor: run.stageFloor,
@@ -254,7 +252,7 @@ export function PlanProvider({
         },
         giftStatus: (giftId) => run.giftStatus[giftId] ?? null,
         onEnter: variant ? undefined : enter,
-        // The sheet's 「입장 취소」 clears what the stage's 「돌아가기」 clears: one undo, one rule.
+        // The sheet's 「입장 취소」 clears what the stage's 「입장 취소」 clears: one undo, one rule.
         onUnvisit: leave,
         onGiftStatus: setGiftStatus,
       },
@@ -295,7 +293,7 @@ export function PlanProvider({
       next,
       goTo,
       leave,
-      openGift: setDetailGift,
+      openGift,
     };
   }, [
     data,
@@ -312,23 +310,19 @@ export function PlanProvider({
     variantIndex,
     setVariantIndex,
     variant,
-    options,
     run,
     exclusivesOf,
     childrenOf,
     entangled,
     blocked,
-    preferPack,
-    banPack,
-    restorePack,
     toggleObserved,
     toggleGoal,
-    removeWanted,
     visitPack,
     unvisitPack,
     setGiftStatus,
     nextFloor,
     setStageFloor,
+    openGift,
   ]);
 
   // The sheet is hosted here and nowhere else, so a tile on the stage, in the tracker, in the
@@ -336,6 +330,7 @@ export function PlanProvider({
   // that opened it. A sheet hosted inside a panel would die with the panel on a phone, where the
   // panel is a full-screen page that unmounts when it closes.
   const sheetGift = detailGift !== null ? indexes.giftById.get(detailGift) : undefined;
+  const previousGift = detailStack.length > 1 ? detailStack[detailStack.length - 2]! : null;
   return (
     <PlanCtx.Provider value={value}>
       {children}
@@ -351,6 +346,12 @@ export function PlanProvider({
           collected={value.needed.has(sheetGift.id)}
           blocked={wanted.includes(sheetGift.id) ? undefined : blocked.get(sheetGift.id)}
           plan={shown}
+          onOpenGift={followGift}
+          back={
+            previousGift !== null
+              ? { name: pick(indexes.giftById.get(previousGift)?.name, lang), onBack: backGift }
+              : undefined
+          }
           onClose={closeSheet}
         />
       ) : null}

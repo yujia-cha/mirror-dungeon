@@ -120,7 +120,13 @@ export function AppShell({
   const pageOpen = !desktop && drawer !== null;
   // The browser opens from the items tab. On a phone that tab is the left page, which the browser
   // page replaces; closing the browser brings the tab back rather than the stage.
-  const openBrowser = (): void => setDrawer('browser');
+  // It opens on the query typed in the tab; a fresh press (the tab stays beside it on a desktop)
+  // remounts it on the new query.
+  const [browserSeed, setBrowserSeed] = useState({ query: '', n: 0 });
+  const openBrowser = (query: string): void => {
+    setBrowserSeed((seed) => ({ query, n: seed.n + 1 }));
+    setDrawer('browser');
+  };
   const closeBrowser = (): void => setDrawer(desktop ? null : 'left');
   const toggle = (side: 'left' | 'right'): void => {
     if (desktop) setUi(side === 'left' ? { leftOpen: !ui.leftOpen } : { rightOpen: !ui.rightOpen });
@@ -289,7 +295,14 @@ export function AppShell({
                 underneath so nothing it holds is lost, but hidden and inert: it neither shows
                 through nor takes a Tab while covered.
               */}
-              {desktop && browserOpen ? <GiftBrowser page={false} onClose={closeBrowser} /> : null}
+              {desktop && browserOpen ? (
+                <GiftBrowser
+                  key={browserSeed.n}
+                  page={false}
+                  initialQuery={browserSeed.query}
+                  onClose={closeBrowser}
+                />
+              ) : null}
               <div
                 className={`flex flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:px-6 lg:pt-4 ${desktop && browserOpen ? 'hidden' : ''}`}
                 inert={(desktop && browserOpen) || undefined}
@@ -382,7 +395,9 @@ export function AppShell({
               )}
             </SidePanel>
           </div>
-          {!desktop && browserOpen ? <GiftBrowser page onClose={closeBrowser} /> : null}
+          {!desktop && browserOpen ? (
+            <GiftBrowser key={browserSeed.n} page initialQuery={browserSeed.query} onClose={closeBrowser} />
+          ) : null}
           {confirmReset ? (
             <ConfirmDialog
               title={t('resetAll', lang)}

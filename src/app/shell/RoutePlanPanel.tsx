@@ -1,7 +1,7 @@
 /**
- * The whole route, as the right panel shows it: the counts, the 「포기 결정」 card when the goals
+ * The whole route, as the right panel shows it: the counts, the decision card when the goals
  * cannot all fit one run, the metro map in its vertical form, and the unresolved card with what
- * fails for other reasons. Condition judgements are not repeated here — the item grid's tiles and
+ * fails for other reasons. Condition judgements are not repeated here — the gift grid's tiles and
  * the gift sheet already carry them. Wide enough for a phone page or a 336px desktop panel.
  *
  * A preview from the decision card scrolls the panel to the map, which is what the preview
@@ -89,7 +89,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const copy = async (): Promise<void> => {
     const dropped = variant?.dropped ?? [];
     const text = planToText(shown, giftName, packName, keywordLabel, lang, dropped, {
-      bannedPacks: options.bannedPacks,
       // Every goal, so a result-only fusion goal is in the text even though no floor names it.
       goals: input.wanted.map((w) => w.giftId).filter((id) => !dropped.includes(id)),
       // The candidates belong to the full plan; a previewed alternative has already picked one.
@@ -209,15 +208,11 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         .map((a) => [a.label, a]),
     ).values(),
   ];
-  const shownInput = variant
-    ? { ...input, wanted: input.wanted.filter((w) => !variant.dropped.includes(w.giftId)) }
-    : input;
-  const groups = conflictGroups(shown, shownInput, data, indexes);
   const others = shown.unresolved.filter((u) => u.reason !== 'pack-conflict');
   // The decision is the full plan's: it stays on screen while an alternative is previewed, so the
   // header chips and the 「전부 유지」 row read the plan itself, not the preview.
   const conflicted = plan.unresolved.some((u) => u.reason === 'pack-conflict');
-  const baseGroups = variant ? conflictGroups(plan, input, data, indexes) : groups;
+  const groups = conflictGroups(plan, input, data, indexes);
 
   return (
     <div className="flex flex-col gap-3" data-testid="route-plan">
@@ -230,11 +225,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           setVariantIndex={setVariantIndex}
           variantsPending={variantsPending}
           groups={groups}
-          baseGroups={baseGroups}
           ctx={ctx}
           removeWanted={removeWanted}
           onPreview={scrollToMap}
-          detailMode="sheet"
         />
       ) : null}
       <div ref={mapRef} className="scroll-mt-3">

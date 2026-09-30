@@ -34,7 +34,7 @@ export function routeSourceOf(plan: RoutePlan | null, giftId: number): RouteSour
   return null;
 }
 
-/** 「5층 경험기억」 · 「관측」 · 「시작 기프트」 · 「범용 (팩 없음)」 · 「2층 이후 조합」 · 「조합 불가」. */
+/** 「5층 경험기억」 · 「관측」 · 「시작 기프트」 · 「범용 드랍」 · 「2층 이후 조합」 · 「조합 불가」. */
 export function routeSourceText(
   source: RouteSource,
   { packName, lang }: { packName: (id: number) => string; lang: Lang },

@@ -4,8 +4,8 @@
  * and everything only it drops, goals first, each a tile pressed when in hand — a handle above to
  * go back and one below to move on. Pulling the whole area down moves on: whatever of the expected
  * list is still unmarked is then missed. Pushing it up goes back — the entry and every status
- * marked for these gifts are cleared and the area folds away. Holding a tile (or its ⓘ) opens
- * the gift's details.
+ * marked for these gifts are cleared and the area folds away. A tile's icon marks it; its name
+ * opens the gift's details.
  */
 import { useEffect, useState } from 'react';
 import { ChevronsDown, ChevronsUp } from 'lucide-react';
@@ -73,7 +73,7 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
             data-testid="area-back"
           >
             <ChevronsUp size={14} aria-hidden />
-            {pastUp ? t('stageReleaseBack', lang) : t('stageBack', lang)}
+            {pastUp ? t('stageReleaseBack', lang) : t('stageUnenter', lang)}
           </button>
 
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 px-3 py-3.5">

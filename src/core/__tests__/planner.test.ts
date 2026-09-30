@@ -427,12 +427,81 @@ describe('deck conditions', () => {
     expect(data.rules.startGift.poolsByKeyword[keyword!]!.length).toBeGreaterThan(0);
   });
 
-  it('picks the deck dominant keyword when asked for an automatic start', () => {
+  it('falls back to the deck dominant keyword when no starting pool holds a goal', () => {
     const stats = analyseDeck(BLADE_LINEAGE_DECK, indexes, data.rules.deployment);
     const keyword = dominantKeyword(stats);
     expect(keyword).not.toBeNull();
-    const result = plan({ deck: BLADE_LINEAGE_DECK, wanted: want(9003) });
-    expect(result.start.keyword).toBe(keyword);
+    // 9003 (재에서 재로) and 9283 (상납된 시가) are in no starting pool.
+    const pooled = new Set(Object.values(data.rules.startGift.poolsByKeyword).flat());
+    expect(pooled.has(9003) || pooled.has(9283)).toBe(false);
+    const result = plan({ deck: BLADE_LINEAGE_DECK, wanted: want(9003, 9283) });
+    expect(result.start).toMatchObject({
+      keyword,
+      startGift: null,
+      autoKeyword: keyword,
+      autoStartGift: null,
+    });
+  });
+
+  it('follows the goals on auto: the keyword whose pool holds a wanted gift wins over the dominant one', () => {
+    // MIXED_DECK is dominantly 파열, but 지옥나비의 꿈 (9001) sits only in the 화상 starting pool.
+    const stats = analyseDeck(MIXED_DECK, indexes, data.rules.deployment);
+    expect(dominantKeyword(stats)).toBe('Burst');
+    expect(data.rules.startGift.poolsByKeyword.Combustion).toContain(9001);
+    const result = plan({ wanted: want(9001) });
+    expect(result.start).toMatchObject({
+      keyword: 'Combustion',
+      startGift: 9001,
+      autoKeyword: 'Combustion',
+      autoStartGift: 9001,
+    });
+    // Taken as the starting gift, so it is no longer a general drop the plan hopes for.
+    expect(result.generalDrops).not.toContain(9001);
+  });
+
+  it('breaks a tie between helpful pools by the dominant keyword, then by keyword id', () => {
+    // 9001 is in the 화상 pool and 9005 (상처붙이) in the 출혈 pool; both are general drops, so
+    // neither is harder to route than the other.
+    expect(data.rules.startGift.poolsByKeyword.Laceration).toContain(9005);
+    // MIXED_DECK is 파열: neither pool is its own, so the keyword id decides.
+    expect(plan({ wanted: want(9005, 9001) }).start).toMatchObject({
+      keyword: 'Combustion',
+      startGift: 9001,
+    });
+    // BLADE_LINEAGE_DECK is 출혈: its own pool helps, so it wins.
+    const blade = plan({ deck: BLADE_LINEAGE_DECK, wanted: want(9001, 9005) });
+    expect(blade.start).toMatchObject({ keyword: 'Laceration', startGift: 9005 });
+  });
+
+  it('keeps a requested keyword as it was, but reports what auto would have taken', () => {
+    const result = plan({ wanted: want(9001), options: options({ startKeyword: 'Sinking' }) });
+    expect(result.start).toMatchObject({
+      keyword: 'Sinking',
+      startGift: null,
+      autoKeyword: 'Combustion',
+      autoStartGift: 9001,
+    });
+    expect(result.generalDrops).toContain(9001);
+    const asked = plan({ wanted: want(9001), options: options({ startKeyword: 'Combustion' }) });
+    expect(asked.start).toMatchObject({ keyword: 'Combustion', startGift: 9001, autoStartGift: 9001 });
+  });
+
+  it('chooses the same start whatever order the goals come in', () => {
+    const a = plan({ wanted: want(9005, 9001, 9283) });
+    const b = plan({ wanted: want(9283, 9001, 9005) });
+    const c = plan({ wanted: want(9005, 9001, 9283) });
+    expect(JSON.stringify(a.start)).toBe(JSON.stringify(b.start));
+    expect(JSON.stringify(a.start)).toBe(JSON.stringify(c.start));
+  });
+
+  it('suggests no starting gift mid-run, when the start is long past', () => {
+    const result = plan({
+      wanted: want(9001),
+      options: options({ lastFloor: 15, hardFromFloor: 1, currentFloor: 3 }),
+    });
+    expect(result.start.startGift).toBeNull();
+    expect(result.start.autoStartGift).toBeNull();
+    expect(result.start.autoKeyword).toBe('Burst');
   });
 });
 
@@ -1213,7 +1282,7 @@ describe('run progress', () => {
       wanted: [{ giftId: 9765, required: true }],
       options: options({ lastFloor: 15, hardFromFloor: 1, ...extra }),
     });
-  const FAILED_KO = '층을 떠날 때까지 획득으로 표시하지 않아 이 런에서는 얻을 수 없는 기프트입니다.';
+  const FAILED_KO = '미획득인 채로 층을 떠나 이 런에서는 더 얻을 수 없는 기프트입니다.';
 
   it('routes a gift missed on a visited pack again from a later pack, and the fusion waits for it', () => {
     const plan = plush({

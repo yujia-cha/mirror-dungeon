@@ -1,6 +1,6 @@
 /**
- * The gift filters the items tab and the 「모두 보기」 browser share: the 「조건」 predicate against real
- * gifts, the combined predicate, and the hook that holds one caller's filters.
+ * The gift filters of the 「모두 보기」 browser (the items tab keeps only the query): the 「조건」
+ * predicate against real gifts, the combined predicate, and the hook that holds one caller's filters.
  */
 import { describe, expect, it } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
@@ -63,16 +63,18 @@ describe('matchesGiftFilters', () => {
     expect(data.gifts.some((g) => matchesGiftFilters(g, none) && matchesGiftFilters(g, gated))).toBe(false);
   });
 
-  it('matches the query against either name, and the price against its band only', () => {
+  it('matches the query against either name, and the tier and the sin against the gift itself', () => {
     expect(matchesGiftFilters(gift(9088), { ...EMPTY_FILTERS, query: '진혼' })).toBe(true);
     expect(matchesGiftFilters(gift(9088), { ...EMPTY_FILTERS, query: gift(9088).name.en.slice(0, 4) })).toBe(
       true,
     );
     expect(matchesGiftFilters(gift(9088), { ...EMPTY_FILTERS, query: '없는이름' })).toBe(false);
-    // 9842 costs 251: in p3, not p2.
-    expect(matchesGiftFilters(gift(9842), { ...EMPTY_FILTERS, price: 'p3' })).toBe(true);
-    expect(matchesGiftFilters(gift(9842), { ...EMPTY_FILTERS, price: 'p2' })).toBe(false);
-    expect(filtersActive({ ...EMPTY_FILTERS, price: 'p2' })).toBe(true);
+    // 진혼 is a T4 PRIDE gift.
+    expect(matchesGiftFilters(gift(9088), { ...EMPTY_FILTERS, tier: '4' })).toBe(true);
+    expect(matchesGiftFilters(gift(9088), { ...EMPTY_FILTERS, tier: '3' })).toBe(false);
+    expect(matchesGiftFilters(gift(9088), { ...EMPTY_FILTERS, sin: 'PRIDE' })).toBe(true);
+    expect(matchesGiftFilters(gift(9088), { ...EMPTY_FILTERS, sin: 'LUST' })).toBe(false);
+    expect(filtersActive({ ...EMPTY_FILTERS, sin: 'LUST' })).toBe(true);
     expect(filtersActive({ ...EMPTY_FILTERS, query: '  ' })).toBe(false);
   });
 });
@@ -95,6 +97,20 @@ describe('useGiftFilters', () => {
     expect(result.current.filters).toEqual(EMPTY_FILTERS);
     expect(result.current.filtersOn).toBe(false);
     expect(result.current.matchesFilters(gift(9235))).toBe(true);
+  });
+
+  it('knows only keyword, condition, tier and sin besides the name — no price, no source', () => {
+    expect(Object.keys(EMPTY_FILTERS).sort()).toEqual(['condition', 'keyword', 'query', 'sin', 'tier']);
+  });
+
+  it('opens on the query it is given, and a reset clears that too', () => {
+    const { result } = renderHook(() => useGiftFilters('진혼'));
+    expect(result.current.filters.query).toBe('진혼');
+    expect(result.current.searching).toBe(true);
+    expect(result.current.matchesFilters(gift(9088))).toBe(true);
+    expect(result.current.matchesFilters(gift(9235))).toBe(false);
+    act(() => result.current.resetFilters());
+    expect(result.current.filters.query).toBe('');
   });
 
   it('keeps its own state per caller', () => {

@@ -18,6 +18,8 @@ export interface UiState {
   /** Desktop panel widths in px, dragged by the divider between panel and stage. */
   leftWidth: number;
   rightWidth: number;
+  /** 「지금 덱으로 활성」 shows only what is left to decide (`isMarked` tiles hidden). On by default. */
+  activeUnpickedOnly: boolean;
 }
 
 /** How wide a side panel may be dragged: narrow enough to read, never eating the whole stage. */
@@ -68,10 +70,6 @@ interface AppState extends SharedState {
   /** Pin or unpin a wanted gift for 기프트 관측; at most `max` pins. */
   /** Pin or unpin a wanted gift for 기프트 관측; a pin needs a free slot and an observable gift. */
   toggleObserved: (giftId: number, limits: ObserveLimits) => void;
-  /** Pack-level choices: include somewhere (the planner picks the floor), give up, or neither. */
-  preferPack: (packId: number) => void;
-  banPack: (packId: number) => void;
-  restorePack: (packId: number) => void;
   setFusionGoal: (giftId: number, goal: 'resultOnly' | 'withIngredients') => void;
   /**
    * Record that `packId` was entered on `floor`; a pack is visited once, so an earlier floor for it
@@ -164,11 +162,11 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   if ('deployed' in source) out.deployed = source.deployed;
   const observed = Array.isArray(out.observedGifts) ? out.observedGifts : [];
   out.observedGifts = [...new Set(observed.filter((n): n is number => typeof n === 'number'))];
-  const ids = (value: unknown): number[] =>
-    Array.isArray(value) ? [...new Set(value.filter((n): n is number => typeof n === 'number'))] : [];
-  const bannedPacks = ids(out.bannedPacks);
-  out.bannedPacks = bannedPacks;
-  out.preferredPacks = ids(out.preferredPacks).filter((id) => !bannedPacks.includes(id));
+  // Pack-level choices are the CLI's (`--ban`, `--prefer`); the app has no control for them, so a
+  // saved state or an old link that still carries some would steer the route with nothing on
+  // screen to say so or to undo it. They are dropped without a word.
+  out.bannedPacks = [];
+  out.preferredPacks = [];
   const pins: Record<number, number> = {};
   if (out.pinnedPacks && typeof out.pinnedPacks === 'object') {
     for (const [floor, packId] of Object.entries(out.pinnedPacks as Record<string, unknown>)) {
@@ -255,6 +253,7 @@ export function defaultUi(): UiState {
     rightTab: 'plan',
     leftWidth: PANEL_WIDTH.default,
     rightWidth: PANEL_WIDTH.default,
+    activeUnpickedOnly: true,
   };
 }
 
@@ -277,6 +276,7 @@ export function sanitizeUi(raw: unknown): UiState {
     out.rightTab = source.rightTab;
   out.leftWidth = clampPanelWidth(source.leftWidth);
   out.rightWidth = clampPanelWidth(source.rightWidth);
+  if (typeof source.activeUnpickedOnly === 'boolean') out.activeUnpickedOnly = source.activeUnpickedOnly;
   return out;
 }
 
@@ -700,31 +700,6 @@ export const useApp = create<AppState>()(
           return { run: { ...state.run, giftStatus } };
         }),
 
-      preferPack: (packId) =>
-        set((state) => ({
-          options: {
-            ...state.options,
-            preferredPacks: [...new Set([...state.options.preferredPacks, packId])],
-            bannedPacks: state.options.bannedPacks.filter((id) => id !== packId),
-          },
-        })),
-      banPack: (packId) =>
-        set((state) => ({
-          options: {
-            ...state.options,
-            bannedPacks: [...new Set([...state.options.bannedPacks, packId])],
-            preferredPacks: state.options.preferredPacks.filter((id) => id !== packId),
-          },
-        })),
-      restorePack: (packId) =>
-        set((state) => ({
-          options: {
-            ...state.options,
-            bannedPacks: state.options.bannedPacks.filter((id) => id !== packId),
-            preferredPacks: state.options.preferredPacks.filter((id) => id !== packId),
-          },
-        })),
-
       toggleObserved: (giftId, limits) =>
         set((state) => {
           const has = state.options.observedGifts.includes(giftId);
@@ -777,19 +752,13 @@ export const useApp = create<AppState>()(
         const observed = (state.options.observedGifts ?? []).filter(
           (id) => giftIds.has(id) && collected.has(id),
         );
-        const preferredPacks = state.options.preferredPacks.filter((id) => packIds.has(id));
-        const bannedPacks = state.options.bannedPacks.filter((id) => packIds.has(id));
         const pinnedPacks = Object.fromEntries(
           Object.entries(state.options.pinnedPacks).filter(
             ([floor, packId]) => packIds.has(packId) && Number(floor) <= lastFloor,
           ),
         );
         const droppedGifts = state.wanted.length - wanted.length;
-        const droppedPacks =
-          state.options.preferredPacks.length -
-          preferredPacks.length +
-          (state.options.bannedPacks.length - bannedPacks.length) +
-          (Object.keys(state.options.pinnedPacks).length - Object.keys(pinnedPacks).length);
+        const droppedPacks = Object.keys(state.options.pinnedPacks).length - Object.keys(pinnedPacks).length;
         // A run recorded on a longer season cannot be replayed on a shorter one; one that still
         // fits keeps only the packs and gifts this season can draw, so no nameless row survives.
         // The done floor is one past the last (that is where the done card lives), so a finished
@@ -815,7 +784,13 @@ export const useApp = create<AppState>()(
           run,
           wanted,
           fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
-          options: { ...state.options, observedGifts: observed, preferredPacks, bannedPacks, pinnedPacks },
+          options: {
+            ...state.options,
+            observedGifts: observed,
+            preferredPacks: [],
+            bannedPacks: [],
+            pinnedPacks,
+          },
         });
         return { gifts: droppedGifts, packs: droppedPacks };
       },

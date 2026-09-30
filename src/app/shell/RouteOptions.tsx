@@ -1,22 +1,38 @@
 /**
- * The route options shown under the items tab: the starting keyword and the packs the player gave
- * up. Packs set to include are not listed — that choice is made and shown where the route is, in
- * the pack sheet and the conflict groups, and a second copy here only made the tab longer.
- * Observation lives in the slots above the selected gifts, and the reset in the header.
+ * The route options shown under the items tab: the starting keyword, and one line on what it does
+ * for the current goals. 'auto' follows the goals, so the line says which starting gift that buys
+ * — or, when no pool holds a goal, that the keyword is the player's free choice. With a keyword
+ * picked by hand it says what 'auto' would have taken instead.
+ *
+ * The line goes once the run leaves floor 1: the start is spent, and "pick any keyword" would no
+ * longer be true. Given-up packs are not listed here — the route panel's unresolved card lists
+ * them with their restore action. Observation lives in the slots above the selected gifts, and the
+ * reset in the header.
  */
 import type { Keyword } from '../../core/schema.ts';
+import { withJosa } from '../format.ts';
 import { pick, t } from '../i18n.ts';
+import { observationClosed } from '../lib/plan-input.ts';
 import { useApp } from '../store.ts';
-import { PackCard } from '../components/PackCard.tsx';
-import { PackActions } from '../components/PackSheet.tsx';
-import { Card, SectionTitle } from '../components/ui.tsx';
+import { Card } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
 
 export function RouteOptions() {
-  const { data, indexes, lang, ctx } = usePlan();
+  // `plan`, not `shown`: the start belongs to the goals as chosen, not to a previewed variant.
+  const { data, lang, plan, giftName, keywordLabel } = usePlan();
   const options = useApp((s) => s.options);
   const setOptions = useApp((s) => s.setOptions);
-  const givenUpPacks = [...options.bannedPacks].sort((a, b) => a - b);
+  const started = useApp((s) => observationClosed(s.run));
+  const start = plan?.start;
+
+  const gift = (id: number) => withJosa(giftName(id), '을/를', lang);
+  const note = started
+    ? null
+    : start?.startGift && start.keyword
+      ? t('startKeywordGives', lang, { keyword: keywordLabel(start.keyword), gift: gift(start.startGift) })
+      : start?.autoStartGift
+        ? t('startKeywordAutoWould', lang, { gift: gift(start.autoStartGift) })
+        : t('startKeywordFree', lang);
 
   return (
     <div className="flex flex-col gap-2.5" data-testid="route-options">
@@ -29,7 +45,11 @@ export function RouteOptions() {
             onChange={(event) => setOptions({ startKeyword: event.target.value as Keyword | 'auto' })}
             className="h-[30px] rounded-full border border-line bg-surface-2 px-2.5 text-xs text-fg-2"
           >
-            <option value="auto">{t('optionAuto', lang)}</option>
+            <option value="auto">
+              {start?.autoKeyword
+                ? t('optionAutoResolved', lang, { keyword: keywordLabel(start.autoKeyword) })
+                : t('optionAuto', lang)}
+            </option>
             {/* Only the keywords the season actually has a starting pool for. 범용 (`None`) is a
                 gift keyword but has no pool, so offering it handed the player no starting gift at
                 all, silently. Read from the rules rather than listed here, like everywhere else. */}
@@ -42,33 +62,10 @@ export function RouteOptions() {
               ))}
           </select>
         </label>
-      </Card>
-
-      <Card className="px-3.5 py-3" testId="settings-packs">
-        <SectionTitle>{t('packBanned', lang)}</SectionTitle>
-        {givenUpPacks.length === 0 ? (
-          <p className="mt-2 text-xs text-fg-3">{t('settingsNone', lang)}</p>
-        ) : (
-          <ul className="mt-2 flex flex-col gap-2">
-            {givenUpPacks.map((packId) => {
-              const pack = indexes.packById.get(packId);
-              if (!pack) return null;
-              return (
-                <li
-                  key={packId}
-                  className="flex items-center gap-2"
-                  data-testid="settings-pack"
-                  data-pack={packId}
-                >
-                  <PackCard pack={pack} size={28} lang={lang} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg-3 line-through">
-                    {pick(pack.name, lang)}
-                  </span>
-                  <PackActions packId={packId} ctx={ctx} />
-                </li>
-              );
-            })}
-          </ul>
+        {note && (
+          <p className="text-xs text-fg-2" data-testid="start-keyword-note">
+            {note}
+          </p>
         )}
       </Card>
     </div>

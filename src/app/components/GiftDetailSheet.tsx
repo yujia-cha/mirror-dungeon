@@ -1,8 +1,11 @@
 /**
  * Everything about one gift, opened from its tile: what it does, the conditions it needs, how it
  * is obtained, and — folded away until asked for — the recipe the planner would actually use.
+ * An ingredient in the recipe opens its own details in the same sheet; 「← 이전 기프트」 at the top
+ * walks back (the host keeps the trail).
  */
-import { Check, Eye, Link2 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ArrowLeft, Check, Eye, Link2 } from 'lucide-react';
 import type { GameData, Gift } from '../../core/schema.ts';
 import { chooseRecipe, observable } from '../../core/index.ts';
 import type { ConditionReport, GameIndexes, RoutePlan } from '../../core/types.ts';
@@ -39,18 +42,44 @@ function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): string {
   return parts.join(' · ');
 }
 
-function Pill({ id, indexes, lang }: { id: number; indexes: GameIndexes; lang: Lang }) {
+const PILL =
+  'inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pl-1 pr-2 text-xs';
+
+/** One ingredient. With `onOpen` it is a button that moves the sheet to that gift. */
+function Pill({
+  id,
+  indexes,
+  lang,
+  onOpen,
+}: {
+  id: number;
+  indexes: GameIndexes;
+  lang: Lang;
+  onOpen?: (id: number) => void;
+}) {
   const gift = indexes.giftById.get(id);
   if (!gift) return null;
+  const name = pick(gift.name, lang);
+  if (!onOpen) {
+    return (
+      <span className={PILL} data-testid="recipe-item" data-gift={id}>
+        <GiftIcon gift={gift} size={20} lang={lang} />
+        {name}
+      </span>
+    );
+  }
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pl-1 pr-2 text-xs"
+    <button
+      type="button"
+      onClick={() => onOpen(id)}
+      aria-label={t('giftDetail', lang, { name })}
+      className={`${PILL} hover:bg-surface-2`}
       data-testid="recipe-item"
       data-gift={id}
     >
       <GiftIcon gift={gift} size={20} lang={lang} />
-      {pick(gift.name, lang)}
-    </span>
+      {name}
+    </button>
   );
 }
 
@@ -59,11 +88,13 @@ function Recipe({
   data,
   indexes,
   lang,
+  onOpen,
 }: {
   gift: Gift;
   data: GameData;
   indexes: GameIndexes;
   lang: Lang;
+  onOpen?: (id: number) => void;
 }) {
   const slots = data.rules.fusion.maxShopSlots;
   const ingredients = chooseRecipe(gift, indexes, slots);
@@ -83,7 +114,7 @@ function Recipe({
       ) : null}
       <div className="flex flex-wrap gap-1.5">
         {(ingredients ?? []).map((id, i) => (
-          <Pill key={`${id}-${i}`} id={id} indexes={indexes} lang={lang} />
+          <Pill key={`${id}-${i}`} id={id} indexes={indexes} lang={lang} onOpen={onOpen} />
         ))}
       </div>
       {(ingredients ?? []).map((id) => {
@@ -97,7 +128,7 @@ function Recipe({
             </span>
             <div className="flex flex-wrap gap-1.5">
               {sub.map((subId, i) => (
-                <Pill key={`${subId}-${i}`} id={subId} indexes={indexes} lang={lang} />
+                <Pill key={`${subId}-${i}`} id={subId} indexes={indexes} lang={lang} onOpen={onOpen} />
               ))}
             </div>
           </div>
@@ -118,6 +149,8 @@ export function GiftDetailSheet({
   collected,
   blocked,
   plan = null,
+  onOpenGift,
+  back,
   onClose,
 }: {
   gift: Gift;
@@ -141,6 +174,10 @@ export function GiftDetailSheet({
    * (`PlanProvider`) passes its `shown` plan; without one the line is simply absent.
    */
   plan?: RoutePlan | null;
+  /** Follow a recipe ingredient: the sheet moves to that gift. Without it the ingredients are plain. */
+  onOpenGift?: (giftId: number) => void;
+  /** Set when this gift was reached from another's recipe: the way back to it. */
+  back?: { name: string; onBack: () => void };
   onClose: () => void;
 }) {
   const wanted = useApp((s) => s.wanted);
@@ -152,6 +189,21 @@ export function GiftDetailSheet({
   // too; the button says why instead of doing nothing).
   const observeClosed = useApp((s) => observationClosed(s.run));
   const observeMax = data.rules.giftObservation.max;
+
+  // Moving to another gift keeps the sheet mounted, so it has to start over by hand: back to the
+  // top, and focus on something that still exists — the pill that was pressed is gone, and a modal
+  // must not drop focus to <body>.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const backRef = useRef<HTMLButtonElement>(null);
+  const titleRef = useRef<HTMLSpanElement>(null);
+  const shownGift = useRef(gift.id);
+  useEffect(() => {
+    if (shownGift.current === gift.id) return;
+    shownGift.current = gift.id;
+    const dialog = contentRef.current?.closest('[role="dialog"]');
+    if (dialog) dialog.scrollTop = 0;
+    (backRef.current ?? titleRef.current)?.focus();
+  }, [gift.id]);
 
   const name = pick(gift.name, lang);
   const selected = wanted.includes(gift.id);
@@ -167,11 +219,27 @@ export function GiftDetailSheet({
 
   return (
     <DetailSurface mode="sheet" label={name} closeLabel={t('routeClose', lang)} onClose={onClose}>
-      <div className="flex flex-col gap-3" data-testid="gift-detail">
+      {/* Keyed by the gift, so a gift reached from a recipe opens with its own recipe folded. */}
+      <div key={gift.id} ref={contentRef} className="flex flex-col gap-3" data-testid="gift-detail">
+        {back ? (
+          <button
+            ref={backRef}
+            type="button"
+            onClick={back.onBack}
+            aria-label={t('giftDetailBack', lang, { name: back.name })}
+            className="inline-flex max-w-full items-center gap-1 self-start rounded-sm px-1 py-0.5 text-xs text-fg-2 hover:bg-surface-2 hover:text-fg"
+            data-testid="gift-detail-back"
+          >
+            <ArrowLeft size={13} aria-hidden className="flex-none" />
+            <span className="truncate">{back.name}</span>
+          </button>
+        ) : null}
         <div className="flex items-start gap-2.5">
           <GiftIcon gift={gift} size={44} judgement={judgementOf(reports)} lang={lang} />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-base font-bold">{name}</span>
+            <span ref={titleRef} tabIndex={-1} className="text-base font-bold outline-none">
+              {name}
+            </span>
             <span className="text-xs text-fg-3">{acquisitionLine(gift, indexes, lang)}</span>
             {/* Where this route gets the gift — the plan's own answer, not the acquisition class.
                 Absent for a gift the route says nothing about (not needed, in hand, unresolved). */}
@@ -198,7 +266,7 @@ export function GiftDetailSheet({
             title={blockedBy}
           >
             {selected ? <Check size={13} aria-hidden /> : null}
-            {t(selected ? 'giftUnselect' : 'giftSelect', lang)}
+            {t(selected ? 'giftRemoveGoal' : 'giftAddGoal', lang)}
           </Button>
           {blockedBy ? <span className="text-xs text-fg-2">{blockedBy}</span> : null}
           {collected ? (
@@ -207,7 +275,7 @@ export function GiftDetailSheet({
                 variant={pinned ? 'primary' : 'secondary'}
                 onClick={() => toggleObserved(gift.id, { max: observeMax, observable: () => canObserve })}
                 disabled={observeClosed || !canObserve || observeFull}
-                ariaLabel={t('giftsObserve', lang, { name })}
+                ariaLabel={t(pinned ? 'observeSlotClear' : 'giftsObserve', lang, { name })}
                 title={
                   observeClosed
                     ? t('giftsObserveClosed', lang)
@@ -219,7 +287,7 @@ export function GiftDetailSheet({
                 }
               >
                 <Eye size={13} aria-hidden />
-                {t('settingsObserved', lang)}
+                {t(pinned ? 'observePinned' : 'settingsObserved', lang)}
               </Button>
             </>
           ) : null}
@@ -285,7 +353,7 @@ export function GiftDetailSheet({
                 </span>
               ) : null}
             </summary>
-            <Recipe gift={gift} data={data} indexes={indexes} lang={lang} />
+            <Recipe gift={gift} data={data} indexes={indexes} lang={lang} onOpen={onOpenGift} />
             {selected ? (
               <label
                 className="flex items-center gap-1.5 border-t border-line px-2.5 py-2 text-xs"

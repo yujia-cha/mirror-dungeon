@@ -184,7 +184,7 @@ function ObservedTile({
       type="button"
       onClick={onPress}
       aria-pressed={entry.pinned}
-      aria-label={t('routeObservedToggle', ctx.lang, { name })}
+      aria-label={t('giftsObserve', ctx.lang, { name })}
       title={title}
       data-testid="observed-tile"
       data-pinned={entry.pinned || undefined}
@@ -300,7 +300,6 @@ export function MetroMap({
           pack={theme}
           size={compact ? 20 : 28}
           caption={!compact}
-          selected={ctx.preferred.has(pack.packId)}
           onOpen={() => setOpen({ kind: 'pack', packId: pack.packId, key, mode })}
           lang={lang}
         />

@@ -1,11 +1,12 @@
 /**
- * 「모두 보기」: every gift in one grid, with the items tab's search and filters, and no 활성 / 기타
- * split — the tile's ring says which is which. On a desktop it takes the stage's place between the
+ * 「모두 보기」: every gift in one grid, with a search box and the filters (keyword, condition, tier,
+ * sin), and no 활성 split — the tile's ring says which is which. The items tab opens it from the >>
+ * at the end of its search row, handing over what was typed there (`initialQuery`). On a desktop it takes the stage's place between the
  * two panels; on a phone it is a full-screen page like the panels, closed by its ← or the back
  * gesture (`usePageHistory`). Escape closes it on either; a gift sheet opened from a tile takes the
  * key first (`DetailSurface` stops it before it reaches the document).
  *
- * Its filters are its own (`useGiftFilters`): what is typed here is not typed in the tab.
+ * Its filters are its own (`useGiftFilters`): what is typed here is not typed back into the tab.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -25,15 +26,18 @@ import { usePlan } from './plan-context.ts';
 export function GiftBrowser({
   page,
   onClose,
+  initialQuery = '',
 }: {
   /** A phone: a full-screen page with a back bar, portalled over the shell. */
   page: boolean;
   onClose: () => void;
+  /** The query the search box opens with — the tab's, when opened from its >>. */
+  initialQuery?: string;
 }) {
   const { data, indexes, stats, lang, childrenOf, entangled, blocked, toggleGoal, openGift, giftName } =
     usePlan();
   const wanted = useApp((s) => s.wanted);
-  const filterState = useGiftFilters();
+  const filterState = useGiftFilters(initialQuery);
   const { filters, matcher } = filterState;
 
   const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);

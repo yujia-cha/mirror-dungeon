@@ -124,7 +124,7 @@ describe('routeSourceText', () => {
     expect(routeSourceText({ kind: 'pack', floor: 5, packId: 1016 }, ko)).toBe('5층 팩1016');
     expect(routeSourceText({ kind: 'observed' }, ko)).toBe('관측');
     expect(routeSourceText({ kind: 'start' }, ko)).toBe('시작 기프트');
-    expect(routeSourceText({ kind: 'general' }, ko)).toBe('범용 (팩 없음)');
+    expect(routeSourceText({ kind: 'general' }, ko)).toBe('범용 드랍');
     expect(routeSourceText({ kind: 'fusion', floor: 3, unreachable: false }, ko)).toBe('3층 이후 조합');
     expect(routeSourceText({ kind: 'fusion', floor: 3, unreachable: true }, ko)).toBe('조합 불가');
     const en = { packName, lang: 'en' as const };

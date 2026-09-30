@@ -17,7 +17,6 @@ export function planToText(
   lang: Lang,
   dropped: number[] = [],
   marks: {
-    bannedPacks?: number[];
     run?: { currentFloor: number; visits: Record<number, number> };
     /** The alternatives the planner tried: the gift each gives up and what it then covers. */
     variants?: { name: string; covered: number; total: number }[];
@@ -96,7 +95,7 @@ export function planToText(
     lines.push(t('routeUnresolved', lang));
     for (const entry of plan.unresolved)
       lines.push(`  ${name(entry.giftId)}: ${unresolvedDetailText(entry, giftName, lang)}`);
-    // The same options the 「포기 결정」 card lists, one line: who to give up and what that buys.
+    // The same options the decision card lists, one line: which goal to take out and what that buys.
     if (marks.variants && marks.variants.length > 0) {
       const candidates = marks.variants.map((v) => `${v.name}(→ ${v.covered}/${v.total})`);
       lines.push(`  ${t('routeDecisionCandidates', lang)}: ${candidates.join(', ')}`);
@@ -106,10 +105,6 @@ export function planToText(
   if (plan.generalDrops.length > 0) {
     lines.push('');
     lines.push(`${t('routeGeneralTitle', lang)}: ${plan.generalDrops.map(name).join(', ')}`);
-  }
-  if (marks.bannedPacks && marks.bannedPacks.length > 0) {
-    lines.push('');
-    lines.push(`${t('packBanned', lang)}: ${marks.bannedPacks.map(packName).join(', ')}`);
   }
   // Same rule as the panel: a warning another line already carries stays out. The general-drop
   // one is deliberately dropped everywhere — the 「범용 드랍」 list is what the route has to say.

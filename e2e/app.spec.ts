@@ -33,7 +33,7 @@ test('plans off the render thread, and the alternatives follow the route', async
 
 test('a share link survives the round trip', async ({ page }) => {
   await page.goto(`./${shareHash([9250, 9251])}`);
-  await page.getByRole('tab', { name: '아이템' }).click();
+  await page.getByRole('tab', { name: '기프트' }).click();
   await expect(page.getByTestId('gift-chip')).toHaveCount(2);
 });
 
@@ -129,11 +129,13 @@ test('a sinner picker opened from the right column stays inside the panel (M63)'
   }
 });
 
-test('「모두 보기」 opens the gift browser over the stage, and a tile picked there is a goal (M71)', async ({
+test('the >> beside the gift search opens 「모두 보기」 over the stage with the query, and a tile picked there is a goal (M71)', async ({
   page,
 }) => {
   await page.goto('./');
-  await page.getByRole('tab', { name: '아이템' }).click();
+  await page.getByRole('tab', { name: '기프트' }).click();
+  // The tab has no filters and no 「기타」 any more; the >> at the end of its search row is the door.
+  await page.getByTestId('panel-left').getByRole('textbox', { name: '기프트 검색' }).fill('진혼');
   await page.getByRole('button', { name: '모두 보기' }).click();
   const browser = page.getByTestId('gift-browser');
   await expect(browser).toBeVisible();
@@ -141,8 +143,8 @@ test('「모두 보기」 opens the gift browser over the stage, and a tile pick
   await expect(page.getByTestId('panel-left')).toBeVisible();
   await expect(page.getByTestId('panel-right')).toBeVisible();
   await expect(page.getByTestId('run-stage')).toBeHidden();
-  // Two search boxes exist now (the tab's and the browser's); this one is the browser's.
-  await browser.getByRole('textbox', { name: '기프트 검색' }).fill('진혼');
+  // Two search boxes exist (the tab's and the browser's); the browser's opened on the tab's query.
+  await expect(browser.getByRole('textbox', { name: '기프트 검색' })).toHaveValue('진혼');
   await browser.getByRole('button', { name: '진혼', exact: true }).click();
   await expect(page.getByTestId('gift-chip')).toHaveCount(1);
   await browser.getByRole('button', { name: '닫기' }).click();

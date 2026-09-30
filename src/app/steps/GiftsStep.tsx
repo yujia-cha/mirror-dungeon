@@ -1,32 +1,32 @@
 /**
  * Pick the gifts to chase, as a grid of tiles; the detail sheet behind each name carries the
  * wording the tiles leave out (effect text, every condition, how it is obtained, the recipe). The
- * sheet itself is hosted by `PlanProvider`, so it survives this panel closing. Between the filters
- * and the grid sit the observation slots and the selected-gift tiles (`SelectedTiles`, the same
+ * sheet itself is hosted by `PlanProvider`, so it survives this panel closing. Between the search
+ * box and the grid sit the observation slots and the selected-gift tiles (`SelectedTiles`, the same
  * tiles as the grid): a tile's name opens the sheet, and the tile can be dragged onto a slot to pin
  * the gift for observation.
  *
- * Browsing splits the tiles into 활성 / 기타 by whether the current deck activates them. **A search
- * does not** — see `results` below — and 활성 steps aside once every gift in it is already a goal.
- * The 「기타」 header also opens the 「모두 보기」 browser (`onBrowse`), which lays every gift out
- * over the stage with the same filters.
+ * Browsing shows one section, 「지금 덱으로 활성」, and by default only what is left to decide in it
+ * (「선택하지 않은 것만 보기」, `ui.activeUnpickedOnly`). Everything else is reached by the search box —
+ * **a search answers from every gift**, in one list — or by the >> at the end of the search row,
+ * which opens the 「모두 보기」 browser (`onBrowse`) with the typed query and the filters.
  */
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, ChevronLeft, ChevronRight, Maximize2, Search, User } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Search, User } from 'lucide-react';
 import type { GameData, Keyword } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { observationClosed } from '../lib/plan-input.ts';
-import { prioritiseGifts, type GiftGroup } from '../lib/gift-priority.ts';
+import { prioritiseGifts } from '../lib/gift-priority.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { useChipDrag } from '../lib/useChipDrag.ts';
 import { useGiftFilters } from '../lib/useGiftFilters.ts';
 import { Badge, Button, Card, FilterSelect } from '../components/ui.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
-import { GiftFilterBar, GiftNoMatch } from '../components/GiftFilterBar.tsx';
+import { GiftNoMatch } from '../components/GiftFilterBar.tsx';
 import { GiftTileGrid } from '../components/GiftGrid.tsx';
 import { SelectedTiles } from '../components/SelectedTiles.tsx';
 import {
@@ -46,14 +46,9 @@ interface Props {
   lang: Lang;
   /** Where to send the player when the deck is empty (the deck tab). */
   onGoDeck?: () => void;
-  /** Open the 「모두 보기」 browser. Without it the 「기타」 header has no such button. */
-  onBrowse?: () => void;
+  /** Open the 「모두 보기」 browser on this query. Without it the search row has no >> button. */
+  onBrowse?: (query: string) => void;
 }
-
-const GROUPS: { group: GiftGroup; title: 'giftsActive' | 'giftsOther' }[] = [
-  { group: 'active', title: 'giftsActive' },
-  { group: 'other', title: 'giftsOther' },
-];
 
 export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Props) {
   const deck = useApp((s) => s.deck);
@@ -63,6 +58,8 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
   const observedGifts = useApp((s) => s.options.observedGifts);
   const toggleObserved = useApp((s) => s.toggleObserved);
   const setOptions = useApp((s) => s.setOptions);
+  const unpickedOnly = useApp((s) => s.ui.activeUnpickedOnly);
+  const setUi = useApp((s) => s.setUi);
   // Floor 1 left: the starlight is spent, and no slot takes or moves a pin any more.
   const observeClosed = useApp((s) => observationClosed(s.run));
   const observeMax = data.rules.giftObservation.max;
@@ -70,6 +67,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
   // they are computed once and every surface agrees.
   const { openGift, childrenOf, entangled, blocked, needed, toggleGoal: toggle } = usePlan();
 
+  // Only the query: the filters live in the 「모두 보기」 browser.
   const filterState = useGiftFilters();
   const { filters, matcher, searching } = filterState;
   const query = filters.query;
@@ -79,20 +77,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
   const [chipSort, setChipSort] = useState<'keyword' | 'name' | 'all'>('all');
   const [chipKeyword, setChipKeyword] = useState<Keyword | 'all'>('all');
   const [chipPack, setChipPack] = useState<string>('all');
-  // 「기타」 is the long tail, so it starts folded; 「활성」 opens with the panel.
-  const [collapsed, setCollapsed] = useState<Record<GiftGroup, boolean>>({ active: false, other: true });
-  /*
-    The 「조건」 filter answers a question the split does not: 「조건 없음」 is by definition all 「기타」
-    (nothing there can be active), so a reader who set it would find the answer behind the shut
-    fold. Setting the filter opens the fold — once, on the change; the header still folds it back.
-  */
-  const filterBarState = {
-    ...filterState,
-    set: <K extends keyof typeof filters>(key: K, value: (typeof filters)[K]): void => {
-      filterState.set(key, value);
-      if (key === 'condition' && value !== 'all') setCollapsed((state) => ({ ...state, other: false }));
-    },
-  };
+  const [collapsed, setCollapsed] = useState(false);
 
   const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
 
@@ -104,7 +89,6 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
     [data, indexes, wanted, conditionByGift, childrenOf, matcher],
   );
 
-  const total = groups.active.length + groups.other.length;
   const giftName = (id: number): string => pick(indexes.giftById.get(id)?.name, lang);
   const judgementFor = (id: number) => judgementOf(conditionByGift.get(id));
   /** Packs a gift can only be had from: its 테마 팩 한정 packs and the boss that drops it on clear. */
@@ -172,10 +156,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
   });
   const draggedGift = drag.state.dragging !== null ? indexes.giftById.get(drag.state.dragging) : undefined;
 
-  const tiles: Record<GiftGroup, GiftTileData[]> = {
-    active: tilesFor(groups.active, childrenOf, wanted, conditionByGift, matcher.attrs),
-    other: tilesFor(groups.other, childrenOf, wanted, conditionByGift, matcher.attrs),
-  };
+  const activeTiles = tilesFor(groups.active, childrenOf, wanted, conditionByGift, matcher.attrs);
   const grid = (list: GiftTileData[]) => (
     <GiftTileGrid
       tiles={list}
@@ -189,78 +170,74 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
       onOpen={openGift}
     />
   );
+  const emptyLine = (text: string) => (
+    <div className="px-3 py-3 text-sm text-fg-3" data-testid="gift-active-empty">
+      {text}
+    </div>
+  );
 
-  const section = (group: GiftGroup, titleKey: 'giftsActive' | 'giftsOther') => {
+  /*
+    「활성」 is a worklist: with 「선택하지 않은 것만 보기」 on (the default) a tile leaves it once there is
+    nothing left to decide about it. 「남은 일」 is the tile's own question (`isMarked`), not just
+    membership in `wanted` — choosing 진혼 settles 요리 비법 전서 too, and the ✓ on that tile says so.
+    The section itself stays when it runs dry, so the box that emptied it stays within reach.
+  */
+  const activeSection = () => {
+    const shown = unpickedOnly ? activeTiles.filter((tile) => !isMarked(tile, wanted, blocked)) : activeTiles;
     // 조합 계승 children come into the grid under their parent, so the parent count read low.
-    const list = tiles[group];
-    const chosen = list.filter((tile) => wanted.includes(tile.entry.gift.id)).length;
-    const shut = collapsed[group];
+    const chosen = activeTiles.filter((tile) => wanted.includes(tile.entry.gift.id)).length;
+    let content: React.ReactNode;
+    if (activeTiles.length === 0) content = emptyLine(t('giftsActiveNone', lang));
+    else if (shown.length === 0) content = emptyLine(t('giftsActiveAllPicked', lang));
+    else content = grid(shown);
     return (
-      <Card className="overflow-hidden" key={group}>
+      <Card className="overflow-hidden">
         {/*
-          The fold toggle and the browser door sit side by side rather than nested: a button
-          inside a button is not HTML, and a press on the door must not fold the section.
+          The fold toggle and the checkbox sit side by side rather than nested: a control inside a
+          button is not HTML, and ticking the box must not fold the section.
         */}
         <div className="flex h-9 items-stretch border-b border-line bg-surface-2">
           <button
             type="button"
-            onClick={() => setCollapsed((state) => ({ ...state, [group]: !state[group] }))}
-            aria-expanded={!shut}
-            className="flex min-w-0 flex-1 items-center justify-between px-3 text-left"
+            onClick={() => setCollapsed((shut) => !shut)}
+            aria-expanded={!collapsed}
+            className="flex min-w-0 flex-1 items-center justify-between gap-1 px-3 text-left"
           >
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              {t(titleKey, lang)} <span className="font-num text-xs text-fg-3">{list.length}</span>
-              {shut && chosen > 0 ? (
+            <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+              <span className="truncate">{t('giftsActive', lang)}</span>
+              <span className="font-num text-xs text-fg-3">{shown.length}</span>
+              {collapsed && chosen > 0 ? (
                 <Badge tone="neutral">{t('giftsSelected', lang, { n: chosen })}</Badge>
               ) : null}
             </span>
-            <span className="text-fg-3">{shut ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</span>
+            <span className="flex-none text-fg-3">
+              {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+            </span>
           </button>
-          {group === 'other' && onBrowse ? (
-            <button
-              type="button"
-              onClick={onBrowse}
-              aria-label={t('giftsBrowseAll', lang)}
-              title={t('giftsBrowseAll', lang)}
-              className="inline-flex flex-none items-center gap-1 border-l border-line px-2.5 text-xs font-medium text-fg-2 hover:bg-surface hover:text-fg"
-              data-testid="gift-browse-all"
-            >
-              <Maximize2 size={12} aria-hidden />
-              {t('giftsBrowseAll', lang)}
-            </button>
-          ) : null}
+          <label className="flex flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap border-l border-line px-2.5 text-xs font-medium text-fg-2">
+            <input
+              type="checkbox"
+              checked={unpickedOnly}
+              onChange={(event) => setUi({ activeUnpickedOnly: event.target.checked })}
+              className="h-[14px] w-[14px] accent-[var(--color-ink)]"
+              data-testid="gift-unpicked-only"
+            />
+            {t('giftsUnpickedOnly', lang)}
+          </label>
         </div>
-        {shut ? null : (
-          <div
-            className={group === 'other' ? 'max-h-[60dvh] overflow-y-auto' : undefined}
-            data-testid={group === 'other' ? 'gift-scroller' : undefined}
-          >
-            {grid(list)}
-          </div>
-        )}
+        {collapsed ? null : content}
       </Card>
     );
   };
 
   /*
-    A query is a narrowing already, so splitting its answer into 활성 / 기타 narrows it twice: what
-    the reader typed for sat behind 「기타」, which opens shut. One list instead. 활성 still comes
-    first — that is the order `prioritiseGifts` left them in — and the tile's own ring keeps saying
-    whether the deck activates it, so the split carried nothing the tiles do not.
+    A query answers from every gift, in one list: 활성 first — the order `prioritiseGifts` left them
+    in — and the tile's own ring says whether the deck activates it. It ignores 「선택하지 않은 것만
+    보기」: a search is explicit, and a picked gift has to stay reachable to be unpicked.
   */
-  const results = [...tiles.active, ...tiles.other];
-  /*
-    「활성」 is a worklist: once nothing in it is left to decide there is no reason to keep reading it,
-    so it steps aside and 「기타」 rises to the top. 「남은 일」 is the tile's own question (`isMarked`), not
-    just membership in `wanted` — choosing 진혼 settles 요리 비법 전서 too, and the ✓ on that tile says
-    so. Not when it is the only thing on screen, though — hiding it with nothing behind it would
-    leave the tab blank.
-  */
-  const activeSettled =
-    tiles.active.length > 0 && tiles.active.every((tile) => isMarked(tile, wanted, blocked));
-  const shownGroups = GROUPS.filter(
-    ({ group }) => !(group === 'active' && activeSettled && tiles.other.length > 0),
-  );
+  const results = searching
+    ? [...activeTiles, ...tilesFor(groups.other, childrenOf, wanted, conditionByGift, matcher.attrs)]
+    : [];
   let body: React.ReactNode;
   if (deck.length === 0) {
     body = (
@@ -275,7 +252,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
         ) : null}
       </Card>
     );
-  } else if (total === 0) {
+  } else if (searching && results.length === 0) {
     body = <GiftNoMatch state={filterState} lang={lang} />;
   } else if (searching) {
     body = (
@@ -289,11 +266,7 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
       </Card>
     );
   } else {
-    body = (
-      <div className="flex flex-col gap-2.5">
-        {shownGroups.map(({ group, title }) => section(group, title))}
-      </div>
-    );
+    body = activeSection();
   }
 
   const keywordOptions = data.enums.keywords.map((k) => ({
@@ -316,23 +289,37 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
 
   return (
     <div className="flex flex-col gap-2.5">
-      <label className="flex h-9 items-center gap-2 rounded-sm border border-line-strong bg-surface px-2.5 text-sm">
-        <Search size={14} aria-hidden className="flex-none text-fg-3" />
-        <input
-          value={query}
-          onChange={(event) => filterState.setQuery(event.target.value)}
-          placeholder={t('giftsSearch', lang)}
-          aria-label={t('giftsSearch', lang)}
-          className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
-        />
-      </label>
+      <div className="flex items-center gap-1.5">
+        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-sm border border-line-strong bg-surface px-2.5 text-sm">
+          <Search size={14} aria-hidden className="flex-none text-fg-3" />
+          <input
+            value={query}
+            onChange={(event) => filterState.setQuery(event.target.value)}
+            placeholder={t('giftsSearch', lang)}
+            aria-label={t('giftsSearch', lang)}
+            className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
+          />
+        </label>
+        {/* The door to every gift and the filters; it takes the query along. */}
+        {onBrowse ? (
+          <button
+            type="button"
+            onClick={() => onBrowse(query)}
+            aria-label={t('giftsBrowseAll', lang)}
+            title={t('giftsBrowseAll', lang)}
+            className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-sm border border-line-strong bg-surface text-fg-2 hover:bg-surface-2 hover:text-fg"
+            data-testid="gift-browse-all"
+          >
+            <ChevronsRight size={16} aria-hidden />
+          </button>
+        ) : null}
+      </div>
       {/*
         While a query is being typed, its results belong under the box that asked for them — the
-        filters, the observation slots and the selection tray would otherwise push them a screen
-        down. With no query the grid goes back to the foot of the tab.
+        observation slots and the selection tray would otherwise push them a screen down. With no
+        query the 활성 section goes back to the foot of the tab.
       */}
       {searching ? body : null}
-      <GiftFilterBar state={filterBarState} enums={data.enums} lang={lang} />
 
       <ObserveSlots
         slots={observedGifts}

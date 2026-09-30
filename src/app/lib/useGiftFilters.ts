@@ -1,7 +1,7 @@
 /**
  * One caller's set of gift filters. The items tab and the 「모두 보기」 browser each hold their own —
- * a query typed in the browser is not a query in the tab — and both draw the same `GiftFilterBar`
- * from what this returns.
+ * a query typed in the browser is not a query in the tab. The tab uses only the query; the browser
+ * also draws `GiftFilterBar` from what this returns.
  */
 import { useCallback, useMemo, useState } from 'react';
 import type { Gift } from '../../core/schema.ts';
@@ -30,8 +30,9 @@ export interface GiftFilterState {
   resetFilters: () => void;
 }
 
-export function useGiftFilters(): GiftFilterState {
-  const [filters, setFilters] = useState<GiftFilters>(EMPTY_FILTERS);
+/** `initialQuery` seeds the search box — the browser opens on whatever the tab had typed. */
+export function useGiftFilters(initialQuery = ''): GiftFilterState {
+  const [filters, setFilters] = useState<GiftFilters>(() => ({ ...EMPTY_FILTERS, query: initialQuery }));
   const set = useCallback(
     <K extends keyof GiftFilters>(key: K, value: GiftFilters[K]): void =>
       setFilters((current) => ({ ...current, [key]: value })),

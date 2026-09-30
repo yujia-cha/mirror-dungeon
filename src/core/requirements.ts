@@ -161,8 +161,8 @@ export function expandRequirements(
           giftId,
           reason: 'failed',
           detail: {
-            ko: '층을 떠날 때까지 획득으로 표시하지 않아 이 런에서는 얻을 수 없는 기프트입니다.',
-            en: 'Not marked as obtained before leaving its floor, so it cannot be had this run.',
+            ko: '미획득인 채로 층을 떠나 이 런에서는 더 얻을 수 없는 기프트입니다.',
+            en: 'Its floor was left with it not got, so it cannot be had this run.',
           },
         });
         return;

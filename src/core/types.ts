@@ -30,7 +30,10 @@ export interface PlanOptions {
    * `rules.deployment.default` of the deck. Ids not in the deck are ignored.
    */
   deployed?: number[];
-  /** Keyword whose starting-gift pool is used. 'auto' picks the deck's dominant keyword. */
+  /**
+   * Keyword whose starting-gift pool is used. 'auto' follows the goals — the pool holding the
+   * hardest-to-route wanted gift — and falls back to the deck's dominant keyword when none does.
+   */
   startKeyword: Keyword | 'auto';
   /**
    * Gifts the user pinned for the starlight-funded 기프트 관측 (at most `rules.giftObservation.max`).
@@ -267,6 +270,17 @@ export interface RoutePlan {
     keyword: Keyword | null;
     /** The one gift taken from the starting keyword pool. */
     startGift: number | null;
+    /**
+     * What the automatic start keyword resolves to for these goals: the keyword whose pool holds the
+     * hardest-to-route wanted gift, or the deck's dominant keyword when no pool holds one. Equal to
+     * `keyword` on 'auto'; with a requested keyword it says what 'auto' would have done instead.
+     */
+    autoKeyword: Keyword | null;
+    /**
+     * The starting gift 'auto' would take. Null when no pool holds a goal — the keyword is then a
+     * free choice — and always null mid-run, when the start is long past.
+     */
+    autoStartGift: number | null;
     /** Gifts taken through the starlight-funded 기프트 관측, pinned ones first. */
     observed: ObservedGift[];
     starlight: number;

@@ -21,8 +21,8 @@ export const STRINGS = {
   resetAll: { ko: '초기화', en: 'Reset' },
   confirmCancel: { ko: '취소', en: 'Cancel' },
   resetAllConfirm: {
-    ko: '덱·아이템·루트 설정·런 기록을 모두 처음 상태로 되돌립니다.',
-    en: 'Resets the deck, items, route settings and run record.',
+    ko: '덱·기프트·루트 설정·런 기록을 모두 처음 상태로 되돌립니다.',
+    en: 'Resets the deck, gifts, route settings and run record.',
   },
   langToggle: { ko: 'English', en: '한국어' },
   themeToggle: { ko: '화면 전환', en: 'Toggle theme' },
@@ -51,8 +51,8 @@ export const STRINGS = {
     en: 'Some data not confirmed',
   },
   seasonProvisionalHint: {
-    ko: '이 시즌은 아직 팩별 범용 기프트 풀을 확인하지 못했습니다. 전용 기프트와 조합은 계획할 수 있지만, 범용 기프트가 어느 팩에서 나오는지는 알 수 없습니다.',
-    en: 'This season has no per-pack general gift pool yet. Exclusive gifts and fusions can be planned; which pack a general gift can drop from is unknown.',
+    ko: '이 시즌은 아직 팩별 범용 드랍 풀을 확인하지 못했습니다. 전용 기프트와 조합은 계획할 수 있지만, 범용 드랍이 어느 팩에서 나오는지는 알 수 없습니다.',
+    en: 'This season has no per-pack general drop pool yet. Exclusive gifts and fusions can be planned; which pack a general drop can come from is unknown.',
   },
   seasonDroppedGifts: {
     ko: '이번 시즌에 없는 기프트 {n}개를 뺐습니다',
@@ -118,7 +118,10 @@ export const STRINGS = {
   // Step 2 — gifts
   giftsSearch: { ko: '기프트 검색', en: 'Search gifts' },
   giftsActive: { ko: '지금 덱으로 활성', en: 'Active with this deck' },
-  giftsOther: { ko: '기타', en: 'Others' },
+  // 「목표가 아닌 것만 보기」 hides what is already a goal or already carried by one (`isMarked`).
+  giftsUnpickedOnly: { ko: '목표가 아닌 것만 보기', en: 'Non-goals only' },
+  giftsActiveAllPicked: { ko: '모두 목표입니다', en: 'All are goals' },
+  giftsActiveNone: { ko: '지금 덱으로 활성인 기프트가 없습니다', en: 'Nothing is active with this deck' },
   giftsResults: { ko: '검색 결과', en: 'Search results' },
   giftSubOf: { ko: '{parent} 재료', en: 'Ingredient of {parent}' },
   giftMaterials: { ko: '조합식', en: 'Recipe' },
@@ -133,24 +136,23 @@ export const STRINGS = {
   giftPackOnlyMany: { ko: '{name} 외 {n}개 팩 전용', en: 'only from {name} and {n} other packs' },
   /** `{source}` is a `routeSourceText` — where this route gets the gift. */
   giftRouteSource: { ko: '이 루트에서는 {source}', en: 'In this route: {source}' },
-  giftSelect: { ko: '목표로 삼기', en: 'Make it a goal' },
-  giftUnselect: { ko: '목표에서 빼기', en: 'Drop the goal' },
   giftBlockedIncluded: { ko: '{name} 조합에 이미 포함됨', en: 'Already part of {name}' },
   giftEntangled: { ko: '얽힘', en: 'Entangled' },
   // `{name}` is a gift name, so the particle is picked by `josa` at the call site.
   giftEntangledWith: { ko: '{name} 재료가 겹칩니다: {list}', en: 'shares ingredients with {name}: {list}' },
   giftDetail: { ko: '{name} 자세히', en: '{name} details' },
+  giftDetailBack: { ko: '{name} 설명으로 돌아가기', en: 'Back to {name}' },
   giftsDeckEmpty: { ko: '덱이 비어 있습니다', en: 'The deck is empty' },
   giftsNoMatch: { ko: '일치하는 기프트 없음', en: 'No gift matches' },
-  giftsSelected: { ko: '선택 {n}', en: 'Selected {n}' },
-  giftsClear: { ko: '선택 비우기', en: 'Clear selection' },
-  // The 「모두 보기」 browser: every gift in one grid, over the stage on a desktop and as its own
-  // page on a phone.
+  giftsSelected: { ko: '목표 {n}', en: 'Goals {n}' },
+  giftsClear: { ko: '목표 비우기', en: 'Clear goals' },
+  // The 「모두 보기」 browser (the >> at the end of the tab's search row): every gift in one grid with
+  // the filters, over the stage on a desktop and as its own page on a phone.
   giftsBrowseAll: { ko: '모두 보기', en: 'Browse all' },
   giftsBrowseTitle: { ko: '모든 기프트', en: 'All gifts' },
   giftsBrowseClose: { ko: '닫기', en: 'Close' },
   giftsSort: { ko: '정렬', en: 'Sort' },
-  giftsSortPicked: { ko: '선택 순서', en: 'As picked' },
+  giftsSortPicked: { ko: '추가한 순서', en: 'As added' },
   giftsSortName: { ko: '이름', en: 'Name' },
   giftsPack: { ko: '팩', en: 'Pack' },
   giftsObserve: { ko: '{name} 관측 지정', en: 'Observe {name}' },
@@ -161,9 +163,12 @@ export const STRINGS = {
     en: 'Observations cannot change after floor 1 is left',
   },
   observeSlots: { ko: '관측', en: 'Observation' },
-  observeSlotAdd: { ko: '관측 지정 추가', en: 'Pin an observation' },
-  observeSlotClear: { ko: '{name} 관측 해제', en: 'Stop observing {name}' },
-  observeSlotNone: { ko: '관측할 수 있는 선택 기프트가 없습니다', en: 'No selected gift can be observed' },
+  observeSlotAdd: { ko: '관측 지정 추가', en: 'Add an observation' },
+  // The observation toggle reads the same everywhere it appears (pack sheet row, start-row detail,
+  // gift sheet, slots): 「관측 지정」 off, 「지정됨」 on, and 「{name} 지정 해제」 to release it.
+  observePinned: { ko: '지정됨', en: 'Pinned' },
+  observeSlotClear: { ko: '{name} 지정 해제', en: 'Unpin {name}' },
+  observeSlotNone: { ko: '관측할 수 있는 목표 기프트가 없습니다', en: 'No goal gift can be observed' },
   filterReset: { ko: '필터 초기화', en: 'Reset filters' },
   filterKeyword: { ko: '키워드', en: 'Keyword' },
   // 「조건」 asks whether the deck decides the gift (`hasDeckCondition`): a threshold keyword count
@@ -172,15 +177,10 @@ export const STRINGS = {
   condNone: { ko: '조건 없음', en: 'No condition' },
   condGated: { ko: '덱 조건', en: 'Deck condition' },
   filterTier: { ko: '등급', en: 'Tier' },
-  filterAcquisition: { ko: '획득', en: 'Source' },
   filterSin: { ko: '죄악', en: 'Sin' },
-  filterPrice: { ko: '가격', en: 'Price' },
   filterAll: { ko: '전체', en: 'All' },
-  priceBand: { ko: '{from}~{to}', en: '{from}–{to}' },
-  priceUpTo: { ko: '~{n}', en: 'up to {n}' },
-  priceOver: { ko: '{n}~', en: '{n}+' },
-  acqSure: { ko: '확정', en: 'Sure' },
-  acqMaybe: { ko: '가능', en: 'May drop' },
+  acqSure: { ko: '팩 한정', en: 'Pack-only' },
+  acqMaybe: { ko: '범용 드랍', en: 'General drop' },
   acqFuse: { ko: '조합', en: 'Fusion' },
   acqStart: { ko: '시작', en: 'Start' },
   acqEvent: { ko: '이벤트', en: 'Event' },
@@ -195,13 +195,24 @@ export const STRINGS = {
   sinGLOOM: { ko: '우울', en: 'Gloom' },
   sinPRIDE: { ko: '오만', en: 'Pride' },
   sinENVY: { ko: '질투', en: 'Envy' },
-  removeFromSelection: { ko: '{name} 선택 해제', en: 'Deselect {name}' },
+  removeFromSelection: { ko: '{name} 목표에서 빼기', en: 'Remove {name} from goals' },
 
   // Step 3 — route
   optionStartKeyword: { ko: '시작 키워드', en: 'Start keyword' },
   optionAuto: { ko: '자동', en: 'Auto' },
+  optionAutoResolved: { ko: '자동 ({keyword})', en: 'Auto ({keyword})' },
+  // The gift name arrives with its particle attached (`withJosa`), so the sentence carries none.
+  startKeywordGives: { ko: '{keyword}: {gift} 시작 기프트로 받습니다', en: '{keyword}: starts with {gift}' },
+  startKeywordAutoWould: {
+    ko: '자동으로 두면 {gift} 시작 기프트로 받습니다',
+    en: 'On auto, the run would start with {gift}',
+  },
+  startKeywordFree: {
+    ko: '목표에 영향이 없으니 원하는 키워드를 골라도 됩니다',
+    en: 'No goal depends on it, so pick any keyword',
+  },
   routeRequiredPacks: { ko: '필요 팩', en: 'Packs' },
-  routeCovered: { ko: '확보', en: 'Covered' },
+  routeCovered: { ko: '획득', en: 'Got' },
   routeApprox: { ko: '근사 결과', en: 'Near-best' },
   routeCopy: { ko: '텍스트 복사', en: 'Copy as text' },
   routeCopied: { ko: '복사했습니다', en: 'Copied' },
@@ -214,62 +225,35 @@ export const STRINGS = {
   routeObservedNone: { ko: '추천할 관측이 없습니다', en: 'Nothing worth observing' },
   // Mid-run the observation decision is past, so the row stops being a recommendation and becomes
   // the record of what the run actually started with (core clears `start.observed` once past floor 1).
-  routeStartHeld: { ko: '시작 시 보유', en: 'Held at start' },
+  routeStartHeld: { ko: '시작 시 획득', en: 'Got at start' },
   routeStartHeldNone: { ko: '관측 없이 시작했습니다', en: 'Started with no observations' },
   routeObservedPinned: { ko: '지정', en: 'Pinned' },
   routeObservedRecommended: { ko: '추천', en: 'Suggested' },
-  routeObservedFrees: { ko: '{pack} 안 가도 됨', en: 'No need to visit {pack}' },
+  routeObservedFrees: { ko: '{pack} 안 가도 됨', en: 'No need to enter {pack}' },
   routeObservedRescue: { ko: '루트로는 얻을 수 없어 관측', en: 'Unreachable by route, so observe it' },
-  routeObservedToggle: { ko: '{name} 관측 지정 전환', en: 'Toggle observing {name}' },
-  routeVariantWithout: { ko: '{name} 제외', en: 'Without {name}' },
-  // The 「포기 결정」 card: one place for the choice the route cannot make — which gift to give up
-  // when they cannot all fit one run. `{names}` is the list of conflicting gift names.
+  routeVariantWithout: { ko: '{name} 빼면', en: 'Without {name}' },
+  // The decision card: one place for the choice the route cannot make — which gift to take out of
+  // the goals when they cannot all fit one run. `{names}` is the list of conflicting gift names.
   routeDecisionTitle: {
-    ko: '전부 얻을 수 없습니다 · {names} 중 하나를 포기해야 합니다',
-    en: 'They do not all fit one run · give up one of {names}',
+    ko: '전부 얻을 수 없습니다 · {names} 중 하나를 목표에서 빼야 합니다',
+    en: 'They do not all fit one run · remove one of {names} from the goals',
   },
   routeDecisionKeep: { ko: '전부 유지', en: 'Keep all' },
-  routeDecisionDrop: { ko: '이 기프트 포기', en: 'Give up this gift' },
+  routeDecisionDrop: { ko: '목표에서 빼기', en: 'Remove from goals' },
   routeDecisionPreview: { ko: '루트 미리 보기', en: 'Preview route' },
-  routeDecisionPreviewing: { ko: '미리 보기: {name} 제외', en: 'Preview: without {name}' },
-  routeDecisionConfirm: { ko: '이대로 포기', en: 'Give it up' },
+  routeDecisionPreviewing: { ko: '미리 보기: {name} 빼면', en: 'Preview: without {name}' },
+  routeDecisionConfirm: { ko: '이대로 빼기', en: 'Remove it' },
   routeDecisionBack: { ko: '원래대로', en: 'Back to all' },
   // `{packs}` is a list of pack names; the particle is picked by `josa` at the call site.
   routeDecisionPacksChange: { ko: '{packs} 들어옵니다', en: '{packs} come in' },
   routeDecisionStillUnresolved: { ko: '그래도 {n}개 미해결', en: 'Still {n} unresolved' },
   routeDecisionPending: { ko: '대안 계산 중…', en: 'Computing alternatives…' },
-  routeDecisionPackPick: { ko: '팩으로 고르기', en: 'Choose by pack' },
-  routeDecisionCandidates: { ko: '포기 후보', en: 'Candidates to give up' },
+  routeDecisionCandidates: { ko: '뺄 후보', en: 'Candidates to remove' },
   routeClose: { ko: '닫기', en: 'Close' },
-  packInclude: { ko: '이 팩으로', en: 'Include this pack' },
-  packIncluded: { ko: '포함 · {floor}층', en: 'Included · floor {floor}' },
-  packPreferred: { ko: '포함 지정', en: 'Set to include' },
-  /**
-   * The same button once the pack is already pinned in.
-   *
-   * It has always been a toggle, but its accessible name said 「포함」 in both states, so a screen
-   * reader announced "include this pack" on the control that would in fact drop it.
-   */
-  packIncludeUndo: { ko: '포함 지정 해제', en: 'Stop including this pack' },
-  packNotInRoute: { ko: '루트에 없음', en: 'Not in the route' },
-  packBan: { ko: '이 팩 포기', en: 'Give up this pack' },
-  packBanned: { ko: '포기한 팩', en: 'Given up' },
-  packRestore: { ko: '되돌리기', en: 'Restore' },
   packGifts: { ko: '이 팩의 기프트', en: 'Gifts from this pack' },
   packFloorRange: { ko: '{floors}층', en: 'Floors {floors}' },
   giftExclusive: { ko: '전용', en: 'Exclusive' },
-  giftWanted: { ko: '원함', en: 'Wanted' },
-  routeConflicts: { ko: '팩 충돌 {n}건', en: '{n} pack conflicts' },
-  conflictHeader: {
-    ko: '{from}~{to}층 · 자리 {slots}개에 팩 {packs}개',
-    en: 'Floors {from}–{to} · {packs} packs for {slots} floors',
-  },
-  routeBannedList: { ko: '포기한 팩 {n}', en: '{n} packs given up' },
-  // `{gift}` is a list of gift names; the particle is picked by `josa` at the call site.
-  packBanConfirm: {
-    ko: '{gift} 이 팩에서만 나옵니다. 포기하면 목표에서도 뺍니다.',
-    en: '{gift} comes only from this pack. Giving it up removes it from your goals too.',
-  },
+  giftWanted: { ko: '목표', en: 'Goal' },
   routeFree: { ko: '자유', en: 'Free' },
   routeFloorRange: { ko: '{from}~{to}층', en: 'Floors {from}–{to}' },
   giftUnjudgeable: { ko: '판정 불가', en: 'Cannot judge' },
@@ -280,9 +264,9 @@ export const STRINGS = {
   routeConditionsBasis: { ko: '출격 {n} 기준', en: 'for {n} deployed' },
   routeUnresolved: { ko: '미해결', en: 'Unresolved' },
   routeWarnings: { ko: '참고', en: 'Notes' },
-  // 루트가 팩 방문으로 더 할 일이 없는 기프트들. 목록과 개수만 말하고 확정/비확정 판단은
-  // 아이템 탭의 획득 분류(`acqMaybe`)와 기프트 상세 시트가 맡는다.
-  routeGeneralBadge: { ko: '범용 {n}', en: '{n} general' },
+  // 루트가 팩 입장으로 더 할 일이 없는 기프트들. 목록과 개수만 말하고 팩 한정/범용 드랍 판단은
+  // 기프트 탭의 획득 분류(`acqMaybe`)와 기프트 상세 시트가 맡는다.
+  routeGeneralBadge: { ko: '범용 드랍 {n}', en: '{n} general drops' },
   /**
    * Shown while a newer route is still being computed off-thread, over the previous one.
    *
@@ -300,14 +284,14 @@ export const STRINGS = {
   routeSourcePack: { ko: '{floor}층 {name}', en: 'floor {floor}, {name}' },
   routeSourceObserved: { ko: '관측', en: 'observation' },
   routeSourceStart: { ko: '시작 기프트', en: 'starting gift' },
-  routeSourceGeneral: { ko: '범용 (팩 없음)', en: 'general drop (no pack)' },
+  routeSourceGeneral: { ko: '범용 드랍', en: 'general drop' },
   routeSourceFusion: { ko: '{floor}층 이후 조합', en: 'fused after floor {floor}' },
   routeSourceFusionUnreachable: { ko: '조합 불가', en: 'cannot be fused' },
   routeApproxHint: {
-    ko: '목표가 많아 탐색을 끝까지 하지 못했습니다. 최선이 아닐 수 있고, 목표를 더 넣으면 이미 확보한 것이 빠질 수 있습니다.',
-    en: 'Too many goals to search exhaustively. This may not be optimal, and adding goals can drop ones already secured.',
+    ko: '목표가 많아 탐색을 끝까지 하지 못했습니다. 최선이 아닐 수 있고, 목표를 더 넣으면 이미 획득한 것이 빠질 수 있습니다.',
+    en: 'Too many goals to search exhaustively. This may not be optimal, and adding goals can drop ones already got.',
   },
-  routeEmpty: { ko: '기프트를 고르면 루트가 나옵니다', en: 'Choose gifts and the route appears' },
+  routeEmpty: { ko: '목표를 정하면 루트가 나옵니다', en: 'Set goals and the route appears' },
   unresolvedNoPack: { ko: '층 범위 밖', en: 'No pack in range' },
   unresolvedConflict: { ko: '팩 충돌', en: 'Pack conflict' },
   unresolvedHardOnly: { ko: '난이도 제한', en: 'Difficulty-locked' },
@@ -315,36 +299,39 @@ export const STRINGS = {
   unresolvedNotObtainable: { ko: '획득 불가', en: 'Not obtainable' },
   unresolvedNoPackPath: { ko: '팩 경로 없음', en: 'No pack path' },
   unresolvedChance: { ko: '확률 보상', en: 'Chance only' },
-  unresolvedBanned: { ko: '포기한 팩', en: 'Pack given up' },
+  unresolvedBanned: { ko: '제외한 팩', en: 'Pack excluded' },
   unresolvedShared: { ko: '재료 겹침', en: 'Ingredient shared' },
-  unresolvedFailed: { ko: '수집 실패', en: 'Missed' },
+  unresolvedFailed: { ko: '미획득', en: 'Not got' },
   unresolvedDropped: {
-    ko: '나머지 재료({names})만을 위한 방문은 취소했습니다.',
-    en: 'Visits for the remaining ingredients ({names}) alone were dropped.',
+    ko: '나머지 재료({names})만을 위한 입장은 취소했습니다.',
+    en: 'Pack entries for the remaining ingredients ({names}) alone were dropped.',
   },
 
   runActive: { ko: '진행 중', en: 'In progress' },
   runCurrentFloor: { ko: '현재 층', en: 'Current floor' },
-  runVisited: { ko: '{floor}층 방문', en: 'Entered on floor {floor}' },
-  runVisitedShort: { ko: '방문 · {floor}층', en: 'Entered · F{floor}' },
+  runVisited: { ko: '{floor}층 입장', en: 'Entered on floor {floor}' },
+  runVisitedShort: { ko: '입장 · {floor}층', en: 'Entered · F{floor}' },
   runPassed: { ko: '지남', en: 'Passed' },
-  runFailedCount: { ko: '실패 {n}', en: '{n} missed' },
-  giftStatusGot: { ko: '완료', en: 'Got' },
-  giftStatusFailed: { ko: '실패', en: 'Missed' },
+  runFailedCount: { ko: '미획득 {n}', en: '{n} not got' },
+  giftStatusGot: { ko: '획득', en: 'Got' },
+  giftStatusFailed: { ko: '미획득', en: 'Not got' },
+  // Every way a gift becomes or stops being a goal — the gift sheet, the pack sheet's rows — says
+  // these two; the ✕ on a tray tile and the decision card say the same with the name attached.
   giftAddGoal: { ko: '목표에 추가', en: 'Add as goal' },
-  giftRemoveGoal: { ko: '목표에서 빼기', en: 'Remove goal' },
+  giftRemoveGoal: { ko: '목표에서 빼기', en: 'Remove from goals' },
   giftFusionDead: {
     ko: '조합 불가 — {result} 재료를 구할 수 없습니다',
     en: 'Fusion lost — {result} cannot get its ingredients',
   },
   fusionGoalIngredients: { ko: '재료도 목표', en: 'Ingredients are goals too' },
   fusionGoalHint: {
-    ko: '끄면 조합이 불가능해졌을 때 남은 재료만을 위한 방문을 취소합니다.',
-    en: 'Off: when the fusion becomes impossible, visits for the remaining ingredients alone are dropped.',
+    ko: '끄면 조합이 불가능해졌을 때 남은 재료만을 위한 입장을 취소합니다.',
+    en: 'Off: when the fusion becomes impossible, pack entries for the remaining ingredients alone are dropped.',
   },
 
-  panelLeft: { ko: '설정 패널', en: 'Setup panel' },
-  panelRight: { ko: '루트 패널', en: 'Route panel' },
+  // A phone page is titled with the name of the header door that opens it.
+  panelLeft: { ko: '덱', en: 'Deck' },
+  panelRight: { ko: '전체 루트', en: 'Full route' },
   panelResize: { ko: '패널 너비', en: 'Panel width' },
   panelResizeHint: {
     ko: '끌어서 너비 조절 · 두 번 눌러 기본값 · 화살표 키로 조금씩',
@@ -352,7 +339,7 @@ export const STRINGS = {
   },
   panelBack: { ko: '뒤로', en: 'Back' },
   tabDeck: { ko: '덱', en: 'Deck' },
-  tabGifts: { ko: '아이템', en: 'Items' },
+  tabGifts: { ko: '기프트', en: 'Gifts' },
   tabRoutePlan: { ko: '전체 루트', en: 'Full route' },
   tabGoals: { ko: '목표', en: 'Goals' },
   tabTracker: { ko: '추적기', en: 'Tracker' },
@@ -371,14 +358,13 @@ export const STRINGS = {
   stageEnterPack: { ko: '{name} 입장', en: 'Enter {name}' },
   stageUnenter: { ko: '입장 취소', en: 'Undo entry' },
   stageReleaseEnter: { ko: '놓으면 입장', en: 'Release to enter' },
-  stageOtherEntry: { ko: '넘기기', en: 'Skip' },
+  stageOtherEntry: { ko: '다음 층', en: 'Next floor' },
   stageReleaseNext: { ko: '놓으면 다음 층', en: 'Release for the next floor' },
-  stageBack: { ko: '돌아가기', en: 'Go back' },
   stageReleaseBack: {
-    ko: '놓으면 돌아가기 · 표시한 기프트 초기화',
-    en: 'Release to go back · marked gifts reset',
+    ko: '놓으면 입장 취소 · 표시한 기프트 초기화',
+    en: 'Release to undo entry · marked gifts reset',
   },
-  stageBackPack: { ko: '{name} 돌아가기', en: 'Go back from {name}' },
+  stageBackPack: { ko: '{name} 입장 취소', en: 'Undo entry to {name}' },
   stageExclusiveMore: { ko: '+{n}', en: '+{n}' },
   stagePackDetail: { ko: '{name} 자세히', en: '{name} details' },
   stageEntered: { ko: '{floor}층에 입장', en: 'Entered on floor {floor}' },
@@ -411,30 +397,28 @@ export const STRINGS = {
   },
   confirmSeasonConfirm: { ko: '시즌 바꾸기', en: 'Change season' },
   giftTileToggle: { ko: '{name} 획득 표시', en: 'Mark {name} as got' },
-  giftTileHold: { ko: '길게 누르면 정보', en: 'Hold for details' },
   trackerTitle: { ko: 'T4 기프트 추적', en: 'T4 gift tracker' },
   trackerGroupKeyword: { ko: '키워드', en: 'Keyword' },
   trackerGroupShard: { ko: '조각', en: 'Shards' },
   trackerGroupMemory: { ko: '기억', en: 'Memories' },
   trackerGroupAttack: { ko: '공격 유형', en: 'Attack type' },
-  trackerGroupPlain: { ko: '범용', en: 'General' },
+  trackerGroupPlain: { ko: '키워드 없음', en: 'Keywordless' },
   trackerFusionNotice: {
-    ko: '합성으로 소모한 조각 {a}개·기억 {b}개는 미획득으로 표시하세요.',
+    ko: '조합으로 소모한 조각 {a}개·기억 {b}개는 미획득으로 표시하세요.',
     en: 'Mark the {a} shards and {b} memories the fusion consumed as not got.',
   },
   trackerFusionHeld: { ko: '지금 획득으로 표시된 재료', en: 'Ingredients marked as got' },
   trackerUnmark: { ko: '미획득으로', en: 'Not got' },
   routeUnresolvedCount: { ko: '미해결 {n}', en: '{n} unresolved' },
   routeGoals: { ko: '목표 기프트', en: 'Goals' },
-  settingsObserved: { ko: '관측 지정', en: 'Pinned observations' },
-  settingsNone: { ko: '없음', en: 'None' },
+  settingsObserved: { ko: '관측 지정', en: 'Observe' },
   // `{names}` is a list of gift names, so the particle is picked by `josa` at the call site.
   unresolvedMissing: {
     ko: '재료 {names} 구할 수 없어 조합할 수 없습니다.',
     en: 'Cannot be fused: {names} cannot be obtained in this plan.',
   },
   actionObserveGift: { ko: '{name} 관측 지정', en: 'Observe {name}' },
-  actionReleaseObservations: { ko: '관측 지정 해제', en: 'Release pinned observations' },
+  actionReleaseObservations: { ko: '관측 지정 해제', en: 'Unpin observations' },
 } as const satisfies Record<string, Localized>;
 
 export type StringKey = keyof typeof STRINGS;

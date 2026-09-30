@@ -2,5 +2,11 @@
   "_comment": "Display-name corrections, for when the localization text is awkward or the community uses a different common name.",
   "gifts": {},
   "packs": {},
-  "identities": {}
+  "identities": {},
+  "keywords": {
+    "None": {
+      "ko": "키워드 없음",
+      "_source": "게임의 EgoGiftCategory 이름은 「범용」이지만, 앱은 「범용」을 범용 드랍(어느 팩에서나 나올 수 있는 기프트)에 쓴다. 같은 낱말이 두 개념을 가리키지 않도록 키워드 라벨은 영문 Keywordless와 같은 뜻의 「키워드 없음」으로 적는다(M76 용어 통일)."
+    }
+  }
 }

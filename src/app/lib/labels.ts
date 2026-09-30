@@ -46,6 +46,7 @@ export const UNRESOLVED_LABEL: Record<UnresolvedReason, StringKey> = {
   'not-obtainable': 'unresolvedNotObtainable',
   'chance-only': 'unresolvedChance',
   'no-pack-path': 'unresolvedNoPackPath',
+  // The app bans no pack (`sanitizeOptions` empties `bannedPacks`), but the map covers every core reason.
   'pack-banned': 'unresolvedBanned',
   'ingredient-shared': 'unresolvedShared',
   failed: 'unresolvedFailed',

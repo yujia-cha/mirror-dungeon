@@ -156,10 +156,12 @@ export function ObservedDetailBody({ entry, ctx }: { entry: ObservedGift; ctx: P
         <Button
           variant={entry.pinned ? 'primary' : 'secondary'}
           onClick={() => ctx.onToggleObserved?.(entry.giftId)}
-          ariaLabel={t('routeObservedToggle', ctx.lang, { name: pick(gift.name, ctx.lang) })}
+          ariaLabel={t(entry.pinned ? 'observeSlotClear' : 'giftsObserve', ctx.lang, {
+            name: pick(gift.name, ctx.lang),
+          })}
         >
           <Eye size={12} aria-hidden />
-          {entry.pinned ? t('routeObservedPinned', ctx.lang) : t('routeObservedRecommended', ctx.lang)}
+          {t(entry.pinned ? 'observePinned' : 'settingsObserved', ctx.lang)}
         </Button>
       ) : null}
     </div>

@@ -1,6 +1,6 @@
 /**
  * What an alternative route changes against the plan it was computed from — the facts the
- * 「포기 결정」 card writes on each option row.
+ * decision card writes on each option row.
  *
  * Packs are compared as a set, not floor by floor: a pack that merely slides from floor 5 to
  * floor 7 (most windows span several floors, see `FloorPlan.window`) is the same visit, and

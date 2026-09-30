@@ -311,8 +311,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         giftId: requirement.giftId,
         reason: 'chance-only',
         detail: {
-          ko: `${floorsText}층 히든 전투 보상${pct !== null ? `(층당 ${pct}%)` : ''}으로만 나오는 기프트입니다. 루트로 확정할 수 없습니다.`,
-          en: `Only a random hidden-battle reward on floors ${floorsText.replace('~', '-')}${pct !== null ? ` (${pct}% per floor)` : ''}; no route can guarantee it.`,
+          ko: `${floorsText}층 히든 전투 보상${pct !== null ? `(층당 ${pct}%)` : ''}으로만 나오는 기프트입니다. 루트로 정할 수 없습니다.`,
+          en: `Only a random hidden-battle reward on floors ${floorsText.replace('~', '-')}${pct !== null ? ` (${pct}% per floor)` : ''}; the route cannot plan for it.`,
         },
       });
       continue;
@@ -724,8 +724,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
           }
         : onlyBanned
           ? {
-              ko: '이 기프트를 주는 팩을 모두 포기했습니다.',
-              en: 'Every pack that supplies it has been given up.',
+              ko: '이 기프트를 주는 팩을 모두 제외했습니다.',
+              en: 'Every pack that supplies it has been excluded.',
             }
           : midRun
             ? {
@@ -871,8 +871,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       ...(droppedIngredients ? { droppedIngredients } : {}),
       detail: droppedIngredients
         ? {
-            ko: `재료 ${missing.join(', ')}을(를) 구할 수 없어 조합할 수 없습니다. 나머지 재료(${droppedIngredients.join(', ')})만을 위한 방문은 취소했습니다.`,
-            en: `Cannot be fused: ingredients ${missing.join(', ')} are not obtainable. Visits for the remaining ingredients (${droppedIngredients.join(', ')}) alone were dropped.`,
+            ko: `재료 ${missing.join(', ')}을(를) 구할 수 없어 조합할 수 없습니다. 나머지 재료(${droppedIngredients.join(', ')})만을 위한 입장은 취소했습니다.`,
+            en: `Cannot be fused: ingredients ${missing.join(', ')} are not obtainable. Pack entries for the remaining ingredients (${droppedIngredients.join(', ')}) alone were dropped.`,
           }
         : {
             ko: `재료 ${missing.join(', ')}을(를) 구할 수 없어 조합할 수 없습니다.`,
@@ -906,8 +906,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       code: 'general-drop-not-guaranteed',
       giftIds: [...new Set(generalDrops)].sort((a, b) => a - b),
       detail: {
-        ko: '범용 기프트는 어느 팩에서나 나올 수 있을 뿐 확정 획득이 아닙니다. 상점과 새로고침을 함께 쓰세요.',
-        en: 'General gifts can drop from any pack but are never guaranteed; use the shop and refreshes.',
+        ko: '범용 드랍은 어느 팩에서나 나올 수 있을 뿐 반드시 나오지는 않습니다. 상점과 새로고침을 함께 쓰세요.',
+        en: 'General drops can come from any pack but are never guaranteed; use the shop and refreshes.',
       },
     });
   }
@@ -938,8 +938,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     warnings.push({
       code: 'search-capped',
       detail: {
-        ko: '탐색 한도에 도달해 최선에 가까운 결과만 보여 줍니다. 원하는 기프트를 줄이면 더 정확해집니다.',
-        en: 'The search hit its node cap, so this is a near-best plan. Fewer wanted gifts will sharpen it.',
+        ko: '탐색 한도에 도달해 최선에 가까운 결과만 보여 줍니다. 목표 기프트를 줄이면 더 정확해집니다.',
+        en: 'The search hit its node cap, so this is a near-best plan. Fewer goal gifts will sharpen it.',
       },
     });
   }
@@ -971,6 +971,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     start: {
       keyword: start.keyword,
       startGift: start.startGift,
+      autoKeyword: start.auto.keyword,
+      autoStartGift: start.auto.startGift,
       observed: startObserved,
       starlight: startStarlight,
       starlightVerified: data.rules.giftObservation.verified,

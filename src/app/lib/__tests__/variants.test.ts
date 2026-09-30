@@ -1,6 +1,6 @@
 /**
  * `variantDiff`: what an alternative route changes against the plan it came from — the facts the
- * 「포기 결정」 card writes on each row. The synthetic cases pin the reading of "changes" (a pack
+ * decision card writes on each row. The synthetic cases pin the reading of "changes" (a pack
  * that only slides to another floor is the same visit); the last case runs the real planner.
  */
 import { describe, expect, it } from 'vitest';

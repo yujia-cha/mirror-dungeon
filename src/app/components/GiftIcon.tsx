@@ -107,7 +107,7 @@ export function GiftIcon({
   // gift's keyword — seven of them differ by hue alone, and 범용 is told by the badge being absent.
   // So a screen reader could not learn the keyword or the tier, two of the axes the app sorts and
   // filters on. They go in the name instead (WCAG 1.4.1, 1.1.1).
-  // `None` is a keyword in the data with a name of its own (「범용」 / 「Keywordless」), so even the
+  // `None` is a keyword in the data with a name of its own (「키워드 없음」 / 「Keywordless」), so even the
   // badge-less case reads from the enums rather than from a string written here.
   const tierAria = gift.tier === null ? null : tierLabel(gift.tier);
   const aria = [statusText, judged, label, keywordText, tierAria].filter(Boolean).join(' · ');

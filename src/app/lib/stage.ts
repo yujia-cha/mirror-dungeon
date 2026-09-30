@@ -64,13 +64,7 @@ export interface EnterablePack {
  * `alternatives` is recomputed for the floor being shown rather than read off the plan entry,
  * because a pack's window spans several floors and the packs offered differ from floor to floor.
  */
-export function enterablePacks(
-  plan: RoutePlan | null,
-  floor: number,
-  indexes: GameIndexes,
-  /** Packs given up are no choice, so they are no alternative either — as in the plan's own list. */
-  banned: ReadonlySet<number> = new Set(),
-): EnterablePack[] {
+export function enterablePacks(plan: RoutePlan | null, floor: number, indexes: GameIndexes): EnterablePack[] {
   if (!plan) return [];
   const out: EnterablePack[] = [];
   for (const entry of plan.floors) {
@@ -86,7 +80,7 @@ export function enterablePacks(
         bandMode(indexes, floor),
         entry.pickups.map((pickup) => pickup.giftId),
         indexes,
-        { exclude: entry.packId, banned },
+        { exclude: entry.packId },
       ),
     });
   }

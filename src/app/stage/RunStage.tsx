@@ -25,7 +25,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
   const resetRun = useApp((s) => s.resetRun);
   const lastFloor = useApp((s) => s.lastFloor);
   const floor = run.stageFloor;
-  const routePacks = enterablePacks(shown, floor, indexes, ctx.banned);
+  const routePacks = enterablePacks(shown, floor, indexes);
   const offered = packsOfferedOn(indexes, floor);
   const entered = run.visits[floor];
 
@@ -38,7 +38,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
     const before = previous.current;
     previous.current = { floor, entered };
     // Any other move ends the fold at once. Leaving `closing` set would keep a collapsed but live
-    // pack area in the DOM, its 「돌아가기」·「다음 층」 buttons still reachable by keyboard.
+    // pack area in the DOM, its 「입장 취소」·「다음 층」 buttons still reachable by keyboard.
     if (before.floor !== floor || before.entered === undefined || entered !== undefined) {
       setClosing(null);
       return undefined;

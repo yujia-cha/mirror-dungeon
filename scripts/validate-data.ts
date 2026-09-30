@@ -49,6 +49,7 @@ import {
   curatedSeasonSchema,
   CONSUMED_KEYWORDS,
   IDENTITY_KEYWORDS,
+  KEYWORDS,
   STATUS_KEYWORDS,
   type ArtManifest,
   artManifestSchema,
@@ -1091,11 +1092,17 @@ function checkCuratedOverrides(gifts: Gift[], packs: ThemePack[], identities: Id
     gifts?: Record<string, unknown>;
     packs?: Record<string, unknown>;
     identities?: Record<string, unknown>;
+    keywords?: Record<string, unknown>;
   }>(repoPath('data/curated/names-override.json'));
   if (names) {
     check('names-override.json gifts', Object.keys(names.gifts ?? {}), giftIds, 'gift');
     check('names-override.json packs', Object.keys(names.packs ?? {}), packIds, 'pack');
     check('names-override.json identities', Object.keys(names.identities ?? {}), identityIds, 'identity');
+    const giftKeywords = new Set<string>(KEYWORDS);
+    for (const key of Object.keys(names.keywords ?? {})) {
+      if (!key.startsWith('_') && !giftKeywords.has(key))
+        err('invariant', `curated override names-override.json keywords references unknown keyword "${key}"`);
+    }
   }
 
   const notes = readJsonIfExists<{ gifts?: Record<string, unknown>; packs?: Record<string, unknown> }>(

@@ -16,7 +16,6 @@ export function PackCard({
   pack,
   size,
   caption = false,
-  selected = false,
   onOpen,
   lang,
   testId = 'pack-card',
@@ -25,7 +24,6 @@ export function PackCard({
   size: PackCardSize;
   /** Show the name under the card. */
   caption?: boolean;
-  selected?: boolean;
   onOpen?: (packId: number) => void;
   lang: Lang;
   testId?: string;
@@ -39,9 +37,7 @@ export function PackCard({
       role="img"
       aria-label={name}
       data-testid="pack-image"
-      className={`inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border bg-surface-3 text-fg-3 ${
-        selected ? 'border-ink ring-2 ring-ink' : 'border-line'
-      }`}
+      className="inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-line bg-surface-3 text-fg-3"
       style={{ width: size, height }}
     >
       {url && !failed ? (
