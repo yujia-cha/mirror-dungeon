@@ -136,7 +136,7 @@ test('the >> beside the gift search opens 「모두 보기」 over the stage wit
   await page.getByRole('tab', { name: '기프트' }).click();
   // The tab has no filters and no 「기타」 any more; the >> at the end of its search row is the door.
   await page.getByTestId('panel-left').getByRole('textbox', { name: '기프트 검색' }).fill('진혼');
-  await page.getByRole('button', { name: '모두 보기' }).click();
+  await page.getByRole('button', { name: '모두 보기', exact: true }).click();
   const browser = page.getByTestId('gift-browser');
   await expect(browser).toBeVisible();
   // It takes the stage's column: the panels stay on either side, and the stage is not on screen.
@@ -150,4 +150,11 @@ test('the >> beside the gift search opens 「모두 보기」 over the stage wit
   await browser.getByRole('button', { name: '닫기' }).click();
   await expect(browser).toHaveCount(0);
   await expect(page.getByTestId('run-stage')).toBeVisible();
+  // The same door closes it: while it is open the >> reads << (M77).
+  await page.getByRole('button', { name: '모두 보기', exact: true }).click();
+  await expect(browser).toBeVisible();
+  await page.getByRole('button', { name: '모두 보기 닫기' }).click();
+  await expect(browser).toHaveCount(0);
+  await expect(page.getByTestId('run-stage')).toBeVisible();
+  await expect(page.getByRole('button', { name: '모두 보기', exact: true })).toBeVisible();
 });

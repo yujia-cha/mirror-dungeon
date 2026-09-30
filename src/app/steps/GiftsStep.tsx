@@ -9,11 +9,20 @@
  * Browsing shows one section, 「지금 덱으로 활성」, and by default only what is left to decide in it
  * (「선택하지 않은 것만 보기」, `ui.activeUnpickedOnly`). Everything else is reached by the search box —
  * **a search answers from every gift**, in one list — or by the >> at the end of the search row,
- * which opens the 「모두 보기」 browser (`onBrowse`) with the typed query and the filters.
+ * which opens the 「모두 보기」 browser (`onBrowse`) with the typed query and the filters. While the
+ * browser is open beside this tab (a desktop), the same button turns to << and closes it.
  */
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Search, User } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+  User,
+} from 'lucide-react';
 import type { GameData, Keyword } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -48,9 +57,21 @@ interface Props {
   onGoDeck?: () => void;
   /** Open the 「모두 보기」 browser on this query. Without it the search row has no >> button. */
   onBrowse?: (query: string) => void;
+  /** The browser is open beside this tab: the >> becomes a << that closes it (`onCloseBrowse`). */
+  browseOpen?: boolean;
+  onCloseBrowse?: () => void;
 }
 
-export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Props) {
+export function GiftsStep({
+  data,
+  indexes,
+  stats,
+  lang,
+  onGoDeck,
+  onBrowse,
+  browseOpen = false,
+  onCloseBrowse,
+}: Props) {
   const deck = useApp((s) => s.deck);
   const wanted = useApp((s) => s.wanted);
   const removeWanted = useApp((s) => s.removeWanted);
@@ -300,17 +321,21 @@ export function GiftsStep({ data, indexes, stats, lang, onGoDeck, onBrowse }: Pr
             className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
           />
         </label>
-        {/* The door to every gift and the filters; it takes the query along. */}
+        {/*
+          The door to every gift and the filters; it takes the query along. While the browser is
+          open beside the tab it is the way back: >> turns to << and closes it.
+        */}
         {onBrowse ? (
           <button
             type="button"
-            onClick={() => onBrowse(query)}
-            aria-label={t('giftsBrowseAll', lang)}
-            title={t('giftsBrowseAll', lang)}
+            onClick={() => (browseOpen ? onCloseBrowse?.() : onBrowse(query))}
+            aria-label={t(browseOpen ? 'giftsBrowseHide' : 'giftsBrowseAll', lang)}
+            title={t(browseOpen ? 'giftsBrowseHide' : 'giftsBrowseAll', lang)}
+            aria-expanded={browseOpen}
             className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-sm border border-line-strong bg-surface text-fg-2 hover:bg-surface-2 hover:text-fg"
             data-testid="gift-browse-all"
           >
-            <ChevronsRight size={16} aria-hidden />
+            {browseOpen ? <ChevronsLeft size={16} aria-hidden /> : <ChevronsRight size={16} aria-hidden />}
           </button>
         ) : null}
       </div>

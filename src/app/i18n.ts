@@ -151,6 +151,7 @@ export const STRINGS = {
   giftsBrowseAll: { ko: '모두 보기', en: 'Browse all' },
   giftsBrowseTitle: { ko: '모든 기프트', en: 'All gifts' },
   giftsBrowseClose: { ko: '닫기', en: 'Close' },
+  giftsBrowseHide: { ko: '모두 보기 닫기', en: 'Close browse all' },
   giftsSort: { ko: '정렬', en: 'Sort' },
   giftsSortPicked: { ko: '추가한 순서', en: 'As added' },
   giftsSortName: { ko: '이름', en: 'Name' },

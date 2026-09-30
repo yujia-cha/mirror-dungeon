@@ -3345,7 +3345,7 @@ describe('AppShell', () => {
     fireEvent.pointerUp(window, { pointerId: 2, clientX: 850 });
   });
 
-  it('opens 「모두 보기」 in the stage on a desktop, picks a goal there, and closes by ✕ and by Escape', async () => {
+  it('opens 「모두 보기」 in the stage on a desktop, picks a goal there, and closes by <<, ✕ and Escape', async () => {
     stubMatchMedia(true);
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -3381,7 +3381,19 @@ describe('AppShell', () => {
     expect(within(browser).getByText('일치하는 기프트 없음')).toBeInTheDocument();
     await user.selectOptions(within(browser).getByLabelText('조건'), 'gated');
     expect(within(browser).getAllByTestId('gift-tile')[0]).toHaveAttribute('data-gift', '9088');
-    await user.click(within(browser).getByRole('button', { name: '닫기' }));
+    // While it is open, the tab's >> is a << that closes it, and turns back once it has.
+    expect(screen.queryByRole('button', { name: '모두 보기' })).toBeNull();
+    const back = screen.getByRole('button', { name: '모두 보기 닫기' });
+    expect(back).toHaveAttribute('aria-expanded', 'true');
+    expect(back).toHaveAttribute('title', '모두 보기 닫기');
+    await user.click(back);
+    expect(screen.queryByTestId('gift-browser')).toBeNull();
+    expect(screen.getByTestId('stage-body')).not.toHaveAttribute('inert');
+    const door = screen.getByRole('button', { name: '모두 보기' });
+    expect(door).toHaveAttribute('aria-expanded', 'false');
+    // Its own ✕ closes it too.
+    await user.click(door);
+    await user.click(within(screen.getByTestId('gift-browser')).getByRole('button', { name: '닫기' }));
     expect(screen.queryByTestId('gift-browser')).toBeNull();
     expect(screen.getByTestId('stage-body')).not.toHaveAttribute('inert');
     expect(screen.getByTestId('run-stage')).toBeInTheDocument();

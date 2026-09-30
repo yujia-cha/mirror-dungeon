@@ -120,8 +120,8 @@ export function AppShell({
   const pageOpen = !desktop && drawer !== null;
   // The browser opens from the items tab. On a phone that tab is the left page, which the browser
   // page replaces; closing the browser brings the tab back rather than the stage.
-  // It opens on the query typed in the tab; a fresh press (the tab stays beside it on a desktop)
-  // remounts it on the new query.
+  // It opens on the query typed in the tab. On a desktop the tab stays beside it and its >> turns
+  // to a << that closes it; the next open remounts it on whatever the tab holds then.
   const [browserSeed, setBrowserSeed] = useState({ query: '', n: 0 });
   const openBrowser = (query: string): void => {
     setBrowserSeed((seed) => ({ query, n: seed.n + 1 }));
@@ -274,6 +274,8 @@ export function AppShell({
                     lang={lang}
                     onGoDeck={() => setUi({ leftTab: 'deck' })}
                     onBrowse={openBrowser}
+                    browseOpen={desktop && browserOpen}
+                    onCloseBrowse={closeBrowser}
                   />
                   <RouteOptions />
                 </div>
