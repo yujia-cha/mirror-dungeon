@@ -603,7 +603,7 @@
       "LIMBUS_COMPANY_LCE"
     ],
     "id": 10116,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Burst": {
         "skills": 4,
@@ -630,7 +630,10 @@
       "en": "LCE E.G.O:: Dimension Shredder",
       "ko": "LCE E.G.O:: 차원찢개"
     },
-    "traits": []
+    "traits": [
+      "EGO_EQUIPMENT",
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [
@@ -1792,6 +1795,41 @@
   },
   {
     "attackTypes": [
+      "Hit"
+    ],
+    "factions": [],
+    "id": 10315,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Charge": {
+        "skills": 1,
+        "specialSkills": 4
+      },
+      "Vibration": {
+        "skills": 5,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 8,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "SLOTH",
+      "PRIDE",
+      "ENVY"
+    ],
+    "title": {
+      "en": "Haute Couture:: Le Noir Brand Manager",
+      "ko": "오트쿠튀르:: 르누아르 브랜드 매니저"
+    },
+    "traits": []
+  },
+  {
+    "attackTypes": [
       "Slash"
     ],
     "factions": [
@@ -2391,16 +2429,19 @@
     "attackTypes": [
       "Hit"
     ],
-    "factions": [],
+    "factions": [
+      "LE_NOIR",
+      "SISYPHE"
+    ],
     "id": 10416,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 0,
-        "specialSkills": 4
+        "skills": 5,
+        "specialSkills": 0
       },
       "Vibration": {
-        "skills": 4,
+        "skills": 5,
         "specialSkills": 0
       }
     },
@@ -2420,7 +2461,9 @@
       "en": "Haute Couture:: Le Noir Footwear Hall",
       "ko": "오트쿠튀르:: 르누아르 신발관"
     },
-    "traits": []
+    "traits": [
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [
@@ -3611,7 +3654,7 @@
       "CINQ"
     ],
     "id": 10616,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Breath": {
         "skills": 3,
@@ -3638,7 +3681,10 @@
       "en": "Cinq Assoc. East Section 3",
       "ko": "동부 섕크 협회 3과"
     },
-    "traits": []
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [
@@ -4871,13 +4917,16 @@
     "attackTypes": [
       "Penetrate"
     ],
-    "factions": [],
+    "factions": [
+      "LE_ROUGE",
+      "SISYPHE"
+    ],
     "id": 10816,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 0,
-        "specialSkills": 3
+        "skills": 3,
+        "specialSkills": 0
       },
       "Laceration": {
         "skills": 3,
@@ -4900,7 +4949,9 @@
       "en": "Haute Couture:: Boutique du Rouge",
       "ko": "오트쿠튀르:: 르루주 부티크"
     },
-    "traits": []
+    "traits": [
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [
@@ -5537,12 +5588,14 @@
     "attackTypes": [
       "Slash"
     ],
-    "factions": [],
+    "factions": [
+      "SISYPHE"
+    ],
     "id": 10917,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 0,
+        "skills": 5,
         "specialSkills": 4
       },
       "Vibration": {
@@ -5566,7 +5619,9 @@
       "en": "Haute Couture:: Alteration Shop",
       "ko": "오트쿠튀르:: 수선실"
     },
-    "traits": []
+    "traits": [
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [

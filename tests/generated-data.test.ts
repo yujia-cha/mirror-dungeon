@@ -272,28 +272,29 @@ describe('gifts', () => {
 });
 
 describe('identities', () => {
-  it('covers the 183 the static data ships plus the ones backfilled from the other sources', () => {
-    expect(identities).toHaveLength(188);
-    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(5);
+  it('covers the 188 the static data ships plus the ones backfilled from the other sources', () => {
+    expect(identities).toHaveLength(189);
+    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(1);
   });
 
   it.each([
     [10116, 'LCE E.G.O:: 차원찢개', 1, ['Burst', 'Charge'], ['LIMBUS_COMPANY', 'LIMBUS_COMPANY_LCE']],
     [10616, '동부 섕크 협회 3과', 6, ['Breath', 'Combustion'], ['CINQ']],
-    // Season 8's first two: the static data does not ship them, and their 충전 is the special
-    // variant only (counted under `specialSkills`), so the keyword set still names it.
-    [10416, '오트쿠튀르:: 르누아르 신발관', 4, ['Charge', 'Vibration'], []],
-    [10816, '오트쿠튀르:: 르루주 부티크', 8, ['Charge', 'Laceration'], []],
-    [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], []],
+    // Season 8's first three: the static data did not ship them at first, and their 충전 is the
+    // special variant only (counted under `specialSkills`), so the keyword set still names it.
+    [10416, '오트쿠튀르:: 르누아르 신발관', 4, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
+    [10816, '오트쿠튀르:: 르루주 부티크', 8, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
+    [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], ['SISYPHE']],
+    [10315, '오트쿠튀르:: 르누아르 브랜드 매니저', 3, ['Charge', 'Vibration'], [], 'backfilled'],
   ])(
-    'backfills %i 「%s」, which the static data has not shipped',
-    (id, title, sinnerId, keywords, factions) => {
+    'knows %i 「%s」 once the static data ships it',
+    (id, title, sinnerId, keywords, factions, source = 'derived') => {
       const identity = identityById.get(id as number)!;
       expect(identity.title.ko).toBe(title);
       expect(identity.sinnerId).toBe(sinnerId);
       // Keywords come from the Korean skill text — see tests/text-derivation.test.ts.
       expect(Object.keys(identity.keywords).sort()).toEqual(keywords);
-      expect(identity.keywordSource).toBe('backfilled');
+      expect(identity.keywordSource).toBe(source);
       // Associations, sins and attack types come from the derived mirror, so unlike a hand-written
       // stub these are filled in and the faction conditions count the identity properly.
       expect(identity.factions).toEqual(factions);

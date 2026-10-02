@@ -70,6 +70,10 @@ const KNOWN_DIVERGENCES: Record<number, string> = {
   11207: '탄환: 같은 이유',
   10215: '충전: 생체 재료(특수 충전)만 읽고 기본 충전을 놓친다 — 스크립트 이름 경로에 대응하는 문장이 없다',
   10614: '충전: 같은 이유',
+  10416:
+    '충전: 정적 데이터가 기본 충전으로 적은 것을 원문은 특수 충전으로만 읽는다 (2026-10-01 정적 데이터 도착으로 백필에서 승격)',
+  10816: '충전: 같은 이유',
+  10917: '충전: 정적 데이터는 기본 5·특수 4, 원문은 특수만 읽는다',
 };
 
 describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', () => {
@@ -124,20 +128,23 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
   it.each([
     [10116, { Burst: { skills: 4, specialSkills: 0 }, Charge: { skills: 4, specialSkills: 0 } }],
     [10616, { Combustion: { skills: 3, specialSkills: 0 }, Breath: { skills: 3, specialSkills: 0 } }],
-  ])('derives %i from the skill text, exactly as it ships', (id, expected) => {
-    const entry = derivedSource.get(id as number);
-    const derived = deriveIdentityKeywordsFromText(
-      skillsOfIdentity(id as number, localized),
-      variants,
-      entry ? derivedAttackSkillIds(entry) : undefined,
-    );
-    expect(derived).toEqual(expected);
-    const shipped = identities.find((identity) => identity.id === id);
-    expect(shipped?.keywords).toEqual(
-      derived as Record<IdentityKeywordId, { skills: number; specialSkills: number }>,
-    );
-    expect(shipped?.keywordSource).toBe('backfilled');
-  });
+  ])(
+    'derives %i from the skill text, and the static data now ships it with the same keywords',
+    (id, expected) => {
+      const entry = derivedSource.get(id as number);
+      const derived = deriveIdentityKeywordsFromText(
+        skillsOfIdentity(id as number, localized),
+        variants,
+        entry ? derivedAttackSkillIds(entry) : undefined,
+      );
+      expect(derived).toEqual(expected);
+      const shipped = identities.find((identity) => identity.id === id);
+      expect(shipped?.keywords).toEqual(
+        derived as Record<IdentityKeywordId, { skills: number; specialSkills: number }>,
+      );
+      expect(shipped?.keywordSource).toBe('derived');
+    },
+  );
 
   it('agrees with the derived mirror on what the backfilled identities inflict', () => {
     for (const id of [10116, 10616]) {

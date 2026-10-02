@@ -226,6 +226,22 @@
     },
     {
       "deprecated": false,
+      "id": "LE_NOIR",
+      "name": {
+        "en": "LE_NOIR",
+        "ko": "LE_NOIR"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "LE_ROUGE",
+      "name": {
+        "en": "LE_ROUGE",
+        "ko": "LE_ROUGE"
+      }
+    },
+    {
+      "deprecated": false,
       "id": "LIMBUS_COMPANY",
       "name": {
         "en": "Limbus Company",
@@ -446,6 +462,14 @@
       "name": {
         "en": "Shi Association",
         "ko": "시 협회"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "SISYPHE",
+      "name": {
+        "en": "SISYPHE",
+        "ko": "SISYPHE"
       }
     },
     {

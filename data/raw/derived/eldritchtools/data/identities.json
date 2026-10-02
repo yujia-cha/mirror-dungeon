@@ -4669,6 +4669,125 @@
       "The Index"
     ]
   },
+  "10315": {
+    "breakSection": [
+      40
+    ],
+    "date": "2026-10-01",
+    "defCorrection": 4,
+    "defenseSkillTypes": [
+      {
+        "id": "1031504",
+        "type": {
+          "affinity": "sloth",
+          "atkType": "blunt",
+          "tier": 1,
+          "type": "counter"
+        }
+      }
+    ],
+    "hp": {
+      "base": 88,
+      "level": 3.05
+    },
+    "name": "Haute Couture:: Le Noir Brand Manager",
+    "rank": 3,
+    "resists": {
+      "blunt": 0.5,
+      "pierce": 2,
+      "slash": 1
+    },
+    "season": 8,
+    "sinnerId": 3,
+    "skillKeywordList": [
+      "Charge",
+      "Tremor"
+    ],
+    "skillTypes": [
+      {
+        "id": "1031501",
+        "num": 3,
+        "type": {
+          "affinity": "pride",
+          "tier": 1,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1031502",
+        "num": 2,
+        "type": {
+          "affinity": "envy",
+          "tier": 2,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1031503",
+        "num": 1,
+        "type": {
+          "affinity": "sloth",
+          "tier": 3,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1031505",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 1,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1031506",
+        "num": 0,
+        "type": {
+          "affinity": "sloth",
+          "tier": 3,
+          "type": "blunt"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        3,
+        6
+      ],
+      [
+        3,
+        7
+      ],
+      [
+        4,
+        7
+      ],
+      [
+        4,
+        7
+      ]
+    ],
+    "statuses": [
+      "Agility",
+      "AttackUp",
+      "Charge",
+      "ChargeNoirAlly",
+      "DefenseUp",
+      "NoirNailDonQuixote",
+      "NoirShieldUpDonQuixote",
+      "OathFieldDonQuixote",
+      "PersonalityCharge",
+      "Switch_Vibration",
+      "Vibration",
+      "VibrationExplosion",
+      "VibrationFocusing"
+    ],
+    "tags": [
+      "Le Noir",
+      "Sisyphe"
+    ]
+  },
   "10401": {
     "breakSection": [
       70,

@@ -2,10 +2,10 @@
   "counts": {
     "fusionRecipes": 68,
     "gifts": 446,
-    "identities": 188,
+    "identities": 189,
     "packs": 116
   },
-  "dataVersion": "7.2b63e0a8",
+  "dataVersion": "7.5393d408",
   "dungeon": {
     "id": 7,
     "name": {
@@ -17,22 +17,22 @@
   "schemaVersion": 2,
   "sources": {
     "eldritchtools": {
-      "fetchedAt": "2026-09-24",
+      "fetchedAt": "2026-10-02",
       "repo": "eldritchtools/limbus-assets",
-      "sha": "e3f03ac7c17ca3e6438d5f5f3010af53597d1d3b"
+      "sha": "04d23bddbe979bbe1277376e817768fa412967b4"
     },
     "localize": {
-      "fetchedAt": "2026-09-24",
+      "fetchedAt": "2026-10-02",
       "languages": {
-        "EN": "5b7294632741fa6db8f3d48e7965c27b8beb7122",
-        "KR": "617d26bd6126c302d78e8300b856f5c5c1ea0c7f"
+        "EN": "ba446454e6f9164f2f144759cbea4f4d14a0beb6",
+        "KR": "1924dfa59154736cd07a1e7d27ed7dd2e45f2391"
       },
       "repo": "x1bViolet/Limbus-Localization-Files"
     },
     "openLethe": {
-      "fetchedAt": "2026-09-24",
+      "fetchedAt": "2026-10-02",
       "repo": "LEAGUE-OF-NINE/OpenLethe",
-      "sha": "2b920d134ffd319a39d3fb6416b8674ca01857da"
+      "sha": "b778652701cd7b404ceaf980a37fd47dfb9e42ee"
     }
   },
   "staticDataPresent": true
