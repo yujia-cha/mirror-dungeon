@@ -4,7 +4,7 @@
  * An ingredient in the recipe opens its own details in the same sheet; 「← 이전 기프트」 at the top
  * walks back (the host keeps the trail).
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Check, Eye, Link2 } from 'lucide-react';
 import type { GameData, Gift } from '../../core/schema.ts';
 import { chooseRecipe, observable } from '../../core/index.ts';
@@ -88,16 +88,19 @@ function Recipe({
   data,
   indexes,
   lang,
+  goals,
   onOpen,
 }: {
   gift: Gift;
   data: GameData;
   indexes: GameIndexes;
   lang: Lang;
+  /** The goals, so the recipe shown is the one the route uses (`chooseRecipe`). */
+  goals: ReadonlySet<number>;
   onOpen?: (id: number) => void;
 }) {
   const slots = data.rules.fusion.maxShopSlots;
-  const ingredients = chooseRecipe(gift, indexes, slots);
+  const ingredients = chooseRecipe(gift, indexes, slots, goals);
   const mixed = gift.fusion?.mixed ?? null;
   if (!ingredients && !mixed) return null;
   return (
@@ -119,7 +122,7 @@ function Recipe({
       </div>
       {(ingredients ?? []).map((id) => {
         const child = indexes.giftById.get(id);
-        const sub = child ? chooseRecipe(child, indexes, slots) : null;
+        const sub = child ? chooseRecipe(child, indexes, slots, goals) : null;
         if (!child || !sub) return null;
         return (
           <div key={`sub-${id}`} className="ml-3 flex flex-col gap-1 border-l border-line pl-2.5">
@@ -207,6 +210,7 @@ export function GiftDetailSheet({
 
   const name = pick(gift.name, lang);
   const selected = wanted.includes(gift.id);
+  const goalSet = useMemo(() => new Set(wanted), [wanted]);
   const pinned = observedGifts.includes(gift.id);
   const canObserve = observable(gift, data.rules);
   const observeFull = !pinned && observedGifts.length >= observeMax;
@@ -353,7 +357,14 @@ export function GiftDetailSheet({
                 </span>
               ) : null}
             </summary>
-            <Recipe gift={gift} data={data} indexes={indexes} lang={lang} onOpen={onOpenGift} />
+            <Recipe
+              gift={gift}
+              data={data}
+              indexes={indexes}
+              lang={lang}
+              goals={goalSet}
+              onOpen={onOpenGift}
+            />
             {selected ? (
               <label
                 className="flex items-center gap-1.5 border-t border-line px-2.5 py-2 text-xs"

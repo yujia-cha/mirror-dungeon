@@ -248,6 +248,11 @@ export const STRINGS = {
     ko: '전부 얻을 수 없습니다 · {names} 중 하나를 목표에서 빼야 합니다',
     en: 'They do not all fit one run · remove one of {names} from the goals',
   },
+  // When no single gift clears it: `{n}` is how many have to go (`minDrops`, core).
+  routeDecisionTitleMany: {
+    ko: '전부 얻을 수 없습니다 · {names} 중 {n}개를 목표에서 빼야 합니다',
+    en: 'They do not all fit one run · remove {n} of {names} from the goals',
+  },
   routeDecisionKeep: { ko: '전부 유지', en: 'Keep all' },
   routeDecisionDrop: { ko: '목표에서 빼기', en: 'Remove from goals' },
   routeDecisionPreview: { ko: '루트 미리 보기', en: 'Preview route' },

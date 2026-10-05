@@ -62,7 +62,7 @@ export function PlanProvider({
   // mark recomputes the plan, and the same variant is re-found in the new list. Gone (the conflict
   // resolved, the gift deselected) means back to the main plan. An index reset on every input
   // change used to flip the panel back to the main plan on any gift mark.
-  const [variantKey, setVariantKey] = useState<number | null>(null);
+  const [variantKey, setVariantKey] = useState<string | null>(null);
   // The gift sheet's trail: the top is on show, and each gift below it is one a recipe was
   // followed from (「← 이전 기프트」). Opening from anywhere else starts a fresh trail.
   const [detailStack, setDetailStack] = useState<number[]>([]);
@@ -91,9 +91,11 @@ export function PlanProvider({
   // arrives first and the alternatives follow, because they are the expensive half — see
   // `use-planner.ts`.
   const { plan, variants, pending: planPending, variantsPending } = usePlanner(data, indexes, input);
-  const variantIndex = variantKey === null ? 0 : variants.findIndex((v) => v.dropped[0] === variantKey) + 1;
+  // Keyed by the whole drop set: a bundle row may start with the same gift as a single row.
+  const variantIndex =
+    variantKey === null ? 0 : variants.findIndex((v) => v.dropped.join(',') === variantKey) + 1;
   const setVariantIndex = useCallback(
-    (index: number) => setVariantKey(index > 0 ? (variants[index - 1]?.dropped[0] ?? null) : null),
+    (index: number) => setVariantKey(index > 0 ? (variants[index - 1]?.dropped.join(',') ?? null) : null),
     [variants],
   );
   const variant = variantIndex > 0 ? variants[variantIndex - 1] : undefined;
@@ -133,12 +135,13 @@ export function PlanProvider({
         .filter((entry) => entry.reason === 'fusion-ingredient-unresolved')
         .map((entry) => entry.giftId),
     );
+    const goals = new Set(input.wanted.map((w) => w.giftId));
     /** Ingredient -> the dead fusions that wanted it, so a tile can say why it stopped mattering. */
     const deadFusionOf = new Map<number, number[]>();
     for (const resultId of deadFusions) {
       const result = indexes.giftById.get(resultId);
       if (!result?.fusion) continue;
-      for (const id of ingredientsOf(result, indexes, data.rules.fusion.maxShopSlots)) {
+      for (const id of ingredientsOf(result, indexes, data.rules.fusion.maxShopSlots, goals)) {
         deadFusionOf.set(id, [...(deadFusionOf.get(id) ?? []), resultId]);
       }
     }
@@ -153,7 +156,6 @@ export function PlanProvider({
       }
       return parts.length > 0 ? parts.join(' / ') : undefined;
     };
-    const goals = new Set(input.wanted.map((w) => w.giftId));
     /*
      * What the route is actually out to collect. A fusion goal is a promise about its ingredients
      * too — the search chases them, and a pack that drops one is worth entering — so they wear the
@@ -169,7 +171,7 @@ export function PlanProvider({
       if (deadFusions.has(want.giftId)) continue;
       const gift = indexes.giftById.get(want.giftId);
       if (!gift?.fusion) continue;
-      for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots)) needed.add(id);
+      for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots, goals)) needed.add(id);
     }
     // The plan on screen decides, not the base one: entering a pack while an alternative route is
     // selected must hand over that route's observations, never the ones it replaced.

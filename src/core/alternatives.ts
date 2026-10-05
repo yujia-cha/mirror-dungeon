@@ -2,8 +2,9 @@
  * Alternative routes: when the wanted gifts cannot all fit in one run, plan again with one of the
  * conflicting gifts left out, so the user can pick which gift to give up.
  *
- * Only single drops are tried; a set of gifts that needs two or more drops shows up as variants
- * that still carry a conflict of their own.
+ * Single drops that clear every conflict come first. When none does, the gifts the main plan
+ * itself left out are tried together as one bundle: the search minimises missed requirements, so
+ * dropping exactly those is the smallest set it knows to fit (see `minDrops`).
  */
 import type { GameData } from './schema.ts';
 import type { GameIndexes, PlanInput, RoutePlan } from './types.ts';
@@ -12,7 +13,7 @@ import { planRoute } from './index.ts';
 import { modeForFloor } from './search.ts';
 
 export interface RouteVariant {
-  /** Wanted gift ids this variant leaves out (currently always one). */
+  /** Wanted gift ids this variant leaves out: one, or the bundle when no single drop clears. */
   dropped: number[];
   plan: RoutePlan;
 }
@@ -69,10 +70,17 @@ export function planAlternatives(
   // preference to honour and every side of the conflict is a candidate.
   const tiered = input.wanted.some((w) => !w.required);
   const required = new Set(tiered ? input.wanted.filter((w) => w.required).map((w) => w.giftId) : []);
-  const candidates = [...new Set([...conflicts.flatMap((id) => roots(id)), ...occupants])]
+  // Sides of the conflict first, then the gifts holding the contested floors: with one conflict
+  // the former always clear it, so the cap never cuts off a drop that would.
+  const conflictRoots = [...new Set(conflicts.flatMap((id) => roots(id)))]
     .filter((id) => !required.has(id))
-    .sort((a, b) => a - b)
-    .slice(0, maxRuns);
+    .sort((a, b) => a - b);
+  const others = [...new Set(occupants)]
+    .filter((id) => !required.has(id) && !conflictRoots.includes(id))
+    .sort((a, b) => a - b);
+  const candidates = [...conflictRoots, ...others].slice(0, maxRuns);
+  const conflictsLeft = (plan: RoutePlan): number =>
+    new Set(plan.unresolved.filter((u) => u.reason === 'pack-conflict').flatMap((u) => roots(u.giftId))).size;
 
   const covered = (plan: RoutePlan, wanted: number[]): string => {
     const unresolved = new Set(plan.unresolved.map((u) => u.giftId));
@@ -101,12 +109,34 @@ export function planAlternatives(
     variants.push({ dropped: [giftId], plan });
   }
 
-  return variants
+  const sorted = variants
+    .map((variant) => ({ variant, left: conflictsLeft(variant.plan) }))
     .sort(
       (a, b) =>
-        b.plan.stats.coveredWanted - a.plan.stats.coveredWanted ||
-        a.plan.stats.requiredPacks - b.plan.stats.requiredPacks ||
-        a.dropped[0]! - b.dropped[0]!,
+        a.left - b.left ||
+        b.variant.plan.stats.coveredWanted - a.variant.plan.stats.coveredWanted ||
+        a.variant.plan.stats.requiredPacks - b.variant.plan.stats.requiredPacks ||
+        a.variant.dropped[0]! - b.variant.dropped[0]!,
     )
+    .map((entry) => entry.variant)
     .slice(0, max);
+
+  // No single drop clears it: offer the main plan's own losses together, if that really fits.
+  if (conflictRoots.length >= 2 && !sorted.some((v) => conflictsLeft(v.plan) === 0)) {
+    const dropped = new Set(conflictRoots);
+    const wanted = input.wanted.filter((w) => !dropped.has(w.giftId));
+    const plan = planRoute({ ...input, wanted, options }, data, indexes);
+    if (conflictsLeft(plan) === 0) return [{ dropped: conflictRoots, plan }, ...sorted].slice(0, max);
+  }
+  return sorted;
+}
+
+/**
+ * How many goals have to go for the rest to fit, as far as the alternatives know: the size of the
+ * first variant when it clears every conflict, else `null` (none found within the run budget).
+ */
+export function minDrops(variants: readonly RouteVariant[]): number | null {
+  const first = variants[0];
+  if (!first || first.plan.unresolved.some((u) => u.reason === 'pack-conflict')) return null;
+  return first.dropped.length;
 }

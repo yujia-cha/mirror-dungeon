@@ -5,19 +5,23 @@
  * It sits under the summary and above the metro map, because that is the decision the rest of
  * the panel waits on. One row per option: 「전부 유지」 (the plan as it is, with what stays
  * unresolved), then each alternative the planner tried with what changes — which packs come in,
- * and whether a conflict remains. The row's two buttons are symbols at the end of the gift's own
+ * and whether a conflict remains. Rows that clear every conflict with one drop come first
+ * (`planAlternatives` sorts by the conflicts left); when no single drop does, the first row is a
+ * bundle — the gifts the main plan itself lost, removed together — and the header says how many
+ * have to go (`minDrops`). The row's two buttons are symbols at the end of the gift's own
  * line (the name truncates before they move) — ✕ 「목표에서 빼기」 is a
  * deselection (`removeWanted`), as everywhere else in the app; the route icon 「루트 미리 보기」 only
  * switches the map and the stage to that route and keeps the decision open, which the header says
  * while it lasts. The badge 「그래도 n개 미해결」 shows the number alone; the sentence is its
- * tooltip and accessible name.
+ * tooltip and accessible name. It leaves out what the base plan lost for other reasons — no drop
+ * changes those, and the 미해결 card already lists them.
  *
  * The header chips name the contested floors (`conflictGroups`, core) — information only; the app
  * makes no pack-level choice, the decision is always which gift to give up.
  */
 import { Route, TriangleAlert, X } from 'lucide-react';
 import type { ConflictGroup } from '../../core/conflicts.ts';
-import type { RouteVariant } from '../../core/index.ts';
+import { minDrops, type RouteVariant } from '../../core/index.ts';
 import type { RoutePlan } from '../../core/types.ts';
 import { withJosa } from '../format.ts';
 import { t } from '../i18n.ts';
@@ -64,6 +68,8 @@ export function RouteDecision({
   const unresolved = [...new Set(plan.unresolved.map((u) => u.giftId))];
   const previewed = variantIndex > 0 ? variants[variantIndex - 1] : undefined;
   const previewedName = previewed ? previewed.dropped.map(giftName).join(', ') : '';
+  const drops = minDrops(variants);
+  const names = conflicting.map(giftName).join(' · ');
   const covered = (p: RoutePlan): string => `${p.stats.coveredWanted}/${p.stats.totalWanted}`;
 
   return (
@@ -72,7 +78,9 @@ export function RouteDecision({
         <div className="flex items-start gap-1.5">
           <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden />
           <h2 className="text-sm font-semibold">
-            {t('routeDecisionTitle', lang, { names: conflicting.map(giftName).join(' · ') })}
+            {drops !== null && drops > 1
+              ? t('routeDecisionTitleMany', lang, { names, n: drops })
+              : t('routeDecisionTitle', lang, { names })}
           </h2>
         </div>
         {groups.length > 0 ? (
@@ -103,7 +111,11 @@ export function RouteDecision({
                 {t('routeDecisionPreviewing', lang, { name: previewedName })}
               </span>
               <span className="ml-auto flex gap-1.5">
-                <Button size="sm" variant="primary" onClick={() => removeWanted(previewed.dropped[0]!)}>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => previewed.dropped.forEach((id) => removeWanted(id))}
+                >
                   {t('routeDecisionConfirm', lang)}
                 </Button>
                 <Button size="sm" onClick={() => setVariantIndex(0)}>
@@ -137,32 +149,35 @@ export function RouteDecision({
           ) : null}
         </li>
         {variants.map((entry, i) => {
-          const dropped = entry.dropped[0]!;
-          const gift = indexes.giftById.get(dropped);
-          const name = giftName(dropped);
+          const key = entry.dropped.join(',');
+          const name = entry.dropped.map(giftName).join(' · ');
           const diff = variantDiff(plan, entry.plan);
           const shownHere = variantIndex === i + 1;
           return (
             <li
-              key={dropped}
+              key={key}
               className="flex flex-col gap-1.5 border-b border-line px-3 py-2 last:border-b-0"
               data-testid="route-option"
-              data-option={dropped}
+              data-option={key}
               aria-current={shownHere ? 'true' : undefined}
             >
               {/* One line: the gift, what the route keeps, and the two actions at its end. The
                   name gives way (truncates) before the buttons do. */}
               <div className="flex items-center gap-2" data-testid="route-option-head">
-                {gift ? (
-                  <span className="inline-flex flex-none">
-                    <GiftIcon
-                      gift={gift}
-                      size={20}
-                      judgement={ctx.judgements.get(dropped) ?? null}
-                      lang={lang}
-                    />
-                  </span>
-                ) : null}
+                <span className="inline-flex flex-none gap-0.5">
+                  {entry.dropped.map((giftId) => {
+                    const gift = indexes.giftById.get(giftId);
+                    return gift ? (
+                      <GiftIcon
+                        key={giftId}
+                        gift={gift}
+                        size={20}
+                        judgement={ctx.judgements.get(giftId) ?? null}
+                        lang={lang}
+                      />
+                    ) : null;
+                  })}
+                </span>
                 <span className="min-w-0 truncate text-sm font-medium" title={name}>
                   {name}
                 </span>
@@ -183,7 +198,7 @@ export function RouteDecision({
                 <span className="ml-auto flex flex-none gap-1.5">
                   <button
                     type="button"
-                    onClick={() => removeWanted(dropped)}
+                    onClick={() => entry.dropped.forEach((id) => removeWanted(id))}
                     aria-label={`${name} ${t('routeDecisionDrop', lang)}`}
                     title={t('routeDecisionDrop', lang)}
                     className={`${ICON_BUTTON} border-ink bg-ink text-ink-fg hover:opacity-90`}

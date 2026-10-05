@@ -56,6 +56,24 @@ describe('variantDiff', () => {
     expect(variantDiff(base, variant).stillUnresolved).toEqual([9002, 9003]);
   });
 
+  it('leaves out what the base already lost for another reason', () => {
+    const base = {
+      ...planOf([[1, 1001]], [9001]),
+      unresolved: [
+        { giftId: 9001, reason: 'pack-conflict' },
+        { giftId: 9009, reason: 'chance-only' },
+      ],
+    } as unknown as RoutePlan;
+    const variant = {
+      ...planOf([[1, 1001]]),
+      unresolved: [
+        { giftId: 9009, reason: 'chance-only' },
+        { giftId: 9002, reason: 'pack-conflict' },
+      ],
+    } as unknown as RoutePlan;
+    expect(variantDiff(base, variant).stillUnresolved).toEqual([9002]);
+  });
+
   it('describes a real alternative: the sixth EXTREME pack comes in for the one the dropped gift needed', () => {
     const data = loadGameDataFromDisk();
     const indexes = buildIndexes(data);

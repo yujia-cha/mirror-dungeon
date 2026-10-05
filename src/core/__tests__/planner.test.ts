@@ -11,6 +11,7 @@ import {
   buildIndexes,
   conflictGroups,
   defaultOptions,
+  minDrops,
   planAlternatives,
   planRoute,
   wantedRoots,
@@ -189,6 +190,27 @@ describe('fusion', () => {
     );
     const top = expansion.fusions.find((f) => f.result === 9088)!;
     expect(top.ingredients).toEqual([9003, 9053, 9157]);
+  });
+
+  it('fuses a goal into the goal it feeds once instead of spelling its ingredients out again', () => {
+    // 생강꽃, 안경 그리고 전해진 편지 (9248) = 생강꽃 가지 + 부치지 못한 편지 (9424), or the long
+    // 해진 우산 + 생강꽃 가지 + 깨진 안경. Alone it takes the long one (no nested fusion); with
+    // 부치지 못한 편지 also a goal, the long one asked for 해진 우산 and 깨진 안경 twice.
+    const stats = analyseDeck(MIXED_DECK, indexes, data.rules.deployment);
+    const slots = data.rules.fusion.maxShopSlots;
+    const alone = expandRequirements(want(9248), indexes, stats, slots);
+    expect(alone.fusions).toEqual([{ result: 9248, ingredients: [9119, 9419, 9423] }]);
+
+    const both = expandRequirements(want(9424, 9248), indexes, stats, slots);
+    expect(both.fusions).toEqual([
+      { result: 9424, ingredients: [9119, 9423] },
+      { result: 9248, ingredients: [9419, 9424] },
+    ]);
+    expect(both.requirements.map((r) => r.giftId).sort((a, b) => a - b)).toEqual([9119, 9419, 9423]);
+
+    const route = plan({ wanted: want(9248, 9424), options: options({ lastFloor: 15, hardFromFloor: 1 }) });
+    expect(route.warnings.map((w) => w.code)).not.toContain('shared-ingredient');
+    expect(route.unresolved).toEqual([]);
   });
 
   it('warns when a recipe would need more fusion slots than a shop has', () => {
@@ -1086,6 +1108,43 @@ describe('alternative routes', () => {
     expect(JSON.stringify(first.map((v) => ({ d: v.dropped, f: v.plan.floors.map((x) => x.packId) })))).toBe(
       JSON.stringify(second.map((v) => ({ d: v.dropped, f: v.plan.floors.map((x) => x.packId) }))),
     );
+  });
+  it('tries the sides of the conflict before the gifts holding the floor', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9283, 9222, 9423),
+      options: options({ hardFromFloor: 1 }),
+    };
+    // 9222 has the lower id but only holds floor 5; 9283 is the gift that lost it.
+    const variants = planAlternatives(input, noObservation, indexes, undefined, { maxRuns: 1 });
+    expect(variants.map((v) => v.dropped)).toEqual([[9283]]);
+    expect(minDrops(variants)).toBe(1);
+  });
+
+  it("bundles the main plan's losses when no single drop clears the conflicts", () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9277, 9744, 9751, 9766, 9842),
+      options: options({ hardFromFloor: 1 }),
+    };
+    const main = planRoute(input, noObservation, indexes);
+    expect(main.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId)).toEqual([
+      9751, 9842,
+    ]);
+    const variants = planAlternatives(input, noObservation, indexes, main);
+    expect(variants[0]!.dropped).toEqual([9751, 9842]);
+    expect(variants[0]!.plan.unresolved).toEqual([]);
+    expect(variants[0]!.plan.stats.coveredWanted).toBe(3);
+    // The singles that follow each still leave one conflict.
+    for (const variant of variants.slice(1)) {
+      expect(variant.dropped).toHaveLength(1);
+      expect(variant.plan.unresolved.filter((u) => u.reason === 'pack-conflict')).toHaveLength(1);
+    }
+    expect(minDrops(variants)).toBe(2);
+  });
+
+  it('knows no drop count without variants', () => {
+    expect(minDrops([])).toBeNull();
   });
 });
 

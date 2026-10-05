@@ -43,8 +43,18 @@ export function scarcity(giftId: number, indexes: GameIndexes): number {
  * one that spells that intermediate out. The long one often needs more fusion slots than a normal
  * shop has, and the game's own hint is to fuse the sub-ingredient first — so a recipe that fits the
  * shop wins, then the one with fewer nested fusions, then the more widely available ingredients.
+ *
+ * Except when the intermediate is itself a goal (`goals`): then the short recipe that eats it wins
+ * right after the shop check. The goal is fused once and consumed into this one — taking the long
+ * recipe instead spelled its ingredients out a second time, so the route chased 해진 우산 and 깨진
+ * 안경 twice for 생강꽃, 안경 그리고 전해진 편지 + 부치지 못한 편지.
  */
-export function chooseRecipe(gift: Gift, indexes: GameIndexes, maxShopSlots: number): number[] | null {
+export function chooseRecipe(
+  gift: Gift,
+  indexes: GameIndexes,
+  maxShopSlots: number,
+  goals: ReadonlySet<number> = new Set(),
+): number[] | null {
   const recipes = gift.fusion?.recipes ?? [];
   if (recipes.length === 0) return null;
   const scored = recipes.map((recipe) => {
@@ -52,11 +62,19 @@ export function chooseRecipe(gift: Gift, indexes: GameIndexes, maxShopSlots: num
       (id) => indexes.giftById.get(id)?.acquisition.kind === 'fusionOnly',
     ).length;
     const availability = recipe.ingredients.reduce((sum, id) => sum + scarcity(id, indexes), 0);
-    return { recipe, nested, availability, fitsShop: recipe.ingredients.length <= maxShopSlots };
+    const feedsGoal = recipe.ingredients.filter((id) => id !== gift.id && goals.has(id)).length;
+    return {
+      recipe,
+      nested,
+      availability,
+      feedsGoal,
+      fitsShop: recipe.ingredients.length <= maxShopSlots,
+    };
   });
   scored.sort(
     (a, b) =>
       Number(b.fitsShop) - Number(a.fitsShop) ||
+      b.feedsGoal - a.feedsGoal ||
       a.nested - b.nested ||
       b.availability - a.availability ||
       a.recipe.ingredients.length - b.recipe.ingredients.length ||
@@ -98,7 +116,9 @@ export const requirementKey = (r: Pick<Requirement, 'giftId' | 'neededFor'>): st
  * Turn the wanted list into the gifts that must actually be picked up.
  *
  * A fusion result is not obtainable directly, so it is replaced by its ingredients (recursively).
- * Ingredients shared by two results are counted, because the shop consumes them.
+ * Ingredients shared by two results are counted, because the shop consumes them. A goal that is
+ * an ingredient of another goal is fused once on the way (`chooseRecipe` picks the recipe that eats
+ * it), never routed twice.
  */
 export function expandRequirements(
   wanted: WantedGift[],
@@ -111,6 +131,7 @@ export function expandRequirements(
   const fusions: { result: number; ingredients: number[] }[] = [];
   const unresolved: Unresolved[] = [];
   const seenFusions = new Set<number>();
+  const goals = new Set(wanted.map((w) => w.giftId));
 
   const addRequirement = (
     giftId: number,
@@ -187,7 +208,7 @@ export function expandRequirements(
     }
 
     const ingredients =
-      chooseRecipe(gift, indexes, maxShopSlots) ?? chooseMixedIngredients(gift, indexes, stats);
+      chooseRecipe(gift, indexes, maxShopSlots, goals) ?? chooseMixedIngredients(gift, indexes, stats);
     if (!ingredients || ingredients.length === 0) {
       unresolved.push({
         giftId,

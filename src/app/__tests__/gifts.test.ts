@@ -59,6 +59,13 @@ describe('entangled goals', () => {
     expect(entanglements([9088, 9157], indexes, SLOTS).size).toBe(0);
   });
 
+  it('follows the recipe that eats the other goal, so the two are a containment', () => {
+    // 생강꽃, 안경 그리고 전해진 편지 has a long recipe (해진 우산 + 생강꽃 가지 + 깨진 안경) and a
+    // short one through 부치지 못한 편지 (= 해진 우산 + 깨진 안경). With both as goals the short one
+    // is used, and the shared 해진 우산 · 깨진 안경 are one set, not a second copy.
+    expect(entanglements([9248, 9424], indexes, SLOTS).size).toBe(0);
+  });
+
   it('leaves plain drops and lone fusions alone', () => {
     expect(entanglements([9267, 9105, 9142], indexes, SLOTS).size).toBe(0);
     expect(entanglements([9088], indexes, SLOTS).size).toBe(0);

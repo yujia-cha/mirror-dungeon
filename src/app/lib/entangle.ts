@@ -20,13 +20,21 @@ export interface Entanglement {
   shared: number[];
 }
 
-/** Every gift consumed on the way to `gift`, its sub-fusions included. */
-export function ingredientsOf(gift: Gift, indexes: GameIndexes, maxShopSlots: number): Set<number> {
+/**
+ * Every gift consumed on the way to `gift`, its sub-fusions included. `goals` picks the recipe the
+ * planner picks (`chooseRecipe`): one that eats another goal wins.
+ */
+export function ingredientsOf(
+  gift: Gift,
+  indexes: GameIndexes,
+  maxShopSlots: number,
+  goals: ReadonlySet<number> = new Set(),
+): Set<number> {
   const seen = new Set<number>();
   const walk = (current: Gift): void => {
     // A mixed recipe (달의 기억) picks from pools, so every candidate counts as possibly consumed.
     const direct =
-      chooseRecipe(current, indexes, maxShopSlots) ??
+      chooseRecipe(current, indexes, maxShopSlots, goals) ??
       (current.fusion?.mixed ? [...current.fusion.mixed.aPool, ...current.fusion.mixed.bPool] : null);
     if (!direct) return;
     for (const id of direct) {
@@ -67,10 +75,11 @@ export function entanglements(
   maxShopSlots: number,
 ): Map<number, Entanglement[]> {
   const sets = new Map<number, Set<number>>();
+  const goals = new Set(wanted);
   for (const id of wanted) {
     const gift = indexes.giftById.get(id);
     if (!gift?.fusion) continue;
-    const ingredients = ingredientsOf(gift, indexes, maxShopSlots);
+    const ingredients = ingredientsOf(gift, indexes, maxShopSlots, goals);
     if (ingredients.size > 0) sets.set(id, ingredients);
   }
   const found = new Map<number, Entanglement[]>();
@@ -121,7 +130,7 @@ export function blockedGifts(
     const known = sets.get(id);
     if (known) return known;
     const gift = indexes.giftById.get(id);
-    const set = gift?.fusion ? ingredientsOf(gift, indexes, maxShopSlots) : new Set<number>();
+    const set = gift?.fusion ? ingredientsOf(gift, indexes, maxShopSlots, chosen) : new Set<number>();
     sets.set(id, set);
     return set;
   };

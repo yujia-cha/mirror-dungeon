@@ -12,7 +12,11 @@ import type { RoutePlan } from '../../core/types.ts';
 export interface VariantDiff {
   added: { floor: number; packId: number }[];
   removed: { floor: number; packId: number }[];
-  /** The gifts the variant still leaves unresolved, in the plan's order, each once. */
+  /**
+   * The gifts the variant still leaves unresolved, in the plan's order, each once — minus those
+   * the base plan already lost for a reason other than the conflict (`chance-only`, no pack path
+   * …): no drop changes those, and counting them would put ⚠ on a variant that clears it.
+   */
   stillUnresolved: number[];
 }
 
@@ -35,6 +39,9 @@ export function variantDiff(base: RoutePlan, variant: RoutePlan): VariantDiff {
     .filter(([packId]) => !after.has(packId))
     .map(([packId, floor]) => ({ floor, packId }))
     .sort((a, b) => a.floor - b.floor || a.packId - b.packId);
-  const stillUnresolved = [...new Set(variant.unresolved.map((u) => u.giftId))];
+  const settled = new Set(base.unresolved.filter((u) => u.reason !== 'pack-conflict').map((u) => u.giftId));
+  const stillUnresolved = [
+    ...new Set(variant.unresolved.map((u) => u.giftId).filter((id) => !settled.has(id))),
+  ];
   return { added, removed, stillUnresolved };
 }

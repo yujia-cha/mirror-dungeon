@@ -96,7 +96,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         ? {}
         : {
             variants: variants.map((v) => ({
-              name: v.dropped.map(giftName).join(', '),
+              name: v.dropped.map(giftName).join(' + '),
               covered: v.plan.stats.coveredWanted,
               total: v.plan.stats.totalWanted,
             })),

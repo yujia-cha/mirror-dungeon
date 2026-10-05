@@ -2705,12 +2705,34 @@ describe('RoutePlanPanel', () => {
     expect(drop).toHaveAttribute('title', '목표에서 빼기');
     expect(preview).toHaveAttribute('title', '루트 미리 보기');
     expect(first.textContent).not.toMatch(/목표에서 빼기|루트 미리 보기/);
-    // A row that still leaves something unresolved says the count alone; the sentence is its
+    // 9228 is lost whichever goal goes, so the badge leaves it out: the row clears the conflict.
+    expect(within(first).queryByLabelText(/그래도/)).toBeNull();
+  });
+
+  it('bundles two goals when one is not enough, and says how many have to go', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    // 9827 and 9255 both lose their floor; no single drop frees both.
+    for (const id of [...CLEAR_REWARDS, 9827]) useApp.getState().toggleWanted(id);
+    renderRoute();
+    const card = screen.getByTestId('route-decision');
+    expect(within(card).getByRole('heading').textContent).toMatch(/중 2개를 목표에서 빼야 합니다$/);
+    const options = within(screen.getByTestId('variants')).getAllByTestId('route-option');
+    const bundle = options[1]!;
+    expect(bundle).toHaveAttribute('data-option', '9255,9827');
+    expect(within(bundle).queryByLabelText(/그래도/)).toBeNull();
+    // A single drop after it still leaves one conflict: the count alone, the sentence in the
     // tooltip and accessible name (the ⚠ is the alert badge's own icon).
-    const badge = within(first).getByLabelText('그래도 1개 미해결');
+    const single = options[2]!;
+    const badge = within(single).getByLabelText('그래도 1개 미해결');
     expect(badge).toHaveAttribute('title', '그래도 1개 미해결');
     expect(badge).toHaveTextContent(/^1$/);
-    expect(first.textContent).not.toMatch(/그래도|미해결/);
+    expect(single.textContent).not.toMatch(/그래도|미해결/);
+    // ✕ on the bundle takes both out of the goals.
+    await user.click(within(bundle).getAllByRole('button', { name: /목표에서 빼기$/ })[0]!);
+    expect(useApp.getState().wanted).not.toContain(9255);
+    expect(useApp.getState().wanted).not.toContain(9827);
+    expect(useApp.getState().wanted).toContain(9250);
   });
 
   it('draws a placeholder row while the alternatives are still being computed', async () => {
