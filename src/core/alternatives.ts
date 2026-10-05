@@ -198,6 +198,36 @@ export function planDropEffects(
   main?: RoutePlan,
   opts: DropEffectOptions = {},
 ): DropAnalysis {
+  const steps = createDropEffects(input, data, indexes, main, opts);
+  while (!steps.done()) steps.step();
+  return steps.finish();
+}
+
+/**
+ * `planDropEffects` one candidate at a time, for a caller that shows bars as they come and stops on
+ * a budget of its own (the worker: `planner-protocol.ts`). Core keeps no clock — every step is the
+ * same `planRoute` call `planDropEffects` makes, so stopping early only leaves the tail out.
+ */
+export interface DropEffectSteps {
+  /** Conflicting goals in the main plan; 0 means there is nothing to measure. */
+  conflicts: number;
+  /** True when every candidate within `maxRuns` has its bar. */
+  done(): boolean;
+  /** Measure the next candidate. */
+  step(): void;
+  /** The bars so far, sorted, with a single drop that clears everything as `resolving`. */
+  snapshot(): DropAnalysis;
+  /** The final answer: the bars so far, plus the bundle when no single drop clears it. */
+  finish(): DropAnalysis;
+}
+
+export function createDropEffects(
+  input: PlanInput,
+  data: GameData,
+  indexes: GameIndexes,
+  main?: RoutePlan,
+  opts: DropEffectOptions = {},
+): DropEffectSteps {
   const maxRuns = opts.maxRuns ?? 10;
   const base = main ?? planRoute(input, data, indexes);
   const options =
@@ -206,7 +236,16 @@ export function planDropEffects(
       : input.options;
   const scoped = { ...input, options };
   const conflictRoots = conflictRootsOf(base, scoped, data, indexes);
-  if (conflictRoots.length === 0) return { conflicts: 0, effects: [], resolving: null };
+  const empty: DropAnalysis = { conflicts: 0, effects: [], resolving: null };
+  if (conflictRoots.length === 0) {
+    return {
+      conflicts: 0,
+      done: () => true,
+      step: () => undefined,
+      snapshot: () => empty,
+      finish: () => empty,
+    };
+  }
 
   const roots = wantedRoots(scoped, data, indexes);
   const wantedIds = new Set(input.wanted.map((w) => w.giftId));
@@ -240,36 +279,57 @@ export function planDropEffects(
       candidates.push(id);
     }
   }
+  const queue = candidates.slice(0, maxRuns);
 
   const left = (plan: RoutePlan): number => conflictRootsOf(plan, scoped, data, indexes).length;
-  const effects: DropEffect[] = candidates.slice(0, maxRuns).map((giftId) => {
-    const plan = planRoute(
-      { ...scoped, wanted: input.wanted.filter((w) => w.giftId !== giftId) },
-      data,
-      indexes,
+  const effects: DropEffect[] = [];
+  const sorted = (): DropEffect[] =>
+    [...effects].sort(
+      (a, b) =>
+        b.reduces - a.reduces ||
+        b.plan.stats.coveredWanted - a.plan.stats.coveredWanted ||
+        a.plan.stats.requiredPacks - b.plan.stats.requiredPacks ||
+        a.giftId - b.giftId,
     );
-    return { giftId, reduces: conflictRoots.length - left(plan), plan };
-  });
-  effects.sort(
-    (a, b) =>
-      b.reduces - a.reduces ||
-      b.plan.stats.coveredWanted - a.plan.stats.coveredWanted ||
-      a.plan.stats.requiredPacks - b.plan.stats.requiredPacks ||
-      a.giftId - b.giftId,
-  );
+  const single = (list: DropEffect[]): RouteVariant | null => {
+    const best = list[0];
+    return best && best.reduces === conflictRoots.length ? { dropped: [best.giftId], plan: best.plan } : null;
+  };
+  let finished: DropAnalysis | null = null;
 
-  const best = effects[0];
-  let resolving: RouteVariant | null =
-    best && best.reduces === conflictRoots.length ? { dropped: [best.giftId], plan: best.plan } : null;
-  const bundle = conflictRoots.filter((id) => !required.has(id));
-  if (!resolving && bundle.length >= 2) {
-    const dropped = new Set(bundle);
-    const plan = planRoute(
-      { ...scoped, wanted: input.wanted.filter((w) => !dropped.has(w.giftId)) },
-      data,
-      indexes,
-    );
-    if (left(plan) === 0) resolving = { dropped: bundle, plan };
-  }
-  return { conflicts: conflictRoots.length, effects, resolving };
+  return {
+    conflicts: conflictRoots.length,
+    done: () => effects.length >= queue.length,
+    step() {
+      const giftId = queue[effects.length];
+      if (giftId === undefined) return;
+      const plan = planRoute(
+        { ...scoped, wanted: input.wanted.filter((w) => w.giftId !== giftId) },
+        data,
+        indexes,
+      );
+      effects.push({ giftId, reduces: conflictRoots.length - left(plan), plan });
+    },
+    snapshot() {
+      const list = sorted();
+      return { conflicts: conflictRoots.length, effects: list, resolving: single(list) };
+    },
+    finish() {
+      if (finished) return finished;
+      const list = sorted();
+      let resolving = single(list);
+      const bundle = conflictRoots.filter((id) => !required.has(id));
+      if (!resolving && bundle.length >= 2) {
+        const dropped = new Set(bundle);
+        const plan = planRoute(
+          { ...scoped, wanted: input.wanted.filter((w) => !dropped.has(w.giftId)) },
+          data,
+          indexes,
+        );
+        if (left(plan) === 0) resolving = { dropped: bundle, plan };
+      }
+      finished = { conflicts: conflictRoots.length, effects: list, resolving };
+      return finished;
+    },
+  };
 }

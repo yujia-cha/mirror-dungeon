@@ -12,7 +12,14 @@
  */
 import type { GameData } from '../../core/schema.ts';
 import type { GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
-import { buildIndexes, planDropEffects, planRoute, type DropAnalysis } from '../../core/index.ts';
+import {
+  buildIndexes,
+  createDropEffects,
+  planDropEffects,
+  planRoute,
+  type DropAnalysis,
+  type DropEffectSteps,
+} from '../../core/index.ts';
 
 /** Hand the worker the season's data once; it builds its own indexes. */
 export interface InitRequest {
@@ -48,12 +55,27 @@ export interface PlanResponse {
   analysisPending: boolean;
 }
 
-/** The drop analysis for plan `id`, sent after it. Never sent for a plan a newer one replaced. */
+/**
+ * The drop analysis for plan `id`, sent after it — several times since M81: once per bar as it is
+ * measured (`done: false`, the bars so far), then the final answer (`done: true`). Never sent for
+ * a plan a newer one replaced.
+ */
 export interface AnalysisResponse {
   type: 'analysis';
   id: number;
   analysis: DropAnalysis;
+  done: boolean;
 }
+
+/**
+ * How long the worker keeps measuring bars before it settles for the ones it has. Small goal lists
+ * finish all ten candidates in a few dozen milliseconds; at 40+ goals one candidate is ~150ms, so
+ * this keeps the first five or so — the conflicting goals and the ones on their floors come first.
+ * A clock lives here, not in core: core stays deterministic and the inline path measures them all.
+ */
+export const ANALYSIS_BUDGET_MS = 800;
+
+const dropKey = (ids: readonly number[]): string => [...ids].sort((a, b) => a - b).join(',');
 
 /** The answer to a `drop` request. */
 export interface DropResponse {
@@ -105,16 +127,21 @@ export function runDrop(
  * protocol without a worker).
  *
  * The route and its drop analysis are **two answers** (M52; the analysis replaced the alternatives
- * list in M80). The route arrives after ~180ms and the
- * panel stops saying 「갱신 중…」; the alternatives follow. And `alternatives(id)` answers only the
- * newest plan: a toggle that lands while the alternatives are still queued makes them moot, so they
- * are skipped rather than computed for a question nobody is asking any more. Before M52 every quick
- * toggle paid the full ~900ms before the worker would even read the next one.
+ * list in M80). The route arrives after ~180ms and the panel stops saying 「갱신 중…」; the analysis
+ * follows **one bar per call** of `analysisStep(id)` (M81), which the worker runs as a task each, so
+ * a newer request queued behind it is read between bars and makes the rest moot: `analysisStep`
+ * answers only the newest plan. Before M52 every quick toggle paid the full analysis before the
+ * worker would even read the next one; before M81 it still paid until the last bar.
+ *
+ * The checked sets the card asks about (`drop`) are kept per plan input: the single drops the
+ * analysis already planned answer a checked bar at once, and checking a set back costs nothing.
  */
-export function createPlanner(): {
+export function createPlanner(opts: { budgetMs?: number; now?: () => number } = {}): {
   handle: (request: PlannerRequest) => PlanResponse | DropResponse | { type: 'ready' } | null;
-  alternatives: (id: number) => AnalysisResponse | null;
+  analysisStep: (id: number) => AnalysisResponse | null;
 } {
+  const budgetMs = opts.budgetMs ?? ANALYSIS_BUDGET_MS;
+  const now = opts.now ?? (() => performance.now());
   let data: GameData | null = null;
   let indexes: GameIndexes | null = null;
   /**
@@ -122,9 +149,17 @@ export function createPlanner(): {
    * overwrites it, which is what makes a superseded plan's analysis unanswerable. A `drop`
    * request leaves it alone.
    */
-  let latest: { id: number; input: PlanInput; plan: RoutePlan } | null = null;
+  let latest: {
+    id: number;
+    input: PlanInput;
+    plan: RoutePlan;
+    steps?: DropEffectSteps;
+    startedAt?: number;
+  } | null = null;
   /** The newest plan request's input, which a `drop` request is answered against. */
   let current: PlanInput | null = null;
+  /** Plans for checked sets (`dropKey`) of the `current` input; emptied when it changes. */
+  const dropCache = new Map<string, RoutePlan | null>();
   return {
     handle(request) {
       if (request.type === 'init') {
@@ -132,6 +167,7 @@ export function createPlanner(): {
         indexes = buildIndexes(request.data);
         latest = null;
         current = null;
+        dropCache.clear();
         return { type: 'ready' };
       }
       // A plan asked for before `init` cannot be answered; the host always sends `init` first, and
@@ -139,19 +175,34 @@ export function createPlanner(): {
       if (!data || !indexes) return null;
       if (request.type === 'drop') {
         if (!current) return null;
-        return { type: 'drop', id: request.id, plan: runDrop(current, request.dropped, data, indexes) };
+        const key = dropKey(request.dropped);
+        if (!dropCache.has(key)) dropCache.set(key, runDrop(current, request.dropped, data, indexes));
+        return { type: 'drop', id: request.id, plan: dropCache.get(key)! };
       }
+      if (request.input !== current) dropCache.clear();
       current = request.input;
       const plan = request.input.wanted.length === 0 ? null : planRoute(request.input, data, indexes);
       const analysisPending = needsAlternatives(plan);
       latest = analysisPending ? { id: request.id, input: request.input, plan: plan! } : null;
       return { type: 'plan', id: request.id, plan, analysisPending };
     },
-    alternatives(id) {
+    analysisStep(id) {
       if (!latest || latest.id !== id || !data || !indexes) return null;
-      const { input, plan } = latest;
+      if (!latest.steps) {
+        latest.steps = createDropEffects(latest.input, data, indexes, latest.plan);
+        latest.startedAt = now();
+      }
+      const { steps } = latest;
+      // Always one bar, then stop when the candidates or the budget run out.
+      steps.step();
+      if (!steps.done() && now() - latest.startedAt! < budgetMs)
+        return { type: 'analysis', id, analysis: steps.snapshot(), done: false };
+      const analysis = steps.finish();
       latest = null;
-      return { type: 'analysis', id, analysis: planDropEffects(input, data, indexes, plan) };
+      // The analysis already planned these sets; a checked bar is answered from here.
+      for (const effect of analysis.effects) dropCache.set(dropKey([effect.giftId]), effect.plan);
+      if (analysis.resolving) dropCache.set(dropKey(analysis.resolving.dropped), analysis.resolving.plan);
+      return { type: 'analysis', id, analysis, done: true };
     },
   };
 }

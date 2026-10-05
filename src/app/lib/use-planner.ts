@@ -104,7 +104,11 @@ export function usePlanner(
   const worker = plannerWorker();
 
   const [answer, setAnswer] = useState<PlanResponse | null>(null);
-  const [alternatives, setAlternatives] = useState<{ id: number; analysis: DropAnalysis } | null>(null);
+  const [alternatives, setAlternatives] = useState<{
+    id: number;
+    analysis: DropAnalysis;
+    done: boolean;
+  } | null>(null);
   const [dropAnswer, setDropAnswer] = useState<{ id: number; plan: RoutePlan | null } | null>(null);
   const [dropSent, setDropSent] = useState(0);
   const dropKey = [...dropped].sort((a, b) => a - b).join(',');
@@ -123,7 +127,9 @@ export function usePlanner(
         setAnswer((current) => (current && current.id > message.id ? current : message));
       if (message.type === 'analysis') {
         setAlternatives((current) =>
-          current && current.id > message.id ? current : { id: message.id, analysis: message.analysis },
+          current && current.id > message.id
+            ? current
+            : { id: message.id, analysis: message.analysis, done: message.done },
         );
       }
       if (message.type === 'drop')
@@ -191,7 +197,8 @@ export function usePlanner(
     plan: answer?.plan ?? null,
     analysis: matched ? alternatives.analysis : null,
     pending: answer === null || answer.id < sentId,
-    analysisPending: answer !== null && answer.analysisPending && !matched,
+    // Bars arrive one by one (M81): what is in shows, and the placeholder stays until the last.
+    analysisPending: answer !== null && answer.analysisPending && !(matched && alternatives.done),
     dropPlan: dropFresh ? dropAnswer.plan : null,
     dropPending: dropKey !== '' && !dropFresh,
     offThread: true,

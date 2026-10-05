@@ -11,6 +11,7 @@ import {
   buildIndexes,
   conflictGroups,
   conflictRootsOf,
+  createDropEffects,
   defaultOptions,
   minDrops,
   planAlternatives,
@@ -1201,6 +1202,33 @@ describe('drop effects (M80)', () => {
     expect(reduces[9220]).toBe(0);
     expect(reduces[9221]).toBe(0);
     expect(analysis.effects.map((e) => e.giftId).slice(-2)).toEqual([9220, 9221]);
+  });
+
+  it('steps one bar at a time to the same answer, with sorted bars in between (M81)', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9277, 9744, 9751, 9766, 9842),
+      options: options({ hardFromFloor: 1 }),
+    };
+    const whole = planDropEffects(input, noObservation, indexes);
+    const steps = createDropEffects(input, noObservation, indexes);
+    expect(steps.conflicts).toBe(2);
+    let count = 0;
+    while (!steps.done()) {
+      steps.step();
+      count += 1;
+      const partial = steps.snapshot().effects;
+      expect(partial).toHaveLength(count);
+      expect(partial.map((e) => e.reduces)).toEqual([...partial.map((e) => e.reduces)].sort((x, y) => y - x));
+    }
+    const final = steps.finish();
+    expect(final.effects.map((e) => [e.giftId, e.reduces])).toEqual(
+      whole.effects.map((e) => [e.giftId, e.reduces]),
+    );
+    expect(final.resolving!.dropped).toEqual(whole.resolving!.dropped);
+    // A partial snapshot only knows single drops; the bundle comes with `finish`.
+    expect(steps.snapshot().resolving).toBeNull();
+    expect(steps.finish()).toBe(final);
   });
 
   it('spends no runs without a conflict, and stays within the budget', () => {

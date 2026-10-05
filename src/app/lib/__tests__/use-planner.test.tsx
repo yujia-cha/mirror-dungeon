@@ -79,9 +79,12 @@ class FakeWorker implements Partial<Worker> {
     queueMicrotask(() => this.emit('message', { data: response satisfies PlannerResponse }));
     // As `planner.worker.ts` does: the alternatives follow on a later task, and only if still wanted.
     if (response.type === 'plan' && response.analysisPending) {
+      // One task per bar until the final answer, as the worker's `pump` does.
       const send = (): void => {
-        const analysis = this.planner.alternatives(response.id);
-        if (analysis) this.emit('message', { data: analysis satisfies PlannerResponse });
+        const analysis = this.planner.analysisStep(response.id);
+        if (!analysis) return;
+        this.emit('message', { data: analysis satisfies PlannerResponse });
+        if (!analysis.done) setTimeout(send, 0);
       };
       if (this.holdAlternatives) this.held.push(send);
       else setTimeout(send, 0);
@@ -196,9 +199,15 @@ describe('the drop analysis arrives after the route (M52)', () => {
     wanted: [9250, 9251, 9252, 9253, 9254, 9255].map((giftId) => ({ giftId, required: false })),
   };
 
-  it('shows the route as soon as it is ready, then the alternatives', async () => {
+  it('shows the route as soon as it is ready, then the bars as they come (M81)', async () => {
     const { latest } = stubWorker(() => new FakeWorker('answers', true));
-    const { result } = renderHook(() => usePlanner(data, indexes, conflictInput));
+    // Every state the hook went through: how many bars, and whether more were still coming.
+    const seen: [number, boolean][] = [];
+    const { result } = renderHook(() => {
+      const state = usePlanner(data, indexes, conflictInput);
+      seen.push([state.analysis?.effects.length ?? 0, state.analysisPending]);
+      return state;
+    });
 
     await waitFor(() => expect(result.current.plan).not.toBeNull());
     // The route is done: the panel must not keep saying 「갱신 중…」 for the alternatives.
@@ -207,8 +216,10 @@ describe('the drop analysis arrives after the route (M52)', () => {
     expect(result.current.analysis).toBeNull();
 
     act(() => latest()!.release());
-    await waitFor(() => expect(result.current.analysis).not.toBeNull());
-    expect(result.current.analysisPending).toBe(false);
+    await waitFor(() => expect(result.current.analysisPending).toBe(false));
+    expect(result.current.analysis!.effects).toHaveLength(6);
+    // Some bars were on show while the rest were still being measured.
+    expect(seen.some(([bars, pending]) => bars > 0 && bars < 6 && pending)).toBe(true);
   });
 
   it("does not show one plan's alternatives beside the next plan", async () => {

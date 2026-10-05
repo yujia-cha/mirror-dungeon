@@ -31,12 +31,19 @@ import { requirementKey } from './requirements.ts';
 import { chooseStart, observable } from './starting.ts';
 import { josa } from './text.ts';
 
-export { conflictRootsOf, minDrops, planAlternatives, planDropEffects } from './alternatives.ts';
+export {
+  conflictRootsOf,
+  createDropEffects,
+  minDrops,
+  planAlternatives,
+  planDropEffects,
+} from './alternatives.ts';
 export type {
   AlternativeOptions,
   DropAnalysis,
   DropEffect,
   DropEffectOptions,
+  DropEffectSteps,
   RouteVariant,
 } from './alternatives.ts';
 export { conflictGroups, wantedRoots } from './conflicts.ts';
