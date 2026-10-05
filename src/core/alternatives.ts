@@ -140,3 +140,136 @@ export function minDrops(variants: readonly RouteVariant[]): number | null {
   if (!first || first.plan.unresolved.some((u) => u.reason === 'pack-conflict')) return null;
   return first.dropped.length;
 }
+
+/** What leaving one goal out does to the conflict: the bar the decision card draws for it. */
+export interface DropEffect {
+  giftId: number;
+  /** How many conflicting goals the drop clears, the dropped goal itself included. 0: no help. */
+  reduces: number;
+  plan: RoutePlan;
+}
+
+export interface DropAnalysis {
+  /** Conflicting goals in the main plan (`pack-conflict`, ingredients counted as their goal). */
+  conflicts: number;
+  /** One per candidate goal tried, most helpful first. */
+  effects: DropEffect[];
+  /**
+   * A drop that clears every conflict: the best single one, or else the main plan's own losses
+   * together (as `planAlternatives` builds it). `null` when neither was found.
+   */
+  resolving: RouteVariant | null;
+}
+
+export interface DropEffectOptions {
+  /** Candidate drops tried, which bounds the number of extra `planRoute` calls. */
+  maxRuns?: number;
+}
+
+/** The goals a plan loses to the conflict, ingredients mapped to the goal they feed. */
+export function conflictRootsOf(
+  plan: RoutePlan,
+  input: PlanInput,
+  data: GameData,
+  indexes: GameIndexes,
+): number[] {
+  const conflicts = plan.unresolved.filter((u) => u.reason === 'pack-conflict');
+  if (conflicts.length === 0) return [];
+  const roots = wantedRoots(input, data, indexes);
+  return [...new Set(conflicts.flatMap((u) => roots(u.giftId)))].sort((a, b) => a - b);
+}
+
+/**
+ * Each candidate goal left out on its own, measured by how many conflicting goals that clears.
+ *
+ * Unlike `planAlternatives` nothing is merged or cut to a short list: every candidate gets its bar,
+ * because a drop that clears nothing is worth knowing too. Effects do not add up — two goals that
+ * fight over one floor clear one conflict between them, and two that share a pack clear nothing
+ * alone — so the card checks a chosen set with a plan of its own instead of summing bars.
+ *
+ * Candidates, in the order the budget is spent: the conflicting goals, the goals holding the
+ * contested floors, the goals the plan observes (leaving one out frees an observation slot for
+ * another), then the rest of the routed goals.
+ */
+export function planDropEffects(
+  input: PlanInput,
+  data: GameData,
+  indexes: GameIndexes,
+  main?: RoutePlan,
+  opts: DropEffectOptions = {},
+): DropAnalysis {
+  const maxRuns = opts.maxRuns ?? 10;
+  const base = main ?? planRoute(input, data, indexes);
+  const options =
+    base.floors.length > 0
+      ? { ...input.options, lastFloor: base.floors[base.floors.length - 1]!.floor }
+      : input.options;
+  const scoped = { ...input, options };
+  const conflictRoots = conflictRootsOf(base, scoped, data, indexes);
+  if (conflictRoots.length === 0) return { conflicts: 0, effects: [], resolving: null };
+
+  const roots = wantedRoots(scoped, data, indexes);
+  const wantedIds = new Set(input.wanted.map((w) => w.giftId));
+  const tiered = input.wanted.some((w) => !w.required);
+  const required = new Set(tiered ? input.wanted.filter((w) => w.required).map((w) => w.giftId) : []);
+
+  const conflictFloors = new Set<number>();
+  const banned = new Set(options.bannedPacks);
+  for (const u of base.unresolved) {
+    if (u.reason !== 'pack-conflict') continue;
+    const packs = (indexes.packsByGift.get(u.giftId) ?? []).filter((id) => !banned.has(id));
+    for (const floor of base.floors) {
+      const offered =
+        indexes.packsByFloor[modeForFloor(floor.floor, options, indexes)].get(floor.floor) ?? [];
+      const pinned = options.pinnedPacks[floor.floor];
+      if (packs.some((id) => offered.includes(id) && (pinned === undefined || pinned === id)))
+        conflictFloors.add(floor.floor);
+    }
+  }
+  const occupants = base.floors
+    .filter((floor) => floor.reason === 'required' && conflictFloors.has(floor.floor))
+    .flatMap((floor) => floor.pickups.flatMap((p) => roots(p.giftId)));
+  const observed = base.start.observed.flatMap((o) => roots(o.giftId));
+  const routed = base.floors.flatMap((floor) => floor.pickups.flatMap((p) => roots(p.giftId)));
+  const seen = new Set<number>();
+  const candidates: number[] = [];
+  for (const tier of [conflictRoots, occupants, observed, routed]) {
+    for (const id of [...new Set(tier)].sort((a, b) => a - b)) {
+      if (seen.has(id) || !wantedIds.has(id) || required.has(id)) continue;
+      seen.add(id);
+      candidates.push(id);
+    }
+  }
+
+  const left = (plan: RoutePlan): number => conflictRootsOf(plan, scoped, data, indexes).length;
+  const effects: DropEffect[] = candidates.slice(0, maxRuns).map((giftId) => {
+    const plan = planRoute(
+      { ...scoped, wanted: input.wanted.filter((w) => w.giftId !== giftId) },
+      data,
+      indexes,
+    );
+    return { giftId, reduces: conflictRoots.length - left(plan), plan };
+  });
+  effects.sort(
+    (a, b) =>
+      b.reduces - a.reduces ||
+      b.plan.stats.coveredWanted - a.plan.stats.coveredWanted ||
+      a.plan.stats.requiredPacks - b.plan.stats.requiredPacks ||
+      a.giftId - b.giftId,
+  );
+
+  const best = effects[0];
+  let resolving: RouteVariant | null =
+    best && best.reduces === conflictRoots.length ? { dropped: [best.giftId], plan: best.plan } : null;
+  const bundle = conflictRoots.filter((id) => !required.has(id));
+  if (!resolving && bundle.length >= 2) {
+    const dropped = new Set(bundle);
+    const plan = planRoute(
+      { ...scoped, wanted: input.wanted.filter((w) => !dropped.has(w.giftId)) },
+      data,
+      indexes,
+    );
+    if (left(plan) === 0) resolving = { dropped: bundle, plan };
+  }
+  return { conflicts: conflictRoots.length, effects, resolving };
+}

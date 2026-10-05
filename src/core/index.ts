@@ -31,8 +31,14 @@ import { requirementKey } from './requirements.ts';
 import { chooseStart, observable } from './starting.ts';
 import { josa } from './text.ts';
 
-export { minDrops, planAlternatives } from './alternatives.ts';
-export type { RouteVariant, AlternativeOptions } from './alternatives.ts';
+export { conflictRootsOf, minDrops, planAlternatives, planDropEffects } from './alternatives.ts';
+export type {
+  AlternativeOptions,
+  DropAnalysis,
+  DropEffect,
+  DropEffectOptions,
+  RouteVariant,
+} from './alternatives.ts';
 export { conflictGroups, wantedRoots } from './conflicts.ts';
 export type { ConflictGroup, ConflictCandidate } from './conflicts.ts';
 export { buildIndexes } from './data/indexes.ts';

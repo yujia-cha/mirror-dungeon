@@ -78,10 +78,10 @@ class FakeWorker implements Partial<Worker> {
     if (!response) return;
     queueMicrotask(() => this.emit('message', { data: response satisfies PlannerResponse }));
     // As `planner.worker.ts` does: the alternatives follow on a later task, and only if still wanted.
-    if (response.type === 'plan' && response.variantsPending) {
+    if (response.type === 'plan' && response.analysisPending) {
       const send = (): void => {
-        const variants = this.planner.alternatives(response.id);
-        if (variants) this.emit('message', { data: variants satisfies PlannerResponse });
+        const analysis = this.planner.alternatives(response.id);
+        if (analysis) this.emit('message', { data: analysis satisfies PlannerResponse });
       };
       if (this.holdAlternatives) this.held.push(send);
       else setTimeout(send, 0);
@@ -156,9 +156,7 @@ describe('with a worker', () => {
     const strip = (plan: RoutePlan | null): unknown =>
       plan && { ...plan, stats: { ...plan.stats, elapsedMs: 0 } };
     expect(strip(viaWorker.result.current.plan)).toEqual(strip(inline.result.current.plan));
-    expect(viaWorker.result.current.variants.map((v) => v.dropped)).toEqual(
-      inline.result.current.variants.map((v) => v.dropped),
-    );
+    expect(viaWorker.result.current.analysis).toEqual(inline.result.current.analysis);
   });
 
   it('keeps the previous answer on show while a newer one is computed', async () => {
@@ -192,7 +190,7 @@ describe('with a worker', () => {
   });
 });
 
-describe('alternatives arrive after the route (M52)', () => {
+describe('the drop analysis arrives after the route (M52)', () => {
   const conflictInput = {
     ...input,
     wanted: [9250, 9251, 9252, 9253, 9254, 9255].map((giftId) => ({ giftId, required: false })),
@@ -205,12 +203,12 @@ describe('alternatives arrive after the route (M52)', () => {
     await waitFor(() => expect(result.current.plan).not.toBeNull());
     // The route is done: the panel must not keep saying 「갱신 중…」 for the alternatives.
     expect(result.current.pending).toBe(false);
-    expect(result.current.variantsPending).toBe(true);
-    expect(result.current.variants).toEqual([]);
+    expect(result.current.analysisPending).toBe(true);
+    expect(result.current.analysis).toBeNull();
 
     act(() => latest()!.release());
-    await waitFor(() => expect(result.current.variants.length).toBeGreaterThan(0));
-    expect(result.current.variantsPending).toBe(false);
+    await waitFor(() => expect(result.current.analysis).not.toBeNull());
+    expect(result.current.analysisPending).toBe(false);
   });
 
   it("does not show one plan's alternatives beside the next plan", async () => {
@@ -220,12 +218,34 @@ describe('alternatives arrive after the route (M52)', () => {
     });
     await waitFor(() => expect(result.current.plan).not.toBeNull());
     act(() => latest()!.release());
-    await waitFor(() => expect(result.current.variants.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.analysis).not.toBeNull());
 
     rerender({ value: { ...conflictInput } });
     await waitFor(() => expect(result.current.pending).toBe(false));
-    expect(result.current.variants).toEqual([]);
-    expect(result.current.variantsPending).toBe(true);
+    expect(result.current.analysis).toBeNull();
+    expect(result.current.analysisPending).toBe(true);
+  });
+
+  it('plans a checked set beside the route, the same as inline (M80)', async () => {
+    stubWorker(() => new FakeWorker('answers'));
+    const viaWorker = renderHook(() => usePlanner(data, indexes, conflictInput, [9250, 9255]));
+    await waitFor(() => expect(viaWorker.result.current.dropPlan).not.toBeNull());
+    expect(viaWorker.result.current.dropPending).toBe(false);
+    expect(viaWorker.result.current.dropPlan!.stats.totalWanted).toBe(4);
+
+    cleanup();
+    resetPlannerWorker();
+    vi.unstubAllGlobals();
+    const inline = renderHook(() => usePlanner(data, indexes, conflictInput, [9255, 9250]));
+    const strip = (plan: RoutePlan | null): unknown =>
+      plan && { ...plan, stats: { ...plan.stats, elapsedMs: 0 } };
+    expect(strip(viaWorker.result.current.dropPlan)).toEqual(strip(inline.result.current.dropPlan));
+  });
+
+  it('has no checked-set plan when nothing is checked', () => {
+    const { result } = renderHook(() => usePlanner(data, indexes, conflictInput));
+    expect(result.current.dropPlan).toBeNull();
+    expect(result.current.dropPending).toBe(false);
   });
 });
 

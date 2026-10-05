@@ -18,8 +18,11 @@ export function planToText(
   dropped: number[] = [],
   marks: {
     run?: { currentFloor: number; visits: Record<number, number> };
-    /** The alternatives the planner tried: the gift each gives up and what it then covers. */
-    variants?: { name: string; covered: number; total: number }[];
+    /**
+     * The decision card's bars: each candidate goal and the conflicts leaving it out alone clears,
+     * plus the set that fits everything when one is known.
+     */
+    drops?: { effects: { name: string; reduces: number }[]; resolving?: string };
     /**
      * Every goal of the plan, in the order chosen. The plan itself only names the gifts it
      * routes, so a goal that is nothing but a fusion result used to be absent from the text.
@@ -95,11 +98,13 @@ export function planToText(
     lines.push(t('routeUnresolved', lang));
     for (const entry of plan.unresolved)
       lines.push(`  ${name(entry.giftId)}: ${unresolvedDetailText(entry, giftName, lang)}`);
-    // The same options the decision card lists, one line: which goal to take out and what that buys.
-    if (marks.variants && marks.variants.length > 0) {
-      const candidates = marks.variants.map((v) => `${v.name}(→ ${v.covered}/${v.total})`);
+    // The decision card in two lines: each goal's bar, and the set that fits everything.
+    if (marks.drops && marks.drops.effects.length > 0) {
+      const candidates = marks.drops.effects.map((e) => `${e.name}(−${e.reduces})`);
       lines.push(`  ${t('routeDecisionCandidates', lang)}: ${candidates.join(', ')}`);
     }
+    if (marks.drops?.resolving)
+      lines.push(`  ${t('routeDecisionResolves', lang, { names: marks.drops.resolving })}`);
   }
   // Which goals no pack is fetching — the copied plan carries the same list the panel shows.
   if (plan.generalDrops.length > 0) {

@@ -28,17 +28,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameData } from '../../core/schema.ts';
 import type { GameIndexes, PlanInput } from '../../core/types.ts';
-import { runPlan, type PlanResponse, type PlanResult, type PlannerResponse } from './planner-protocol.ts';
-import type { RouteVariant } from '../../core/index.ts';
+import {
+  runDrop,
+  runPlan,
+  type PlanResponse,
+  type PlanResult,
+  type PlannerResponse,
+} from './planner-protocol.ts';
+import type { DropAnalysis } from '../../core/index.ts';
+import type { RoutePlan } from '../../core/types.ts';
 
 export interface PlannerState extends PlanResult {
   /** True while the worker is still answering; what is on show is the previous answer. */
   pending: boolean;
   /**
-   * True while the route on show is waiting for its alternatives (M52: they arrive after it). Until
-   * then `variants` is empty rather than the previous plan's — those answer a different question.
+   * True while the route on show is waiting for its drop analysis (M52: it arrives after it). Until
+   * then `analysis` is null rather than the previous plan's — that answers a different question.
    */
-  variantsPending: boolean;
+  analysisPending: boolean;
+  /** The plan with the `dropped` goals left out, or null when nothing is dropped (or left). */
+  dropPlan: RoutePlan | null;
+  /** True while `dropPlan` is still being computed for the current `dropped`. */
+  dropPending: boolean;
   /** False when the plan is computed inline — the fallback, and what tests run on. */
   offThread: boolean;
 }
@@ -70,6 +81,8 @@ function makeWorker(): Worker | null {
  */
 let cached: Worker | null | undefined;
 
+const NONE: readonly number[] = [];
+
 function plannerWorker(): Worker | null {
   if (cached === undefined) cached = makeWorker();
   return cached;
@@ -81,12 +94,20 @@ export function resetPlannerWorker(): void {
   cached = undefined;
 }
 
-export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInput): PlannerState {
+export function usePlanner(
+  data: GameData,
+  indexes: GameIndexes,
+  input: PlanInput,
+  dropped: readonly number[] = NONE,
+): PlannerState {
   // Known on the first render, so the plan never appears and then vanishes.
   const worker = plannerWorker();
 
   const [answer, setAnswer] = useState<PlanResponse | null>(null);
-  const [alternatives, setAlternatives] = useState<{ id: number; variants: RouteVariant[] } | null>(null);
+  const [alternatives, setAlternatives] = useState<{ id: number; analysis: DropAnalysis } | null>(null);
+  const [dropAnswer, setDropAnswer] = useState<{ id: number; plan: RoutePlan | null } | null>(null);
+  const [dropSent, setDropSent] = useState(0);
+  const dropKey = [...dropped].sort((a, b) => a - b).join(',');
   const nextId = useRef(0);
   const [sentId, setSentId] = useState(0);
   /** Set when the worker reports an error; from then on the plan is computed inline. */
@@ -100,11 +121,13 @@ export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInpu
       // Answers can arrive out of order after a season change; the newest question wins.
       if (message.type === 'plan')
         setAnswer((current) => (current && current.id > message.id ? current : message));
-      if (message.type === 'variants') {
+      if (message.type === 'analysis') {
         setAlternatives((current) =>
-          current && current.id > message.id ? current : { id: message.id, variants: message.variants },
+          current && current.id > message.id ? current : { id: message.id, analysis: message.analysis },
         );
       }
+      if (message.type === 'drop')
+        setDropAnswer((current) => (current && current.id > message.id ? current : message));
     };
     // A script that 404s, a parse error, an exception inside the planner: all arrive here, and all
     // mean the same thing — stop waiting and compute inline instead.
@@ -132,20 +155,45 @@ export function usePlanner(data: GameData, indexes: GameIndexes, input: PlanInpu
     active.postMessage({ type: 'plan', id: nextId.current, input });
   }, [active, input, data]);
 
+  // The checked set, asked after the plan so the worker answers it against the same input. Ids
+  // come from the same counter, so a drop answer is newer than the plan it was asked after.
+  useEffect(() => {
+    if (!active || dropKey === '') return;
+    nextId.current += 1;
+    setDropSent(nextId.current);
+    active.postMessage({ type: 'drop', id: nextId.current, dropped: dropKey.split(',').map(Number) });
+  }, [active, input, data, dropKey]);
+
   // No worker, or a worker that failed: compute inline, once per input, as the provider used to.
   const inline = useMemo(
     () => (active ? null : runPlan(input, data, indexes)),
     [active, input, data, indexes],
   );
 
-  if (!active) return { ...inline!, pending: false, variantsPending: false, offThread: false };
-  // Alternatives belong to one plan; shown only beside the plan they were computed for.
+  const inlineDrop = useMemo(
+    () => (active || dropKey === '' ? null : runDrop(input, dropKey.split(',').map(Number), data, indexes)),
+    [active, input, data, indexes, dropKey],
+  );
+
+  if (!active)
+    return {
+      ...inline!,
+      pending: false,
+      analysisPending: false,
+      dropPlan: inlineDrop,
+      dropPending: false,
+      offThread: false,
+    };
+  // The analysis belongs to one plan; shown only beside the plan it was computed for.
   const matched = answer !== null && alternatives?.id === answer.id;
+  const dropFresh = dropKey !== '' && dropAnswer !== null && dropAnswer.id === dropSent;
   return {
     plan: answer?.plan ?? null,
-    variants: matched ? alternatives.variants : [],
+    analysis: matched ? alternatives.analysis : null,
     pending: answer === null || answer.id < sentId,
-    variantsPending: answer !== null && answer.variantsPending && !matched,
+    analysisPending: answer !== null && answer.analysisPending && !matched,
+    dropPlan: dropFresh ? dropAnswer.plan : null,
+    dropPending: dropKey !== '' && !dropFresh,
     offThread: true,
   };
 }

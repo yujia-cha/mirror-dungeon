@@ -17,7 +17,7 @@ test('opens under the Pages sub-path with its data', async ({ page }) => {
   expect(failed).toEqual([]);
 });
 
-test('plans off the render thread, and the alternatives follow the route', async ({ page }) => {
+test('plans off the render thread, and the drop analysis follows the route', async ({ page }) => {
   const workerChunk = page.waitForResponse((response) => /planner\.worker-[^/]*\.js$/.test(response.url()));
   await page.goto(`./${shareHash(CONFLICTING)}`);
   expect((await workerChunk).status()).toBe(200);
@@ -27,8 +27,8 @@ test('plans off the render thread, and the alternatives follow the route', async
   const plan = page.getByTestId('route-plan');
   await expect(plan).toBeVisible();
   await expect(page.getByTestId('route-pending')).toHaveCount(0);
-  // The worker answered, not the inline fallback: the variants tab strip comes from its second answer.
-  await expect(page.getByTestId('variants')).toBeVisible();
+  // The worker answered, not the inline fallback: the drop bars come from its second answer.
+  await expect(page.getByTestId('drop-effect').first()).toBeVisible();
 });
 
 test('a share link survives the round trip', async ({ page }) => {

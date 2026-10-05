@@ -4,7 +4,7 @@
  * context every pack surface takes and the run actions that settle gifts as floors are left.
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { evaluateConditions } from '../../core/index.ts';
+import { conflictRootsOf, evaluateConditions } from '../../core/index.ts';
 import type { GameData, Gift, Keyword } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -58,11 +58,11 @@ export function PlanProvider({
   const setGiftStatus = useApp((s) => s.setGiftStatus);
   const nextFloor = useApp((s) => s.nextFloor);
   const setStageFloor = useApp((s) => s.setStageFloor);
-  // The alternative on display is remembered by the gift it drops, not by its position: a run
-  // mark recomputes the plan, and the same variant is re-found in the new list. Gone (the conflict
-  // resolved, the gift deselected) means back to the main plan. An index reset on every input
-  // change used to flip the panel back to the main plan on any gift mark.
-  const [variantKey, setVariantKey] = useState<string | null>(null);
+  // The goals the decision card has checked to leave out, and whether the map shows that route.
+  // Kept by gift id, so a run mark (which recomputes the plan) keeps both; a checked gift that is
+  // no longer a goal falls out below, and an empty check list ends the preview.
+  const [dropSelection, setDropSelection] = useState<number[]>([]);
+  const [previewWanted, setPreviewWanted] = useState(false);
   // The gift sheet's trail: the top is on show, and each gift below it is one a recipe was
   // followed from (「← 이전 기프트」). Opening from anywhere else starts a fresh trail.
   const [detailStack, setDetailStack] = useState<number[]>([]);
@@ -90,16 +90,40 @@ export function PlanProvider({
   // The route and its alternatives, off the render thread where the browser allows it. The route
   // arrives first and the alternatives follow, because they are the expensive half — see
   // `use-planner.ts`.
-  const { plan, variants, pending: planPending, variantsPending } = usePlanner(data, indexes, input);
-  // Keyed by the whole drop set: a bundle row may start with the same gift as a single row.
-  const variantIndex =
-    variantKey === null ? 0 : variants.findIndex((v) => v.dropped.join(',') === variantKey) + 1;
-  const setVariantIndex = useCallback(
-    (index: number) => setVariantKey(index > 0 ? (variants[index - 1]?.dropped.join(',') ?? null) : null),
-    [variants],
+  const selection = useMemo(() => dropSelection.filter((id) => wanted.includes(id)), [dropSelection, wanted]);
+  const {
+    plan,
+    analysis,
+    pending: planPending,
+    analysisPending,
+    dropPlan,
+    dropPending,
+  } = usePlanner(data, indexes, input, selection);
+  const toggleDrop = useCallback(
+    (giftId: number) =>
+      setDropSelection((list) =>
+        list.includes(giftId) ? list.filter((id) => id !== giftId) : [...list, giftId],
+      ),
+    [],
   );
-  const variant = variantIndex > 0 ? variants[variantIndex - 1] : undefined;
+  const setDrops = useCallback((ids: number[]) => setDropSelection(ids), []);
+  const clearDrops = useCallback(() => {
+    setDropSelection([]);
+    setPreviewWanted(false);
+  }, []);
+  const previewing = previewWanted && selection.length > 0;
+  const setPreviewing = useCallback((on: boolean) => setPreviewWanted(on), []);
+  /** The checked set's route, while it is on the map. */
+  const variant = useMemo(
+    () => (previewing && dropPlan ? { dropped: selection, plan: dropPlan } : undefined),
+    [previewing, dropPlan, selection],
+  );
   const shown = variant?.plan ?? plan;
+  /** Conflicting goals left in the checked set's route, or null while it is being computed. */
+  const dropConflicts = useMemo(
+    () => (dropPlan ? conflictRootsOf(dropPlan, input, data, indexes).length : null),
+    [dropPlan, input, data, indexes],
+  );
   const exclusivesOf = useMemo(() => exclusivesIndex(data, indexes), [data, indexes]);
   const childrenOf = useMemo(() => upgradeChildren(data), [data]);
   const entangled = useMemo(
@@ -269,10 +293,19 @@ export function PlanProvider({
       plan,
       shown,
       planPending,
-      variants,
-      variantsPending,
-      variantIndex,
-      setVariantIndex,
+      analysis,
+      analysisPending,
+      drops: {
+        selection,
+        toggle: toggleDrop,
+        set: setDrops,
+        clear: clearDrops,
+        plan: selection.length > 0 ? dropPlan : null,
+        pending: dropPending,
+        conflicts: selection.length > 0 ? dropConflicts : null,
+        previewing,
+        setPreviewing,
+      },
       variant,
       goals,
       childrenOf,
@@ -307,10 +340,17 @@ export function PlanProvider({
     plan,
     shown,
     planPending,
-    variants,
-    variantsPending,
-    variantIndex,
-    setVariantIndex,
+    analysis,
+    analysisPending,
+    selection,
+    toggleDrop,
+    setDrops,
+    clearDrops,
+    dropPlan,
+    dropPending,
+    dropConflicts,
+    previewing,
+    setPreviewing,
     variant,
     run,
     exclusivesOf,

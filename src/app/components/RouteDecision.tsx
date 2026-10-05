@@ -1,47 +1,39 @@
 /**
  * The decision card: the one place for the choice the planner cannot make for the user — which
- * gift to take out of the goals when they cannot all fit one run (`pack-conflict`).
+ * goals to take out when they cannot all fit one run (`pack-conflict`).
  *
  * It sits under the summary and above the metro map, because that is the decision the rest of
- * the panel waits on. One row per option: 「전부 유지」 (the plan as it is, with what stays
- * unresolved), then each alternative the planner tried with what changes — which packs come in,
- * and whether a conflict remains. Rows that clear every conflict with one drop come first
- * (`planAlternatives` sorts by the conflicts left); when no single drop does, the first row is a
- * bundle — the gifts the main plan itself lost, removed together — and the header says how many
- * have to go (`minDrops`). The row's two buttons are symbols at the end of the gift's own
- * line (the name truncates before they move) — ✕ 「목표에서 빼기」 is a
- * deselection (`removeWanted`), as everywhere else in the app; the route icon 「루트 미리 보기」 only
- * switches the map and the stage to that route and keeps the decision open, which the header says
- * while it lasts. The badge 「그래도 n개 미해결」 shows the number alone; the sentence is its
- * tooltip and accessible name. It leaves out what the base plan lost for other reasons — no drop
- * changes those, and the 미해결 card already lists them.
+ * the panel waits on. Since M80 it is a list of **drop effects** (`planDropEffects`, core): one bar
+ * per candidate goal, as long as the number of conflicting goals that leaving it out alone clears.
+ * A bar of 0 is information too — two goals sharing a pack free nothing one at a time.
  *
- * The header chips name the contested floors (`conflictGroups`, core) — information only; the app
- * makes no pack-level choice, the decision is always which gift to give up.
+ * Bars do not add up, so the card never sums them into a verdict. Checking goals asks the planner
+ * for the route without all of them (`drops.plan`) and the line under the bars sets the two side by
+ * side: 「막대 합 −2 · 함께 뺀 실제 −1」. The footer says what that route gets, previews it on the map
+ * (the stage follows `shown`), and removes the checked goals with 「목표에서 빼기」 — the app's one
+ * word for deselecting, as everywhere else.
+ *
+ * The header names the conflicting goals and how many have to go (`resolving`, the best single drop
+ * or the main plan's losses together); 「…빼면 해결」 checks that set in one press. The floor chips
+ * name the contested floors (`conflictGroups`, core) — information only; the app makes no
+ * pack-level choice.
  */
-import { Route, TriangleAlert, X } from 'lucide-react';
+import { Route, TriangleAlert } from 'lucide-react';
 import type { ConflictGroup } from '../../core/conflicts.ts';
-import { minDrops, type RouteVariant } from '../../core/index.ts';
+import type { DropAnalysis } from '../../core/index.ts';
 import type { RoutePlan } from '../../core/types.ts';
-import { withJosa } from '../format.ts';
 import { t } from '../i18n.ts';
-import { variantDiff } from '../lib/variants.ts';
+import type { DropSelection } from '../shell/plan-context.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 import type { PackContext } from './PackSheet.tsx';
-import { Badge, Button, Card, Chip, Skeleton } from './ui.tsx';
-
-/** The row's two icon buttons: 28px square, the label in `aria-label` and `title`. */
-const ICON_BUTTON =
-  'inline-flex h-7 w-7 flex-none items-center justify-center rounded-sm border transition-colors';
+import { Button, Card, Chip, Skeleton } from './ui.tsx';
 
 export interface RouteDecisionProps {
-  /** The plan for the full goal list — the 「전부 유지」 option and the base every variant is diffed against. */
+  /** The plan for the full goal list — what the bars are measured against. */
   plan: RoutePlan;
-  variants: RouteVariant[];
-  /** 0 for `plan`, `i + 1` for `variants[i]`. */
-  variantIndex: number;
-  setVariantIndex: (index: number) => void;
-  variantsPending: boolean;
+  analysis: DropAnalysis | null;
+  analysisPending: boolean;
+  drops: DropSelection;
   /** Contested floors of `plan`, for the header chips. */
   groups: ConflictGroup[];
   ctx: PackContext;
@@ -52,25 +44,40 @@ export interface RouteDecisionProps {
 
 export function RouteDecision({
   plan,
-  variants,
-  variantIndex,
-  setVariantIndex,
-  variantsPending,
+  analysis,
+  analysisPending,
+  drops,
   groups,
   ctx,
   removeWanted,
   onPreview,
 }: RouteDecisionProps) {
-  const { lang, giftName, packName, indexes } = ctx;
+  const { lang, giftName, indexes } = ctx;
   const conflicting = [
     ...new Set(plan.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId)),
   ];
-  const unresolved = [...new Set(plan.unresolved.map((u) => u.giftId))];
-  const previewed = variantIndex > 0 ? variants[variantIndex - 1] : undefined;
-  const previewedName = previewed ? previewed.dropped.map(giftName).join(', ') : '';
-  const drops = minDrops(variants);
   const names = conflicting.map(giftName).join(' · ');
+  const need = analysis?.resolving?.dropped.length ?? null;
+  const total = analysis?.conflicts ?? conflicting.length;
+  const effects = analysis?.effects ?? [];
+  const { selection } = drops;
   const covered = (p: RoutePlan): string => `${p.stats.coveredWanted}/${p.stats.totalWanted}`;
+
+  const barSum = selection.reduce((sum, id) => sum + (effects.find((e) => e.giftId === id)?.reduces ?? 0), 0);
+  const real = drops.conflicts === null ? null : total - drops.conflicts;
+
+  const status = ((): { text: string; tone: 'ok' | 'left' | 'plain' } => {
+    if (selection.length === 0)
+      return { text: t('routeDecisionNow', lang, { n: total, covered: covered(plan) }), tone: 'plain' };
+    if (drops.pending || !drops.plan || drops.conflicts === null)
+      return { text: t('routeDecisionComputing', lang), tone: 'plain' };
+    if (drops.conflicts === 0)
+      return { text: t('routeDecisionFits', lang, { covered: covered(drops.plan) }), tone: 'ok' };
+    return {
+      text: t('routeDecisionLeft', lang, { n: drops.conflicts, covered: covered(drops.plan) }),
+      tone: 'left',
+    };
+  })();
 
   return (
     <Card variant="strong" className="overflow-visible" testId="route-decision">
@@ -78,8 +85,8 @@ export function RouteDecision({
         <div className="flex items-start gap-1.5">
           <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden />
           <h2 className="text-sm font-semibold">
-            {drops !== null && drops > 1
-              ? t('routeDecisionTitleMany', lang, { names, n: drops })
+            {need !== null && need > 1
+              ? t('routeDecisionTitleMany', lang, { names, n: need })
               : t('routeDecisionTitle', lang, { names })}
           </h2>
         </div>
@@ -98,158 +105,148 @@ export function RouteDecision({
             })}
           </div>
         ) : null}
-        {/* Always in the tree so the announcement lands when a preview starts or ends. */}
-        <div
-          aria-live="polite"
-          className={previewed ? 'flex flex-wrap items-center gap-1.5 pt-1' : undefined}
-          data-testid="route-decision-preview"
-          data-dropped={previewed?.dropped.join(',')}
-        >
-          {previewed ? (
-            <>
-              <span className="text-xs font-medium">
-                {t('routeDecisionPreviewing', lang, { name: previewedName })}
-              </span>
-              <span className="ml-auto flex gap-1.5">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => previewed.dropped.forEach((id) => removeWanted(id))}
-                >
-                  {t('routeDecisionConfirm', lang)}
-                </Button>
-                <Button size="sm" onClick={() => setVariantIndex(0)}>
-                  {t('routeDecisionBack', lang)}
-                </Button>
-              </span>
-            </>
-          ) : null}
-        </div>
       </div>
 
-      <ul className="flex flex-col" data-testid={variants.length > 0 ? 'variants' : undefined}>
-        <li
-          className="flex flex-col gap-1 border-b border-line px-3 py-2"
-          data-testid="route-option"
-          data-option="all"
-          aria-current={variantIndex === 0 ? 'true' : undefined}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium">{t('routeDecisionKeep', lang)}</span>
-            <span className="text-xs text-fg-3">
-              {t('routeCovered', lang)} <span className="font-num text-fg">{covered(plan)}</span>
-            </span>
-          </div>
-          {unresolved.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {unresolved.map((giftId) => (
-                <Chip key={giftId}>{giftName(giftId)}</Chip>
-              ))}
-            </div>
-          ) : null}
-        </li>
-        {variants.map((entry, i) => {
-          const key = entry.dropped.join(',');
-          const name = entry.dropped.map(giftName).join(' · ');
-          const diff = variantDiff(plan, entry.plan);
-          const shownHere = variantIndex === i + 1;
-          return (
-            <li
-              key={key}
-              className="flex flex-col gap-1.5 border-b border-line px-3 py-2 last:border-b-0"
-              data-testid="route-option"
-              data-option={key}
-              aria-current={shownHere ? 'true' : undefined}
-            >
-              {/* One line: the gift, what the route keeps, and the two actions at its end. The
-                  name gives way (truncates) before the buttons do. */}
-              <div className="flex items-center gap-2" data-testid="route-option-head">
-                <span className="inline-flex flex-none gap-0.5">
-                  {entry.dropped.map((giftId) => {
-                    const gift = indexes.giftById.get(giftId);
-                    return gift ? (
+      <div className="flex flex-col gap-1 px-3 py-2">
+        <div className="text-xs text-fg-3">{t('routeDecisionEffects', lang)}</div>
+        <ul className="flex flex-col gap-0.5" data-testid="drop-effects">
+          {effects.map((effect) => {
+            const gift = indexes.giftById.get(effect.giftId);
+            const name = giftName(effect.giftId);
+            const checked = selection.includes(effect.giftId);
+            const width = total > 0 ? Math.round((effect.reduces / total) * 100) : 0;
+            return (
+              <li key={effect.giftId}>
+                <label
+                  className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_minmax(2.5rem,28%)_2rem] items-center gap-2 rounded-sm px-1 py-0.5 hover:bg-surface-2"
+                  data-testid="drop-effect"
+                  data-gift={effect.giftId}
+                  data-reduces={effect.reduces}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => drops.toggle(effect.giftId)}
+                    aria-label={`${name} ${t('routeDecisionCheck', lang)}`}
+                    className="accent-ink"
+                  />
+                  <span className="inline-flex flex-none">
+                    {gift ? (
                       <GiftIcon
-                        key={giftId}
                         gift={gift}
                         size={20}
-                        judgement={ctx.judgements.get(giftId) ?? null}
+                        judgement={ctx.judgements.get(effect.giftId) ?? null}
                         lang={lang}
                       />
-                    ) : null;
-                  })}
-                </span>
-                <span className="min-w-0 truncate text-sm font-medium" title={name}>
-                  {name}
-                </span>
-                <span className="flex-none whitespace-nowrap text-xs text-fg-3">
-                  {t('routeCovered', lang)} <span className="font-num text-fg">{covered(entry.plan)}</span>
-                </span>
-                {diff.stillUnresolved.length > 0 ? (
-                  <span className="inline-flex flex-none">
-                    <Badge
-                      tone="alert"
-                      title={t('routeDecisionStillUnresolved', lang, { n: diff.stillUnresolved.length })}
-                      ariaLabel={t('routeDecisionStillUnresolved', lang, { n: diff.stillUnresolved.length })}
-                    >
-                      <span className="font-num">{diff.stillUnresolved.length}</span>
-                    </Badge>
+                    ) : null}
                   </span>
-                ) : null}
-                <span className="ml-auto flex flex-none gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => entry.dropped.forEach((id) => removeWanted(id))}
-                    aria-label={`${name} ${t('routeDecisionDrop', lang)}`}
-                    title={t('routeDecisionDrop', lang)}
-                    className={`${ICON_BUTTON} border-ink bg-ink text-ink-fg hover:opacity-90`}
+                  <span className="min-w-0 truncate text-sm" title={name}>
+                    {name}
+                  </span>
+                  <span className="h-2.5 overflow-hidden rounded-sm bg-surface-2" aria-hidden>
+                    <span className="block h-full bg-ink" style={{ width: `${width}%` }} />
+                  </span>
+                  <span
+                    className="text-right font-num text-xs text-fg-2"
+                    aria-label={t('routeDecisionReducesLabel', lang, { n: effect.reduces })}
                   >
-                    <X size={14} aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={shownHere}
-                    aria-label={`${name} ${t('routeDecisionPreview', lang)}`}
-                    title={t('routeDecisionPreview', lang)}
-                    onClick={() => {
-                      if (shownHere) {
-                        setVariantIndex(0);
-                        return;
-                      }
-                      setVariantIndex(i + 1);
-                      onPreview?.();
-                    }}
-                    className={`${ICON_BUTTON} ${
-                      shownHere
-                        ? 'border-ink bg-ink text-ink-fg'
-                        : 'border-line-strong bg-surface text-fg hover:bg-surface-2'
-                    }`}
-                  >
-                    <Route size={14} aria-hidden />
-                  </button>
-                </span>
-              </div>
-              {diff.added.length > 0 ? (
-                <div className="text-xs text-fg-2">
-                  {t('routeDecisionPacksChange', lang, {
-                    packs: withJosa(diff.added.map((a) => packName(a.packId)).join(', '), '이/가', lang),
-                  })}
-                </div>
-              ) : null}
+                    −{effect.reduces}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+          {analysisPending ? (
+            <li
+              className="flex items-center gap-2 px-1 py-1 text-xs text-fg-3"
+              data-testid="route-decision-pending"
+              role="status"
+            >
+              <Skeleton className="h-5 w-5 flex-none rounded-sm" />
+              <span>{t('routeDecisionPending', lang)}</span>
+              <Skeleton className="h-2.5 flex-1" />
             </li>
-          );
-        })}
-        {variantsPending ? (
-          <li
-            className="flex items-center gap-2 px-3 py-2 text-xs text-fg-3"
-            data-testid="route-decision-pending"
-            role="status"
+          ) : null}
+        </ul>
+        {selection.length > 0 ? (
+          <div
+            className="mt-1 rounded-sm bg-surface-2 px-2 py-1 text-xs text-fg-2"
+            data-testid="drop-sum"
+            aria-live="polite"
           >
-            <Skeleton className="h-5 w-5 flex-none rounded-sm" />
-            <span>{t('routeDecisionPending', lang)}</span>
-            <Skeleton className="h-2.5 flex-1" />
-          </li>
+            {t('routeDecisionBarSum', lang, { sum: barSum })}
+            {' · '}
+            {real === null ? t('routeDecisionComputing', lang) : t('routeDecisionReal', lang, { real })}
+            {real !== null && real !== barSum ? (
+              <>
+                {' '}
+                <span className="font-semibold text-fg">{t('routeDecisionNotAdditive', lang)}</span>
+              </>
+            ) : null}
+          </div>
         ) : null}
-      </ul>
+        {analysis?.resolving ? (
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs" data-testid="drop-resolving">
+            <span className="min-w-0 text-fg-2">
+              {t('routeDecisionResolves', lang, {
+                names: analysis.resolving.dropped.map(giftName).join(' + '),
+              })}
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => drops.set([...analysis.resolving!.dropped])}>
+              {t('routeDecisionPick', lang)}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 border-t border-line px-3 py-2">
+        <span
+          className={`min-w-0 flex-[1_1_10rem] text-xs ${status.tone === 'ok' ? 'font-semibold text-ok' : status.tone === 'left' ? 'font-semibold text-fg' : 'text-fg-2'}`}
+          data-testid="drop-status"
+          aria-live="polite"
+        >
+          {selection.length > 0
+            ? `${t('routeDecisionSelected', lang, { n: selection.length })} · ${status.text}`
+            : status.text}
+        </span>
+        <Button size="sm" variant="ghost" disabled={selection.length === 0} onClick={drops.clear}>
+          {t('routeDecisionClear', lang)}
+        </Button>
+        <button
+          type="button"
+          disabled={selection.length === 0}
+          aria-pressed={drops.previewing}
+          title={t('routeDecisionPreview', lang)}
+          onClick={() => {
+            if (drops.previewing) {
+              drops.setPreviewing(false);
+              return;
+            }
+            drops.setPreviewing(true);
+            onPreview?.();
+          }}
+          className={`inline-flex h-7 flex-none items-center gap-1.5 whitespace-nowrap rounded-sm border px-2.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-fg-3 ${
+            drops.previewing
+              ? 'border-ink bg-ink text-ink-fg'
+              : 'border-line-strong bg-surface text-fg hover:bg-surface-2'
+          }`}
+        >
+          <Route size={14} aria-hidden />
+          {t('routeDecisionPreview', lang)}
+        </button>
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={selection.length === 0}
+          onClick={() => {
+            const ids = [...selection];
+            drops.clear();
+            for (const id of ids) removeWanted(id);
+          }}
+        >
+          {t('routeDecisionDropSelected', lang, { n: selection.length })}
+        </Button>
+      </div>
     </Card>
   );
 }

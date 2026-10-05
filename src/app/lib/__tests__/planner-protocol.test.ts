@@ -11,7 +11,14 @@ import { loadGameDataFromDisk } from '../../../core/data/node.ts';
 import { buildIndexes, defaultOptions } from '../../../core/index.ts';
 import { defaultDeck } from '../default-deck.ts';
 import type { RoutePlan } from '../../../core/types.ts';
-import { createPlanner, runPlan, type PlanResponse, type PlannerResponse } from '../planner-protocol.ts';
+import {
+  createPlanner,
+  runDrop,
+  runPlan,
+  type DropResponse,
+  type PlanResponse,
+  type PlannerResponse,
+} from '../planner-protocol.ts';
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
@@ -47,24 +54,24 @@ const packBound = data.gifts
 
 describe('runPlan', () => {
   it('answers with no plan at all when nothing is wanted', () => {
-    expect(runPlan(inputFor([]), data, indexes)).toEqual({ plan: null, variants: [] });
+    expect(runPlan(inputFor([]), data, indexes)).toEqual({ plan: null, analysis: null });
   });
 
   it('plans a route for the gifts asked for', () => {
-    const { plan, variants } = runPlan(inputFor(packBound.slice(0, 3)), data, indexes);
+    const { plan, analysis } = runPlan(inputFor(packBound.slice(0, 3)), data, indexes);
     expect(plan).not.toBeNull();
     expect(plan!.floors.length).toBeGreaterThan(0);
     expect(plan!.stats.totalWanted).toBe(3);
     // No conflict, so the expensive half is skipped entirely.
-    expect(variants).toEqual([]);
+    expect(analysis).toBeNull();
   });
 
   it('only computes alternatives when the route could not fit everything', () => {
     // The gate is `pack-conflict`; anything else (an unobtainable gift, a failed one) must not pay
     // for up to six more `planRoute` calls.
-    const { plan, variants } = runPlan(inputFor(packBound.slice(0, 3)), data, indexes);
+    const { plan, analysis } = runPlan(inputFor(packBound.slice(0, 3)), data, indexes);
     expect(plan!.unresolved.some((entry) => entry.reason === 'pack-conflict')).toBe(false);
-    expect(variants).toEqual([]);
+    expect(analysis).toBeNull();
   });
 
   it('returns a result that survives structured cloning', () => {
@@ -122,24 +129,26 @@ describe('createPlanner', () => {
   });
 });
 
-describe('the route and its alternatives are two answers (M52)', () => {
+describe('the route and its drop analysis are two answers (M52)', () => {
   it('fixture: the conflicting set really does have alternatives', () => {
-    const { plan, variants } = runPlan(inputFor(conflicting), data, indexes);
+    const { plan, analysis } = runPlan(inputFor(conflicting), data, indexes);
     expect(plan!.unresolved.some((entry) => entry.reason === 'pack-conflict')).toBe(true);
-    expect(variants.length).toBeGreaterThan(0);
+    expect(analysis!.effects.length).toBeGreaterThan(0);
   });
 
   it('answers the route first and says alternatives follow', () => {
     const planner = createPlanner();
     planner.handle({ type: 'init', data });
     const response = planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) }) as PlanResponse;
-    expect(response).toMatchObject({ type: 'plan', id: 1, variantsPending: true });
-    expect(response).not.toHaveProperty('variants');
+    expect(response).toMatchObject({ type: 'plan', id: 1, analysisPending: true });
+    expect(response).not.toHaveProperty('analysis');
 
-    const variants = planner.alternatives(1);
+    const answer = planner.alternatives(1);
     const direct = runPlan(inputFor(conflicting), data, indexes);
-    expect(variants!.type).toBe('variants');
-    expect(variants!.variants.map((v) => v.dropped)).toEqual(direct.variants.map((v) => v.dropped));
+    expect(answer!.type).toBe('analysis');
+    expect(answer!.analysis.effects.map((e) => [e.giftId, e.reduces])).toEqual(
+      direct.analysis!.effects.map((e) => [e.giftId, e.reduces]),
+    );
     // Answered once: the plan's alternatives are not recomputed on a second ask.
     expect(planner.alternatives(1)).toBeNull();
   });
@@ -158,7 +167,7 @@ describe('the route and its alternatives are two answers (M52)', () => {
     const planner = createPlanner();
     planner.handle({ type: 'init', data });
     expect(planner.handle({ type: 'plan', id: 1, input: inputFor(packBound.slice(0, 3)) })).toMatchObject({
-      variantsPending: false,
+      analysisPending: false,
     });
     expect(planner.alternatives(1)).toBeNull();
   });
@@ -169,5 +178,26 @@ describe('the route and its alternatives are two answers (M52)', () => {
     planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) });
     planner.handle({ type: 'init', data });
     expect(planner.alternatives(1)).toBeNull();
+  });
+});
+
+describe('a checked set is planned on request (M80)', () => {
+  it('answers a drop against the newest plan input, without touching its pending analysis', () => {
+    const planner = createPlanner();
+    planner.handle({ type: 'init', data });
+    planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) });
+    const answer = planner.handle({ type: 'drop', id: 2, dropped: [9250] });
+    expect(answer).toMatchObject({ type: 'drop', id: 2 });
+    const direct = runDrop(inputFor(conflicting), [9250], data, indexes);
+    expect((answer as DropResponse).plan!.stats).toEqual({ ...direct!.stats, elapsedMs: expect.any(Number) });
+    expect((answer as DropResponse).plan!.stats.totalWanted).toBe(5);
+    // The analysis of plan 1 is still owed.
+    expect(planner.alternatives(1)).not.toBeNull();
+  });
+
+  it('cannot answer a drop before any plan', () => {
+    const planner = createPlanner();
+    planner.handle({ type: 'init', data });
+    expect(planner.handle({ type: 'drop', id: 1, dropped: [9250] })).toBeNull();
   });
 });

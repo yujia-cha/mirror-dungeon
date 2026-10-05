@@ -58,7 +58,7 @@ import { LONG_PRESS } from '../lib/useChipDrag.ts';
 import { createPlanner, type PlannerRequest } from '../lib/planner-protocol.ts';
 import { resetPlannerWorker } from '../lib/use-planner.ts';
 import { keywordName } from '../format.ts';
-import { observable as observableGift, planAlternatives, planRoute } from '../../core/index.ts';
+import { observable as observableGift, planDropEffects, planRoute } from '../../core/index.ts';
 // Namespace import so the mock factory can spread the real module (the lint rule forbids an
 // inline `import()` type annotation).
 import type * as LoadModule from '../../core/data/load.ts';
@@ -2563,8 +2563,7 @@ describe('RoutePlanPanel', () => {
     expect(screen.getByTestId('route-summary')).toHaveTextContent('미해결 1');
   });
 
-  it('puts the give-up decision in one card under the summary: what conflicts, and each option with what it changes', async () => {
-    const user = userEvent.setup();
+  it('puts the give-up decision in one card under the summary: a bar per goal, and what fits', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
     renderRoute();
@@ -2573,84 +2572,54 @@ describe('RoutePlanPanel', () => {
     expect(screen.getByTestId('route-summary').nextElementSibling).toBe(card);
     expect(card.nextElementSibling).toContainElement(rows());
     expect(card).toHaveTextContent('전부 얻을 수 없습니다 · 박수 짝짝! 중 하나를 목표에서 빼야 합니다');
-    expect(card).toHaveTextContent('11~15층');
-    // The rows are a plain list with two actions each, not a tab strip.
-    expect(screen.queryByRole('tablist')).toBeNull();
-    const options = within(screen.getByTestId('variants')).getAllByTestId('route-option');
-    expect(options).toHaveLength(5);
-    const keep = options[0]!;
-    expect(keep).toHaveAttribute('data-option', 'all');
-    expect(keep).toHaveAttribute('aria-current', 'true');
-    expect(keep).toHaveTextContent('전부 유지');
-    expect(keep).toHaveTextContent('획득 5/6');
-    expect(keep).toHaveTextContent('박수 짝짝!');
-    const first = options[1]!;
-    expect(first).toHaveTextContent('보급형 K사 앰플');
-    expect(first).toHaveTextContent('획득 5/5');
-    // What changes: the pack the base could not seat comes in. No conflict is left, so no badge.
-    expect(first).toHaveTextContent('핏물진 비린내가 들어옵니다');
-    expect(first).not.toHaveTextContent('미해결');
-    expect(within(first).getByRole('button', { name: '보급형 K사 앰플 목표에서 빼기' })).toBeInTheDocument();
-    // Both actions sit at the end of the gift's own line, not on a line of their own.
-    const head = within(first).getByTestId('route-option-head');
-    expect(head).toHaveTextContent('보급형 K사 앰플');
-    expect(head).toContainElement(
-      within(first).getByRole('button', { name: '보급형 K사 앰플 목표에서 빼기' }),
+    expect(card).toHaveTextContent('혼자 뺐을 때 줄어드는 충돌');
+    // Six goals for five floors: leaving any one of them out clears the one conflict.
+    const bars = within(card).getAllByTestId('drop-effect');
+    expect(bars.map((bar) => Number(bar.getAttribute('data-gift'))).sort()).toEqual(
+      [...CLEAR_REWARDS].sort(),
     );
-    expect(head).toContainElement(
-      within(first).getByRole('button', { name: '보급형 K사 앰플 루트 미리 보기' }),
-    );
-    expect(within(first).getByRole('button', { name: '보급형 K사 앰플 루트 미리 보기' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-    // No 확정 anywhere in the panel, and no placeholder once the alternatives are in.
+    expect(bars.every((bar) => bar.getAttribute('data-reduces') === '1')).toBe(true);
+    expect(bars[0]).toHaveTextContent('−1');
+    expect(within(bars[0]!).getByText('−1')).toHaveAttribute('aria-label', '충돌 1개 줄어듦');
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('충돌 1 · 획득 5/6');
+    expect(screen.getByTestId('drop-resolving')).toHaveTextContent('빼면 해결: 보급형 K사 앰플');
+    // Nothing checked: nothing to sum, preview or remove.
+    expect(screen.queryByTestId('drop-sum')).toBeNull();
+    expect(screen.getByRole('button', { name: '루트 미리 보기' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '선택한 0개 목표에서 빼기' })).toBeDisabled();
     expect(screen.getByTestId('route-plan').textContent).not.toMatch(/확정/);
     expect(screen.queryByTestId('route-decision-pending')).toBeNull();
-    // 포기 is 말 그대로 a deselection: the gift simply leaves the selection, and the card with it.
-    await user.click(within(first).getByRole('button', { name: '보급형 K사 앰플 목표에서 빼기' }));
-    expect(useApp.getState().wanted).toHaveLength(CLEAR_REWARDS.length - 1);
-    expect(useApp.getState().wanted).not.toContain(9250);
-    expect(screen.queryByTestId('route-decision')).toBeNull();
-    expect(screen.queryByTestId('variants')).toBeNull();
   });
 
-  it('previews an alternative without deciding, says so in the header, and comes back', async () => {
+  it('checks goals against the planner, previews that route, and removes them from the goals', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
     renderRoute();
-    const option = () =>
-      within(screen.getByTestId('variants'))
-        .getAllByTestId('route-option')
-        .find((el) => el.getAttribute('data-option') === '9251')!;
-    const live = screen.getByTestId('route-decision-preview');
-    expect(live).toHaveAttribute('aria-live', 'polite');
-    expect(live).toBeEmptyDOMElement();
-    await user.click(within(option()).getByRole('button', { name: '불타는 운명 루트 미리 보기' }));
-    // The map and the counts switch to that route; the decision card stays and says what is on show.
+    await user.click(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' }));
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
+    expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −1 · 함께 뺀 실제 −1');
+    expect(screen.getByTestId('drop-sum')).not.toHaveTextContent('더해지지 않음');
+    // Preview: the map and the counts switch; the card stays the full plan's.
+    const preview = screen.getByRole('button', { name: '루트 미리 보기' });
+    expect(preview).toHaveAttribute('aria-pressed', 'false');
+    await user.click(preview);
+    expect(preview).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('route-summary')).toHaveTextContent('5/5');
-    expect(option()).toHaveAttribute('aria-current', 'true');
-    expect(within(option()).getByRole('button', { name: '불타는 운명 루트 미리 보기' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
+    expect(screen.getByTestId('route-decision')).toHaveTextContent(
+      '박수 짝짝! 중 하나를 목표에서 빼야 합니다',
     );
-    expect(live).toHaveTextContent('미리 보기: 불타는 운명 빼면');
-    expect(live).toHaveAttribute('data-dropped', '9251');
-    // The card is still the full plan's: its header and the 「전부 유지」 row do not follow the preview.
-    const card = screen.getByTestId('route-decision');
-    expect(card).toHaveTextContent('박수 짝짝! 중 하나를 목표에서 빼야 합니다');
-    expect(within(card).getAllByTestId('route-option')[0]).toHaveTextContent('획득 5/6');
-    expect(card).toHaveTextContent('11~15층');
-    expect(screen.getByTestId('route-plan').textContent).not.toMatch(/확정/);
-    // Back: the full plan returns, conflict and all.
-    await user.click(within(live).getByRole('button', { name: '원래대로' }));
-    expect(live).toBeEmptyDOMElement();
+    await user.click(preview);
     expect(screen.getByTestId('route-summary')).toHaveTextContent('5/6');
-    expect(useApp.getState().wanted).toHaveLength(CLEAR_REWARDS.length);
-    // Preview again and take it: 「이대로 포기」 is the same deselection as the row's button.
-    await user.click(within(option()).getByRole('button', { name: '불타는 운명 루트 미리 보기' }));
-    await user.click(within(live).getByRole('button', { name: '이대로 빼기' }));
+    // 「선택 해제」 unchecks and ends the preview.
+    await user.click(preview);
+    await user.click(screen.getByRole('button', { name: '선택 해제' }));
+    expect(screen.getByTestId('route-summary')).toHaveTextContent('5/6');
+    expect(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' })).not.toBeChecked();
+    // Removing is the app's one deselection: the goal leaves, and the card with the conflict.
+    await user.click(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' }));
+    await user.click(screen.getByRole('button', { name: '선택한 1개 목표에서 빼기' }));
+    expect(useApp.getState().wanted).toHaveLength(CLEAR_REWARDS.length - 1);
     expect(useApp.getState().wanted).not.toContain(9251);
     expect(screen.queryByTestId('route-decision')).toBeNull();
   });
@@ -2671,45 +2640,24 @@ describe('RoutePlanPanel', () => {
     const container = screen.getByTestId('route-plan').closest('.overflow-y-auto') as HTMLElement;
     const scrollTo = vi.fn();
     Object.defineProperty(container, 'scrollTo', { configurable: true, value: scrollTo });
-    const preview = () => screen.getByRole('button', { name: '불타는 운명 루트 미리 보기' });
+    await user.click(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' }));
+    const preview = () => screen.getByRole('button', { name: '루트 미리 보기' });
     await user.click(preview());
     expect(scrollTo).toHaveBeenCalledTimes(1);
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }));
     // The map, not the card: the wrapper right after the decision card is the scroll target.
     expect(screen.getByTestId('route-decision').nextElementSibling).toHaveClass('scroll-mt-3');
     expect(screen.getByTestId('route-decision').nextElementSibling).toContainElement(rows());
-    // Turning the preview off, and 「원래대로」, do not scroll.
+    // Turning the preview off, and 「선택 해제」, do not scroll.
     await user.click(preview());
     expect(scrollTo).toHaveBeenCalledTimes(1);
     await user.click(preview());
     expect(scrollTo).toHaveBeenCalledTimes(2);
-    await user.click(screen.getByRole('button', { name: '원래대로' }));
+    await user.click(screen.getByRole('button', { name: '선택 해제' }));
     expect(scrollTo).toHaveBeenCalledTimes(2);
   });
 
-  it('says the row actions with symbols and keeps the sentence in the tooltip and name', () => {
-    useApp.getState().setDeck(BURN_DECK, 7);
-    // 9228 is event-only (`no-pack-path`), so it stays unresolved in every alternative and each
-    // row wears the 「그래도 1개 미해결」 badge.
-    for (const id of [...CLEAR_REWARDS, 9228]) useApp.getState().toggleWanted(id);
-    renderRoute();
-    const options = within(screen.getByTestId('variants')).getAllByTestId('route-option');
-    const first = options[1]!;
-    const drop = within(first).getByRole('button', { name: '보급형 K사 앰플 목표에서 빼기' });
-    const preview = within(first).getByRole('button', { name: '보급형 K사 앰플 루트 미리 보기' });
-    for (const button of [drop, preview]) {
-      expect(button).toHaveTextContent('');
-      expect(button.querySelector('svg')).not.toBeNull();
-      expect(button).toHaveClass('h-7', 'w-7');
-    }
-    expect(drop).toHaveAttribute('title', '목표에서 빼기');
-    expect(preview).toHaveAttribute('title', '루트 미리 보기');
-    expect(first.textContent).not.toMatch(/목표에서 빼기|루트 미리 보기/);
-    // 9228 is lost whichever goal goes, so the badge leaves it out: the row clears the conflict.
-    expect(within(first).queryByLabelText(/그래도/)).toBeNull();
-  });
-
-  it('bundles two goals when one is not enough, and says how many have to go', async () => {
+  it('says how many have to go when one is not enough, and picks that set in one press', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     // 9827 and 9255 both lose their floor; no single drop frees both.
@@ -2717,27 +2665,49 @@ describe('RoutePlanPanel', () => {
     renderRoute();
     const card = screen.getByTestId('route-decision');
     expect(within(card).getByRole('heading').textContent).toMatch(/중 2개를 목표에서 빼야 합니다$/);
-    const options = within(screen.getByTestId('variants')).getAllByTestId('route-option');
-    const bundle = options[1]!;
-    expect(bundle).toHaveAttribute('data-option', '9255,9827');
-    expect(within(bundle).queryByLabelText(/그래도/)).toBeNull();
-    // A single drop after it still leaves one conflict: the count alone, the sentence in the
-    // tooltip and accessible name (the ⚠ is the alert badge's own icon).
-    const single = options[2]!;
-    const badge = within(single).getByLabelText('그래도 1개 미해결');
-    expect(badge).toHaveAttribute('title', '그래도 1개 미해결');
-    expect(badge).toHaveTextContent(/^1$/);
-    expect(single.textContent).not.toMatch(/그래도|미해결/);
-    // ✕ on the bundle takes both out of the goals.
-    await user.click(within(bundle).getAllByRole('button', { name: /목표에서 빼기$/ })[0]!);
+    const bars = within(card).getAllByTestId('drop-effect');
+    expect(bars.every((bar) => bar.getAttribute('data-reduces') === '1')).toBe(true);
+    // One alone leaves a conflict.
+    await user.click(screen.getByRole('checkbox', { name: '보급형 K사 앰플 뺄 목표로 고르기' }));
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 5/6');
+    await user.click(screen.getByRole('button', { name: '선택 해제' }));
+    // 「이 조합 고르기」 checks the set that fits.
+    expect(screen.getByTestId('drop-resolving')).toHaveTextContent('빼면 해결: 박수 짝짝! + 가족의 원망');
+    await user.click(
+      within(screen.getByTestId('drop-resolving')).getByRole('button', { name: '이 조합 고르기' }),
+    );
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
+    expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −2 · 함께 뺀 실제 −2');
+    await user.click(screen.getByRole('button', { name: '선택한 2개 목표에서 빼기' }));
     expect(useApp.getState().wanted).not.toContain(9255);
     expect(useApp.getState().wanted).not.toContain(9827);
     expect(useApp.getState().wanted).toContain(9250);
+    expect(screen.queryByTestId('route-decision')).toBeNull();
   });
 
-  it('draws a placeholder row while the alternatives are still being computed', async () => {
-    // A worker that answers the route and never sends the alternatives: the moment between the
-    // two answers, which the inline fallback the other tests run on cannot show.
+  it('shows that bars do not add up: two goals from one pack free nothing alone', async () => {
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    // Floors 1~4 only; 도둑맞은 해결사 잡지 (9220) and 열선 무기 (9221) share 현혹, 방황, 불신.
+    for (const id of [9403, 9413, 9431, 9407, 9701, 9415, 9428, 9221, 9220, 9433])
+      useApp.getState().toggleWanted(id);
+    renderRoute();
+    const bar = (id: number) =>
+      within(screen.getByTestId('route-decision'))
+        .getAllByTestId('drop-effect')
+        .find((el) => el.getAttribute('data-gift') === String(id))!;
+    expect(bar(9220)).toHaveAttribute('data-reduces', '0');
+    expect(bar(9221)).toHaveAttribute('data-reduces', '0');
+    // An observed 1층 gift has a bar: leaving it out frees an observation slot for another.
+    expect(bar(9413)).toHaveAttribute('data-reduces', '1');
+    await user.click(screen.getByRole('checkbox', { name: '도둑맞은 해결사 잡지 뺄 목표로 고르기' }));
+    await user.click(screen.getByRole('checkbox', { name: '열선 무기 뺄 목표로 고르기' }));
+    expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −0 · 함께 뺀 실제 −1 더해지지 않음');
+  });
+
+  it('draws a placeholder row while the drop analysis is still being computed', async () => {
+    // A worker that answers the route and never sends the analysis: the moment between the two
+    // answers, which the inline fallback the other tests run on cannot show.
     const planner = createPlanner();
     class HeldWorker {
       private readonly listeners = new Map<string, Set<(event: unknown) => void>>();
@@ -2766,9 +2736,9 @@ describe('RoutePlanPanel', () => {
       expect(pending).toHaveTextContent('대안 계산 중');
       const card = screen.getByTestId('route-decision');
       expect(card).toContainElement(pending);
-      // The full-plan row is already there; the alternatives are not, so no `variants` list yet.
-      expect(within(card).getAllByTestId('route-option')).toHaveLength(1);
-      expect(screen.queryByTestId('variants')).toBeNull();
+      // The header and the status are the route's own; the bars are not in yet.
+      expect(card).toHaveTextContent('충돌 1 · 획득 5/6');
+      expect(within(card).queryAllByTestId('drop-effect')).toHaveLength(0);
     } finally {
       resetPlannerWorker();
       vi.unstubAllGlobals();
@@ -2867,20 +2837,21 @@ describe('RoutePlanPanel', () => {
     expect(actionsFor(dead, byId(9717), free, data.rules, goals, true, byId)).toEqual([]);
   });
 
-  it('keeps the chosen alternative on screen when a gift is marked during the run', async () => {
+  it('keeps the checked set and its preview when a gift is marked during the run', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
     renderRoute();
-    const preview = () => screen.getByRole('button', { name: '보급형 K사 앰플 루트 미리 보기' });
+    await user.click(screen.getByRole('checkbox', { name: '보급형 K사 앰플 뺄 목표로 고르기' }));
+    const preview = () => screen.getByRole('button', { name: '루트 미리 보기' });
     await user.click(preview());
     expect(preview()).toHaveAttribute('aria-pressed', 'true');
-    // A mark on an unrelated gift changes the plan input but not the conflict: the same variant stays.
+    // A mark on an unrelated gift changes the plan input but not the choice: the set stays checked.
     act(() => useApp.getState().setGiftStatus(9267, 'got'));
     expect(preview()).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('route-decision-preview')).toHaveAttribute('data-dropped', '9250');
-    // Deselecting the dropped gift removes that variant, so the main plan is back.
-    await user.click(screen.getByRole('button', { name: '이대로 빼기' }));
+    expect(screen.getByRole('checkbox', { name: '보급형 K사 앰플 뺄 목표로 고르기' })).toBeChecked();
+    // Removing it takes the conflict away, and the card with it.
+    await user.click(screen.getByRole('button', { name: '선택한 1개 목표에서 빼기' }));
     expect(screen.queryByTestId('route-decision')).toBeNull();
   });
 
@@ -2962,33 +2933,32 @@ describe('RoutePlanPanel', () => {
     expect(marked).not.toContain('포기: ');
   });
 
-  it('copies the give-up candidates with the unresolved block', () => {
+  it('copies the drop bars and the set that fits with the unresolved block', () => {
     const input = {
       deck: BURN_DECK,
       wanted: CLEAR_REWARDS.map((giftId) => ({ giftId, required: false })),
       options: { ...defaultOptions(), lastFloor: 15, hardFromFloor: 1, deployed: BURN_DECK.slice(0, 7) },
     };
     const plan = planRoute(input, data, indexes);
-    const variants = planAlternatives(input, data, indexes, plan);
+    const analysis = planDropEffects(input, data, indexes, plan);
     const giftName = (id: number) => indexes.giftById.get(id)?.name.ko ?? '';
     const packName = (id: number) => indexes.packById.get(id)?.name.ko ?? '';
     const text = planToText(plan, giftName, packName, () => '', 'ko', [], {
-      variants: variants.map((v) => ({
-        name: giftName(v.dropped[0]!),
-        covered: v.plan.stats.coveredWanted,
-        total: v.plan.stats.totalWanted,
-      })),
+      drops: {
+        effects: analysis.effects.map((e) => ({ name: giftName(e.giftId), reduces: e.reduces })),
+        resolving: analysis.resolving!.dropped.map(giftName).join(' + '),
+      },
     });
     const lines = text.split('\n');
     const at = lines.indexOf('미해결');
     expect(at).toBeGreaterThan(0);
     expect(lines[at + 1]).toMatch(/^ {2}박수 짝짝!: /);
-    expect(lines[at + 2]).toBe(
-      '  뺄 후보: 보급형 K사 앰플(→ 5/5), 불타는 운명(→ 5/5), 못과 망치(→ 5/5), 회전 목마 모형(→ 5/5)',
-    );
+    expect(lines[at + 2]).toMatch(/^ {2}뺄 후보: 보급형 K사 앰플\(−1\), /);
+    expect(lines[at + 2]).toContain('박수 짝짝!(−1)');
+    expect(lines[at + 3]).toBe('  빼면 해결: 보급형 K사 앰플');
     expect(text).not.toContain('포기한 팩');
     expect(text).not.toMatch(/확정/);
-    // Without candidates the block is what it was.
+    // Without the bars the block is what it was.
     expect(planToText(plan, giftName, packName, () => '', 'ko')).not.toContain('뺄 후보');
   });
 

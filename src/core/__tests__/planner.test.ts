@@ -10,9 +10,11 @@ import {
   alternativePacksOn,
   buildIndexes,
   conflictGroups,
+  conflictRootsOf,
   defaultOptions,
   minDrops,
   planAlternatives,
+  planDropEffects,
   planRoute,
   wantedRoots,
 } from '../index.ts';
@@ -1145,6 +1147,76 @@ describe('alternative routes', () => {
 
   it('knows no drop count without variants', () => {
     expect(minDrops([])).toBeNull();
+  });
+});
+
+describe('drop effects (M80)', () => {
+  it('measures every candidate goal by the conflicts leaving it out alone clears', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9283, 9222, 9423),
+      options: options({ hardFromFloor: 1 }),
+    };
+    const analysis = planDropEffects(input, noObservation, indexes);
+    expect(analysis.conflicts).toBe(1);
+    const reduces = Object.fromEntries(analysis.effects.map((e) => [e.giftId, e.reduces]));
+    expect(reduces[9283]).toBe(1);
+    expect(reduces[9222]).toBe(1);
+    // Most helpful first, and a single drop that clears it is the resolving set.
+    expect(analysis.effects[0]!.reduces).toBe(1);
+    expect(analysis.resolving!.dropped).toHaveLength(1);
+  });
+
+  it('falls back to the bundle when no single drop clears the conflicts', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9277, 9744, 9751, 9766, 9842),
+      options: options({ hardFromFloor: 1 }),
+    };
+    const analysis = planDropEffects(input, noObservation, indexes);
+    expect(analysis.conflicts).toBe(2);
+    expect(analysis.effects.every((e) => e.reduces < 2)).toBe(true);
+    expect(analysis.resolving!.dropped).toEqual([9751, 9842]);
+    expect(conflictRootsOf(analysis.resolving!.plan, input, noObservation, indexes)).toEqual([]);
+  });
+
+  it('counts observed goals (an observation slot frees up) and gives a shared pack no bar', () => {
+    // Floors 1~4 only: three 1층 gifts ride the observation slots and two goals are still left out.
+    // 도둑맞은 해결사 잡지 (9220) and 열선 무기 (9221) come from the same pack: neither alone frees it.
+    const deck = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916, 11009, 11115, 11216];
+    const input = {
+      deck,
+      wanted: [9403, 9413, 9431, 9407, 9701, 9415, 9428, 9221, 9220, 9433].map((giftId) => ({
+        giftId,
+        required: false,
+      })),
+      options: options({ lastFloor: 15, hardFromFloor: 1, deployed: deck.slice(0, 7) }),
+    };
+    const main = planRoute(input, data, indexes);
+    expect(main.start.observed.map((o) => o.giftId)).toContain(9413);
+    const analysis = planDropEffects(input, data, indexes, main);
+    const reduces = Object.fromEntries(analysis.effects.map((e) => [e.giftId, e.reduces]));
+    expect(analysis.conflicts).toBe(2);
+    expect(reduces[9413]).toBe(1);
+    expect(reduces[9220]).toBe(0);
+    expect(reduces[9221]).toBe(0);
+    expect(analysis.effects.map((e) => e.giftId).slice(-2)).toEqual([9220, 9221]);
+  });
+
+  it('spends no runs without a conflict, and stays within the budget', () => {
+    expect(
+      planDropEffects(
+        { deck: BLADE_LINEAGE_DECK, wanted: want(9423), options: options({ hardFromFloor: 1 }) },
+        data,
+        indexes,
+      ),
+    ).toEqual({ conflicts: 0, effects: [], resolving: null });
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9250, 9251, 9252, 9253, 9254, 9255),
+      options: options({ lastFloor: 15 }),
+    };
+    expect(planDropEffects(input, data, indexes, undefined, { maxRuns: 3 }).effects).toHaveLength(3);
   });
 });
 

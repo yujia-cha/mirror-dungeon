@@ -34,10 +34,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     plan,
     shown,
     planPending,
-    variants,
-    variantsPending,
-    variantIndex,
-    setVariantIndex,
+    analysis,
+    analysisPending,
+    drops,
     variant,
     giftName,
     packName,
@@ -91,15 +90,16 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     const text = planToText(shown, giftName, packName, keywordLabel, lang, dropped, {
       // Every goal, so a result-only fusion goal is in the text even though no floor names it.
       goals: input.wanted.map((w) => w.giftId).filter((id) => !dropped.includes(id)),
-      // The candidates belong to the full plan; a previewed alternative has already picked one.
-      ...(variant
+      // The bars belong to the full plan; a previewed set has already picked its goals.
+      ...(variant || !analysis
         ? {}
         : {
-            variants: variants.map((v) => ({
-              name: v.dropped.map(giftName).join(' + '),
-              covered: v.plan.stats.coveredWanted,
-              total: v.plan.stats.totalWanted,
-            })),
+            drops: {
+              effects: analysis.effects.map((e) => ({ name: giftName(e.giftId), reduces: e.reduces })),
+              ...(analysis.resolving
+                ? { resolving: analysis.resolving.dropped.map(giftName).join(' + ') }
+                : {}),
+            },
           }),
       ...(run.currentFloor > 1 || Object.keys(run.visits).length > 0
         ? { run: { currentFloor: run.currentFloor, visits: run.visits } }
@@ -217,13 +217,12 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   return (
     <div className="flex flex-col gap-3" data-testid="route-plan">
       {summary}
-      {conflicted || variants.length > 0 || variantsPending ? (
+      {conflicted || analysis !== null || analysisPending ? (
         <RouteDecision
           plan={plan}
-          variants={variants}
-          variantIndex={variantIndex}
-          setVariantIndex={setVariantIndex}
-          variantsPending={variantsPending}
+          analysis={analysis}
+          analysisPending={analysisPending}
+          drops={drops}
           groups={groups}
           ctx={ctx}
           removeWanted={removeWanted}

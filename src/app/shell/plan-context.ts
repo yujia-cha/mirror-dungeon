@@ -9,12 +9,29 @@
 import { createContext, useContext } from 'react';
 import type { Gift, GameData, Keyword } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
-import type { RouteVariant } from '../../core/index.ts';
+import type { DropAnalysis, RouteVariant } from '../../core/index.ts';
 import type { Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
 import type { StageMode } from '../lib/stage.ts';
 import type { PackContext } from '../components/PackSheet.tsx';
+
+export interface DropSelection {
+  /** Checked goal ids, in the order they were checked. */
+  selection: number[];
+  toggle: (giftId: number) => void;
+  set: (ids: number[]) => void;
+  /** Uncheck everything and end the preview. */
+  clear: () => void;
+  /** The route without the checked goals; null when nothing is checked or it is being computed. */
+  plan: RoutePlan | null;
+  pending: boolean;
+  /** Conflicting goals left in `plan` (ingredients counted as their goal), or null. */
+  conflicts: number | null;
+  /** Whether the map and the stage show `plan` instead of the full one. */
+  previewing: boolean;
+  setPreviewing: (on: boolean) => void;
+}
 
 export interface PlanState {
   data: GameData;
@@ -34,14 +51,16 @@ export interface PlanState {
    * one toggle out of date, and that needs saying.
    */
   planPending: boolean;
-  variants: RouteVariant[];
+  /** What leaving each candidate goal out does to the conflict (`planDropEffects`), or null. */
+  analysis: DropAnalysis | null;
   /**
-   * True while the route on show is still waiting for its alternatives (they follow the route by
-   * about a second). The decision card draws a placeholder row so the options do not pop in.
+   * True while the route on show is still waiting for its drop analysis (it follows the route). The
+   * decision card draws placeholder bars so they do not pop in.
    */
-  variantsPending: boolean;
-  variantIndex: number;
-  setVariantIndex: (index: number) => void;
+  analysisPending: boolean;
+  /** The goals the decision card has checked to leave out, and the route without them. */
+  drops: DropSelection;
+  /** The checked set's route while it is previewed on the map; `shown` is its plan. */
   variant: RouteVariant | undefined;
   /** Goal gifts the planner works for (given-up ones excluded). */
   goals: ReadonlySet<number>;

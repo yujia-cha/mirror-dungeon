@@ -12,13 +12,13 @@ self.onmessage = (event: MessageEvent<PlannerRequest>): void => {
   const response = planner.handle(event.data);
   if (!response) return;
   self.postMessage(response);
-  // The alternatives go on a task of their own, so a newer request already queued behind this one is
+  // The drop analysis goes on a task of their own, so a newer request already queued behind this one is
   // read first — and then `alternatives` declines to answer a superseded plan.
-  if (response.type === 'plan' && response.variantsPending) {
+  if (response.type === 'plan' && response.analysisPending) {
     const id = response.id;
     setTimeout(() => {
-      const variants = planner.alternatives(id);
-      if (variants) self.postMessage(variants);
+      const analysis = planner.alternatives(id);
+      if (analysis) self.postMessage(analysis);
     }, 0);
   }
 };
