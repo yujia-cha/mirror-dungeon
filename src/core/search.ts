@@ -1,3 +1,4 @@
+import { maximizeLp } from './lp.ts';
 import { requirementKey } from './requirements.ts';
 import type { Difficulty, Rules } from './schema.ts';
 import type { GameIndexes, PlanOptions, Requirement } from './types.ts';
@@ -65,6 +66,16 @@ export interface SearchInput {
    * other gift of its own over for free, but not these: a copy has to come from a pack still ahead.
    */
   failed?: ReadonlySet<number>;
+  /** Prune with the floor-window lower bound (`boundExceeds` below). On unless set to false. */
+  lowerBound?: boolean;
+  /**
+   * How many more nodes the search may spend once its misses are proven optimal (`rootBound`
+   * below), comparing plans that miss the same number on packs and floors alone. Defaults to
+   * `TIE_BREAK_NODES`.
+   */
+  tieBreakNodes?: number;
+  /** Start from the greedy seed (below). On unless set to false; tests compare the two. */
+  seed?: boolean;
 }
 
 export interface SearchResult {
@@ -79,7 +90,13 @@ export interface SearchResult {
   /** Preferred packs the search found no floor for. */
   unplacedPacks: number[];
   nodes: number;
+  /** The node cap stopped the search: a better plan may exist. */
   capped: boolean;
+  /**
+   * The tie-break budget stopped the search. The misses are optimal — the root bound proves it — but
+   * a plan with as many misses and fewer packs or earlier floors may exist.
+   */
+  tieBreakCut: boolean;
 }
 
 /** A gift to supply, or a preferred pack to place somewhere (`giftId` null). */
@@ -105,6 +122,14 @@ interface Candidate {
 const DEFAULT_NODE_CAP = 60_000;
 
 /**
+ * The nodes left for tie-breaking once the misses are proven optimal (M83). Past that point only
+ * pack count and floor sum are at stake, and on large boards proving those minimal was what ran the
+ * search into the node cap. On 120 random boards 1,000 already left the packs of every one as they
+ * were with no budget at all (M84); 2,000 keeps some margin at 10~40ms on the largest boards.
+ */
+const TIE_BREAK_NODES = 2_000;
+
+/**
  * Assign theme packs to floors so that as many wanted gifts as possible are obtainable.
  *
  * The search chooses a PACK for each gift and leaves the floors to bipartite matching. A gift is
@@ -123,6 +148,7 @@ const DEFAULT_NODE_CAP = 60_000;
 export function assignPacks(input: SearchInput): SearchResult {
   const { requirements, floors, options, indexes } = input;
   const nodeCap = input.nodeCap ?? DEFAULT_NODE_CAP;
+  const tieBreakNodes = input.tieBreakNodes ?? TIE_BREAK_NODES;
   const banned = new Set(options.bannedPacks);
 
   // Floors already settled — played floors and pins — keep their pack and are not up for grabs.
@@ -235,6 +261,11 @@ export function assignPacks(input: SearchInput): SearchResult {
   let missedOptional = 0;
   let nodes = 0;
   let capped = false;
+  let tieBreakCut = false;
+  /** Either limit hit: unwind without exploring further. */
+  let halted = false;
+  /** The node count when the best plan's misses first met the root bound, or null. */
+  let provenAt: number | null = null;
 
   /**
    * The placement the DFS carries: floor -> pack, for the chosen packs only. Adding a pack needs
@@ -328,6 +359,126 @@ export function assignPacks(input: SearchInput): SearchResult {
     return match(kept);
   };
 
+  /*
+   * The floor-window lower bound (M82).
+   *
+   * Packs whose open floors are the same form one window class, and every window is a run of floors
+   * (MD7: 115 packs, 11 classes). For a run of open floors [a, b], every pack whose window lies
+   * inside it competes for its b - a + 1 floors — Hall's condition, one constraint per distinct set
+   * of classes. A gift still to decide whose packs all sit inside such a run needs one of them, and
+   * gifts whose pack choices are pairwise disjoint need distinct packs. So if those gifts, plus the
+   * chosen packs already inside the run, outnumber its floors, at least the excess will be missed —
+   * however the rest of the branch goes. That is a bound on what the DFS can still achieve, which is
+   * what pruning needs: a better first answer (M81's seed) did not cut a single node, because the
+   * time goes into proving that nothing beats the answer the DFS already has.
+   */
+  const windowKey = new Map<string, number>();
+  const classOf = new Map<number, number>();
+  const classFloors: number[][] = [];
+  const classify = (packId: number): number => {
+    const known = classOf.get(packId);
+    if (known !== undefined) return known;
+    const open = floorsFor(packId);
+    const key = open.join(',');
+    let id = windowKey.get(key);
+    if (id === undefined) {
+      id = classFloors.length;
+      windowKey.set(key, id);
+      classFloors.push(open);
+    }
+    classOf.set(packId, id);
+    return id;
+  };
+  const candidateClasses = candidates.map((candidate) =>
+    candidate.freePack !== null
+      ? 0
+      : candidate.packs.reduce((mask, packId) => mask | (1 << classify(packId)), 0),
+  );
+  /** One entry per distinct set of classes a run of open floors fully contains: its mask and size. */
+  const windows: { mask: number; cap: number }[] = [];
+  const useBound = input.lowerBound !== false && classFloors.length > 0 && classFloors.length <= 30;
+  if (useBound) {
+    const position = new Map(openFloors.map((floor, i) => [floor, i]));
+    const smallest = new Map<number, number>();
+    for (let from = 0; from < openFloors.length; from += 1) {
+      for (let to = from; to < openFloors.length; to += 1) {
+        let mask = 0;
+        classFloors.forEach((open, id) => {
+          if (open.length === 0) return;
+          const first = position.get(open[0]!)!;
+          const last = position.get(open[open.length - 1]!)!;
+          if (first >= from && last <= to) mask |= 1 << id;
+        });
+        if (mask === 0) continue;
+        const cap = to - from + 1;
+        const known = smallest.get(mask);
+        if (known === undefined || cap < known) smallest.set(mask, cap);
+      }
+    }
+    for (const [mask, cap] of smallest) windows.push({ mask, cap });
+  }
+
+  /**
+   * The bound is checked in the first half of the decisions only. A cut there saves a whole subtree;
+   * near the leaves the subtrees are small and the check costs about what it saves.
+   */
+  const boundDepth = Math.ceil(candidates.length / 2);
+  /** Per window: the gift candidates whose every pack lies inside it, in DFS order. */
+  const inside = windows.map(({ mask }) =>
+    candidates
+      .map((candidate, k) => ({ candidate, k }))
+      .filter(
+        ({ candidate, k }) =>
+          candidate.freePack === null && candidate.giftId !== null && (candidateClasses[k]! & ~mask) === 0,
+      ),
+  );
+
+  /**
+   * How many of window `w`'s gifts from candidate `index` on still need a pack of their own: the
+   * open ones whose packs are pairwise disjoint.
+   */
+  const claimed = new Set<number>();
+  const windowNeed = (w: number, index: number): number => {
+    let need = 0;
+    claimed.clear();
+    for (const { candidate, k } of inside[w]!) {
+      if (k < index) continue;
+      if (candidate.packs.some((packId) => chosenPacks.has(packId) || claimed.has(packId))) continue;
+      need += 1;
+      for (const packId of candidate.packs) claimed.add(packId);
+    }
+    return need;
+  };
+  /** The floors of window `w` the chosen packs leave free. */
+  const windowRoom = (w: number): number => {
+    const { mask, cap } = windows[w]!;
+    let room = cap;
+    for (const packId of chosen) if ((mask >> classify(packId)) & 1) room -= 1;
+    return room;
+  };
+
+  /**
+   * Whether the gifts from candidate `index` on are bound to miss more than `slack` more — the room
+   * this branch has left before it is no better than the best plan. Stops at the first window that
+   * shows it.
+   */
+  const boundExceeds = (index: number, slack: number): boolean => {
+    for (let w = 0; w < windows.length; w += 1) {
+      const room = windowRoom(w);
+      // Not enough gifts left in here to overflow it, whatever they are.
+      if (inside[w]!.length - room <= slack) continue;
+      if (windowNeed(w, index) - room > slack) return true;
+    }
+    return false;
+  };
+
+  /**
+   * The fewest misses any plan can have, computed before the DFS (below). Once the best plan's
+   * misses reach it they are optimal, and the rest of the search only breaks ties on packs and
+   * floors — which `tieBreakNodes` caps (M83).
+   */
+  let rootBound = 0;
+
   /** Lexicographic order: required misses, then optional misses, then packs, then floors. */
   const beatenAlready = (packCount: number): boolean => {
     if (missedRequired !== best.missedRequired) return missedRequired > best.missedRequired;
@@ -335,18 +486,36 @@ export function assignPacks(input: SearchInput): SearchResult {
     return packCount > best.packCount;
   };
 
+  /**
+   * The best plan is the greedy seed (below) until the DFS finds one at least as good. The seed only
+   * sets the bar: on a tie the DFS's own plan wins, so a search that finishes returns exactly what it
+   * returned without a seed.
+   */
+  let seeded = false;
+  /** Bumped whenever `chosen` changes, so `record` can tell a pack set it has placed already. */
+  let chosenVersion = 0;
+  let placedFor = -1;
+  let lastPlacement: Map<number, number> | null = null;
+  let lastFloorSum = 0;
   const record = (): void => {
     const packCount = settled.size + chosen.length;
     if (beatenAlready(packCount)) return;
-    const placement = cheapestPlacement(chosen);
+    // Leaves under the same chosen packs share their floors; only the suppliers differ.
+    if (placedFor !== chosenVersion) {
+      placedFor = chosenVersion;
+      lastPlacement = cheapestPlacement(chosen);
+      lastFloorSum = 0;
+      for (const floor of lastPlacement?.keys() ?? []) lastFloorSum += floor;
+    }
+    const placement = lastPlacement;
     if (!placement) return;
-    let floorSum = 0;
-    for (const floor of placement.keys()) floorSum += floor;
+    const floorSum = lastFloorSum;
     const tied =
       missedRequired === best.missedRequired &&
       missedOptional === best.missedOptional &&
       packCount === best.packCount;
-    if (tied && floorSum >= best.floorSum) return;
+    if (tied && (seeded ? floorSum > best.floorSum : floorSum >= best.floorSum)) return;
+    seeded = false;
     best.missedRequired = missedRequired;
     best.missedOptional = missedOptional;
     best.packCount = packCount;
@@ -355,13 +524,42 @@ export function assignPacks(input: SearchInput): SearchResult {
     best.supplierPack = new Map(supplierPack);
     best.missed = [...missed];
     best.missedPacks = [...missedPacks];
+    // A required miss could still be traded for optional ones, so only a plan missing optional
+    // goals alone is proven by the bound, which counts both.
+    if (provenAt === null && missedRequired === 0 && missedOptional <= rootBound) provenAt = nodes;
   };
 
+  /**
+   * Dominance (M84). A copy that a chosen pack can supply takes one: a new pack instead, or a miss,
+   * ends with the same packs or worse, and the DFS tries the chosen packs first, so it has met that
+   * plan already. And among new packs no later candidate lists, only the window matters — they
+   * supply nothing else — so one per window class is enough.
+   */
+  const lastUse = new Map<number, number>();
+  /** No later copy of the same gift: any chosen pack serves this one alike, so the first will do. */
+  const lastCopy: boolean[] = [];
+  const copyAfter = new Set<number>();
+  for (let k = candidates.length - 1; k >= 0; k -= 1) {
+    const { giftId } = candidates[k]!;
+    lastCopy[k] = giftId === null || !copyAfter.has(giftId);
+    if (giftId !== null) copyAfter.add(giftId);
+  }
+  candidates.forEach((candidate, k) => {
+    for (const packId of candidate.packs) lastUse.set(packId, k);
+  });
+  const freshClasses = new Set<number>();
+
   const dfs = (index: number): void => {
-    if (capped) return;
+    if (halted) return;
     nodes += 1;
     if (nodes > nodeCap) {
       capped = true;
+      halted = true;
+      return;
+    }
+    if (provenAt !== null && nodes > provenAt + tieBreakNodes) {
+      tieBreakCut = true;
+      halted = true;
       return;
     }
     if (index >= candidates.length) {
@@ -374,6 +572,15 @@ export function assignPacks(input: SearchInput): SearchResult {
      * worse on an earlier term can never recover.
      */
     if (beatenAlready(settled.size + chosen.length)) return;
+    // However the misses still to come split, they make the branch worse once they reach the best
+    // plan's: on the first term, or — the required ones equal — on the second.
+    if (
+      useBound &&
+      index < boundDepth &&
+      missedRequired === best.missedRequired &&
+      boundExceeds(index, best.missedOptional - missedOptional)
+    )
+      return;
 
     const candidate = candidates[index]!;
     if (candidate.freePack !== null) {
@@ -383,10 +590,22 @@ export function assignPacks(input: SearchInput): SearchResult {
 
     const taken = candidate.giftId === null ? undefined : packsTaken.get(candidate.giftId);
     const open = taken ? candidate.packs.filter((packId) => !taken.has(packId)) : candidate.packs;
-    // Reusing a pack already chosen costs nothing, so try those first.
+    // Reusing a pack already chosen costs nothing, so try those first — and only those, if any.
     const reuse = open.filter((packId) => chosenPacks.has(packId));
-    const fresh = open.filter((packId) => !chosenPacks.has(packId));
-    for (const packId of [...reuse, ...fresh]) {
+    let fresh: number[] = [];
+    if (reuse.length === 0) {
+      freshClasses.clear();
+      fresh = open.filter((packId) => {
+        if (chosenPacks.has(packId)) return false;
+        if (lastUse.get(packId)! > index) return true;
+        const id = classify(packId);
+        if (freshClasses.has(id)) return false;
+        freshClasses.add(id);
+        return true;
+      });
+    }
+    const branches = reuse.length === 0 ? fresh : lastCopy[index] ? reuse.slice(0, 1) : reuse;
+    for (const packId of branches) {
       const isNew = !chosenPacks.has(packId);
       const undo: [number, number | undefined][] = [];
       if (isNew) {
@@ -397,6 +616,7 @@ export function assignPacks(input: SearchInput): SearchResult {
         }
         chosen.push(packId);
         chosenPacks.add(packId);
+        chosenVersion += 1;
       }
       let mine: Set<number> | undefined;
       if (candidate.giftId !== null) {
@@ -416,10 +636,12 @@ export function assignPacks(input: SearchInput): SearchResult {
       if (isNew) {
         chosen.pop();
         chosenPacks.delete(packId);
+        chosenVersion += 1;
         restore(undo);
       }
-      if (capped) return;
+      if (halted) return;
     }
+    if (reuse.length > 0) return;
 
     // Giving up on this gift is also a branch: two exclusives can be mutually exclusive.
     if (candidate.giftId !== null) missed.push(candidate.key!);
@@ -432,6 +654,167 @@ export function assignPacks(input: SearchInput): SearchResult {
     if (candidate.giftId !== null) missed.pop();
     else missedPacks.pop();
   };
+
+  /*
+   * What to supply, per gift: its copies share one pack list and each needs a pack of its own, so a
+   * gift with n copies is covered n times at most, once per chosen pack it lists. A preferred pack
+   * is a "gift" of its own with one copy.
+   */
+  const groups: { copies: number; required: boolean; packs: number[] }[] = [];
+  {
+    const groupOfGift = new Map<number, number>();
+    for (const candidate of candidates) {
+      if (candidate.freePack !== null) continue;
+      const known = candidate.giftId === null ? undefined : groupOfGift.get(candidate.giftId);
+      if (known !== undefined) {
+        groups[known]!.copies += 1;
+        continue;
+      }
+      if (candidate.giftId !== null) groupOfGift.set(candidate.giftId, groups.length);
+      groups.push({ copies: 1, required: candidate.required, packs: candidate.packs });
+    }
+  }
+  const groupPacks = [...new Set(groups.flatMap((group) => group.packs))].sort((a, b) => a - b);
+  const groupsOfPack = new Map<number, number[]>();
+  groups.forEach((group, g) => {
+    for (const packId of group.packs) {
+      const list = groupsOfPack.get(packId) ?? [];
+      list.push(g);
+      groupsOfPack.set(packId, list);
+    }
+  });
+
+  /*
+   * The greedy seed (M84): take the pack that supplies the most copies still missing, as long as the
+   * packs taken still fit on distinct floors. The DFS meets the hard decisions — whether to give up
+   * a gift only one pack supplies — first, and on a large board never gets back to them before the
+   * node cap; this plan starts it from a good bar instead.
+   */
+  if (input.seed !== false) {
+    const have = new Array<number>(groups.length).fill(0);
+    const picked = new Set<number>();
+    const undos: [number, number | undefined][][] = [];
+    const left = [...groupPacks];
+    for (;;) {
+      let pick = -1;
+      let gain = 0;
+      for (const packId of left) {
+        if (picked.has(packId)) continue;
+        let g = 0;
+        for (const group of groupsOfPack.get(packId)!) {
+          if (have[group]! < groups[group]!.copies) g += groups[group]!.required ? groups.length + 1 : 1;
+        }
+        if (g > gain) {
+          gain = g;
+          pick = packId;
+        }
+      }
+      if (pick < 0) break;
+      const undo: [number, number | undefined][] = [];
+      if (augment(pick, undo)) {
+        picked.add(pick);
+        undos.push(undo);
+        for (const group of groupsOfPack.get(pick)!) have[group] = have[group]! + 1;
+      } else {
+        restore(undo);
+        left.splice(left.indexOf(pick), 1);
+      }
+    }
+    for (let i = undos.length - 1; i >= 0; i -= 1) restore(undos[i]!);
+
+    // Hand each copy, in DFS order, a picked pack its gift has not used yet.
+    const seedSupplier = new Map<string, number>();
+    const seedMissed: string[] = [];
+    const seedMissedPacks: number[] = [];
+    const usedBy = new Map<number, Set<number>>();
+    const usedPacks = new Set<number>();
+    let seedRequired = 0;
+    let seedOptional = 0;
+    for (const candidate of candidates) {
+      if (candidate.freePack !== null) continue;
+      let used = candidate.giftId === null ? undefined : usedBy.get(candidate.giftId);
+      if (!used) {
+        used = new Set();
+        if (candidate.giftId !== null) usedBy.set(candidate.giftId, used);
+      }
+      const packId = candidate.packs.find((p) => picked.has(p) && !used.has(p));
+      if (packId !== undefined) {
+        used.add(packId);
+        usedPacks.add(packId);
+        if (candidate.key !== null) seedSupplier.set(candidate.key, packId);
+        continue;
+      }
+      if (candidate.giftId !== null) seedMissed.push(candidate.key!);
+      else seedMissedPacks.push(candidate.packId!);
+      if (candidate.required) seedRequired += 1;
+      else seedOptional += 1;
+    }
+    const placement = cheapestPlacement([...usedPacks]);
+    if (placement) {
+      seeded = true;
+      best.missedRequired = seedRequired;
+      best.missedOptional = seedOptional;
+      best.packCount = settled.size + usedPacks.size;
+      best.floorSum = [...placement.keys()].reduce((sum, floor) => sum + floor, 0);
+      best.placement = placement;
+      best.supplierPack = seedSupplier;
+      best.missed = seedMissed;
+      best.missedPacks = seedMissedPacks;
+    }
+  }
+
+  /*
+   * The root bound: the worst window's excess (M82's bound with nothing chosen), and — when that
+   * does not already prove the seed — the linear relaxation of the whole board (M84). The window
+   * bound counts only gifts with pairwise disjoint packs; on large boards most gifts share packs
+   * with others and it falls well short, while the relaxation is exact on every board measured.
+   *
+   * Relaxation: x_p ∈ [0, 1] per pack, cov_g per gift with cov_g ≤ copies and cov_g ≤ Σ x_p over
+   * its packs, and Σ x_p ≤ floors for every window. Every plan is a solution, so no plan supplies
+   * more copies than the optimum, and no plan misses fewer than the copies less that.
+   */
+  if (useBound) {
+    for (let w = 0; w < windows.length; w += 1)
+      rootBound = Math.max(rootBound, windowNeed(w, 0) - windowRoom(w));
+    if (best.missedRequired === 0 && best.missedOptional > rootBound) {
+      const P = groupPacks.length;
+      const column = new Map(groupPacks.map((packId, j) => [packId, j]));
+      const c = [...new Array<number>(P).fill(0), ...new Array<number>(groups.length).fill(1)];
+      const rows: number[][] = [];
+      const b: number[] = [];
+      groups.forEach((group, g) => {
+        const row = new Array<number>(P + groups.length).fill(0);
+        row[P + g] = 1;
+        for (const packId of group.packs) row[column.get(packId)!] = -1;
+        rows.push(row);
+        b.push(0);
+        const cap = new Array<number>(P + groups.length).fill(0);
+        cap[P + g] = 1;
+        rows.push(cap);
+        b.push(group.copies);
+      });
+      for (let j = 0; j < P; j += 1) {
+        const row = new Array<number>(P + groups.length).fill(0);
+        row[j] = 1;
+        rows.push(row);
+        b.push(1);
+      }
+      for (const { mask, cap } of windows) {
+        const row = new Array<number>(P + groups.length).fill(0);
+        groupPacks.forEach((packId, j) => {
+          if ((mask >> classify(packId)) & 1) row[j] = 1;
+        });
+        rows.push(row);
+        b.push(cap);
+      }
+      const supplied = maximizeLp(c, rows, b);
+      if (supplied !== null) {
+        const copies = groups.reduce((sum, group) => sum + group.copies, 0);
+        rootBound = Math.max(rootBound, copies - Math.floor(supplied + 1e-6));
+      }
+    }
+  }
+  if (best.missedRequired === 0 && best.missedOptional <= rootBound) provenAt = 0;
 
   dfs(0);
 
@@ -464,6 +847,7 @@ export function assignPacks(input: SearchInput): SearchResult {
     unplacedPacks: [...unplacedPacks, ...best.missedPacks].sort((a, b) => a - b),
     nodes,
     capped,
+    tieBreakCut,
   };
 }
 

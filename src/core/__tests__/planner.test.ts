@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGameDataFromDisk } from '../data/node.ts';
 import {
   alternativePacksOn,
+  assignPacks,
   buildIndexes,
   conflictGroups,
   conflictRootsOf,
@@ -1245,6 +1246,197 @@ describe('drop effects (M80)', () => {
       options: options({ lastFloor: 15 }),
     };
     expect(planDropEffects(input, data, indexes, undefined, { maxRuns: 3 }).effects).toHaveLength(3);
+  });
+});
+
+describe('floor-window lower bound (M82) and tie-break budget (M83)', () => {
+  const all = Array.from({ length: 15 }, (_, i) => i + 1);
+  const run = (ids: number[], lowerBound: boolean, tieBreakNodes = Number.POSITIVE_INFINITY, seed = true) => {
+    const stats = analyseDeck(BLADE_LINEAGE_DECK, indexes, data.rules.deployment);
+    const { requirements } = expandRequirements(
+      ids.map((giftId) => ({ giftId, required: false })),
+      indexes,
+      stats,
+      data.rules.fusion.maxShopSlots,
+    );
+    return assignPacks({
+      requirements,
+      floors: all,
+      options: options({ lastFloor: 15, hardFromFloor: 1 }),
+      rules: data.rules,
+      indexes,
+      lowerBound,
+      tieBreakNodes,
+      seed,
+    });
+  };
+  const same = (ids: number[]) => {
+    const on = run(ids, true);
+    const off = run(ids, false);
+    if (on.capped || off.capped) return null;
+    expect(on.unresolvedKeys).toEqual(off.unresolvedKeys);
+    expect([...on.assignment].sort((a, b) => a[0] - b[0])).toEqual(
+      [...off.assignment].sort((a, b) => a[0] - b[0]),
+    );
+    expect([...on.supplier].sort()).toEqual([...off.supplier].sort());
+    expect(on.nodes).toBeLessThanOrEqual(off.nodes);
+    return on.nodes < off.nodes;
+  };
+
+  it('changes no answer the search finishes, and never costs nodes', () => {
+    // The two examples the decision card was built on: seven goals for five EXTREME floors, and ten
+    // 1~4층 goals whose packs crowd floors 1~4.
+    same([9250, 9251, 9252, 9253, 9254, 9255, 9827]);
+    expect(same([9403, 9413, 9431, 9407, 9701, 9415, 9428, 9221, 9220, 9433])).toBe(true);
+    // Seeded random boards of pack-bound gifts, small enough to finish without the node cap.
+    const pool = data.gifts
+      .filter(
+        (g) => g.acquisition.kind === 'packLimited' && (indexes.packsByGift.get(g.id) ?? []).length <= 2,
+      )
+      .map((g) => g.id)
+      .sort((a, b) => a - b);
+    let seed = 20261005;
+    const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    let finished = 0;
+    for (let board = 0; board < 40; board += 1) {
+      const ids = new Set<number>();
+      const size = 6 + Math.floor(next() * 10);
+      while (ids.size < size) ids.add(pool[Math.floor(next() * pool.length)]!);
+      if (same([...ids]) !== null) finished += 1;
+    }
+    expect(finished).toBeGreaterThan(30);
+  });
+
+  /*
+   * M83: once the best plan's misses meet the root bound they are optimal, and the search only
+   * breaks ties on packs and floors for `tieBreakNodes` more nodes.
+   */
+  const giftsOf = (kind: string) =>
+    data.gifts
+      .filter((g) => g.obtainable && g.acquisition.kind === kind && !indexes.freelyAvailableGifts.has(g.id))
+      .map((g) => g.id);
+  const mixed = [...giftsOf('fusionOnly').slice(0, 20), ...giftsOf('packLimited')].sort((a, b) => a - b);
+  const every = (n: number) => mixed.filter((_, i) => i % Math.floor(mixed.length / n) === 0).slice(0, n);
+
+  it('stops breaking ties once the misses are proven, without missing more', () => {
+    // Fifteen goals this deck cannot all fit: four misses, and without the budget the whole node cap
+    // goes into comparing plans that miss four on packs and floors.
+    const ids = every(15);
+    const cut = run(ids, true, 5_000);
+    const full = run(ids, true);
+    expect(full.capped).toBe(true);
+    expect(cut.capped).toBe(false);
+    expect(cut.tieBreakCut).toBe(true);
+    expect(cut.nodes).toBeLessThan(full.nodes / 10);
+    expect(cut.unresolvedKeys.length).toBe(full.unresolvedKeys.length);
+  });
+
+  it('never misses more however small the tie-break budget', () => {
+    // A budget of 20 cuts nearly every board right after its first optimal plan; the misses hold.
+    const pool = data.gifts
+      .filter(
+        (g) => g.acquisition.kind === 'packLimited' && (indexes.packsByGift.get(g.id) ?? []).length <= 2,
+      )
+      .map((g) => g.id)
+      .sort((a, b) => a - b);
+    let seed = 20261006;
+    const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    let cut = 0;
+    for (let board = 0; board < 30; board += 1) {
+      const ids = new Set<number>();
+      const size = 6 + Math.floor(next() * 10);
+      while (ids.size < size) ids.add(pool[Math.floor(next() * pool.length)]!);
+      const full = run([...ids], true);
+      if (full.capped) continue;
+      const small = run([...ids], true, 20);
+      expect(small.capped).toBe(false);
+      expect(small.unresolvedKeys.length).toBe(full.unresolvedKeys.length);
+      if (small.tieBreakCut) cut += 1;
+      // The default budget lets every one of these finish as before.
+      const budget = run([...ids], true, 5_000);
+      expect(budget.unresolvedKeys).toEqual(full.unresolvedKeys);
+      expect([...budget.assignment].sort((a, b) => a[0] - b[0])).toEqual(
+        [...full.assignment].sort((a, b) => a[0] - b[0]),
+      );
+    }
+    expect(cut).toBeGreaterThan(10);
+  });
+});
+
+describe('greedy seed, linear root bound and dominance (M84)', () => {
+  const all = Array.from({ length: 15 }, (_, i) => i + 1);
+  const run = (ids: number[], seed = true, tieBreakNodes?: number) => {
+    const stats = analyseDeck(BLADE_LINEAGE_DECK, indexes, data.rules.deployment);
+    const { requirements } = expandRequirements(
+      ids.map((giftId) => ({ giftId, required: false })),
+      indexes,
+      stats,
+      data.rules.fusion.maxShopSlots,
+    );
+    return assignPacks({
+      requirements,
+      floors: all,
+      options: options({ lastFloor: 15, hardFromFloor: 1 }),
+      rules: data.rules,
+      indexes,
+      seed,
+      tieBreakNodes,
+    });
+  };
+  const giftsOf = (kind: string) =>
+    data.gifts
+      .filter((g) => g.obtainable && g.acquisition.kind === kind && !indexes.freelyAvailableGifts.has(g.id))
+      .map((g) => g.id);
+  const mixed = [...giftsOf('fusionOnly').slice(0, 20), ...giftsOf('packLimited')].sort((a, b) => a - b);
+  const every = (n: number) => mixed.filter((_, i) => i % Math.floor(mixed.length / n) === 0).slice(0, n);
+
+  it('proves the exact optimum on boards the node cap used to stop', () => {
+    // The optima were checked offline with an integer program over the same packs and floors. Before
+    // M84 the search stopped at the cap on all four, one to eight copies short.
+    for (const [n, optimum] of [
+      [20, 5],
+      [30, 11],
+      [60, 24],
+      [80, 32],
+    ] as const) {
+      const result = run(every(n));
+      expect(result.capped).toBe(false);
+      expect(result.unresolvedKeys.length).toBe(optimum);
+    }
+  });
+
+  it('only sets the bar: a search that finishes returns what it did without the seed', () => {
+    const pool = data.gifts
+      .filter(
+        (g) => g.acquisition.kind === 'packLimited' && (indexes.packsByGift.get(g.id) ?? []).length <= 2,
+      )
+      .map((g) => g.id);
+    const boards = [every(10), [9403, 9413, 9431, 9407, 9701, 9415, 9428, 9221, 9220, 9433]];
+    let seed = 20261007;
+    const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    for (let board = 0; board < 30; board += 1) {
+      const ids = new Set<number>();
+      const size = 6 + Math.floor(next() * 14);
+      while (ids.size < size) {
+        // Mostly pack-bound gifts, some fusions for gifts with several copies.
+        const source = next() < 0.3 ? mixed : pool;
+        ids.add(source[Math.floor(next() * source.length)]!);
+      }
+      boards.push([...ids]);
+    }
+    let compared = 0;
+    for (const ids of boards) {
+      const seeded = run(ids, true, Number.POSITIVE_INFINITY);
+      const plain = run(ids, false, Number.POSITIVE_INFINITY);
+      if (seeded.capped || plain.capped) continue;
+      compared += 1;
+      expect(seeded.unresolvedKeys).toEqual(plain.unresolvedKeys);
+      expect([...seeded.assignment].sort((a, b) => a[0] - b[0])).toEqual(
+        [...plain.assignment].sort((a, b) => a[0] - b[0]),
+      );
+      expect([...seeded.supplier].sort()).toEqual([...plain.supplier].sort());
+    }
+    expect(compared).toBeGreaterThan(20);
   });
 });
 

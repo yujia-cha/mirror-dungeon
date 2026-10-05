@@ -301,6 +301,8 @@ export interface RoutePlan {
     totalWanted: number;
     searchNodes: number;
     searchCapped: boolean;
+    /** The search stopped breaking ties after proving its misses optimal (M83) — not approximate. */
+    searchTieCut: boolean;
     elapsedMs: number;
   };
 }

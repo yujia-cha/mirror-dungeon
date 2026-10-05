@@ -1003,6 +1003,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       totalWanted: input.wanted.length,
       searchNodes: search.nodes,
       searchCapped: search.capped,
+      searchTieCut: search.tieBreakCut,
       elapsedMs: Date.now() - startedAt,
     },
   };

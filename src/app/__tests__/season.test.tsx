@@ -43,6 +43,7 @@ function Metro({
       coveredWanted: 0,
       totalWanted: 0,
       searchCapped: false,
+      searchTieCut: false,
       elapsedMs: 0,
     },
   };

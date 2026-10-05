@@ -252,5 +252,7 @@ if (variants.length > 0) {
 }
 
 if (hasFlag('--trace')) {
-  console.log(`탐색 노드 ${plan.stats.searchNodes}${plan.stats.searchCapped ? ' (한도 도달)' : ''}`);
+  console.log(
+    `탐색 노드 ${plan.stats.searchNodes}${plan.stats.searchCapped ? ' (한도 도달)' : plan.stats.searchTieCut ? ' (놓친 수 최적 증명 후 동점 비교 중단)' : ''}`,
+  );
 }
