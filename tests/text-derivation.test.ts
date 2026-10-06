@@ -22,7 +22,9 @@ import { deriveIdentityKeywords, type IdentityKeywordCounts } from '../scripts/l
 import {
   deriveIdentityKeywordsFromText,
   identityIdOfSkill,
+  keywordsInSkillText,
   skillsOfIdentity,
+  specialAmmoFamiliesOf,
 } from '../scripts/lib/derive-text.ts';
 import {
   readLocalizedPersonalitySkills,
@@ -55,11 +57,12 @@ const project = (counts: IdentityKeywordCounts): Projection =>
   );
 
 /**
- * Identities whose text says less than their static data does, with the reason.
+ * Identities whose text says less than what we ship, with the reason.
  *
- * Every one of these is the text missing something, never inventing it — the keyword is inflicted
- * by a named buff that the sentence never spells out in Korean. Chasing them would cost the
- * precision that makes the 10116 reading worth trusting, so they are pinned instead.
+ * What we ship joins the skill data and the text per skill (`alsoFrom`), so the text can never say
+ * more; every entry here is the text missing something the skill data gives — the keyword is
+ * inflicted by a named buff that the sentence never spells out in Korean. Chasing them would cost
+ * the precision that makes the 10116 reading worth trusting, so they are pinned instead.
  */
 const KNOWN_DIVERGENCES: Record<number, string> = {
   10110: '진동: 버프 id로만 부여하고 문장에 이름이 없다',
@@ -71,10 +74,8 @@ const KNOWN_DIVERGENCES: Record<number, string> = {
   10215: '충전: 생체 재료(특수 충전)만 읽고 기본 충전을 놓친다 — 스크립트 이름 경로에 대응하는 문장이 없다',
   10614: '충전: 같은 이유',
   10416:
-    '충전: 정적 데이터가 기본 충전으로 적은 것을 원문은 특수 충전으로만 읽는다 (2026-10-01 정적 데이터 도착으로 백필에서 승격)',
+    '충전: 정적 데이터가 기본 충전으로 적은 것을 원문은 특수 충전으로만 읽는다 — 내보내는 값은 둘을 합쳐 기본·특수 모두 (2026-10-01 정적 데이터 도착으로 백필에서 승격)',
   10816: '충전: 같은 이유',
-  10916:
-    '호흡: 여기만은 정적 쪽이 더 센다 — 기본 S1~S3은 「[Breath]이 6 이상이면」으로 호흡을 조건으로 확인할 뿐 얻지 않는데, 정적 buffKeyword가 그 확인(SkillPowerResultAdderViaOnUseBuffCheck)을 센다. 얻는 문장은 강화 스킬에만 있다',
   10917: '충전: 정적 데이터는 기본 3·특수 2, 원문은 특수만 읽는다',
 };
 
@@ -89,16 +90,28 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
 
   const fromText = (id: number): IdentityKeywordCounts =>
     deriveIdentityKeywordsFromText(skillsOfIdentity(id, localized), variants);
+  /** What the build ships for an identity with static data: skill data ∪ text, per skill. */
+  const shippedFor = (p: (typeof statics)[number]): IdentityKeywordCounts => {
+    const families = specialAmmoFamiliesOf(skillsOfIdentity(p.id, localized), variants);
+    return deriveIdentityKeywords(p, staticSkills, variants, {
+      alsoFrom: (skillId) => {
+        const text = localized.get(skillId);
+        return text ? keywordsInSkillText(text, variants, families) : undefined;
+      },
+    });
+  };
 
   it('covers most of the roster, and says so rather than pretending to cover all of it', () => {
     expect(calibratable.length).toBeGreaterThanOrEqual(115);
     expect(calibratable.length).toBeLessThanOrEqual(statics.length);
   });
 
-  it('never claims a keyword the static data does not have', () => {
+  // The text is joined into what we ship, so it must not invent: every keyword it reads has to be
+  // one the skill data at least names on that identity's base skills (`anyMention`).
+  it('never claims a keyword the static data does not even name', () => {
     const invented = calibratable
       .map((p) => {
-        const truth = deriveIdentityKeywords(p, staticSkills, variants);
+        const truth = deriveIdentityKeywords(p, staticSkills, variants, { anyMention: true });
         const extra = Object.keys(fromText(p.id)).filter((keyword) => !(keyword in truth));
         return extra.length > 0 ? `${p.id}: ${extra.join(', ')}` : null;
       })
@@ -110,7 +123,7 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
   it('reproduces what the planner reads, except for a pinned list of text that says less', () => {
     const diverging = calibratable
       .filter((p) => {
-        const truth = project(deriveIdentityKeywords(p, staticSkills, variants));
+        const truth = project(shippedFor(p));
         return JSON.stringify(truth) !== JSON.stringify(project(fromText(p.id)));
       })
       .map((p) => p.id)
@@ -149,16 +162,17 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
     },
   );
 
-  // The rule the user stated: keywords come from the base S1/S2/S3 only, never from the enhanced
-  // skill an S3 turns into (`attributeList[].number === 0`). 40 identities have one; this holds the
-  // shipped data to it for every one of them, so a build that starts counting them again fails.
-  it('ships only what the base S1/S2/S3 inflict, never an enhanced skill', () => {
+  // The rules the user stated: keywords come from the base S1/S2/S3 only, never from the enhanced
+  // skill an S3 turns into (`attributeList[].number === 0`, 40 identities have one), and only from
+  // what those skills give or spend (`buffCounts`). This holds every shipped identity to it, so a
+  // build that starts counting enhanced skills or mere mentions again fails.
+  it('ships only what the base S1/S2/S3 give or spend, never an enhanced skill', () => {
     const withEnhanced = statics.filter((p) => (p.attributeList ?? []).some((e) => e.number === 0));
     expect(withEnhanced.length).toBeGreaterThanOrEqual(40);
-    for (const p of withEnhanced) {
+    for (const p of statics) {
       const shipped = identities.find((i) => i.id === p.id)!;
       if (shipped.keywordSource !== 'derived') continue;
-      const base = deriveIdentityKeywords(p, staticSkills, variants);
+      const base = shippedFor(p);
       // 혈찬 is read from the text, not the skill data, so it is compared by its own test.
       const ours = Object.fromEntries(
         Object.entries(shipped.keywords).filter(([keyword]) => keyword !== 'BloodDinner'),

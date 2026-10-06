@@ -344,7 +344,25 @@ describe('identities', () => {
     const abi = identityById.get(10115)!;
     expect(Object.keys(abi.keywords).sort()).toEqual(['Breath', 'Sinking']);
     expect(abi.sins).not.toContain('WRATH');
-    expect(identityById.get(11115)!.keywords.Combustion).toEqual({ skills: 3, specialSkills: 0 });
+    // S2·S3 inflict 화상 when the sword is in state 2/3 — written only in the Korean text (M86).
+    expect(identityById.get(11115)!.keywords.Combustion).toEqual({ skills: 2, specialSkills: 0 });
+  });
+
+  // A 디버프 counts when the skill inflicts it on the other side, 호흡·충전 when the skill gives
+  // itself or spends its own — not when it merely checks or scales off one (M86).
+  it('counts a keyword only when a base skill gives or spends it, not when it reads it', () => {
+    const keys = (id: number) => Object.keys(identityById.get(id)!.keywords).sort();
+    // 「[Breath]이 6 이상이면」 only checks 호흡.
+    expect(keys(10916)).not.toContain('Breath');
+    // 동백 이상 puts its 진동 on itself.
+    expect(keys(10104)).not.toContain('Vibration');
+    // Given to the target, by scripts that do not say GiveBuff on the buff itself or say it oddly.
+    expect(keys(10110)).toContain('Vibration'); // CheckAdditionalBuffOnEquipEgo
+    expect(keys(10508)).toContain('Laceration'); // CheckAdditionalBuff20509
+    expect(keys(10805)).toContain('Burst'); // GiveBuffOnLoseDuel
+    expect(keys(10808)).toContain('Breath'); // to the lowest-SP allies — the user's side counts
+    // 특수 침잠 given through the script name alone.
+    expect(identityById.get(10110)!.keywords.Sinking?.specialSkills).toBeGreaterThan(0);
   });
 
   it('keeps 탄환 out of the gift keywords, since no gift, pack or start pool has it', () => {

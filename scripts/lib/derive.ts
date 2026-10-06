@@ -146,14 +146,82 @@ const SKILL_REQUIREMENT = /\[(?:necessary|optional):([A-Za-z0-9_]+)/g;
 /** Every ammo buff the game ships carries `Bullet` in its id: 호표탄, 포자탄, LCA 균열탄, 탄환 - 고독 … */
 const AMMO_BUFF_ID = /Bullet/;
 
+/** 디버프: they count only when given to the other side. */
+const DEBUFF_KEYWORDS = new Set<IdentityKeywordId>([
+  'Combustion',
+  'Laceration',
+  'Vibration',
+  'Burst',
+  'Sinking',
+]);
+
+/**
+ * Script names that give the buff in their `buffData`. Everything with one of these words gives;
+ * `CheckAdditionalBuff*` is how 10110 and 10508 inflict a second status on the target.
+ */
+const GIVES = /GiveBuff|CheckAdditionalBuff/;
+
+/**
+ * Script names that only read a buff: a threshold (「호흡이 6 이상이면」, `…ViaBuffCheck`), a scale
+ * (「대상의 화상과 출혈의 합 6당」, `…DivideBySumOfTwoBuffStack…`), a trigger on a buff already
+ * there (진동 폭발, 침잠 쇄도), or removing it. None of them puts the keyword anywhere.
+ */
+const READS_ONLY =
+  /Check|LoseBuff|LoseTarget|Explosion|Surge|Activ|Heal|Dmg|CoinScale|Power|Parr|Critical|TagetNum|Replace|Divide|Devide|ByBuff|Sum/;
+
+/** Script names that spend the owner's own buff (`…ViaBuffCheckAndUse`, `UseAllChargeTurn…`). */
+const SPENDS = /AndUse|Using|UseAll|UseBuffTurn|UseBuffAll|UseBuffStack/;
+
+/** The 버프 a script spends when it names it as a suffix (`…UsingBuffTurn_Charge3`). */
+const SPENT_IN_NAME = /_(Breath|Charge)\d*$/;
+
+/**
+ * Who receives a given buff. A 버프 counts for the skill user's own side — itself, or allies it
+ * may be among (`LowestMpAlly1`, `EveryAlly`, a `…ToAlly…` script; the user's call, M86).
+ * `Custom` scripts pick at run time: 10808's lowest-SP allies, 11211's 연료 on the enemy.
+ */
+const TO_OTHER_SIDE = /^(Target|Both|Custom|RandomEnemy\d*)$/;
+const TO_OWN_SIDE = /^(Self|Both|Custom)$|Ally/;
+const GIVES_TO_ALLY = /ToAlly/;
+
+/**
+ * Whether one `buffData` makes the skill an identity with that keyword — the rule the user set:
+ * a 디버프 (화상·진동·침잠·출혈·파열) counts when the skill inflicts it on the other side, a 버프
+ * (호흡·충전) when the skill gives it to itself — or to allies, which it may be among — or spends
+ * its own.
+ *
+ * `keyword` is the base keyword the buff belongs to (a 특수 variant passes its base). The script
+ * name decides give vs read; `target` decides the side, `buffOwner` whose buff is spent.
+ */
+export function buffCounts(
+  keyword: IdentityKeywordId,
+  scriptName: string,
+  buffData: { target?: unknown; buffOwner?: unknown },
+): boolean {
+  const target = typeof buffData.target === 'string' ? buffData.target : '';
+  const gives = target !== '' && (GIVES.test(scriptName) || !READS_ONLY.test(scriptName));
+  if (DEBUFF_KEYWORDS.has(keyword)) return gives && TO_OTHER_SIDE.test(target);
+  if (gives && (TO_OWN_SIDE.test(target) || GIVES_TO_ALLY.test(scriptName))) return true;
+  return buffData.buffOwner === 'Self' && SPENDS.test(scriptName);
+}
+
 /**
  * Keywords one skill uses, split into the base keyword (`buffKeyword: "Charge"`, ammo required as
  * plain `Bullet`) and the 특수 variants.
  *
+ * A status counts only when `buffCounts` says the skill gives or spends it — a skill that merely
+ * reads a keyword (「[Breath]이 6 이상이면」) is not an identity of that keyword. `buffData` and a
+ * conditional ability's `resultBuffData` are read against the nearest script name above them;
+ * `conditionBuffData` is the condition and never counts. `anyMention` is the old reading, where a
+ * mention anywhere counted — the validator compares the derived source against it.
+ *
  * A 특수 variant shows up either as a `buffKeyword` of its own (`NailPersonality`, `DarkFlame`) or —
  * for 생체 재료 (특수 충전) — only in the names of the ability scripts that grant and spend it
  * (`MarkGiveChargeBodyArtTurn`, `MarkSubKeywordChargeBodyArt`), so a script name containing the
- * buff id counts too. Variant ids come from `readSpecialVariants()`, never from a hard-coded list.
+ * buff id counts too. For a 디버프 variant the name must say it gives that variant
+ * (`GiveSinkingWhitePerConsumedBulletLamentToHitedTarget`, 10110) — elsewhere the name can just as
+ * well be a check (`GiveBuffOnSucceedAttackIfHasStack_NailPersonality1`).
+ * Variant ids come from `readSpecialVariants()`, never from a hard-coded list.
  *
  * 탄환 is different: it is a resource the skill spends, so it is read off the requirement token
  * instead. An ammo id the game never localizes (`BulletLament`, `AccelBullet`) is not marked
@@ -162,34 +230,44 @@ const AMMO_BUFF_ID = /Bullet/;
 function keywordsInSkill(
   skill: RawSkill,
   specialVariants: Map<string, IdentityKeywordId>,
+  anyMention = false,
 ): { base: Set<IdentityKeywordId>; special: Set<IdentityKeywordId> } {
   const base = new Set<IdentityKeywordId>();
   const special = new Set<IdentityKeywordId>();
-  const visit = (node: unknown): void => {
+  const visit = (node: unknown, key: string, scriptName: string): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) visit(item, key, scriptName);
       return;
     }
-    if (node && typeof node === 'object') {
-      const obj = node as Record<string, unknown>;
-      const kw = obj['buffKeyword'];
-      if (typeof kw === 'string') {
-        if (STATUS_SET.has(kw)) base.add(kw as StatusKeyword);
-        const variant = specialVariants.get(kw);
-        if (variant) special.add(variant);
+    if (!node || typeof node !== 'object') return;
+    const obj = node as Record<string, unknown>;
+    const script = typeof obj['scriptName'] === 'string' ? obj['scriptName'] : scriptName;
+    const kw = obj['buffKeyword'];
+    if (typeof kw === 'string' && key !== 'conditionBuffData') {
+      const variant = specialVariants.get(kw);
+      const keyword = STATUS_SET.has(kw) ? (kw as StatusKeyword) : variant;
+      if (keyword && (anyMention || buffCounts(keyword, script, obj))) {
+        if (STATUS_SET.has(kw)) base.add(keyword);
+        else special.add(keyword);
       }
-      const script = obj['scriptName'];
-      if (typeof script === 'string') {
-        for (const [id, variant] of specialVariants) if (script.includes(id)) special.add(variant);
-        for (const [, required] of script.matchAll(SKILL_REQUIREMENT)) {
-          if (!required || !AMMO_BUFF_ID.test(required)) continue;
-          if (!specialVariants.has(required)) base.add('Bullet');
-        }
-      }
-      for (const value of Object.values(obj)) visit(value);
     }
+    if (typeof obj['scriptName'] === 'string') {
+      // A spend named only in the script: `GiveBuffOnSuccessAttackUsingBuffTurn_Charge3` gives a
+      // different buff in its `buffData`, paid for with the user's own 충전 (10503, 10506).
+      const spent = SPENT_IN_NAME.exec(script)?.[1] as IdentityKeywordId | undefined;
+      if (spent && SPENDS.test(script)) base.add(spent);
+      for (const [id, variant] of specialVariants) {
+        if (!script.includes(id)) continue;
+        if (anyMention || !DEBUFF_KEYWORDS.has(variant) || script.includes(`Give${id}`)) special.add(variant);
+      }
+      for (const [, required] of script.matchAll(SKILL_REQUIREMENT)) {
+        if (!required || !AMMO_BUFF_ID.test(required)) continue;
+        if (!specialVariants.has(required)) base.add('Bullet');
+      }
+    }
+    for (const [childKey, value] of Object.entries(obj)) visit(value, childKey, script);
   };
-  visit(skill.skillData ?? []);
+  visit(skill.skillData ?? [], '', '');
   return { base, special };
 }
 
@@ -211,6 +289,8 @@ export function baseAttackSkillIds(personality: RawPersonality): number[] {
  * Only the base S1/S2/S3 count (`baseAttackSkillIds`) — the unit conditional gifts measure
  * ("부여하는 공격 스킬을 보유한 인격"). An enhanced skill an S3 turns into under a condition (10212's
  * 「흑수 묘 오의 - 운해현현」 is the only one that grants 호흡) is not a skill the identity has.
+ * And a skill counts for a keyword only when it inflicts the 디버프 on the other side, or gives
+ * itself / spends the 버프 (`buffCounts`): reading 「[Breath]이 6 이상이면」 makes 10916 no 호흡 user.
  *
  * `skills` counts the base keyword, `specialSkills` the 특수 variant (see `keywordsInSkill`).
  * The game's conditions treat them differently — 「[Charge] 횟수 또는 특수 충전을 획득하는」 counts
@@ -221,11 +301,28 @@ export function deriveIdentityKeywords(
   personality: RawPersonality,
   skills: Map<number, RawSkill>,
   specialVariants: Map<string, IdentityKeywordId> = new Map(),
-  /**
-   * Count the enhanced skills too. Only the validator's cross-check against the derived source
-   * wants this — that list was built over every skill, so it needs the same reading to compare.
-   */
-  { includeExtra = false }: { includeExtra?: boolean } = {},
+  {
+    includeExtra = false,
+    anyMention = false,
+    alsoFrom,
+  }: {
+    /**
+     * Count the enhanced skills too, and (`anyMention`) any keyword a skill so much as names. Only
+     * the validator's cross-check wants these — the derived source's list was built that way, so
+     * it needs the same reading to tell a keyword we dropped on purpose from one we lost.
+     */
+    includeExtra?: boolean;
+    anyMention?: boolean;
+    /**
+     * Keywords the same skill gives by another reading — the build passes the Korean skill text
+     * (`keywordsInSkillText`). Some grants have no machine-readable `buffData` at all: 11115's
+     * 화상 comes from `GiveBuffOnSuccedAttackIfHasSwordBuff11115`, which only the sentence explains.
+     * The two are joined per skill, so a skill is counted once whichever reading saw it.
+     */
+    alsoFrom?: (
+      skillId: number,
+    ) => { base: Set<IdentityKeywordId>; special: Set<IdentityKeywordId> } | undefined;
+  } = {},
 ): IdentityKeywordCounts {
   const baseCounts = new Map<IdentityKeywordId, number>();
   const specialCounts = new Map<IdentityKeywordId, number>();
@@ -236,7 +333,10 @@ export function deriveIdentityKeywords(
     const skill = skills.get(id);
     if (!skill) continue;
     if (skill.skillType && skill.skillType !== 'SKILL') continue;
-    const found = keywordsInSkill(skill, specialVariants);
+    const found = keywordsInSkill(skill, specialVariants, anyMention);
+    const more = alsoFrom?.(id);
+    for (const kw of more?.base ?? []) found.base.add(kw);
+    for (const kw of more?.special ?? []) found.special.add(kw);
     for (const kw of found.base) baseCounts.set(kw, (baseCounts.get(kw) ?? 0) + 1);
     for (const kw of found.special) specialCounts.set(kw, (specialCounts.get(kw) ?? 0) + 1);
   }

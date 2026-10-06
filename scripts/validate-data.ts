@@ -22,12 +22,9 @@ import {
   readCommonData,
   readObservationData,
   readPersonalities,
-  readPersonalitySkills,
-  readSpecialVariants,
   readThemePacks,
   staticDataPresent,
 } from './lib/raw.ts';
-import { deriveIdentityKeywords } from './lib/derive.ts';
 import { familyOf, seasonOf } from './lib/season-files.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
@@ -72,6 +69,16 @@ import {
   type ThemePack,
 } from '../src/core/schema.ts';
 import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../src/core/text.ts';
+
+/**
+ * Keywords the derived source lists that we leave out by rule, with the reason. The derived list is
+ * read off every skill, enhanced ones included, and off any keyword a skill names; we count the
+ * base S1/S2/S3 only (`baseAttackSkillIds`, M85) and only what they give or spend (`buffCounts`,
+ * M86).
+ */
+const KEYWORDS_DROPPED_ON_PURPOSE: Record<number, Record<string, string>> = {
+  10312: { Sinking: '침잠은 강화 스킬(1031205~07)에만 있다 (M85)' },
+};
 
 /** The twelve sinners the game has had since launch; every one must be deckable. */
 const SINNER_COUNT = 12;
@@ -697,18 +704,6 @@ function checkInvariants(
   // weaker reading — it misses a keyword our static derivation finds on 10 of 179 identities — so a
   // disagreement is a prompt to look, not a failure.
   const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
-  const staticById = staticDataPresent()
-    ? new Map(readPersonalities().map((p) => [p.id, p]))
-    : new Map<number, ReturnType<typeof readPersonalities>[number]>();
-  const staticSkills = staticById.size > 0 ? readPersonalitySkills() : new Map();
-  const variants = staticById.size > 0 ? readSpecialVariants() : new Map();
-  const enhancedKeywords = (id: number): Set<string> => {
-    const personality = staticById.get(id);
-    if (!personality) return new Set();
-    const all = deriveIdentityKeywords(personality, staticSkills, variants, { includeExtra: true });
-    const base = deriveIdentityKeywords(personality, staticSkills, variants);
-    return new Set(Object.keys(all).filter((k) => !(k in base)));
-  };
   const derivedIdentitiesByid = derivedById;
   const keywordDisagreements: number[] = [];
   for (const identity of identities) {
@@ -725,16 +720,28 @@ function checkInvariants(
     // keyword only the derived source has means a derivation silently dropped it. That is how
     // 10410 and 10913 lost 특수 충전 to a too-strict 「특수 X」 pattern until M60.
     //
-    // Except where we left it out on purpose: the derived list reads every skill, enhanced ones
-    // included, and we count only the base S1/S2/S3 (`baseAttackSkillIds`) — 10312's 침잠 comes
-    // from its enhanced skills alone. A keyword the static data shows on an enhanced skill is that.
-    const enhancedOnly = enhancedKeywords(identity.id);
-    const missed = [...theirs].filter((k) => STATUS_SET.has(k) && !ours.has(k) && !enhancedOnly.has(k));
-    if (missed.length > 0) {
+    //
+    // Except where we left it out on purpose, and those are named one by one (`KEYWORDS_DROPPED_ON_
+    // PURPOSE`) rather than worked out: an exemption computed from our own derivation would excuse
+    // exactly the bug it is meant to catch. A listed keyword the derived source stops naming, or we
+    // start shipping, is an error too, so the list cannot rot.
+    const onPurpose = new Set<string>(Object.keys(KEYWORDS_DROPPED_ON_PURPOSE[identity.id] ?? {}));
+    const missed: string[] = [...theirs].filter((k) => STATUS_SET.has(k) && !ours.has(k));
+    const unexpected = missed.filter((k) => !onPurpose.has(k));
+    if (unexpected.length > 0) {
       err(
         'invariant',
-        `identity ${identity.id} (${identity.title.ko}) lacks ${missed.join(', ')}, which the ` +
-          `derived source lists; check the keyword derivation (readSpecialVariants, deriveIdentityKeywords)`,
+        `identity ${identity.id} (${identity.title.ko}) lacks ${unexpected.join(', ')}, which the ` +
+          `derived source lists; check the keyword derivation (readSpecialVariants, deriveIdentityKeywords, ` +
+          `buffCounts), or list it in KEYWORDS_DROPPED_ON_PURPOSE with the reason`,
+      );
+    }
+    const stale = [...onPurpose].filter((k) => !missed.includes(k));
+    if (stale.length > 0) {
+      err(
+        'invariant',
+        `KEYWORDS_DROPPED_ON_PURPOSE lists ${identity.id} ${stale.join(', ')}, but that is no longer a ` +
+          `keyword the derived source has and we do not; remove the entry`,
       );
     }
   }

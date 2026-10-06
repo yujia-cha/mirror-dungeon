@@ -71,7 +71,9 @@ import { parseConditions } from './lib/parse-conditions.ts';
 import {
   deriveConsumedKeywordsFromText,
   deriveIdentityKeywordsFromText,
+  keywordsInSkillText,
   skillsOfIdentity,
+  specialAmmoFamiliesOf,
 } from './lib/derive-text.ts';
 import { DERIVED_DIR } from './lib/derived-source.ts';
 import {
@@ -662,9 +664,21 @@ const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
   // 혈찬 is spent, never inflicted, and the static data says nothing machine-readable about it —
   // only the Korean sentence does. So it is read separately and merged over what the skill data
   // gives; a curated entry still wins outright.
+  // The Korean sentence of each base skill is a second reading of what it gives, joined per skill
+  // with the skill data — it is the only place some grants are written: 11115's 화상, and the 특수
+  // 충전 that 10312·10416·10816 gain, which the skill data stores as plain `Charge` while the
+  // sentence names the variant (`ThePowerOfLoveAndHate`, `ChargeNoirAlly`, `ChargeRougeAlly`).
+  const texts = skillsOfIdentity(raw.id, localizedSkills);
+  const textById = new Map(texts.map((skill) => [skill.id, skill]));
+  const ammoFamilies = specialAmmoFamiliesOf(texts, specialVariants);
   const derived = {
-    ...deriveIdentityKeywords(raw, skills, specialVariants),
-    ...deriveConsumedKeywordsFromText(skillsOfIdentity(raw.id, localizedSkills), baseAttackSkillIds(raw)),
+    ...deriveIdentityKeywords(raw, skills, specialVariants, {
+      alsoFrom: (skillId) => {
+        const text = textById.get(skillId);
+        return text ? keywordsInSkillText(text, specialVariants, ammoFamilies) : undefined;
+      },
+    }),
+    ...deriveConsumedKeywordsFromText(texts, baseAttackSkillIds(raw)),
   };
   const keywords = (curatedKeywords ?? derived) as Identity['keywords'];
   const keywordSource: Identity['keywordSource'] = curatedKeywords

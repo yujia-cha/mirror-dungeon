@@ -39,8 +39,24 @@ describe('keywordsInSkillText', () => {
     expect(base(skill(1000101, '', '[OnSucceedAttack] 자신의 [Charge] 횟수 6 증가'))).toEqual(['Charge']);
   });
 
-  it('ignores a keyword that is spent, merely named, or only one option of several', () => {
-    expect(base(skill(1000101, '[WhenUse] 자신의 [Charge] 횟수를 2 소모하여, 코인 위력 +1'))).toEqual([]);
+  it('counts 호흡·충전 the skill user spends or its side gets, but not a 디버프 spent', () => {
+    expect(base(skill(1000101, '[WhenUse] 자신의 [Charge] 횟수를 2 소모하여, 코인 위력 +1'))).toEqual([
+      'Charge',
+    ]);
+    expect(base(skill(1000101, '[WhenUse] 대상의 [Burst] 횟수 2 소모'))).toEqual([]);
+    // Allies count — the user may be among them; the enemy's does not.
+    expect(base(skill(1000101, '[WhenUse] 아군에게 [Charge] 3 부여'))).toEqual(['Charge']);
+    expect(base(skill(1000101, '[WhenUse] 대상의 [Charge] 3 증가'))).toEqual([]);
+  });
+
+  it('does not count a 디버프 the skill puts on its own user', () => {
+    expect(base(skill(1000101, '[WhenUse] 자신에게 [Vibration] 2 부여'))).toEqual([]);
+    expect(base(skill(1000101, '[OnSucceedAttack] [Vibration] 2 부여'))).toEqual(['Vibration']);
+    // 10714: the target gets it too.
+    expect(base(skill(1000101, '[WhenUse] 대상과 자신에게 [Combustion] 2 부여'))).toEqual(['Combustion']);
+  });
+
+  it('ignores a keyword that is merely named, or only one option of several', () => {
     expect(base(skill(1000101, '[BeforeUse] 자신의 [Charge] 횟수가 15 이상이면 발동'))).toEqual([]);
     // An enumeration offers a choice; naming a keyword there is not inflicting it.
     expect(base(skill(1000101, '[Combustion], [Laceration], [Sinking] 중 무작위 1개의 횟수 2 증가'))).toEqual(

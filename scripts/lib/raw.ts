@@ -72,7 +72,10 @@ export interface RawSkillData {
 }
 
 interface RawCoin {
-  abilityScriptList?: { scriptName?: string; buffData?: { buffKeyword?: string } }[];
+  abilityScriptList?: {
+    scriptName?: string;
+    buffData?: { buffKeyword?: string; target?: string; buffOwner?: string };
+  }[];
 }
 
 export interface RawCommonData {

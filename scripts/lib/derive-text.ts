@@ -21,11 +21,34 @@ const MENTION = /\[([A-Za-z0-9_]+)\]|(화상|출혈|진동|파열|침잠|호흡|
 const TAIL = 14;
 
 /**
- * 「… 부여」 gives the keyword to a target; 「… 횟수 N 증가」 and 「… N 얻음」 give it to oneself. All
- * count — the static data does not tell them apart either. 「얻음」 is how 적안·참회 (10410) and
- * 검은 눈물 (10913) state their 특수 충전; without it the text read neither (M60).
+ * 「… 부여」 gives the keyword to a target; 「… 횟수 N 증가」 and 「… N 얻음」 give it to oneself.
+ * Whose it is is decided by the words before the mention (`onSelf`, `ON_OTHERS`), the same rule
+ * `buffCounts` applies to the skill data. 「얻음」 is how 적안·참회 (10410) and 검은 눈물 (10913)
+ * state their 특수 충전; without it the text read neither (M60).
  */
 const GRANTS = /부여|증가|얻음/;
+
+/** A 버프 (호흡·충전) also counts when the skill spends its own: 「자신의 [Charge] 횟수 3 소모」. */
+const GRANTS_OR_SPENDS = /부여|증가|얻음|소모/;
+
+/** How much of the sentence before a mention says whose it is. */
+const HEAD = 6;
+
+/**
+ * 「자신에게 [Vibration] 2 부여」 — a 디버프 on oneself is not inflicting it. 「대상과 자신에게」
+ * (10714) gives it to the target as well, so a head naming the target still counts.
+ */
+const onSelf = (line: string, at: number): boolean =>
+  /자신/.test(line.slice(Math.max(0, at - HEAD), at)) &&
+  !/대상과\s*자신/.test(line.slice(Math.max(0, at - 2 * HEAD), at));
+
+/**
+ * 「대상의 [Breath]」 — a 버프 that is the enemy's, not the skill user's side. 「아군에게 [Charge]
+ * 부여」 counts: the user may be among those allies (M86).
+ */
+const ON_OTHERS = /대상/;
+
+const BUFF_KEYWORDS = new Set<IdentityKeywordId>(['Breath', 'Charge']);
 
 /**
  * 「[Combustion], [Laceration], [Vibration], [Burst], [Sinking] 중 무작위 1개」 lists keywords to
@@ -140,18 +163,23 @@ export function keywordsInSkillText(
     for (const match of line.matchAll(MENTION)) {
       const end = match.index + match[0].length;
       const tail = line.slice(end, end + TAIL);
-      if (ENUMERATION.test(tail) || !GRANTS.test(tail)) continue;
+      if (ENUMERATION.test(tail)) continue;
       const korean = match[2];
-      if (korean) {
-        const keyword = IDENTITY_KEYWORD_BY_KO[korean];
-        if (keyword) base.add(keyword);
-        continue;
-      }
       const token = match[1];
-      if (!token) continue;
-      const variant = specialVariants.get(token);
+      const variant = token ? specialVariants.get(token) : undefined;
+      const keyword: IdentityKeywordId | undefined = korean
+        ? IDENTITY_KEYWORD_BY_KO[korean]
+        : (variant ?? (token && INFLICTABLE.has(token) ? (token as IdentityKeywordId) : undefined));
+      if (!keyword) continue;
+      // The rule the static path follows too (`buffCounts`): a 디버프 counts when the other side
+      // gets it, a 버프 when the skill user gains or spends its own. 탄환 keeps its own reading
+      // (the token loop below); a sentence about it is taken as before.
+      const head = line.slice(Math.max(0, match.index - HEAD), match.index);
+      const isBuff = BUFF_KEYWORDS.has(keyword);
+      if (!(isBuff ? GRANTS_OR_SPENDS : GRANTS).test(tail)) continue;
+      if (keyword !== 'Bullet' && (isBuff ? ON_OTHERS.test(head) : onSelf(line, match.index))) continue;
       if (variant) special.add(variant);
-      else if (INFLICTABLE.has(token)) base.add(token as IdentityKeywordId);
+      else base.add(keyword);
     }
   }
   // 탄환 is spent, not inflicted, so it is never written as 「부여」. Its presence anywhere in the
@@ -192,16 +220,7 @@ export function deriveIdentityKeywordsFromText(
     attacks ? attacks.has(skill.id) : looksLikeAttackSkill(skill);
   const baseCounts = new Map<IdentityKeywordId, number>();
   const specialCounts = new Map<IdentityKeywordId, number>();
-  // Gathered across every skill, defense included: the reload that names the family often sits on
-  // a skill the attack list leaves out.
-  const specialAmmoFamilies = new Set<string>();
-  for (const skill of skills) {
-    for (const token of tokensOf(skill)) {
-      if (specialVariants.get(token) !== 'Bullet') continue;
-      const family = ammoFamily(token);
-      if (family) specialAmmoFamilies.add(family);
-    }
-  }
+  const specialAmmoFamilies = specialAmmoFamiliesOf(skills, specialVariants);
   for (const skill of skills) {
     if (!isAttack(skill)) continue;
     const found = keywordsInSkillText(skill, specialVariants, specialAmmoFamilies);
@@ -213,6 +232,26 @@ export function deriveIdentityKeywordsFromText(
     const n = baseCounts.get(kw) ?? 0;
     const s = specialCounts.get(kw) ?? 0;
     if (n + s > 0) out[kw] = { skills: n, specialSkills: s };
+  }
+  return out;
+}
+
+/**
+ * The 특수 ammo families an identity declares (see `ammoFamily`). Gathered across every skill,
+ * defense included: the reload that names the family often sits on a skill the attack list leaves
+ * out.
+ */
+export function specialAmmoFamiliesOf(
+  skills: LocalizedSkill[],
+  specialVariants: Map<string, IdentityKeywordId>,
+): Set<string> {
+  const out = new Set<string>();
+  for (const skill of skills) {
+    for (const token of tokensOf(skill)) {
+      if (specialVariants.get(token) !== 'Bullet') continue;
+      const family = ammoFamily(token);
+      if (family) out.add(family);
+    }
   }
   return out;
 }

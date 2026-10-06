@@ -143,16 +143,105 @@ describe('sinnerIdFromIdentityId', () => {
 });
 
 describe('deriveIdentityKeywords', () => {
+  // Each keyword is given the way the game gives it: a 디버프 to the target, 호흡·충전 to oneself.
+  const BUFFS = new Set(['Breath', 'Charge', 'ChargeBodyArt']);
   const skill = (id: number, keywords: string[]): RawSkill => ({
     id,
     skillType: 'SKILL',
     skillData: [
       {
         coinList: keywords.map((buffKeyword) => ({
-          abilityScriptList: [{ scriptName: 'GiveBuffOnSucceedAttack', buffData: { buffKeyword } }],
+          abilityScriptList: [
+            {
+              scriptName: 'GiveBuffOnSucceedAttack',
+              buffData: { buffKeyword, target: BUFFS.has(buffKeyword) ? 'Self' : 'Target' },
+            },
+          ],
         })),
       },
     ],
+  });
+  const ability = (id: number, scriptName: string, buffData: Record<string, string>): RawSkill => ({
+    id,
+    skillType: 'SKILL',
+    skillData: [{ coinList: [{ abilityScriptList: [{ scriptName, buffData }] }] }],
+  });
+  const one = (s: RawSkill) =>
+    deriveIdentityKeywords(
+      { id: 10101, attributeList: [{ skillId: s.id, number: 1 }] },
+      new Map([[s.id, s]]),
+    );
+
+  it('counts a 디버프 only when the other side gets it', () => {
+    expect(one(ability(1, 'GiveBuffOnLoseDuel', { buffKeyword: 'Burst', target: 'Target' }))).toEqual({
+      Burst: { skills: 1, specialSkills: 0 },
+    });
+    // 10110·10508 inflict their second status this way.
+    expect(
+      one(ability(1, 'CheckAdditionalBuff20509', { buffKeyword: 'Laceration', target: 'Target' })),
+    ).toEqual({
+      Laceration: { skills: 1, specialSkills: 0 },
+    });
+    // 10104 동백 puts its 진동 on itself.
+    expect(one(ability(1, 'GiveBuffOnUse', { buffKeyword: 'Vibration', target: 'Self' }))).toEqual({});
+    // 「대상의 화상과 출혈의 합 6당」 reads the target's statuses; it inflicts nothing.
+    expect(
+      one(
+        ability(1, 'CoinScaleAdderDivideBySumOfTwoBuffStack_Combustion_Laceration', {
+          buffKeyword: 'Combustion',
+          buffOwner: 'Target',
+        }),
+      ),
+    ).toEqual({});
+  });
+
+  it('counts 호흡·충전 only when the skill gives them to itself or spends its own', () => {
+    expect(one(ability(1, 'GiveBuffOnUse', { buffKeyword: 'Charge', target: 'Self' }))).toEqual({
+      Charge: { skills: 1, specialSkills: 0 },
+    });
+    expect(
+      one(
+        ability(1, 'CoinScaleAdderOnStartTurnViaBuffCheckAndUse', {
+          buffKeyword: 'Charge',
+          buffOwner: 'Self',
+        }),
+      ),
+    ).toEqual({ Charge: { skills: 1, specialSkills: 0 } });
+    // 10916: 「[Breath]이 6 이상이면, 최종 위력 +1」 is a check, not a gain.
+    expect(
+      one(ability(1, 'SkillPowerResultAdderViaOnUseBuffCheck', { buffKeyword: 'Breath', buffOwner: 'Self' })),
+    ).toEqual({});
+    // 10503: the spend is named only as the script's suffix; its buffData is the buff it pays for.
+    expect(
+      one(
+        ability(1, 'GiveBuffOnSuccessAttackUsingBuffTurn_Charge3', {
+          buffKeyword: 'DefenseDown',
+          target: 'Target',
+        }),
+      ),
+    ).toEqual({ Charge: { skills: 1, specialSkills: 0 } });
+    // 충전 handed to allies counts — the skill user may be among them (10917).
+    expect(one(ability(1, 'BuffToAlly1', { buffKeyword: 'Charge', target: 'Target' }))).toEqual({
+      Charge: { skills: 1, specialSkills: 0 },
+    });
+    expect(one(ability(1, 'GiveBuffOnUse', { buffKeyword: 'Breath', target: 'LowestMpAlly1' }))).toEqual({
+      Breath: { skills: 1, specialSkills: 0 },
+    });
+    // Given to the enemy target by an ordinary script, it is not the user's side's.
+    expect(one(ability(1, 'GiveBuffOnSucceedAttack', { buffKeyword: 'Charge', target: 'Target' }))).toEqual(
+      {},
+    );
+  });
+
+  it('joins another reading of the same skill, so a grant only the sentence states still counts', () => {
+    // 11115's 화상 has no buffData of its own; the Korean text says it is inflicted.
+    const s = ability(1, 'GiveBuffOnSucceedAttack', { buffKeyword: 'Laceration', target: 'Target' });
+    const personality = { id: 11115, attributeList: [{ skillId: 1, number: 1 }] };
+    expect(
+      deriveIdentityKeywords(personality, new Map([[1, s]]), new Map(), {
+        alsoFrom: () => ({ base: new Set(['Combustion', 'Laceration'] as const), special: new Set() }),
+      }),
+    ).toEqual({ Laceration: { skills: 1, specialSkills: 0 }, Combustion: { skills: 1, specialSkills: 0 } });
   });
 
   it('counts the attack skills that inflict each keyword, not the skill copies', () => {
