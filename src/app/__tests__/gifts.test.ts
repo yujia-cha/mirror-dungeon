@@ -1,16 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Unresolved } from '../../core/types.ts';
+import type { RoutePlan, Unresolved } from '../../core/types.ts';
 import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../../core/text.ts';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
-import {
-  analyseDeck,
-  buildIndexes,
-  defaultOptions,
-  evaluateConditions,
-  planRoute,
-} from '../../core/index.ts';
-import { planToText } from '../lib/plan-text.ts';
-import { unresolvedDetailText } from '../lib/unresolved-text.ts';
+import { analyseDeck, buildIndexes, evaluateConditions } from '../../core/index.ts';
+import { lostFusions } from '../lib/fusion-lost.ts';
+import { plannedGifts } from '../lib/plan-input.ts';
+import { sanitizeRun, useApp } from '../store.ts';
 import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementOf } from '../lib/judgement.ts';
@@ -163,45 +158,42 @@ describe('identity keyword chips', () => {
   });
 });
 
-describe('unresolved detail text', () => {
-  const giftName = (id: number) => indexes.giftById.get(id)?.name.ko ?? String(id);
+describe('fusions lost to the run', () => {
+  const dead = (giftId: number, missing: number[], droppedIngredients?: number[]): Unresolved => ({
+    giftId,
+    reason: 'fusion-ingredient-unresolved',
+    detail: { ko: '', en: '' },
+    missing,
+    ...(droppedIngredients ? { droppedIngredients } : {}),
+  });
+  const planWith = (unresolved: Unresolved[]): RoutePlan =>
+    ({
+      unresolved,
+      fusions: [{ result: 9249, ingredients: [9431, 9706, 9707] }],
+    }) as unknown as RoutePlan;
 
-  it('names the ingredients a fusion is missing instead of listing their ids', () => {
-    // Core can only write the ids — the planner never carries display names — so the reason is
-    // rebuilt here. The panel always did this; the copied plan text printed the raw numbers.
-    const entry: Unresolved = {
-      giftId: 9410,
-      reason: 'fusion-ingredient-unresolved',
-      detail: { ko: '재료 9408, 9409을(를) 구할 수 없어 조합할 수 없습니다.', en: 'x' },
-      missing: [9408, 9409],
-    };
-    const text = unresolvedDetailText(entry, giftName, 'ko');
-    expect(text).toContain(giftName(9408));
-    expect(text).toContain(giftName(9409));
-    expect(text).not.toMatch(/9408|9409/);
+  it('lists a fusion whose missing ingredient was left 미획득, with what the route stopped chasing', () => {
+    expect(lostFusions(planWith([dead(9249, [9431], [9706, 9707])]), { 9431: 'failed' })).toEqual([
+      { result: 9249, missing: [9431], dropped: [9706, 9707], remaining: [9706, 9707] },
+    ]);
   });
 
-  it('reaches the copied plan text, not just the route panel', () => {
-    const deck = [10101, 10201, 10301, 10401, 10501, 10601, 10701, 10801, 10901, 11001, 11101, 11201];
-    const plan = planRoute(
-      {
-        deck,
-        wanted: [9191, 9410, 9419, 9423].map((giftId) => ({ giftId, required: true })),
-        options: { ...defaultOptions(), lastFloor: 15, hardFromFloor: 1, currentFloor: 3 },
-      },
-      data,
-      indexes,
-    );
-    expect(plan.unresolved.some((u) => u.reason === 'fusion-ingredient-unresolved')).toBe(true);
-    const text = planToText(
-      plan,
-      giftName,
-      (id) => indexes.packById.get(id)?.name.ko ?? '',
-      () => '',
-      'ko',
-    );
-    expect(text).toContain('재료 ' + giftName(9408));
-    expect(text).not.toMatch(/재료 \d+/);
+  it('counts as remaining only the other ingredients not yet in hand', () => {
+    // Still routed (`dropped` empty): the remaining ones are what the player may choose to stop chasing.
+    expect(lostFusions(planWith([dead(9249, [9431])]), { 9431: 'failed', 9706: 'got' })).toEqual([
+      { result: 9249, missing: [9431], dropped: [], remaining: [9707] },
+    ]);
+  });
+
+  it('says nothing about a fusion the plan could never make', () => {
+    // No pack in range offers the ingredient: not the run's doing, and the route did not change.
+    expect(lostFusions(planWith([dead(9249, [9431])]), {})).toEqual([]);
+    expect(lostFusions(planWith([dead(9249, [9431])]), { 9431: 'got', 9706: 'failed' })).toEqual([]);
+  });
+
+  it('follows a nested fusion up to the result that needed it', () => {
+    const plan = planWith([dead(9410, [9408]), dead(9408, [9407]), dead(9500, [9501])]);
+    expect(lostFusions(plan, { 9407: 'failed' }).map((l) => l.result)).toEqual([9410, 9408]);
   });
 });
 
@@ -261,5 +253,32 @@ describe('special keyword conditions', () => {
       .filter((g) => judgementOf(evaluateConditions([g.id], withBloodfiends, indexes)) === 'unknown')
       .map((g) => g.id);
     expect(unknown).toEqual([9208]);
+  });
+});
+
+describe('the remaining ingredients of a fusion the run loses', () => {
+  it('are given up by default once the run is under way, unless the player keeps collecting', () => {
+    const flag = (run?: { currentFloor: number; collectRest?: number[] }, fusionGoal = {}) =>
+      plannedGifts([9249, 9267], fusionGoal, run).map((w) => w.ingredientsAsGoals);
+    // Before the run nothing is lost yet, and only 「재료는 목표가 아님」 sets it.
+    expect(flag()).toEqual([undefined, undefined]);
+    expect(flag({ currentFloor: 1 })).toEqual([undefined, undefined]);
+    expect(flag({ currentFloor: 1 }, { 9249: 'resultOnly' })).toEqual([false, undefined]);
+    // Past floor 1 a lost fusion is given up whole by default…
+    expect(flag({ currentFloor: 3 })).toEqual([false, false]);
+    // …and 「남은 재료 모으기」 keeps its ingredients goals.
+    expect(flag({ currentFloor: 3, collectRest: [9249] })).toEqual([undefined, false]);
+  });
+
+  it('keeps the choice with the saved run, and drops it with the goal', () => {
+    expect(sanitizeRun({ currentFloor: 3, collectRest: [9249, 9249, 'x'] }).collectRest).toEqual([9249]);
+    expect(sanitizeRun({ currentFloor: 3 }).collectRest).toBeUndefined();
+    useApp.setState({ wanted: [9249], fusionGoal: { 9249: 'resultOnly' } });
+    useApp.getState().setCollectRest(9249, true);
+    expect(useApp.getState().run.collectRest).toEqual([9249]);
+    // Collecting the rest makes them goals again.
+    expect(useApp.getState().fusionGoal).toEqual({});
+    useApp.getState().removeWanted(9249);
+    expect(useApp.getState().run.collectRest).toEqual([]);
   });
 });

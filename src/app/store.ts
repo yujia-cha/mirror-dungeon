@@ -7,7 +7,7 @@ import type { Lang } from './i18n.ts';
 import { observationClosed, type FusionGoalMap, type RunState } from './lib/plan-input.ts';
 
 export type LeftTab = 'deck' | 'gifts';
-export type RightTab = 'plan' | 'goals' | 'tracker';
+export type RightTab = 'plan' | 'tracker';
 
 /** Which side panels are open on a desktop layout, and which tab each shows. Device-only. */
 export interface UiState {
@@ -89,6 +89,12 @@ interface AppState extends SharedState {
   setStageFloor: (floor: number, settle?: { got?: number[]; failed?: number[] }) => void;
   resetRun: () => void;
   setGiftStatus: (giftId: number, status: 'got' | 'failed' | null) => void;
+  /**
+   * 「남은 재료 모으기」 on a fusion the run lost: keep entering packs for its remaining
+   * ingredients (`on`), or give them up with the fusion (the default once the run is under way).
+   * Collecting them makes them goals again, so it also clears 「재료는 목표가 아님」.
+   */
+  setCollectRest: (giftId: number, on: boolean) => void;
   setOptions: (patch: Partial<PlanOptions>) => void;
   /** The header's 초기화: deck back to `deck` (the LCB default), no items, default options, no run. `ui`, `lang`, `dark` stay. */
   resetAll: (deck: number[], deployedDefault: number) => void;
@@ -272,8 +278,8 @@ export function sanitizeUi(raw: unknown): UiState {
   // The old 「루트 설정」 tab folded into the items tab.
   if (source.leftTab === 'deck' || source.leftTab === 'gifts') out.leftTab = source.leftTab;
   else if (source.leftTab === 'settings') out.leftTab = 'gifts';
-  if (source.rightTab === 'plan' || source.rightTab === 'goals' || source.rightTab === 'tracker')
-    out.rightTab = source.rightTab;
+  // The old 「목표」 tab (`'goals'`) is gone; it falls back to the route like any unknown value.
+  if (source.rightTab === 'plan' || source.rightTab === 'tracker') out.rightTab = source.rightTab;
   out.leftWidth = clampPanelWidth(source.leftWidth);
   out.rightWidth = clampPanelWidth(source.rightWidth);
   if (typeof source.activeUnpickedOnly === 'boolean') out.activeUnpickedOnly = source.activeUnpickedOnly;
@@ -337,6 +343,10 @@ export function sanitizeRun(raw: unknown): RunState {
       ),
     ];
   }
+  if (Array.isArray(source.collectRest)) {
+    const collectRest = [...new Set(source.collectRest.filter((id): id is number => Number.isInteger(id)))];
+    if (collectRest.length > 0) out.collectRest = collectRest;
+  }
   return out;
 }
 
@@ -385,7 +395,11 @@ export function withoutStaleFailures(
 /** The run with every unreachable miss dropped; the same object when nothing was stale. */
 function withRunFor(run: RunState, wanted: number[], fusionGoal: FusionGoalMap): RunState {
   const giftStatus = withoutStaleFailures(run.giftStatus, collectedGifts(wanted, fusionGoal));
-  return giftStatus === run.giftStatus ? run : { ...run, giftStatus };
+  // A 「남은 재료 모으기」 choice belongs to its goal and goes with it.
+  const collectRest = run.collectRest?.filter((id) => wanted.includes(id));
+  const prunedRest = collectRest !== undefined && collectRest.length !== run.collectRest?.length;
+  if (giftStatus === run.giftStatus && !prunedRest) return run;
+  return { ...run, giftStatus, ...(prunedRest ? { collectRest } : {}) };
 }
 
 function withoutPack(visits: Record<number, number>, packId: number): Record<number, number> {
@@ -699,6 +713,16 @@ export const useApp = create<AppState>()(
           else giftStatus[giftId] = status;
           return { run: { ...state.run, giftStatus } };
         }),
+      setCollectRest: (giftId, on) =>
+        set((state) => {
+          if (!state.wanted.includes(giftId)) return {};
+          const rest = (state.run.collectRest ?? []).filter((id) => id !== giftId);
+          const run = { ...state.run, collectRest: on ? [...rest, giftId] : rest };
+          if (!on || state.fusionGoal[giftId] !== 'resultOnly') return { run };
+          const fusionGoal = { ...state.fusionGoal };
+          delete fusionGoal[giftId];
+          return { run, fusionGoal, options: withObservedIn(state.options, state.wanted, fusionGoal) };
+        }),
 
       toggleObserved: (giftId, limits) =>
         set((state) => {
@@ -777,6 +801,9 @@ export const useApp = create<AppState>()(
                   Object.entries(state.run.giftStatus).filter(([id]) => giftIds.has(Number(id))),
                 ),
                 startGifts: state.run.startGifts.filter((id) => giftIds.has(id)),
+                ...(state.run.collectRest
+                  ? { collectRest: state.run.collectRest.filter((id) => giftIds.has(id)) }
+                  : {}),
               };
         set({
           season,

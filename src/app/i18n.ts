@@ -224,8 +224,6 @@ export const STRINGS = {
   routeRequiredPacks: { ko: '필요 팩', en: 'Packs' },
   routeCovered: { ko: '획득', en: 'Got' },
   routeApprox: { ko: '근사 결과', en: 'Near-best' },
-  routeCopy: { ko: '텍스트 복사', en: 'Copy as text' },
-  routeCopied: { ko: '복사했습니다', en: 'Copied' },
   routeStart: { ko: '시작', en: 'Start' },
   routeStartGift: { ko: '시작 기프트', en: 'Starting gift' },
   routeObserved: { ko: '관측', en: 'Observed' },
@@ -286,11 +284,7 @@ export const STRINGS = {
   condUnmet: { ko: '미충족', en: 'Not met' },
   routeConditions: { ko: '조건 판정', en: 'Conditions' },
   routeConditionsBasis: { ko: '출격 {n} 기준', en: 'for {n} deployed' },
-  routeUnresolved: { ko: '미해결', en: 'Unresolved' },
   routeWarnings: { ko: '참고', en: 'Notes' },
-  // 루트가 팩 입장으로 더 할 일이 없는 기프트들. 목록과 개수만 말하고 팩 한정/범용 드랍 판단은
-  // 기프트 탭의 획득 분류(`acqMaybe`)와 기프트 상세 시트가 맡는다.
-  routeGeneralBadge: { ko: '범용 드랍 {n}', en: '{n} general drops' },
   /**
    * Shown while a newer route is still being computed off-thread, over the previous one.
    *
@@ -300,9 +294,6 @@ export const STRINGS = {
   routeRecomputing: { ko: '갱신 중…', en: 'updating…' },
   /** The skip link's own text. 「무대」 is what the centre column is called everywhere else. */
   skipToStage: { ko: '무대로 건너뛰기', en: 'Skip to the stage' },
-  routeGeneralTitle: { ko: '범용 드랍', en: 'General drops' },
-  /** The copied plan's first line: every goal, the unresolved ones marked. */
-  routeGoalsLabel: { ko: '목표', en: 'Goals' },
   // Where this route gets one gift (`routeSourceText`): a floor and pack, the observation, the
   // starting gift, the general pool no pack fetches, or a fusion after a floor.
   routeSourcePack: { ko: '{floor}층 {name}', en: 'floor {floor}, {name}' },
@@ -316,16 +307,21 @@ export const STRINGS = {
     en: 'Too many goals to search exhaustively. This may not be optimal, and adding goals can drop ones already got.',
   },
   routeEmpty: { ko: '목표를 정하면 루트가 나옵니다', en: 'Set goals and the route appears' },
-  unresolvedNoPack: { ko: '층 범위 밖', en: 'No pack in range' },
-  unresolvedConflict: { ko: '팩 충돌', en: 'Pack conflict' },
-  unresolvedHardOnly: { ko: '난이도 제한', en: 'Difficulty-locked' },
-  unresolvedIngredient: { ko: '재료 미해결', en: 'Ingredient unresolved' },
-  unresolvedNotObtainable: { ko: '획득 불가', en: 'Not obtainable' },
-  unresolvedNoPackPath: { ko: '팩 경로 없음', en: 'No pack path' },
-  unresolvedChance: { ko: '확률 보상', en: 'Chance only' },
-  unresolvedBanned: { ko: '제외한 팩', en: 'Pack excluded' },
-  unresolvedShared: { ko: '재료 겹침', en: 'Ingredient shared' },
-  unresolvedFailed: { ko: '미획득', en: 'Not got' },
+  // The top of the route tab when a run's 미획득 killed a fusion (`FusionLostNotice`).
+  fusionLostTitle: { ko: '조합 불가로 루트 변경', en: 'Route changed: fusion lost' },
+  fusionLostText: {
+    ko: '{missing} 얻지 못해 {result} 조합할 수 없습니다. 루트를 다시 계산했습니다.',
+    en: '{missing} was not got, so {result} cannot be fused. The route was re-planned.',
+  },
+  // The one toggle under a lost fusion: keep entering packs for the other ingredients.
+  fusionLostCollect: { ko: '{name} 남은 재료 모으기', en: 'Keep collecting the rest of {name}' },
+  // The state bar under the remaining ingredients: what the route does with them right now.
+  fusionLostCollecting: { ko: '모으기', en: 'Collect' },
+  fusionLostNotCollecting: { ko: '모으지 않기', en: "Don't collect" },
+  fusionLostKept: {
+    ko: '남은 재료({names})는 계속 모으러 갑니다.',
+    en: 'The route still goes after the remaining ingredients ({names}).',
+  },
   unresolvedDropped: {
     ko: '나머지 재료({names})만을 위한 입장은 취소했습니다.',
     en: 'Pack entries for the remaining ingredients ({names}) alone were dropped.',
@@ -336,7 +332,6 @@ export const STRINGS = {
   runVisited: { ko: '{floor}층 입장', en: 'Entered on floor {floor}' },
   runVisitedShort: { ko: '입장 · {floor}층', en: 'Entered · F{floor}' },
   runPassed: { ko: '지남', en: 'Passed' },
-  runFailedCount: { ko: '미획득 {n}', en: '{n} not got' },
   giftStatusGot: { ko: '획득', en: 'Got' },
   giftStatusFailed: { ko: '미획득', en: 'Not got' },
   // Every way a gift becomes or stops being a goal — the gift sheet, the pack sheet's rows — says
@@ -365,7 +360,6 @@ export const STRINGS = {
   tabDeck: { ko: '덱', en: 'Deck' },
   tabGifts: { ko: '기프트', en: 'Gifts' },
   tabRoutePlan: { ko: '전체 루트', en: 'Full route' },
-  tabGoals: { ko: '목표', en: 'Goals' },
   tabTracker: { ko: '추적기', en: 'Tracker' },
   stageFloor: { ko: '{floor}층', en: 'Floor {floor}' },
   stageOf: { ko: '/ {last}', en: '/ {last}' },
@@ -433,16 +427,7 @@ export const STRINGS = {
   },
   trackerFusionHeld: { ko: '지금 획득으로 표시된 재료', en: 'Ingredients marked as got' },
   trackerUnmark: { ko: '미획득으로', en: 'Not got' },
-  routeUnresolvedCount: { ko: '미해결 {n}', en: '{n} unresolved' },
-  routeGoals: { ko: '목표 기프트', en: 'Goals' },
   settingsObserved: { ko: '관측 지정', en: 'Observe' },
-  // `{names}` is a list of gift names, so the particle is picked by `josa` at the call site.
-  unresolvedMissing: {
-    ko: '재료 {names} 구할 수 없어 조합할 수 없습니다.',
-    en: 'Cannot be fused: {names} cannot be obtained in this plan.',
-  },
-  actionObserveGift: { ko: '{name} 관측 지정', en: 'Observe {name}' },
-  actionReleaseObservations: { ko: '관측 지정 해제', en: 'Unpin observations' },
   guide: { ko: '설명서', en: 'Guide' },
   guidePrev: { ko: '이전 카드', en: 'Previous card' },
   guideNext: { ko: '다음 카드', en: 'Next card' },
@@ -547,8 +532,8 @@ export const GUIDE_CARDS = [
         en: '「Full route」 at the top right draws the packs floor by floor as a route map.',
       },
       {
-        ko: '「획득 M/T」는 목표 중 루트가 가져다주는 수이고, 「범용 드랍」은 어느 팩에서나 나올 수 있지만 반드시 나오지는 않는 것입니다.',
-        en: '「Got M/T」 counts the goals the route brings; 「General drops」 can come from any pack but are never guaranteed.',
+        ko: '「획득 M/T」는 목표 중 루트가 가져다주는 수입니다. 어느 팩에서나 나올 수 있는 범용 드랍도 세지만, 반드시 나오지는 않습니다.',
+        en: '「Got M/T」 counts the goals the route brings, general drops included — those can come from any pack but are never guaranteed.',
       },
       {
         ko: '전부 얻을 수 없으면 요약 아래 카드가 어떤 기프트를 빼면 무엇이 달라지는지 한 줄씩 보여 줍니다. ✕는 목표에서 빼기, 경로 아이콘은 미리 보기입니다.',
@@ -570,6 +555,10 @@ export const GUIDE_CARDS = [
       {
         ko: '「다음 층」으로 넘어가고 「입장 취소」로 되돌립니다. 층 칸을 눌러 지난 층을 다시 볼 수 있습니다.',
         en: '「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.',
+      },
+      {
+        ko: '재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.',
+        en: "When a missed ingredient makes a fusion impossible, the top of 「Full route」 says so and the route is re-planned. By default the fusion is given up (「Don't collect」); press the remaining ingredients to switch to 「Collect」.",
       },
     ],
   },

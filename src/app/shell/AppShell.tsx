@@ -33,7 +33,6 @@ import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
 import { PlanProvider } from './PlanContext.tsx';
 import { RoutePlanPanel } from './RoutePlanPanel.tsx';
-import { GoalsPanel } from './GoalsPanel.tsx';
 import { RouteOptions } from './RouteOptions.tsx';
 import { PanelResizer } from './PanelResizer.tsx';
 import { EnumsContext } from '../lib/useEnums.ts';
@@ -178,7 +177,6 @@ export function AppShell({
   ];
   const rightTabs: { id: RightTab; label: string }[] = [
     { id: 'plan', label: t('tabRoutePlan', lang) },
-    { id: 'goals', label: t('tabGoals', lang) },
     { id: 'tracker', label: t('tabTracker', lang) },
   ];
 
@@ -419,13 +417,7 @@ export function AppShell({
               lang={lang}
               width={ui.rightWidth}
             >
-              {ui.rightTab === 'plan' ? (
-                <RoutePlanPanel onOpenGifts={openGifts} />
-              ) : ui.rightTab === 'goals' ? (
-                <GoalsPanel onOpenGifts={openGifts} />
-              ) : (
-                <Tracker />
-              )}
+              {ui.rightTab === 'plan' ? <RoutePlanPanel onOpenGifts={openGifts} /> : <Tracker />}
             </SidePanel>
           </div>
           {!desktop && browserOpen ? (

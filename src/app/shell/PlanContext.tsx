@@ -183,19 +183,27 @@ export function PlanProvider({
     /*
      * What the route is actually out to collect. A fusion goal is a promise about its ingredients
      * too — the search chases them, and a pack that drops one is worth entering — so they wear the
-     * goal's ring wherever a pack lists its drops. A goal marked 「재료는 목표가 아님」
-     * (`ingredientsAsGoals: false`) keeps its ingredients out, exactly as it keeps them out of the plan.
+     * goal's ring wherever a pack lists its drops. A goal marked 「재료는 목표가 아님」 keeps its
+     * ingredients out, exactly as it keeps them out of the plan. (`ingredientsAsGoals: false` on the
+     * input is not the test: past floor 1 every goal carries it, and a live fusion still wants its
+     * ingredients.)
      */
     const needed = new Set(goals);
+    const collectRest = new Set(run.collectRest ?? []);
     for (const want of input.wanted) {
-      if (want.ingredientsAsGoals === false) continue;
-      // A fusion the plan gave up on promises nothing about its ingredients any more. Leaving them
-      // ringed sent the player after pieces that could no longer finish anything — and core had
-      // already dropped the visits that served only them, so the ring outlived the route.
-      if (deadFusions.has(want.giftId)) continue;
+      if (fusionGoal[want.giftId] === 'resultOnly') continue;
+      // A fusion the plan gave up on promises nothing about its ingredients any more — unless the
+      // player chose to keep collecting the rest (「남은 재료 모으기」), and then only the rest.
+      // Leaving them ringed otherwise sent the player after pieces that could no longer finish
+      // anything, while core had already dropped the visits that served only them.
+      const dead = deadFusions.has(want.giftId);
+      if (dead && !collectRest.has(want.giftId)) continue;
       const gift = indexes.giftById.get(want.giftId);
       if (!gift?.fusion) continue;
-      for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots, goals)) needed.add(id);
+      for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots, goals)) {
+        if (dead && run.giftStatus[id] === 'failed') continue;
+        needed.add(id);
+      }
     }
     // The plan on screen decides, not the base one: entering a pack while an alternative route is
     // selected must hand over that route's observations, never the ones it replaced.
@@ -353,6 +361,7 @@ export function PlanProvider({
     setPreviewing,
     variant,
     run,
+    fusionGoal,
     exclusivesOf,
     childrenOf,
     entangled,

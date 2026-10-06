@@ -1,5 +1,4 @@
 import type { AcquisitionKind, Gift, Sin } from '../../core/schema.ts';
-import type { UnresolvedReason } from '../../core/types.ts';
 import type { StringKey } from '../i18n.ts';
 
 export type BadgeKind = 'sure' | 'maybe' | 'fuse' | 'start' | 'neutral';
@@ -36,20 +35,6 @@ export const SIN_LABEL: Record<Sin, StringKey> = {
   GLOOM: 'sinGLOOM',
   PRIDE: 'sinPRIDE',
   ENVY: 'sinENVY',
-};
-
-export const UNRESOLVED_LABEL: Record<UnresolvedReason, StringKey> = {
-  'no-pack-in-range': 'unresolvedNoPack',
-  'pack-conflict': 'unresolvedConflict',
-  'hard-only': 'unresolvedHardOnly',
-  'fusion-ingredient-unresolved': 'unresolvedIngredient',
-  'not-obtainable': 'unresolvedNotObtainable',
-  'chance-only': 'unresolvedChance',
-  'no-pack-path': 'unresolvedNoPackPath',
-  // The app bans no pack (`sanitizeOptions` empties `bannedPacks`), but the map covers every core reason.
-  'pack-banned': 'unresolvedBanned',
-  'ingredient-shared': 'unresolvedShared',
-  failed: 'unresolvedFailed',
 };
 
 /** How a tier is written: `T4` for the numbered ones, `EX` on its own (never `TEX`). */

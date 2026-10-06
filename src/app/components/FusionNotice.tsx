@@ -1,7 +1,7 @@
 /**
  * The reminder raised when 달의 기억 is marked as got: its fusion consumed two shards and three
- * memories, so the ones still marked as held are listed to be unmarked in place. Shared by the
- * T4 tracker and the goals grid of the route panel.
+ * memories, so the ones still marked as held are listed to be unmarked in place. Raised by the
+ * T4 tracker.
  */
 import { X } from 'lucide-react';
 import type { Gift } from '../../core/schema.ts';

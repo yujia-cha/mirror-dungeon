@@ -31,6 +31,12 @@ export interface RunState {
    * back), so a revisited decision never leaves phantom "in hand" gifts behind.
    */
   startGifts: number[];
+  /**
+   * Fusion goals whose remaining ingredients the player chose to keep collecting after the run
+   * lost the fusion (「남은 재료 모으기」 in the route tab's notice). Past floor 1 every other
+   * fusion goal stops being chased once it is lost — see `plannedGifts`.
+   */
+  collectRest?: number[];
 }
 
 /**
@@ -42,11 +48,25 @@ export function observationClosed(run: Pick<RunState, 'currentFloor'>): boolean 
   return run.currentFloor > 1;
 }
 
-export function plannedGifts(wanted: number[], fusionGoal: FusionGoalMap = {}): WantedGift[] {
+/**
+ * The goals as core takes them. `ingredientsAsGoals: false` only changes anything once a fusion is
+ * lost — core then stops entering packs for its remaining ingredients — so it is set for every goal
+ * once the run is under way: a fusion the run loses is given up whole unless the player asked to
+ * keep collecting (`run.collectRest`). Before the run only 「재료는 목표가 아님」 sets it.
+ */
+export function plannedGifts(
+  wanted: number[],
+  fusionGoal: FusionGoalMap = {},
+  run?: Pick<RunState, 'currentFloor' | 'collectRest'>,
+): WantedGift[] {
+  const underway = run !== undefined && run.currentFloor > 1;
+  const collect = new Set(run?.collectRest ?? []);
   return wanted.map((id) => ({
     giftId: id,
     required: false,
-    ...(fusionGoal[id] === 'resultOnly' ? { ingredientsAsGoals: false } : {}),
+    ...(fusionGoal[id] === 'resultOnly' || (underway && !collect.has(id))
+      ? { ingredientsAsGoals: false }
+      : {}),
   }));
 }
 
@@ -79,7 +99,7 @@ export function planInputFor(
     : { currentFloor: 1, ownedGifts: [], unobtainableGifts: [] };
   return {
     deck: state.deck,
-    wanted: plannedGifts(state.wanted, state.fusionGoal ?? {}),
+    wanted: plannedGifts(state.wanted, state.fusionGoal ?? {}, run),
     options: {
       ...state.options,
       ...progress,

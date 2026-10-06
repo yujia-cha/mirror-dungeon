@@ -161,20 +161,7 @@ function ObservedTile({
         : t('routeObservedRescue', ctx.lang);
   const body = (
     <>
-      <span className="relative">
-        <GiftIcon
-          gift={gift}
-          size={32}
-          judgement={ctx.judgements.get(entry.giftId) ?? null}
-          lang={ctx.lang}
-        />
-        <span
-          className={`absolute -right-1 -top-1 rounded-full border border-line p-0.5 ${entry.pinned ? 'bg-ink text-ink-fg' : 'bg-surface text-fg-2'}`}
-          aria-hidden
-        >
-          <Eye size={9} />
-        </span>
-      </span>
+      <GiftIcon gift={gift} size={32} judgement={ctx.judgements.get(entry.giftId) ?? null} lang={ctx.lang} />
       <span className="text-xs text-fg">{name}</span>
     </>
   );
@@ -358,21 +345,17 @@ export function MetroMap({
            *
            * After: the decision is past, so core clears `start.observed` and empty slots would be
            * meaningless. The row becomes the record of what the run started with. `run.startGifts`
-           * holds the observations and the free starting gift together, which is why the label
-           * changes to 「시작 시 보유」 instead of claiming they were all observed.
+           * holds the observations and the free starting gift together, so a tile's title says
+           * 「시작 시 획득」 rather than claiming they were all observed.
            *
-           * Either way the row carries a visible label: it used to live in `aria-label` only, and
-           * a `title` reaches neither touch nor keyboard.
+           * The row has no label of its own: it sits under the start line in the start cell, and
+           * each tile's `title` and the observed sheet say what it is.
            */
           <div
             className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
             data-testid="observed-line"
             data-history={history || undefined}
           >
-            <span className="inline-flex items-center gap-1 text-fg-3">
-              <Eye size={11} aria-hidden />
-              {t(history ? 'routeStartHeld' : 'routeObserved', lang)}
-            </span>
             {observedEntries.map((entry) => (
               <span key={entry.giftId} className="relative inline-flex">
                 <ObservedTile
