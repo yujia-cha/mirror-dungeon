@@ -63,17 +63,19 @@ const project = (counts: IdentityKeywordCounts): Projection =>
  */
 const KNOWN_DIVERGENCES: Record<number, string> = {
   10110: '진동: 버프 id로만 부여하고 문장에 이름이 없다',
-  10115: '화상: 같은 이유',
-  10212: '호흡: 같은 이유',
   10312: '충전: 같은 이유',
   10406: '탄환: 탄환 버프 id가 대괄호 토큰으로 적히지 않는다',
+  10508:
+    '출혈: 같은 이유 — 기본 S1~S3의 출혈은 버프 id로만 부여한다 (원문이 출혈을 적는 1050805는 기본 스킬이 아니다)',
   11207: '탄환: 같은 이유',
   10215: '충전: 생체 재료(특수 충전)만 읽고 기본 충전을 놓친다 — 스크립트 이름 경로에 대응하는 문장이 없다',
   10614: '충전: 같은 이유',
   10416:
     '충전: 정적 데이터가 기본 충전으로 적은 것을 원문은 특수 충전으로만 읽는다 (2026-10-01 정적 데이터 도착으로 백필에서 승격)',
   10816: '충전: 같은 이유',
-  10917: '충전: 정적 데이터는 기본 5·특수 4, 원문은 특수만 읽는다',
+  10916:
+    '호흡: 여기만은 정적 쪽이 더 센다 — 기본 S1~S3은 「[Breath]이 6 이상이면」으로 호흡을 조건으로 확인할 뿐 얻지 않는데, 정적 buffKeyword가 그 확인(SkillPowerResultAdderViaOnUseBuffCheck)을 센다. 얻는 문장은 강화 스킬에만 있다',
+  10917: '충전: 정적 데이터는 기본 3·특수 2, 원문은 특수만 읽는다',
 };
 
 describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', () => {
@@ -126,7 +128,8 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
   // what the official Korean text says, not what anyone typed. The build reads the attack-skill list
   // off the derived mirror rather than guessing, so this passes the same list in.
   it.each([
-    [10116, { Burst: { skills: 4, specialSkills: 0 }, Charge: { skills: 4, specialSkills: 0 } }],
+    // 3 each: 1011605 is an enhanced skill, not one of the base S1/S2/S3.
+    [10116, { Burst: { skills: 3, specialSkills: 0 }, Charge: { skills: 3, specialSkills: 0 } }],
     [10616, { Combustion: { skills: 3, specialSkills: 0 }, Breath: { skills: 3, specialSkills: 0 } }],
   ])(
     'derives %i from the skill text, and the static data now ships it with the same keywords',
@@ -145,6 +148,24 @@ describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', 
       expect(shipped?.keywordSource).toBe('derived');
     },
   );
+
+  // The rule the user stated: keywords come from the base S1/S2/S3 only, never from the enhanced
+  // skill an S3 turns into (`attributeList[].number === 0`). 40 identities have one; this holds the
+  // shipped data to it for every one of them, so a build that starts counting them again fails.
+  it('ships only what the base S1/S2/S3 inflict, never an enhanced skill', () => {
+    const withEnhanced = statics.filter((p) => (p.attributeList ?? []).some((e) => e.number === 0));
+    expect(withEnhanced.length).toBeGreaterThanOrEqual(40);
+    for (const p of withEnhanced) {
+      const shipped = identities.find((i) => i.id === p.id)!;
+      if (shipped.keywordSource !== 'derived') continue;
+      const base = deriveIdentityKeywords(p, staticSkills, variants);
+      // 혈찬 is read from the text, not the skill data, so it is compared by its own test.
+      const ours = Object.fromEntries(
+        Object.entries(shipped.keywords).filter(([keyword]) => keyword !== 'BloodDinner'),
+      );
+      expect([p.id, ours]).toEqual([p.id, base]);
+    }
+  });
 
   it('agrees with the derived mirror on what the backfilled identities inflict', () => {
     for (const id of [10116, 10616]) {

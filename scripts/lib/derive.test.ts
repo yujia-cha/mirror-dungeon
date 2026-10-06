@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   affinitiesFromDevName,
   availabilityFor,
+  baseAttackSkillIds,
   cleanFactionName,
   deriveIdentityKeywords,
   deriveUpgradeOf,
@@ -175,6 +176,33 @@ describe('deriveIdentityKeywords', () => {
     ).toEqual({
       Sinking: { skills: 2, specialSkills: 0 },
       Charge: { skills: 1, specialSkills: 0 },
+    });
+  });
+
+  it('reads the base S1/S2/S3 only, not the enhanced skill an S3 turns into', () => {
+    // 10212 흑수 - 묘 필두 파우스트: 1021205 「흑수 묘 오의 - 운해현현」 is number 0 and is the only
+    // skill that grants 호흡.
+    const skills = new Map<number, RawSkill>([
+      [1021201, skill(1021201, ['Burst'])],
+      [1021202, skill(1021202, ['Burst'])],
+      [1021203, skill(1021203, ['Burst'])],
+      [1021205, skill(1021205, ['Breath', 'Burst'])],
+    ]);
+    const faust = {
+      id: 10212,
+      attributeList: [
+        { skillId: 1021201, number: 3 },
+        { skillId: 1021202, number: 2 },
+        { skillId: 1021203, number: 1 },
+        { skillId: 1021205, number: 0 },
+      ],
+    };
+    expect(baseAttackSkillIds(faust)).toEqual([1021201, 1021202, 1021203]);
+    expect(deriveIdentityKeywords(faust, skills)).toEqual({ Burst: { skills: 3, specialSkills: 0 } });
+    // The validator's cross-check reads them all, the way the derived source does.
+    expect(deriveIdentityKeywords(faust, skills, new Map(), { includeExtra: true })).toEqual({
+      Burst: { skills: 4, specialSkills: 0 },
+      Breath: { skills: 1, specialSkills: 0 },
     });
   });
 

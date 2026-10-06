@@ -130,14 +130,30 @@ export function derivedStatuses(entry: DerivedIdentity): Set<string> {
   return new Set(entry.statuses ?? []);
 }
 
+/**
+ * Whether a listed skill is one of the base S1/S2/S3. `num` mirrors the static `attributeList`
+ * count (3/2/1, and 0 for an enhanced skill that replaces one under a condition); without it the
+ * id suffix decides, which is 01–03 for the base three on every identity the static data has.
+ */
+function isBaseSkill(skill: DerivedSkill): boolean {
+  if (typeof skill.num === 'number') return skill.num > 0;
+  return /0[123]$/.test(skill.id);
+}
+
+function baseSkills(entry: DerivedIdentity): DerivedSkill[] {
+  return (entry.skillTypes ?? []).filter(isBaseSkill);
+}
+
 /** The ids of the base attack skills, which this source lists outright. */
 export function derivedAttackSkillIds(entry: DerivedIdentity): number[] {
-  return (entry.skillTypes ?? []).map((s) => Number(s.id)).filter((id) => Number.isFinite(id));
+  return baseSkills(entry)
+    .map((s) => Number(s.id))
+    .filter((id) => Number.isFinite(id));
 }
 
 export function derivedSins(entry: DerivedIdentity): Sin[] {
   const out = new Set<Sin>();
-  for (const skill of entry.skillTypes ?? []) {
+  for (const skill of baseSkills(entry)) {
     const sin = skill.type?.affinity ? SIN_BY_AFFINITY[skill.type.affinity] : undefined;
     if (sin) out.add(sin);
   }
@@ -146,7 +162,7 @@ export function derivedSins(entry: DerivedIdentity): Sin[] {
 
 export function derivedAttackTypes(entry: DerivedIdentity): AttackType[] {
   const out = new Set<AttackType>();
-  for (const skill of entry.skillTypes ?? []) {
+  for (const skill of baseSkills(entry)) {
     const type = skill.type?.type ? ATTACK_BY_TYPE[skill.type.type] : undefined;
     if (type) out.add(type);
   }

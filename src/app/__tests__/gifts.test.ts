@@ -31,7 +31,7 @@ describe('condition chip', () => {
     expect(conditionShort(reportsFor(9088)[0]!, data.enums, 'ko')).toBe('화상 7/5');
     expect(conditionShort(reportsFor(9088)[0]!, data.enums, 'en')).toBe('Burn 7/5');
     // 연성진동 wants five 진동 identities; this deck is short.
-    expect(conditionShort(reportsFor(9092)[0]!, data.enums, 'ko')).toBe('진동 3/5');
+    expect(conditionShort(reportsFor(9092)[0]!, data.enums, 'ko')).toBe('진동 2/5');
     // 날개 모양 양초 counts a faction instead.
     expect(conditionShort(reportsFor(9282)[0]!, data.enums, 'ko')).toBe('새벽 사무소 3/3');
     expect(conditionShort(null, data.enums, 'ko')).toBeNull();
@@ -41,7 +41,7 @@ describe('condition chip', () => {
     const reports = reportsFor(9092);
     const entry = classifyGift(indexes.giftById.get(9092)!, reports);
     expect(decidingReport(reports, entry.lack)).toBe(entry.lack ?? reports[0]);
-    expect(conditionShort(decidingReport(reports, entry.lack), data.enums, 'ko')).toBe('진동 3/5');
+    expect(conditionShort(decidingReport(reports, entry.lack), data.enums, 'ko')).toBe('진동 2/5');
   });
 });
 

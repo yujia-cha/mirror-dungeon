@@ -194,10 +194,23 @@ function keywordsInSkill(
 }
 
 /**
+ * The identity's base attack skills — S1, S2 and S3.
+ *
+ * `attributeList[].number` is how many copies of the skill go into the deck: 3/2/1 for S1/S2/S3,
+ * and 0 for an enhanced skill that only replaces one of them under a condition (suffix 05 and up;
+ * 40 of 188 identities have at least one). The identity's keywords, sins and attack types are read
+ * off the base three only, as the game shows them.
+ */
+export function baseAttackSkillIds(personality: RawPersonality): number[] {
+  return (personality.attributeList ?? []).filter((entry) => entry.number > 0).map((entry) => entry.skillId);
+}
+
+/**
  * Which keywords an identity's base attack skills use, and how many skills do it.
  *
- * `attributeList` holds exactly the identity's base attack skills, so this counts attack skills
- * only — which is the unit conditional gifts measure ("부여하는 공격 스킬을 보유한 인격").
+ * Only the base S1/S2/S3 count (`baseAttackSkillIds`) — the unit conditional gifts measure
+ * ("부여하는 공격 스킬을 보유한 인격"). An enhanced skill an S3 turns into under a condition (10212's
+ * 「흑수 묘 오의 - 운해현현」 is the only one that grants 호흡) is not a skill the identity has.
  *
  * `skills` counts the base keyword, `specialSkills` the 특수 variant (see `keywordsInSkill`).
  * The game's conditions treat them differently — 「[Charge] 횟수 또는 특수 충전을 획득하는」 counts
@@ -208,11 +221,19 @@ export function deriveIdentityKeywords(
   personality: RawPersonality,
   skills: Map<number, RawSkill>,
   specialVariants: Map<string, IdentityKeywordId> = new Map(),
+  /**
+   * Count the enhanced skills too. Only the validator's cross-check against the derived source
+   * wants this — that list was built over every skill, so it needs the same reading to compare.
+   */
+  { includeExtra = false }: { includeExtra?: boolean } = {},
 ): IdentityKeywordCounts {
   const baseCounts = new Map<IdentityKeywordId, number>();
   const specialCounts = new Map<IdentityKeywordId, number>();
-  for (const entry of personality.attributeList ?? []) {
-    const skill = skills.get(entry.skillId);
+  const ids = includeExtra
+    ? (personality.attributeList ?? []).map((entry) => entry.skillId)
+    : baseAttackSkillIds(personality);
+  for (const id of ids) {
+    const skill = skills.get(id);
     if (!skill) continue;
     if (skill.skillType && skill.skillType !== 'SKILL') continue;
     const found = keywordsInSkill(skill, specialVariants);

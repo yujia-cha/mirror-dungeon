@@ -19,6 +19,18 @@ const base = (s: LocalizedSkill) => [...keywordsInSkillText(s, variants).base].s
 const special = (s: LocalizedSkill) => [...keywordsInSkillText(s, variants).special].sort();
 
 describe('keywordsInSkillText', () => {
+  it('does not count what the switch to an enhanced form names', () => {
+    // 10711's S3: the special ammo is the enhanced skill's, the base S3 spends plain 탄환.
+    const s3 = skill(
+      1071103,
+      "[BeforeUse] 자신에게 [Bullet_LogicAtelier]가 있으면, '로직 아틀리에제 고속분쇄탄'으로 발동",
+      '[Bullet] 1 소모',
+    );
+    const withAtelier = new Map([...variants, ['Bullet_LogicAtelier', 'Bullet' as IdentityKeywordId]]);
+    expect([...keywordsInSkillText(s3, withAtelier).base]).toEqual(['Bullet']);
+    expect([...keywordsInSkillText(s3, withAtelier).special]).toEqual([]);
+  });
+
   it('counts a keyword the text says is inflicted, by token or by its Korean name', () => {
     expect(base(skill(1000101, '', '[OnSucceedAttack] [Burst] 1 부여'))).toEqual(['Burst']);
     // Older skills write the name with no bracket token at all.
@@ -61,9 +73,15 @@ describe('looksLikeAttackSkill', () => {
   });
 
   it('leaves out a counter, a guard or an evasion follow-up wherever its slot sits', () => {
-    expect(looksLikeAttackSkill(skill(1011605, '[DuelCounter] …'))).toBe(false);
-    expect(looksLikeAttackSkill(skill(1011605, '[CanDuelGuard] …'))).toBe(false);
-    expect(looksLikeAttackSkill(skill(1011605, '[OnSucceedEvade] …'))).toBe(false);
+    expect(looksLikeAttackSkill(skill(1011603, '[DuelCounter] …'))).toBe(false);
+    expect(looksLikeAttackSkill(skill(1011603, '[CanDuelGuard] …'))).toBe(false);
+    expect(looksLikeAttackSkill(skill(1011603, '[OnSucceedEvade] …'))).toBe(false);
+  });
+
+  it('leaves out the enhanced skill an S3 turns into, which is not one of the base three', () => {
+    // 10212's 「흑수 묘 오의 - 운해현현」 is the only skill that grants 호흡.
+    expect(looksLikeAttackSkill(skill(1021205, '[WhenUse] [Breath]을 20 얻음'))).toBe(false);
+    expect(looksLikeAttackSkill(skill(1021203, '[WinDuel] [Burst] 횟수 2 증가'))).toBe(true);
   });
 });
 

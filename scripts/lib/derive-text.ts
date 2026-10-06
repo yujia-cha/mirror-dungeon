@@ -68,8 +68,12 @@ function ammoFamily(token: string): string | null {
  */
 const NOT_AN_ATTACK = new Set(['DuelCounter', 'CanDuelGuard', 'OnSucceedEvade']);
 
-/** The defense slot. Suffix 04 is never in an identity's `attributeList`. */
-const DEFENSE_SUFFIX = '04';
+/**
+ * The base S1/S2/S3 slots. 04 is the defense skill and 05 and up are counters, guards and the
+ * enhanced skills an attack turns into under a condition — none of them is a skill the identity's
+ * keywords are read from (see `baseAttackSkillIds`).
+ */
+const BASE_SUFFIXES = new Set(['01', '02', '03']);
 
 export function identityIdOfSkill(skillId: number): number {
   return Math.floor(skillId / 100);
@@ -94,9 +98,22 @@ function linesOf(skill: LocalizedSkill): string[] {
   return out;
 }
 
-function tokensOf(skill: LocalizedSkill): Set<string> {
+/**
+ * The line that says the skill turns into its enhanced form — 「[Bullet_LogicAtelier]가 있으면,
+ * '로직 아틀리에제 고속분쇄탄'으로 발동」. The condition names what the *enhanced* skill uses, and
+ * that skill is not one of the base three (see `looksLikeAttackSkill`), so it must not count here.
+ * The quote is what tells it from 「이 스킬로 발동」 or 「반격 스킬로 발동」.
+ */
+const SWITCHES_TO_ENHANCED = /['‘’]\s*으?로 발동/;
+
+/** The lines that describe the skill itself, without the switch to an enhanced form. */
+function ownLinesOf(skill: LocalizedSkill): string[] {
+  return linesOf(skill).filter((line) => !SWITCHES_TO_ENHANCED.test(line));
+}
+
+function tokensOf(skill: LocalizedSkill, lines: string[] = linesOf(skill)): Set<string> {
   const out = new Set<string>();
-  for (const line of linesOf(skill)) {
+  for (const line of lines) {
     for (const [, token] of line.matchAll(/\[([A-Za-z0-9_]+)\]/g)) if (token) out.add(token);
   }
   return out;
@@ -104,7 +121,7 @@ function tokensOf(skill: LocalizedSkill): Set<string> {
 
 /** Whether a skill is one of the identity's base attacks, as far as the text can tell. */
 export function looksLikeAttackSkill(skill: LocalizedSkill): boolean {
-  if (skillSuffix(skill.id) === DEFENSE_SUFFIX) return false;
+  if (!BASE_SUFFIXES.has(skillSuffix(skill.id))) return false;
   for (const token of tokensOf(skill)) if (NOT_AN_ATTACK.has(token)) return false;
   return true;
 }
@@ -118,7 +135,8 @@ export function keywordsInSkillText(
 ): { base: Set<IdentityKeywordId>; special: Set<IdentityKeywordId> } {
   const base = new Set<IdentityKeywordId>();
   const special = new Set<IdentityKeywordId>();
-  for (const line of linesOf(skill)) {
+  const lines = ownLinesOf(skill);
+  for (const line of lines) {
     for (const match of line.matchAll(MENTION)) {
       const end = match.index + match[0].length;
       const tail = line.slice(end, end + TAIL);
@@ -138,7 +156,7 @@ export function keywordsInSkillText(
   }
   // 탄환 is spent, not inflicted, so it is never written as 「부여」. Its presence anywhere in the
   // skill is the signal, exactly as the static path reads it off the requirement token.
-  for (const token of tokensOf(skill)) {
+  for (const token of tokensOf(skill, lines)) {
     if (!AMMO_BUFF_ID.test(token)) continue;
     const variant = specialVariants.get(token);
     if (variant) {
@@ -153,11 +171,11 @@ export function keywordsInSkillText(
 }
 
 /**
- * Which keywords an identity's attack skills inflict, counted per skill, from the localized text.
+ * Which keywords an identity's base S1/S2/S3 inflict, counted per skill, from the localized text.
  *
- * Counts are the weaker half of the result: without `attackSkillIds`, which skills belong to
- * `attributeList` is a guess (see `looksLikeAttackSkill`) and it is wrong for a handful of
- * conditional replacements. What the planner reads is only whether a count is above zero, so the
+ * Counts are the weaker half of the result: without `attackSkillIds`, which skills are the base
+ * three is read off the id suffix (see `looksLikeAttackSkill`), and the text can miss a keyword a
+ * named buff inflicts. What the planner reads is only whether a count is above zero, so the
  * calibration test compares that.
  */
 export function deriveIdentityKeywordsFromText(

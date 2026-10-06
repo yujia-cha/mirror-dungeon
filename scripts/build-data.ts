@@ -59,6 +59,7 @@ import {
   affinitiesFromDevName,
   availabilityFor,
   cleanFactionName,
+  baseAttackSkillIds,
   deriveIdentityKeywords,
   groupForPackId,
   sinnerIdFromIdentityId,
@@ -663,10 +664,7 @@ const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
   // gives; a curated entry still wins outright.
   const derived = {
     ...deriveIdentityKeywords(raw, skills, specialVariants),
-    ...deriveConsumedKeywordsFromText(
-      skillsOfIdentity(raw.id, localizedSkills),
-      (raw.attributeList ?? []).map((entry) => entry.skillId),
-    ),
+    ...deriveConsumedKeywordsFromText(skillsOfIdentity(raw.id, localizedSkills), baseAttackSkillIds(raw)),
   };
   const keywords = (curatedKeywords ?? derived) as Identity['keywords'];
   const keywordSource: Identity['keywordSource'] = curatedKeywords
@@ -677,8 +675,9 @@ const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
 
   const sins = new Set<Identity['sins'][number]>();
   const attackTypes = new Set<Identity['attackTypes'][number]>();
-  for (const entry of raw.attributeList ?? []) {
-    const data = skills.get(entry.skillId)?.skillData?.[0];
+  // Same three skills as the keywords: an enhanced skill's sin or attack type is not the identity's.
+  for (const skillId of baseAttackSkillIds(raw)) {
+    const data = skills.get(skillId)?.skillData?.[0];
     const sin = data?.attributeType ? SIN_BY_COLOR[data.attributeType] : undefined;
     if (sin) sins.add(sin);
     switch (data?.atkType) {

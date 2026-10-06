@@ -22,9 +22,12 @@ import {
   readCommonData,
   readObservationData,
   readPersonalities,
+  readPersonalitySkills,
+  readSpecialVariants,
   readThemePacks,
   staticDataPresent,
 } from './lib/raw.ts';
+import { deriveIdentityKeywords } from './lib/derive.ts';
 import { familyOf, seasonOf } from './lib/season-files.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
@@ -694,6 +697,18 @@ function checkInvariants(
   // weaker reading — it misses a keyword our static derivation finds on 10 of 179 identities — so a
   // disagreement is a prompt to look, not a failure.
   const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
+  const staticById = staticDataPresent()
+    ? new Map(readPersonalities().map((p) => [p.id, p]))
+    : new Map<number, ReturnType<typeof readPersonalities>[number]>();
+  const staticSkills = staticById.size > 0 ? readPersonalitySkills() : new Map();
+  const variants = staticById.size > 0 ? readSpecialVariants() : new Map();
+  const enhancedKeywords = (id: number): Set<string> => {
+    const personality = staticById.get(id);
+    if (!personality) return new Set();
+    const all = deriveIdentityKeywords(personality, staticSkills, variants, { includeExtra: true });
+    const base = deriveIdentityKeywords(personality, staticSkills, variants);
+    return new Set(Object.keys(all).filter((k) => !(k in base)));
+  };
   const derivedIdentitiesByid = derivedById;
   const keywordDisagreements: number[] = [];
   for (const identity of identities) {
@@ -709,7 +724,12 @@ function checkInvariants(
     // data or the Korean text states, so it should know at least what the weaker reading knows; a
     // keyword only the derived source has means a derivation silently dropped it. That is how
     // 10410 and 10913 lost 특수 충전 to a too-strict 「특수 X」 pattern until M60.
-    const missed = [...theirs].filter((k) => STATUS_SET.has(k) && !ours.has(k));
+    //
+    // Except where we left it out on purpose: the derived list reads every skill, enhanced ones
+    // included, and we count only the base S1/S2/S3 (`baseAttackSkillIds`) — 10312's 침잠 comes
+    // from its enhanced skills alone. A keyword the static data shows on an enhanced skill is that.
+    const enhancedOnly = enhancedKeywords(identity.id);
+    const missed = [...theirs].filter((k) => STATUS_SET.has(k) && !ours.has(k) && !enhancedOnly.has(k));
     if (missed.length > 0) {
       err(
         'invariant',

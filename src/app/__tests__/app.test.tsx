@@ -1463,7 +1463,7 @@ describe('GiftsStep', () => {
     expect(screen.queryByTestId('gift-tile')).toBeNull();
     // A gift short of its condition is a search away.
     await search(user, '연성진동');
-    expect(tile(9092)).toHaveTextContent('진동 3/5');
+    expect(tile(9092)).toHaveTextContent('진동 2/5');
   });
 
   it('locks what a chosen goal already carries, even when the keywords differ', async () => {

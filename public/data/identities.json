@@ -514,11 +514,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -558,15 +558,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 4,
-        "specialSkills": 0
-      },
-      "Combustion": {
-        "skills": 1,
+        "skills": 3,
         "specialSkills": 0
       },
       "Sinking": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -578,7 +574,6 @@
     },
     "sinnerId": 1,
     "sins": [
-      "WRATH",
       "GLUTTONY",
       "GLOOM",
       "PRIDE"
@@ -606,11 +601,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Charge": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -1017,7 +1012,7 @@
     "keywordSource": "derived",
     "keywords": {
       "Combustion": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -1053,12 +1048,8 @@
     "id": 10212,
     "keywordSource": "derived",
     "keywords": {
-      "Breath": {
-        "skills": 1,
-        "specialSkills": 0
-      },
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -1086,7 +1077,6 @@
   },
   {
     "attackTypes": [
-      "Penetrate",
       "Slash"
     ],
     "factions": [
@@ -1096,7 +1086,7 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
@@ -1179,11 +1169,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 4,
-        "specialSkills": 6
+        "skills": 2,
+        "specialSkills": 3
       },
       "Laceration": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -1221,11 +1211,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Combustion": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -1239,7 +1229,6 @@
     "sins": [
       "WRATH",
       "SLOTH",
-      "GLUTTONY",
       "PRIDE"
     ],
     "title": {
@@ -1595,11 +1584,11 @@
     "keywordSource": "derived",
     "keywords": {
       "BloodDinner": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -1680,12 +1669,8 @@
         "specialSkills": 0
       },
       "Charge": {
-        "skills": 6,
-        "specialSkills": 5
-      },
-      "Sinking": {
         "skills": 3,
-        "specialSkills": 0
+        "specialSkills": 3
       }
     },
     "rank": 3,
@@ -1752,8 +1737,7 @@
   },
   {
     "attackTypes": [
-      "Hit",
-      "Slash"
+      "Hit"
     ],
     "factions": [
       "INDEX_FINGER",
@@ -1763,11 +1747,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       },
       "Sinking": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -1803,10 +1787,10 @@
     "keywords": {
       "Charge": {
         "skills": 1,
-        "specialSkills": 4
+        "specialSkills": 3
       },
       "Vibration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -2183,10 +2167,10 @@
     "keywords": {
       "Charge": {
         "skills": 0,
-        "specialSkills": 4
+        "specialSkills": 3
       },
       "Laceration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -2258,16 +2242,12 @@
     "id": 10412,
     "keywordSource": "derived",
     "keywords": {
-      "Breath": {
-        "skills": 1,
-        "specialSkills": 0
-      },
       "Laceration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -2281,7 +2261,6 @@
     "sins": [
       "WRATH",
       "LUST",
-      "PRIDE",
       "ENVY"
     ],
     "title": {
@@ -2347,11 +2326,11 @@
         "specialSkills": 2
       },
       "Sinking": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -2389,15 +2368,15 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       },
       "Combustion": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -2437,11 +2416,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -2897,14 +2876,14 @@
     "keywords": {
       "Bullet": {
         "skills": 0,
-        "specialSkills": 4
+        "specialSkills": 3
       },
       "Combustion": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -2945,11 +2924,11 @@
         "specialSkills": 0
       },
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -3438,8 +3417,7 @@
   },
   {
     "attackTypes": [
-      "Penetrate",
-      "Slash"
+      "Penetrate"
     ],
     "factions": [
       "FULL_STOP"
@@ -3448,11 +3426,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       },
       "Bullet": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -3532,7 +3510,7 @@
         "specialSkills": 0
       },
       "Burst": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -3558,7 +3536,6 @@
   },
   {
     "attackTypes": [
-      "Penetrate",
       "Slash"
     ],
     "factions": [
@@ -3570,15 +3547,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 4,
-        "specialSkills": 6
-      },
-      "Combustion": {
-        "skills": 1,
-        "specialSkills": 0
+        "skills": 2,
+        "specialSkills": 3
       },
       "Laceration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4048,7 +4021,7 @@
     "keywordSource": "derived",
     "keywords": {
       "Sinking": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4084,12 +4057,12 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Bullet": {
         "skills": 3,
-        "specialSkills": 1
+        "specialSkills": 0
       }
     },
     "rank": 3,
@@ -4124,7 +4097,7 @@
     "keywordSource": "derived",
     "keywords": {
       "Laceration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4200,11 +4173,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Combustion": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4241,15 +4214,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Combustion": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
-        "skills": 6,
-        "specialSkills": 0
-      },
-      "Vibration": {
-        "skills": 1,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4285,11 +4254,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Combustion": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4758,11 +4727,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4799,11 +4768,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Sinking": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -4817,8 +4786,7 @@
     "sins": [
       "WRATH",
       "SLOTH",
-      "GLOOM",
-      "ENVY"
+      "GLOOM"
     ],
     "title": {
       "en": "Jeong's Office Rep",
@@ -4884,11 +4852,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -5334,11 +5302,11 @@
         "specialSkills": 0
       },
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -5418,10 +5386,10 @@
     "keywords": {
       "Charge": {
         "skills": 0,
-        "specialSkills": 6
+        "specialSkills": 3
       },
       "Sinking": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -5498,11 +5466,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Laceration": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Sinking": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -5541,19 +5509,19 @@
     "keywordSource": "derived",
     "keywords": {
       "Breath": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Bullet": {
         "skills": 0,
-        "specialSkills": 3
+        "specialSkills": 2
       },
       "Combustion": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 6,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -5566,7 +5534,6 @@
     "sinnerId": 9,
     "sins": [
       "WRATH",
-      "LUST",
       "SLOTH",
       "PRIDE"
     ],
@@ -5595,11 +5562,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 5,
-        "specialSkills": 4
+        "skills": 3,
+        "specialSkills": 2
       },
       "Vibration": {
-        "skills": 4,
+        "skills": 2,
         "specialSkills": 0
       }
     },
@@ -5941,7 +5908,7 @@
     "keywordSource": "derived",
     "keywords": {
       "Combustion": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -6745,11 +6712,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Combustion": {
-        "skills": 10,
+        "skills": 3,
         "specialSkills": 0
       },
       "Laceration": {
-        "skills": 10,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -7248,11 +7215,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Laceration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -7330,11 +7297,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Burst": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       },
       "Charge": {
-        "skills": 4,
+        "skills": 3,
         "specialSkills": 0
       }
     },
@@ -7370,11 +7337,11 @@
     "keywordSource": "derived",
     "keywords": {
       "Combustion": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       },
       "Vibration": {
-        "skills": 5,
+        "skills": 3,
         "specialSkills": 0
       }
     },

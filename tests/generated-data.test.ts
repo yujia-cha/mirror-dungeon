@@ -329,11 +329,22 @@ describe('identities', () => {
   });
 
   it.each([
-    [10611, { skills: 5, specialSkills: 0 }, '마침표 사무소 대표 — 탄환'],
+    [10611, { skills: 3, specialSkills: 0 }, '마침표 사무소 대표 — 탄환'],
     [10414, { skills: 0, specialSkills: 2 }, '잔향・외로움 — 탄환 - 고독뿐'],
-    [10711, { skills: 3, specialSkills: 1 }, '마침표 해결사 — 탄환 + 로직 아틀리에'],
+    // 로직 아틀리에제 탄환 is spent only by the enhanced S3 1071105, not by any base skill.
+    [10711, { skills: 3, specialSkills: 0 }, '마침표 해결사 — 탄환'],
   ])('identity %i spends ammo (%o, %s)', (id, counts) => {
     expect(identityById.get(id)!.keywords.Bullet).toEqual(counts);
+  });
+
+  // Keywords, sins and attack types come from the base S1/S2/S3 only. 흑수 - 묘 필두 파우스트's
+  // 호흡 is on its enhanced S3 「흑수 묘 오의 - 운해현현」 alone, so the identity is 파열 only.
+  it('reads an identity off its base S1/S2/S3, not the enhanced skill an S3 turns into', () => {
+    expect(identityById.get(10212)!.keywords).toEqual({ Burst: { skills: 3, specialSkills: 0 } });
+    const abi = identityById.get(10115)!;
+    expect(Object.keys(abi.keywords).sort()).toEqual(['Breath', 'Sinking']);
+    expect(abi.sins).not.toContain('WRATH');
+    expect(identityById.get(11115)!.keywords.Combustion).toEqual({ skills: 3, specialSkills: 0 });
   });
 
   it('keeps 탄환 out of the gift keywords, since no gift, pack or start pool has it', () => {
