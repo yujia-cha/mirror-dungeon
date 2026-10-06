@@ -113,6 +113,48 @@ export const requirementKey = (r: Pick<Requirement, 'giftId' | 'neededFor'>): st
   `${r.giftId}:${r.neededFor ?? 'direct'}`;
 
 /**
+ * The goals a gift or a requirement keeps alive (M87): every wanted gift up the fusion chain above
+ * it, and the gift itself when it is wanted. A fusion that cannot happen loses every wanted result
+ * it feeds, however deep, so this is the unit `coveredWanted` counts.
+ */
+export function goalRoots(
+  wanted: readonly Pick<WantedGift, 'giftId'>[],
+  fusions: ExpandResult['fusions'],
+): {
+  /** The wanted gifts at or above `giftId`. */
+  ofGift: (giftId: number) => number[];
+  /**
+   * The goals one copy serves: its own gift when that is wanted, and everything at or above the
+   * fusion it feeds. A wanted gift that another goal eats is two copies, and missing the eaten one
+   * marks the gift itself unresolved too (`ingredient-shared` names the gift), so it counts here.
+   */
+  ofRequirement: (requirement: Pick<Requirement, 'giftId' | 'neededFor'>) => number[];
+} {
+  const wantedIds = new Set(wanted.map((w) => w.giftId));
+  const parents = new Map<number, number[]>();
+  for (const fusion of fusions) {
+    for (const id of fusion.ingredients) parents.set(id, [...(parents.get(id) ?? []), fusion.result]);
+  }
+  const memo = new Map<number, number[]>();
+  const ofGift = (giftId: number): number[] => {
+    const known = memo.get(giftId);
+    if (known) return known;
+    memo.set(giftId, []); // a cycle in the recipe data ends here instead of recursing forever
+    const out = new Set<number>(wantedIds.has(giftId) ? [giftId] : []);
+    for (const parent of parents.get(giftId) ?? []) for (const id of ofGift(parent)) out.add(id);
+    const sorted = [...out].sort((a, b) => a - b);
+    memo.set(giftId, sorted);
+    return sorted;
+  };
+  const ofRequirement = (requirement: Pick<Requirement, 'giftId' | 'neededFor'>): number[] => {
+    const own = wantedIds.has(requirement.giftId) ? [requirement.giftId] : [];
+    const above = requirement.neededFor === null ? [] : ofGift(requirement.neededFor);
+    return [...new Set([...own, ...above])].sort((a, b) => a - b);
+  };
+  return { ofGift, ofRequirement };
+}
+
+/**
  * Turn the wanted list into the gifts that must actually be picked up.
  *
  * A fusion result is not obtainable directly, so it is replaced by its ingredients (recursively).

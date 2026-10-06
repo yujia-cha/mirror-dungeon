@@ -19,13 +19,13 @@ import type {
   Unresolved,
 } from './types.ts';
 import { analyseDeck, evaluateConditions } from './deck.ts';
-import { expandRequirements, scarcity, type RunState } from './requirements.ts';
+import { expandRequirements, goalRoots, scarcity, type RunState } from './requirements.ts';
 import {
   alternativePacksOn,
   assignPacks,
   modeForFloor,
   observationCost,
-  type SearchResult,
+  type SearchGoals,
 } from './search.ts';
 import { requirementKey } from './requirements.ts';
 import { chooseStart, observable } from './starting.ts';
@@ -50,7 +50,7 @@ export { conflictGroups, wantedRoots } from './conflicts.ts';
 export type { ConflictGroup, ConflictCandidate } from './conflicts.ts';
 export { buildIndexes } from './data/indexes.ts';
 export { analyseDeck, dominantKeyword, evaluateConditions } from './deck.ts';
-export { chooseRecipe, expandRequirements, scarcity } from './requirements.ts';
+export { chooseRecipe, expandRequirements, goalRoots, scarcity } from './requirements.ts';
 export { alternativePacksOn, assignPacks, modeForFloor, observationCost } from './search.ts';
 export { chooseStart, observable } from './starting.ts';
 export * from './types.ts';
@@ -463,80 +463,85 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   if (startTarget) startTarget.via = 'startGift';
 
   // ---- 6. Recommended observations and the pack search -------------------
-  const runSearch = (ignorePriority: boolean) =>
+  /*
+   * The search counts goals, not copies (M87): a fusion goal is lost with any one of its copies.
+   * Goals the stages above already gave up on — an unresolved gift, and every wanted result above
+   * it — are no goals for the search; their copies are still worth routing for their own sake
+   * (the ingredients of a fusion that cannot happen stay goals of their own by default), but only
+   * once every live goal has had its say. A copy dropped below (step 7) is not what lost its
+   * fusion, so it does not make the fusion lost here: the copy that did is still in the search.
+   */
+  const roots = goalRoots(input.wanted, expansion.fusions);
+  const resultOnly = new Set(input.wanted.filter((w) => w.ingredientsAsGoals === false).map((w) => w.giftId));
+  const goalsFor = (): SearchGoals => {
+    const lost = new Set<number>();
+    for (const entry of unresolved) for (const goal of roots.ofGift(entry.giftId)) lost.add(goal);
+    const keyed = new Map<string, number[]>();
+    for (const requirement of requirements) {
+      if (requirement.via === 'route')
+        keyed.set(requirementKey(requirement), roots.ofRequirement(requirement));
+    }
+    return {
+      roots: keyed,
+      required: new Set(input.wanted.filter((w) => w.required).map((w) => w.giftId)),
+      lost,
+      resultOnly,
+    };
+  };
+  const runSearch = (slots = 0) =>
     assignPacks({
-      requirements: requirements
-        .filter((r) => r.via === 'route')
-        .map((r) => (ignorePriority && r.required ? { ...r, required: false } : r)),
+      requirements: requirements.filter((r) => r.via === 'route'),
       floors,
       options,
       rules: data.rules,
       indexes,
       passed,
       failed: run.failed,
+      goals: goalsFor(),
+      ...(slots > 0
+        ? {
+            observation: {
+              slots,
+              gifts: new Set(
+                requirements.filter((r) => r.via === 'route' && canObserve(r.giftId)).map((r) => r.giftId),
+              ),
+            },
+          }
+        : {}),
     });
 
-  /**
-   * 「반드시」 must never cost coverage.
+  /*
+   * The slots the pins left go, in order: to what the route cannot reach without them; then to
+   * gifts whose pack the route would otherwise be forced to visit, so the run keeps more floors
+   * free.
    *
-   * The search ranks required misses above every other term, so one required gift can drag the plan
-   * into sacrificing several optional ones — even when the rescue below was going to hand that gift
-   * over through an observation slot anyway. So whenever the priority-aware plan leaves something
-   * out, plan again with every goal equal and take that instead if it covers more AND every
-   * required gift it drops fits in the free slots. Priority still decides the genuine conflicts:
-   * when no slot can save the required gift, the priority-aware plan stands.
+   * The first is the search's own call (M87): when the plain search leaves something out, it runs
+   * again with the free slots as one more source — a pack of its own per observable gift, at no
+   * floor — and weighs every observation against every pack. Up to M84 the slots went to the
+   * misses one by one, scarcest first, which the search never saw: it could miss three copies of
+   * one fusion where three single gifts would have cost the same, and the slots saved none of
+   * them. Observing whatever holds the floor a non-observable gift needs (the old swap) is one of
+   * the plans this search weighs, and so is a required gift kept by observation rather than by
+   * the optional goals its pack would push out (the old 「반드시」 fallback).
    */
-  const searchWithFallback = (): SearchResult => {
-    const primary = runSearch(false);
-    if (midRun || primary.unresolvedGiftIds.length === 0) return primary;
-    if (!requirements.some((r) => r.via === 'route' && r.required)) return primary;
-    const blind = runSearch(true);
-    if (blind.unresolvedGiftIds.length >= primary.unresolvedGiftIds.length) return primary;
-    const dropped = blind.unresolvedGiftIds.filter((id) =>
-      requirements.some((r) => r.giftId === id && r.required),
-    );
-    if (dropped.length > budget - observed.length || !dropped.every(canObserve)) return primary;
-    return blind;
-  };
-
-  /**
-   * The slots the pins left go, in order: to gifts the route cannot reach (directly, or by
-   * observing whatever occupies the floor they need); then to gifts whose pack the route would
-   * otherwise be forced to visit, so the run keeps more floors free. The search runs at most twice.
-   */
-  let search = searchWithFallback();
+  let search = runSearch();
 
   // Observation happens at run start, so mid-run nothing is observed: pins were settled above.
   // b) rescue: what the search had to leave out
   if (!midRun && search.unresolvedGiftIds.length > 0 && observed.length < budget) {
-    // Required gifts are rescued first; among equals the scarcer one, then the lower id.
-    const isRequired = (giftId: number): number =>
-      requirements.some((r) => r.giftId === giftId && r.required) ? 1 : 0;
-    const missed = search.unresolvedKeys
-      .map((key, i) => ({ key, giftId: search.unresolvedGiftIds[i]! }))
-      .sort(
-        (a, b) =>
-          isRequired(b.giftId) - isRequired(a.giftId) ||
-          scarcity(a.giftId, indexes) - scarcity(b.giftId, indexes) ||
-          a.giftId - b.giftId ||
-          a.key.localeCompare(b.key, 'en'),
-      );
-    let changed = false;
-    for (const { key, giftId } of missed) {
-      if (observed.length >= budget) break;
-      if (canObserve(giftId)) {
-        observe(giftId, false, null, key);
-        changed = true;
-        continue;
+    const rescue = runSearch(budget - observed.length);
+    if (rescue.lostGoals.length <= search.lostGoals.length) {
+      // An observation that takes over a copy the plain plan had a pack for frees that pack's
+      // floor — the swap the player is told about.
+      const kept = new Set(rescue.assignment.values());
+      for (const key of rescue.observedKeys) {
+        const requirement = requirements.find((r) => r.via === 'route' && requirementKey(r) === key)!;
+        const floor = search.supplier.get(key);
+        const was = floor === undefined ? undefined : search.assignment.get(floor);
+        observe(requirement.giftId, false, was !== undefined && !kept.has(was) ? was : null, key);
       }
-      // Not observable itself: observe the sole occupant of a floor its pack could use instead.
-      const swap = soleOccupantToFree(giftId, search, requirements, floors, options, indexes, canObserve);
-      if (swap) {
-        observe(swap.giftId, false, swap.packId, swap.key);
-        changed = true;
-      }
+      search = rescue;
     }
-    if (changed) search = searchWithFallback();
   }
 
   // c) flexibility: free a forced pack whose only job is one observable gift
@@ -682,11 +687,23 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         );
     }
     if (droppedFor.size > 0) {
-      search = searchWithFallback();
+      search = runSearch();
       scheduled = schedule();
     }
   }
   const { fusions, obtainedAtFloor, resultFloor } = scheduled;
+
+  // Copies of a goal the search itself gave up on (M87) were not chased: they are dropped like the
+  // ingredients of any fusion that can no longer happen, so the fusion's entry says so.
+  for (const key of search.abandonedKeys) {
+    const requirement = requirements.find((r) => r.via === 'route' && requirementKey(r) === key);
+    if (!requirement || requirement.neededFor === null) continue;
+    requirement.via = 'dropped';
+    droppedFor.set(
+      requirement.neededFor,
+      [...(droppedFor.get(requirement.neededFor) ?? []), requirement.giftId].sort((a, b) => a - b),
+    );
+  }
 
   const bannedPacks = new Set(options.bannedPacks);
   for (const [i, giftId] of search.unresolvedGiftIds.entries()) {
@@ -1007,43 +1024,6 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       elapsedMs: Date.now() - startedAt,
     },
   };
-}
-
-/**
- * For a gift the search left out and that cannot itself be observed: find a floor its pack could
- * take whose current pack exists only to supply one observable gift. Observing that gift frees the
- * floor. Lowest floor first, then lowest gift id, for determinism.
- */
-function soleOccupantToFree(
-  giftId: number,
-  search: SearchResult,
-  requirements: Requirement[],
-  floors: number[],
-  options: PlanOptions,
-  indexes: GameIndexes,
-  canObserve: (giftId: number) => boolean,
-): { giftId: number; packId: number; key: string } | null {
-  const banned = new Set(options.bannedPacks);
-  // A pinned or played pack cannot be visited again, so no floor is worth freeing for it.
-  const settled = new Set(Object.values(options.pinnedPacks));
-  const packs = (indexes.packsByGift.get(giftId) ?? []).filter((id) => !banned.has(id) && !settled.has(id));
-  const usable = floors.filter((floor) => {
-    if (options.pinnedPacks[floor] !== undefined) return false;
-    const offered = indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? [];
-    return packs.some((id) => offered.includes(id));
-  });
-  for (const floor of usable.sort((a, b) => a - b)) {
-    const packId = search.assignment.get(floor);
-    if (packId === undefined) continue;
-    const pickups = requirements
-      .filter((r) => r.via === 'route' && search.supplier.get(requirementKey(r)) === floor)
-      .sort((a, b) => a.giftId - b.giftId);
-    const only = pickups[0];
-    if (pickups.length === 1 && only && canObserve(only.giftId)) {
-      return { giftId: only.giftId, packId, key: requirementKey(only) };
-    }
-  }
-  return null;
 }
 
 function dedupeUnresolved(entries: Unresolved[]): Unresolved[] {

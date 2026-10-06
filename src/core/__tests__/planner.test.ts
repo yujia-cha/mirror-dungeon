@@ -21,7 +21,7 @@ import {
   wantedRoots,
 } from '../index.ts';
 import { analyseDeck, dominantKeyword, evaluateConditions } from '../deck.ts';
-import { expandRequirements } from '../requirements.ts';
+import { expandRequirements, goalRoots } from '../requirements.ts';
 import { modeForFloor, observationCost } from '../search.ts';
 import type { PlanInput, PlanOptions, RoutePlan } from '../types.ts';
 
@@ -1437,6 +1437,133 @@ describe('greedy seed, linear root bound and dominance (M84)', () => {
       expect([...seeded.supplier].sort()).toEqual([...plain.supplier].sort());
     }
     expect(compared).toBeGreaterThan(20);
+  });
+});
+
+describe('goals, not copies (M87)', () => {
+  const FIRE_DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916, 11009, 11115, 11216];
+  const all = Array.from({ length: 15 }, (_, i) => i + 1);
+  const giftsOf = (kind: string) =>
+    data.gifts
+      .filter((g) => g.obtainable && g.acquisition.kind === kind && !indexes.freelyAvailableGifts.has(g.id))
+      .map((g) => g.id)
+      .sort((a, b) => a - b);
+  /**
+   * The seeded random boards M87 was measured on (3~82 goals, pack-bound and fusion-only, the fire
+   * deck with seven deployed on even boards and the 검계 deck on odd ones). Board n is the n-th.
+   */
+  const randomBoards = (() => {
+    const pool = giftsOf('packLimited');
+    const fusions = giftsOf('fusionOnly');
+    let seed = 20261006;
+    const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    return Array.from({ length: 120 }, (_, b) => {
+      const size = 3 + Math.floor(next() * 80);
+      const ids = new Set<number>();
+      while (ids.size < size) {
+        const source = next() < 0.3 ? fusions : pool;
+        ids.add(source[Math.floor(next() * source.length)]!);
+      }
+      const fire = b % 2 === 0;
+      return {
+        deck: fire ? FIRE_DECK : BLADE_LINEAGE_DECK,
+        wanted: [...ids].map((giftId) => ({ giftId, required: false })),
+        options: options({
+          lastFloor: 15,
+          hardFromFloor: 1,
+          ...(fire ? { deployed: FIRE_DECK.slice(0, 7) } : {}),
+        }),
+      };
+    });
+  })();
+
+  it('keeps the most goals rather than the most copies', () => {
+    // 조그맣고 근사한 바이올린(9249) is three copies: 부서진 바이올린 (1016, floor 1 only) and two from
+    // 우.미.다 (1102). 완전함(9416) needs 1007 and 1008, 만화경(9420) is 1010's. Floors 1~3 hold three
+    // of those packs. Counting copies, the violin's two from 1102 beat 만화경's one, and the plan kept
+    // one goal; counting goals, the violin is lost either way, so 1010 takes floor 3.
+    const result = planWithout({
+      deck: BLADE_LINEAGE_DECK,
+      wanted: [9249, 9416, 9420].map((giftId) => ({ giftId, required: false })),
+      options: options({ lastFloor: 15, hardFromFloor: 1 }),
+    });
+    expect(result.stats.coveredWanted).toBe(2);
+    expect(result.floors.find((f) => f.packId === 1010)?.pickups.map((p) => p.giftId)).toEqual([9420]);
+    expect(result.floors.some((f) => f.packId === 1102)).toBe(false);
+    // The violin's other copies are not chased for nothing, and its entry says so.
+    expect(result.unresolved.find((u) => u.giftId === 9249)).toMatchObject({
+      reason: 'fusion-ingredient-unresolved',
+      droppedIngredients: [9706, 9707],
+    });
+  });
+
+  it('reaches the integer optimum by goals on fusion-heavy boards', () => {
+    // Optima from an integer program over the same packs, floors and copies (M87.md). M84, which
+    // counted copies, kept 22, 15, 10 and 25.
+    for (const [board, optimum] of [
+      [25, 24],
+      [75, 16],
+      [80, 11],
+      [94, 27],
+    ] as const) {
+      const result = planRoute(randomBoards[board]!, noObservation, indexes);
+      expect(result.stats.searchCapped).toBe(false);
+      expect(result.stats.coveredWanted).toBe(optimum);
+    }
+  });
+
+  it('weighs the observation slots inside the search', () => {
+    // Without observation this board keeps 11 of 14. The slots go where the search says — three
+    // copies whose observation frees what all 14 need — not to the misses one by one.
+    const board = randomBoards[32]!;
+    expect(planRoute(board, noObservation, indexes).stats.coveredWanted).toBe(11);
+    const result = planRoute(board, data, indexes);
+    expect(result.stats.coveredWanted).toBe(14);
+    expect(result.start.observed).toHaveLength(3);
+    expect(result.unresolved).toEqual([]);
+  });
+
+  it('finishes with the same plan with or without the seeds, the branch and bound and the window bound', () => {
+    const run = (input: PlanInput, toggles: { seed?: boolean; branch?: boolean; lowerBound?: boolean }) => {
+      const stats = analyseDeck(input.deck, indexes, data.rules.deployment, input.options.deployed);
+      const { requirements, fusions } = expandRequirements(
+        input.wanted,
+        indexes,
+        stats,
+        data.rules.fusion.maxShopSlots,
+      );
+      const roots = goalRoots(input.wanted, fusions);
+      return assignPacks({
+        requirements,
+        floors: all,
+        options: input.options,
+        rules: data.rules,
+        indexes,
+        goals: {
+          roots: new Map(
+            requirements.map((r) => [`${r.giftId}:${r.neededFor ?? 'direct'}`, roots.ofRequirement(r)]),
+          ),
+        },
+        tieBreakNodes: Number.POSITIVE_INFINITY,
+        ...toggles,
+      });
+    };
+    let compared = 0;
+    for (const input of randomBoards.filter((b) => b.wanted.length <= 16)) {
+      const plain = run(input, { seed: false, branch: false, lowerBound: false });
+      if (plain.capped) continue;
+      compared += 1;
+      for (const toggles of [{}, { branch: false }, { seed: false }, { lowerBound: false }]) {
+        const other = run(input, toggles);
+        expect(other.capped).toBe(false);
+        expect(other.lostGoals).toEqual(plain.lostGoals);
+        expect(other.unresolvedKeys).toEqual(plain.unresolvedKeys);
+        expect([...other.assignment].sort((a, b) => a[0] - b[0])).toEqual(
+          [...plain.assignment].sort((a, b) => a[0] - b[0]),
+        );
+      }
+    }
+    expect(compared).toBeGreaterThan(10);
   });
 });
 

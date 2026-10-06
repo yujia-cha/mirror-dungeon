@@ -7,7 +7,7 @@
 import type { GameData } from './schema.ts';
 import type { GameIndexes, PlanInput, RoutePlan } from './types.ts';
 import { analyseDeck } from './deck.ts';
-import { expandRequirements } from './requirements.ts';
+import { expandRequirements, goalRoots } from './requirements.ts';
 import { modeForFloor } from './search.ts';
 
 export interface ConflictCandidate {
@@ -28,31 +28,18 @@ export interface ConflictGroup {
 }
 
 /**
- * Map a requirement back to the wanted gift(s) it serves: a wanted gift is its own root, a fusion
- * ingredient's root is the wanted result it feeds.
+ * Map a gift back to the wanted gift(s) it serves: a wanted gift is its own root, and a fusion
+ * ingredient serves every wanted result above it, however deep (`goalRoots` — the search counts
+ * goals in the same unit since M87).
  */
 export function wantedRoots(
   input: PlanInput,
   data: GameData,
   indexes: GameIndexes,
 ): (giftId: number) => number[] {
-  const wantedIds = new Set(input.wanted.map((w) => w.giftId));
   const stats = analyseDeck(input.deck, indexes, data.rules.deployment, input.options.deployed);
-  const requirements = expandRequirements(
-    input.wanted,
-    indexes,
-    stats,
-    data.rules.fusion.maxShopSlots,
-  ).requirements;
-  const roots = (giftId: number, seen = new Set<number>()): number[] => {
-    if (wantedIds.has(giftId)) return [giftId];
-    if (seen.has(giftId)) return [];
-    seen.add(giftId);
-    return requirements
-      .filter((r) => r.giftId === giftId && r.neededFor !== null)
-      .flatMap((r) => roots(r.neededFor!, seen));
-  };
-  return roots;
+  const { fusions } = expandRequirements(input.wanted, indexes, stats, data.rules.fusion.maxShopSlots);
+  return goalRoots(input.wanted, fusions).ofGift;
 }
 
 export function conflictGroups(
