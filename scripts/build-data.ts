@@ -769,6 +769,11 @@ const derivedSource = readDerivedIdentities();
 const factionIdByEnglishName = new Map<string, string>();
 for (const [id, name] of readFactionNames('EN'))
   if (!factionIdByEnglishName.has(name)) factionIdByEnglishName.set(name, id);
+// A new association the localization does not name yet (르루주 · 시지프) is named in the curated
+// file; without this the derived mirror's "Le Rouge" tag could not find its way back to LE_ROUGE.
+for (const [id, names] of curatedEntries(curated.factions)) {
+  if (names.en && !factionIdByEnglishName.has(names.en)) factionIdByEnglishName.set(names.en, id);
+}
 const knownFactionIds = new Set<string>(
   rawPersonalities
     .flatMap((raw) => raw.associationList ?? [])

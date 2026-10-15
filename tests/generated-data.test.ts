@@ -303,7 +303,14 @@ describe('identities', () => {
     [10816, '오트쿠튀르:: 르루주 부티크', 8, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
     [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], ['SISYPHE']],
     [10315, '오트쿠튀르:: 르누아르 브랜드 매니저', 3, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
-    [11016, '오트쿠튀르:: 르루주 붉은 신', 10, ['Charge', 'Laceration'], [], 'backfilled'],
+    [
+      11016,
+      '오트쿠튀르:: 르루주 붉은 신',
+      10,
+      ['Charge', 'Laceration'],
+      ['LE_ROUGE', 'SISYPHE'],
+      'backfilled',
+    ],
   ])(
     'knows %i 「%s」 once the static data ships it',
     (id, title, sinnerId, keywords, factions, source = 'derived') => {

@@ -153,7 +153,11 @@ describe('identity keyword chips', () => {
   });
 
   it('still marks the 특수 variants of the status keywords, which conditions do count', () => {
-    expect(label(10614, 'Charge').label).toBe('충전(특수)');
+    // One word for the variant: 「특수 충전」 whether or not the plain 충전 comes with it (M90).
+    expect(label(10614, 'Charge')).toEqual({
+      label: '특수 충전',
+      title: '충전 또는 특수 충전 부여·획득 공격 스킬 보유',
+    });
     expect(label(10504, 'Laceration').label).toBe('특수 출혈');
   });
 });

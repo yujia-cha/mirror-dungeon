@@ -46,8 +46,10 @@ export function renderEffect(text: Localized, enums: Enums, lang: Lang): string 
 const STATUS_KEYWORD_SET = new Set<string>(STATUS_KEYWORDS);
 
 /**
- * How one identity's keyword reads on its chip: 「충전」 for the base keyword, 「충전(특수)」 when
- * its skills also use the 특수 variant (생체 재료), 「특수 출혈」 when they use only the variant (못).
+ * How one identity's keyword reads on its chip: 「충전」 for the base keyword, 「특수 충전」 whenever
+ * its skills use the 특수 variant — alongside the plain one (생체 재료) or alone (못 = 특수 출혈). The
+ * variant has one name; whether the plain keyword counts too is the chip's title (`…SpecialHint`
+ * vs `…SpecialOnlyHint`).
  * The count of skills is deliberately not shown — the deck-level chips carry the numbers.
  *
  * 탄환 is the exception, and always reads plainly. It is spent rather than inflicted (hence

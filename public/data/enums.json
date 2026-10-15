@@ -228,16 +228,16 @@
       "deprecated": false,
       "id": "LE_NOIR",
       "name": {
-        "en": "LE_NOIR",
-        "ko": "LE_NOIR"
+        "en": "Le Noir",
+        "ko": "르누아르"
       }
     },
     {
       "deprecated": false,
       "id": "LE_ROUGE",
       "name": {
-        "en": "LE_ROUGE",
-        "ko": "LE_ROUGE"
+        "en": "Le Rouge",
+        "ko": "르루주"
       }
     },
     {
@@ -468,8 +468,8 @@
       "deprecated": false,
       "id": "SISYPHE",
       "name": {
-        "en": "SISYPHE",
-        "ko": "SISYPHE"
+        "en": "Sisyphe",
+        "ko": "시지프"
       }
     },
     {

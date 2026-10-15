@@ -6169,7 +6169,10 @@
     "attackTypes": [
       "Penetrate"
     ],
-    "factions": [],
+    "factions": [
+      "LE_ROUGE",
+      "SISYPHE"
+    ],
     "id": 11016,
     "keywordSource": "backfilled",
     "keywords": {

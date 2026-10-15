@@ -4,5 +4,20 @@
     "ko": "불주먹 사무소",
     "en": "Firefist Office",
     "_source": "인격 11211 '불주먹 사무소 생존자 그레고르' / 'Firefist Office Survivor Gregor'의 칭호에서 확인 (Personalities.json)."
+  },
+  "LE_NOIR": {
+    "ko": "르누아르",
+    "en": "Le Noir",
+    "_source": "BattleKeywords.json KR 「르누아르 소속 아군 인격」 / EN '\"Le Noir\" allied Identities'. 인격 10315·10416의 associationList."
+  },
+  "LE_ROUGE": {
+    "ko": "르루주",
+    "en": "Le Rouge",
+    "_source": "BattleKeywords.json·Skills_personality-10.json KR 「르루주 소속 아군」 / BattleKeywords.json EN '\"Le Rouge\" allied Identities'. 인격 10816·11016의 소속."
+  },
+  "SISYPHE": {
+    "ko": "시지프",
+    "en": "Sisyphe",
+    "_source": "EGOgift_MirrorDungeon_8.json KR 「시지프 소속 인격」 / EN '\"Sisyphe\" Identity' (9291 꽃가위). 오트쿠튀르 인격들의 공통 소속."
   }
 }

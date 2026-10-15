@@ -1109,7 +1109,7 @@ describe('DeckStep', () => {
     useApp.getState().setDeck([10614, 10504, 10101], 3);
     renderDeck();
     const chip = (title: RegExp) => screen.getAllByTitle(title)[0]!;
-    expect(chip(/^충전 또는 특수 충전/).textContent).toBe('충전(특수)');
+    expect(chip(/^충전 또는 특수 충전/).textContent).toBe('특수 충전');
     expect(chip(/^특수 출혈만/).textContent).toBe('특수 출혈');
     expect(chip(/^침잠 부여 공격 스킬 보유$/).textContent).toBe('침잠');
     // 특수 shows in the search too.

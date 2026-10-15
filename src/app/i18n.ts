@@ -99,7 +99,8 @@ export const STRINGS = {
   deckChipBasis: { ko: '출격 {n}명 · 편성 전체 {total}명', en: '{n} deployed · {total} in the formation' },
   deckRank: { ko: '{n}성', en: '{n}★' },
   deckKeywordSkills: { ko: '{keyword} 부여 공격 스킬 보유', en: 'Has attack skills that inflict {keyword}' },
-  deckKeywordSpecial: { ko: '{keyword}(특수)', en: '{keyword} (Unique)' },
+  // Both forms read 「특수 {keyword}」 (one word for the variant); the hint says whether the plain one counts too.
+  deckKeywordSpecial: { ko: '특수 {keyword}', en: 'Unique {keyword}' },
   deckKeywordSpecialHint: {
     ko: '{keyword} 또는 특수 {keyword} 부여·획득 공격 스킬 보유',
     en: 'Has attack skills that inflict or gain {keyword} or Unique {keyword}',
