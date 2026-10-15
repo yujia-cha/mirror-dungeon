@@ -59,7 +59,10 @@ function main(): void {
   const lock = readJson<Lock>(LOCK_PATH);
   const allPaths = Object.values(lock.sources).flatMap((source) => source.files.map(pathOf));
 
-  const from = fromFlag !== undefined ? Number(fromFlag) : newestSeason(allPaths);
+  // The declared season wins over file names: the lock may carry one next-season file early (the
+  // gift text of packs the derived mirror backfills), and that must not read as "already moved".
+  const from =
+    fromFlag !== undefined ? Number(fromFlag) : (lock.mirrorDungeonSeason ?? newestSeason(allPaths));
   if (from === null) usage('the lock names no season to copy from. Pass --from <season>.');
   if (!Number.isInteger(from)) usage(`--from takes a season number, not ${String(fromFlag)}.`);
   if (from === target) usage(`the lock already sits on season ${target}. Give a newer one.`);

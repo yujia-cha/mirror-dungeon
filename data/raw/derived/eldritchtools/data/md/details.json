@@ -61,13 +61,13 @@
                     "Theme Pack Selection +1",
                     "Theme Pack Refresh Chance +3",
                     "When choosing a new Theme Pack for the first time, all Identities gain +3 Level(s) (max 9)",
-                    "If 45+ Theme Packs are unlocked in the Theme Pack Compendium, gain 1 Clash Power"
+                    "If 45+ Theme Packs are unlocked in the Theme Pack Compendium, gain 1 Clash Power Up"
                 ],
                 [
                     "Theme Pack Selection +1",
                     "Theme Pack Refresh Chance +4",
                     "When choosing a new Theme Pack for the first time, all Identities gain +3 Level(s) (max 9)",
-                    "If 45+ Theme Packs are unlocked in the Theme Pack Compendium, gain 2 Clash Power"
+                    "If 45+ Theme Packs are unlocked in the Theme Pack Compendium, gain 2 Clash Power Up"
                 ]
             ]
         },
@@ -147,15 +147,15 @@
             "cost": 40,
             "descs": [
                 [
-                    "Upon entry, all Identities gain 3 Level(s)",
+                    "Upon entering Floor 1, all Identities gain 3 Level(s)",
                     "Upon Floor clear, all Identities gain 1 Level(s) (max 5)"
                 ],
                 [
-                    "Upon entry, all Identities gain 3 Level(s)",
+                    "Upon entering Floor 1, all Identities gain 3 Level(s)",
                     "Upon Floor clear, all Identities gain 1 Level(s) (max 9)"
                 ],
                 [
-                    "Upon entry, all Identities gain 3 Level(s)",
+                    "Upon entering Floor 1, all Identities gain 3 Level(s)",
                     "Upon entering Floor 6, all Identities gain 3 Level(s)",
                     "Upon Floor clear, all Identities gain 1 Level(s) (max 9)"
                 ]

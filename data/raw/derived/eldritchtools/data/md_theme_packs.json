@@ -343,6 +343,7 @@
       "9439",
       "9440",
       "9795",
+      "9205",
       "9213"
     ],
     "image": "Canto_VII",
@@ -366,6 +367,7 @@
       "9439",
       "9440",
       "9795",
+      "9205",
       "9213"
     ],
     "image": "Canto_VII_mid",
@@ -389,6 +391,7 @@
       "9439",
       "9440",
       "9795",
+      "9205",
       "9213"
     ],
     "image": "Canto_VII_hard",
@@ -523,6 +526,96 @@
       "Canto",
       "Canto IX",
       "Canto Name"
+    ]
+  },
+  "1028": {
+    "bossEncounters": [
+      "md|canto-10-1"
+    ],
+    "category": [
+      "Canto",
+      "X"
+    ],
+    "eventPool": [
+      971120
+    ],
+    "exclusive_gifts": [
+      "9290",
+      "9291"
+    ],
+    "image": "Canto_X",
+    "name": "Storefront Campout",
+    "tags": [
+      "Canto",
+      "Canto X"
+    ]
+  },
+  "1029": {
+    "bossEncounters": [
+      "md|canto-10-2"
+    ],
+    "category": [
+      "Canto",
+      "X"
+    ],
+    "eventPool": [
+      971119
+    ],
+    "exclusive_gifts": [
+      "9288",
+      "9289"
+    ],
+    "image": "Canto_X_mid",
+    "name": "An Anarchy of Colors",
+    "tags": [
+      "Canto",
+      "Canto X"
+    ]
+  },
+  "1030": {
+    "bossEncounters": [
+      "md|canto-10-3"
+    ],
+    "category": [
+      "Canto",
+      "X"
+    ],
+    "eventPool": [
+      971117,
+      971118
+    ],
+    "exclusive_gifts": [
+      "9286",
+      "9287"
+    ],
+    "image": "Canto_X_mid2",
+    "name": "Creed of Preservation",
+    "tags": [
+      "Canto",
+      "Canto X"
+    ]
+  },
+  "1031": {
+    "bossEncounters": [
+      "md|canto-10-4"
+    ],
+    "category": [
+      "Canto",
+      "X"
+    ],
+    "eventPool": [
+      971115,
+      971116
+    ],
+    "exclusive_gifts": [
+      "9284",
+      "9285"
+    ],
+    "image": "Canto_X_hard",
+    "name": "Readvent of Gluttony",
+    "tags": [
+      "Canto",
+      "Canto X"
     ]
   },
   "1101": {
@@ -2003,6 +2096,10 @@
     "category": [
       "Extreme"
     ],
+    "exclusive_gifts": [
+      "9205",
+      "9213"
+    ],
     "image": "BloodFiend_Extreme",
     "name": "Who Couldn't be Bloodfiends",
     "tags": [
@@ -2108,7 +2205,9 @@
       "Extreme"
     ],
     "exclusive_gifts": [
-      "9253"
+      "9205",
+      "9253",
+      "9213"
     ],
     "image": "LamanchaParade_Extreme",
     "name": "Blessed Carnival",
@@ -2173,7 +2272,9 @@
       "Extreme"
     ],
     "exclusive_gifts": [
-      "9827"
+      "9205",
+      "9827",
+      "9213"
     ],
     "image": "LamanchaOwner_Extreme",
     "name": "The Master of La Manchaland",

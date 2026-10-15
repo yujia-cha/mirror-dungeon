@@ -20,6 +20,7 @@ import {
   planRoute,
   wantedRoots,
 } from '../index.ts';
+import { beforeCantoX } from './before-canto-x.ts';
 import { analyseDeck, dominantKeyword, evaluateConditions } from '../deck.ts';
 import { expandRequirements, goalRoots } from '../requirements.ts';
 import { modeForFloor, observationCost } from '../search.ts';
@@ -32,6 +33,20 @@ const noObservation = {
   ...data,
   rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
 };
+
+/**
+ * The season as M82–M87 measured it. Their optima were checked offline with an integer program over
+ * these packs; the Canto X packs that arrived on 10-15 (1028–1031) carry an assumed general pool
+ * (`backfillAssumptions`), so they and their exclusives are left out and the boards stay the same.
+ */
+const measuredSeason = (() => {
+  const season = beforeCantoX(data);
+  return {
+    data: season,
+    indexes: buildIndexes(season),
+    noObservation: { ...season, rules: noObservation.rules },
+  };
+})();
 
 /** Identity ids used below, chosen because their factions and keywords are stable. */
 const BLADE_LINEAGE_DECK = [10403, 10308, 10208, 10108, 11005, 10104];
@@ -1250,6 +1265,7 @@ describe('drop effects (M80)', () => {
 });
 
 describe('floor-window lower bound (M82) and tie-break budget (M83)', () => {
+  const { data, indexes } = measuredSeason;
   const all = Array.from({ length: 15 }, (_, i) => i + 1);
   const run = (ids: number[], lowerBound: boolean, tieBreakNodes = Number.POSITIVE_INFINITY, seed = true) => {
     const stats = analyseDeck(BLADE_LINEAGE_DECK, indexes, data.rules.deployment);
@@ -1364,6 +1380,7 @@ describe('floor-window lower bound (M82) and tie-break budget (M83)', () => {
 });
 
 describe('greedy seed, linear root bound and dominance (M84)', () => {
+  const { data, indexes } = measuredSeason;
   const all = Array.from({ length: 15 }, (_, i) => i + 1);
   const run = (ids: number[], seed = true, tieBreakNodes?: number) => {
     const stats = analyseDeck(BLADE_LINEAGE_DECK, indexes, data.rules.deployment);
@@ -1441,6 +1458,7 @@ describe('greedy seed, linear root bound and dominance (M84)', () => {
 });
 
 describe('goals, not copies (M87)', () => {
+  const { data, indexes, noObservation } = measuredSeason;
   const FIRE_DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916, 11009, 11115, 11216];
   const all = Array.from({ length: 15 }, (_, i) => i + 1);
   const giftsOf = (kind: string) =>
@@ -1782,17 +1800,25 @@ describe('run progress', () => {
   });
 
   it('routes a missed pool gift from any later pack that carries it', () => {
-    // 파란 별조각(9817) is in the pool of 1017 (Hard 3-4), 1018, 1123, 1410 and every EXTREME pack.
-    const plan = planWithout({
-      wanted: [{ giftId: 9817, required: true }],
-      options: options({
-        lastFloor: 15,
-        hardFromFloor: 1,
-        currentFloor: 4,
-        pinnedPacks: { 3: 1017 },
-        unobtainableGifts: [9817],
-      }),
-    });
+    // 파란 별조각(9817) is in the pool of 1017 (Hard 3-4), 1018, 1123, 1410 and every EXTREME pack —
+    // 22 packs, rare enough to route for. The Canto X packs' assumed pool (every general gift) puts
+    // it at 26, over the 20% share, so the case is held on the season as it stood before them.
+    const { indexes } = measuredSeason;
+    const plan = planRoute(
+      {
+        deck: MIXED_DECK,
+        wanted: [{ giftId: 9817, required: true }],
+        options: options({
+          lastFloor: 15,
+          hardFromFloor: 1,
+          currentFloor: 4,
+          pinnedPacks: { 3: 1017 },
+          unobtainableGifts: [9817],
+        }),
+      },
+      measuredSeason.noObservation,
+      indexes,
+    );
     expect(plan.floors.find((f) => f.floor === 3)!.pickups).toEqual([]);
     const supplier = plan.floors.find((f) => f.pickups.some((p) => p.giftId === 9817))!;
     expect(supplier.floor).toBeGreaterThanOrEqual(4);

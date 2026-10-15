@@ -1777,12 +1777,15 @@
     "attackTypes": [
       "Hit"
     ],
-    "factions": [],
+    "factions": [
+      "LE_NOIR",
+      "SISYPHE"
+    ],
     "id": 10315,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 1,
+        "skills": 3,
         "specialSkills": 3
       },
       "Vibration": {
@@ -1806,7 +1809,9 @@
       "en": "Haute Couture:: Le Noir Brand Manager",
       "ko": "오트쿠튀르:: 르누아르 브랜드 매니저"
     },
-    "traits": []
+    "traits": [
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [
@@ -6159,6 +6164,41 @@
       "SMALL",
       "SPIDER_HOUSE_DISCIPLE"
     ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "factions": [],
+    "id": 11016,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Charge": {
+        "skills": 1,
+        "specialSkills": 2
+      },
+      "Laceration": {
+        "skills": 2,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 8,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "GLUTTONY"
+    ],
+    "title": {
+      "en": "Haute Couture:: The Crimson God of Le Rouge",
+      "ko": "오트쿠튀르:: 르루주 붉은 신"
+    },
+    "traits": []
   },
   {
     "attackTypes": [

@@ -15931,6 +15931,197 @@
       "The House of Spiders"
     ]
   },
+  "11016": {
+    "breakSection": [
+      55
+    ],
+    "date": "2026-10-15",
+    "defCorrection": 0,
+    "defenseSkillTypes": [
+      {
+        "id": "1101604",
+        "type": {
+          "affinity": "lust",
+          "affinityUptie": 4,
+          "tier": 1,
+          "type": "evade"
+        }
+      },
+      {
+        "id": "1101612",
+        "type": {
+          "affinity": "gluttony",
+          "clashable": true,
+          "tier": 1,
+          "type": "guard"
+        }
+      },
+      {
+        "id": "1101613",
+        "type": {
+          "affinity": "lust",
+          "atkType": "pierce",
+          "clashable": true,
+          "tier": 1,
+          "type": "counter"
+        }
+      }
+    ],
+    "hp": {
+      "base": 77,
+      "level": 2.9
+    },
+    "name": "Haute Couture:: The Crimson God of Le Rouge",
+    "rank": 3,
+    "resists": {
+      "blunt": 2,
+      "pierce": 0.5,
+      "slash": 1
+    },
+    "season": 8,
+    "sinnerId": 10,
+    "skillKeywordList": [
+      "Bleed",
+      "Charge"
+    ],
+    "skillTypes": [
+      {
+        "id": "1101601",
+        "num": 3,
+        "type": {
+          "affinity": "gluttony",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101602",
+        "num": 2,
+        "type": {
+          "affinity": "wrath",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101603",
+        "num": 1,
+        "type": {
+          "affinity": "lust",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101605",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101606",
+        "num": 0,
+        "type": {
+          "affinity": "gluttony",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101607",
+        "num": 0,
+        "type": {
+          "affinity": "wrath",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101608",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101609",
+        "num": 0,
+        "type": {
+          "affinity": "gluttony",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101610",
+        "num": 0,
+        "type": {
+          "affinity": "lust",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101611",
+        "num": 0,
+        "type": {
+          "affinity": "lust",
+          "tier": 3,
+          "type": "pierce"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        3,
+        6
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        7
+      ],
+      [
+        4,
+        7
+      ]
+    ],
+    "statuses": [
+      "AttackUp",
+      "Binding",
+      "BoneNailSinclair",
+      "BuffetFriendShield",
+      "BuffetSinclair",
+      "BuffetThirst",
+      "CanDuelGuard",
+      "Charge",
+      "ChargeRougeAlly",
+      "DinnerField",
+      "Enhancement",
+      "HungrySinclair",
+      "Laceration",
+      "ParryingResultUp",
+      "PersonalityCharge",
+      "ResultEnhancement",
+      "RougeFamilySinclair",
+      "ScarletTakeDamageUp",
+      "SuperCoin",
+      "SupportAlly",
+      "TransformSinclair"
+    ],
+    "tags": [
+      "Le Rouge",
+      "Sisyphe"
+    ]
+  },
   "11101": {
     "breakSection": [
       70,

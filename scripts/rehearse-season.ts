@@ -26,6 +26,7 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -140,6 +141,63 @@ function makeSandbox(): string {
   return sandbox;
 }
 
+/**
+ * The rehearsal starts from a season the static data covers whole.
+ *
+ * The live derived mirror can know a pack the static data has not shipped yet — a mid-season
+ * addition waiting on an extraction — and the owner may have stood in a pool for it
+ * (`backfillAssumptions`). Left in, that pack rides into every variant as a backfill and the
+ * stand-in hides the refusal `derived-only` exists to show. `keep` is the synthetic packs the
+ * variant adds on purpose.
+ */
+function settleBaseline(sandbox: string, keep: readonly number[]): void {
+  const listOf = (raw: unknown): { id: number }[] =>
+    Array.isArray(raw)
+      ? raw
+      : ((raw as { list?: []; dataList?: [] }).list ?? (raw as { dataList?: [] }).dataList ?? []);
+  const themeDir = join(sandbox, 'data/raw/static/mirrordungeon-theme-floor');
+  const known = new Set<string>(keep.map(String));
+  for (const name of existsSync(themeDir) ? readdirSync(themeDir) : []) {
+    for (const pack of listOf(JSON.parse(readFileSync(join(themeDir, name), 'utf8'))))
+      known.add(String(pack.id));
+  }
+  const dropped = new Set<string>();
+  const floorsPath = join(sandbox, 'data/raw/derived/eldritchtools/data/md_floor_packs.json');
+  if (existsSync(floorsPath)) {
+    const floors = JSON.parse(readFileSync(floorsPath, 'utf8')) as Record<string, Record<string, string[]>>;
+    for (const byFloor of Object.values(floors)) {
+      for (const [floor, ids] of Object.entries(byFloor)) {
+        for (const id of ids) if (!known.has(id)) dropped.add(id);
+        byFloor[floor] = ids.filter((id) => known.has(id));
+      }
+    }
+    writeFileSync(floorsPath, `${JSON.stringify(floors)}\n`);
+  }
+  // A curated correction to one of those packs' exclusives would name a gift the season no longer has.
+  const packsPath = join(sandbox, 'data/raw/derived/eldritchtools/data/md_theme_packs.json');
+  const conditionsPath = join(sandbox, 'data/curated/conditions.json');
+  if (dropped.size > 0 && existsSync(packsPath) && existsSync(conditionsPath)) {
+    const packs = JSON.parse(readFileSync(packsPath, 'utf8')) as Record<
+      string,
+      { exclusive_gifts?: string[] }
+    >;
+    const conditions = JSON.parse(readFileSync(conditionsPath, 'utf8')) as Record<string, unknown>;
+    for (const id of dropped)
+      for (const giftId of packs[id]?.exclusive_gifts ?? []) delete conditions[giftId];
+    writeFileSync(conditionsPath, `${JSON.stringify(conditions, null, 2)}\n`);
+  }
+  const seasonsDir = join(sandbox, 'data/curated/seasons');
+  for (const season of existsSync(seasonsDir) ? readdirSync(seasonsDir) : []) {
+    const path = join(seasonsDir, season, 'rules.json');
+    if (!existsSync(path)) continue;
+    const rules = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+    if (!('backfillAssumptions' in rules)) continue;
+    delete rules['backfillAssumptions'];
+    delete (rules['_sources'] as Record<string, unknown> | undefined)?.['backfillAssumptions'];
+    writeFileSync(path, `${JSON.stringify(rules, null, 2)}\n`);
+  }
+}
+
 /** The lines `data:import` prints under "A newer season is in this folder". */
 function newSeasonFilesFrom(output: string): string[] {
   const start = output.indexOf('A newer season is in this folder');
@@ -190,9 +248,11 @@ export function rehearse(variant: SynthVariant, options: { keep?: boolean } = {}
       rmSync(join(sandbox, 'data/raw/derived/eldritchtools'), { recursive: true, force: true });
       mkdirSync(join(sandbox, 'data/raw/derived/eldritchtools'), { recursive: true });
       copyTreePreservingTimes(synth.derivedDir!, join(sandbox, 'data/raw/derived/eldritchtools'));
+      settleBaseline(sandbox, synth.newPackIds);
       // Nothing is written to `data/curated`: the build marks a season provisional by itself when
       // a selectable pack has no general pool, and that is the behaviour being rehearsed.
     } else {
+      settleBaseline(sandbox, []);
       // 1. The first import, before anyone touches the lock. It must change nothing on disk and
       //    name the season's files instead.
       const preview = run(

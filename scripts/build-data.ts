@@ -281,10 +281,25 @@ const backfilledPacks = (() => {
   const known = new Set(staticPacks.map((pack) => pack.id));
   const hiddenPackId = (curated.rules.hiddenPack as { id?: number } | undefined)?.id;
   const derived = readDerivedPacks();
+  const assumedPool = assumedGeneralPool();
   return [...readDerivedAvailability()]
     .filter(([id]) => !known.has(id) && id !== hiddenPackId)
-    .map(([id, floors]) => derivedPackAsRaw(id, derived.get(id) ?? {}, floors));
+    .map(([id, floors]) => ({
+      ...derivedPackAsRaw(id, derived.get(id) ?? {}, floors),
+      ...(assumedPool ? { egoGiftPool: assumedPool } : {}),
+    }));
 })();
+
+/**
+ * The owner's stand-in pool for a backfilled pack (`backfillAssumptions.generalPool`): every gift
+ * some static pack drops as a general gift, i.e. in a general pool and exclusive to no pack.
+ */
+function assumedGeneralPool(): number[] | null {
+  if (curatedSeason.backfillAssumptions?.generalPool !== 'allGeneral') return null;
+  const exclusive = new Set(staticPacks.flatMap((pack) => pack.specificEgoGiftPool ?? []));
+  const general = new Set(staticPacks.flatMap((pack) => pack.egoGiftPool ?? []));
+  return sortNums([...general].filter((id) => !exclusive.has(id)));
+}
 
 const rawPacks = [...staticPacks, ...backfilledPacks];
 
@@ -488,6 +503,11 @@ const observableIds = new Set(
   (observation?.observationEgoGiftDataList ?? []).flatMap((entry) => entry.egogiftIdList ?? []),
 );
 for (const id of observation?.unobservableEgoGiftIds ?? []) observableIds.delete(id);
+// The static observation list cannot name a gift the static data has not shipped; the owner's
+// stand-in (`backfillAssumptions.exclusivesObservable`) lets those exclusives be observed for now.
+if (curatedSeason.backfillAssumptions?.exclusivesObservable === true) {
+  for (const gift of backfilledGifts) observableIds.add(gift.id);
+}
 
 /**
  * Everything the season can hand out. `excludeEgoGifts` does NOT mean unobtainable — it removes a
@@ -599,6 +619,9 @@ const gifts: Gift[] = [...giftIds]
       hardOnly: hardOnlyIds.has(id),
       obtainable:
         dropPoolIds.has(id) ||
+        // A backfilled pack's exclusive is reached by entering that pack; the static drop pool
+        // that would otherwise list it has not shipped yet.
+        backfilledGiftIds.has(id) ||
         materialIds.has(id) ||
         recipes.length > 0 ||
         Boolean(mixed) ||
@@ -1014,13 +1037,18 @@ function readJsonStableBytes(path: string): string {
 }
 
 /**
- * A season is provisional while a selectable pack has no general gift pool: the fallback knows the
- * pack exists but not what it can drop, and a plan built on that would be quietly wrong. The app
- * shows the flag rather than presenting half a season as a whole one.
+ * A season is provisional while a selectable pack came from the fallback: its general gift pool is
+ * either missing or the owner's stand-in (`backfillAssumptions`), and a plan built on that may be
+ * quietly wrong. The app shows the flag rather than presenting half a season as a whole one.
  */
 const backfilledPackIds = new Set(backfilledPacks.map((pack) => pack.id));
-const packsWithoutGeneralPool = selectablePacks.filter((pack) => backfilledPackIds.has(pack.id));
-const provisional = curatedSeason.provisional === true || packsWithoutGeneralPool.length > 0;
+const backfilledSelectable = selectablePacks.filter((pack) => backfilledPackIds.has(pack.id));
+const provisional = curatedSeason.provisional === true || backfilledSelectable.length > 0;
+if (curatedSeason.backfillAssumptions?.generalPool === 'allGeneral' && backfilledSelectable.length > 0) {
+  console.log(
+    `  assumed general pool (backfillAssumptions): ${backfilledSelectable.map((pack) => pack.id).join(', ')}`,
+  );
+}
 
 const meta: Meta = {
   dataVersion: `${dungeonId}.${inputsFingerprint()}`,

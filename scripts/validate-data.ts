@@ -807,9 +807,20 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
   // latter. Say so as an error — a route built on it would be quietly wrong.
   if (staticDataPresent()) {
     const staticPackIds = new Set(readThemePacks().map((pack) => pack.id));
-    const poolless = packs
-      .filter((pack) => pack.selectable && !staticPackIds.has(pack.id))
-      .map((pack) => `${pack.id} ${pack.name.ko || pack.name.en}`);
+    const backfilled = packs.filter((pack) => pack.selectable && !staticPackIds.has(pack.id));
+    const label = (pack: (typeof packs)[number]): string => `${pack.id} ${pack.name.ko || pack.name.en}`;
+    // The owner may stand in a pool (`backfillAssumptions` in the season's curated rules). That is
+    // a decision on record, not a silent gap, so it is a warning — but it stays loud every build.
+    const assumed = backfilled.filter((pack) => pack.giftPool.length > pack.exclusiveGifts.length);
+    if (assumed.length > 0) {
+      warn(
+        'invariant',
+        `${assumed.length} backfilled pack(s) use an assumed general gift pool ` +
+          `(backfillAssumptions): ${assumed.map(label).join(', ')}. Replace it with the season's ` +
+          `static data (npm run data:import) and drop the assumption.`,
+      );
+    }
+    const poolless = backfilled.filter((pack) => !assumed.includes(pack)).map(label);
     if (poolless.length > 0) {
       err(
         'invariant',
@@ -1212,8 +1223,8 @@ function checkSeasonIndex(): void {
     if (entry.provisional) {
       warn(
         'invariant',
-        `season ${entry.id} is provisional: a selectable pack has no general gift pool, so general ` +
-          `gifts cannot be planned through it. Get the season's static data (npm run data:import).`,
+        `season ${entry.id} is provisional: a selectable pack came from the derived source, so its ` +
+          `general gift pool is missing or assumed. Get the season's static data (npm run data:import).`,
       );
     }
   }

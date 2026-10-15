@@ -5,8 +5,8 @@
     "openLethe": {
       "repo": "LEAGUE-OF-NINE/OpenLethe",
       "ref": "main",
-      "sha": "b778652701cd7b404ceaf980a37fd47dfb9e42ee",
-      "fetchedAt": "2026-10-02",
+      "sha": "6c1a3cdd5ae87c9345283612f143d1d4b005622d",
+      "fetchedAt": "2026-10-15",
       "note": "Game client StaticData. No license file upstream; data is Project Moon's. Vendored because the repo may disappear.",
       "remotePrefix": "src/OpenLethe.Resources/StaticData/static-data",
       "localPrefix": "data/raw/static",
@@ -100,14 +100,14 @@
       "languages": {
         "KR": {
           "ref": "Korean",
-          "sha": "1924dfa59154736cd07a1e7d27ed7dd2e45f2391"
+          "sha": "9b1fe18879f1b1ab6b63f654f56bc38392c9bf1f"
         },
         "EN": {
           "ref": "English",
-          "sha": "ba446454e6f9164f2f144759cbea4f4d14a0beb6"
+          "sha": "e824e5f3087996e25e1168ad7b60ab1322b52b89"
         }
       },
-      "fetchedAt": "2026-10-02",
+      "fetchedAt": "2026-10-15",
       "note": "Game Localize folder, mirrored verbatim (source text is Project Moon's). Languages are branches here, not folders. Chosen over LocalizeLimbusCompany because that mirror's auto-update stopped on 2026-07-23 and newer identities never arrived; this one tracks the weekly patch. The KR-only Skills_personality-* files are the evidence for identities the static data does not ship. Every BattleKeywords* file is taken, not just the base one: the per-chapter and per-season tables are where the buff names live that gift text refers to by id (혈찬, 진동 - 작열 …).",
       "remotePrefix": "",
       "localPrefix": "data/raw/localize",
@@ -116,6 +116,7 @@
         "EGOgift_MirrorDungeon_2.json",
         "EGOgift_MirrorDungeon_6.json",
         "EGOgift_MirrorDungeon_7.json",
+        "EGOgift_MirrorDungeon_8.json",
         "EGOgift_MirrorDungeon-StoryTheme.json",
         "EGOgift_MirrorDungeon-StoryTheme_2.json",
         "EGOgift_MirrorDungeon-EventTheme.json",
@@ -278,8 +279,8 @@
     "eldritchtools": {
       "repo": "eldritchtools/limbus-assets",
       "ref": "main",
-      "sha": "04d23bddbe979bbe1277376e817768fa412967b4",
-      "fetchedAt": "2026-10-02",
+      "sha": "8cefa1b6ff8db1e8beec14abb28bea7c37f94ed8",
+      "fetchedAt": "2026-10-15",
       "note": "Derived, English-only data behind the limbus.tools sites, updated near-daily. Two jobs: it backfills identities the static data has not shipped, and it cross-checks the Mirror Dungeon data OpenLethe froze — packs, floors, fusion recipes, start pools. It is the only living MD source, but it has no per-pack general gift pool, no prices, no observation list and no dungeon constants, so it can supplement the static data and not replace it.",
       "remotePrefix": "",
       "localPrefix": "data/raw/derived/eldritchtools",

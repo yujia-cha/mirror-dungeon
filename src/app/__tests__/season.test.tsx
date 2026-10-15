@@ -165,7 +165,10 @@ describe('the season selector', () => {
   });
 
   it('says nothing about half-known data for a season that is fully known', () => {
-    renderShell(md7, [entry(md7), entry(short)]);
+    // The live md7 is provisional while the Canto X packs wait on an extraction; this is about a
+    // season whose data is whole.
+    const whole: GameData = { ...md7, meta: { ...md7.meta, provisional: false } };
+    renderShell(whole, [entry(whole), entry(short)]);
     expect(screen.queryByTestId('season-provisional')).toBeNull();
   });
 });

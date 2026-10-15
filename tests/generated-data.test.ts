@@ -72,8 +72,24 @@ describe('meta', () => {
 
 describe('theme packs', () => {
   it('has the full Mirror Dungeon 7 pack list', () => {
-    expect(packs).toHaveLength(116);
-    expect(packs.filter((p) => p.selectable)).toHaveLength(115);
+    // 116 → 120: 10-15 패치의 칸토 X 팩 1028~1031, 정적 데이터 전이라 파생 미러가 채운다.
+    expect(packs).toHaveLength(120);
+    expect(packs.filter((p) => p.selectable)).toHaveLength(119);
+  });
+
+  it('stands the owner-assumed pool in for the Canto X packs until the static data ships them', () => {
+    // backfillAssumptions in data/curated/seasons/md7/rules.json: every general gift, no more —
+    // another pack's exclusive must not leak in — and their own exclusives observable and obtainable.
+    const general = gifts.filter((g) => g.acquisition.kind === 'general').map((g) => g.id);
+    for (const id of [1028, 1029, 1030, 1031]) {
+      const pack = packById.get(id)!;
+      expect(pack.exclusiveGifts, String(id)).toHaveLength(2);
+      expect(pack.giftPool, String(id)).toEqual([...general, ...pack.exclusiveGifts].sort((a, b) => a - b));
+      for (const giftId of pack.exclusiveGifts) {
+        expect(giftById.get(giftId), String(giftId)).toMatchObject({ observable: true, obtainable: true });
+      }
+    }
+    expect(meta.provisional).toBe(true);
   });
 
   it('marks 선의의 순례 unselectable because it is story-dungeon only', () => {
@@ -129,7 +145,8 @@ describe('theme packs', () => {
 
 describe('gifts', () => {
   it('covers every gift the season references', () => {
-    expect(gifts).toHaveLength(446);
+    // 446 → 454: 칸토 X 팩의 전용 기프트 9284~9291.
+    expect(gifts).toHaveLength(454);
   });
 
   it('names every buff the Korean text refers to, leaving no bracketed id on screen', () => {
@@ -179,7 +196,7 @@ describe('gifts', () => {
     const byKind = new Map<string, number>();
     for (const gift of gifts) byKind.set(gift.acquisition.kind, (byKind.get(gift.acquisition.kind) ?? 0) + 1);
     expect(byKind.get('general')).toBe(187);
-    expect(byKind.get('packLimited')).toBe(171);
+    expect(byKind.get('packLimited')).toBe(179);
     expect(byKind.get('fusionOnly')).toBe(59);
   });
 
@@ -273,7 +290,7 @@ describe('gifts', () => {
 
 describe('identities', () => {
   it('covers the 188 the static data ships plus the ones backfilled from the other sources', () => {
-    expect(identities).toHaveLength(189);
+    expect(identities).toHaveLength(190);
     expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(1);
   });
 
@@ -285,7 +302,8 @@ describe('identities', () => {
     [10416, '오트쿠튀르:: 르누아르 신발관', 4, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
     [10816, '오트쿠튀르:: 르루주 부티크', 8, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
     [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], ['SISYPHE']],
-    [10315, '오트쿠튀르:: 르누아르 브랜드 매니저', 3, ['Charge', 'Vibration'], [], 'backfilled'],
+    [10315, '오트쿠튀르:: 르누아르 브랜드 매니저', 3, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
+    [11016, '오트쿠튀르:: 르루주 붉은 신', 10, ['Charge', 'Laceration'], [], 'backfilled'],
   ])(
     'knows %i 「%s」 once the static data ships it',
     (id, title, sinnerId, keywords, factions, source = 'derived') => {
@@ -429,7 +447,8 @@ describe('rules', () => {
 
   it('reads the gift observation cost table and pool from the season data', () => {
     expect(rules.giftObservation).toMatchObject({ max: 3, costTable: [70, 160, 270], verified: true });
-    expect(gifts.filter((g) => g.observable).length).toBe(312);
+    // 312 → 320: 칸토 X 팩의 전용 기프트 8개는 `backfillAssumptions.exclusivesObservable`로 관측 가능이다.
+    expect(gifts.filter((g) => g.observable).length).toBe(320);
   });
 
   it('derives EXTREME clear rewards and hidden-battle gifts from the stage files', () => {

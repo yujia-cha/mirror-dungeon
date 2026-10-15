@@ -9,6 +9,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import lzString from 'lz-string';
 import { FormationDeckCode, createFormationDetailInfo } from 'limbus-formation-deck';
 import userEvent from '@testing-library/user-event';
+import { beforeCantoX } from '../../core/__tests__/before-canto-x.ts';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions } from '../../core/index.ts';
 import { conditionText, reachedTierText } from '../condition-text.ts';
@@ -113,10 +114,15 @@ afterEach(() => {
 });
 
 /** Render a piece of the shell with the plan computed from the store, as the shell does. */
-const renderPlanned = (node: ReactNode, override?: typeof data) => {
+const renderPlanned = (node: ReactNode, override?: typeof data, overrideIndexes?: typeof indexes) => {
   const { deck, deployed } = useApp.getState();
   return render(
-    <PlanProvider data={override ?? data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko">
+    <PlanProvider
+      data={override ?? data}
+      indexes={overrideIndexes ?? indexes}
+      stats={statsFor(deck, deployed)}
+      lang="ko"
+    >
       {node}
     </PlanProvider>,
   );
@@ -3732,13 +3738,15 @@ describe('RunStage', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     // 9817 파란 별조각 is a general gift: the planner has 어느 세계 (1017) hand it over from its pool
-    // on floor 3. The pack's own exclusive (9433) is no goal.
+    // on floor 3. The pack's own exclusive (9433) is no goal. Held on the season before the Canto X
+    // packs, whose assumed pool makes 9817 a free drop (see before-canto-x.ts).
     useApp.getState().toggleWanted(9817);
+    const before = beforeCantoX(data);
     const noObservation = {
-      ...data,
-      rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
+      ...before,
+      rules: { ...before.rules, giftObservation: { ...before.rules.giftObservation, max: 0 } },
     };
-    renderPlanned(<RunStage onOpenGifts={() => undefined} />, noObservation);
+    renderPlanned(<RunStage onOpenGifts={() => undefined} />, noObservation, buildIndexes(before));
     const tiles = () =>
       within(screen.getByTestId('exclusive-gifts'))
         .getAllByTestId('gift-tile')

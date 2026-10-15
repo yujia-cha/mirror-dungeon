@@ -539,6 +539,23 @@ export const curatedSeasonSchema = z
       .optional(),
     upgradeCostByTier: z.record(z.string(), z.array(z.number().int())).optional(),
     /**
+     * The owner's stand-in for what the static data has not shipped yet, applied only to packs and
+     * gifts backfilled from the derived mirror. A pack the static data does carry always keeps its
+     * own pool, so importing the season's static data retires these without an edit. The season
+     * stays `provisional` while any backfilled pack is selectable.
+     *
+     * - `generalPool: "allGeneral"`: such a pack drops every general gift of the season. In MD7 a
+     *   general gift sits in 22–88 of 115 packs, so this over-states the pool on purpose.
+     * - `exclusivesObservable`: such a pack's exclusive gifts can be observed.
+     */
+    backfillAssumptions: z
+      .object({
+        generalPool: z.literal('allGeneral').optional(),
+        exclusivesObservable: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    /**
      * Where each value above came from, keyed by its path (`floors`, `giftObservation.costTable`).
      * `validate-data` requires one per value key: CLAUDE.md asks every curated entry to carry its
      * `_source`, and this is the first time a machine checks it.
@@ -573,6 +590,7 @@ export const KNOWN_CURATED_SEASON_KEYS = new Set([
   'starlight',
   'fusion',
   'upgradeCostByTier',
+  'backfillAssumptions',
   '_sources',
 ]);
 

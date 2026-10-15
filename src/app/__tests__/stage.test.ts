@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
+import { beforeCantoX } from '../../core/__tests__/before-canto-x.ts';
 import { buildIndexes, planRoute } from '../../core/index.ts';
 import { appDefaultOptions } from '../store.ts';
 import {
@@ -13,7 +14,9 @@ import {
   stageModeFor,
 } from '../lib/stage.ts';
 
-const data = loadGameDataFromDisk();
+// Before the Canto X packs: their assumed pool makes 9817 a free drop, and the pool-pickup cases
+// below need a general gift the route still aims at (see before-canto-x.ts).
+const data = beforeCantoX(loadGameDataFromDisk());
 const indexes = buildIndexes(data);
 const DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715];
 const noObservation = {
