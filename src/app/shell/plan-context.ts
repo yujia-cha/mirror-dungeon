@@ -58,6 +58,8 @@ export interface PlanState {
    * decision card draws placeholder bars so they do not pop in.
    */
   analysisPending: boolean;
+  /** Measure the candidates the analysis left out — the card's 「더 계산」 (M115). */
+  analyzeMore: () => void;
   /** The goals the decision card has checked to leave out, and the route without them. */
   drops: DropSelection;
   /** The checked set's route while it is previewed on the map; `shown` is its plan. */

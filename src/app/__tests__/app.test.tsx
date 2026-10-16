@@ -333,7 +333,7 @@ describe('share links', () => {
 
   // A link replaces the deck, the goals and the run, and the hash is gone afterwards — so mid-run
   // it destroyed a record with no warning and no way back.
-  it('asks before a link discards a run in progress, and keeps the hash when the answer is no', async () => {
+  it('asks before a link discards a run in progress, and drops the hash whatever the answer (M119)', async () => {
     const user = userEvent.setup();
     useApp.getState().visitPack(1402, 1);
     useApp.getState().setStageFloor(4);
@@ -348,11 +348,16 @@ describe('share links', () => {
     const dialog = await screen.findByTestId('confirm-dialog');
     expect(useApp.getState().wanted).not.toEqual([9283]);
     await user.click(within(dialog).getByRole('button', { name: '취소' }));
-    // Cancelling leaves the link in the URL: it is the reader's only copy.
-    expect(window.location.hash).toBe(hash);
+    // Cancelling consumes the link too: a reload no longer asks, and the run is untouched.
+    expect(window.location.hash).toBe('');
     expect(useApp.getState().run.visits).toEqual({ 1: 1402 });
-
+    cleanup();
     render(<App />);
+    expect(screen.queryByTestId('confirm-dialog')).toBeNull();
+
+    // Opened again from where it came (a new hash on the open tab), it asks again.
+    window.location.hash = hash;
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
     const again = await screen.findByTestId('confirm-dialog');
     await user.click(within(again).getByRole('button', { name: /링크 열기/ }));
     await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
@@ -450,6 +455,22 @@ describe('a saved state that cannot be trusted', () => {
       .getState()
       .applyShared({ deck: doubled, deployed: [10102], wanted: [], options: appDefaultOptions() });
     expect(useApp.getState()).toMatchObject({ deck: [10101, 10203], deployed: [] });
+  });
+
+  it('keeps each goal and each deployed identity once, whichever way they come in', () => {
+    // Arrange: a hand-edited link or blob that names a goal twice. The planner counted both
+    // (「획득 1/2」 for one gift) and the selection tray drew two tiles with one React key.
+    const twice = { deck: [10101, 10201], deployed: [10101, 10101], wanted: [9267, 9267, 9283] };
+
+    // Act
+    const saved = sanitizePersisted(twice, PERSIST_VERSION);
+    const link = decodeShared(encodeShared({ ...twice, options: appDefaultOptions() }))!;
+    useApp.getState().applyShared({ ...twice, options: appDefaultOptions() });
+
+    // Assert
+    expect(saved).toMatchObject({ wanted: [9267, 9283], deployed: [10101] });
+    expect(link).toMatchObject({ wanted: [9267, 9283], deployed: [10101] });
+    expect(useApp.getState()).toMatchObject({ wanted: [9267, 9283], deployed: [10101] });
   });
 
   it('lets nothing through that partialize never wrote, so a blob cannot overwrite an action or the floor count', async () => {
@@ -565,16 +586,29 @@ describe('state that outlived the game data', () => {
     const state = useApp.getState();
     expect(state.wanted).toEqual([9267]);
     expect(state.fusionGoal).toEqual({});
-    // Pack-level choices are not the app's: even a known pack is dropped from them.
+    // Pack-level choices are not the app's: even a known pack is dropped from them, a pin too (M118).
     expect(state.options).toMatchObject({
       observedGifts: [9267],
       bannedPacks: [],
       preferredPacks: [],
-      pinnedPacks: { 4: 1402 },
+      pinnedPacks: {},
     });
     // The run is kept — it still fits the season — but nothing unresolvable rides along in it.
     expect(state.run).toMatchObject({ visits: { 2: 1402 }, giftStatus: { 9267: 'got' }, startGifts: [] });
-    expect(counts).toEqual({ gifts: 1, packs: 1 });
+    expect(counts).toEqual({ gifts: 1 });
+  });
+
+  it('takes no pack pin from a link or a saved state: the planner sees only the packs entered (M118)', () => {
+    useApp.getState().applyShared({
+      deck: LCB_DECK,
+      deployed: LCB_DECK.slice(0, 6),
+      wanted: [9267],
+      options: { ...appDefaultOptions(), pinnedPacks: { 3: 1402 } },
+    });
+    expect(useApp.getState().options.pinnedPacks).toEqual({});
+    useApp.setState({ options: { ...useApp.getState().options, pinnedPacks: { 3: 1402 } } });
+    useApp.getState().visitPack(1016, 1);
+    expect(planInputFor(useApp.getState()).options.pinnedPacks).toEqual({ 1: 1016 });
   });
 
   it('keeps a pin only for a gift that is still a goal, from a link and from a saved state', () => {
@@ -2665,7 +2699,14 @@ describe('RoutePlanPanel', () => {
     // Right under the summary and above the map — the decision the rest of the panel waits on.
     expect(screen.getByTestId('route-summary').nextElementSibling).toBe(card);
     expect(card.nextElementSibling).toContainElement(rows());
-    expect(card).toHaveTextContent('전부 얻을 수 없습니다 · 박수 짝짝! 중 하나를 목표에서 빼야 합니다');
+    // M115: the header names both sides — the lost goal, and what the route keeping it leaves out.
+    expect(within(card).getByRole('heading')).toHaveTextContent(/^전부 얻을 수 없습니다$/);
+    const tradeoff = within(card).getByTestId('drop-tradeoff');
+    expect(tradeoff).toHaveAttribute('data-lost', '9255');
+    // Six goals for five floors: leaving any other one out keeps it, and the line says so.
+    expect(tradeoff).toHaveTextContent(
+      '박수 짝짝!을(를) 얻으려면 보급형 K사 앰플 · 불타는 운명 · 못과 망치 · 회전 목마 모형 · 한 잔 더! 중 하나를 빼면 됩니다',
+    );
     expect(card).toHaveTextContent('뺐을 때 줄어드는 충돌');
     // Six goals for five floors: leaving any one of them out clears the one conflict.
     const bars = within(card).getAllByTestId('drop-effect');
@@ -2673,6 +2714,22 @@ describe('RoutePlanPanel', () => {
       [...CLEAR_REWARDS].sort(),
     );
     expect(bars.every((bar) => bar.getAttribute('data-reduces') === '1')).toBe(true);
+    // Why each goal is a candidate: the lost one, its rival; the goal picked last is marked.
+    const roleOf = (id: number) =>
+      within(bars.find((bar) => bar.getAttribute('data-gift') === String(id))!)
+        .queryByTestId('drop-role')
+        ?.getAttribute('data-role');
+    expect(roleOf(9255)).toBe('lost');
+    expect(
+      within(card)
+        .getAllByTestId('drop-role')
+        .map((el) => el.textContent),
+    ).toEqual(expect.arrayContaining(['원인', '놓친 목표']));
+    expect(within(card).getByTestId('drop-last-added').closest('[data-gift]')).toHaveAttribute(
+      'data-gift',
+      '9255',
+    );
+    expect(within(card).queryByTestId('drop-more')).toBeNull();
     expect(bars[0]).toHaveTextContent('−1');
     expect(within(bars[0]!).getByText('−1')).toHaveAttribute('aria-label', '충돌 1개 줄어듦');
     expect(screen.getByTestId('drop-status')).toHaveTextContent('충돌 1 · 획득 5/6');
@@ -2700,9 +2757,7 @@ describe('RoutePlanPanel', () => {
     await user.click(preview);
     expect(preview).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('route-summary')).toHaveTextContent('5/5');
-    expect(screen.getByTestId('route-decision')).toHaveTextContent(
-      '박수 짝짝! 중 하나를 목표에서 빼야 합니다',
-    );
+    expect(screen.getByTestId('drop-tradeoff')).toHaveAttribute('data-lost', '9255');
     await user.click(preview);
     expect(screen.getByTestId('route-summary')).toHaveTextContent('5/6');
     // 「선택 해제」 unchecks and ends the preview.
@@ -2761,7 +2816,12 @@ describe('RoutePlanPanel', () => {
     for (const id of [...CLEAR_REWARDS, 9827]) useApp.getState().toggleWanted(id);
     renderRoute();
     const card = screen.getByTestId('route-decision');
-    expect(within(card).getByRole('heading').textContent).toMatch(/중 2개를 목표에서 빼야 합니다$/);
+    expect(within(card).getByRole('heading').textContent).toMatch(/· 2개를 목표에서 빼야 합니다$/);
+    expect(
+      within(card)
+        .getAllByTestId('drop-tradeoff')
+        .map((el) => el.getAttribute('data-lost')),
+    ).toEqual(['9255', '9827']);
     const bars = within(card).getAllByTestId('drop-effect');
     expect(bars.every((bar) => bar.getAttribute('data-reduces') === '1')).toBe(true);
     // One alone leaves a conflict.
@@ -2798,11 +2858,74 @@ describe('RoutePlanPanel', () => {
         .find((el) => el.getAttribute('data-gift') === String(id))!;
     expect(bar(9220)).toHaveAttribute('data-reduces', '0');
     expect(bar(9221)).toHaveAttribute('data-reduces', '0');
+    // A bar of 0 says why: the other goal still takes the pack (M115).
+    const sharesOf = (id: number) =>
+      within(bar(id).closest('li')!).getByTestId('drop-shares-pack').textContent;
+    expect(sharesOf(9220)).toMatch(/^혼자 빼면 자리가 나지 않습니다 · 같은 팩: .*열선 무기/);
+    expect(sharesOf(9221)).toMatch(/같은 팩: .*도둑맞은 해결사 잡지/);
     // An observed 1층 gift has a bar: leaving it out frees an observation slot for another.
     expect(bar(9413)).toHaveAttribute('data-reduces', '1');
     await user.click(screen.getByRole('checkbox', { name: '도둑맞은 해결사 잡지 뺄 목표로 고르기' }));
     await user.click(screen.getByRole('checkbox', { name: '열선 무기 뺄 목표로 고르기' }));
     expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −0 · 함께 뺀 실제 −1 더해지지 않음');
+  });
+
+  it('says how many candidates the budget left out, and measures the rest on request (M115)', async () => {
+    const user = userEvent.setup();
+    // A worker whose budget runs out at once: one step, then the final answer with the rest skipped.
+    const planner = createPlanner({ budgetMs: 0 });
+    class BudgetWorker {
+      private readonly listeners = new Map<string, Set<(event: unknown) => void>>();
+      addEventListener(type: string, listener: (event: unknown) => void): void {
+        this.listeners.set(type, (this.listeners.get(type) ?? new Set()).add(listener));
+      }
+      removeEventListener(type: string, listener: (event: unknown) => void): void {
+        this.listeners.get(type)?.delete(listener);
+      }
+      terminate(): void {}
+      private emit(data: unknown): void {
+        for (const listener of this.listeners.get('message') ?? []) listener({ data });
+      }
+      private pump(id: number): void {
+        setTimeout(() => {
+          const answer = planner.analysisStep(id);
+          if (!answer) return;
+          this.emit(answer);
+          if (!answer.done) this.pump(id);
+        }, 0);
+      }
+      postMessage(request: PlannerRequest): void {
+        if (request.type === 'analysis-more') {
+          if (planner.resume(request.id)) this.pump(request.id);
+          return;
+        }
+        const response = planner.handle(request);
+        if (!response) return;
+        queueMicrotask(() => this.emit(response));
+        if (response.type === 'plan' && response.analysisPending) this.pump(response.id);
+      }
+    }
+    vi.stubGlobal('Worker', BudgetWorker);
+    resetPlannerWorker();
+    try {
+      useApp.getState().setDeck(BURN_DECK, 7);
+      for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
+      renderRoute();
+      const more = await screen.findByTestId('drop-more');
+      expect(more).toHaveTextContent(/^후보 6개 중 0개 계산/);
+      // No bar yet: the line says what the forced plan gives up, without claiming it must go.
+      expect(screen.getByTestId('drop-tradeoff')).toHaveTextContent(
+        /^박수 짝짝!을\(를\) 얻는 루트에서는 .+이\(가\) 빠집니다$/,
+      );
+      await user.click(within(more).getByRole('button', { name: '더 계산' }));
+      await waitFor(() => expect(screen.getAllByTestId('drop-effect')).toHaveLength(6));
+      expect(screen.getByTestId('drop-tradeoff')).toHaveTextContent(/중 하나를 빼면 됩니다$/);
+      expect(screen.queryByTestId('drop-more')).toBeNull();
+      expect(screen.queryByTestId('route-decision-pending')).toBeNull();
+    } finally {
+      resetPlannerWorker();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('draws a placeholder row while the drop analysis is still being computed', async () => {
@@ -3420,6 +3543,58 @@ describe('RunStage', () => {
     fireEvent.pointerUp(window, { ...pointer, clientY: pointer.clientY + dy });
   };
 
+  it('records the start gifts of the goals as they are, not of a plan the worker has yet to replace (M118)', async () => {
+    const user = userEvent.setup();
+    // A worker that answers the first plan and holds every later one: the moment after a goal
+    // changed and before the worker answered, which a quick player can leave floor 1 in.
+    const planner = createPlanner();
+    let answered = 0;
+    class SlowWorker {
+      private readonly listeners = new Map<string, Set<(event: unknown) => void>>();
+      addEventListener(type: string, listener: (event: unknown) => void): void {
+        this.listeners.set(type, (this.listeners.get(type) ?? new Set()).add(listener));
+      }
+      removeEventListener(type: string, listener: (event: unknown) => void): void {
+        this.listeners.get(type)?.delete(listener);
+      }
+      terminate(): void {}
+      postMessage(request: PlannerRequest): void {
+        if (request.type === 'plan' && answered++ > 0) return;
+        const response = planner.handle(request);
+        if (!response) return;
+        queueMicrotask(() => {
+          for (const listener of this.listeners.get('message') ?? []) listener({ data: response });
+        });
+      }
+    }
+    vi.stubGlobal('Worker', SlowWorker);
+    resetPlannerWorker();
+    try {
+      useApp.getState().setDeck(BURN_DECK, 7);
+      useApp.getState().toggleWanted(9267);
+      renderStage();
+      await screen.findByTestId('floor-header');
+      const startOf = () => {
+        const fresh = planRoute(planInputFor(useApp.getState()), data, indexes);
+        return [
+          ...fresh.start.observed.map((o) => o.giftId),
+          ...(fresh.start.startGift ? [fresh.start.startGift] : []),
+        ];
+      };
+      const before = startOf();
+      // 깨진 안경 (9423) becomes a goal; the worker never answers for it.
+      act(() => useApp.getState().toggleWanted(9423));
+      const now = startOf();
+      expect(now).not.toEqual(before);
+      await skipFloor(user);
+      expect(useApp.getState().run.currentFloor).toBe(2);
+      expect([...useApp.getState().run.startGifts].sort()).toEqual([...now].sort());
+    } finally {
+      resetPlannerWorker();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('draws the fifteen floors alike, with no dot for the floors that hold a pack', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9267);
@@ -3712,6 +3887,24 @@ describe('RunStage', () => {
     for (const r of rows) expect(within(r).getByTestId('other-pack-gifts')).toBeInTheDocument();
   });
 
+  it('rings a wanted exclusive on the stage card even when the pack has more than fit', async () => {
+    // Arrange: 시간살인시간 (1120, Hard 4~5 · 6~10) has eleven exclusives; the goal 9816 is the
+    // eleventh by id, so the first five icons by id leave it behind 「+6」.
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9816);
+    renderStage();
+
+    // Act
+    for (let i = 0; i < 3; i += 1) await skipFloor(user);
+
+    // Assert: the card says the pack holds the goal.
+    const card = screen.getAllByTestId('stage-pack').find((el) => el.getAttribute('data-pack') === '1120')!;
+    const icons = within(card).getByTestId('stage-pack-gifts');
+    expect(icons.querySelectorAll('[data-wanted]')).toHaveLength(1);
+    expect(within(icons).getAllByTestId('gift-icon')[0]).toHaveAccessibleName(/^초정밀 시간 가속 장치/);
+  });
+
   it('finds any other pack of the floor by name and adds a gift from it as a goal', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -3965,6 +4158,31 @@ describe('RunStage', () => {
     await user.click(await screen.findByRole('button', { name: /입장 취소/ }));
     expect(useApp.getState().run.visits).toEqual({});
     expect(useApp.getState().run.giftStatus[9267]).toBeUndefined();
+  });
+
+  it('keeps the status of a gift another recorded entry also hands over when one entry is undone', async () => {
+    // Arrange: 인연 얽힘 (9208) is exclusive to all seven sin packs. It was marked in hand with
+    // 해방된 분노 (1302) on floor 5, and 옭아매는 색욕 (1305), which carries it too, was entered on 7.
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9208);
+    useApp.setState({
+      run: {
+        ...emptyRun(),
+        currentFloor: 8,
+        stageFloor: 7,
+        visits: { 5: 1302, 7: 1305 },
+        giftStatus: { 9208: 'got' },
+      },
+    });
+    renderStage();
+
+    // Act: undo the later entry.
+    await user.click(screen.getByRole('button', { name: '옭아매는 색욕 입장 취소' }));
+
+    // Assert: the entry goes, and the gift the earlier entry gave stays in hand.
+    expect(useApp.getState().run.visits).toEqual({ 5: 1302 });
+    expect(useApp.getState().run.giftStatus[9208]).toBe('got');
   });
 
   it('offers no second entry from a pack sheet while the stage floor already holds one', async () => {

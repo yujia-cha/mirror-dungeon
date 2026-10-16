@@ -34,6 +34,7 @@ import { msg } from './messages.ts';
 export {
   conflictRootsOf,
   createDropEffects,
+  MAX_TRADEOFFS,
   minDrops,
   planAlternatives,
   planDropEffects,
@@ -44,7 +45,9 @@ export type {
   DropEffect,
   DropEffectOptions,
   DropEffectSteps,
+  DropRole,
   RouteVariant,
+  Tradeoff,
 } from './alternatives.ts';
 export { conflictGroups, wantedRoots } from './conflicts.ts';
 export type { ConflictGroup, ConflictCandidate } from './conflicts.ts';
@@ -122,10 +125,12 @@ function normaliseOptions(
     });
   }
 
-  // Run progress: the floor about to be entered stays within the plan, and a gift is either in
-  // hand or missed, never both (in hand wins).
+  // Run progress: the floor about to be entered stays within the plan — or one past it, which is a
+  // finished run (every floor played, nothing left to plan) — and a gift is either in hand or
+  // missed, never both (in hand wins). Clamping a finished run to the last floor used to plan that
+  // floor again: a pack recommended after the run was over, and its gifts counted as collected.
   const currentFloor = Number.isFinite(next.currentFloor)
-    ? Math.min(lastFloor, Math.max(1, Math.round(next.currentFloor as number)))
+    ? Math.min(lastFloor + 1, Math.max(1, Math.round(next.currentFloor as number)))
     : 1;
   const knownGift = (id: unknown): id is number => typeof id === 'number' && indexes.giftById.has(id);
   const ownedGifts = [...new Set((next.ownedGifts ?? []).filter(knownGift))];
@@ -142,8 +147,9 @@ function normaliseOptions(
     next = { ...next, deployed };
   }
 
-  // Pack choices: known packs only, no contradiction between a ban and a preference, and a pin
-  // only on a floor that actually offers the pack in that floor's mode.
+  // Pack choices: known packs only, no contradiction between a ban and a preference, and an entry
+  // only on a played floor (M118: the route is the goals' to decide — a pack is never forced onto a
+  // floor still ahead) that actually offers the pack in that floor's mode.
   const known = (id: unknown): id is number => typeof id === 'number' && indexes.packById.has(id);
   const bannedPacks = [...new Set((next.bannedPacks ?? []).filter(known))];
   const bannedSet = new Set(bannedPacks);
@@ -155,7 +161,7 @@ function normaliseOptions(
   for (const [floorText, packId] of Object.entries(next.pinnedPacks ?? {})) {
     const floor = Number(floorText);
     const offered =
-      Number.isInteger(floor) && floor >= 1 && floor <= lastFloor
+      Number.isInteger(floor) && floor >= 1 && floor <= lastFloor && floor < currentFloor
         ? (indexes.packsByFloor[modeForFloor(floor, next, indexes)].get(floor) ?? [])
         : [];
     if (known(packId) && offered.includes(packId) && !bannedSet.has(packId)) pinnedPacks[floor] = packId;

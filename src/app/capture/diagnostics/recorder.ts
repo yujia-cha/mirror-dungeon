@@ -15,12 +15,17 @@
  * Lifecycle: everything stored goes into the next export, one zip. After exporting, the player
  * clears what that zip holds (the browser cannot say whether the file was saved, so it is never
  * cleared on its own); until then the stats say how much exported data is still on the device.
+ * The export is marked only once the zip was handed to the browser (`markExported`, M116) — a
+ * failed zip leaves nothing to clear.
+ *
+ * Every write, read-back and clear runs in one queue (M116), so a clear never races a write and the
+ * counts always match what is on the device. Frames are encoded only when kept, inside that queue.
  *
  * React-free: the provider feeds it, the popover reads `stats()`, tests drive it with
  * `memoryStore()`.
  */
 import { DIAG_FORMAT, type DiagRecord, type DiagnosticsBundle } from '../../../core/schema.ts';
-import type { ReadReport } from '../session.ts';
+import type { FrameSource, ReadReport } from '../session.ts';
 import { memoryStore, type DiagStore, type StoredFrame } from './store.ts';
 
 /** Reads kept in memory for a hand-made change to look back on. */
@@ -45,7 +50,7 @@ export interface DiagStats {
   full: boolean;
 }
 
-interface ExportMark {
+export interface ExportMark {
   seq: number;
   frameIds: string[];
   at: number;
@@ -62,7 +67,8 @@ export class DiagRecorder {
   private exportedRecords = 0;
   private trimmed = 0;
   private startedAt: number | null = null;
-  private ring: { t: number; blob: Blob; id: string | null }[] = [];
+  /** The last reads' pictures, not encoded unless a hand-made change keeps them. */
+  private ring: { t: number; frame: FrameSource; id: string | null }[] = [];
   private lastUnknownFrameAt = -Infinity;
   private lastReadT: number | null = null;
   private queue: Promise<void> = Promise.resolve();
@@ -139,6 +145,19 @@ export class DiagRecorder {
     return this.queue;
   }
 
+  /** `work` in its turn in the queue, with its result — or its error, which the queue survives. */
+  private inTurn<T>(work: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      void this.enqueue(async () => {
+        try {
+          resolve(await work());
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
   /** Wait for every write so far (tests, and export). */
   flush(): Promise<void> {
     return this.queue;
@@ -154,46 +173,60 @@ export class DiagRecorder {
     this.changed();
   }
 
-  private keepFrame(t: number, blob: Blob): string {
+  /**
+   * Keep a picture. The id is the record's to name now; the encode and the write run in the queue,
+   * and only then does the frame count — past a cap, the oldest frames go and the stats say so.
+   */
+  private keepFrame(t: number, frame: FrameSource): string {
     const id = `${t}-${this.seq + 1}`;
-    const frame: StoredFrame = { id, t, bytes: blob.size, blob };
-    this.frameList.push({ id, t, bytes: blob.size });
-    void this.enqueue(() => this.store.addFrame(frame));
-    // Over a cap: the oldest frames go, and the stats say so.
-    const drop: string[] = [];
-    let bytes = this.frameList.reduce((sum, f) => sum + f.bytes, 0);
-    while (this.frameList.length > MAX_FRAMES || bytes > MAX_FRAME_BYTES) {
-      const oldest = this.frameList.shift()!;
-      bytes -= oldest.bytes;
-      drop.push(oldest.id);
-    }
-    if (drop.length > 0) {
-      this.trimmed += drop.length;
-      const trimmed = this.trimmed;
-      void this.enqueue(async () => {
+    // Asked for right after this read's events are handed on (a microtask: the session hands
+    // them on in the same task), and before any later read can push the picture out of the ring
+    // and free it — so it is encoded even if the queue is still busy with earlier writes.
+    const jpeg = Promise.resolve().then(() => frame.encode());
+    void this.enqueue(async () => {
+      const blob = await jpeg;
+      if (!blob) return;
+      this.frameList.push({ id, t, bytes: blob.size });
+      await this.store.addFrame({ id, t, bytes: blob.size, blob });
+      const drop: string[] = [];
+      let bytes = this.frameList.reduce((sum, f) => sum + f.bytes, 0);
+      while (this.frameList.length > MAX_FRAMES || bytes > MAX_FRAME_BYTES) {
+        const oldest = this.frameList.shift()!;
+        bytes -= oldest.bytes;
+        drop.push(oldest.id);
+      }
+      if (drop.length > 0) {
+        this.trimmed += drop.length;
+        // A ring entry must not go on naming a frame that is gone: it is kept anew if needed.
+        const gone = new Set(drop);
+        for (const entry of this.ring) if (entry.id && gone.has(entry.id)) entry.id = null;
         await this.store.deleteFrames(drop);
-        await this.store.setMeta('trimmed', trimmed);
-      });
-    }
+        await this.store.setMeta('trimmed', this.trimmed);
+      }
+      this.changed();
+    });
     return id;
   }
 
-  onRead(report: ReadReport, image: Blob | null): void {
-    if (!this.recording) return;
+  onRead(report: ReadReport, frame: FrameSource | null): void {
+    if (!this.recording) {
+      frame?.close();
+      return;
+    }
     this.lastReadT = report.t;
     let frameId: string | null = null;
-    if (image && this.images) {
+    if (frame && this.images) {
       const sawText = report.trace.some((s) => s.lines.some((line) => line.trim() !== ''));
       const unknown = report.frame.screen === null && sawText;
       const keep =
         report.events.length > 0 || (unknown && report.t - this.lastUnknownFrameAt >= UNKNOWN_FRAME_GAP_MS);
       if (keep) {
-        frameId = this.keepFrame(report.t, image);
+        frameId = this.keepFrame(report.t, frame);
         if (unknown) this.lastUnknownFrameAt = report.t;
       }
-      this.ring.push({ t: report.t, blob: image, id: frameId });
-      if (this.ring.length > RING_SIZE) this.ring.shift();
-    }
+      this.ring.push({ t: report.t, frame, id: frameId });
+      if (this.ring.length > RING_SIZE) this.ring.shift()!.frame.close();
+    } else frame?.close();
     this.add(
       {
         kind: 'read',
@@ -237,7 +270,7 @@ export class DiagRecorder {
     const frameIds: string[] = [];
     if (input.capturing && this.images) {
       for (const entry of this.ring) {
-        entry.id ??= this.keepFrame(entry.t, entry.blob);
+        entry.id ??= this.keepFrame(entry.t, entry.frame);
         frameIds.push(entry.id);
       }
     }
@@ -253,47 +286,56 @@ export class DiagRecorder {
   }
 
   /**
-   * Everything stored, as one bundle plus its frames, and marked exported. The caller zips and
-   * downloads it; clearing is the player's next step (`clearExported`).
+   * Everything stored, as one bundle plus its frames, read in the queue's turn. Nothing is marked
+   * yet: the caller zips and downloads it and then calls `markExported` with `mark` — a zip that
+   * failed must not leave the device thinking it was exported (M116).
    */
-  async exportBundle(meta: {
+  exportBundle(meta: {
     dataVersion: string;
     season: number;
     layoutReference: DiagnosticsBundle['layoutReference'];
-  }): Promise<{ bundle: DiagnosticsBundle; frames: StoredFrame[]; name: string }> {
-    await this.flush();
-    const [records, frames] = await Promise.all([this.store.records(), this.store.frames()]);
-    const at = this.now();
-    const startedAt = records[0]?.rec.t ?? at;
-    const bundle: DiagnosticsBundle = {
-      format: DIAG_FORMAT,
-      bundleId: String(startedAt),
-      startedAt,
-      exportedAt: at,
-      ...meta,
-      records: records.map((r) => r.rec),
-      frames: frames.map(({ id, t, bytes }) => ({ id, t, bytes })),
-    };
-    const mark: ExportMark = {
-      seq: records.reduce((max, r) => Math.max(max, r.seq), 0),
-      frameIds: frames.map((f) => f.id),
-      at,
-    };
+  }): Promise<{ bundle: DiagnosticsBundle; frames: StoredFrame[]; name: string; mark: ExportMark }> {
+    return this.inTurn(async () => {
+      const [records, frames] = await Promise.all([this.store.records(), this.store.frames()]);
+      const at = this.now();
+      const startedAt = records[0]?.rec.t ?? at;
+      const bundle: DiagnosticsBundle = {
+        format: DIAG_FORMAT,
+        bundleId: String(startedAt),
+        startedAt,
+        exportedAt: at,
+        ...meta,
+        records: records.map((r) => r.rec),
+        frames: frames.map(({ id, t, bytes }) => ({ id, t, bytes })),
+      };
+      const mark: ExportMark = {
+        seq: records.reduce((max, r) => Math.max(max, r.seq), 0),
+        frameIds: frames.map((f) => f.id),
+        at,
+      };
+      return { bundle, frames, name: `md-diagnostics-${stamp(at)}.zip`, mark };
+    });
+  }
+
+  /** The zip of `mark` reached the browser: what it holds now counts as exported. */
+  markExported(mark: ExportMark): Promise<void> {
     this.exported = mark;
-    this.exportedRecords = records.length;
-    await this.store.setMeta('exported', mark);
+    // Records up to the mark's seq; a clear in between makes the count catch up on reload.
+    this.exportedRecords = Math.min(this.records, this.countUpTo(mark.seq));
     this.changed();
-    return { bundle, frames, name: `md-diagnostics-${stamp(at)}.zip` };
+    return this.enqueue(() => this.store.setMeta('exported', mark));
+  }
+
+  /** Records numbered up to `seq` still held — every one since the last clear. */
+  private countUpTo(seq: number): number {
+    return Math.max(0, this.records - (this.seq - seq));
   }
 
   /** Remove what the last export holds; anything recorded since stays. */
-  async clearExported(): Promise<{ records: number; frames: number }> {
+  clearExported(): Promise<{ records: number; frames: number }> {
     const mark = this.exported;
-    if (!mark) return { records: 0, frames: 0 };
-    await this.flush();
+    if (!mark) return Promise.resolve({ records: 0, frames: 0 });
     const removed = { records: this.exportedRecords, frames: mark.frameIds.length };
-    await this.store.clearUpTo(mark.seq, mark.frameIds);
-    await this.store.setMeta('exported', null);
     const gone = new Set(mark.frameIds);
     this.frameList = this.frameList.filter((f) => !gone.has(f.id));
     for (const entry of this.ring) if (entry.id && gone.has(entry.id)) entry.id = null;
@@ -302,21 +344,30 @@ export class DiagRecorder {
     this.exportedRecords = 0;
     this.startedAt = this.records > 0 ? this.startedAt : null;
     this.changed();
-    return removed;
+    return this.inTurn(async () => {
+      await this.store.clearUpTo(mark.seq, mark.frameIds);
+      await this.store.setMeta('exported', null);
+      return removed;
+    });
   }
 
-  /** Remove everything on the device, exported or not. */
-  async clearAll(): Promise<void> {
-    await this.flush();
-    await this.store.clearAll();
+  /** Remove everything on the device, exported or not — after every write before it. */
+  clearAll(): Promise<void> {
+    // Records count from the call (a record made after it is kept); frames are counted in the
+    // queue's turn, so the frames still being encoded before the clear go with it.
     this.records = 0;
-    this.frameList = [];
+    for (const entry of this.ring) entry.frame.close();
     this.ring = [];
     this.exported = null;
     this.exportedRecords = 0;
-    this.trimmed = 0;
     this.startedAt = null;
     this.changed();
+    return this.inTurn(async () => {
+      await this.store.clearAll();
+      this.frameList = [];
+      this.trimmed = 0;
+      this.changed();
+    });
   }
 }
 

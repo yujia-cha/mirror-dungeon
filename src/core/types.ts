@@ -45,7 +45,11 @@ export interface PlanOptions {
   observedGifts: number[];
   /** Assume every forced pack needs an observation on a pack never visited before (×1.5 cost). */
   assumeUnvisitedPacks: boolean;
-  /** Floors the user pins to a pack by hand. */
+  /**
+   * The pack entered on each played floor (below `currentFloor`): the run's record, never a choice
+   * about the floors ahead. An entry on a floor not yet played is dropped with
+   * `pack-option-dropped` (M118 — the goals decide the route; there is no pinning a pack).
+   */
   pinnedPacks: Record<number, number>;
   /** Packs to keep out of the plan. */
   bannedPacks: number[];

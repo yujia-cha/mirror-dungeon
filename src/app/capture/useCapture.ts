@@ -7,11 +7,20 @@
  * automatically, with undo). The run state is read from the store at that moment rather than from
  * the render that started the session, so a long session never applies to a stale run.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { giftIconUrl } from '../lib/assets.ts';
 import { usePlan } from '../shell/plan-context.ts';
 import { useApp } from '../store.ts';
-import { actionsFor, inverseOf, type CaptureAction, type CaptureAsk } from './apply.ts';
+import {
+  actionsFor,
+  enterAction,
+  execute,
+  inverseOf,
+  type CaptureAction,
+  type CaptureAsk,
+  type CaptureStep,
+  type RunOps,
+} from './apply.ts';
 import { READ_INTERVALS } from './loop.ts';
 import {
   CaptureSession,
@@ -19,6 +28,7 @@ import {
   type CaptureContext,
   type CaptureError,
   type CaptureStatus,
+  type FrameSource,
   type ReadReport,
 } from './session.ts';
 import type { CaptureEvent } from './tracker.ts';
@@ -38,10 +48,12 @@ export interface CaptureQuestion {
 
 /** The log keeps the latest entries only; older ones cannot be undone from the panel anyway. */
 const LOG_LIMIT = 20;
+/** Questions nobody answers pile up over a long run; the oldest give way (M116). */
+const QUESTION_LIMIT = 10;
 
 /** What the owner's diagnostics (M112) hear from the session. All optional. */
 export interface CaptureHooks {
-  onRead?: (report: ReadReport, image: Blob | null) => void;
+  onRead?: (report: ReadReport, frame: FrameSource | null) => void;
   wantImage?: () => boolean;
   /** An entry went into the log; `fromRead` is false for an answered question. */
   onApplied?: (logId: number, event: { kind: string }, actions: unknown[], fromRead: boolean) => void;
@@ -52,7 +64,6 @@ export interface CaptureHooks {
 
 export function useCapture(hooks: CaptureHooks = {}) {
   const { data, indexes, enterAt, leave } = usePlan();
-  const setGiftStatus = useApp((s) => s.setGiftStatus);
   const interval = useApp((s) => s.ui.captureInterval);
   const gameLang = useApp((s) => s.ui.captureLang);
   const [status, setStatus] = useState<CaptureStatus>('idle');
@@ -63,9 +74,9 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const nextId = useRef(1);
 
   // The session calls back long after the render that created it: it must see the latest of these.
-  const latest = useRef({ data, indexes, enterAt, leave, setGiftStatus, gameLang, hooks });
+  const latest = useRef({ data, indexes, enterAt, leave, gameLang, hooks });
   useEffect(() => {
-    latest.current = { data, indexes, enterAt, leave, setGiftStatus, gameLang, hooks };
+    latest.current = { data, indexes, enterAt, leave, gameLang, hooks };
   });
   /**
    * True while the reader is changing the run, so a store listener can tell its changes from the
@@ -73,15 +84,19 @@ export function useCapture(hooks: CaptureHooks = {}) {
    */
   const applying = useRef(false);
 
-  const run = useCallback((actions: readonly (CaptureAction | { kind: 'leave'; packId: number })[]) => {
-    const { enterAt: doEnter, leave: doLeave, setGiftStatus: setStatusOf } = latest.current;
+  /** Play steps on the run as it is now: the plan's entry and leave, the store for the rest. */
+  const run = useCallback((steps: readonly CaptureStep[]): CaptureAction[] => {
+    const ops: RunOps = {
+      run: () => useApp.getState().run,
+      enterAt: (floor, packId) => latest.current.enterAt(floor, packId),
+      leave: (packId) => latest.current.leave(packId),
+      visit: (floor, packId) => useApp.getState().visitPack(packId, floor),
+      setStageFloor: (floor) => useApp.getState().setStageFloor(floor),
+      setGiftStatus: (giftId, to) => useApp.getState().setGiftStatus(giftId, to),
+    };
     applying.current = true;
     try {
-      for (const action of actions) {
-        if (action.kind === 'enter') doEnter(action.floor, action.packId);
-        else if (action.kind === 'leave') doLeave(action.packId);
-        else for (const change of action.changes) setStatusOf(change.giftId, change.to);
-      }
+      return execute(steps, ops);
     } finally {
       applying.current = false;
     }
@@ -94,36 +109,53 @@ export function useCapture(hooks: CaptureHooks = {}) {
     latest.current.hooks.onApplied?.(entry.id, event, actions, event.kind !== 'answer');
   }, []);
 
+  const ask = useCallback((question: CaptureAsk) => {
+    setQuestions((all) => [...all, { id: nextId.current++, ask: question }].slice(-QUESTION_LIMIT));
+  }, []);
+
   const onEvents = useCallback(
     (events: CaptureEvent[]) => {
       for (const event of events) {
-        const { indexes: idx } = latest.current;
+        const { run: now } = useApp.getState();
         const applied = actionsFor(event, {
-          giftStatus: useApp.getState().run.giftStatus,
-          giftById: idx.giftById,
+          giftStatus: now.giftStatus,
+          giftById: latest.current.indexes.giftById,
+          visits: now.visits,
+          stageFloor: now.stageFloor,
         });
-        run(applied.actions);
-        record(event, applied.actions);
-        if (applied.ask) {
-          const ask = applied.ask;
-          setQuestions((all) => [...all, { id: nextId.current++, ask }]);
-        }
+        record(event, run(applied.actions));
+        // A clean read of a floor settles the question its muddled read left (M116).
+        if (event.kind === 'enter')
+          setQuestions((all) => all.filter((q) => !(q.ask.kind === 'pack' && q.ask.floor === event.floor)));
+        if (applied.ask) ask(applied.ask);
       }
     },
-    [record, run],
+    [ask, record, run],
   );
 
+  /** The season's names in the game's language, made once per season and language (M116). */
+  const candidates = useRef<{ key: unknown; lang: string; value: Omit<CaptureContext, 'held' | 'iconUrl'> }>(
+    null,
+  );
   const context = useCallback((): CaptureContext => {
     const { data: d, indexes: idx, gameLang: lang } = latest.current;
+    if (candidates.current?.key !== d || candidates.current.lang !== lang)
+      candidates.current = {
+        key: d,
+        lang,
+        value: {
+          lang,
+          packs: d.packs.map((p) => ({ id: p.id, name: p.name[lang] })),
+          gifts: d.gifts.map((g) => ({ id: g.id, name: g.name[lang] })),
+          materials: d.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id),
+        },
+      };
     const giftStatus = useApp.getState().run.giftStatus;
     return {
-      lang,
-      packs: d.packs.map((p) => ({ id: p.id, name: p.name[lang] })),
-      gifts: d.gifts.map((g) => ({ id: g.id, name: g.name[lang] })),
+      ...candidates.current.value,
       held: Object.entries(giftStatus)
         .filter(([, s]) => s === 'got')
         .map(([id]) => Number(id)),
-      materials: d.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id),
       iconUrl: (id) => {
         const gift = idx.giftById.get(id);
         return gift ? (giftIconUrl(gift.icon)?.url ?? null) : null;
@@ -134,16 +166,28 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const start = useCallback(async () => {
     session.current?.stop();
     setError(null);
-    const created = new CaptureSession({
+    /**
+     * Callbacks that speak only while their session is the current one (M116): a session replaced
+     * or stopped can still finish a read or see its share end, and must not overwrite the status
+     * of the one after it or touch the run.
+     */
+    const own =
+      <A extends unknown[]>(fn: (...args: A) => void) =>
+      (...args: A): void => {
+        if (session.current === created) fn(...args);
+      };
+    const created: CaptureSession = new CaptureSession({
       intervalMs: READ_INTERVALS[useApp.getState().ui.captureInterval],
       context,
-      onEvents,
-      onStatus: (next, why) => {
+      onEvents: own(onEvents),
+      onStatus: own((next: CaptureStatus, why?: CaptureError) => {
         setStatus(next);
         if (why) setError(why);
         latest.current.hooks.onSession?.(next, why ?? null);
-      },
-      onRead: (report, image) => latest.current.hooks.onRead?.(report, image),
+      }),
+      onRead: own((report: ReadReport, frame: FrameSource | null) =>
+        latest.current.hooks.onRead?.(report, frame),
+      ),
       wantImage: () => latest.current.hooks.wantImage?.() ?? false,
     });
     session.current = created;
@@ -182,37 +226,43 @@ export function useCapture(hooks: CaptureHooks = {}) {
       if (!question) return;
       latest.current.hooks.onAnswer?.(question.ask, picked);
       if (picked.length === 0) return;
-      const { ask } = question;
-      const giftStatus = useApp.getState().run.giftStatus;
-      const actions: CaptureAction[] =
-        ask.kind === 'pack'
-          ? [{ kind: 'enter', floor: ask.floor, packId: picked[0]! }]
+      const { ask: asked } = question;
+      const now = useApp.getState().run;
+      const entry = asked.kind === 'pack' ? enterAction(asked.floor, picked[0]!, now) : null;
+      const steps: CaptureAction[] =
+        asked.kind === 'pack'
+          ? entry
+            ? [entry]
+            : []
           : [
               {
                 kind: 'status',
                 changes: picked.map((giftId) => ({
                   giftId,
-                  from: giftStatus[giftId] ?? null,
-                  to: ask.kind === 'gift' ? ('got' as const) : null,
+                  from: now.giftStatus[giftId] ?? null,
+                  to: asked.kind === 'gift' ? ('got' as const) : null,
                 })),
               },
             ];
-      run(actions);
-      record({ kind: 'answer', ask, picked }, actions);
+      record({ kind: 'answer', ask: asked, picked }, run(steps));
     },
     [questions, record, run],
   );
 
-  return {
-    supported: captureSupported(),
-    status,
-    error,
-    log,
-    questions,
-    start,
-    stop,
-    undo,
-    answer,
-    applying,
-  };
+  // One object while nothing in it changes, so the provider's value holds still (M116).
+  return useMemo(
+    () => ({
+      supported: captureSupported(),
+      status,
+      error,
+      log,
+      questions,
+      start,
+      stop,
+      undo,
+      answer,
+      applying,
+    }),
+    [status, error, log, questions, start, stop, undo, answer],
+  );
 }

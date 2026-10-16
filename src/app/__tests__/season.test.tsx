@@ -174,7 +174,7 @@ describe('the season selector', () => {
 });
 
 describe('adopting a season', () => {
-  it('drops the goals and pack choices it has never heard of, and counts them', () => {
+  it('drops the goals it has never heard of and counts them; a pack pin goes without a word (M118)', () => {
     const kept = short.gifts[0]!.id;
     const gone = md7.gifts[md7.gifts.length - 1]!.id;
     const unknownPack = -1;
@@ -185,11 +185,11 @@ describe('adopting a season', () => {
         options: { ...appDefaultOptions(), observedGifts: [gone], pinnedPacks: { 3: unknownPack } },
       });
     });
-    let counts!: { gifts: number; packs: number };
+    let counts!: { gifts: number };
     act(() => {
       counts = adopt(short);
     });
-    expect(counts).toEqual({ gifts: 1, packs: 1 });
+    expect(counts).toEqual({ gifts: 1 });
     const state = useApp.getState();
     expect(state.wanted).toEqual([kept]);
     expect(state.fusionGoal).toEqual({});
@@ -202,7 +202,7 @@ describe('adopting a season', () => {
   it('keeps a gift the season ships but cannot award — the planner explains that one itself', () => {
     const shipped = short.gifts[1]!.id;
     act(() => useApp.setState({ wanted: [shipped] }));
-    let counts!: { gifts: number; packs: number };
+    let counts!: { gifts: number };
     act(() => {
       counts = adopt(short);
     });

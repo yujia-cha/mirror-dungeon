@@ -17,11 +17,18 @@
  * or the main plan's losses together); 「…빼면 해결」 checks that set in one press. The floor chips
  * name the contested floors (`conflictGroups`, core) — information only; the app makes no
  * pack-level choice.
+ *
+ * Since M115 the card names both sides. Under the header, one line per lost goal names the goals it
+ * fights (`tradeoffs`): the measured bars whose drop alone keeps it, or before they are in, what the
+ * route that must keep it leaves out.
+ * Each bar says why it is a candidate (원인 · 놓친 목표 · 시작 기프트) and marks the goal added
+ * last; a bar of 0 says which goals share its pack; and when the cap or the budget left
+ * candidates out, the card says how many and measures the rest on request (「더 계산」).
  */
 import { useState } from 'react';
 import { Route, TriangleAlert } from 'lucide-react';
 import type { ConflictGroup } from '../../core/conflicts.ts';
-import type { DropAnalysis } from '../../core/index.ts';
+import type { DropAnalysis, DropRole, Tradeoff } from '../../core/index.ts';
 import type { RoutePlan } from '../../core/types.ts';
 import { t } from '../i18n.ts';
 import type { DropSelection } from '../shell/plan-context.ts';
@@ -38,11 +45,26 @@ export interface RouteDecisionProps {
   drops: DropSelection;
   /** Contested floors of `plan`, for the header chips. */
   groups: ConflictGroup[];
+  /** Goals `plan` loses to the conflict (`conflictRootsOf`), for the header. */
+  conflicting: number[];
+  /** The goal picked last (`wanted` keeps the picking order): most often the one that caused it. */
+  lastAdded: number | null;
+  /** Measure the candidates the analysis left out. */
+  onMore: () => void;
   ctx: PackContext;
   removeWanted: (giftId: number) => void;
   /** After a preview starts (not when it ends): the panel scrolls to the map that just changed. */
   onPreview?: () => void;
 }
+
+/** The marked roles; a goal that is merely routed or on a contested floor carries none. */
+const ROLE_LABEL: Partial<
+  Record<DropRole, 'routeDecisionRoleCause' | 'routeDecisionRoleLost' | 'routeDecisionRoleStart'>
+> = {
+  cause: 'routeDecisionRoleCause',
+  lost: 'routeDecisionRoleLost',
+  start: 'routeDecisionRoleStart',
+};
 
 export function RouteDecision({
   plan,
@@ -50,16 +72,29 @@ export function RouteDecision({
   analysisPending,
   drops,
   groups,
+  conflicting,
+  lastAdded,
+  onMore,
   ctx,
   removeWanted,
   onPreview,
 }: RouteDecisionProps) {
   const { lang, giftName, indexes } = ctx;
   const [confirmDrop, setConfirmDrop] = useState(false);
-  const conflicting = [
-    ...new Set(plan.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId)),
-  ];
   const names = conflicting.map(giftName).join(' · ');
+  const tradeoffs = analysis?.tradeoffs ?? [];
+  // The rivals the bars measured say it surely (each alone keeps the goal); until they are in, the
+  // forced plan's pick says what one route gives up.
+  const tradeoffLine = ({ lost, causes, rivals }: Tradeoff): string =>
+    rivals.length > 1
+      ? t('routeDecisionTradeoffAny', lang, { lost: giftName(lost), names: rivals.map(giftName).join(' · ') })
+      : rivals.length === 1
+        ? t('routeDecisionTradeoffOne', lang, { lost: giftName(lost), name: giftName(rivals[0]!) })
+        : t('routeDecisionTradeoff', lang, {
+            lost: giftName(lost),
+            causes: causes.map(giftName).join(' · '),
+          });
+  const skipped = analysis?.skipped ?? 0;
   const need = analysis?.resolving?.dropped.length ?? null;
   const total = analysis?.conflicts ?? conflicting.length;
   const effects = analysis?.effects ?? [];
@@ -88,11 +123,24 @@ export function RouteDecision({
         <div className="flex items-start gap-1.5">
           <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden />
           <h2 className="text-subheading ">
-            {need !== null && need > 1
-              ? t('routeDecisionTitleMany', lang, { names, n: need })
-              : t('routeDecisionTitle', lang, { names })}
+            {tradeoffs.length > 0
+              ? need !== null && need > 1
+                ? t('routeDecisionTitleShortMany', lang, { n: need })
+                : t('routeDecisionTitleShort', lang)
+              : need !== null && need > 1
+                ? t('routeDecisionTitleMany', lang, { names, n: need })
+                : t('routeDecisionTitle', lang, { names })}
           </h2>
         </div>
+        {tradeoffs.length > 0 ? (
+          <ul className="flex flex-col gap-0.5 pl-6 text-body" data-testid="drop-tradeoffs">
+            {tradeoffs.map((tradeoff) => (
+              <li key={tradeoff.lost} data-testid="drop-tradeoff" data-lost={tradeoff.lost}>
+                {tradeoffLine(tradeoff)}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {groups.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {groups.map((group) => {
@@ -143,8 +191,20 @@ export function RouteDecision({
                       />
                     ) : null}
                   </span>
-                  <span className="min-w-0 truncate text-body" title={name}>
-                    {name}
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span className="min-w-0 truncate text-body" title={name}>
+                      {name}
+                    </span>
+                    {ROLE_LABEL[effect.role] ? (
+                      <span className="flex-none" data-testid="drop-role" data-role={effect.role}>
+                        <Chip>{t(ROLE_LABEL[effect.role]!, lang)}</Chip>
+                      </span>
+                    ) : null}
+                    {effect.giftId === lastAdded ? (
+                      <span className="flex-none" data-testid="drop-last-added">
+                        <Chip>{t('routeDecisionLastAdded', lang)}</Chip>
+                      </span>
+                    ) : null}
                   </span>
                   <span className="h-2.5 overflow-hidden rounded-sm bg-surface-muted" aria-hidden>
                     <span className="block h-full bg-primary" style={{ width: `${width}%` }} />
@@ -156,6 +216,13 @@ export function RouteDecision({
                     −{effect.reduces}
                   </span>
                 </label>
+                {effect.sharesPackWith ? (
+                  <p className="pl-6 text-caption text-fg-muted" data-testid="drop-shares-pack">
+                    {t('routeDecisionSharesPack', lang, {
+                      names: effect.sharesPackWith.map(giftName).join(' · '),
+                    })}
+                  </p>
+                ) : null}
               </li>
             );
           })}
@@ -171,6 +238,16 @@ export function RouteDecision({
             </li>
           ) : null}
         </ul>
+        {skipped > 0 && !analysisPending ? (
+          <div className="flex flex-wrap items-center gap-2 text-caption" data-testid="drop-more">
+            <span className="text-fg-muted">
+              {t('routeDecisionMeasured', lang, { done: effects.length, total: effects.length + skipped })}
+            </span>
+            <Button size="sm" variant="ghost" onClick={onMore}>
+              {t('routeDecisionMore', lang)}
+            </Button>
+          </div>
+        ) : null}
         {selection.length > 0 ? (
           <div
             className="mt-1 rounded-sm bg-surface-muted px-2 py-1 text-caption text-fg-muted"

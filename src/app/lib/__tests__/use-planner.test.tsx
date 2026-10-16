@@ -74,21 +74,26 @@ class FakeWorker implements Partial<Worker> {
       queueMicrotask(() => this.emit('error', new Event('error')));
       return;
     }
+    if (request.type === 'analysis-more') {
+      if (this.planner.resume(request.id)) this.pump(request.id);
+      return;
+    }
     const response = this.planner.handle(request);
     if (!response) return;
     queueMicrotask(() => this.emit('message', { data: response satisfies PlannerResponse }));
     // As `planner.worker.ts` does: the alternatives follow on a later task, and only if still wanted.
-    if (response.type === 'plan' && response.analysisPending) {
-      // One task per bar until the final answer, as the worker's `pump` does.
-      const send = (): void => {
-        const analysis = this.planner.analysisStep(response.id);
-        if (!analysis) return;
-        this.emit('message', { data: analysis satisfies PlannerResponse });
-        if (!analysis.done) setTimeout(send, 0);
-      };
-      if (this.holdAlternatives) this.held.push(send);
-      else setTimeout(send, 0);
-    }
+    if (response.type === 'plan' && response.analysisPending) this.pump(response.id);
+  }
+  /** One task per bar until the final answer, as the worker's `pump` does. */
+  private pump(id: number): void {
+    const send = (): void => {
+      const analysis = this.planner.analysisStep(id);
+      if (!analysis) return;
+      this.emit('message', { data: analysis satisfies PlannerResponse });
+      if (!analysis.done) setTimeout(send, 0);
+    };
+    if (this.holdAlternatives) this.held.push(send);
+    else setTimeout(send, 0);
   }
   private emit(type: string, event: unknown): void {
     for (const listener of this.listeners.get(type) ?? []) listener(event);

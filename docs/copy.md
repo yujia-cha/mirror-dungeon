@@ -166,11 +166,6 @@
 - en: Dropped {n} gift(s) this season does not have
 - 쓰는 곳: src/app/App.tsx
 
-### seasonDroppedPacks
-- ko: 이번 시즌에 없는 팩 설정 {n}개를 뺐습니다
-- en: Dropped {n} pack setting(s) this season does not have
-- 쓰는 곳: src/app/App.tsx
-
 ### aboutData
 메모: 푸터의 한 줄. 화면의 설명문은 이것과 데이터 버전 둘뿐이라는 규칙을 지킨다. 출처 목록은 너무 길어 NOTICE에 있고 링크로 닿는다.
 - ko: 게임 데이터와 텍스트의 권리는 Project Moon에 있습니다. Project Moon과 제휴하거나 승인받지 않은 비상업 팬 프로젝트입니다.
@@ -1018,6 +1013,73 @@
 - en: Computing alternatives…
 - 쓰는 곳: src/app/components/RouteDecision.tsx
 
+### routeDecisionTitleShort
+메모: M115: 맞바꿈(`tradeoffs`)을 구했으면 머리는 이것이고, 그 아래 줄들이 양쪽 이름을 말한다.
+- ko: 전부 얻을 수 없습니다
+- en: They do not all fit one run
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionTitleShortMany
+- ko: 전부 얻을 수 없습니다 · {n}개를 목표에서 빼야 합니다
+- en: They do not all fit one run · remove {n} from the goals
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionTradeoff
+메모: 막대가 오기 전: 놓친 목표 하나를 반드시로 둔 계획이 대신 잃는 목표. 「빼야 한다」고 단정하지 않는다 — 같은 자리를 다투는 목표가 여럿이면 탐색이 그중 하나를 고른 것이다.
+- ko: {lost}을(를) 얻는 루트에서는 {causes}이(가) 빠집니다
+- en: A route that gets {lost} leaves out {causes}
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionTradeoffAny
+메모: 계산한 막대 중 혼자 빼면 그 목표가 사는 것(`rivals`)이 둘 이상일 때. 각 막대가 실제로 계산한 사실이다.
+- ko: {lost}을(를) 얻으려면 {names} 중 하나를 빼면 됩니다
+- en: To get {lost}, remove any one of {names}
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionTradeoffOne
+- ko: {lost}을(를) 얻으려면 {name}을(를) 빼면 됩니다
+- en: To get {lost}, remove {name}
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionRoleCause
+메모: 막대의 역할 표식. 원인 = 맞바꿈 상대.
+- ko: 원인
+- en: Cause
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionRoleLost
+- ko: 놓친 목표
+- en: Left out
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionRoleStart
+- ko: 시작 기프트
+- en: Start gift
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionLastAdded
+메모: `wanted`의 마지막 — 고른 순서대로 쌓이므로 마지막에 고른 목표다.
+- ko: 마지막에 추가
+- en: Added last
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionSharesPack
+메모: −0 막대 아래: 같은 팩을 쓰는 다른 목표가 남아 그 팩에 여전히 들어간다.
+- ko: 혼자 빼면 자리가 나지 않습니다 · 같은 팩: {names}
+- en: Frees nothing alone · same pack: {names}
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionMeasured
+메모: 후보가 상한(10개)이나 계산 예산에 잘렸을 때.
+- ko: 후보 {total}개 중 {done}개 계산
+- en: {done} of {total} candidates measured
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionMore
+- ko: 더 계산
+- en: Measure the rest
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
 ### routeDecisionCandidates
 - ko: 뺄 후보
 - en: Candidates to remove
@@ -1607,6 +1669,11 @@
 - en: Export
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
+### diagExportFailed
+- ko: 내보내지 못했습니다. 기록은 그대로 남아 있으니 다시 내보내 보세요.
+- en: The export failed. Everything is still on this device; try exporting again.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
 ### diagClearAll
 - ko: 모두 지우기
 - en: Clear all
@@ -2013,12 +2080,12 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 ## 루트 | Route
 
 - readme: 오른쪽 **전체 루트**가 층별 테마팩을 노선도로 그립니다. 요약의 「획득 M/T」는 목표 기프트 중 루트가 가져다주는 수입니다. 팩이 아니라 **어느 팩에서나 나올 수 있는** 범용 드랍도 획득으로 셉니다(반드시 나오지는 않습니다 — 상점·새로고침을 함께 쓰세요. 어느 기프트가 범용 드랍인지는 기프트 탭과 상세 시트가 말합니다).
-- readme: **전부 얻을 수 없으면** 요약 아래에 「…중 하나를 목표에서 빼야 합니다」 카드가 뜹니다. 목표마다 **혼자 뺐을 때 줄어드는 충돌** 수가 막대로 나옵니다. 막대는 더해지지 않으니, 뺄 목표를 체크하면 그 조합으로 실제 루트를 다시 계산해 전부 들어가는지, 충돌이 몇 개 남는지 알려 줍니다. 「빼면 해결: …」 줄의 「이 조합 고르기」는 해결되는 조합을 한 번에 체크합니다. 「루트 미리 보기」는 그 루트를 노선도로 보여 주고(노선도로 스크롤합니다), 「선택한 n개 목표에서 빼기」는 확인을 거쳐 목표에서 뺍니다.
+- readme: **전부 얻을 수 없으면** 요약 아래에 「…중 하나를 목표에서 빼야 합니다」 카드가 뜹니다. 충돌을 일으킨 쪽도 이름으로 부릅니다 — 놓친 목표마다 「A을(를) 얻으려면 B · C 중 하나를 빼면 됩니다」라고 쓰고, 막대에는 「원인」·「놓친 목표」·「시작 기프트」·「마지막에 추가」 표식이 붙습니다. 목표마다 **혼자 뺐을 때 줄어드는 충돌** 수가 막대로 나옵니다. 후보가 많아 다 계산하지 못했으면 「더 계산」으로 나머지를 계산합니다. 막대는 더해지지 않으니, 뺄 목표를 체크하면 그 조합으로 실제 루트를 다시 계산해 전부 들어가는지, 충돌이 몇 개 남는지 알려 줍니다. 「빼면 해결: …」 줄의 「이 조합 고르기」는 해결되는 조합을 한 번에 체크합니다. 「루트 미리 보기」는 그 루트를 노선도로 보여 주고(노선도로 스크롤합니다), 「선택한 n개 목표에서 빼기」는 확인을 거쳐 목표에서 뺍니다.
 - readme: 런 중에 조합 재료를 **미획득**해서 상위 기프트를 조합할 수 없게 되면, 전체 루트 맨 위에 어떤 재료 때문에 어느 조합이 막혔는지와 루트를 다시 계산했다는 알림이 뜹니다. 기본은 그 조합을 통째로 버리는 것이라 남은 재료만을 위한 입장도 취소됩니다. 알림의 남은 재료 묶음(아래 「모으지 않기」 막대)을 누르면 「모으기」로 바뀌고 남은 재료를 계속 모으러 갑니다.
 - 설명서: 오른쪽 위 「전체 루트」가 층별 테마팩을 노선도로 보여 줍니다.
 - en: 「Full route」 at the top right draws the packs floor by floor as a route map.
-- 설명서: 전부 얻을 수 없으면 기프트마다 뺐을 때 줄어드는 충돌을 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.
-- en: When not everything fits, it shows how many conflicts leaving out each gift clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.
+- 설명서: 전부 얻을 수 없으면 놓친 목표마다 무엇과 자리를 다투는지 알려 주고, 기프트마다 뺐을 때 줄어드는 충돌을 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.
+- en: When not everything fits, it says what each missed goal competes with and shows how many conflicts leaving out each gift clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.
 
 ## 런 | Run
 

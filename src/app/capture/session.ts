@@ -6,7 +6,8 @@
  *
  *   tick (every interval) → signature of the watched regions on a small copy (`change.ts`)
  *     → `decide` (`loop.ts`): read only on change, a pending change, or the refresh
- *     → snapshot at full size → `readFrame` (OCR and icon slots on crops of the snapshot)
+ *     → snapshot at full size → `readFrame` (OCR and icon slots on the regions it asks for,
+ *       each read off the snapshot canvas on its own — M116)
  *     → `trackFrame` → events to the caller
  *
  * The caller (M104's UI) applies the events to the run and supplies what the reading needs
@@ -20,7 +21,7 @@ import { decide, finished, INITIAL_LOOP, READ_INTERVALS, type LoopState } from '
 import { prepareReference, prepareSlot, type IconRef } from './match-icon.ts';
 import type { NameCandidate } from './match-name.ts';
 import { createOcrEngine, type OcrEngine } from './ocr-engine.ts';
-import { cropRgba, isolateLightText, type Region } from './preprocess.ts';
+import { pixelRect, toPnm, type Region } from './preprocess.ts';
 import { readFrame, type RegionReader } from './read-frame.ts';
 import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame, type TrackerState } from './tracker.ts';
 
@@ -67,11 +68,21 @@ export interface SessionOptions {
   onEvents: (events: CaptureEvent[]) => void;
   onStatus: (status: CaptureStatus, error?: CaptureError) => void;
   /**
-   * Every read, before its events are handed on (M112). `image` is the frame as JPEG when
-   * `wantImage()` said so at the time — encoded only then, since it costs a full-size encode.
+   * Every read, just before its events are handed on (M112). `frame` is the read's picture when
+   * `wantImage()` said so at the time: copied after the events, encoded only if kept (M116).
    */
-  onRead?: (report: ReadReport, image: Blob | null) => void;
+  onRead?: (report: ReadReport, frame: FrameSource | null) => void;
   wantImage?: () => boolean;
+}
+
+/**
+ * A read's picture for the owner's diagnostics (M116). Taking it is a cheap copy of the snapshot;
+ * the full-size JPEG encode happens only for a frame the recorder keeps, once (`encode` is
+ * memoised). `close` frees the copy; a frame being encoded is freed when the encode is done.
+ */
+export interface FrameSource {
+  encode(): Promise<Blob | null>;
+  close(): void;
 }
 
 /** The small copy the signature is taken on: wide enough to see a popup appear, cheap to read back. */
@@ -102,19 +113,31 @@ export class CaptureSession {
     this.intervalMs = options.intervalMs ?? READ_INTERVALS.balanced;
   }
 
-  /** Ask for the game window and start reading. Resolves once running, or after reporting the error. */
+  /**
+   * Ask for the game window and start reading. Resolves once running, or after reporting the error.
+   *
+   * Every step waits — the picker, the layout, the engine — and the player may press Stop during
+   * any of them (M116). So after each wait the session looks again, and if it was stopped it
+   * releases what that step just brought (the share's tracks, the engine) and says nothing more.
+   */
   async start(): Promise<void> {
     if (!captureSupported()) return this.fail('unsupported');
     this.options.onStatus('starting');
+    let stream: MediaStream;
     try {
-      this.stream = await navigator.mediaDevices.getDisplayMedia({
+      stream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 8 } },
         audio: false,
       });
     } catch {
       return this.fail('denied');
     }
-    const track = this.stream.getVideoTracks()[0];
+    if (this.stopped) {
+      for (const track of stream.getTracks()) track.stop();
+      return;
+    }
+    this.stream = stream;
+    const track = stream.getVideoTracks()[0];
     track?.addEventListener('ended', () => this.fail('ended'));
     try {
       const base = import.meta.env.BASE_URL.endsWith('/')
@@ -126,12 +149,18 @@ export class CaptureSession {
     } catch {
       return this.fail('layout');
     }
+    if (this.stopped) return;
+    let engine: OcrEngine;
     try {
-      this.engine = await createOcrEngine(this.options.context().lang);
+      engine = await createOcrEngine(this.options.context().lang);
     } catch {
       return this.fail('engine');
     }
-    if (this.stopped) return;
+    if (this.stopped) {
+      void engine.terminate();
+      return;
+    }
+    this.engine = engine;
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
@@ -166,7 +195,9 @@ export class CaptureSession {
     this.options.onStatus('idle');
   }
 
+  /** Stop on an error and say why — unless already stopped: a later session may own the status now. */
   private fail(error: CaptureError): void {
+    if (this.stopped) return;
     this.stop();
     this.options.onStatus('error', error);
   }
@@ -210,16 +241,31 @@ export class CaptureSession {
     const layout = this.layout!;
     const engine = this.engine!;
     // One snapshot per read: the reading takes several OCR calls, and the screen must not change
-    // under them.
-    const snapshot = drawScaled(this.snapshotCanvas, video, width, height);
+    // under them. Only the regions the reading asks for come back off the canvas (M116) — a read
+    // that stops at the popup's title touches one strip, not the 1920×1009 frame.
+    const canvas = this.snapshotCanvas;
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    const snapshot = canvas.getContext('2d', { willReadFrequently: true })!;
+    snapshot.drawImage(video, 0, 0, width, height);
+    const pixelsOf = (region: Region) => {
+      const rect = pixelRect(width, height, region);
+      const data =
+        rect.width > 0 && rect.height > 0
+          ? snapshot.getImageData(rect.left, rect.top, rect.width, rect.height).data
+          : new Uint8ClampedArray(0);
+      return { rect, data };
+    };
     const ctx = this.options.context();
     const reader: RegionReader = {
       ocr: async (region, light) => {
-        const crop = cropRgba(snapshot.data, width, height, region);
-        const pixels = light ? isolateLightText(crop.data) : new Uint8ClampedArray(crop.data);
-        return engine.recognize(toCanvas(pixels, crop.width, crop.height));
+        const { rect, data } = pixelsOf(region);
+        return engine.recognize(toPnm(data, rect.width, rect.height, light));
       },
-      slot: async (region) => prepareSlot(snapshot.data, width, height, region),
+      slot: async (region) => {
+        const { rect, data } = pixelsOf(region);
+        return prepareSlot(data, width, height, region, rect);
+      },
     };
     const refsOf = async (ids: readonly number[]) =>
       (await Promise.all(ids.map((id) => this.ref(id, ctx.iconUrl)))).filter((r): r is IconRef => r !== null);
@@ -235,23 +281,24 @@ export class CaptureSession {
     if (this.stopped) return;
     const out = trackFrame(this.tracker, frame);
     this.tracker = out.state;
-    if (this.options.onRead) {
-      const image = this.options.wantImage?.() ? await toJpeg(this.snapshotCanvas) : null;
-      this.options.onRead(
-        {
-          t,
-          reason,
-          ms: performance.now() - started,
-          ocrCalls,
-          frame,
-          trace,
-          events: out.events,
-          captureSize: { width, height },
-        },
-        image,
-      );
-    }
+    // Nothing waits from here on (M116): a Stop pressed now cannot land between the check above
+    // and the events, and the events never wait for a picture.
+    const picture = this.options.onRead && this.options.wantImage?.() ? new SnapshotFrame(canvas) : null;
+    this.options.onRead?.(
+      {
+        t,
+        reason,
+        ms: performance.now() - started,
+        ocrCalls,
+        frame,
+        trace,
+        events: out.events,
+        captureSize: { width, height },
+      },
+      picture,
+    );
     if (out.events.length > 0) this.options.onEvents(out.events);
+    picture?.take();
   }
 
   /** A gift icon reduced for matching, decoded once per session. */
@@ -279,7 +326,7 @@ function drawScaled(
   return ctx.getImageData(0, 0, width, height);
 }
 
-/** The snapshot as JPEG at full size — the diagnostics re-read it with OCR, so no downscale. */
+/** A canvas as JPEG at full size — the diagnostics re-read it with OCR, so no downscale. */
 function toJpeg(canvas: HTMLCanvasElement): Promise<Blob | null> {
   return new Promise((resolve) => {
     try {
@@ -290,12 +337,64 @@ function toJpeg(canvas: HTMLCanvasElement): Promise<Blob | null> {
   });
 }
 
-function toCanvas(pixels: Uint8ClampedArray, width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(pixels), width, height), 0, 0);
-  return canvas;
+/** Where kept pictures are drawn to be encoded; one for the page, made on first use. */
+let encodeCanvas: HTMLCanvasElement | null = null;
+
+/** A picture as JPEG. Draw and `toBlob` run together, so one canvas serves every encode. */
+function bitmapToJpeg(bitmap: ImageBitmap): Promise<Blob | null> {
+  try {
+    encodeCanvas ??= document.createElement('canvas');
+    encodeCanvas.width = bitmap.width;
+    encodeCanvas.height = bitmap.height;
+    encodeCanvas.getContext('2d')!.drawImage(bitmap, 0, 0);
+    return toJpeg(encodeCanvas);
+  } catch {
+    // A picture already freed, or no 2D context.
+    return Promise.resolve(null);
+  }
+}
+
+/**
+ * The snapshot of one read, for the diagnostics (`FrameSource`). `take` copies the canvas into an
+ * `ImageBitmap` — before the next read draws over it; the session calls it right after the events.
+ * Without `createImageBitmap` the copy is the JPEG itself, encoded at once.
+ */
+class SnapshotFrame implements FrameSource {
+  private copy: Promise<ImageBitmap | Blob | null> | null = null;
+  private jpeg: Promise<Blob | null> | null = null;
+  private closed = false;
+
+  constructor(private readonly canvas: HTMLCanvasElement) {}
+
+  take(): void {
+    if (this.copy) return;
+    this.copy =
+      typeof createImageBitmap === 'function'
+        ? createImageBitmap(this.canvas).catch(() => null)
+        : toJpeg(this.canvas);
+  }
+
+  encode(): Promise<Blob | null> {
+    if (this.jpeg) return this.jpeg;
+    if (this.closed) return Promise.resolve(null);
+    this.take();
+    this.jpeg = this.copy!.then((copy) =>
+      copy === null || copy instanceof Blob ? copy : bitmapToJpeg(copy),
+    );
+    return this.jpeg;
+  }
+
+  close(): void {
+    if (this.closed) return;
+    this.closed = true;
+    const copy = this.copy;
+    if (!copy) return;
+    void (this.jpeg ?? Promise.resolve(null))
+      .then(() => copy)
+      .then((bitmap) => {
+        if (bitmap && !(bitmap instanceof Blob)) bitmap.close();
+      });
+  }
 }
 
 async function loadRef(id: number, url: string | null): Promise<IconRef | null> {

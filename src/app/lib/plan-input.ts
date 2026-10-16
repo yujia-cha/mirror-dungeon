@@ -83,11 +83,11 @@ export function planInputFor(
   season: { lastFloor?: number } = {},
 ): PlanInput {
   const run = state.run;
-  // The run pins the packs already entered, moves the plan to the frontier floor, and settles
+  // The run records the packs already entered, moves the plan to the frontier floor, and settles
   // the gifts the player has recorded as collected or missed.
   const progress: Partial<PlanOptions> = run
     ? {
-        pinnedPacks: { ...state.options.pinnedPacks, ...run.visits },
+        pinnedPacks: { ...run.visits },
         currentFloor: run.currentFloor,
         ownedGifts: Object.entries(run.giftStatus)
           .filter(([, s]) => s === 'got')

@@ -11,8 +11,11 @@ import type { Lang } from '../i18n.ts';
 const TESS_LANG = { ko: 'kor', en: 'eng' } as const;
 
 export interface OcrEngine {
-  /** The lines OCR reads in a canvas. */
-  recognize(image: HTMLCanvasElement | OffscreenCanvas): Promise<string[]>;
+  /**
+   * The lines OCR reads in an image file's bytes — a PNM the session writes (`toPnm`, M116).
+   * Tesseract would turn a canvas into a PNG on the page's thread first; this skips that.
+   */
+  recognize(image: Uint8Array): Promise<string[]>;
   terminate(): Promise<void>;
 }
 
@@ -33,7 +36,9 @@ export async function createOcrEngine(lang: Lang): Promise<OcrEngine> {
   });
   return {
     async recognize(image) {
-      const { data } = await worker.recognize(image as HTMLCanvasElement);
+      // Bytes are an image file to Tesseract.js (its typings say `Buffer`, its browser loader
+      // takes any byte array as is).
+      const { data } = await worker.recognize(image as unknown as Blob);
       return data.text.split('\n').filter((line) => line.trim() !== '');
     },
     terminate: async () => {

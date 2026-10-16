@@ -5,6 +5,8 @@
  * so the UI can apply them, log them and undo them, and the rules can be tested without a screen:
  *
  * - `enter` → enter the pack on that floor (the floors walked past settle, as on the floor strip).
+ *   An entry the run already holds does nothing — every new session reads the map it stands on
+ *   again, and a duplicate would carry an undo that deletes the player's own entry (M116).
  * - `got` → mark the gift collected, unless it already is.
  * - `sold` → unmark a collected gift: it is no longer held, and the route may send the player for it
  *   again — which is true.
@@ -13,10 +15,11 @@
  *   What stays unclear is asked, not guessed.
  * - `unsure` → nothing changes; the player is asked to pick.
  *
- * Pure: event and run state in, actions and questions out.
+ * Pure: event and run state in, actions and questions out. `execute` runs them through the run
+ * actions it is handed, so the same steps play forward and back in tests against the real store.
  */
 import type { Gift } from '../../core/schema.ts';
-import type { GiftStatus } from '../lib/plan-input.ts';
+import type { GiftStatus, RunState } from '../lib/plan-input.ts';
 import { mixedFusionConsumed } from './fusion.ts';
 import type { CaptureEvent } from './tracker.ts';
 
@@ -26,8 +29,35 @@ export interface StatusChange {
   to: GiftStatus | null;
 }
 
-export type CaptureAction =
-  { kind: 'enter'; floor: number; packId: number } | { kind: 'status'; changes: StatusChange[] };
+/**
+ * An entry, with what taking it back needs (M116): the pack it replaced on its floor, the floor the
+ * same pack stood on before (an entry moves it), the stage floor it walked from, and the statuses
+ * the walk changed — the misses settled on the floors walked past and the run start on leaving
+ * floor 1. `changes` is filled by `execute`, which sees the run before and after.
+ */
+export interface EnterAction {
+  kind: 'enter';
+  floor: number;
+  packId: number;
+  replaced: number | null;
+  movedFrom: number | null;
+  stageFrom: number;
+  changes: StatusChange[];
+}
+
+export type CaptureAction = EnterAction | { kind: 'status'; changes: StatusChange[] };
+
+/**
+ * A step that takes an action back. `revisit` re-enters a pack without settling anything (it was
+ * settled when first entered); `rewind` walks the stage back to where an entry found it and
+ * restores the statuses the walk changed — but only while the stage still stands on the entry's
+ * floor: a player who moved on keeps the floors they settled since, and only the entry goes.
+ */
+export type CaptureStep =
+  | CaptureAction
+  | { kind: 'leave'; packId: number }
+  | { kind: 'revisit'; floor: number; packId: number }
+  | { kind: 'rewind'; from: number; to: number; changes: StatusChange[] };
 
 /** A question for the player: which of these did the screen mean? */
 export type CaptureAsk =
@@ -39,6 +69,9 @@ export type CaptureAsk =
 export interface ApplyContext {
   giftStatus: Readonly<Record<number, GiftStatus>>;
   giftById: ReadonlyMap<number, Gift>;
+  /** The run's entries, floor → pack. */
+  visits: Readonly<Record<number, number>>;
+  stageFloor: number;
 }
 
 export interface Applied {
@@ -48,6 +81,26 @@ export interface Applied {
 
 const NONE: Applied = { actions: [], ask: null };
 
+/** The entry action for `packId` on `floor` in this run; null when the run already holds it. */
+export function enterAction(
+  floor: number,
+  packId: number,
+  ctx: Pick<ApplyContext, 'visits' | 'stageFloor'>,
+): EnterAction | null {
+  const replaced = ctx.visits[floor] ?? null;
+  if (replaced === packId) return null;
+  const moved = Object.entries(ctx.visits).find(([, id]) => id === packId);
+  return {
+    kind: 'enter',
+    floor,
+    packId,
+    replaced,
+    movedFrom: moved ? Number(moved[0]) : null,
+    stageFrom: ctx.stageFloor,
+    changes: [],
+  };
+}
+
 /** The run changes for one event. Nothing to do yields no actions (the log skips it). */
 export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
   const status = (id: number): GiftStatus | null => ctx.giftStatus[id] ?? null;
@@ -56,8 +109,10 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
     return changes.length > 0 ? [{ kind: 'status', changes }] : [];
   };
   switch (event.kind) {
-    case 'enter':
-      return { actions: [{ kind: 'enter', floor: event.floor, packId: event.packId }], ask: null };
+    case 'enter': {
+      const action = enterAction(event.floor, event.packId, ctx);
+      return action ? { actions: [action], ask: null } : NONE;
+    }
     case 'got':
       return { actions: change([event.giftId], 'got'), ask: null };
     case 'sold':
@@ -100,16 +155,89 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
   }
 }
 
-/** The actions that take `actions` back, in reverse order. An entry is taken back by leaving the pack. */
-export function inverseOf(
-  actions: readonly CaptureAction[],
-): (CaptureAction | { kind: 'leave'; packId: number })[] {
-  return [...actions].reverse().map((action) =>
-    action.kind === 'enter'
-      ? { kind: 'leave' as const, packId: action.packId }
-      : {
-          kind: 'status' as const,
-          changes: action.changes.map((c) => ({ giftId: c.giftId, from: c.to, to: c.from })),
-        },
-  );
+/** Every gift whose status differs between two runs, by id. */
+export function statusDiff(
+  before: Readonly<Record<number, GiftStatus>>,
+  after: Readonly<Record<number, GiftStatus>>,
+): StatusChange[] {
+  const ids = new Set([...Object.keys(before), ...Object.keys(after)].map(Number));
+  return [...ids]
+    .sort((a, b) => a - b)
+    .flatMap((giftId) => {
+      const from = before[giftId] ?? null;
+      const to = after[giftId] ?? null;
+      return from === to ? [] : [{ giftId, from, to }];
+    });
+}
+
+const swap = (changes: readonly StatusChange[]): StatusChange[] =>
+  changes.map((c) => ({ giftId: c.giftId, from: c.to, to: c.from }));
+
+/**
+ * The steps that take `actions` back, in reverse order. An entry goes by leaving the pack, putting
+ * back what it displaced, and rewinding the walk that led to it.
+ */
+export function inverseOf(actions: readonly CaptureAction[]): CaptureStep[] {
+  return [...actions].reverse().flatMap((action): CaptureStep[] => {
+    if (action.kind === 'status') return [{ kind: 'status', changes: swap(action.changes) }];
+    const steps: CaptureStep[] = [{ kind: 'leave', packId: action.packId }];
+    if (action.movedFrom !== null)
+      steps.push({ kind: 'revisit', floor: action.movedFrom, packId: action.packId });
+    if (action.replaced !== null)
+      steps.push({ kind: 'revisit', floor: action.floor, packId: action.replaced });
+    steps.push({ kind: 'rewind', from: action.floor, to: action.stageFrom, changes: swap(action.changes) });
+    return steps;
+  });
+}
+
+/** The run actions `execute` plays steps through: the plan's for an entry, the store's otherwise. */
+export interface RunOps {
+  run(): RunState;
+  /** Enter wherever the stage stands, settling the floors walked past (`PlanContext.enterAt`). */
+  enterAt(floor: number, packId: number): void;
+  /** Take an entry back and clear what it answered for (`PlanContext.leave`). */
+  leave(packId: number): void;
+  /** Record an entry without settling anything. */
+  visit(floor: number, packId: number): void;
+  /** Show a floor without settling anything. */
+  setStageFloor(floor: number): void;
+  setGiftStatus(giftId: number, status: GiftStatus | null): void;
+}
+
+/**
+ * Play `steps` on the run. Returns the actions as applied: an entry comes back with the statuses
+ * its walk changed, which its undo restores.
+ */
+export function execute(steps: readonly CaptureStep[], ops: RunOps): CaptureAction[] {
+  const applied: CaptureAction[] = [];
+  for (const step of steps) {
+    switch (step.kind) {
+      case 'enter': {
+        const before = ops.run().giftStatus;
+        ops.enterAt(step.floor, step.packId);
+        applied.push({ ...step, changes: statusDiff(before, ops.run().giftStatus) });
+        break;
+      }
+      case 'status':
+        for (const change of step.changes) ops.setGiftStatus(change.giftId, change.to);
+        applied.push(step);
+        break;
+      case 'leave':
+        ops.leave(step.packId);
+        break;
+      case 'revisit':
+        ops.visit(step.floor, step.packId);
+        break;
+      case 'rewind': {
+        if (ops.run().stageFloor !== step.from) break;
+        // One floor at a time: stepping back onto a skip right before the frontier takes it back,
+        // so each skip the walk made is undone in turn.
+        if (step.to < step.from) for (let f = step.from - 1; f >= step.to; f -= 1) ops.setStageFloor(f);
+        else if (step.to > step.from) ops.setStageFloor(step.to);
+        for (const change of step.changes) ops.setGiftStatus(change.giftId, change.to);
+        break;
+      }
+    }
+  }
+  return applied;
 }

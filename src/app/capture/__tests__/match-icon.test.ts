@@ -7,6 +7,7 @@ import {
   prepareSlot,
   resizeRgba,
 } from '../match-icon.ts';
+import { cropRgba, pixelRect } from '../preprocess.ts';
 
 /** A w×h RGBA image filled by `paint(x, y)` → [r, g, b, a]. */
 function image(w: number, h: number, paint: (x: number, y: number) => [number, number, number, number]) {
@@ -96,6 +97,18 @@ describe('matchIcon', () => {
     const result = matchIcon(prepareSlot(slot, 100, 100, [0, 0, 1, 1]), refs);
     // Assert
     expect(result).toMatchObject({ status: 'match', id: 2 });
+  });
+
+  it('reduces a slot the same from its own pixels as from the whole frame', () => {
+    // Arrange: the slot sits inside a larger frame; only the slot's rectangle is read (M116).
+    const frame = image(300, 200, (x, y) => [(x * 3) % 256, (y * 5) % 256, (x + y) % 256, 255]);
+    const region = [0.31, 0.22, 0.27, 0.41] as const;
+    const view = pixelRect(300, 200, region);
+    const part = cropRgba(frame, 300, 200, region).data;
+    // Act
+    const fromView = prepareSlot(part, 300, 200, region, view);
+    // Assert
+    expect(fromView).toEqual(prepareSlot(frame, 300, 200, region));
   });
 
   it('says none for a slot that is like nothing', () => {

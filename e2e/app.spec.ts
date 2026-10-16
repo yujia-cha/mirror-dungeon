@@ -47,6 +47,9 @@ test('plans off the render thread, and the drop analysis follows the route', asy
   await expect(page.getByTestId('route-pending')).toHaveCount(0);
   // The worker answered, not the inline fallback: the drop bars come from its second answer.
   await expect(page.getByTestId('drop-effect').first()).toBeVisible();
+  // M115: the card names both sides — a trade-off line and the bars' roles.
+  await expect(page.getByTestId('drop-tradeoff').first()).toBeVisible();
+  await expect(page.getByTestId('drop-role').first()).toBeVisible();
 });
 
 test('a share link survives the round trip', async ({ page }) => {

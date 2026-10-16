@@ -33,7 +33,7 @@ const FOOT_CLASS =
   '-mx-3 mt-0.5 flex h-[34px] w-[calc(100%+20px)] items-center justify-center gap-1 rounded-b-md border-t text-label transition-colors';
 const MAX_ICONS = 5;
 
-/** The pack's exclusive gifts as small icons, the wanted ones ringed; at most `MAX_ICONS`, then 「+n」. */
+/** The pack's exclusive gifts as small icons, the wanted ones ringed and first; at most `MAX_ICONS`, then 「+n」. */
 function ExclusiveIcons({
   packId,
   ctx,
@@ -47,7 +47,11 @@ function ExclusiveIcons({
   justify: 'center' | 'start';
   testId: string;
 }) {
-  const exclusives = exclusivesOf(packId);
+  // What the route collects first: 18 packs carry more than `MAX_ICONS` exclusives, and a goal past
+  // the fifth by id hid behind 「+n」 with its ring, so the card no longer said the pack held it.
+  const exclusives = [...exclusivesOf(packId)].sort(
+    (a, b) => Number(ctx.needed.has(b)) - Number(ctx.needed.has(a)) || a - b,
+  );
   const shown = exclusives.slice(0, MAX_ICONS);
   const more = exclusives.length - shown.length;
   return (

@@ -21,9 +21,10 @@ import { captureLayoutSchema, type DiagRecord } from '../../../core/schema.ts';
 import type { RunState } from '../../lib/plan-input.ts';
 import { downloadBlob } from '../../lib/download.ts';
 import { usePlan } from '../../shell/plan-context.ts';
-import { runDoneFloor, runInProgress, useApp } from '../../store.ts';
+import { useApp } from '../../store.ts';
 import type { CaptureHooks } from '../useCapture.ts';
 import { DiagRecorder, type DiagStats } from './recorder.ts';
+import { FRESH_RUN, runStep, type RunMemory } from './run-records.ts';
 import { openDiagStore } from './store.ts';
 
 const EMPTY: DiagStats = {
@@ -117,18 +118,22 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
 
   useEffect(() => {
     if (!recorder) return undefined;
-    return useApp.subscribe((state, prev) => {
-      if (state.run === prev.run || !recorder.recording) return;
+    // Floors written and whether the run is done, for this recorder's lifetime (`run-records.ts`).
+    let memory: RunMemory = FRESH_RUN;
+    return useApp.subscribe((state, prevState) => {
+      if (state.run === prevState.run || !recorder.recording) return;
       const { plan: p, shown: s, expectedIn: expected, capture: c } = latest.current;
-      const before = prev.run;
+      const before = prevState.run;
       const after = state.run;
       // Hand-made changes. The reader's own go through `applying`.
       if (!c.applying()?.current) {
         const diff = runDiff(before, after);
         if (diff) recorder.onManual({ ...diff, capturing: c.status() === 'running' });
       }
-      // Floors left behind, with what the route on show offered for them.
-      for (let floor = before.currentFloor; floor < after.currentFloor; floor += 1) {
+      const step = runStep(before, after, state.lastFloor, memory);
+      memory = step.memory;
+      // Floors the stage left behind, with what the route on show offered for them.
+      for (const floor of step.floors) {
         const fp = s?.floors.find((f) => f.floor === floor);
         const entered = after.visits[floor] ?? null;
         recorder.onFloor({
@@ -147,17 +152,15 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
           startGifts: floor === 1 ? after.startGifts : [],
         });
       }
-      // A run over (the last floor left) or thrown away for a new one.
-      const done =
-        after.currentFloor >= runDoneFloor(state.lastFloor) && before.currentFloor < after.currentFloor;
-      const reset = runInProgress(before) && !runInProgress(after);
-      if (done || reset) {
-        const run = done ? after : before;
+      // A run over (the last floor left) or thrown away for a new one. A reset clears the goals
+      // and the deck in the same update (`resetAll`), so a thrown-away run is told from before it.
+      if (step.done || step.reset) {
+        const [run, goalsOf] = step.done ? [after, state] : [before, prevState];
         recorder.onRun({
-          ended: done ? 'done' : 'reset',
-          goals: state.wanted.map((giftId) => ({ giftId, status: run.giftStatus[giftId] ?? null })),
-          fusionGoal: Object.fromEntries(Object.entries(state.fusionGoal).map(([k, v]) => [k, String(v)])),
-          deck: state.deck,
+          ended: step.done ? 'done' : 'reset',
+          goals: goalsOf.wanted.map((giftId) => ({ giftId, status: run.giftStatus[giftId] ?? null })),
+          fusionGoal: Object.fromEntries(Object.entries(goalsOf.fusionGoal).map(([k, v]) => [k, String(v)])),
+          deck: goalsOf.deck,
           unresolved: (p?.unresolved ?? []).map((u) => ({ giftId: u.giftId, reason: u.reason })),
           warnings: (p?.warnings ?? []).map((w) => w.code),
         });
@@ -172,7 +175,10 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
   }, [recorder]);
   const hooks = useMemo<CaptureHooks>(
     () => ({
-      onRead: (report, image) => recorderRef.current?.onRead(report, image),
+      onRead: (report, frame) => {
+        if (recorderRef.current) recorderRef.current.onRead(report, frame);
+        else frame?.close();
+      },
       wantImage: () => recorderRef.current?.images ?? false,
       onApplied: (logId, event, actions, fromRead) =>
         recorderRef.current?.onApplied(logId, event, actions, fromRead),
@@ -192,13 +198,16 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
     [],
   );
 
-  /** Zip everything stored and hand it to the browser as a download. */
-  const exportZip = useCallback(async (): Promise<string | null> => {
-    if (!recorder) return null;
+  /**
+   * Zip everything stored and hand it to the browser as a download. The export is marked only
+   * after the zip was built and handed over (M116); any failure throws and marks nothing.
+   */
+  const exportZip = useCallback(async (): Promise<string> => {
+    if (!recorder) throw new Error('diagnostics are not open');
     const layoutReference = await fetch(`${import.meta.env.BASE_URL}data/capture-layout.json`)
       .then(async (r) => captureLayoutSchema.parse(await r.json()).reference)
       .catch(() => null);
-    const { bundle, frames, name } = await recorder.exportBundle({
+    const { bundle, frames, name, mark } = await recorder.exportBundle({
       dataVersion: latest.current.data.meta.dataVersion,
       season: latest.current.data.meta.dungeon.id,
       layoutReference,
@@ -211,21 +220,20 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
       // JPEGs are compressed already; storing them saves the time a second pass would waste.
       files[`frames/${frame.id}.jpg`] = [new Uint8Array(await frame.blob.arrayBuffer()), { level: 0 }];
     downloadBlob(new Blob([zipSync(files) as Uint8Array<ArrayBuffer>], { type: 'application/zip' }), name);
+    await recorder.markExported(mark);
     return name;
   }, [recorder]);
 
-  return {
-    enabled,
-    ready: recorder !== null,
-    stats,
-    hooks,
-    exportZip,
-    clearExported: useCallback(
-      async () => (recorder ? recorder.clearExported() : { records: 0, frames: 0 }),
-      [recorder],
-    ),
-    clearAll: useCallback(async () => recorder?.clearAll(), [recorder]),
-  };
+  const clearExported = useCallback(
+    async () => (recorder ? recorder.clearExported() : { records: 0, frames: 0 }),
+    [recorder],
+  );
+  const clearAll = useCallback(async () => recorder?.clearAll(), [recorder]);
+  // One object while nothing in it changes, so the provider's value holds still (M116).
+  return useMemo(
+    () => ({ enabled, ready: recorder !== null, stats, hooks, exportZip, clearExported, clearAll }),
+    [enabled, recorder, stats, hooks, exportZip, clearExported, clearAll],
+  );
 }
 
 export type DiagnosticsApi = ReturnType<typeof useDiagnostics>;

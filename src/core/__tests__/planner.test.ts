@@ -649,10 +649,10 @@ describe('shared ingredients', () => {
     expect(floorOf(result, 9713)).toHaveLength(1);
   });
 
-  it('never revisits a pinned pack for the second copy: that copy is ingredient-shared, or observed', () => {
-    // With 육참골단 (1104) given up, its 복각 (1116) is the only source of 녹슨 칼자루 — and it is pinned
-    // on floor 7. The search used to place 1116 on floor 4 a second time for the second copy.
-    const pinned = hard15({ pinnedPacks: { 7: 1116 }, bannedPacks: [1104] });
+  it('never revisits an entered pack for the second copy: that copy is ingredient-shared', () => {
+    // With 육참골단 (1104) given up, its 복각 (1116) is the only source of 녹슨 칼자루 — and it was
+    // entered on floor 7. The search used to place 1116 a second time for the second copy.
+    const pinned = hard15({ currentFloor: 8, pinnedPacks: { 7: 1116 }, bannedPacks: [1104] });
     const result = planWithout({ wanted: want(9717, 9718), options: pinned });
     expect(result.floors.filter((f) => f.packId === 1116).map((f) => f.floor)).toEqual([7]);
     expect(result.floors.find((f) => f.floor === 7)).toMatchObject({ reason: 'pinned' });
@@ -662,14 +662,9 @@ describe('shared ingredients', () => {
     );
     expect(result.unresolved.find((u) => u.giftId === 9713)?.reason).toBe('ingredient-shared');
     expect(result.unresolved.filter((u) => u.reason === 'fusion-ingredient-unresolved')).toHaveLength(1);
-    expect(result.stats).toMatchObject({ requiredPacks: 1, coveredWanted: 1 });
+    // The entered pack is the run's history, not a pack the plan still has to take.
+    expect(result.stats).toMatchObject({ requiredPacks: 0, coveredWanted: 1 });
     expect(result.warnings.map((w) => w.code)).not.toContain('shared-ingredient');
-
-    // With observation on, the second copy is observed instead and both fusions live.
-    const observed = plan({ wanted: want(9717, 9718), options: pinned });
-    expect(observed.start.observed.map((o) => o.giftId)).toContain(9713);
-    expect(observed.floors.filter((f) => f.packId === 1116).map((f) => f.floor)).toEqual([7]);
-    expect(observed.stats.coveredWanted).toBe(2);
   });
 });
 
@@ -698,15 +693,26 @@ describe('observation cost', () => {
 });
 
 describe('pins and bans', () => {
-  it('keeps a pinned pack and charges no observation for it', () => {
+  it('keeps the pack entered on a played floor and charges no observation for it', () => {
     const result = plan({
       wanted: want(9283),
-      options: options({ hardFromFloor: 1, pinnedPacks: { 5: 1025 } }),
+      options: options({ hardFromFloor: 1, currentFloor: 6, pinnedPacks: { 5: 1025 } }),
     });
     const floor5 = result.floors.find((f) => f.floor === 5)!;
-    expect(floor5.packId).toBe(1025);
-    expect(floor5.reason).toBe('pinned');
+    expect(floor5).toMatchObject({ packId: 1025, reason: 'pinned', passed: true });
     expect(floor5.observation.needed).toBe(false);
+  });
+
+  it('forces no pack onto a floor still ahead: the goals decide the route (M118)', () => {
+    // 1012 is one of the packs that offer 깨진 안경 (9423); a pin used to put it on floor 5.
+    const free = planWithout({ wanted: want(9423), options: options({ hardFromFloor: 1 }) });
+    const pinned = planWithout({
+      wanted: want(9423),
+      options: options({ hardFromFloor: 1, pinnedPacks: { 5: 1012, 2: 1402 } }),
+    });
+    expect(pinned.floors).toEqual(free.floors);
+    expect(pinned.floors.some((f) => f.reason === 'pinned')).toBe(false);
+    expect(pinned.warnings.find((w) => w.code === 'pack-option-dropped')?.packIds).toEqual([1402, 1012]);
   });
 
   it('never uses a banned pack', () => {
@@ -880,16 +886,6 @@ describe('floor windows', () => {
     expect(railway.window).toEqual({ from: 5, to: 10 });
   });
 
-  it('collapses the window to the pinned floor', () => {
-    const result = planWithout({
-      wanted: want(9423),
-      options: options({ hardFromFloor: 1, pinnedPacks: { 5: 1012 } }),
-    });
-    const used = result.floors.find((f) => f.packId === 1012)!;
-    expect(used.reason).toBe('pinned');
-    expect(used.window).toEqual({ from: 5, to: 5 });
-  });
-
   it('clamps lastFloor into 1-15', () => {
     const result = planWithout({ wanted: want(9283), options: options({ lastFloor: 99 }) });
     expect(result.floors.at(-1)!.floor).toBe(15);
@@ -933,15 +929,6 @@ describe('gift observation', () => {
     expect(result.start.observed.map((o) => o.giftId)).toEqual([9423, 9427]);
     expect(result.start.observed.map((o) => o.freedPack)).toEqual([1012, 1014]);
     expect(result.stats.requiredPacks).toBe(0);
-  });
-
-  it('never frees a pinned floor', () => {
-    const result = plan({
-      wanted: want(9423),
-      options: options({ hardFromFloor: 1, pinnedPacks: { 4: 1012 } }),
-    });
-    expect(result.start.observed).toEqual([]);
-    expect(result.floors.find((f) => f.floor === 4)!.packId).toBe(1012);
   });
 
   it('rescues first and leaves a conflict it cannot afford', () => {
@@ -1234,7 +1221,8 @@ describe('drop effects (M80)', () => {
       steps.step();
       count += 1;
       const partial = steps.snapshot().effects;
-      expect(partial).toHaveLength(count);
+      // The first steps are the forced plans (M115, one per lost goal); a bar per step follows.
+      expect(partial).toHaveLength(Math.max(0, count - 2));
       expect(partial.map((e) => e.reduces)).toEqual([...partial.map((e) => e.reduces)].sort((x, y) => y - x));
     }
     const final = steps.finish();
@@ -1254,13 +1242,117 @@ describe('drop effects (M80)', () => {
         data,
         indexes,
       ),
-    ).toEqual({ conflicts: 0, effects: [], resolving: null });
+    ).toEqual({ conflicts: 0, effects: [], resolving: null, tradeoffs: [], skipped: 0 });
     const input = {
       deck: BLADE_LINEAGE_DECK,
       wanted: want(9250, 9251, 9252, 9253, 9254, 9255),
       options: options({ lastFloor: 15 }),
     };
-    expect(planDropEffects(input, data, indexes, undefined, { maxRuns: 3 }).effects).toHaveLength(3);
+    const capped = planDropEffects(input, data, indexes, undefined, { maxRuns: 3 });
+    expect(capped.effects).toHaveLength(3);
+    // What the cap left out is said, not hidden (M115).
+    expect(capped.skipped).toBeGreaterThan(0);
+  });
+});
+
+describe('drop causes (M115)', () => {
+  it('names the goal a lost goal fights, puts it first and marks why each goal is a candidate', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9283, 9222, 9423),
+      options: options({ hardFromFloor: 1 }),
+    };
+    const analysis = planDropEffects(input, noObservation, indexes);
+    expect(analysis.tradeoffs).toEqual([{ lost: 9283, causes: [9222], rivals: [9222] }]);
+    const roles = Object.fromEntries(analysis.effects.map((e) => [e.giftId, e.role]));
+    // 9423 was picked last: the likeliest cause, measured right after the two sides.
+    expect(roles).toEqual({ 9222: 'cause', 9283: 'lost', 9423: 'recent' });
+  });
+
+  it('finds a cause for each lost goal, and every rival the bars show keeps it', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9277, 9744, 9751, 9766, 9842),
+      options: options({ hardFromFloor: 1 }),
+    };
+    const analysis = planDropEffects(input, noObservation, indexes);
+    // The forced plan for 9842 gives up 9766; leaving 9744 out alone keeps 9842 too.
+    expect(analysis.tradeoffs).toEqual([
+      { lost: 9751, causes: [9277], rivals: [9277] },
+      { lost: 9842, causes: [9766], rivals: [9744, 9766] },
+    ]);
+  });
+
+  it('counts a fusion starved of its shared ingredient as one conflict, with the other fusion its cause', () => {
+    // 절경 (9783) and 탁마 (9784) both eat 낡은 칼자루 (9782), which only one pack drops.
+    const input = {
+      deck: MIXED_DECK,
+      wanted: want(9783, 9784),
+      options: options({ lastFloor: 15, hardFromFloor: 1 }),
+    };
+    const main = planRoute(input, noObservation, indexes);
+    expect(main.unresolved.find((u) => u.giftId === 9782)?.reason).toBe('ingredient-shared');
+    expect(conflictRootsOf(main, input, noObservation, indexes)).toEqual([9784]);
+    const analysis = planDropEffects(input, noObservation, indexes, main);
+    expect(analysis.conflicts).toBe(1);
+    expect(analysis.tradeoffs).toEqual([{ lost: 9784, causes: [9783], rivals: [9783] }]);
+    expect(analysis.resolving?.dropped).toHaveLength(1);
+  });
+
+  it('measures the goal holding the start gift, which no forced plan can name', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9150, 9758, 9178, 9440, 9245),
+      options: options({ hardFromFloor: 1, lastFloor: 5 }),
+    };
+    const main = planRoute(input, noObservation, indexes);
+    expect(main.start.startGift).toBe(9150);
+    const analysis = planDropEffects(input, noObservation, indexes, main);
+    expect(analysis.effects.find((e) => e.giftId === 9150)?.role).toBe('start');
+  });
+
+  it('says which goals share the pack when leaving one out alone frees nothing', () => {
+    const deck = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916, 11009, 11115, 11216];
+    const input = {
+      deck,
+      wanted: [9403, 9413, 9431, 9407, 9701, 9415, 9428, 9221, 9220, 9433].map((giftId) => ({
+        giftId,
+        required: false,
+      })),
+      options: options({ lastFloor: 15, hardFromFloor: 1, deployed: deck.slice(0, 7) }),
+    };
+    const analysis = planDropEffects(input, data, indexes);
+    const byId = new Map(analysis.effects.map((e) => [e.giftId, e]));
+    expect(byId.get(9220)?.sharesPackWith).toContain(9221);
+    expect(byId.get(9221)?.sharesPackWith).toContain(9220);
+    expect(analysis.effects.filter((e) => e.reduces > 0).every((e) => e.sharesPackWith === undefined)).toBe(
+      true,
+    );
+  });
+
+  it('measures the rest on demand once the cap stopped it', () => {
+    const input = {
+      deck: BLADE_LINEAGE_DECK,
+      wanted: want(9250, 9251, 9252, 9253, 9254, 9255),
+      options: options({ lastFloor: 15 }),
+    };
+    const steps = createDropEffects(input, data, indexes, undefined, { maxRuns: 2 });
+    while (!steps.done()) steps.step();
+    const first = steps.finish();
+    expect(first.effects).toHaveLength(2);
+    expect(first.skipped).toBeGreaterThan(0);
+    steps.extend();
+    expect(steps.done()).toBe(false);
+    while (!steps.done()) steps.step();
+    const all = steps.finish();
+    expect(all).not.toBe(first);
+    expect(all.effects).toHaveLength(2 + first.skipped);
+    expect(all.skipped).toBe(0);
+    expect(all.effects.map((e) => e.giftId).sort()).toEqual(
+      planDropEffects(input, data, indexes, undefined, { maxRuns: Infinity })
+        .effects.map((e) => e.giftId)
+        .sort(),
+    );
   });
 });
 
@@ -1636,10 +1728,15 @@ describe('pack choices', () => {
     expect(result.warnings.map((w) => w.code)).not.toContain('pack-option-dropped');
   });
 
-  it('validates a pin against the Hard plan it is about to force, not the Normal one it was given', () => {
-    // 변하지 않는 (1012) is Hard-only on 4-5; a 15-floor plan is Hard from floor 1 anyway. The pin
+  it('validates an entry against the Hard plan it is about to force, not the Normal one it was given', () => {
+    // 변하지 않는 (1012) is Hard-only on 4-5; a 15-floor plan is Hard from floor 1 anyway. The entry
     // used to be checked before the switch, dropped with a warning, and then placed there regardless.
-    const pinnedOnNormal = options({ hardFromFloor: null, lastFloor: 15, pinnedPacks: { 4: 1012 } });
+    const pinnedOnNormal = options({
+      hardFromFloor: null,
+      lastFloor: 15,
+      currentFloor: 5,
+      pinnedPacks: { 4: 1012 },
+    });
     const result = planWithout({ wanted: want(9423), options: pinnedOnNormal });
     expect(result.warnings.map((w) => w.code)).toContain('parallel-requires-hard');
     expect(result.warnings.map((w) => w.code)).not.toContain('pack-option-dropped');
@@ -1648,8 +1745,6 @@ describe('pack choices', () => {
       reason: 'pinned',
       pickups: [{ giftId: 9423, kind: 'exclusive', neededFor: null }],
     });
-    // A pinned floor is never freed by observation either.
-    expect(plan({ wanted: want(9423), options: pinnedOnNormal }).start.observed).toEqual([]);
   });
 
   it('reports pack-banned when every pack that supplies a gift was given up', () => {
@@ -1829,20 +1924,6 @@ describe('run progress', () => {
     expect(plan.stats.coveredWanted).toBe(1);
   });
 
-  it('takes a missed gift for free from a pack pinned on a floor still ahead', () => {
-    const plan = plush({
-      currentFloor: 4,
-      pinnedPacks: { 3: 1103, 5: 1113 },
-      ownedGifts: [9710, 9711],
-      unobtainableGifts: [9709],
-    });
-    expect(plan.floors.find((f) => f.floor === 5)).toMatchObject({ packId: 1113, reason: 'pinned' });
-    expect(plan.floors.find((f) => f.floor === 5)!.pickups.map((p) => p.giftId)).toEqual([9709]);
-    expect(plan.unresolved).toEqual([]);
-    expect(plan.floors.filter((f) => f.packId !== null).map((f) => f.packId)).toEqual([1103, 1113]);
-    expect(plan.fusions[0]).toMatchObject({ unreachable: false, earliestFloor: 5 });
-  });
-
   it('reports a missed gift as out of range when no floor ahead offers another supplier', () => {
     const plan = plush({
       currentFloor: 11,
@@ -1971,6 +2052,37 @@ describe('run progress', () => {
     expect(plan.stats).toMatchObject({ requiredPacks: 1, coveredWanted: 2 });
   });
 
+  it('plans no floor once the run is over, and shows the last floor as played', () => {
+    // Arrange: the app's finished run stands one past the last floor (`runDoneFloor`), floor 15
+    // either skipped or entered.
+    const finished = (pinnedPacks: Record<number, number>) =>
+      planRoute(
+        {
+          deck: MIXED_DECK,
+          wanted: [{ giftId: 9250, required: false }],
+          options: options({ lastFloor: 15, hardFromFloor: 1, currentFloor: 16, pinnedPacks }),
+        },
+        data,
+        indexes,
+      );
+
+    // Act
+    const skipped = finished({});
+    const entered = finished({ 15: 1511 });
+
+    // Assert: nothing is left to enter, so the clear reward is not counted as collected.
+    expect(skipped.floors.every((f) => f.passed)).toBe(true);
+    expect(skipped.floors.find((f) => f.floor === 15)!.packId).toBeNull();
+    expect(skipped.stats).toMatchObject({ requiredPacks: 0, coveredWanted: 0 });
+    expect(skipped.unresolved.map((u) => u.giftId)).toEqual([9250]);
+    expect(entered.floors.find((f) => f.floor === 15)).toMatchObject({
+      packId: 1511,
+      reason: 'pinned',
+      passed: true,
+    });
+    expect(entered.stats.coveredWanted).toBe(1);
+  });
+
   it('counts an owned gift as covered and never plans for it, and lets in-hand win over missed', () => {
     const plan = planWithout({
       wanted: [{ giftId: 9754, required: true }],
@@ -1981,9 +2093,10 @@ describe('run progress', () => {
     expect(plan.stats.coveredWanted).toBe(1);
   });
 
-  it('clamps the current floor into the plan', () => {
+  it('clamps the current floor to one past the plan, a finished run', () => {
     const plan = violin({ currentFloor: 99 });
-    expect(plan.floors.filter((f) => !f.passed).map((f) => f.floor)).toEqual([15]);
+    expect(plan.floors).toHaveLength(15);
+    expect(plan.floors.filter((f) => !f.passed).map((f) => f.floor)).toEqual([]);
   });
 });
 

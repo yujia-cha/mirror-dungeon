@@ -18,7 +18,7 @@
  * only gifts the run owns can be ingredients — which is what keeps a near miss from winning.
  */
 import type { MatchResult } from './match-name.ts';
-import { cropRgba, type Region } from './preprocess.ts';
+import { cropRgba, type PixelRect, type Region } from './preprocess.ts';
 
 /** Side of the square both images are reduced to before comparing. */
 export const ICON_SIZE = 24;
@@ -129,6 +129,7 @@ export function prepareSlot(
   width: number,
   height: number,
   region: Region,
+  view?: PixelRect,
 ): Float32Array[] {
   const [rx, ry, rw, rh] = region;
   return PLACEMENTS.map(([size, dx, dy]) => {
@@ -138,7 +139,7 @@ export function prepareSlot(
       rw * size,
       rh * size,
     ];
-    const crop = cropRgba(rgba, width, height, inner);
+    const crop = cropRgba(rgba, width, height, inner, view);
     const small = resizeRgba(crop.data, crop.width, crop.height, ICON_SIZE);
     const rgb = new Float32Array(ICON_SIZE * ICON_SIZE * 3);
     for (let p = 0; p < ICON_SIZE * ICON_SIZE; p++) {

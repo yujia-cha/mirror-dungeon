@@ -15,3 +15,6 @@ playwright-report/
 
 # game screenshots for the screen-capture spike — Project Moon's images, never committed
 local-fixtures/
+
+# agent worktrees (Claude Code isolation) — local only
+.claude/worktrees/

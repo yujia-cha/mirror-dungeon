@@ -137,7 +137,6 @@ interface AppState extends SharedState {
     recipes: ReadonlyMap<number, readonly number[]>;
   }) => {
     gifts: number;
-    packs: number;
   };
   applyShared: (shared: SharedState) => void;
 }
@@ -190,13 +189,9 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   // screen to say so or to undo it. They are dropped without a word.
   out.bannedPacks = [];
   out.preferredPacks = [];
-  const pins: Record<number, number> = {};
-  if (out.pinnedPacks && typeof out.pinnedPacks === 'object') {
-    for (const [floor, packId] of Object.entries(out.pinnedPacks as Record<string, unknown>)) {
-      if (Number.isInteger(Number(floor)) && typeof packId === 'number') pins[Number(floor)] = packId;
-    }
-  }
-  out.pinnedPacks = pins;
+  // No pinning a pack either (M118): the goals decide the route. The packs entered so far live in
+  // the run (`run.visits`), never in saved or shared options; an old link's pins go quietly.
+  out.pinnedPacks = {};
   out.lastFloor = MAX_FLOOR_EVER;
   out.hardFromFloor = 1;
   // Run progress lives in the `run` slice, never in shared or saved options.
@@ -506,8 +501,12 @@ export function sanitizePersisted(persisted: unknown, version: number): Persiste
   }
   // An id list is the one shape a share link and a hand-edited blob both get wrong, so the
   // elements are filtered too — `deck: "abc"` used to survive as a string and break every reader.
+  // Each id once, too: a goal named twice was counted twice by the planner (「획득 1/2」 for one
+  // gift) and drawn as two tiles under one React key.
   const ids = (raw: unknown): number[] =>
-    Array.isArray(raw) ? raw.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : [];
+    Array.isArray(raw)
+      ? [...new Set(raw.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)))]
+      : [];
   // One identity per sinner and at most twelve, as `setDeck` enforces: a blob with two of one
   // sinner made the deck builder show one and the planner count both.
   const deck = uniqueDeck(ids(state.deck));
@@ -808,13 +807,7 @@ export const useApp = create<AppState>()(
         const observed = (state.options.observedGifts ?? []).filter(
           (id) => giftIds.has(id) && collected.has(id),
         );
-        const pinnedPacks = Object.fromEntries(
-          Object.entries(state.options.pinnedPacks).filter(
-            ([floor, packId]) => packIds.has(packId) && Number(floor) <= lastFloor,
-          ),
-        );
         const droppedGifts = state.wanted.length - wanted.length;
-        const droppedPacks = Object.keys(state.options.pinnedPacks).length - Object.keys(pinnedPacks).length;
         // A run recorded on a longer season cannot be replayed on a shorter one; one that still
         // fits keeps only the packs and gifts this season can draw, so no nameless row survives.
         // The done floor is one past the last (that is where the done card lives), so a finished
@@ -848,28 +841,29 @@ export const useApp = create<AppState>()(
             observedGifts: observed,
             preferredPacks: [],
             bannedPacks: [],
-            pinnedPacks,
+            pinnedPacks: {},
           },
         });
-        return { gifts: droppedGifts, packs: droppedPacks };
+        return { gifts: droppedGifts };
       },
 
       // A link is someone's plan, not this device's run: the run record starts over with it.
       applyShared: (shared) => {
         const deck = uniqueDeck(shared.deck);
+        const wanted = [...new Set(shared.wanted)];
         set({
           ...(shared.season === undefined ? {} : { season: shared.season }),
           deck,
-          deployed: shared.deployed.filter((id) => deck.includes(id)),
-          wanted: shared.wanted,
-          fusionGoal: sanitizeFusionGoal(shared.fusionGoal, shared.wanted),
+          deployed: [...new Set(shared.deployed)].filter((id) => deck.includes(id)),
+          wanted,
+          fusionGoal: sanitizeFusionGoal(shared.fusionGoal, wanted),
           // Pins follow the same rule priorities and fusion goals do: only a goal can be observed.
           // A link that carried a pin for something else used to spend observation budget on it and
           // then drop it without a word the next time any gift was toggled.
           options: withObservedIn(
             sanitizeOptions(shared.options),
-            shared.wanted,
-            sanitizeFusionGoal(shared.fusionGoal, shared.wanted),
+            wanted,
+            sanitizeFusionGoal(shared.fusionGoal, wanted),
           ),
           run: emptyRun(),
         });
@@ -941,9 +935,9 @@ export function decodeShared(hash: string): SharedState | null {
     const deck = uniqueDeck(parsed.deck.filter((n): n is number => typeof n === 'number'));
     // v1 links carried no deployed list: the first six fought.
     const deployed = Array.isArray(parsed.deployed)
-      ? parsed.deployed.filter((n): n is number => typeof n === 'number' && deck.includes(n))
+      ? [...new Set(parsed.deployed.filter((n): n is number => typeof n === 'number' && deck.includes(n)))]
       : deck.slice(0, LEGACY_DEPLOYED);
-    const wanted = parsed.wanted.filter((n): n is number => typeof n === 'number');
+    const wanted = [...new Set(parsed.wanted.filter((n): n is number => typeof n === 'number'))];
     return {
       ...(season === undefined ? {} : { season }),
       deck,

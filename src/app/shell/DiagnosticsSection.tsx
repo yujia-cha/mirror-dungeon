@@ -6,6 +6,9 @@
  * The browser cannot say whether the download was saved, so clearing is the player's step right
  * after the export, never automatic; until then the section says how much exported data is still
  * here. Where the zip goes is said on the section itself, not left to memory.
+ *
+ * One thing at a time (M116): while an export or a clearing runs, the other buttons wait — they
+ * work on the same records. An export that fails says so and offers nothing to clear.
  */
 import { useState } from 'react';
 import { Download, Trash2 } from 'lucide-react';
@@ -26,7 +29,9 @@ export function DiagnosticsSection() {
   const recordOn = useApp((s) => s.ui.diagRecord);
   const imagesOn = useApp((s) => s.ui.diagImages);
   const setUi = useApp((s) => s.setUi);
-  const [exporting, setExporting] = useState(false);
+  /** What is running: the buttons that touch the stored records wait for it. */
+  const [busy, setBusy] = useState<'export' | 'clear' | null>(null);
+  const [failed, setFailed] = useState(false);
   /** The file just exported: the clean-up step shows until the player answers it. */
   const [justExported, setJustExported] = useState<string | null>(null);
   const [cleared, setCleared] = useState<{ records: number; frames: number } | null>(null);
@@ -35,18 +40,30 @@ export function DiagnosticsSection() {
   if (!diagnostics.enabled) return null;
 
   const onExport = async (): Promise<void> => {
-    setExporting(true);
+    setBusy('export');
     setCleared(null);
+    setFailed(false);
     try {
       setJustExported(await diagnostics.exportZip());
+    } catch {
+      setFailed(true);
     } finally {
-      setExporting(false);
+      setBusy(null);
     }
   };
-  const onClearExported = async (): Promise<void> => {
-    setCleared(await diagnostics.clearExported());
-    setJustExported(null);
+  const clearing = async (work: () => Promise<void>): Promise<void> => {
+    setBusy('clear');
+    try {
+      await work();
+    } finally {
+      setBusy(null);
+    }
   };
+  const onClearExported = (): Promise<void> =>
+    clearing(async () => {
+      setCleared(await diagnostics.clearExported());
+      setJustExported(null);
+    });
   const time = (ms: number) =>
     new Date(ms).toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-GB', {
       dateStyle: 'short',
@@ -116,6 +133,8 @@ export function DiagnosticsSection() {
             <Button
               size="sm"
               variant="primary"
+              loading={busy === 'clear'}
+              disabled={busy !== null}
               onClick={() => void onClearExported()}
               testId="diag-clear-exported"
             >
@@ -130,10 +149,21 @@ export function DiagnosticsSection() {
       ) : stats.exportedRecords > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-caption text-fg">{t('diagExportedLeft', lang, { n: stats.exportedRecords })}</p>
-          <Button size="sm" onClick={() => void onClearExported()} testId="diag-clear-exported">
+          <Button
+            size="sm"
+            loading={busy === 'clear'}
+            disabled={busy !== null}
+            onClick={() => void onClearExported()}
+            testId="diag-clear-exported"
+          >
             {t('diagClearExported', lang)}
           </Button>
         </div>
+      ) : null}
+      {failed ? (
+        <p className="text-caption text-danger" role="alert" data-testid="diag-export-failed">
+          ⚠ {t('diagExportFailed', lang)}
+        </p>
       ) : null}
       {cleared ? (
         <p className="text-caption text-fg-muted" role="status">
@@ -145,8 +175,8 @@ export function DiagnosticsSection() {
         <Button
           variant="primary"
           size="sm"
-          loading={exporting}
-          disabled={!diagnostics.ready || (stats.records === 0 && stats.frames === 0)}
+          loading={busy === 'export'}
+          disabled={busy !== null || !diagnostics.ready || (stats.records === 0 && stats.frames === 0)}
           onClick={() => void onExport()}
           testId="diag-export"
         >
@@ -156,8 +186,9 @@ export function DiagnosticsSection() {
         <Button
           variant="ghost"
           size="sm"
-          disabled={stats.records === 0 && stats.frames === 0}
+          disabled={busy !== null || (stats.records === 0 && stats.frames === 0)}
           onClick={() => setConfirmAll(true)}
+          testId="diag-clear-all"
         >
           {t('diagClearAll', lang)}
         </Button>
@@ -173,9 +204,12 @@ export function DiagnosticsSection() {
           onConfirm={() => {
             setConfirmAll(false);
             setJustExported(null);
-            void diagnostics
-              .clearAll()
-              .then(() => setCleared({ records: stats.records, frames: stats.frames }));
+            setFailed(false);
+            const counts = { records: stats.records, frames: stats.frames };
+            void clearing(async () => {
+              await diagnostics.clearAll();
+              setCleared(counts);
+            });
           }}
           onCancel={() => setConfirmAll(false)}
           lang={lang}

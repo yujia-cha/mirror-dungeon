@@ -135,6 +135,65 @@ function joinLines(first: string, second: string): string {
  */
 const SIDE_BY_SIDE = /\s{3,}/;
 
+/** A candidate's name, normalized once (M116). */
+interface PreparedName {
+  id: number;
+  codes: Int32Array;
+}
+
+/**
+ * Candidates normalized once per list: the caller hands the same array on every read of a session
+ * (the season's names in one language), so the hundreds of names are not decomposed again for
+ * every piece of every read.
+ */
+const preparedNames = new WeakMap<readonly NameCandidate[], PreparedName[]>();
+
+function prepared(candidates: readonly NameCandidate[]): PreparedName[] {
+  let names = preparedNames.get(candidates);
+  if (!names) {
+    names = candidates.map((c) => ({ id: c.id, codes: codePoints(normalizeName(c.name)) }));
+    preparedNames.set(candidates, names);
+  }
+  return names;
+}
+
+function codePoints(text: string): Int32Array {
+  return Int32Array.from(text, (ch) => ch.codePointAt(0)!);
+}
+
+/**
+ * `editDistance` over code points, or null as soon as it must exceed `within`: every row's
+ * smallest value is a floor for the result. Exactly `editDistance` whenever it answers.
+ */
+let rowA = new Int32Array(64);
+let rowB = new Int32Array(64);
+
+function boundedDistance(x: Int32Array, y: Int32Array, within: number): number | null {
+  if (within < 0) return null;
+  // Two rows reused across calls: this runs for every pair on every read.
+  if (rowA.length <= y.length) {
+    rowA = new Int32Array(y.length * 2 + 1);
+    rowB = new Int32Array(y.length * 2 + 1);
+  }
+  let prev = rowA;
+  let row = rowB;
+  for (let j = 0; j <= y.length; j++) prev[j] = j;
+  for (let i = 1; i <= x.length; i++) {
+    row[0] = i;
+    let least = i;
+    for (let j = 1; j <= y.length; j++) {
+      const cost = x[i - 1] === y[j - 1] ? 0 : 1;
+      const value = Math.min(prev[j]! + 1, row[j - 1]! + 1, prev[j - 1]! + cost);
+      row[j] = value;
+      if (value < least) least = value;
+    }
+    if (least > within) return null;
+    [prev, row] = [row, prev];
+  }
+  const distance = prev[y.length]!;
+  return distance > within ? null : distance;
+}
+
 /**
  * The closest candidate to any of the OCR'd `lines`. Each line — each side-by-side piece of a line,
  * and each name a known sentence wraps (`namePieces`) — is tried on its own because a crop often
@@ -149,12 +208,28 @@ export function matchName(
   thresholds: MatchThresholds = DEFAULT_THRESHOLDS,
 ): MatchResult {
   const best = new Map<number, number>();
-  const pieces = namePieces(lines);
-  for (const line of pieces) {
-    if (normalizeName(line) === '') continue;
-    for (const c of candidates) {
-      const score = similarity(line, c.name);
-      if (score > (best.get(c.id) ?? 0)) best.set(c.id, score);
+  const names = prepared(candidates);
+  const seen = new Set<string>();
+  for (const piece of namePieces(lines)) {
+    const text = normalizeName(piece);
+    // The same text twice scores the same twice.
+    if (text === '' || seen.has(text)) continue;
+    seen.add(text);
+    const x = codePoints(text);
+    for (const c of names) {
+      if (c.codes.length === 0) continue;
+      const floor = best.get(c.id) ?? 0;
+      const longest = Math.max(x.length, c.codes.length);
+      // Only a score above this candidate's best counts, and the distance is at least the
+      // difference in length: a pair that cannot get there is not worth its table (M116).
+      if (1 - Math.abs(x.length - c.codes.length) / longest <= floor) continue;
+      // The largest distance that still beats `floor`, settled in the same arithmetic as the score.
+      let within = Math.min(longest, Math.ceil(longest * (1 - floor)));
+      while (within >= 0 && !(1 - within / longest > floor)) within -= 1;
+      const distance = boundedDistance(x, c.codes, within);
+      if (distance === null) continue;
+      const score = 1 - distance / longest;
+      if (score > floor) best.set(c.id, score);
     }
   }
   const ranked = [...best].sort((a, b) => b[1] - a[1] || a[0] - b[0]);

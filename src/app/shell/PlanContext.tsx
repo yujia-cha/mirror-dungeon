@@ -4,7 +4,7 @@
  * context every pack surface takes and the run actions that settle gifts as floors are left.
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { conflictRootsOf, evaluateConditions } from '../../core/index.ts';
+import { conflictRootsOf, evaluateConditions, planRoute } from '../../core/index.ts';
 import type { GameData, Gift, Keyword } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -15,6 +15,7 @@ import { conditionText } from '../condition-text.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
 import { planInputFor } from '../lib/plan-input.ts';
 import { usePlanner } from '../lib/use-planner.ts';
+import { runDrop } from '../lib/planner-protocol.ts';
 import {
   autoFailedFor,
   entryGifts,
@@ -98,6 +99,7 @@ export function PlanProvider({
     analysisPending,
     dropPlan,
     dropPending,
+    analyzeMore,
   } = usePlanner(data, indexes, input, selection);
   const toggleDrop = useCallback(
     (giftId: number) =>
@@ -213,8 +215,29 @@ export function PlanProvider({
           ...(shown.start.startGift ? [shown.start.startGift] : []),
         ]
       : [];
-    // Leaving floor 1 for the first time is when the start-of-run gifts land in hand.
-    const startSettle = run.currentFloor === 1 ? startGifts : [];
+    /**
+     * Leaving floor 1 for the first time is when the start-of-run gifts land in hand. Read at that
+     * moment, never from a plan one toggle behind (M118): while the worker is still answering, the
+     * plan on show is the previous input's, and a pin or a goal changed just before leaving would
+     * record the old observations as 획득. Then the same plan is computed here, once, on the spot.
+     */
+    const startSettle = (): number[] => {
+      if (run.currentFloor !== 1) return [];
+      const stale = planPending || (previewing && dropPending);
+      if (!stale) return startGifts;
+      // The route alone: the drop analysis that `runPlan` adds says nothing about the start.
+      const fresh = previewing
+        ? runDrop(input, selection, data, indexes)
+        : input.wanted.length > 0
+          ? planRoute(input, data, indexes)
+          : null;
+      return fresh
+        ? [
+            ...fresh.start.observed.map((o) => o.giftId),
+            ...(fresh.start.startGift ? [fresh.start.startGift] : []),
+          ]
+        : [];
+    };
     /**
      * What the route expects a pack entered on `floor` to hand over — the plan on show decides, so
      * an alternative route's pickups are what its entries answer for. This is what the entered
@@ -237,22 +260,35 @@ export function PlanProvider({
     const settleFor = (floor: number): { got: number[]; failed: number[] } => {
       const entered = run.visits[floor];
       return {
-        got: startSettle,
+        got: startSettle(),
         failed: entered !== undefined ? autoFailedFor(expectedIn(floor, entered), run.giftStatus) : [],
       };
     };
-    const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: startSettle });
+    const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: startSettle() });
     const next = (): void => nextFloor(settleFor(run.stageFloor));
     /** Show `floor`; walking forward settles every floor left behind on the way. */
     const goTo = (floor: number): void => {
       const from = run.stageFloor;
       if (floor <= from) return setStageFloor(floor);
-      const got = startSettle;
+      const got = startSettle();
       const failed = new Set<number>();
       for (let f = from; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
       return setStageFloor(floor, { got, failed: [...failed] });
     };
-    const leave = (packId: number): void => unvisitPack(packId, { reset: entryGiftsOf(packId) });
+    /*
+     * Undoing an entry clears what it answered for — except a gift another recorded entry hands over
+     * too. 53 gifts are exclusive to several packs (인연 얽힘 to all seven sin packs), so the status
+     * may well be that other entry's doing, and clearing it threw away progress the undo never
+     * touched. The store holds the same line for the start-of-run gifts.
+     */
+    const leave = (packId: number): void => {
+      const elsewhere = new Set(
+        Object.values(run.visits)
+          .filter((id) => id !== packId)
+          .flatMap((id) => exclusivesOf(id)),
+      );
+      unvisitPack(packId, { reset: entryGiftsOf(packId).filter((id) => !elsewhere.has(id)) });
+    };
     /**
      * Record an entry the screen saw on `floor`, wherever the stage stands. The stage cannot step
      * past the frontier, so a later floor is entered first and then shown; the floors walked past
@@ -261,7 +297,7 @@ export function PlanProvider({
     const enterAt = (floor: number, packId: number): void => {
       const failed = new Set<number>();
       for (let f = run.stageFloor; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
-      visitPack(packId, floor, { got: startSettle, failed: [...failed] });
+      visitPack(packId, floor, { got: startSettle(), failed: [...failed] });
       // The store reads its own state, so this sees the frontier the entry just moved.
       if (floor !== run.stageFloor) setStageFloor(floor);
     };
@@ -316,6 +352,7 @@ export function PlanProvider({
       planPending,
       analysis,
       analysisPending,
+      analyzeMore,
       drops: {
         selection,
         toggle: toggleDrop,
@@ -364,6 +401,7 @@ export function PlanProvider({
     planPending,
     analysis,
     analysisPending,
+    analyzeMore,
     selection,
     toggleDrop,
     setDrops,

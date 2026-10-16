@@ -111,7 +111,7 @@ export function App() {
   const [incoming, setIncoming] = useState(readIncoming);
   const [linkBroken, setLinkBroken] = useState(incoming.kind === 'broken');
   const [copyFailed, setCopyFailed] = useState(false);
-  const [dropped, setDropped] = useState<{ gifts: number; packs: number } | null>(null);
+  const [dropped, setDropped] = useState<{ gifts: number } | null>(null);
   // Held decisions: a share link and a season change each throw the run away, so when one is
   // live the choice waits here for the confirmation below.
   const [pendingShared, setPendingShared] = useState<SharedState | null>(
@@ -153,10 +153,13 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [linkBroken]);
 
+  /** Either answer consumes the link: the address no longer carries it. */
+  const clearHash = (): void =>
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   const takeShared = (): void => {
     if (pendingShared) applyShared(pendingShared);
     setPendingShared(null);
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    clearHash();
   };
 
   useEffect(() => {
@@ -230,7 +233,7 @@ export function App() {
           recipes: ingredientTree(nextIndexes, next.rules.fusion.maxShopSlots),
         });
         setLoaded({ season: openSeason, attempt, data: next, indexes: nextIndexes });
-        setDropped(counts.gifts + counts.packs > 0 ? counts : null);
+        setDropped(counts.gifts > 0 ? counts : null);
       })
       .catch((cause: unknown) => {
         if (!cancelled) setFailure({ attempt, error: loadFailure(cause) });
@@ -350,9 +353,13 @@ export function App() {
           message={t('confirmSharedMessage', lang)}
           confirmLabel={t('confirmSharedConfirm', lang)}
           onConfirm={takeShared}
-          // Cancelling leaves the hash in the URL: it is the reader's only copy of the link, and
-          // they may want to open it after finishing the run.
-          onCancel={() => setPendingShared(null)}
+          // Cancelling drops the hash too (M119, owner's call). Left in the address it asked again
+          // on every reload, and pasting the same link later changed nothing, so no `hashchange`
+          // came. The link is still in the message it arrived in; opening it from there asks again.
+          onCancel={() => {
+            setPendingShared(null);
+            clearHash();
+          }}
         />
       ) : pendingSeason !== null ? (
         <ConfirmDialog
@@ -370,14 +377,7 @@ export function App() {
       {sharedCopied ? (
         <Toast>{t('shared', lang)}</Toast>
       ) : dropped ? (
-        <Toast>
-          {[
-            dropped.gifts > 0 ? t('seasonDroppedGifts', lang, { n: dropped.gifts }) : null,
-            dropped.packs > 0 ? t('seasonDroppedPacks', lang, { n: dropped.packs }) : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </Toast>
+        <Toast>{t('seasonDroppedGifts', lang, { n: dropped.gifts })}</Toast>
       ) : null}
       {copyFailed ? <Toast tone="alert">{t('copyFailed', lang)}</Toast> : null}
       {linkBroken ? <Toast tone="alert">{t('linkBroken', lang)}</Toast> : null}

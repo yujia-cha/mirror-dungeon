@@ -201,3 +201,55 @@ describe('matchName with a wrapped name', () => {
     });
   });
 });
+
+describe('matchName, pruned (M116)', () => {
+  /** The scan before M116: every piece against every name, no shortcut. */
+  function plain(lines: string[], candidates: { id: number; name: string }[]) {
+    const best = new Map<number, number>();
+    for (const line of namePieces(lines)) {
+      if (normalizeName(line) === '') continue;
+      for (const c of candidates) {
+        const score = similarity(line, c.name);
+        if (score > (best.get(c.id) ?? 0)) best.set(c.id, score);
+      }
+    }
+    return best;
+  }
+
+  it('answers exactly as the full scan, margins included', () => {
+    // Arrange: names of every length, and reads that are close, far, wrapped or noisy.
+    const names = [
+      '해진 우산',
+      '깨진 안경',
+      '부치지 못한 편지',
+      '생강꽃, 안경 그리고 전해진 편지',
+      '4호선 - 제 3 구간',
+      '4호선 - 제 4 구간',
+      '타입 L',
+      '타입 E',
+      'Broken Glasses',
+      '빛나는 잔영',
+      '잔영',
+    ].map((name, i) => ({ id: i + 1, name }));
+    const reads = [
+      ['해진우산'],
+      ['깨진 안견', '300   코스트'],
+      ['생강꽃, 안경 그리고', '전해진 편지'],
+      ['4호선 - 제 3 구간'],
+      ['타입 l'],
+      ['broken glases'],
+      ['[빛나는 잔영]을(를) 코스트 300에 판매합니다'],
+      ['완전히 다른 글', '아무것'],
+      ['잔'],
+    ];
+    for (const lines of reads) {
+      // Act
+      const result = matchName(lines, names);
+      // Assert: the same ranking the full scan gives decides it.
+      const ranked = [...plain(lines, names)].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+      const [first, second] = ranked;
+      if (!first || first[1] < 0.75) expect(result).toEqual({ status: 'none' });
+      else expect(result).toMatchObject({ score: first[1], margin: first[1] - (second?.[1] ?? 0) });
+    }
+  });
+});

@@ -9,9 +9,11 @@
  *        --must gift,gift (these are required; the rest are best-effort),
  *        --observe gift,gift (pin these for 기프트 관측), --no-observe (planner may not observe),
  *        --assume-unvisited (price every observation as a first visit to that pack, ×1.5),
- *        --pin floor:pack,…, --ban pack,…, --prefer pack,… (must be included somewhere),
- *        --floor N (run in progress: floors below N are played; pin them to say which pack was taken),
- *        --own gift,… (already in hand), --failed gift,… (not taken from the pack pinned on a played floor; routed again elsewhere),
+ *        --ban pack,…, --prefer pack,… (must be included somewhere),
+ *        --floor N (run in progress: floors below N are played),
+ *        --entered floor:pack,… (the pack taken on each played floor — below --floor; there is no
+ *        pinning a pack on a floor ahead, M118: the goals decide the route),
+ *        --own gift,… (already in hand), --failed gift,… (not taken from the pack entered on a played floor; routed again elsewhere),
  *        --result-only gift,… (fusion results whose ingredients are not goals of their own),
  *        --alternatives, --json, --explain, --trace
  */
@@ -41,7 +43,7 @@ function parseFloors(text: string | undefined): number {
   return 5;
 }
 
-function parsePins(text: string | undefined): Record<number, number> {
+function parseEntries(text: string | undefined): Record<number, number> {
   const out: Record<number, number> = {};
   for (const pair of (text ?? '').split(',')) {
     const [floor, pack] = pair.split(':').map((n) => Number(n));
@@ -112,7 +114,7 @@ const input: PlanInput = share
               : null,
         startKeyword: (flagValue('--keyword') as Keyword | undefined) ?? 'auto',
         observedGifts: numbers(flagValue('--observe')),
-        pinnedPacks: parsePins(flagValue('--pin')),
+        pinnedPacks: parseEntries(flagValue('--entered')),
         bannedPacks: numbers(flagValue('--ban')),
         preferredPacks: numbers(flagValue('--prefer')),
         currentFloor: flagValue('--floor') !== undefined ? Number(flagValue('--floor')) : 1,

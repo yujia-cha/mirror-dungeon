@@ -90,6 +90,22 @@ test('reads an entry and a gift off the shared window, and takes them back', asy
   await expect.poll(got).toBe(null);
   await expect(log.locator('li', { hasText: '커피와 종이학' })).toContainText('되돌림');
 
+  // A new session reads the map it stands on again: the run already holds that entry, so nothing
+  // is logged twice (M116) — a duplicate's undo would have taken the entry away.
+  await paint(page, [
+    { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045], size: 34 },
+    { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
+  ]);
+  await panel.getByTestId('capture-stop').click();
+  await panel.getByTestId('capture-start').click();
+  await expect(status).toHaveAttribute('data-status', 'running', { timeout: 45_000 });
+  await page.waitForTimeout(3000);
+  await expect(log.locator('li', { hasText: '1층 입장' })).toHaveCount(1);
+
+  // Undoing the entry takes it out of the run.
+  await log.locator('li', { hasText: '1층 입장' }).getByRole('button', { name: '되돌리기' }).click();
+  await expect(page.getByTestId('entered-pack')).toHaveCount(0);
+
   // Closing the popover does not end the share: the header button still says it is reading.
   await page.keyboard.press('Escape');
   await expect(panel).toHaveCount(0);

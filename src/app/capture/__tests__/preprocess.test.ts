@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cropRgba, isolateLightText } from '../preprocess.ts';
+import { cropRgba, isolateLightText, pixelRect, toPnm } from '../preprocess.ts';
 
 /** One RGBA pixel per [r, g, b], opaque. */
 const pixels = (...rgb: [number, number, number][]) =>
@@ -60,5 +60,38 @@ describe('cropRgba', () => {
   it('returns an empty image for a region of no size', () => {
     const crop = cropRgba(image, 4, 2, [0.5, 0.5, 0, 0]);
     expect([crop.width, crop.height, crop.data.length]).toEqual([0, 0, 0]);
+  });
+
+  it('gives the same pixels from a view of part of the image as from the whole', () => {
+    // Arrange: a 37×23 image of distinct pixels, and only a window of it held (M116).
+    const [w, h] = [37, 23];
+    const whole = new Uint8ClampedArray(Array.from({ length: w * h * 4 }, (_, i) => (i * 7) % 251));
+    const region = [0.21, 0.13, 0.52, 0.61] as const;
+    const view = pixelRect(w, h, [0.2, 0.1, 0.6, 0.7]);
+    const part = cropRgba(whole, w, h, [0.2, 0.1, 0.6, 0.7]).data;
+    // Act
+    const fromView = cropRgba(part, w, h, region, view);
+    // Assert
+    expect(fromView).toEqual(cropRgba(whole, w, h, region));
+  });
+});
+
+describe('toPnm', () => {
+  it('writes the light-text pass as a grey PGM, the same pixels isolateLightText makes', () => {
+    // Arrange: text, a button, and a pixel on the threshold, in one row.
+    const input = pixels([240, 225, 170], [250, 220, 30], [150, 150, 150]);
+    // Act
+    const out = toPnm(input, 3, 1, true);
+    // Assert
+    const header = new TextEncoder().encode('P5\n3 1\n255\n');
+    expect([...out.slice(0, header.length)]).toEqual([...header]);
+    const grey = isolateLightText(input).filter((_, i) => i % 4 === 0);
+    expect([...out.slice(header.length)]).toEqual([...grey]);
+  });
+
+  it('writes the raw pass as an RGB PPM without alpha', () => {
+    const out = toPnm(pixels([1, 2, 3], [4, 5, 6]), 1, 2, false);
+    const header = new TextEncoder().encode('P6\n1 2\n255\n');
+    expect([...out.slice(header.length)]).toEqual([1, 2, 3, 4, 5, 6]);
   });
 });

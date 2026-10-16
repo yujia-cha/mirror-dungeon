@@ -44,7 +44,16 @@ export interface DropRequest {
   dropped: number[];
 }
 
-export type PlannerRequest = InitRequest | PlanRequest | DropRequest;
+/**
+ * Measure the candidates the budget or the cap left out of plan `id`'s analysis (M115, the card's
+ * 「더 계산」). Ignored unless `id` is still the newest plan; answered by more `analysis` messages.
+ */
+export interface MoreRequest {
+  type: 'analysis-more';
+  id: number;
+}
+
+export type PlannerRequest = InitRequest | PlanRequest | DropRequest | MoreRequest;
 
 /** The route alone — what the panel waits on. */
 export interface PlanResponse {
@@ -91,9 +100,15 @@ export interface PlanResult {
   analysis: DropAnalysis | null;
 }
 
-/** Whether a plan needs the drop analysis at all: only when the route could not fit everything. */
+/**
+ * Whether a plan needs the drop analysis at all: only when the route could not fit everything —
+ * a pack conflict, or since M115 a shared ingredient's second copy that no pack could supply.
+ */
 export function needsAlternatives(plan: RoutePlan | null): boolean {
-  return plan !== null && plan.unresolved.some((entry) => entry.reason === 'pack-conflict');
+  return (
+    plan !== null &&
+    plan.unresolved.some((entry) => entry.reason === 'pack-conflict' || entry.reason === 'ingredient-shared')
+  );
 }
 
 /**
@@ -104,10 +119,18 @@ export function needsAlternatives(plan: RoutePlan | null): boolean {
  * ten), and at 40+ goals one call is ~180ms (`docs/review/M49.md`). The worker path splits the two
  * for that reason (`createPlanner`).
  */
-export function runPlan(input: PlanInput, data: GameData, indexes: GameIndexes): PlanResult {
+export function runPlan(
+  input: PlanInput,
+  data: GameData,
+  indexes: GameIndexes,
+  /** Every candidate rather than the first ten (the card's 「더 계산」). */
+  all = false,
+): PlanResult {
   if (input.wanted.length === 0) return { plan: null, analysis: null };
   const plan = planRoute(input, data, indexes);
-  const analysis = needsAlternatives(plan) ? planDropEffects(input, data, indexes, plan) : null;
+  const analysis = needsAlternatives(plan)
+    ? planDropEffects(input, data, indexes, plan, all ? { maxRuns: Infinity } : {})
+    : null;
   return { plan, analysis };
 }
 
@@ -139,15 +162,16 @@ export function runDrop(
 export function createPlanner(opts: { budgetMs?: number; now?: () => number } = {}): {
   handle: (request: PlannerRequest) => PlanResponse | DropResponse | { type: 'ready' } | null;
   analysisStep: (id: number) => AnalysisResponse | null;
+  resume: (id: number) => boolean;
 } {
   const budgetMs = opts.budgetMs ?? ANALYSIS_BUDGET_MS;
   const now = opts.now ?? (() => performance.now());
   let data: GameData | null = null;
   let indexes: GameIndexes | null = null;
   /**
-   * The newest plan, kept until its analysis is computed. Every plan request and every `init`
-   * overwrites it, which is what makes a superseded plan's analysis unanswerable. A `drop`
-   * request leaves it alone.
+   * The newest plan and its analysis. Every plan request and every `init` overwrites it, which is
+   * what makes a superseded plan's analysis unanswerable. A `drop` request leaves it alone. Kept
+   * after the analysis finished (M115), so 「더 계산」 can carry on from where the budget stopped.
    */
   let latest: {
     id: number;
@@ -155,6 +179,9 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
     plan: RoutePlan;
     steps?: DropEffectSteps;
     startedAt?: number;
+    finished?: boolean;
+    /** Resumed by `analysis-more`: no budget, the player asked for every bar. */
+    unbounded?: boolean;
   } | null = null;
   /** The newest plan request's input, which a `drop` request is answered against. */
   let current: PlanInput | null = null;
@@ -173,6 +200,7 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
       // A plan asked for before `init` cannot be answered; the host always sends `init` first, and
       // answering with an empty plan would look like "nothing to do" rather than "not ready".
       if (!data || !indexes) return null;
+      if (request.type === 'analysis-more') return null;
       if (request.type === 'drop') {
         if (!current) return null;
         const key = dropKey(request.dropped);
@@ -187,7 +215,7 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
       return { type: 'plan', id: request.id, plan, analysisPending };
     },
     analysisStep(id) {
-      if (!latest || latest.id !== id || !data || !indexes) return null;
+      if (!latest || latest.id !== id || latest.finished || !data || !indexes) return null;
       if (!latest.steps) {
         latest.steps = createDropEffects(latest.input, data, indexes, latest.plan);
         latest.startedAt = now();
@@ -195,14 +223,23 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
       const { steps } = latest;
       // Always one bar, then stop when the candidates or the budget run out.
       steps.step();
-      if (!steps.done() && now() - latest.startedAt! < budgetMs)
+      if (!steps.done() && (latest.unbounded || now() - latest.startedAt! < budgetMs))
         return { type: 'analysis', id, analysis: steps.snapshot(), done: false };
       const analysis = steps.finish();
-      latest = null;
+      latest.finished = true;
       // The analysis already planned these sets; a checked bar is answered from here.
       for (const effect of analysis.effects) dropCache.set(dropKey([effect.giftId]), effect.plan);
       if (analysis.resolving) dropCache.set(dropKey(analysis.resolving.dropped), analysis.resolving.plan);
       return { type: 'analysis', id, analysis, done: true };
+    },
+    /** Lift the cap and the budget on plan `id`'s finished analysis; true when there is more to do. */
+    resume(id) {
+      if (!latest || latest.id !== id || !latest.steps || !latest.finished) return false;
+      latest.steps.extend();
+      if (latest.steps.done()) return false;
+      latest.finished = false;
+      latest.unbounded = true;
+      return true;
     },
   };
 }

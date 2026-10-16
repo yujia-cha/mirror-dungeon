@@ -13,7 +13,7 @@
  */
 import { useRef } from 'react';
 import { Star } from 'lucide-react';
-import { conflictGroups } from '../../core/index.ts';
+import { conflictGroups, conflictRootsOf } from '../../core/index.ts';
 import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { lostFusions } from '../lib/fusion-lost.ts';
@@ -36,6 +36,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     planPending,
     analysis,
     analysisPending,
+    analyzeMore,
     drops,
     giftName,
     packName,
@@ -119,7 +120,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
 
   // The decision is the full plan's: it stays on screen while an alternative is previewed, so the
   // header chips and the 「전부 유지」 row read the plan itself, not the preview.
-  const conflicted = plan.unresolved.some((u) => u.reason === 'pack-conflict');
+  // The goals lost to the conflict, a starved shared ingredient's fusion among them (M115).
+  const conflicting = conflictRootsOf(plan, input, data, indexes);
+  const conflicted = conflicting.length > 0;
   const groups = conflictGroups(plan, input, data, indexes);
 
   return (
@@ -140,6 +143,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           analysisPending={analysisPending}
           drops={drops}
           groups={groups}
+          conflicting={conflicting}
+          lastAdded={wanted.at(-1) ?? null}
+          onMore={analyzeMore}
           ctx={ctx}
           removeWanted={removeWanted}
           onPreview={scrollToMap}

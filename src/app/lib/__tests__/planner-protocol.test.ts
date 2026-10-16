@@ -156,10 +156,14 @@ describe('the route and its drop analysis are two answers (M52)', () => {
 
     const answers = drain(planner, 1);
     const direct = runPlan(inputFor(conflicting), data, indexes);
-    // One bar per step: each partial answer has one more bar than the last, the last is final.
-    expect(answers.map((a) => a.analysis.effects.length)).toEqual(
-      direct.analysis!.effects.map((_, i) => i + 1),
-    );
+    // The forced plans first (M115: no bar, they find the causes), then one bar per step.
+    const lengths = answers.map((a) => a.analysis.effects.length);
+    const forced = lengths.filter((n) => n === 0).length;
+    expect(forced).toBeGreaterThan(0);
+    expect(lengths).toEqual([
+      ...Array<number>(forced).fill(0),
+      ...direct.analysis!.effects.map((_, i) => i + 1),
+    ]);
     expect(answers.map((a) => a.done)).toEqual(answers.map((_, i) => i === answers.length - 1));
     const final = answers[answers.length - 1]!;
     expect(final.analysis.effects.map((e) => [e.giftId, e.reduces])).toEqual(
@@ -179,8 +183,41 @@ describe('the route and its drop analysis are two answers (M52)', () => {
     clock = 150;
     const last = planner.analysisStep(1)!;
     expect(last.done).toBe(true);
-    expect(last.analysis.effects).toHaveLength(2);
+    // Two steps: the forced plan(s) come first, so the bars the budget left out are said (M115).
+    expect(last.analysis.effects.length).toBeLessThan(2);
+    expect(last.analysis.skipped).toBeGreaterThan(0);
     expect(planner.analysisStep(1)).toBeNull();
+  });
+
+  it('carries a budget-stopped analysis on when asked, without a budget (M115 「더 계산」)', () => {
+    let clock = 0;
+    const planner = createPlanner({ budgetMs: 100, now: () => clock });
+    planner.handle({ type: 'init', data });
+    planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) });
+    planner.analysisStep(1);
+    clock = 150;
+    const stopped = planner.analysisStep(1)!;
+    expect(stopped.done).toBe(true);
+    // Only the newest plan resumes.
+    expect(planner.resume(2)).toBe(false);
+    expect(planner.handle({ type: 'analysis-more', id: 1 })).toBeNull();
+    expect(planner.resume(1)).toBe(true);
+    clock = 10_000;
+    const answers = drain(planner, 1);
+    const final = answers[answers.length - 1]!;
+    expect(final.done).toBe(true);
+    expect(final.analysis.skipped).toBe(0);
+    const all = runPlan(inputFor(conflicting), data, indexes, true);
+    expect(final.analysis.effects.map((e) => e.giftId).sort()).toEqual(
+      all.analysis!.effects.map((e) => e.giftId).sort(),
+    );
+    // Nothing left: a second ask has nothing to resume.
+    expect(planner.resume(1)).toBe(false);
+    // The bars measured on request answer a checked set at once.
+    const effect = final.analysis.effects[final.analysis.effects.length - 1]!;
+    expect(planner.handle({ type: 'drop', id: 9, dropped: [effect.giftId] })).toMatchObject({
+      plan: effect.plan,
+    });
   });
 
   it("skips the rest of a plan's analysis once a newer request replaced it", () => {

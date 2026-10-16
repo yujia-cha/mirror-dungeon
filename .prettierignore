@@ -10,3 +10,4 @@ data/raw
 public/data
 coverage
 package-lock.json
+.claude/worktrees

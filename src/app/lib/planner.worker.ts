@@ -22,6 +22,11 @@ const pump = (id: number): void => {
 };
 
 self.onmessage = (event: MessageEvent<PlannerRequest>): void => {
+  // 「더 계산」: the finished analysis carries on, one bar per task as before.
+  if (event.data.type === 'analysis-more') {
+    if (planner.resume(event.data.id)) pump(event.data.id);
+    return;
+  }
   const response = planner.handle(event.data);
   if (!response) return;
   self.postMessage(response);

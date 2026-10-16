@@ -25,7 +25,7 @@
  * waiting forever with no route at all. Any failure from the worker side falls back to inline for
  * the rest of the session, which is exactly the behaviour this app had before the worker existed.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameData } from '../../core/schema.ts';
 import type { GameIndexes, PlanInput } from '../../core/types.ts';
 import {
@@ -52,6 +52,8 @@ export interface PlannerState extends PlanResult {
   dropPending: boolean;
   /** False when the plan is computed inline — the fallback, and what tests run on. */
   offThread: boolean;
+  /** Measure the candidates the analysis left out (M115, the card's 「더 계산」). */
+  analyzeMore: () => void;
 }
 
 /**
@@ -117,6 +119,8 @@ export function usePlanner(
   /** Set when the worker reports an error; from then on the plan is computed inline. */
   const [broken, setBroken] = useState(false);
   const active = broken ? null : worker;
+  /** The input whose analysis the player asked to finish, on the inline path. */
+  const [allFor, setAllFor] = useState<PlanInput | null>(null);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -172,9 +176,24 @@ export function usePlanner(
 
   // No worker, or a worker that failed: compute inline, once per input, as the provider used to.
   const inline = useMemo(
-    () => (active ? null : runPlan(input, data, indexes)),
-    [active, input, data, indexes],
+    () => (active ? null : runPlan(input, data, indexes, allFor === input)),
+    [active, input, data, indexes, allFor],
   );
+
+  const answerId = answer?.id ?? null;
+  const analyzeMore = useCallback((): void => {
+    if (!active) {
+      setAllFor(input);
+      return;
+    }
+    if (answerId === null) return;
+    // Pending again until the worker's next `done`; it only resumes the newest plan, and a newer
+    // plan replaces this answer anyway.
+    setAlternatives((current) =>
+      current && current.id === answerId ? { ...current, done: false } : current,
+    );
+    active.postMessage({ type: 'analysis-more', id: answerId });
+  }, [active, input, answerId]);
 
   const inlineDrop = useMemo(
     () => (active || dropKey === '' ? null : runDrop(input, dropKey.split(',').map(Number), data, indexes)),
@@ -189,6 +208,7 @@ export function usePlanner(
       dropPlan: inlineDrop,
       dropPending: false,
       offThread: false,
+      analyzeMore,
     };
   // The analysis belongs to one plan; shown only beside the plan it was computed for.
   const matched = answer !== null && alternatives?.id === answer.id;
@@ -202,5 +222,6 @@ export function usePlanner(
     dropPlan: dropFresh ? dropAnswer.plan : null,
     dropPending: dropKey !== '' && !dropFresh,
     offThread: true,
+    analyzeMore,
   };
 }

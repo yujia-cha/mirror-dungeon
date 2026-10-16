@@ -94,6 +94,8 @@ async function measure(preset: ReadIntervalPreset | null): Promise<Row> {
     );
     await page.evaluate(() => (window as unknown as { __show: (i: number) => void }).__show(0));
     if (preset) {
+      // The controls live in the header's popover since M111.
+      await page.getByTestId('capture-open').click();
       await page.getByTestId('capture-interval').selectOption(preset);
       await page.getByTestId('capture-start').click();
       await page

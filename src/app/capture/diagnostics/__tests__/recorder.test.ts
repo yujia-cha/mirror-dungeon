@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { diagnosticsBundleSchema } from '../../../../core/schema.ts';
-import type { ReadReport } from '../../session.ts';
-import { DiagRecorder, MAX_FRAMES, RING_SIZE, UNKNOWN_FRAME_GAP_MS } from '../recorder.ts';
-import { memoryStore } from '../store.ts';
+import type { FrameSource, ReadReport } from '../../session.ts';
+import { DiagRecorder, MAX_FRAMES, MAX_FRAME_BYTES, RING_SIZE, UNKNOWN_FRAME_GAP_MS } from '../recorder.ts';
+import { memoryStore, type DiagStore } from '../store.ts';
 
 const META = { dataVersion: '7.test', season: 7, layoutReference: { width: 1920, height: 1009 } };
 
@@ -29,7 +29,11 @@ const popup = (t: number, giftId: number) =>
     },
     events: [{ kind: 'got', giftId }],
   });
-const jpeg = (n = 10) => new Blob([new Uint8Array(n)], { type: 'image/jpeg' });
+/** A read's picture: its JPEG once encoded, and whether it was encoded at all. */
+const jpeg = (n = 10, blob: Blob = new Blob([new Uint8Array(n)], { type: 'image/jpeg' })) => {
+  const frame = { encode: vi.fn(async () => blob), close: vi.fn() };
+  return frame satisfies FrameSource;
+};
 
 async function recorder(opts: { images?: boolean } = {}) {
   let clock = 1_000_000;
@@ -86,6 +90,7 @@ describe('DiagRecorder', () => {
     r.onRead(unknown(0), jpeg());
     r.onRead(unknown(1000), jpeg());
     r.onRead(unknown(UNKNOWN_FRAME_GAP_MS), jpeg());
+    await r.flush();
     // Assert
     expect(r.stats().frames).toBe(2);
   });
@@ -144,7 +149,8 @@ describe('DiagRecorder', () => {
     });
     tick(10);
     // Act
-    const { bundle, frames, name } = await r.exportBundle(META);
+    const { bundle, frames, name, mark } = await r.exportBundle(META);
+    r.markExported(mark);
     r.onRead(popup(2, 9007), jpeg()); // recorded after the export
     const removed = await r.clearExported();
     // Assert
@@ -158,9 +164,81 @@ describe('DiagRecorder', () => {
   it('says how much exported data is still on the device until it is cleared', async () => {
     const { r } = await recorder();
     r.onUndo(1);
-    await r.exportBundle(META);
+    r.markExported((await r.exportBundle(META)).mark);
     expect(r.stats()).toMatchObject({ records: 1, exportedRecords: 1 });
     expect(r.stats().lastExportAt).not.toBeNull();
+  });
+
+  it('marks nothing exported until the zip was handed to the browser', async () => {
+    // Arrange
+    const { r } = await recorder();
+    r.onUndo(1);
+    // Act: the bundle is read, but zipping or the download failed.
+    await r.exportBundle(META);
+    // Assert: nothing on the device counts as exported, so nothing offers to clear it.
+    expect(r.stats()).toMatchObject({ records: 1, exportedRecords: 0, lastExportAt: null });
+    expect(await r.clearExported()).toEqual({ records: 0, frames: 0 });
+  });
+
+  it('clears everything in turn with the writes around it', async () => {
+    // Arrange: a slow device — each write takes a while.
+    const slow = memoryStore();
+    const store: DiagStore = {
+      ...slow,
+      addRecord: async (seq, rec) => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        await slow.addRecord(seq, rec);
+      },
+    };
+    const r = await DiagRecorder.open(store);
+    r.recording = true;
+    r.onUndo(1);
+    // Act: clear, and something is recorded before the clearing is done.
+    const cleared = r.clearAll();
+    r.onUndo(2);
+    await cleared;
+    await r.flush();
+    // Assert: the record made after the clear stays, and the count agrees with the device.
+    const kept = await store.records();
+    expect(kept.map((x) => x.rec)).toMatchObject([{ kind: 'undo', logId: 2 }]);
+    expect(r.stats().records).toBe(1);
+  });
+
+  it('encodes only the pictures it keeps', async () => {
+    // Arrange
+    const { r } = await recorder({ images: true });
+    const quiet = jpeg();
+    const event = jpeg();
+    // Act
+    r.onRead(report(1), quiet);
+    r.onRead(popup(2, 9006), event);
+    await r.flush();
+    // Assert
+    expect(quiet.encode).not.toHaveBeenCalled();
+    expect(event.encode).toHaveBeenCalledTimes(1);
+  });
+
+  it('frees the pictures that leave the ring', async () => {
+    const { r } = await recorder({ images: true });
+    const first = jpeg();
+    r.onRead(report(1), first);
+    for (let t = 2; t <= RING_SIZE + 1; t += 1) r.onRead(report(t), jpeg());
+    expect(first.close).toHaveBeenCalled();
+  });
+
+  it('keeps a ring frame again after the cap trimmed it, instead of naming a frame that is gone', async () => {
+    // Arrange: three pictures of a third of the byte cap each — the first is trimmed.
+    const { r } = await recorder({ images: true });
+    const big = () => jpeg(0, { size: Math.ceil(MAX_FRAME_BYTES / 2.5) } as Blob);
+    for (let t = 1; t <= 3; t += 1) r.onRead(popup(t, 9000 + t), big());
+    await r.flush();
+    expect(r.stats().trimmedFrames).toBe(1);
+    // Act: a hand-made change while reading keeps the ring's frames.
+    r.onManual({ capturing: true, visits: [], status: [], currentFloor: { from: 1, to: 2 } });
+    await r.flush();
+    // Assert: the trimmed first frame was kept anew.
+    const { frames } = await r.exportBundle(META);
+    expect(frames.map((f) => f.t)).toContain(1);
   });
 
   it('drops the oldest frames past the cap and says so', async () => {
@@ -185,6 +263,7 @@ describe('DiagRecorder', () => {
     const { r } = await recorder({ images: true });
     r.onRead(popup(1, 9006), jpeg());
     await r.clearAll();
+    await r.flush();
     expect(r.stats()).toMatchObject({ records: 0, frames: 0, bytes: 0 });
   });
 });

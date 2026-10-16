@@ -38,6 +38,8 @@ export default defineConfig({
         'scripts/capture-bench.ts',
         'scripts/capture-bench-browser.ts',
         'scripts/capture-feedback.ts',
+        // A measurement for the review (M115); what it measures is core, tested in planner.test.ts.
+        'scripts/measure-drop-causes.ts',
       ],
       // Measured at M58: 66.32 / 59.76 / 72.38 / 67.75.
       thresholds: { statements: 65.5, branches: 59, functions: 71.5, lines: 67 },
