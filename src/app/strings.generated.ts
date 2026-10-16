@@ -397,7 +397,7 @@ export const STRINGS = {
   stageNewRun: { ko: '같은 목표로 새 런', en: 'New run, same goals' },
   giftTileToggle: { ko: '{name} 획득 표시', en: 'Mark {name} as got' },
 
-  // ── 화면 인식 (무대 위 패널)
+  // ── 화면 인식 (헤더 버튼과 팝오버)
   captureTitle: { ko: '화면 인식', en: 'Screen reader' },
   captureStart: { ko: '화면 인식 시작', en: 'Start reading the screen' },
   captureStop: { ko: '중지', en: 'Stop' },
@@ -407,6 +407,8 @@ export const STRINGS = {
   },
   captureStarting: { ko: '게임 창 연결 중', en: 'Connecting to the game window' },
   captureRunning: { ko: '인식 중', en: 'Reading' },
+  captureErrShort: { ko: '오류', en: 'Error' },
+  captureAsking: { ko: '확인할 것 {n}개', en: '{n} to confirm' },
   capturePrivacy: {
     ko: '화면은 이 브라우저 안에서만 읽고 어디로도 보내지 않습니다',
     en: 'The screen is read in this browser only and sent nowhere',
@@ -453,6 +455,55 @@ export const STRINGS = {
   },
   captureAskApply: { ko: '적용', en: 'Apply' },
   captureAskDismiss: { ko: '무시', en: 'Ignore' },
+
+  // ── 진단 기록 (소유자 전용 — 주소에 #diag를 붙여 열 때만)
+  diagTitle: { ko: '진단 기록 (소유자용)', en: 'Diagnostics (owner only)' },
+  diagHide: { ko: '숨기기', en: 'Hide' },
+  diagRecord: { ko: '진단 기록', en: 'Record diagnostics' },
+  diagImages: { ko: '화면 이미지 포함', en: 'Include screen images' },
+  diagImagesWarn: {
+    ko: '이미지에는 게임 화면이 들어 있습니다. 공개된 곳에 올리지 마세요.',
+    en: 'Images contain game screens. Do not post them anywhere public.',
+  },
+  diagEmpty: { ko: '아직 기록이 없습니다', en: 'Nothing recorded yet' },
+  diagStats: {
+    ko: '기록 {records}건 · 이미지 {frames}장 · 약 {mb}MB',
+    en: '{records} records · {frames} images · about {mb} MB',
+  },
+  diagLastExport: { ko: '마지막 내보내기 {time}', en: 'last exported {time}' },
+  diagFull: {
+    ko: '기록이 가득 찼습니다(2만 건). 내보내고 지워야 다시 기록합니다.',
+    en: 'The record is full (20,000). Export and clear it to record again.',
+  },
+  diagTrimmed: {
+    ko: '이미지 상한을 넘어 오래된 {n}장을 지웠습니다.',
+    en: 'Over the image cap: the oldest {n} were dropped.',
+  },
+  diagSavedTitle: { ko: '내보낸 뒤 정리', en: 'After exporting' },
+  diagSavedPrompt: {
+    ko: '{name}을(를) 저장했으면 기기의 기록을 지우세요. 그 파일 하나만 전달하면 됩니다.',
+    en: 'Once {name} is saved, clear the record on this device. That one file is all you hand over.',
+  },
+  diagClearExported: { ko: '기록 지우기', en: 'Clear the record' },
+  diagLater: { ko: '나중에', en: 'Later' },
+  diagExportedLeft: {
+    ko: '내보낸 기록 {n}건이 아직 기기에 남아 있습니다',
+    en: '{n} exported records are still on this device',
+  },
+  diagCleared: {
+    ko: '기록 {records}건과 이미지 {frames}장을 지웠습니다.',
+    en: 'Cleared {records} records and {frames} images.',
+  },
+  diagExport: { ko: '내보내기', en: 'Export' },
+  diagClearAll: { ko: '모두 지우기', en: 'Clear all' },
+  diagClearAllConfirm: {
+    ko: '내보내지 않은 것까지 기록 {records}건과 이미지 {frames}장을 모두 지웁니다. 되돌릴 수 없습니다.',
+    en: 'This clears all {records} records and {frames} images, exported or not. It cannot be undone.',
+  },
+  diagWhere: {
+    ko: '보낼 곳: 내보낸 zip을 Claude Code 개발 세션에 첨부하고 「진단 기록 분석해 줘」라고 보내세요. 직접 돌릴 때는 개발 저장소의 local-fixtures/sessions/에 넣고 npm run capture:feedback을 실행합니다. 게임 화면이 들어 있으니 이슈·채팅방 같은 공개된 곳에는 올리지 마세요.',
+    en: 'Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. To run it yourself, put it in local-fixtures/sessions/ of the development repository and run npm run capture:feedback. It contains game screens, so keep it out of public places such as issues and chat rooms.',
+  },
 
   // ── 추적기 탭
   trackerTitle: { ko: 'T4 기프트 추적', en: 'T4 gift tracker' },
@@ -591,8 +642,8 @@ export const GUIDE_CARDS = [
         en: '「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.',
       },
       {
-        ko: '데스크톱에서는 「화면 인식 시작」으로 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있고, 화면은 브라우저 밖으로 나가지 않습니다.',
-        en: 'On desktop, 「Start reading the screen」 shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone, and the screen never leaves the browser.',
+        ko: '데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있고, 화면은 브라우저 밖으로 나가지 않습니다.',
+        en: 'On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone, and the screen never leaves the browser.',
       },
       {
         ko: '재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.',

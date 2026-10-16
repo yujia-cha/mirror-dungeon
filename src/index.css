@@ -302,6 +302,18 @@ body {
   }
 
   /*
+   * A picture is never a drag of its own. The browser starts a native drag of an `<img>` on a press
+   * and move, which takes the pointer from the app's gestures — pulling a pack card by its art, or
+   * picking a goal tile up by its icon, did nothing. `draggable={false}` on each image covers
+   * Firefox; this covers WebKit/Blink and the long-press image callout on iOS.
+   */
+  img {
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  /*
    * Every field is set in the input role (16px on a touch screen, so iOS does not zoom in). Here
    * rather than on each element, so no field can be left at another size; a size class on a field
    * is a system violation the design-system test catches.

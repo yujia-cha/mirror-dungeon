@@ -15,7 +15,7 @@
  *
  * No DOM, no timers: the caller owns the pixels and the clock.
  */
-import type { CaptureLayout } from '../../core/schema.ts';
+import type { CaptureLayout, DiagTraceStep } from '../../core/schema.ts';
 import type { Lang } from '../i18n.ts';
 import { assignSlots, type Consumed, type SlotRanking, type SlotThresholds } from './fusion.ts';
 import { rankIcons, type IconRef } from './match-icon.ts';
@@ -50,6 +50,12 @@ export interface ReadContext {
 export interface ReadResult {
   frame: Frame;
   ocrCalls: number;
+  /**
+   * Every pass the read made, in order — the lines OCR gave, whether they were taken, what they
+   * matched (M112). The owner's diagnostics keep it, so a misread can be traced to the pass that
+   * went wrong rather than only to the frame it ended in.
+   */
+  trace: DiagTraceStep[];
 }
 
 export async function readFrame(
@@ -58,24 +64,54 @@ export async function readFrame(
   ctx: ReadContext,
 ): Promise<ReadResult> {
   let ocrCalls = 0;
+  const trace: DiagTraceStep[] = [];
+  type Step = DiagTraceStep['step'];
+  /** Note one pass: its lines, and what `accept` made of them (null = not taken). */
+  const note = (step: Step, region: Region, light: boolean, lines: string[], taken: unknown): void => {
+    const entry: DiagTraceStep = { step, region: [...region], light, lines, accepted: taken !== null };
+    if (taken !== null && typeof taken === 'object' && 'status' in (taken as object))
+      entry.match = taken as MatchResult;
+    if (step === 'title') entry.screen = typeof taken === 'string' ? taken : null;
+    trace.push(entry);
+  };
   /** Light pass, then raw when `accept` finds nothing in it. */
-  const readEither = async <T>(region: Region, accept: (lines: string[]) => T | null): Promise<T | null> => {
+  const readEither = async <T>(
+    region: Region,
+    step: Step,
+    accept: (lines: string[]) => T | null,
+  ): Promise<T | null> => {
     ocrCalls += 1;
-    const first = accept(await reader.ocr(region, true));
+    const lightLines = await reader.ocr(region, true);
+    const first = accept(lightLines);
+    note(step, region, true, lightLines, first);
     if (first !== null) return first;
     ocrCalls += 1;
-    return accept(await reader.ocr(region, false));
+    const rawLines = await reader.ocr(region, false);
+    const second = accept(rawLines);
+    note(step, region, false, rawLines, second);
+    return second;
   };
-  const readLight = async (region: Region): Promise<string[]> => {
+  const readLight = async <T>(
+    region: Region,
+    step: Step,
+    accept: (lines: string[]) => T | null,
+  ): Promise<T | null> => {
     ocrCalls += 1;
-    return reader.ocr(region, true);
+    const lines = await reader.ocr(region, true);
+    const taken = accept(lines);
+    note(step, region, true, lines, taken);
+    return taken;
   };
   const nameIn = async (region: Region, candidates: readonly NameCandidate[]): Promise<MatchResult> => {
-    const found = await readEither(region, (lines) => {
+    let best: MatchResult = { status: 'none' };
+    const found = await readEither(region, 'name', (lines) => {
       const m = matchName(lines, candidates);
-      return m.status === 'none' ? null : m;
+      // A pass that matched nothing still says how close it came: keep the closest for the trace.
+      if (m.status !== 'none') return m;
+      best = m;
+      return null;
     });
-    return found ?? { status: 'none' };
+    return found ?? best;
   };
 
   let screen: Screen | null = null;
@@ -88,7 +124,9 @@ export async function readFrame(
     };
     // Only titles the light pass can erase get the second, raw read (M108): on a frame that shows
     // nothing, every title region is read, and the raw reads were half of it.
-    const found = title.raw ? await readEither(title.region, accept) : accept(await readLight(title.region));
+    const found = title.raw
+      ? await readEither(title.region, 'title', accept)
+      : await readLight(title.region, 'title', accept);
     if (found) {
       screen = found;
       break;
@@ -97,7 +135,7 @@ export async function readFrame(
 
   const frame: Frame = { screen, floor: null, pack: null, gift: null };
   if (screen === 'exploring') {
-    frame.floor = await readEither(layout.names.mapHeader, parseFloor);
+    frame.floor = await readEither(layout.names.mapHeader, 'floor', parseFloor);
     frame.pack = await nameIn(layout.names.mapHeader, ctx.packs);
   } else if (screen === 'acquired') {
     frame.gift = await nameIn(layout.names.popup, ctx.gifts);
@@ -106,10 +144,10 @@ export async function readFrame(
   } else if (screen === 'sell') {
     frame.gift = await nameIn(layout.names.selected, ctx.gifts);
   } else if (screen === 'fusionConfirm') {
-    const filled = await readEither(layout.fusion.count, parseFusionCount);
-    if (filled) frame.ingredients = await readIngredients(reader, layout, ctx, filled);
+    const filled = await readEither(layout.fusion.count, 'fusionCount', parseFusionCount);
+    if (filled) frame.ingredients = await readIngredients(reader, layout, ctx, filled, trace);
   }
-  return { frame, ocrCalls };
+  return { frame, ocrCalls, trace };
 }
 
 /**
@@ -135,6 +173,7 @@ async function readIngredients(
   layout: CaptureLayout,
   ctx: ReadContext,
   filled: number,
+  trace: DiagTraceStep[] = [],
 ): Promise<Consumed> {
   const heldIds = new Set(ctx.held.map((h) => h.id));
   const candidates = [...ctx.held, ...ctx.materials.filter((m) => !heldIds.has(m.id))];
@@ -146,10 +185,22 @@ async function readIngredients(
   const meanBest = (rankings: SlotRanking[]) =>
     rankings.reduce((sum, r) => sum + (r[0]?.[1] ?? 0), 0) / Math.max(1, rankings.length);
   let rankings = await rank(layout.fusion.five.slice(0, filled));
+  let shape: 'five' | 'three' = 'five';
   if (filled === 3) {
     const large = await rank(layout.fusion.three);
-    if (meanBest(large) > meanBest(rankings)) rankings = large;
+    if (meanBest(large) > meanBest(rankings)) [rankings, shape] = [large, 'three'];
   }
+  trace.push({
+    step: 'slots',
+    region: null,
+    light: null,
+    lines: [],
+    accepted: true,
+    slots: {
+      shape,
+      top: rankings.map((r) => r.slice(0, 3).map(([id, score]) => [id, score] as [number, number])),
+    },
+  });
   const read = assignSlots(rankings, ctx.slotThresholds, new Set(ctx.materials.map((m) => m.id)));
   const consumed = read.flatMap((r) => (r.status === 'match' ? [r.id] : []));
   const unsure = [...new Set(read.flatMap((r) => (r.status === 'ambiguous' ? r.ids : [])))];

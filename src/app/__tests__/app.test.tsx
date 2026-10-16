@@ -48,6 +48,8 @@ import { PlanProvider } from '../shell/PlanContext.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 import { RoutePlanPanel } from '../shell/RoutePlanPanel.tsx';
 import { RouteOptions } from '../shell/RouteOptions.tsx';
+import { CaptureProvider } from '../capture/CaptureProvider.tsx';
+import { CaptureMenu } from '../shell/CapturePanel.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
 import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
@@ -2586,6 +2588,35 @@ describe('RoutePlanPanel', () => {
     expect(sheet.textContent).not.toMatch(/포함 ·|포함 지정|포기한 팩/);
   });
 
+  it('lists only what the pack alone gives when opened from the route, the pool too on the stage (M110)', async () => {
+    // Arrange: a pack-limited goal of 화왕지절 and a general gift its pool also drops.
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267); // 달궈진 놋쇠 — 화왕지절 전용
+    useApp.getState().toggleWanted(9006); // 커피와 종이학 — 범용 드랍, 화왕지절 풀에도 있다
+    renderRoute();
+    // Act
+    await user.click(within(rows()).getByRole('button', { name: '화왕지절' }));
+    const sheet = screen.getByRole('dialog', { name: '화왕지절' });
+    // Assert: only the pack's own gifts (9267, 9282), each marked 전용; the general goal is not there.
+    const ids = within(sheet)
+      .getAllByTestId('pack-gift')
+      .map((el) => Number(el.getAttribute('data-gift')));
+    expect(ids.sort((a, b) => a - b)).toEqual([9267, 9282]);
+    for (const row of within(sheet).getAllByTestId('pack-gift')) expect(row).toHaveTextContent('전용');
+    cleanup();
+    // The stage's sheet still lists the pool gift the route collects there.
+    renderPlanned(<RunStage onOpenGifts={() => undefined} />);
+    for (let i = 0; i < 3; i += 1) await user.click(screen.getByRole('button', { name: '다음 층' }));
+    await user.click(screen.getByRole('button', { name: '화왕지절 자세히' }));
+    const stageSheet = screen.getByTestId('block-sheet');
+    expect(
+      within(stageSheet)
+        .getAllByTestId('pack-gift')
+        .map((el) => el.getAttribute('data-gift')),
+    ).toContain('9006');
+  });
+
   it('opens a sheet from an observed tile and pins the observation from it', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -4348,16 +4379,30 @@ describe('screen reader (M107)', () => {
     Reflect.deleteProperty(navigator, 'mediaDevices');
   });
 
-  it('stays off the stage where the browser cannot share a screen', () => {
-    renderPlanned(<RunStage onOpenGifts={() => undefined} />);
+  const renderMenu = () =>
+    renderPlanned(
+      <CaptureProvider>
+        <CaptureMenu />
+        <RunStage onOpenGifts={() => undefined} />
+      </CaptureProvider>,
+    );
+
+  it('draws no header button where the browser cannot share a screen, and none on the stage', () => {
+    renderMenu();
+    expect(screen.queryByTestId('capture-open')).toBeNull();
     expect(screen.queryByTestId('capture-panel')).toBeNull();
   });
 
-  it('starts from the stage and says, in words, that sharing was refused', async () => {
+  it('opens from the header, says in words that sharing was refused, and keeps the state when closed', async () => {
     // Arrange: a browser that can share, and a player who says no.
     const user = userEvent.setup();
     share(() => Promise.reject(new DOMException('denied', 'NotAllowedError')));
-    renderPlanned(<RunStage onOpenGifts={() => undefined} />);
+    renderMenu();
+    // The stage no longer holds the panel (M111): it lives in the header's popover.
+    expect(within(screen.getByTestId('run-stage')).queryByTestId('capture-panel')).toBeNull();
+    const button = screen.getByTestId('capture-open');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    await user.click(button);
     const panel = screen.getByTestId('capture-panel');
     expect(within(panel).getByTestId('capture-status')).toHaveAttribute('data-status', 'idle');
     // Act
@@ -4370,6 +4415,63 @@ describe('screen reader (M107)', () => {
     // The interval preset is a device setting, kept in the store.
     await user.selectOptions(within(panel).getByTestId('capture-interval'), 'quality');
     expect(useApp.getState().ui.captureInterval).toBe('quality');
+    // Closing the popover keeps the session's state: the button says it, with a word and a mark.
+    await user.click(screen.getByRole('button', { name: '닫기' }));
+    expect(screen.queryByTestId('capture-panel')).toBeNull();
+    expect(button).toHaveAttribute('data-status', 'error');
+    expect(button).toHaveTextContent('오류');
+    expect(button).toHaveAccessibleName(/화면 인식 · 화면 공유를 허용하지 않았습니다/);
+  });
+
+  it('shows the owner diagnostics only after #diag, and records a hand-made change (M112)', async () => {
+    // Arrange: a browser that can share; first without #diag.
+    const user = userEvent.setup();
+    share(() => Promise.reject(new DOMException('denied', 'NotAllowedError')));
+    const { unmount } = renderMenu();
+    await user.click(screen.getByTestId('capture-open'));
+    expect(screen.queryByTestId('diag-section')).toBeNull();
+    unmount();
+    // Act: the owner opens the app with #diag.
+    window.history.replaceState(null, '', '#diag');
+    renderMenu();
+    await user.click(screen.getByTestId('capture-open'));
+    const section = await screen.findByTestId('diag-section');
+    // Assert: the hash is consumed, nothing is recorded until the box is ticked, then a manual
+    // change is.
+    expect(window.location.hash).toBe('');
+    expect(useApp.getState().ui.diagEnabled).toBe(true);
+    expect(within(section).getByTestId('diag-where')).toHaveTextContent('Claude Code');
+    const images = within(section).getByRole('checkbox', { name: '화면 이미지 포함' });
+    expect(images).toBeDisabled();
+    act(() => useApp.getState().setGiftStatus(9006, 'got'));
+    expect(within(section).getByTestId('diag-stats')).toHaveAttribute('data-records', '0');
+    await user.click(within(section).getByRole('checkbox', { name: '진단 기록' }));
+    expect(images).toBeEnabled();
+    act(() => useApp.getState().setGiftStatus(9007, 'got'));
+    await waitFor(() =>
+      expect(within(section).getByTestId('diag-stats')).toHaveAttribute('data-records', '1'),
+    );
+    // Hiding the section keeps what was recorded.
+    await user.click(within(section).getByRole('button', { name: '숨기기' }));
+    expect(screen.queryByTestId('diag-section')).toBeNull();
+    expect(useApp.getState().ui.diagEnabled).toBe(false);
+  });
+
+  it('records a floor left behind as route feedback, with the hand-made move (M112)', async () => {
+    // Arrange: the owner has recording on; the reader is off.
+    const user = userEvent.setup();
+    share(() => Promise.reject(new DOMException('denied', 'NotAllowedError')));
+    useApp.getState().setUi({ diagEnabled: true, diagRecord: true });
+    renderMenu();
+    await user.click(screen.getByTestId('capture-open'));
+    const stats = await screen.findByTestId('diag-stats');
+    await waitFor(() => expect(stats).toHaveAttribute('data-records', '0'));
+    // Act: skip floor 1 on the stage (the press outside closes the popover; recording goes on).
+    await user.click(screen.getByRole('button', { name: '다음 층' }));
+    expect(screen.queryByTestId('diag-stats')).toBeNull();
+    await user.click(screen.getByTestId('capture-open'));
+    // Assert: one manual record (the frontier moved by hand) and one floor record.
+    await waitFor(() => expect(screen.getByTestId('diag-stats')).toHaveAttribute('data-records', '2'));
   });
 
   it('records an entry seen on a later floor by walking there first (enterAt)', () => {

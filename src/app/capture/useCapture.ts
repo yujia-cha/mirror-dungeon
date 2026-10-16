@@ -1,6 +1,7 @@
 /**
- * The screen reader as the stage uses it (M107): one `CaptureSession`, its status, a log of what it
- * did to the run (each entry undoable), and the questions it could not settle on its own.
+ * The screen reader as the app uses it (M107; held by `CaptureProvider` since M111): one
+ * `CaptureSession`, its status, a log of what it did to the run (each entry undoable), and the
+ * questions it could not settle on its own.
  *
  * Events are applied the moment they arrive (the owner's choice: high-confidence reads apply
  * automatically, with undo). The run state is read from the store at that moment rather than from
@@ -18,6 +19,7 @@ import {
   type CaptureContext,
   type CaptureError,
   type CaptureStatus,
+  type ReadReport,
 } from './session.ts';
 import type { CaptureEvent } from './tracker.ts';
 
@@ -37,7 +39,18 @@ export interface CaptureQuestion {
 /** The log keeps the latest entries only; older ones cannot be undone from the panel anyway. */
 const LOG_LIMIT = 20;
 
-export function useCapture() {
+/** What the owner's diagnostics (M112) hear from the session. All optional. */
+export interface CaptureHooks {
+  onRead?: (report: ReadReport, image: Blob | null) => void;
+  wantImage?: () => boolean;
+  /** An entry went into the log; `fromRead` is false for an answered question. */
+  onApplied?: (logId: number, event: { kind: string }, actions: unknown[], fromRead: boolean) => void;
+  onUndo?: (logId: number) => void;
+  onAnswer?: (ask: CaptureAsk, picked: number[]) => void;
+  onSession?: (status: CaptureStatus, error: CaptureError | null) => void;
+}
+
+export function useCapture(hooks: CaptureHooks = {}) {
   const { data, indexes, enterAt, leave } = usePlan();
   const setGiftStatus = useApp((s) => s.setGiftStatus);
   const interval = useApp((s) => s.ui.captureInterval);
@@ -50,17 +63,27 @@ export function useCapture() {
   const nextId = useRef(1);
 
   // The session calls back long after the render that created it: it must see the latest of these.
-  const latest = useRef({ data, indexes, enterAt, leave, setGiftStatus, gameLang });
+  const latest = useRef({ data, indexes, enterAt, leave, setGiftStatus, gameLang, hooks });
   useEffect(() => {
-    latest.current = { data, indexes, enterAt, leave, setGiftStatus, gameLang };
+    latest.current = { data, indexes, enterAt, leave, setGiftStatus, gameLang, hooks };
   });
+  /**
+   * True while the reader is changing the run, so a store listener can tell its changes from the
+   * player's (zustand's `set` is synchronous: the listener runs inside this window).
+   */
+  const applying = useRef(false);
 
   const run = useCallback((actions: readonly (CaptureAction | { kind: 'leave'; packId: number })[]) => {
     const { enterAt: doEnter, leave: doLeave, setGiftStatus: setStatusOf } = latest.current;
-    for (const action of actions) {
-      if (action.kind === 'enter') doEnter(action.floor, action.packId);
-      else if (action.kind === 'leave') doLeave(action.packId);
-      else for (const change of action.changes) setStatusOf(change.giftId, change.to);
+    applying.current = true;
+    try {
+      for (const action of actions) {
+        if (action.kind === 'enter') doEnter(action.floor, action.packId);
+        else if (action.kind === 'leave') doLeave(action.packId);
+        else for (const change of action.changes) setStatusOf(change.giftId, change.to);
+      }
+    } finally {
+      applying.current = false;
     }
   }, []);
 
@@ -68,6 +91,7 @@ export function useCapture() {
     if (actions.length === 0) return;
     const entry: CaptureLogEntry = { id: nextId.current++, event, actions, undone: false };
     setLog((all) => [entry, ...all].slice(0, LOG_LIMIT));
+    latest.current.hooks.onApplied?.(entry.id, event, actions, event.kind !== 'answer');
   }, []);
 
   const onEvents = useCallback(
@@ -117,7 +141,10 @@ export function useCapture() {
       onStatus: (next, why) => {
         setStatus(next);
         if (why) setError(why);
+        latest.current.hooks.onSession?.(next, why ?? null);
       },
+      onRead: (report, image) => latest.current.hooks.onRead?.(report, image),
+      wantImage: () => latest.current.hooks.wantImage?.() ?? false,
     });
     session.current = created;
     await created.start();
@@ -133,7 +160,7 @@ export function useCapture() {
     session.current?.setInterval(READ_INTERVALS[interval]);
   }, [interval]);
 
-  // Leaving the stage ends the share.
+  // Closing the app (the provider unmounting) ends the share.
   useEffect(() => () => session.current?.stop(), []);
 
   const undo = useCallback(
@@ -142,6 +169,7 @@ export function useCapture() {
       if (!entry || entry.undone) return;
       run(inverseOf(entry.actions));
       setLog((all) => all.map((e) => (e.id === id ? { ...e, undone: true } : e)));
+      latest.current.hooks.onUndo?.(id);
     },
     [log, run],
   );
@@ -151,7 +179,9 @@ export function useCapture() {
     (id: number, picked: number[]) => {
       const question = questions.find((q) => q.id === id);
       setQuestions((all) => all.filter((q) => q.id !== id));
-      if (!question || picked.length === 0) return;
+      if (!question) return;
+      latest.current.hooks.onAnswer?.(question.ask, picked);
+      if (picked.length === 0) return;
       const { ask } = question;
       const giftStatus = useApp.getState().run.giftStatus;
       const actions: CaptureAction[] =
@@ -173,5 +203,16 @@ export function useCapture() {
     [questions, record, run],
   );
 
-  return { supported: captureSupported(), status, error, log, questions, start, stop, undo, answer };
+  return {
+    supported: captureSupported(),
+    status,
+    error,
+    log,
+    questions,
+    start,
+    stop,
+    undo,
+    answer,
+    applying,
+  };
 }

@@ -79,6 +79,25 @@ describe('readFrame', () => {
     expect(ocrCalls).toBe(5);
   });
 
+  it('traces every pass: the lines, whether they were taken and what they matched (M112)', async () => {
+    // Arrange: the popup title, then a name the light pass misses and raw reads.
+    const { reader } = fakeReader({
+      '0': { light: ['E.G.O 기프트를 획득했습니다.'] },
+      '0.4': { light: ['???'], raw: ['작고 나쁜 인형'] },
+    });
+    // Act
+    const { trace } = await readFrame(reader, LAYOUT, CTX);
+    // Assert
+    expect(trace.map((s) => [s.step, s.light, s.accepted])).toEqual([
+      ['title', true, true],
+      ['name', true, false],
+      ['name', false, true],
+    ]);
+    expect(trace[0]).toMatchObject({ screen: 'acquired', lines: ['E.G.O 기프트를 획득했습니다.'] });
+    expect(trace[1]!.match).toBeUndefined();
+    expect(trace[2]).toMatchObject({ lines: ['작고 나쁜 인형'], match: { status: 'match', id: 9091 } });
+  });
+
   it('does not let a region speak for a screen whose title lives elsewhere', async () => {
     // A dimmed full-screen title read in the popup region must not make it the popup.
     const { reader } = fakeReader({ '0': { light: ['E.G.O 기프트 판매'] } });

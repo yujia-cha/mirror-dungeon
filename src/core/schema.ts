@@ -575,6 +575,144 @@ export const captureLayoutSchema = z.object({
   }),
 });
 export type CaptureLayout = z.infer<typeof captureLayoutSchema>;
+
+/**
+ * The owner's diagnostics bundle (M112): what the screen reader read, what the player corrected,
+ * and how the route compared with the run — exported from the app as `session.json` inside a zip
+ * (`frames/{id}.jpg` beside it) and read back by `npm run capture:feedback`. Never committed: the
+ * frames are game screens. Loose where the app's own shapes are (events, actions), strict on the
+ * envelope, so an old bundle still parses after the app moves on.
+ */
+const diagMatchSchema = z.union([
+  z.object({ status: z.literal('match'), id: z.number(), score: z.number(), margin: z.number() }),
+  z.object({
+    status: z.literal('ambiguous'),
+    ids: z.array(z.number()),
+    score: z.number(),
+    margin: z.number(),
+  }),
+  z.object({ status: z.literal('none') }),
+]);
+const diagEventSchema = z.object({ kind: z.string() }).passthrough();
+export const diagTraceStepSchema = z.object({
+  /** What was being read: a title region, a name, the floor, the fusion header, the slots. */
+  step: z.enum(['title', 'name', 'floor', 'fusionCount', 'slots']),
+  region: z.tuple([z.number(), z.number(), z.number(), z.number()]).nullable(),
+  /** The light-text pass (true) or the untouched crop (false); null for the icon slots. */
+  light: z.boolean().nullable(),
+  lines: z.array(z.string()),
+  /** This pass's lines were taken (a screen named, a name matched, a number found). */
+  accepted: z.boolean(),
+  match: diagMatchSchema.optional(),
+  screen: z.string().nullable().optional(),
+  /** Icon slots: the shape tried and each slot's top candidates. */
+  slots: z
+    .object({ shape: z.enum(['five', 'three']), top: z.array(z.array(z.tuple([z.number(), z.number()]))) })
+    .optional(),
+});
+export type DiagTraceStep = z.infer<typeof diagTraceStepSchema>;
+
+const diagFloorGiftSchema = z.object({ giftId: z.number(), status: z.enum(['got', 'failed']).nullable() });
+
+export const diagRecordSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('session'),
+    t: z.number(),
+    status: z.string(),
+    error: z.string().nullable(),
+    interval: z.string(),
+    lang: z.enum(['ko', 'en']),
+    captureSize: z.object({ width: z.number(), height: z.number() }).nullable(),
+  }),
+  z.object({
+    kind: z.literal('read'),
+    t: z.number(),
+    reason: z.enum(['change', 'dirty', 'refresh']),
+    ms: z.number(),
+    ocrCalls: z.number(),
+    screen: z.string().nullable(),
+    floor: z.number().nullable(),
+    pack: diagMatchSchema.nullable(),
+    gift: diagMatchSchema.nullable(),
+    ingredients: z.object({ consumed: z.array(z.number()), unsure: z.array(z.number()) }).nullable(),
+    trace: z.array(diagTraceStepSchema),
+    events: z.array(diagEventSchema),
+    /** The frame kept for this read, `frames/{frameId}.jpg`. */
+    frameId: z.string().nullable(),
+  }),
+  z.object({
+    kind: z.literal('applied'),
+    t: z.number(),
+    logId: z.number(),
+    /** The read that produced it (its `t`), or null for an answered question. */
+    readT: z.number().nullable(),
+    event: diagEventSchema,
+    actions: z.array(z.unknown()),
+  }),
+  z.object({ kind: z.literal('undo'), t: z.number(), logId: z.number() }),
+  z.object({
+    kind: z.literal('answer'),
+    t: z.number(),
+    ask: z.object({ kind: z.string() }).passthrough(),
+    picked: z.array(z.number()),
+  }),
+  z.object({
+    /** A change to the run the player made by hand. While the reader runs, a likely miss. */
+    kind: z.literal('manual'),
+    t: z.number(),
+    capturing: z.boolean(),
+    visits: z.array(z.object({ floor: z.number(), from: z.number().nullable(), to: z.number().nullable() })),
+    status: z.array(
+      z.object({
+        giftId: z.number(),
+        from: z.enum(['got', 'failed']).nullable(),
+        to: z.enum(['got', 'failed']).nullable(),
+      }),
+    ),
+    currentFloor: z.object({ from: z.number(), to: z.number() }).nullable(),
+    /** Frames kept around it (the reader's last few reads), when it happened while reading. */
+    frameIds: z.array(z.string()),
+  }),
+  z.object({
+    /** A floor left behind: what the route offered, what was entered, how its gifts went. */
+    kind: z.literal('floor'),
+    t: z.number(),
+    floor: z.number(),
+    recommended: z.number().nullable(),
+    window: z.object({ from: z.number(), to: z.number() }).nullable(),
+    alternatives: z.array(z.number()),
+    entered: z.number().nullable(),
+    expected: z.array(diagFloorGiftSchema),
+    startGifts: z.array(z.number()),
+  }),
+  z.object({
+    /** A run that ended (the last floor left) or was thrown away for a new one. */
+    kind: z.literal('run'),
+    t: z.number(),
+    ended: z.enum(['done', 'reset']),
+    goals: z.array(diagFloorGiftSchema),
+    fusionGoal: z.record(z.string(), z.string()),
+    deck: z.array(z.number().nullable()),
+    unresolved: z.array(z.object({ giftId: z.number(), reason: z.string() })),
+    warnings: z.array(z.string()),
+  }),
+]);
+export type DiagRecord = z.infer<typeof diagRecordSchema>;
+
+export const DIAG_FORMAT = 1;
+
+export const diagnosticsBundleSchema = z.object({
+  format: z.literal(DIAG_FORMAT),
+  bundleId: z.string(),
+  startedAt: z.number(),
+  exportedAt: z.number(),
+  dataVersion: z.string(),
+  season: z.number(),
+  layoutReference: z.object({ width: z.number(), height: z.number() }).nullable(),
+  records: z.array(diagRecordSchema),
+  frames: z.array(z.object({ id: z.string(), t: z.number(), bytes: z.number() })),
+});
+export type DiagnosticsBundle = z.infer<typeof diagnosticsBundleSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];
 
 /**

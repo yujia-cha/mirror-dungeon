@@ -279,6 +279,7 @@ export function PlanProvider({
       observed: new Set((shown?.start.observed ?? []).filter((o) => o.pinned).map((o) => o.giftId)),
       wanted: goals,
       needed,
+      exclusivesOf,
       onToggleObserved: variant
         ? undefined
         : (giftId) => toggleObserved(giftId, { max: data.rules.giftObservation.max, observable: canObserve }),

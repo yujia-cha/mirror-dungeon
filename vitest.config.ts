@@ -37,6 +37,7 @@ export default defineConfig({
         'scripts/capture-spike.ts',
         'scripts/capture-bench.ts',
         'scripts/capture-bench-browser.ts',
+        'scripts/capture-feedback.ts',
       ],
       // Measured at M58: 66.32 / 59.76 / 72.38 / 67.75.
       thresholds: { statements: 65.5, branches: 59, functions: 71.5, lines: 67 },

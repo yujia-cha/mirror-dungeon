@@ -232,7 +232,7 @@ export function MetroMap({
           closeLabel={t('routeClose', lang)}
           onClose={close}
         >
-          <PackSheetBody packId={open.packId} ctx={ctx} />
+          <PackSheetBody packId={open.packId} ctx={ctx} exclusiveOnly />
         </DetailSurface>
       );
     }

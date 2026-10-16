@@ -171,6 +171,7 @@ export function GiftIcon({
             src={picture.url}
             alt=""
             loading="lazy"
+            draggable={false}
             onError={() => setFailedUrl(picture.url)}
             className={
               picture.pixelArt
@@ -212,6 +213,7 @@ export function GiftIcon({
             src={badgeIcon}
             alt=""
             loading="lazy"
+            draggable={false}
             className="block object-contain"
             style={{ width: iconBadgeSize, height: iconBadgeSize }}
           />

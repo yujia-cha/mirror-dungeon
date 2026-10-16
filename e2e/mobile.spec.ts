@@ -48,9 +48,11 @@ test('a long press picks a chip up and drops it on an observation slot', async (
   const chip = page.getByTestId('gift-chip').first();
   const slot = page.getByTestId('observe-slot').first();
   await chip.scrollIntoViewIfNeeded();
-  const from = (await chip.boundingBox())!;
   const to = (await slot.boundingBox())!;
-  const start = { x: from.x + 10, y: from.y + from.height / 2 };
+  // Start on the icon itself: a long press on an image is the browser's own drag or callout
+  // unless the image opts out (`draggable={false}`, `-webkit-user-drag`/`-touch-callout: none`).
+  const icon = (await chip.locator('img').first().boundingBox())!;
+  const start = { x: icon.x + icon.width / 2, y: icon.y + icon.height / 2 };
   const end = { x: to.x + to.width / 2, y: to.y + to.height / 2 };
 
   const cdp = await page.context().newCDPSession(page);

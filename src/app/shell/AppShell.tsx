@@ -45,6 +45,8 @@ const NOTICE_URL = 'https://github.com/yujia-cha/mirror-dungeon/blob/main/NOTICE
 import { SidePanel } from './SidePanel.tsx';
 import { GiftBrowser } from './GiftBrowser.tsx';
 import { GuideSheet } from './GuideSheet.tsx';
+import { CaptureMenu } from './CapturePanel.tsx';
+import { CaptureProvider } from '../capture/CaptureProvider.tsx';
 import { usePageHistory } from '../lib/usePageHistory.ts';
 
 /** What covers the shell on a phone, or (for `browser`) the stage on a desktop. */
@@ -185,285 +187,288 @@ export function AppShell({
        it from here rather than having `enums` threaded through every component between. */
     <EnumsContext.Provider value={data.enums}>
       <PlanProvider data={data} indexes={indexes} stats={stats} lang={lang}>
-        <div className="flex min-h-dvh flex-col" data-testid="app-shell" inert={pageOpen || undefined}>
-          {/*
+        <CaptureProvider>
+          <div className="flex min-h-dvh flex-col" data-testid="app-shell" inert={pageOpen || undefined}>
+            {/*
             The header carries two panel doors and a menu before the stage begins; a keyboard reader
             had to tab past all of them on every load. Hidden until focused, so nothing changes for
             a pointer, and it is the first thing Tab reaches.
           */}
-          <a
-            href="#stage"
-            className="sr-only rounded-sm bg-primary px-3 py-2 text-label text-primary-fg focus-visible:not-sr-only focus-visible:absolute focus-visible:left-3 focus-visible:top-3 focus-visible:z-40"
-            data-testid="skip-link"
-          >
-            {t('skipToStage', lang)}
-          </a>
-          <header className="sticky top-0 z-30 flex h-[52px] flex-none items-center justify-between border-b border-border bg-surface px-4 lg:h-14 lg:px-6">
-            {/* The page's one h1: the header shows doors, not a title, so it is for assistive tech. */}
-            <h1 className="sr-only">{t('appTitle', lang)}</h1>
-            {/*
+            <a
+              href="#stage"
+              className="sr-only rounded-sm bg-primary px-3 py-2 text-label text-primary-fg focus-visible:not-sr-only focus-visible:absolute focus-visible:left-3 focus-visible:top-3 focus-visible:z-40"
+              data-testid="skip-link"
+            >
+              {t('skipToStage', lang)}
+            </a>
+            <header className="sticky top-0 z-30 flex h-[52px] flex-none items-center justify-between border-b border-border bg-surface px-4 lg:h-14 lg:px-6">
+              {/* The page's one h1: the header shows doors, not a title, so it is for assistive tech. */}
+              <h1 className="sr-only">{t('appTitle', lang)}</h1>
+              {/*
             Two doors and a drawer of odds and ends. The panel buttons carry their own name, so the
             header needs no title to say where you are, and the four one-off actions sit behind 「⋯」
             rather than competing with the doors for the eye.
           */}
-            <PanelToggle
-              side="left"
-              label={t('tabDeck', lang)}
-              open={leftOpen}
-              controls="panel-left"
-              onClick={() => toggle('left')}
-            />
-            <div className="relative flex items-center gap-1.5">
-              <IconButton onClick={() => setGuide(true)} label={t('guide', lang)} testId="guide-open">
-                <CircleHelp size={15} />
-              </IconButton>
-              <IconButton
-                onClick={() => setMenu((open) => !open)}
-                label={t('moreActions', lang)}
-                expanded={menu}
-                controls="header-menu"
-              >
-                <MoreHorizontal size={15} />
-              </IconButton>
-              {menu ? (
-                <DetailSurface
-                  id="header-menu"
-                  mode="popover"
-                  variant="menu"
-                  placement={{ vertical: 'below', horizontal: 'end' }}
+              <PanelToggle
+                side="left"
+                label={t('tabDeck', lang)}
+                open={leftOpen}
+                controls="panel-left"
+                onClick={() => toggle('left')}
+              />
+              <div className="relative flex items-center gap-1.5">
+                <CaptureMenu />
+                <IconButton onClick={() => setGuide(true)} label={t('guide', lang)} testId="guide-open">
+                  <CircleHelp size={15} />
+                </IconButton>
+                <IconButton
+                  onClick={() => setMenu((open) => !open)}
                   label={t('moreActions', lang)}
-                  closeLabel={t('routeClose', lang)}
-                  onClose={() => setMenu(false)}
+                  expanded={menu}
+                  controls="header-menu"
                 >
-                  <ul className="flex w-max min-w-[9rem] flex-col gap-0.5" data-testid="header-menu">
-                    {(
-                      [
-                        {
-                          key: 'resetAll',
-                          icon: <RotateCcw size={14} aria-hidden />,
-                          run: () => setConfirmReset(true),
-                        },
-                        { key: 'share', icon: <Share2 size={14} aria-hidden />, run: onShare },
-                        { key: 'langToggle', icon: <Globe size={14} aria-hidden />, run: onToggleLang },
-                        {
-                          key: 'themeToggle',
-                          icon: dark ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />,
-                          run: onToggleDark,
-                        },
-                      ] as const
-                    ).map((item) => (
-                      <li key={item.key}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMenu(false);
-                            item.run();
-                          }}
-                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-body text-fg hover:bg-surface-muted active:bg-surface-sunken touch:min-h-11"
-                        >
-                          {item.icon}
-                          {t(item.key, lang)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  {/*
+                  <MoreHorizontal size={15} />
+                </IconButton>
+                {menu ? (
+                  <DetailSurface
+                    id="header-menu"
+                    mode="popover"
+                    variant="menu"
+                    placement={{ vertical: 'below', horizontal: 'end' }}
+                    label={t('moreActions', lang)}
+                    closeLabel={t('routeClose', lang)}
+                    onClose={() => setMenu(false)}
+                  >
+                    <ul className="flex w-max min-w-[9rem] flex-col gap-0.5" data-testid="header-menu">
+                      {(
+                        [
+                          {
+                            key: 'resetAll',
+                            icon: <RotateCcw size={14} aria-hidden />,
+                            run: () => setConfirmReset(true),
+                          },
+                          { key: 'share', icon: <Share2 size={14} aria-hidden />, run: onShare },
+                          { key: 'langToggle', icon: <Globe size={14} aria-hidden />, run: onToggleLang },
+                          {
+                            key: 'themeToggle',
+                            icon: dark ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />,
+                            run: onToggleDark,
+                          },
+                        ] as const
+                      ).map((item) => (
+                        <li key={item.key}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenu(false);
+                              item.run();
+                            }}
+                            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-body text-fg hover:bg-surface-muted active:bg-surface-sunken touch:min-h-11"
+                          >
+                            {item.icon}
+                            {t(item.key, lang)}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {/*
                     Not a menu action: picking a step keeps the menu open, so the tiles behind it
                     can be seen changing before the next pick.
                   */}
-                  <div
-                    role="group"
-                    aria-labelledby="gift-icon-size-label"
-                    className="mt-1 border-t border-border px-2 pb-1 pt-2"
-                    data-testid="gift-icon-size"
-                  >
-                    <div id="gift-icon-size-label" className="mb-1 text-caption text-fg-muted">
-                      {t('giftIconSize', lang)}
+                    <div
+                      role="group"
+                      aria-labelledby="gift-icon-size-label"
+                      className="mt-1 border-t border-border px-2 pb-1 pt-2"
+                      data-testid="gift-icon-size"
+                    >
+                      <div id="gift-icon-size-label" className="mb-1 text-caption text-fg-muted">
+                        {t('giftIconSize', lang)}
+                      </div>
+                      <div className="flex gap-1">
+                        {GIFT_ICON_SCALES.map((scale) => (
+                          <button
+                            key={scale}
+                            type="button"
+                            aria-pressed={ui.giftIconScale === scale}
+                            onClick={() => setUi({ giftIconScale: scale })}
+                            className="min-h-8 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-caption text-fg hover:bg-surface-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg"
+                          >
+                            {t(`giftIconSize_${scale}`, lang)}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      {GIFT_ICON_SCALES.map((scale) => (
-                        <button
-                          key={scale}
-                          type="button"
-                          aria-pressed={ui.giftIconScale === scale}
-                          onClick={() => setUi({ giftIconScale: scale })}
-                          className="min-h-8 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-caption text-fg hover:bg-surface-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg"
-                        >
-                          {t(`giftIconSize_${scale}`, lang)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </DetailSurface>
-              ) : null}
-              <PanelToggle
-                side="right"
-                label={t('tabRoutePlan', lang)}
-                open={rightOpen}
-                controls="panel-right"
-                onClick={() => toggle('right')}
-              />
-            </div>
-          </header>
+                  </DetailSurface>
+                ) : null}
+                <PanelToggle
+                  side="right"
+                  label={t('tabRoutePlan', lang)}
+                  open={rightOpen}
+                  controls="panel-right"
+                  onClick={() => toggle('right')}
+                />
+              </div>
+            </header>
 
-          <div className="flex flex-1 items-start">
-            <SidePanel<LeftTab>
-              id="panel-left"
-              side="left"
-              label={t('panelLeft', lang)}
-              desktop={desktop}
-              open={leftOpen}
-              onClose={() => close('left')}
-              tabs={leftTabs}
-              tab={ui.leftTab}
-              onTab={(leftTab) => setUi({ leftTab })}
-              lang={lang}
-              width={ui.leftWidth}
-            >
-              {ui.leftTab === 'deck' ? (
-                <DeckStep data={data} indexes={indexes} stats={stats} lang={lang} />
-              ) : null}
-              {ui.leftTab === 'gifts' ? (
-                <div className="flex flex-col gap-3">
-                  <GiftsStep
-                    data={data}
-                    indexes={indexes}
-                    stats={stats}
-                    lang={lang}
-                    onGoDeck={() => setUi({ leftTab: 'deck' })}
-                    onBrowse={openBrowser}
-                    browseOpen={desktop && browserOpen}
-                    onCloseBrowse={closeBrowser}
-                  />
-                  <RouteOptions />
-                </div>
-              ) : null}
-            </SidePanel>
-
-            {desktop && leftOpen ? (
-              <PanelResizer
+            <div className="flex flex-1 items-start">
+              <SidePanel<LeftTab>
+                id="panel-left"
                 side="left"
-                width={ui.leftWidth}
-                onWidth={(leftWidth) => setUi({ leftWidth })}
+                label={t('panelLeft', lang)}
+                desktop={desktop}
+                open={leftOpen}
+                onClose={() => close('left')}
+                tabs={leftTabs}
+                tab={ui.leftTab}
+                onTab={(leftTab) => setUi({ leftTab })}
                 lang={lang}
-              />
-            ) : null}
+                width={ui.leftWidth}
+              >
+                {ui.leftTab === 'deck' ? (
+                  <DeckStep data={data} indexes={indexes} stats={stats} lang={lang} />
+                ) : null}
+                {ui.leftTab === 'gifts' ? (
+                  <div className="flex flex-col gap-3">
+                    <GiftsStep
+                      data={data}
+                      indexes={indexes}
+                      stats={stats}
+                      lang={lang}
+                      onGoDeck={() => setUi({ leftTab: 'deck' })}
+                      onBrowse={openBrowser}
+                      browseOpen={desktop && browserOpen}
+                      onCloseBrowse={closeBrowser}
+                    />
+                    <RouteOptions />
+                  </div>
+                ) : null}
+              </SidePanel>
 
-            <main id="stage" tabIndex={-1} className="relative flex min-w-0 flex-1 flex-col">
-              {/*
+              {desktop && leftOpen ? (
+                <PanelResizer
+                  side="left"
+                  width={ui.leftWidth}
+                  onWidth={(leftWidth) => setUi({ leftWidth })}
+                  lang={lang}
+                />
+              ) : null}
+
+              <main id="stage" tabIndex={-1} className="relative flex min-w-0 flex-1 flex-col">
+                {/*
                 On a desktop the gift browser takes the stage's column. The stage stays mounted
                 underneath so nothing it holds is lost, but hidden and inert: it neither shows
                 through nor takes a Tab while covered.
               */}
-              {desktop && browserOpen ? (
-                <GiftBrowser
-                  key={browserSeed.n}
-                  page={false}
-                  initialQuery={browserSeed.query}
-                  onClose={closeBrowser}
-                />
-              ) : null}
-              <div
-                className={`flex flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:px-6 lg:pt-4 ${desktop && browserOpen ? 'hidden' : ''}`}
-                inert={(desktop && browserOpen) || undefined}
-                data-testid="stage-body"
-              >
-                <RunStage onOpenGifts={openGifts} />
-                <footer className="mt-auto border-t border-border pt-3 text-caption text-fg-subtle">
-                  <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                    <span>
-                      {t('dataVersion', lang)} {data.meta.dataVersion}
-                    </span>
-                    <span aria-hidden>·</span>
-                    {/*
+                {desktop && browserOpen ? (
+                  <GiftBrowser
+                    key={browserSeed.n}
+                    page={false}
+                    initialQuery={browserSeed.query}
+                    onClose={closeBrowser}
+                  />
+                ) : null}
+                <div
+                  className={`flex flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:px-6 lg:pt-4 ${desktop && browserOpen ? 'hidden' : ''}`}
+                  inert={(desktop && browserOpen) || undefined}
+                  data-testid="stage-body"
+                >
+                  <RunStage onOpenGifts={openGifts} />
+                  <footer className="mt-auto border-t border-border pt-3 text-caption text-fg-subtle">
+                    <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                      <span>
+                        {t('dataVersion', lang)} {data.meta.dataVersion}
+                      </span>
+                      <span aria-hidden>·</span>
+                      {/*
                   The season is named here already, so this is where it is chosen. Until a second
                   season is published there is nothing to choose and the line reads as it always
                   has — no control appears for a list of one.
                 */}
-                    {seasons.length > 1 ? (
-                      <select
-                        className="rounded-sm border border-border-control bg-surface px-1.5 py-0.5 text-fg-muted"
-                        aria-label={t('season', lang)}
-                        data-testid="season-select"
-                        value={data.meta.dungeon.id}
-                        onChange={(event) => onSeason(Number(event.target.value))}
-                      >
-                        {seasons.map((entry) => (
-                          <option key={entry.id} value={entry.id}>
-                            {pick(entry.name, lang) || `MD${entry.id}`}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span>{pick(data.meta.dungeon.name, lang)}</span>
-                    )}
-                    {data.meta.provisional ? (
-                      <strong
-                        className="text-fg-muted"
-                        title={t('seasonProvisionalHint', lang)}
-                        data-testid="season-provisional"
-                      >
-                        {t('seasonProvisional', lang)}
-                      </strong>
-                    ) : null}
-                  </p>
-                  <p className="mt-1">
-                    {t('aboutData', lang)}{' '}
-                    {/* The credits and the takedown path are too long for a footer, so the notice
+                      {seasons.length > 1 ? (
+                        <select
+                          className="rounded-sm border border-border-control bg-surface px-1.5 py-0.5 text-fg-muted"
+                          aria-label={t('season', lang)}
+                          data-testid="season-select"
+                          value={data.meta.dungeon.id}
+                          onChange={(event) => onSeason(Number(event.target.value))}
+                        >
+                          {seasons.map((entry) => (
+                            <option key={entry.id} value={entry.id}>
+                              {pick(entry.name, lang) || `MD${entry.id}`}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span>{pick(data.meta.dungeon.name, lang)}</span>
+                      )}
+                      {data.meta.provisional ? (
+                        <strong
+                          className="text-fg-muted"
+                          title={t('seasonProvisionalHint', lang)}
+                          data-testid="season-provisional"
+                        >
+                          {t('seasonProvisional', lang)}
+                        </strong>
+                      ) : null}
+                    </p>
+                    <p className="mt-1">
+                      {t('aboutData', lang)}{' '}
+                      {/* The credits and the takedown path are too long for a footer, so the notice
                     links to the file that holds them rather than growing a third line. */}
-                    <a
-                      className="underline hover:text-fg-muted"
-                      href={NOTICE_URL}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      {t('aboutSource', lang)}
-                    </a>
-                  </p>
-                </footer>
-              </div>
-            </main>
+                      <a
+                        className="underline hover:text-fg-muted"
+                        href={NOTICE_URL}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        {t('aboutSource', lang)}
+                      </a>
+                    </p>
+                  </footer>
+                </div>
+              </main>
 
-            {desktop && rightOpen ? (
-              <PanelResizer
+              {desktop && rightOpen ? (
+                <PanelResizer
+                  side="right"
+                  width={ui.rightWidth}
+                  onWidth={(rightWidth) => setUi({ rightWidth })}
+                  lang={lang}
+                />
+              ) : null}
+
+              <SidePanel<RightTab>
+                id="panel-right"
                 side="right"
+                label={t('panelRight', lang)}
+                desktop={desktop}
+                open={rightOpen}
+                onClose={() => close('right')}
+                tabs={rightTabs}
+                tab={ui.rightTab}
+                onTab={(rightTab) => setUi({ rightTab })}
+                lang={lang}
                 width={ui.rightWidth}
-                onWidth={(rightWidth) => setUi({ rightWidth })}
+              >
+                {ui.rightTab === 'plan' ? <RoutePlanPanel onOpenGifts={openGifts} /> : <Tracker />}
+              </SidePanel>
+            </div>
+            {!desktop && browserOpen ? (
+              <GiftBrowser key={browserSeed.n} page initialQuery={browserSeed.query} onClose={closeBrowser} />
+            ) : null}
+            {guide ? <GuideSheet lang={lang} noticeUrl={NOTICE_URL} onClose={() => setGuide(false)} /> : null}
+            {confirmReset ? (
+              <ConfirmDialog
+                title={t('resetAll', lang)}
+                message={t('resetAllConfirm', lang)}
+                confirmLabel={t('resetAll', lang)}
+                onConfirm={reset}
+                onCancel={() => setConfirmReset(false)}
                 lang={lang}
               />
             ) : null}
-
-            <SidePanel<RightTab>
-              id="panel-right"
-              side="right"
-              label={t('panelRight', lang)}
-              desktop={desktop}
-              open={rightOpen}
-              onClose={() => close('right')}
-              tabs={rightTabs}
-              tab={ui.rightTab}
-              onTab={(rightTab) => setUi({ rightTab })}
-              lang={lang}
-              width={ui.rightWidth}
-            >
-              {ui.rightTab === 'plan' ? <RoutePlanPanel onOpenGifts={openGifts} /> : <Tracker />}
-            </SidePanel>
           </div>
-          {!desktop && browserOpen ? (
-            <GiftBrowser key={browserSeed.n} page initialQuery={browserSeed.query} onClose={closeBrowser} />
-          ) : null}
-          {guide ? <GuideSheet lang={lang} noticeUrl={NOTICE_URL} onClose={() => setGuide(false)} /> : null}
-          {confirmReset ? (
-            <ConfirmDialog
-              title={t('resetAll', lang)}
-              message={t('resetAllConfirm', lang)}
-              confirmLabel={t('resetAll', lang)}
-              onConfirm={reset}
-              onCancel={() => setConfirmReset(false)}
-              lang={lang}
-            />
-          ) : null}
-        </div>
+        </CaptureProvider>
       </PlanProvider>
     </EnumsContext.Provider>
   );

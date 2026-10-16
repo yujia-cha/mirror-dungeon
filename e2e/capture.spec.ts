@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { strFromU8, unzipSync } from 'fflate';
+import { diagnosticsBundleSchema } from '../src/core/schema.ts';
 
 /**
  * The screen reader end to end (M107): the shared window is a canvas the test paints — drawn text in
@@ -49,6 +52,9 @@ test('reads an entry and a gift off the shared window, and takes them back', asy
   test.setTimeout(90_000);
   await fakeShare(page);
   await page.goto('./');
+  // The controls live in the header's popover (M111); the stage holds none.
+  await expect(page.getByTestId('run-stage').getByTestId('capture-panel')).toHaveCount(0);
+  await page.getByTestId('capture-open').click();
   const panel = page.getByTestId('capture-panel');
   await expect(panel).toBeVisible();
 
@@ -84,6 +90,72 @@ test('reads an entry and a gift off the shared window, and takes them back', asy
   await expect.poll(got).toBe(null);
   await expect(log.locator('li', { hasText: '커피와 종이학' })).toContainText('되돌림');
 
+  // Closing the popover does not end the share: the header button still says it is reading.
+  await page.keyboard.press('Escape');
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByTestId('capture-open')).toHaveAttribute('data-status', 'running');
+  await page.getByTestId('capture-open').click();
+  await page.getByTestId('capture-stop').click();
+  await expect(page.getByTestId('capture-status')).toHaveAttribute('data-status', 'idle');
+});
+
+test('the owner records, exports one zip with frames, and clears the device (M112)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await fakeShare(page);
+  // Without #diag a visitor sees no diagnostics.
+  await page.goto('./');
+  await page.getByTestId('capture-open').click();
+  await expect(page.getByTestId('capture-panel')).toBeVisible();
+  await expect(page.getByTestId('diag-section')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  // Pasted into the open tab: a same-document navigation, caught by `hashchange`.
+  await page.goto('./#diag');
+  await page.getByTestId('capture-open').click();
+  const diag = page.getByTestId('diag-section');
+  await expect(diag).toBeVisible();
+  await diag.getByRole('checkbox', { name: '진단 기록' }).check();
+  await diag.getByRole('checkbox', { name: '화면 이미지 포함' }).check();
+
+  // A read that makes an event, then the player undoes it.
+  const panel = page.getByTestId('capture-panel');
+  await panel.getByTestId('capture-start').click();
+  await expect(panel.getByTestId('capture-status')).toHaveAttribute('data-status', 'running', {
+    timeout: 45_000,
+  });
+  await paint(page, [
+    { text: 'E.G.O 기프트를 획득했습니다.', region: [0.333, 0.205, 0.34, 0.07], size: 40 },
+    { text: '커피와 종이학', region: [0.2526, 0.56, 0.138, 0.1338], size: 30 },
+  ]);
+  const log = panel.getByTestId('capture-log');
+  await expect(log).toContainText('획득 · 커피와 종이학', { timeout: 20_000 });
+  await log.locator('li', { hasText: '커피와 종이학' }).getByRole('button', { name: '되돌리기' }).click();
   await panel.getByTestId('capture-stop').click();
-  await expect(status).toHaveAttribute('data-status', 'idle');
+
+  // Export: one zip, holding the session and the kept frame.
+  const downloading = page.waitForEvent('download');
+  await diag.getByTestId('diag-export').click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(/^md-diagnostics-\d{8}-\d{4}\.zip$/);
+  // Kept when asked, to try `npm run capture:feedback` on a real export.
+  if (process.env.DIAG_ZIP_OUT) await download.saveAs(process.env.DIAG_ZIP_OUT);
+  const files = unzipSync(new Uint8Array(readFileSync((await download.path())!)));
+  const bundle = diagnosticsBundleSchema.parse(JSON.parse(strFromU8(files['session.json']!)));
+  const kinds = new Set(bundle.records.map((r) => r.kind));
+  expect([...kinds]).toEqual(expect.arrayContaining(['session', 'read', 'applied', 'undo']));
+  const popupRead = bundle.records.find((r) => r.kind === 'read' && r.events.length > 0);
+  expect(popupRead?.kind === 'read' && popupRead.trace.length).toBeGreaterThan(0);
+  expect(popupRead?.kind === 'read' && popupRead.frameId).toBeTruthy();
+  const frames = Object.keys(files).filter((name) => name.startsWith('frames/'));
+  expect(frames.length).toBe(bundle.frames.length);
+  expect(frames.length).toBeGreaterThan(0);
+  expect(files[frames[0]!]!.slice(0, 2)).toEqual(new Uint8Array([0xff, 0xd8])); // JPEG
+
+  // The clean-up step clears exactly that, and says where the file goes.
+  await expect(diag.getByTestId('diag-where')).toContainText('Claude Code');
+  await diag.getByTestId('diag-clear-exported').click();
+  await expect(diag.getByTestId('diag-stats')).toHaveAttribute('data-records', '0');
+  // And it stays cleared across a reload (IndexedDB).
+  await page.reload();
+  await page.getByTestId('capture-open').click();
+  await expect(page.getByTestId('diag-stats')).toHaveAttribute('data-records', '0');
 });

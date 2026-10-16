@@ -26,6 +26,13 @@ export interface UiState {
   /** Screen reader (M107): how often it looks, and the language the game client is in. */
   captureInterval: ReadIntervalPreset;
   captureLang: 'ko' | 'en';
+  /**
+   * The owner's diagnostics (M112): the section is shown (opened by `#diag`), recording is on,
+   * and frames are kept with it. All off by default; visitors never see the section.
+   */
+  diagEnabled: boolean;
+  diagRecord: boolean;
+  diagImages: boolean;
 }
 
 /** Steps of the gift tile size setting; `md` is the size the layout was drawn at. */
@@ -273,6 +280,9 @@ export function defaultUi(): UiState {
     giftIconScale: 'md',
     captureInterval: DEFAULT_READ_INTERVAL,
     captureLang: 'ko',
+    diagEnabled: false,
+    diagRecord: false,
+    diagImages: false,
   };
 }
 
@@ -301,6 +311,10 @@ export function sanitizeUi(raw: unknown): UiState {
   if (typeof source.captureInterval === 'string' && source.captureInterval in READ_INTERVALS)
     out.captureInterval = source.captureInterval as ReadIntervalPreset;
   if (source.captureLang === 'ko' || source.captureLang === 'en') out.captureLang = source.captureLang;
+  if (typeof source.diagEnabled === 'boolean') out.diagEnabled = source.diagEnabled;
+  if (typeof source.diagRecord === 'boolean') out.diagRecord = source.diagRecord;
+  // Frames go with recording: kept only while recording is on.
+  if (typeof source.diagImages === 'boolean') out.diagImages = source.diagImages && out.diagRecord;
   return out;
 }
 

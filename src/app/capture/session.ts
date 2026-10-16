@@ -12,7 +12,7 @@
  * The caller (M104's UI) applies the events to the run and supplies what the reading needs
  * through `context()`, read fresh on every frame so candidates follow the run.
  */
-import type { CaptureLayout } from '../../core/schema.ts';
+import type { CaptureLayout, DiagTraceStep } from '../../core/schema.ts';
 import { captureLayoutSchema } from '../../core/schema.ts';
 import type { Lang } from '../i18n.ts';
 import { changed, signatureOf, watchedRegions } from './change.ts';
@@ -22,7 +22,7 @@ import type { NameCandidate } from './match-name.ts';
 import { createOcrEngine, type OcrEngine } from './ocr-engine.ts';
 import { cropRgba, isolateLightText, type Region } from './preprocess.ts';
 import { readFrame, type RegionReader } from './read-frame.ts';
-import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type TrackerState } from './tracker.ts';
+import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame, type TrackerState } from './tracker.ts';
 
 export type CaptureStatus = 'idle' | 'starting' | 'running' | 'error';
 /** Why a session stopped on its own: no API, the player said no, the share ended, OCR failed to load. */
@@ -48,11 +48,30 @@ export interface CaptureStats {
   readMs: number;
 }
 
+/** One read, as the owner's diagnostics keep it (M112). */
+export interface ReadReport {
+  /** Wall-clock time of the read's start, ms. */
+  t: number;
+  reason: 'change' | 'dirty' | 'refresh';
+  ms: number;
+  ocrCalls: number;
+  frame: Frame;
+  trace: DiagTraceStep[];
+  events: CaptureEvent[];
+  captureSize: { width: number; height: number };
+}
+
 export interface SessionOptions {
   intervalMs?: number;
   context: () => CaptureContext;
   onEvents: (events: CaptureEvent[]) => void;
   onStatus: (status: CaptureStatus, error?: CaptureError) => void;
+  /**
+   * Every read, before its events are handed on (M112). `image` is the frame as JPEG when
+   * `wantImage()` said so at the time — encoded only then, since it costs a full-size encode.
+   */
+  onRead?: (report: ReadReport, image: Blob | null) => void;
+  wantImage?: () => boolean;
 }
 
 /** The small copy the signature is taken on: wide enough to see a popup appear, cheap to read back. */
@@ -165,12 +184,14 @@ export class CaptureSession {
       Math.round((height * PREVIEW_WIDTH) / width),
     );
     const signature = signatureOf(preview.data, preview.width, preview.height, this.regions);
-    const step = decide(this.loop, signature, changed(this.loop.lastRead, signature), performance.now());
+    const isChanged = changed(this.loop.lastRead, signature);
+    const reason: ReadReport['reason'] = isChanged ? 'change' : this.loop.dirty ? 'dirty' : 'refresh';
+    const step = decide(this.loop, signature, isChanged, performance.now());
     this.loop = step.state;
     if (step.decision === 'skip') return;
     const started = performance.now();
     try {
-      await this.read(video, width, height);
+      await this.read(video, width, height, reason);
     } finally {
       this.stats.reads += 1;
       this.stats.readMs += performance.now() - started;
@@ -178,7 +199,14 @@ export class CaptureSession {
     }
   }
 
-  private async read(video: HTMLVideoElement, width: number, height: number): Promise<void> {
+  private async read(
+    video: HTMLVideoElement,
+    width: number,
+    height: number,
+    reason: ReadReport['reason'],
+  ): Promise<void> {
+    const t = Date.now();
+    const started = performance.now();
     const layout = this.layout!;
     const engine = this.engine!;
     // One snapshot per read: the reading takes several OCR calls, and the screen must not change
@@ -196,7 +224,7 @@ export class CaptureSession {
     const refsOf = async (ids: readonly number[]) =>
       (await Promise.all(ids.map((id) => this.ref(id, ctx.iconUrl)))).filter((r): r is IconRef => r !== null);
     const [held, materials] = await Promise.all([refsOf(ctx.held), refsOf(ctx.materials)]);
-    const { frame, ocrCalls } = await readFrame(reader, layout, {
+    const { frame, ocrCalls, trace } = await readFrame(reader, layout, {
       lang: ctx.lang,
       packs: ctx.packs,
       gifts: ctx.gifts,
@@ -207,6 +235,22 @@ export class CaptureSession {
     if (this.stopped) return;
     const out = trackFrame(this.tracker, frame);
     this.tracker = out.state;
+    if (this.options.onRead) {
+      const image = this.options.wantImage?.() ? await toJpeg(this.snapshotCanvas) : null;
+      this.options.onRead(
+        {
+          t,
+          reason,
+          ms: performance.now() - started,
+          ocrCalls,
+          frame,
+          trace,
+          events: out.events,
+          captureSize: { width, height },
+        },
+        image,
+      );
+    }
     if (out.events.length > 0) this.options.onEvents(out.events);
   }
 
@@ -233,6 +277,17 @@ function drawScaled(
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   ctx.drawImage(source, 0, 0, width, height);
   return ctx.getImageData(0, 0, width, height);
+}
+
+/** The snapshot as JPEG at full size — the diagnostics re-read it with OCR, so no downscale. */
+function toJpeg(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    try {
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+    } catch {
+      resolve(null);
+    }
+  });
 }
 
 function toCanvas(pixels: Uint8ClampedArray, width: number, height: number): HTMLCanvasElement {

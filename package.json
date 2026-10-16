@@ -45,9 +45,11 @@
     "shots": "tsx scripts/readme-screenshots.ts",
     "capture:spike": "tsx scripts/capture-spike.ts",
     "capture:bench": "tsx scripts/capture-bench.ts",
-    "capture:bench:browser": "tsx scripts/capture-bench-browser.ts"
+    "capture:bench:browser": "tsx scripts/capture-bench-browser.ts",
+    "capture:feedback": "tsx scripts/capture-feedback.ts"
   },
   "dependencies": {
+    "fflate": "^0.8.2",
     "lucide-react": "^1.48.0",
     "lz-string": "^1.5.0",
     "pako": "^2.2.0",

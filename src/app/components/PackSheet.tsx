@@ -45,6 +45,8 @@ export interface PackContext {
   wanted: ReadonlySet<number>;
   /** The goals plus what a fusion goal consumes: what wears the goal ring on a pack's drops. */
   needed: ReadonlySet<number>;
+  /** Gifts only this pack gives: its pack-limited pool plus its boss's clear reward (`exclusivesIndex`). */
+  exclusivesOf: (packId: number) => number[];
   onToggleObserved?: (giftId: number) => void;
   /** Add or remove a gift as a goal (from a pack's gift list). Carries the fusion tree with it. */
   onToggleWanted?: (giftId: number) => void;
@@ -191,17 +193,33 @@ function EnterActions({ packId, ctx }: { packId: number; ctx: PackContext }) {
   );
 }
 
-/** The sheet / popover body for a pack. */
-export function PackSheetBody({ packId, ctx }: { packId: number; ctx: PackContext }) {
+/**
+ * The sheet / popover body for a pack.
+ *
+ * `exclusiveOnly` (the route panel) lists only what this pack alone gives — its pack-limited
+ * gifts and clear reward (M110): the route says which pack to take, and a general drop or an
+ * ingredient any pack may hand out is no reason to take this one. Without it (the stage) the
+ * pool gifts the route collects are listed too — a fusion goal's ingredients included, so the
+ * pack the player is about to enter says what to pick up there (M65). The rows' toggles and
+ * badges speak of the chosen goals only either way.
+ */
+export function PackSheetBody({
+  packId,
+  ctx,
+  exclusiveOnly = false,
+}: {
+  packId: number;
+  ctx: PackContext;
+  exclusiveOnly?: boolean;
+}) {
   const pack = ctx.indexes.packById.get(packId);
   if (!pack) return null;
-  const exclusives = new Set(pack.exclusiveGifts);
-  // Pool gifts are listed when the route collects them — a fusion goal's ingredients included, so
-  // the pack that drops one says so here as it does on the stage. The rows' toggles and badges
-  // still speak of the chosen goals only.
-  const gifts = [
-    ...new Set([...pack.exclusiveGifts, ...pack.giftPool.filter((id) => ctx.needed.has(id))]),
-  ].sort((a, b) => Number(ctx.needed.has(b)) - Number(ctx.needed.has(a)) || a - b);
+  const own = ctx.exclusivesOf(packId);
+  const exclusives = new Set(own);
+  const listed = exclusiveOnly ? own : [...own, ...pack.giftPool.filter((id) => ctx.needed.has(id))];
+  const gifts = [...new Set(listed)].sort(
+    (a, b) => Number(ctx.needed.has(b)) - Number(ctx.needed.has(a)) || a - b,
+  );
   return (
     <div className="flex flex-col gap-3" data-testid="pack-sheet-body">
       <div className="flex items-start gap-3">

@@ -40,8 +40,9 @@ export function DetailSurface({
   /** Popover only: which side of the anchor it opens on. */
   placement?: Placement;
   /** Popover only: `menu` drops the close row and the fixed width — Escape, a press outside and the
-   *  control that opened it (`aria-controls`) already close it. */
-  variant?: 'detail' | 'menu';
+   *  control that opened it (`aria-controls`) already close it. `panel` is a wider detail with its
+   *  title in the close row and a scroll of its own (the screen reader's popover, M111). */
+  variant?: 'detail' | 'menu' | 'panel';
   /** Sheet only: a confirmation that interrupts (`alertdialog`), described by `describedBy`. */
   alert?: boolean;
   describedBy?: string;
@@ -105,10 +106,21 @@ export function DetailSurface({
       aria-label={label}
       data-testid="block-popover"
       {...stop}
-      className={`absolute z-30 rounded-md border border-border-strong bg-surface text-fg shadow-md ${variant === 'menu' ? 'w-max p-1.5' : 'w-[min(320px,calc(100vw-2rem))] p-3'}`}
+      className={`absolute z-30 rounded-md border border-border-strong bg-surface text-fg shadow-md ${
+        variant === 'menu'
+          ? 'w-max p-1.5'
+          : variant === 'panel'
+            ? 'max-h-[calc(100dvh-72px)] w-[min(400px,calc(100vw-2rem))] overflow-y-auto p-4'
+            : 'w-[min(320px,calc(100vw-2rem))] p-3'
+      }`}
       style={{ ...vertical, ...horizontal }}
     >
-      {variant === 'menu' ? null : (
+      {variant === 'menu' ? null : variant === 'panel' ? (
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-subheading">{label}</h2>
+          <CloseButton label={closeLabel} onClick={onClose} size="sm" />
+        </div>
+      ) : (
         <div className="mb-1 flex justify-end">
           <CloseButton label={closeLabel} onClick={onClose} size="sm" />
         </div>

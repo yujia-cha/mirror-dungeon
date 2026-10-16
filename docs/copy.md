@@ -1024,7 +1024,7 @@
 ### routeClose
 - ko: 닫기
 - en: Close
-- 쓰는 곳: src/app/components/FusionNotice.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/MetroMap.tsx, src/app/components/ObserveSlots.tsx, src/app/shell/AppShell.tsx, src/app/shell/GuideSheet.tsx, src/app/stage/EnterablePacks.tsx, src/app/stage/RunStage.tsx
+- 쓰는 곳: src/app/components/FusionNotice.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/MetroMap.tsx, src/app/components/ObserveSlots.tsx, src/app/shell/AppShell.tsx, src/app/shell/CapturePanel.tsx, src/app/shell/GuideSheet.tsx, src/app/stage/EnterablePacks.tsx, src/app/stage/RunStage.tsx
 
 ### packGifts
 - ko: 이 팩의 기프트
@@ -1334,177 +1334,291 @@
 - en: Mark {name} as got
 - 쓰는 곳: src/app/components/GiftTile.tsx
 
-## 화면 인식 (무대 위 패널)
+## 화면 인식 (헤더 버튼과 팝오버)
 
 ### captureTitle
 - ko: 화면 인식
 - en: Screen reader
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureStart
 - ko: 화면 인식 시작
 - en: Start reading the screen
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureStop
 - ko: 중지
 - en: Stop
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureIdle
 - ko: 게임 창을 공유하면 팩 입장과 기프트 획득을 자동으로 기록합니다
 - en: Share the game window to record pack entries and gifts automatically
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureStarting
 - ko: 게임 창 연결 중
 - en: Connecting to the game window
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureRunning
 - ko: 인식 중
 - en: Reading
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
+
+### captureErrShort
+- ko: 오류
+- en: Error
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
+
+### captureAsking
+- ko: 확인할 것 {n}개
+- en: {n} to confirm
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### capturePrivacy
 - ko: 화면은 이 브라우저 안에서만 읽고 어디로도 보내지 않습니다
 - en: The screen is read in this browser only and sent nowhere
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureErr_unsupported
 - ko: 이 브라우저는 화면 공유를 지원하지 않습니다
 - en: This browser cannot share a screen
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureErr_denied
 - ko: 화면 공유를 허용하지 않았습니다. 다시 시작하면 다시 묻습니다
 - en: Screen sharing was not allowed. Starting again asks again
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureErr_ended
 - ko: 화면 공유가 끝났습니다
 - en: Screen sharing ended
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureErr_engine
 - ko: 글자 인식 엔진을 불러오지 못했습니다
 - en: Could not load the text recognition engine
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureErr_layout
 - ko: 화면 배치 정보를 불러오지 못했습니다
 - en: Could not load the screen layout
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval
 - ko: 판독 간격
 - en: Read interval
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureInterval_economy
 - ko: 최고 성능 · 1초
 - en: Lightest · 1 s
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_performance
 - ko: 성능 · 0.5초
 - en: Light · 0.5 s
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_balanced
 - ko: 밸런스 · 0.25초
 - en: Balanced · 0.25 s
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_quality
 - ko: 품질 · 0.125초
 - en: Quality · 0.125 s
-- 쓰는 곳: src/app/stage/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
 
 ### captureLang
 - ko: 게임 언어
 - en: Game language
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLang_ko
 - ko: 한국어
 - en: Korean
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLang_en
 - ko: English (화면 제목 미확인)
 - en: English (screen titles not known yet)
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLog
 - ko: 기록
 - en: Log
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLogEmpty
 - ko: 아직 기록한 것이 없습니다
 - en: Nothing recorded yet
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLogEnter
 - ko: {floor}층 입장 · {name}
 - en: Floor {floor} entered · {name}
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLogGot
 - ko: 획득 · {name}
 - en: Got · {name}
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLogSold
 - ko: 판매 · {name}
 - en: Sold · {name}
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLogFused
 - ko: 합성 · {name}
 - en: Fused · {name}
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLogAnswer
 - ko: 직접 고름 · {name}
 - en: Picked · {name}
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureUndo
 - ko: 되돌리기
 - en: Undo
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureUndone
 - ko: 되돌림
 - en: Undone
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureAskGift
 - ko: 어느 기프트를 얻었나요?
 - en: Which gift did you get?
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureAskPack
 - ko: {floor}층에서 어느 팩에 입장했나요?
 - en: Which pack did you enter on floor {floor}?
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureAskConsumed
 - ko: {name} 합성에 쓴 기프트를 골라 주세요
 - en: Pick the gifts the {name} fusion used
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureAskApply
 - ko: 적용
 - en: Apply
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureAskDismiss
 - ko: 무시
 - en: Ignore
-- 쓰는 곳: src/app/stage/CapturePanel.tsx
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
+
+## 진단 기록 (소유자 전용 — 주소에 #diag를 붙여 열 때만)
+
+메모가 아닌 화면 문구지만 방문자에게는 보이지 않습니다. 화면 인식 팝오버 맨 아래에 나옵니다.
+
+### diagTitle
+- ko: 진단 기록 (소유자용)
+- en: Diagnostics (owner only)
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagHide
+- ko: 숨기기
+- en: Hide
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagRecord
+- ko: 진단 기록
+- en: Record diagnostics
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagImages
+- ko: 화면 이미지 포함
+- en: Include screen images
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagImagesWarn
+- ko: 이미지에는 게임 화면이 들어 있습니다. 공개된 곳에 올리지 마세요.
+- en: Images contain game screens. Do not post them anywhere public.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagEmpty
+- ko: 아직 기록이 없습니다
+- en: Nothing recorded yet
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagStats
+- ko: 기록 {records}건 · 이미지 {frames}장 · 약 {mb}MB
+- en: {records} records · {frames} images · about {mb} MB
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagLastExport
+- ko: 마지막 내보내기 {time}
+- en: last exported {time}
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagFull
+- ko: 기록이 가득 찼습니다(2만 건). 내보내고 지워야 다시 기록합니다.
+- en: The record is full (20,000). Export and clear it to record again.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagTrimmed
+- ko: 이미지 상한을 넘어 오래된 {n}장을 지웠습니다.
+- en: Over the image cap: the oldest {n} were dropped.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagSavedTitle
+- ko: 내보낸 뒤 정리
+- en: After exporting
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagSavedPrompt
+- ko: {name}을(를) 저장했으면 기기의 기록을 지우세요. 그 파일 하나만 전달하면 됩니다.
+- en: Once {name} is saved, clear the record on this device. That one file is all you hand over.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagClearExported
+- ko: 기록 지우기
+- en: Clear the record
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagLater
+- ko: 나중에
+- en: Later
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagExportedLeft
+- ko: 내보낸 기록 {n}건이 아직 기기에 남아 있습니다
+- en: {n} exported records are still on this device
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagCleared
+- ko: 기록 {records}건과 이미지 {frames}장을 지웠습니다.
+- en: Cleared {records} records and {frames} images.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagExport
+- ko: 내보내기
+- en: Export
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagClearAll
+- ko: 모두 지우기
+- en: Clear all
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagClearAllConfirm
+- ko: 내보내지 않은 것까지 기록 {records}건과 이미지 {frames}장을 모두 지웁니다. 되돌릴 수 없습니다.
+- en: This clears all {records} records and {frames} images, exported or not. It cannot be undone.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagWhere
+- ko: 보낼 곳: 내보낸 zip을 Claude Code 개발 세션에 첨부하고 「진단 기록 분석해 줘」라고 보내세요. 직접 돌릴 때는 개발 저장소의 local-fixtures/sessions/에 넣고 npm run capture:feedback을 실행합니다. 게임 화면이 들어 있으니 이슈·채팅방 같은 공개된 곳에는 올리지 마세요.
+- en: Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. To run it yourself, put it in local-fixtures/sessions/ of the development repository and run npm run capture:feedback. It contains game screens, so keep it out of public places such as issues and chat rooms.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
 ## 추적기 탭
 
@@ -1888,8 +2002,8 @@
 - en: Mark what you got by pressing its icon. Leaving a floor without marking records it as 「Not got」, and what another pack gives is routed again on the floors left.
 - ko: 「다음 층」으로 넘어가고 「입장 취소」로 되돌립니다. 층 칸을 눌러 지난 층을 다시 볼 수 있습니다.
 - en: 「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.
-- ko: 데스크톱에서는 「화면 인식 시작」으로 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있고, 화면은 브라우저 밖으로 나가지 않습니다.
-- en: On desktop, 「Start reading the screen」 shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone, and the screen never leaves the browser.
+- ko: 데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있고, 화면은 브라우저 밖으로 나가지 않습니다.
+- en: On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone, and the screen never leaves the browser.
 - ko: 재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.
 - en: When a missed ingredient makes a fusion impossible, the top of 「Full route」 says so and the route is re-planned. By default the fusion is given up (「Don't collect」); press the remaining ingredients to switch to 「Collect」.
 
@@ -1950,7 +2064,7 @@
 - 무대의 팩 카드에서 **입장**하면(버튼 또는 카드를 아래로 당기기) 그 팩에서 챙길 기프트 타일이 나옵니다. **얻은 것은 아이콘을 눌러 획득 표시**하세요(이름을 누르면 상세) — 표시하지 않고 층을 떠나면 「미획득」으로 기록됩니다. 미획득은 「그 팩에서 못 얻음」이라, 다른 팩이 주는 기프트는 남은 층에서 다시 루팅되고, 그 팩에서만 나오는 기프트는 이 런에서 끝입니다.
 - 「다음 층」(또는 아래로 당기기)으로 넘어가고, 「입장 취소」(위로 당기기)는 입장을 취소하며 그 팩에서 표시한 것을 지웁니다. 층 스트립을 눌러 지난 층을 다시 볼 수 있습니다.
 - 루트는 현재 층부터 다시 계산됩니다. 계획에 없는 팩에 들어가도 됩니다.
-- **화면 인식**(데스크톱 Chrome·Edge·Firefox): 무대 위 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.
+- **화면 인식**(데스크톱 Chrome·Edge·Firefox): 헤더의 「화면 인식」 버튼을 눌러 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다(버튼에 개수가 뜹니다). 창을 닫아도 인식은 계속됩니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.
 - **⋯ 메뉴**의 「링크 복사」가 덱·목표·설정을 담은 공유 링크를 만듭니다(런 진행은 담지 않습니다). 「초기화」는 덱을 기본 LCB 수감자로, 목표·설정·런을 처음으로 되돌립니다.
 
 로컬에서 돌리려면:

@@ -46,6 +46,7 @@ export function PackCard({
           src={picture.url}
           alt=""
           loading="lazy"
+          draggable={false}
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"
           style={picture.pixelArt ? { imageRendering: 'pixelated' } : undefined}
