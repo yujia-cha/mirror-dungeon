@@ -84,7 +84,7 @@ function PanelToggle({
       aria-controls={controls}
       data-testid={`toggle-${controls}`}
       data-open={open || undefined}
-      className={`inline-flex h-9 items-center gap-2 rounded-sm px-2 text-subheading text-fg hover:bg-surface-muted ${open ? 'bg-surface-muted' : ''}`}
+      className={`inline-flex h-9 items-center gap-2 rounded-sm px-2 text-subheading text-fg hover:bg-surface-muted touch:min-h-11 ${open ? 'bg-surface-muted' : ''}`}
     >
       <Mark size={17} aria-hidden />
       {label}
@@ -122,14 +122,16 @@ function SizeSteps<S extends 'sm' | 'md' | 'lg' | 'xl'>({
       <div id={`${id}-label`} className="mb-1 text-caption text-fg-muted">
         {label}
       </div>
-      <div className="flex gap-1">
+      {/* Four equal columns (M128): with `flex-1` each step was at least its own label's width, so
+          「아주 크게」 stood wider than the other three. */}
+      <div className="grid grid-cols-4 gap-1" data-uniform="both">
         {steps.map((step) => (
           <button
             key={step}
             type="button"
             aria-pressed={value === step}
             onClick={() => onPick(step)}
-            className="min-h-9 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-label text-fg hover:bg-surface-muted active:bg-surface-sunken aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg touch:min-h-11"
+            className="min-h-9 whitespace-nowrap rounded-sm border border-border-control px-2 text-label text-fg hover:bg-surface-muted active:bg-surface-sunken aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg touch:min-h-11"
           >
             {t(`sizeStep_${step}`, lang)}
           </button>
@@ -296,7 +298,11 @@ export function AppShell({
                     {/* Full width, never `w-max` (M122): the menu is as wide as its widest section (the size
                         steps), and every row has to span it — a list sized to its own labels left
                         the four actions shorter than the steps below them. */}
-                    <ul className="flex w-full min-w-[9rem] flex-col gap-0.5" data-testid="header-menu">
+                    <ul
+                      className="flex w-full min-w-[9rem] flex-col gap-0.5"
+                      data-testid="header-menu"
+                      data-uniform="width"
+                    >
                       {(
                         [
                           {

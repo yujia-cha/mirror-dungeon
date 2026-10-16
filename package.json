@@ -43,6 +43,7 @@
     "copy": "tsx scripts/build-copy.ts",
     "copy:check": "tsx scripts/build-copy.ts --check",
     "shots": "tsx scripts/readme-screenshots.ts",
+    "layout:shots": "tsx scripts/layout-shots.ts",
     "capture:spike": "tsx scripts/capture-spike.ts",
     "capture:bench": "tsx scripts/capture-bench.ts",
     "capture:bench:browser": "tsx scripts/capture-bench-browser.ts",

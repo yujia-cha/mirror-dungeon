@@ -66,6 +66,7 @@ export function FloorHeader({ mode }: { mode: StageMode }) {
         className="scroll-x flex gap-1"
         aria-label={t('floorStrip', lang)}
         data-testid="floor-strip"
+        data-uniform="both"
       >
         {floors.map((f) => {
           const state = stageModeFor(run, f, lastFloor);

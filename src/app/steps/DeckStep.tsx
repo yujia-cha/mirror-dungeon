@@ -438,7 +438,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                 onClick={() => setOpenSinner(open ? null : sinner.id)}
                 aria-expanded={open}
                 aria-haspopup="dialog"
-                className="flex min-w-0 flex-col items-start gap-1 rounded-sm text-left hover:underline"
+                className="flex min-h-6 min-w-0 flex-col items-start justify-center gap-1 rounded-sm text-left hover:underline touch:min-h-11"
               >
                 {identity ? (
                   <>

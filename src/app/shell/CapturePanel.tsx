@@ -275,7 +275,7 @@ export function CaptureMenu() {
         data-testid="capture-open"
         data-status={capture.status}
         data-open={open || undefined}
-        className={`inline-flex h-9 items-center gap-1.5 rounded-sm border px-2 text-label transition-colors duration-150 touch:min-h-11 ${
+        className={`inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-sm border px-2 text-label transition-colors duration-150 touch:min-h-11 touch:min-w-11 ${
           open
             ? 'border-border-strong bg-surface-muted text-fg'
             : 'border-border bg-surface text-fg-muted hover:bg-surface-muted hover:text-fg'

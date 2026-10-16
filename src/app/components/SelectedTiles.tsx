@@ -47,7 +47,12 @@ export function SelectedTiles({
 }) {
   const size = useTileIconSize(32);
   return (
-    <div className="grid gap-1.5" style={{ gridTemplateColumns: tileColumns(size) }} data-testid="gift-chips">
+    <div
+      className="grid gap-1.5"
+      style={{ gridTemplateColumns: tileColumns(size) }}
+      data-testid="gift-chips"
+      data-uniform="width"
+    >
       {ids.map((id) => {
         const gift = indexes.giftById.get(id);
         const name = giftName(id);

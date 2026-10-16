@@ -46,6 +46,7 @@ export function GiftTileGrid({
       className="grid gap-1.5 p-2"
       style={{ gridTemplateColumns: tileColumns(size) }}
       data-testid="gift-grid"
+      data-uniform="width"
     >
       {tiles.map((tile) => {
         const { entry, parent } = tile;

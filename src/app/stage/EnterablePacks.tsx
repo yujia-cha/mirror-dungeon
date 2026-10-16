@@ -28,8 +28,10 @@ import { Badge, Button, LinkButton, TextField } from '../components/ui.tsx';
 
 const CARD_CLASS =
   'relative flex w-[128px] flex-none flex-col items-center gap-2 rounded-md border bg-surface px-3 pt-3 select-none';
+// The foot spans the card between its side borders (`data-span`, M128): the card's padding is
+// 12px a side, so the bar is 24px wider than the content — at +20px it stopped 2px short each side.
 const FOOT_CLASS =
-  '-mx-3 mt-0.5 flex h-[34px] w-[calc(100%+20px)] items-center justify-center gap-1 rounded-b-md border-t text-label transition-colors';
+  '-mx-3 mt-0.5 flex h-[34px] w-[calc(100%+24px)] items-center touch:h-11 justify-center gap-1 rounded-b-md border-t text-label transition-colors';
 const MAX_ICONS = 5;
 
 /** The pack's exclusive gifts as small icons, the wanted ones ringed and first; at most `MAX_ICONS`, then 「+n」. */
@@ -114,6 +116,7 @@ export function OtherEntryCard({ onSkip, lang }: { onSkip: () => void; lang: Lan
         type="button"
         onClick={onSkip}
         aria-label={t('stageOtherEntry', lang)}
+        data-span="padding"
         className={`${FOOT_CLASS} border-dashed ${pull.past ? 'border-primary bg-primary text-primary-fg' : 'border-border-strong text-fg-muted hover:bg-surface-muted'}`}
       >
         {pull.past ? t('stageReleaseNext', lang) : t('stageNext', lang)}
@@ -179,6 +182,7 @@ export function StagePackCard({
         type="button"
         onClick={() => onEnter(pack.id)}
         aria-label={t('stageEnterPack', lang, { name })}
+        data-span="padding"
         className={`${FOOT_CLASS} ${pull.past ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:bg-surface-muted'}`}
       >
         {pull.past ? t('stageReleaseEnter', lang) : t('stageEnter', lang)}
@@ -231,7 +235,7 @@ export function OtherPacks({
   }, [offered, exclude, sameGifts, ctx, query, lang, exclusivesOf]);
   return (
     <details className="rounded-md border border-border bg-surface" data-testid="other-packs">
-      <summary className="cursor-pointer px-3 py-2 text-label text-fg-muted">
+      <summary className="cursor-pointer px-3 py-2 text-label text-fg-muted touch:min-h-11">
         {t('stageOtherPacks', lang)}{' '}
         <span className="font-num text-caption text-fg-subtle">{packs.length}</span>
       </summary>

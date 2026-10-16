@@ -18,7 +18,8 @@ import { PackCard } from '../components/PackCard.tsx';
 import { LinkButton } from '../components/ui.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
-const HANDLE_CLASS = 'flex h-9 w-full items-center justify-center gap-1 text-label transition-colors';
+const HANDLE_CLASS =
+  'flex h-9 w-full items-center justify-center gap-1 text-label transition-colors touch:h-11';
 
 /** Opens from zero height on mount (`grid-template-rows` 0fr → 1fr) and folds the same way when `closing`. */
 export function PackArea({ packId, closing = false }: { packId: number; closing?: boolean }) {

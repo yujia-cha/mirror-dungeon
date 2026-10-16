@@ -27,7 +27,7 @@ export function GiftFilterBar({ state, enums, lang }: { state: GiftFilterState; 
   }));
   const sinOptions = enums.sins.map((s) => ({ value: s as Sin, label: t(SIN_LABEL[s as Sin], lang) }));
   return (
-    <div className="flex flex-wrap gap-1.5" data-testid="gift-filters">
+    <div className="flex flex-wrap gap-1.5" data-testid="gift-filters" data-uniform="height">
       <FilterSelect
         label={t('filterKeyword', lang)}
         value={filters.keyword}

@@ -173,7 +173,7 @@ export function Button({
       aria-busy={loading || undefined}
       aria-pressed={pressed}
       data-testid={testId}
-      className={`inline-flex ${BUTTON_SIZE[size]} flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-sm border transition-colors duration-150 touch:min-h-11 ${BUTTON_DISABLED} ${BUTTON_VARIANT[variant]} ${className}`}
+      className={`inline-flex ${BUTTON_SIZE[size]} flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-sm border transition-colors duration-150 touch:min-h-11 touch:min-w-11 ${BUTTON_DISABLED} ${BUTTON_VARIANT[variant]} ${className}`}
     >
       {loading ? <Loader2 size={size === 'sm' ? 12 : 14} className="animate-spin" aria-hidden /> : null}
       {children}
@@ -306,6 +306,7 @@ export function LinkButton({
       aria-haspopup="dialog"
       aria-label={ariaLabel}
       data-testid={testId}
+      data-link
       className={`underline decoration-border-strong underline-offset-2 transition-colors duration-150 hover:decoration-fg ${muted ? 'text-fg-subtle hover:text-fg' : 'text-fg'} ${className}`}
     >
       {children}
@@ -493,7 +494,7 @@ export function Checkbox({
   return (
     <label
       title={title}
-      className={`inline-flex items-center gap-2 touch:min-h-11 ${disabled ? 'text-fg-subtle' : ''} ${className}`}
+      className={`inline-flex min-h-6 items-center gap-2 touch:min-h-11 touch:min-w-11 ${disabled ? 'text-fg-subtle' : ''} ${className}`}
     >
       <input
         type="checkbox"

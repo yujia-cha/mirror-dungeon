@@ -98,7 +98,9 @@ export function ObserveSlots({
       <p className="font-num text-caption text-fg-muted" data-testid="observe-slots-count">
         {t('observeSlotsCount', lang, { n: slots.length, max: budget })}
       </p>
-      <div className="flex flex-wrap gap-1.5">
+      {/* A grid of equal cells (M128): wrapping `flex-1` cells left the third alone on its row,
+          stretched to twice the width of the two above it. */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(104px,1fr))] gap-1.5" data-uniform="both">
         {cells.map((giftId, i) => {
           const gift = giftId !== null ? indexes.giftById.get(giftId) : undefined;
           const name = gift ? pick(gift.name, lang) : '';

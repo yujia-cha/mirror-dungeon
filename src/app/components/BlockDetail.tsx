@@ -106,6 +106,7 @@ export function DetailSurface({
       role="dialog"
       aria-label={label}
       data-testid="block-popover"
+      data-variant={variant}
       {...stop}
       className={`absolute z-30 rounded-md border border-border-strong bg-surface text-fg shadow-md ${
         variant === 'menu'

@@ -52,6 +52,7 @@ export function TabBar<Id extends string>({
       aria-label={label}
       onKeyDown={onKeyDown}
       className="flex gap-1 border-b border-border bg-surface px-2 pt-2"
+      data-uniform="height"
     >
       {tabs.map((entry) => {
         const on = entry.id === tab;
@@ -63,7 +64,7 @@ export function TabBar<Id extends string>({
             aria-selected={on}
             tabIndex={on ? 0 : -1}
             onClick={() => onTab(entry.id)}
-            className={`-mb-px border-b-2 px-3 pb-2 pt-1 text-subheading touch:min-h-11 ${on ? 'border-primary text-fg' : 'border-transparent text-fg-muted hover:text-fg'}`}
+            className={`-mb-px border-b-2 px-3 pb-2 pt-1 text-subheading touch:min-h-11 touch:min-w-11 ${on ? 'border-primary text-fg' : 'border-transparent text-fg-muted hover:text-fg'}`}
           >
             {entry.label}
           </button>
