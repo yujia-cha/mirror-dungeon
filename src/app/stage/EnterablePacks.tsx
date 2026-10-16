@@ -21,10 +21,9 @@ import { pick, t, type Lang } from '../i18n.ts';
 import { matchesQuery } from '../lib/hangul.ts';
 import type { EnterablePack } from '../lib/stage.ts';
 import { pullStyle, usePullGesture } from '../lib/usePullGesture.ts';
-import { DetailSurface } from '../components/BlockDetail.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { PackCard } from '../components/PackCard.tsx';
-import { PackSheetBody, type PackContext } from '../components/PackSheet.tsx';
+import type { PackContext } from '../components/PackSheet.tsx';
 import { Badge, Button, LinkButton, TextField } from '../components/ui.tsx';
 
 const CARD_CLASS =
@@ -203,7 +202,8 @@ export function OtherPacks({
   const { lang } = ctx;
   const visitedAt = (packId: number): number | null => ctx.run?.visitedAt(packId) ?? null;
   const [query, setQuery] = useState('');
-  const [open, setOpen] = useState<number | null>(null);
+  // The shell's one detail sheet (M120): the portrait and the name both open it.
+  const open = (packId: number): void => ctx.onOpenPack?.(packId);
   const packs = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (
@@ -253,10 +253,17 @@ export function OtherPacks({
                   data-testid="other-pack"
                   data-pack={pack.id}
                 >
-                  <PackCard pack={pack} size={28} onOpen={setOpen} lang={lang} />
+                  <PackCard pack={pack} size={28} onOpen={open} lang={lang} />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-body">{name}</span>
+                      <LinkButton
+                        onClick={() => open(pack.id)}
+                        ariaLabel={t('stagePackDetail', lang, { name })}
+                        className="truncate text-left text-body"
+                        testId="other-pack-name"
+                      >
+                        {name}
+                      </LinkButton>
                       {sameGifts?.has(pack.id) ? (
                         <span data-testid="other-pack-same">
                           <Badge tone="neutral">{t('stageSameGifts', lang)}</Badge>
@@ -292,17 +299,6 @@ export function OtherPacks({
           </ul>
         )}
       </div>
-      {/* The sheet lives outside the list: adding a goal from it can move the pack to the route row. */}
-      {open !== null ? (
-        <DetailSurface
-          mode="sheet"
-          label={pick(ctx.indexes.packById.get(open)?.name, lang)}
-          closeLabel={t('routeClose', lang)}
-          onClose={() => setOpen(null)}
-        >
-          <PackSheetBody packId={open} ctx={ctx} />
-        </DetailSurface>
-      ) : null}
     </details>
   );
 }

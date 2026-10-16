@@ -639,17 +639,17 @@
 ### giftsObserveNotAllowed
 - ko: 관측할 수 없는 기프트
 - en: Cannot be observed
-- 쓰는 곳: src/app/components/GiftDetailSheet.tsx
+- 쓰는 곳: 참조 없음
 
 ### giftsObserveFull
 - ko: 관측은 최대 {max}개
 - en: Up to {max} observations
-- 쓰는 곳: src/app/components/GiftDetailSheet.tsx
+- 쓰는 곳: 참조 없음
 
 ### giftsObserveClosed
 - ko: 1층을 떠난 뒤에는 관측을 바꿀 수 없습니다
 - en: Observations cannot change after floor 1 is left
-- 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/components/ObserveSlots.tsx
+- 쓰는 곳: src/app/components/ObserveSlots.tsx
 
 ### observeSlots
 - ko: 관측
@@ -675,11 +675,27 @@
 메모: 관측 토글은 어디서나 같게 읽힌다(팩 시트·시작 줄·기프트 시트·슬롯): 꺼짐 「관측 지정」, 켜짐 「지정됨」, 해제 「{name} 지정 해제」.
 - ko: 지정됨
 - en: Pinned
-- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/PackSheet.tsx
+- 쓰는 곳: src/app/components/BlockDetail.tsx
 
 ### observeSlotClear
 - ko: {name} 지정 해제
 - en: Unpin {name}
+- 쓰는 곳: src/app/components/ObserveSlots.tsx
+
+### observeSlotSkip
+메모: M120: 관측 칸 목록의 맨 위. 누르면 그 칸을 쓰지 않는다(계획이 관측을 하나 덜 쓴다).
+- ko: 관측하지 않기
+- en: Don't observe
+- 쓰는 곳: src/app/components/ObserveSlots.tsx
+
+### observeSlotOff
+- ko: 관측 안 함
+- en: Not observing
+- 쓰는 곳: src/app/components/ObserveSlots.tsx
+
+### observeSlotOn
+- ko: 관측 안 함 해제
+- en: Use this slot again
 - 쓰는 곳: src/app/components/ObserveSlots.tsx
 
 ### observeSlotNone
@@ -690,7 +706,7 @@
 ### settingsObserved
 - ko: 관측 지정
 - en: Observe
-- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/PackSheet.tsx
+- 쓰는 곳: src/app/components/BlockDetail.tsx
 
 ## 기프트 상세 시트
 
@@ -750,22 +766,22 @@
 ### giftDetail
 - ko: {name} 자세히
 - en: {name} details
-- 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/components/GiftGrid.tsx, src/app/components/GiftTile.tsx, src/app/components/SelectedTiles.tsx
+- 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/components/GiftGrid.tsx, src/app/components/GiftTile.tsx, src/app/components/PackSheet.tsx, src/app/components/SelectedTiles.tsx
 
 ### giftDetailBack
 - ko: {name} 설명으로 돌아가기
 - en: Back to {name}
-- 쓰는 곳: src/app/components/GiftDetailSheet.tsx
+- 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/components/PackSheet.tsx
 
 ### giftExclusive
 - ko: 전용
 - en: Exclusive
-- 쓰는 곳: src/app/components/PackSheet.tsx
+- 쓰는 곳: 참조 없음
 
 ### giftWanted
 - ko: 목표
 - en: Goal
-- 쓰는 곳: src/app/components/PackSheet.tsx
+- 쓰는 곳: 참조 없음
 
 ### giftUnjudgeable
 - ko: 판정 불가
@@ -776,12 +792,12 @@
 메모: 기프트가 목표가 되거나 빠지는 모든 곳(기프트 시트, 팩 시트의 줄)이 이 둘을 쓴다. 트레이 타일의 ✕와 결정 카드는 이름을 붙여 같은 말을 한다.
 - ko: 목표에 추가
 - en: Add as goal
-- 쓰는 곳: src/app/components/PackSheet.tsx
+- 쓰는 곳: src/app/components/GiftDetailSheet.tsx
 
 ### giftRemoveGoal
 - ko: 목표에서 빼기
 - en: Remove from goals
-- 쓰는 곳: src/app/components/PackSheet.tsx
+- 쓰는 곳: src/app/components/GiftDetailSheet.tsx
 
 ### giftFusionDead
 - ko: 조합 불가 — {result} 재료를 구할 수 없습니다
@@ -808,12 +824,12 @@
 ### optionAuto
 - ko: 자동
 - en: Auto
-- 쓰는 곳: src/app/shell/RouteOptions.tsx
+- 쓰는 곳: src/app/components/MetroMap.tsx, src/app/shell/RouteOptions.tsx
 
 ### optionAutoResolved
 - ko: 자동 ({keyword})
 - en: Auto ({keyword})
-- 쓰는 곳: src/app/shell/RouteOptions.tsx
+- 쓰는 곳: src/app/components/MetroMap.tsx, src/app/shell/RouteOptions.tsx
 
 ### startKeywordGives
 메모: 기프트 이름에 조사가 붙어서 오므로(withJosa) 문장에는 조사가 없다.
@@ -1088,7 +1104,7 @@
 ### routeClose
 - ko: 닫기
 - en: Close
-- 쓰는 곳: src/app/components/FusionNotice.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/MetroMap.tsx, src/app/components/ObserveSlots.tsx, src/app/shell/AppShell.tsx, src/app/shell/CapturePanel.tsx, src/app/shell/GuideSheet.tsx, src/app/stage/EnterablePacks.tsx, src/app/stage/RunStage.tsx
+- 쓰는 곳: src/app/components/FusionNotice.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/MetroMap.tsx, src/app/components/ObserveSlots.tsx, src/app/components/PackSheet.tsx, src/app/shell/AppShell.tsx, src/app/shell/CapturePanel.tsx, src/app/shell/GuideSheet.tsx
 
 ### packGifts
 - ko: 이 팩의 기프트
@@ -1355,7 +1371,7 @@
 ### stagePackDetail
 - ko: {name} 자세히
 - en: {name} details
-- 쓰는 곳: src/app/stage/EnterablePacks.tsx
+- 쓰는 곳: src/app/stage/EnterablePacks.tsx, src/app/stage/EnteredPack.tsx
 
 ### stageEntered
 - ko: {floor}층에 입장

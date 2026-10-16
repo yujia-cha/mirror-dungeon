@@ -15,13 +15,14 @@ import { useTileIconSize } from '../lib/icon-size.ts';
 import { pullStyle, usePullGesture } from '../lib/usePullGesture.ts';
 import { GiftTile } from '../components/GiftTile.tsx';
 import { PackCard } from '../components/PackCard.tsx';
+import { LinkButton } from '../components/ui.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
 const HANDLE_CLASS = 'flex h-9 w-full items-center justify-center gap-1 text-label transition-colors';
 
 /** Opens from zero height on mount (`grid-template-rows` 0fr → 1fr) and folds the same way when `closing`. */
 export function PackArea({ packId, closing = false }: { packId: number; closing?: boolean }) {
-  const { indexes, lang, ctx, needed, entryGiftsOf, next, leave, openGift } = usePlan();
+  const { indexes, lang, ctx, needed, entryGiftsOf, next, leave, openGift, openPack } = usePlan();
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
   const tileSize = useTileIconSize(44);
@@ -79,8 +80,14 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
 
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 px-3 py-4">
             <div className="flex w-[112px] flex-col items-center gap-2 md:w-[150px]">
-              <PackCard pack={pack} size={96} lang={lang} />
-              <span className="text-center text-subheading ">{name}</span>
+              <PackCard pack={pack} size={96} onOpen={openPack} lang={lang} />
+              <LinkButton
+                onClick={() => openPack(pack.id)}
+                ariaLabel={t('stagePackDetail', lang, { name })}
+                className="text-center text-subheading"
+              >
+                {name}
+              </LinkButton>
             </div>
             <div className="flex min-w-0 flex-col gap-2">
               <div className="flex flex-wrap items-baseline gap-2">

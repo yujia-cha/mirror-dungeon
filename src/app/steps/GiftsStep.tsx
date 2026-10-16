@@ -24,7 +24,7 @@ import {
   User,
 } from 'lucide-react';
 import type { GameData, Keyword } from '../../core/schema.ts';
-import { observable } from '../../core/index.ts';
+import { observable, observationBudget } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
@@ -94,6 +94,9 @@ export function GiftsStep({
   // Floor 1 left: the starlight is spent, and no slot takes or moves a pin any more.
   const observeClosed = useApp((s) => observationClosed(s.run));
   const observeMax = data.rules.giftObservation.max;
+  const observationSlots = useApp((s) => s.options.observationSlots);
+  // The slots the plan may spend: 「관측하지 않기」 turns one off (M120).
+  const observeBudget = observationBudget({ observationSlots }, data);
   // The selection rule and the derived views over `wanted` are the shell's (`PlanProvider`), so
   // they are computed once and every surface agrees.
   const { plan, openGift, childrenOf, entangled, blocked, needed, toggleGoal: toggle } = usePlan();
@@ -182,14 +185,19 @@ export function GiftsStep({
       (id) => canObserve(id) && !observedGifts.includes(id) && !observeSuggested.includes(id),
     ),
   ];
-  const pin = (id: number): void => toggleObserved(id, { max: observeMax, observable: canObserve });
+  const pin = (id: number): void => toggleObserved(id, { max: observeBudget, observable: canObserve });
   const unpin = (id: number): void => {
-    if (observedGifts.includes(id)) toggleObserved(id, { max: observeMax, observable: canObserve });
+    if (observedGifts.includes(id)) toggleObserved(id, { max: observeBudget, observable: canObserve });
   };
+  const skipSlot = (): void =>
+    setOptions({ observationSlots: Math.max(observedGifts.length, observeBudget - 1) });
+  const unskipSlot = (): void =>
+    setOptions({ observationSlots: observeBudget + 1 >= observeMax ? undefined : observeBudget + 1 });
   const drag = useChipDrag((giftId, slot) => {
     // The replace and reorder paths below write the options directly, so the store's own refusal
     // of a pin after floor 1 does not reach them: the drop is ignored here instead.
-    if (slot === null || observeClosed || !canObserve(giftId)) return;
+    // A slot turned off takes no pin: 「관측 안 함」 is undone with its own button first.
+    if (slot === null || slot >= observeBudget || observeClosed || !canObserve(giftId)) return;
     // The slot order is what the run pays (`costTable`), so moving a pin between cells is a real
     // choice — dropping an already-pinned chip used to light the target up and then do nothing.
     if (observedGifts.includes(giftId)) {
@@ -372,6 +380,9 @@ export function GiftsStep({
       <ObserveSlots
         slots={observedGifts}
         max={observeMax}
+        budget={observeBudget}
+        onSkip={skipSlot}
+        onUnskip={unskipSlot}
         candidates={observeCandidates}
         suggested={observeSuggested}
         indexes={indexes}
@@ -379,6 +390,7 @@ export function GiftsStep({
         lang={lang}
         onPin={pin}
         onUnpin={unpin}
+        onOpenGift={openGift}
         closed={observeClosed}
         dragging={drag.state.dragging !== null}
         over={drag.state.over}

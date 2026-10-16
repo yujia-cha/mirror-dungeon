@@ -119,6 +119,8 @@ export interface PlanState {
   enterAt: (floor: number, packId: number) => void;
   /** Open the gift detail sheet (the same one the items tab uses) from anywhere in the shell. */
   openGift: (giftId: number) => void;
+  /** Open a pack's details in the same sheet (M120). */
+  openPack: (packId: number) => void;
 }
 
 export const PlanCtx = createContext<PlanState | null>(null);

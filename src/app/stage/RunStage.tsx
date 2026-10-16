@@ -7,9 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Star } from 'lucide-react';
 import { useApp } from '../store.ts';
 import { enterablePacks, packsOfferedOn } from '../lib/stage.ts';
-import { pick, t } from '../i18n.ts';
-import { DetailSurface } from '../components/BlockDetail.tsx';
-import { PackSheetBody } from '../components/PackSheet.tsx';
+import { t } from '../i18n.ts';
 import { Button, Card, Notice } from '../components/ui.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 import { OtherEntryCard, OtherPacks, StagePackCard } from './EnterablePacks.tsx';
@@ -20,7 +18,7 @@ import { FloorHeader } from './FloorHeader.tsx';
 const FOLD_MS = 200;
 
 export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
-  const { indexes, lang, shown, ctx, exclusivesOf, stageMode, enter, next } = usePlan();
+  const { indexes, lang, shown, ctx, exclusivesOf, stageMode, enter, next, openPack } = usePlan();
   const run = useApp((s) => s.run);
   const resetRun = useApp((s) => s.resetRun);
   const lastFloor = useApp((s) => s.lastFloor);
@@ -31,8 +29,6 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
 
   // When the entry on the stage floor is taken back, the area stays a moment to fold away.
   const [closing, setClosing] = useState<number | null>(null);
-  // The pack sheet opened from a card's title; rendered here so no pulled card's transform contains it.
-  const [detail, setDetail] = useState<number | null>(null);
   const previous = useRef<{ floor: number; entered: number | undefined }>({ floor, entered });
   useEffect(() => {
     const before = previous.current;
@@ -90,7 +86,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
                 ctx={ctx}
                 exclusivesOf={exclusivesOf}
                 onEnter={enter}
-                onOpen={setDetail}
+                onOpen={openPack}
                 alternatives={alternatives}
               />
             ) : null;
@@ -107,16 +103,6 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
           exclusivesOf={exclusivesOf}
           onEnter={enter}
         />
-        {detail !== null ? (
-          <DetailSurface
-            mode="sheet"
-            label={pick(indexes.packById.get(detail)?.name, lang)}
-            closeLabel={t('routeClose', lang)}
-            onClose={() => setDetail(null)}
-          >
-            <PackSheetBody packId={detail} ctx={ctx} />
-          </DetailSurface>
-        ) : null}
       </div>
     );
   }

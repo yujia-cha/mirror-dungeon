@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy, Plus, RotateCcw, Search } from 'lucide-react';
+import { Check, ClipboardPaste, Plus, RotateCcw, Search } from 'lucide-react';
 import type { GameData, Identity } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
@@ -192,7 +192,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           <span className="hidden @sm:inline">{t('deckDefault', lang)}</span>
         </Button>
         <Button onClick={() => setImportOpen((v) => !v)} ariaLabel={t('deckImport', lang)}>
-          <Copy size={14} aria-hidden />
+          <ClipboardPaste size={14} aria-hidden />
           <span className="hidden @sm:inline">{t('deckImport', lang)}</span>
         </Button>
         {open ? (

@@ -184,6 +184,10 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   if ('deployed' in source) out.deployed = source.deployed;
   const observed = Array.isArray(out.observedGifts) ? out.observedGifts : [];
   out.observedGifts = [...new Set(observed.filter((n): n is number => typeof n === 'number'))];
+  // Slots turned off with 「관측하지 않기」 (M120). Core clamps the top to the rules' count.
+  const slots = source.observationSlots;
+  if (typeof slots === 'number' && Number.isInteger(slots) && slots >= 0) out.observationSlots = slots;
+  else delete out.observationSlots;
   // Pack-level choices are the CLI's (`--ban`, `--prefer`); the app has no control for them, so a
   // saved state or an old link that still carries some would steer the route with nothing on
   // screen to say so or to undo it. They are dropped without a word.

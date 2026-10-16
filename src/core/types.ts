@@ -43,6 +43,11 @@ export interface PlanOptions {
    * a forced pack so the route has more room.
    */
   observedGifts: number[];
+  /**
+   * How many 기프트 관측 slots the plan may use, pins included (M120 — the player's 「관측하지 않기」
+   * on a slot). Omitted = every slot the rules allow; clamped into 0..`rules.giftObservation.max`.
+   */
+  observationSlots?: number;
   /** Assume every forced pack needs an observation on a pack never visited before (×1.5 cost). */
   assumeUnvisitedPacks: boolean;
   /**

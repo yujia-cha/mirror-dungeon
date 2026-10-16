@@ -13,6 +13,7 @@ import { pick, t } from '../i18n.ts';
 import { segmentsFor, stackBlocks, type Segment } from '../lib/metro.ts';
 import { useElementWidth, useMeasuredHeights } from '../lib/useElementWidth.ts';
 import { DetailSurface, ObservedDetailBody, type DetailMode } from './BlockDetail.tsx';
+import { LinkButton } from './ui.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { PackCard } from './PackCard.tsx';
 import { PackSheetBody, type PackContext } from './PackSheet.tsx';
@@ -30,6 +31,8 @@ export interface MetroMapProps {
   /** `indexes.fixedModeByFloor`: which floors the season fixes to 평행중첩 or EXTREME. */
   fixedModeByFloor: Map<number, 'parallel' | 'extreme'>;
   keywordLabel: (id: NonNullable<RoutePlan['start']['keyword']>) => string;
+  /** The start keyword is left on 「자동」: the start line says so (M120). */
+  autoKeyword?: boolean;
   run?: MetroRun;
   /** `auto` switches horizontal/vertical on the viewport; `vertical` always draws the narrow form (side panels). */
   variant?: 'auto' | 'vertical';
@@ -195,6 +198,7 @@ export function MetroMap({
   plan,
   ctx,
   keywordLabel,
+  autoKeyword = false,
   lastFloor,
   fixedModeByFloor,
   run,
@@ -232,7 +236,7 @@ export function MetroMap({
           closeLabel={t('routeClose', lang)}
           onClose={close}
         >
-          <PackSheetBody packId={open.packId} ctx={ctx} exclusiveOnly />
+          <PackSheetBody packId={open.packId} ctx={ctx} />
         </DetailSurface>
       );
     }
@@ -287,10 +291,30 @@ export function MetroMap({
           pack={theme}
           size={compact ? 20 : 28}
           caption={!compact}
-          onOpen={() => setOpen({ kind: 'pack', packId: pack.packId, key, mode })}
+          // The shell's one detail sheet when there is one (M120); a local surface otherwise.
+          // A compact row's name beside it is the link, so the portrait is not a second button.
+          onOpen={
+            compact && ctx.onOpenPack
+              ? undefined
+              : () =>
+                  ctx.onOpenPack
+                    ? ctx.onOpenPack(pack.packId)
+                    : setOpen({ kind: 'pack', packId: pack.packId, key, mode })
+          }
           lang={lang}
         />
-        {compact ? <span className="truncate text-caption-strong ">{pick(theme.name, lang)}</span> : null}
+        {compact ? (
+          ctx.onOpenPack ? (
+            <LinkButton
+              onClick={() => ctx.onOpenPack?.(pack.packId)}
+              className="truncate text-caption-strong"
+            >
+              {pick(theme.name, lang)}
+            </LinkButton>
+          ) : (
+            <span className="truncate text-caption-strong ">{pick(theme.name, lang)}</span>
+          )
+        ) : null}
         {detailFor(key, mode)}
       </div>
     );
@@ -325,6 +349,11 @@ export function MetroMap({
               />
               {pick(startGift.name, lang)}
             </span>
+            {autoKeyword && startKeyword ? (
+              <span className="text-fg-subtle" data-testid="start-auto">
+                {t('optionAutoResolved', lang, { keyword: startKeyword })}
+              </span>
+            ) : null}
           </div>
         ) : startKeyword ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="start-line">
@@ -332,6 +361,11 @@ export function MetroMap({
               <Star size={11} aria-hidden className="text-fg-subtle" />
               {t('routeStart', lang)} {startKeyword}
             </span>
+            {autoKeyword ? (
+              <span className="text-fg-subtle" data-testid="start-auto">
+                {t('optionAuto', lang)}
+              </span>
+            ) : null}
           </div>
         ) : null}
         {slots > 0 ? (

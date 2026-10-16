@@ -4,7 +4,7 @@
  * context every pack surface takes and the run actions that settle gifts as floors are left.
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { conflictRootsOf, evaluateConditions, planRoute } from '../../core/index.ts';
+import { conflictRootsOf, evaluateConditions, observationBudget, planRoute } from '../../core/index.ts';
 import type { GameData, Gift, Keyword } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -30,8 +30,11 @@ import { upgradeChildren } from '../lib/upgrade-children.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
 import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
-import type { PackContext } from '../components/PackSheet.tsx';
+import { PackDetailSheet, type PackContext } from '../components/PackSheet.tsx';
 import { PlanCtx, type PlanState } from './plan-context.ts';
+
+/** One entry of the detail sheet's trail. */
+type Detail = { kind: 'gift' | 'pack'; id: number };
 
 export function PlanProvider({
   data,
@@ -64,22 +67,29 @@ export function PlanProvider({
   // no longer a goal falls out below, and an empty check list ends the preview.
   const [dropSelection, setDropSelection] = useState<number[]>([]);
   const [previewWanted, setPreviewWanted] = useState(false);
-  // The gift sheet's trail: the top is on show, and each gift below it is one a recipe was
-  // followed from (「← 이전 기프트」). Opening from anywhere else starts a fresh trail.
-  const [detailStack, setDetailStack] = useState<number[]>([]);
-  const detailGift = detailStack.length > 0 ? detailStack[detailStack.length - 1]! : null;
-  const openGift = useCallback((giftId: number) => setDetailStack([giftId]), []);
-  const followGift = useCallback(
-    (giftId: number) =>
-      setDetailStack((stack) => (stack[stack.length - 1] === giftId ? stack : [...stack, giftId])),
+  // The detail sheet's trail (gifts and, since M120, packs): the top is on show, and each entry
+  // below it is one a name was followed from (「← 이전」). Opening from a tile or a card starts a
+  // fresh trail; a name inside a sheet adds to it.
+  const [detailStack, setDetailStack] = useState<Detail[]>([]);
+  const detail = detailStack.length > 0 ? detailStack[detailStack.length - 1]! : null;
+  const openGift = useCallback((giftId: number) => setDetailStack([{ kind: 'gift', id: giftId }]), []);
+  const openPack = useCallback((packId: number) => setDetailStack([{ kind: 'pack', id: packId }]), []);
+  const follow = useCallback(
+    (next: Detail) =>
+      setDetailStack((stack) => {
+        const top = stack[stack.length - 1];
+        return top && top.kind === next.kind && top.id === next.id ? stack : [...stack, next];
+      }),
     [],
   );
-  const backGift = useCallback(() => setDetailStack((stack) => stack.slice(0, -1)), []);
+  const followGift = useCallback((giftId: number) => follow({ kind: 'gift', id: giftId }), [follow]);
+  const followPack = useCallback((packId: number) => follow({ kind: 'pack', id: packId }), [follow]);
+  const backDetail = useCallback(() => setDetailStack((stack) => stack.slice(0, -1)), []);
   const desktop = useDesktop();
   const closeSheet = useCallback(() => setDetailStack([]), []);
   // On a phone the sheet owns a history entry of its own, above the panel page's, so one back
   // gesture closes the sheet (the whole trail) and the next one the page.
-  usePageHistory(detailGift !== null, closeSheet, !desktop);
+  usePageHistory(detail !== null, closeSheet, !desktop);
 
   // How far the run goes is the season's, not the app's: `options.lastFloor` only bounds what a
   // saved or shared plan may claim.
@@ -318,7 +328,11 @@ export function PlanProvider({
       exclusivesOf,
       onToggleObserved: variant
         ? undefined
-        : (giftId) => toggleObserved(giftId, { max: data.rules.giftObservation.max, observable: canObserve }),
+        : (giftId) =>
+            toggleObserved(giftId, { max: observationBudget(options, data), observable: canObserve }),
+      // A name inside a sheet moves the sheet; from anywhere else it opens one (M120).
+      onOpenGift: followGift,
+      onOpenPack: followPack,
       onToggleWanted: variant
         ? undefined
         : (giftId) => {
@@ -388,10 +402,12 @@ export function PlanProvider({
       leave,
       enterAt,
       openGift,
+      openPack,
     };
   }, [
     data,
     indexes,
+    options,
     stats,
     lang,
     lastFloor,
@@ -426,14 +442,27 @@ export function PlanProvider({
     nextFloor,
     setStageFloor,
     openGift,
+    openPack,
+    followGift,
+    followPack,
   ]);
 
   // The sheet is hosted here and nowhere else, so a tile on the stage, in the tracker, in the
   // route panel or in the items tab opens the same details — and the sheet outlives the surface
   // that opened it. A sheet hosted inside a panel would die with the panel on a phone, where the
   // panel is a full-screen page that unmounts when it closes.
-  const sheetGift = detailGift !== null ? indexes.giftById.get(detailGift) : undefined;
-  const previousGift = detailStack.length > 1 ? detailStack[detailStack.length - 2]! : null;
+  const sheetGift = detail?.kind === 'gift' ? indexes.giftById.get(detail.id) : undefined;
+  const sheetPack = detail?.kind === 'pack' ? indexes.packById.get(detail.id) : undefined;
+  const previous = detailStack.length > 1 ? detailStack[detailStack.length - 2]! : null;
+  const back = previous
+    ? {
+        name:
+          previous.kind === 'gift'
+            ? pick(indexes.giftById.get(previous.id)?.name, lang)
+            : pick(indexes.packById.get(previous.id)?.name, lang),
+        onBack: backDetail,
+      }
+    : undefined;
   return (
     <PlanCtx.Provider value={value}>
       {children}
@@ -446,17 +475,15 @@ export function PlanProvider({
           indexes={indexes}
           lang={lang}
           onToggleWanted={toggleGoal}
-          collected={value.needed.has(sheetGift.id)}
           blocked={wanted.includes(sheetGift.id) ? undefined : blocked.get(sheetGift.id)}
           plan={shown}
           onOpenGift={followGift}
-          back={
-            previousGift !== null
-              ? { name: pick(indexes.giftById.get(previousGift)?.name, lang), onBack: backGift }
-              : undefined
-          }
+          onOpenPack={followPack}
+          back={back}
           onClose={closeSheet}
         />
+      ) : sheetPack ? (
+        <PackDetailSheet pack={sheetPack} ctx={value.ctx} back={back} onClose={closeSheet} />
       ) : null}
     </PlanCtx.Provider>
   );

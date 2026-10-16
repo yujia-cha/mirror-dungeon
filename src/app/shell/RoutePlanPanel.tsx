@@ -156,6 +156,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           plan={shown}
           ctx={ctx}
           keywordLabel={keywordLabel}
+          autoKeyword={input.options.startKeyword === 'auto'}
           lastFloor={lastFloor}
           fixedModeByFloor={indexes.fixedModeByFloor}
           run={{ currentFloor: run.currentFloor }}

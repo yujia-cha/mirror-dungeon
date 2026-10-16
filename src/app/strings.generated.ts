@@ -207,6 +207,10 @@ export const STRINGS = {
   // 관측 토글은 어디서나 같게 읽힌다(팩 시트·시작 줄·기프트 시트·슬롯): 꺼짐 「관측 지정」, 켜짐 「지정됨」, 해제 「{name} 지정 해제」.
   observePinned: { ko: '지정됨', en: 'Pinned' },
   observeSlotClear: { ko: '{name} 지정 해제', en: 'Unpin {name}' },
+  // M120: 관측 칸 목록의 맨 위. 누르면 그 칸을 쓰지 않는다(계획이 관측을 하나 덜 쓴다).
+  observeSlotSkip: { ko: '관측하지 않기', en: "Don't observe" },
+  observeSlotOff: { ko: '관측 안 함', en: 'Not observing' },
+  observeSlotOn: { ko: '관측 안 함 해제', en: 'Use this slot again' },
   observeSlotNone: { ko: '관측할 수 있는 목표 기프트가 없습니다', en: 'No goal gift can be observed' },
   settingsObserved: { ko: '관측 지정', en: 'Observe' },
 

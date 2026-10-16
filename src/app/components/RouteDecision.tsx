@@ -35,7 +35,7 @@ import type { DropSelection } from '../shell/plan-context.ts';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import type { PackContext } from './PackSheet.tsx';
-import { Button, Card, Chip, Skeleton } from './ui.tsx';
+import { Button, Card, Chip, LinkButton, Skeleton } from './ui.tsx';
 
 export interface RouteDecisionProps {
   /** The plan for the full goal list — what the bars are measured against. */
@@ -192,9 +192,19 @@ export function RouteDecision({
                     ) : null}
                   </span>
                   <span className="flex min-w-0 items-center gap-1">
-                    <span className="min-w-0 truncate text-body" title={name}>
-                      {name}
-                    </span>
+                    {ctx.onOpenGift ? (
+                      // A button inside the label: pressing the name opens the gift, not the box.
+                      <LinkButton
+                        onClick={() => ctx.onOpenGift?.(effect.giftId)}
+                        className="min-w-0 truncate text-left text-body"
+                      >
+                        {name}
+                      </LinkButton>
+                    ) : (
+                      <span className="min-w-0 truncate text-body" title={name}>
+                        {name}
+                      </span>
+                    )}
                     {ROLE_LABEL[effect.role] ? (
                       <span className="flex-none" data-testid="drop-role" data-role={effect.role}>
                         <Chip>{t(ROLE_LABEL[effect.role]!, lang)}</Chip>

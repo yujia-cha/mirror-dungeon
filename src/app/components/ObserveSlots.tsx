@@ -8,10 +8,15 @@
  * `plan.start.observed`), drawn dim with 「추천」: the route panel already counted those, and a row of
  * bare 「+」 beside a route that uses three observations read as if nothing were planned. Pressing
  * it opens the same list with the suggestion first — one way in, and a stray press pins nothing.
+ *
+ * The list opens as a sheet (M120): as a popover it hung inside the panel's scroll and was cut
+ * off. Its first row is 「관측하지 않기」 — the player may leave a slot unused, and the plan then
+ * spends one observation fewer (`options.observationSlots`). A slot turned off sits at the right
+ * end as 「관측 안 함」 with a button that turns it back on.
  */
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { CloseButton } from './ui.tsx';
+import { EyeOff, Plus } from 'lucide-react';
+import { CloseButton, LinkButton } from './ui.tsx';
 import type { GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
@@ -27,6 +32,9 @@ import { GiftIcon } from './GiftIcon.tsx';
 export function ObserveSlots({
   slots,
   max,
+  budget,
+  onSkip,
+  onUnskip,
   candidates,
   suggested,
   indexes,
@@ -34,6 +42,7 @@ export function ObserveSlots({
   lang,
   onPin,
   onUnpin,
+  onOpenGift,
   closed,
   dragging,
   over,
@@ -42,6 +51,12 @@ export function ObserveSlots({
   /** Pinned gift ids, in slot order. */
   slots: number[];
   max: number;
+  /** The slots the plan may spend (`max` less those turned off); the rest draw 「관측 안 함」. */
+  budget: number;
+  /** Turn one empty slot off: the plan observes one gift fewer. */
+  onSkip: () => void;
+  /** Turn one slot back on. */
+  onUnskip: () => void;
   /** Selected gifts that can still be pinned. */
   candidates: number[];
   /** What the planner would observe in the empty cells, in order (none once `closed`). */
@@ -51,6 +66,8 @@ export function ObserveSlots({
   lang: Lang;
   onPin: (giftId: number) => void;
   onUnpin: (giftId: number) => void;
+  /** Open a gift's details from its name (M120). */
+  onOpenGift?: (giftId: number) => void;
   /**
    * The observation window has closed (floor 1 is left): no empty cell is drawn, a filled one
    * keeps only its ✕, and a caption says why. With nothing pinned there is nothing to draw.
@@ -79,7 +96,7 @@ export function ObserveSlots({
       aria-label={t('observeSlots', lang)}
     >
       <p className="font-num text-caption text-fg-muted" data-testid="observe-slots-count">
-        {t('observeSlotsCount', lang, { n: slots.length, max })}
+        {t('observeSlotsCount', lang, { n: slots.length, max: budget })}
       </p>
       <div className="flex flex-wrap gap-1.5">
         {cells.map((giftId, i) => {
@@ -94,6 +111,23 @@ export function ObserveSlots({
                   ? 'border-border bg-surface'
                   : 'border-dashed border-border-control';
           // The empty cells take the suggestions in order, after the pins.
+          if (!gift && !closed && i >= budget) {
+            return (
+              <div
+                key={`off-${i}`}
+                className="relative flex h-11 min-w-[104px] flex-1 items-center gap-1.5 rounded-md border border-border bg-surface-sunken px-2"
+                data-testid="observe-slot"
+                data-index={i}
+                data-off
+              >
+                <EyeOff size={14} aria-hidden className="flex-none text-fg-muted" />
+                <span className="min-w-0 flex-1 truncate text-caption text-fg-muted">
+                  {t('observeSlotOff', lang)}
+                </span>
+                <CloseButton label={t('observeSlotOn', lang)} onClick={onUnskip} size="sm" />
+              </div>
+            );
+          }
           const hintId = gift ? undefined : suggested[i - slots.length];
           const hint = hintId !== undefined ? indexes.giftById.get(hintId) : undefined;
           const hintName = hint ? pick(hint.name, lang) : '';
@@ -115,9 +149,18 @@ export function ObserveSlots({
               {gift ? (
                 <>
                   <GiftIcon gift={gift} size={32} judgement={judgementOf(gift.id)} lang={lang} />
-                  <span className="min-w-0 flex-1 truncate text-caption" title={name}>
-                    {name}
-                  </span>
+                  {onOpenGift ? (
+                    <LinkButton
+                      onClick={() => onOpenGift(gift.id)}
+                      className="min-w-0 flex-1 truncate text-left text-caption"
+                    >
+                      {name}
+                    </LinkButton>
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate text-caption" title={name}>
+                      {name}
+                    </span>
+                  )}
                   <span className="font-num text-micro text-fg-subtle" aria-hidden>
                     {i + 1}
                   </span>
@@ -159,20 +202,31 @@ export function ObserveSlots({
               {open === i ? (
                 <DetailSurface
                   id={popoverId(i)}
-                  mode="popover"
-                  // A right-hand cell opens leftward, so the popover stays inside a narrow panel.
-                  placement={{ vertical: 'below', horizontal: i % 2 === 1 ? 'end' : 'start' }}
+                  mode="sheet"
                   label={t('observeSlotAdd', lang)}
                   closeLabel={t('routeClose', lang)}
                   onClose={() => setOpenSlot(null)}
                 >
+                  <h2 className="mb-2 text-subheading">{t('observeSlotAdd', lang)}</h2>
+                  {/* First, so leaving the slot unused is as easy to find as any gift. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSkip();
+                      setOpenSlot(null);
+                    }}
+                    className="mb-1 flex w-full items-center gap-2 rounded-sm border border-dashed border-border-control px-1.5 py-1 text-left text-body hover:bg-surface-muted touch:min-h-11"
+                    data-testid="observe-skip"
+                  >
+                    <span className="inline-flex size-8 flex-none items-center justify-center rounded-sm bg-surface-sunken text-fg-muted">
+                      <EyeOff size={16} aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">{t('observeSlotSkip', lang)}</span>
+                  </button>
                   {candidates.length === 0 ? (
                     <p className="text-caption text-fg-subtle">{t('observeSlotNone', lang)}</p>
                   ) : (
-                    <ul
-                      className="flex max-h-[50dvh] flex-col gap-1 overflow-y-auto"
-                      data-testid="observe-candidates"
-                    >
+                    <ul className="flex flex-col gap-1" data-testid="observe-candidates">
                       {candidates.map((id) => {
                         const candidate = indexes.giftById.get(id);
                         if (!candidate) return null;

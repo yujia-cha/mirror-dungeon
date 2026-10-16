@@ -48,8 +48,12 @@ const KEYWORD_BADGE: Record<Keyword, { fill: string; shape: string } | null> = {
   None: null,
 };
 
-/** The smallest tile that draws the game keyword icon as its badge; smaller ones draw the mark. */
-const BADGE_ICON_MIN_TILE = 28;
+/**
+ * Under this tile size the keyword icon takes half the tile instead of a third (M120): a third of a
+ * 20px tile is too small to read, and the old coloured mark there read as a different, older badge
+ * beside the icons the larger tiles carry.
+ */
+const SMALL_TILE = 28;
 
 const RING: Record<Judgement, string> = {
   met: 'ring-2 ring-success ring-offset-1 ring-offset-surface',
@@ -129,12 +133,11 @@ export function GiftIcon({
   const tierAria = gift.tier === null ? null : tierLabel(gift.tier);
   const aria = [statusText, judged, label, keywordText, tierAria].filter(Boolean).join(' · ');
   const badge = KEYWORD_BADGE[gift.keyword] ?? null;
-  // The game icon needs room to be read: about a third of the tile. On an inline icon (under 28px)
-  // its chip would cover half the picture, so there the small coloured mark stays. The mark keeps
-  // its old sizes, and a rotated square needs room for its diagonal, so the diamond is drawn a
-  // shade smaller.
-  const badgeIcon = badge && size >= BADGE_ICON_MIN_TILE ? keywordIconUrl(gift.keyword) : null;
-  const iconBadgeSize = Math.round(size * 0.32);
+  // The game icon needs room to be read: about a third of the tile, half on an inline icon. The
+  // coloured mark is only the fallback when the icon set is not shipped; it keeps its old sizes,
+  // and a rotated square needs room for its diagonal, so the diamond is drawn a shade smaller.
+  const badgeIcon = badge ? keywordIconUrl(gift.keyword) : null;
+  const iconBadgeSize = Math.round(size * (size < SMALL_TILE ? 0.5 : 0.32));
   const markSize = (size >= 32 ? 9 : 6) - (gift.keyword === 'Slash' ? 2 : 0);
   const ring = judgement ? RING[judgement] : '';
   const dimClass = status === 'failed' ? DIM_FAILED : dim ? DIM : '';

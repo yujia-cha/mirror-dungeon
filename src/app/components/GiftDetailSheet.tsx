@@ -2,12 +2,13 @@
  * Everything about one gift, opened from its tile: what it does, the conditions it needs, how it
  * is obtained, and — folded away until asked for — the recipe the planner would actually use.
  * An ingredient in the recipe opens its own details in the same sheet; 「← 이전 기프트」 at the top
- * walks back (the host keeps the trail).
+ * walks back (the host keeps the trail). Since M120 every gift and pack name here is a link to its
+ * own details, and observation is pinned only from the item tab's slots — the sheet has no button.
  */
 import { useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, Check, Eye, Link2, X } from 'lucide-react';
+import { ArrowLeft, Check, Link2, X } from 'lucide-react';
 import type { GameData, Gift } from '../../core/schema.ts';
-import { chooseRecipe, observable } from '../../core/index.ts';
+import { chooseRecipe } from '../../core/index.ts';
 import type { ConditionReport, GameIndexes, RoutePlan } from '../../core/types.ts';
 import { conditionText, reachedTierText } from '../condition-text.ts';
 import { renderEffect, withJosa } from '../format.ts';
@@ -16,10 +17,10 @@ import { conditionShort } from '../lib/gift-condition.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { badgeFor } from '../lib/labels.ts';
-import { observationClosed } from '../lib/plan-input.ts';
 import { routeSourceOf, routeSourceText } from '../lib/route-source.ts';
 import { useApp } from '../store.ts';
 import { DetailSurface } from './BlockDetail.tsx';
+import { LinkedText, type NameLink } from './LinkedText.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { Button, Checkbox } from './ui.tsx';
 
@@ -28,18 +29,22 @@ import { Button, Checkbox } from './ui.tsx';
  * several exclusive packs (53 of them; 인연 얽힘 has seven) names two and counts the rest: the
  * first pack alone used to read as the only source.
  */
-function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): string {
+function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): { text: string; packs: number[] } {
   const parts = [t(badgeFor(gift.acquisition.kind).label, lang)];
   const packName = (id: number): string => pick(indexes.packById.get(id)?.name, lang);
   const exclusive = gift.acquisition.exclusiveTo;
+  let packs: number[] = [];
   if (exclusive.length >= 3) {
+    packs = [exclusive[0]!];
     parts.push(t('giftPackOnlyMany', lang, { name: packName(exclusive[0]!), n: exclusive.length - 1 }));
   } else if (exclusive.length > 0) {
+    packs = [...exclusive];
     parts.push(t('giftPackOnly', lang, { name: exclusive.map(packName).join(' · ') }));
   } else if (gift.acquisition.clearRewardOf !== null && gift.acquisition.clearRewardOf !== undefined) {
+    packs = [gift.acquisition.clearRewardOf];
     parts.push(t('giftPackOnly', lang, { name: packName(gift.acquisition.clearRewardOf) }));
   }
-  return parts.join(' · ');
+  return { text: parts.join(' · '), packs };
 }
 
 const PILL =
@@ -127,7 +132,10 @@ function Recipe({
         return (
           <div key={`sub-${id}`} className="ml-3 flex flex-col gap-1 border-l border-border pl-3">
             <span className="text-caption text-fg-subtle">
-              {t('giftSubRecipe', lang, { name: pick(child.name, lang) })}
+              <LinkedText
+                text={t('giftSubRecipe', lang, { name: pick(child.name, lang) })}
+                links={onOpen ? [{ name: pick(child.name, lang), onOpen: () => onOpen(id) }] : []}
+              />
             </span>
             <div className="flex flex-wrap gap-1.5">
               {sub.map((subId, i) => (
@@ -149,10 +157,10 @@ export function GiftDetailSheet({
   indexes,
   lang,
   onToggleWanted,
-  collected,
   blocked,
   plan = null,
   onOpenGift,
+  onOpenPack,
   back,
   onClose,
 }: {
@@ -164,12 +172,6 @@ export function GiftDetailSheet({
   lang: Lang;
   /** Selecting from here follows the same rule as the grid: what the goal carries comes along. */
   onToggleWanted: (gift: Gift) => void;
-  /**
-   * Whether the route is out to collect this gift (`PlanState.needed`): a goal, or an ingredient a
-   * fusion goal consumes. It gates the observation button — an ingredient is never in the
-   * selection, but it is very much something worth pinning.
-   */
-  collected: boolean;
   /** Why this gift cannot be made a goal right now, if the current goals already carry it. */
   blocked?: Block;
   /**
@@ -179,19 +181,15 @@ export function GiftDetailSheet({
   plan?: RoutePlan | null;
   /** Follow a recipe ingredient: the sheet moves to that gift. Without it the ingredients are plain. */
   onOpenGift?: (giftId: number) => void;
+  /** Follow a pack name (where the gift drops, where this route takes it): the sheet moves there. */
+  onOpenPack?: (packId: number) => void;
   /** Set when this gift was reached from another's recipe: the way back to it. */
   back?: { name: string; onBack: () => void };
   onClose: () => void;
 }) {
   const wanted = useApp((s) => s.wanted);
-  const observedGifts = useApp((s) => s.options.observedGifts);
-  const toggleObserved = useApp((s) => s.toggleObserved);
   const fusionGoal = useApp((s) => s.fusionGoal);
   const setFusionGoal = useApp((s) => s.setFusionGoal);
-  // Floor 1 left: the starlight is spent, and the sheet cannot pin any more (the store refuses
-  // too; the button says why instead of doing nothing).
-  const observeClosed = useApp((s) => observationClosed(s.run));
-  const observeMax = data.rules.giftObservation.max;
 
   // Moving to another gift keeps the sheet mounted, so it has to start over by hand: back to the
   // top, and focus on something that still exists — the pill that was pressed is gone, and a modal
@@ -211,22 +209,17 @@ export function GiftDetailSheet({
   const name = pick(gift.name, lang);
   const selected = wanted.includes(gift.id);
   const goalSet = useMemo(() => new Set(wanted), [wanted]);
-  const pinned = observedGifts.includes(gift.id);
-  const canObserve = observable(gift, data.rules);
-  const observeFull = !pinned && observedGifts.length >= observeMax;
-  const observeReason = observeClosed
-    ? t('giftsObserveClosed', lang)
-    : !canObserve
-      ? t('giftsObserveNotAllowed', lang)
-      : observeFull
-        ? t('giftsObserveFull', lang, { max: observeMax })
-        : undefined;
   const hasRecipe = Boolean(gift.fusion && (gift.fusion.recipes.length > 0 || gift.fusion.mixed));
   const routeSource = routeSourceOf(plan, gift.id);
   const blockedBy =
     blocked && !selected
       ? t('giftBlockedIncluded', lang, { name: pick(indexes.giftById.get(blocked.by)?.name, lang) })
       : undefined;
+  const giftLink = (id: number): NameLink[] =>
+    onOpenGift ? [{ name: pick(indexes.giftById.get(id)?.name, lang), onOpen: () => onOpenGift(id) }] : [];
+  const packLink = (id: number): NameLink[] =>
+    onOpenPack ? [{ name: pick(indexes.packById.get(id)?.name, lang), onOpen: () => onOpenPack(id) }] : [];
+  const acquisition = acquisitionLine(gift, indexes, lang);
 
   return (
     <DetailSurface mode="sheet" label={name} closeLabel={t('routeClose', lang)} onClose={onClose}>
@@ -251,17 +244,26 @@ export function GiftDetailSheet({
             <h2 ref={titleRef} tabIndex={-1} className="text-heading outline-none">
               {name}
             </h2>
-            <span className="text-caption text-fg-subtle">{acquisitionLine(gift, indexes, lang)}</span>
+            <span className="text-caption text-fg-subtle" data-testid="gift-acquisition">
+              <LinkedText text={acquisition.text} links={acquisition.packs.flatMap(packLink)} />
+            </span>
             {/* Where this route gets the gift — the plan's own answer, not the acquisition class.
                 Absent for a gift the route says nothing about (not needed, in hand, unresolved). */}
             {routeSource ? (
               <span className="text-caption text-fg-muted" data-testid="gift-route-source">
-                {t('giftRouteSource', lang, {
-                  source: routeSourceText(routeSource, {
-                    packName: (id) => pick(indexes.packById.get(id)?.name, lang),
-                    lang,
-                  }),
-                })}
+                <LinkedText
+                  text={t('giftRouteSource', lang, {
+                    source: routeSourceText(routeSource, {
+                      packName: (id) => pick(indexes.packById.get(id)?.name, lang),
+                      lang,
+                    }),
+                  })}
+                  links={
+                    'packId' in routeSource && typeof routeSource.packId === 'number'
+                      ? packLink(routeSource.packId)
+                      : []
+                  }
+                />
               </span>
             ) : null}
           </div>
@@ -279,26 +281,10 @@ export function GiftDetailSheet({
             {selected ? <Check size={13} aria-hidden /> : null}
             {t(selected ? 'giftRemoveGoal' : 'giftAddGoal', lang)}
           </Button>
-          {blockedBy ? <span className="text-caption text-fg-muted">{blockedBy}</span> : null}
-          {collected ? (
-            <>
-              <Button
-                variant={pinned ? 'primary' : 'secondary'}
-                onClick={() => toggleObserved(gift.id, { max: observeMax, observable: () => canObserve })}
-                disabled={observeReason !== undefined}
-                ariaLabel={t(pinned ? 'observeSlotClear' : 'giftsObserve', lang, { name })}
-                title={observeReason}
-              >
-                <Eye size={13} aria-hidden />
-                {t(pinned ? 'observePinned' : 'settingsObserved', lang)}
-              </Button>
-              {/* Why it cannot be pressed, where a touch reader sees it: a `title` never reaches one. */}
-              {observeReason ? (
-                <span className="text-caption text-fg-muted" data-testid="observe-reason">
-                  {observeReason}
-                </span>
-              ) : null}
-            </>
+          {blockedBy && blocked ? (
+            <span className="text-caption text-fg-muted">
+              <LinkedText text={blockedBy} links={giftLink(blocked.by)} />
+            </span>
           ) : null}
         </div>
 
@@ -349,14 +335,18 @@ export function GiftDetailSheet({
             <Link2 size={13} aria-hidden className="mt-0.5 flex-none" />
             <span>
               <b className="text-fg">{t('giftEntangled', lang)}</b>{' '}
-              {entangled
-                .map((e) =>
-                  t('giftEntangledWith', lang, {
-                    name: withJosa(pick(indexes.giftById.get(e.other)?.name, lang), '과/와', lang),
-                    list: e.shared.map((id) => pick(indexes.giftById.get(id)?.name, lang)).join(', '),
-                  }),
-                )
-                .join(' · ')}
+              {entangled.map((e, i) => (
+                <span key={e.other}>
+                  {i > 0 ? ' · ' : null}
+                  <LinkedText
+                    text={t('giftEntangledWith', lang, {
+                      name: withJosa(pick(indexes.giftById.get(e.other)?.name, lang), '과/와', lang),
+                      list: e.shared.map((id) => pick(indexes.giftById.get(id)?.name, lang)).join(', '),
+                    })}
+                    links={[e.other, ...e.shared].flatMap(giftLink)}
+                  />
+                </span>
+              ))}
             </span>
           </div>
         ) : null}

@@ -931,6 +931,26 @@ describe('gift observation', () => {
     expect(result.stats.requiredPacks).toBe(0);
   });
 
+  it('spends only the slots the player left on, pins included (M120 「관측하지 않기」)', () => {
+    // Five single-source exclusives on Hard floor 5: with every slot the planner observes three.
+    const wanted = want(9283, 9222, 9217, 9435, 9751);
+    const all = plan({ wanted, options: options({ hardFromFloor: 1 }) });
+    expect(all.start.observed).toHaveLength(3);
+    // One slot off: two observations, and one goal more is left to the packs.
+    const two = plan({ wanted, options: options({ hardFromFloor: 1, observationSlots: 2 }) });
+    expect(two.start.observed).toHaveLength(2);
+    expect(two.stats.coveredWanted).toBe(all.stats.coveredWanted - 1);
+    // Every slot off: none, even a pin; out of range is clamped.
+    const none = plan({
+      wanted,
+      options: options({ hardFromFloor: 1, observationSlots: 0, observedGifts: [9283] }),
+    });
+    expect(none.start.observed).toEqual([]);
+    expect(
+      plan({ wanted, options: options({ hardFromFloor: 1, observationSlots: 9 }) }).start.observed,
+    ).toHaveLength(3);
+  });
+
   it('rescues first and leaves a conflict it cannot afford', () => {
     // Five single-source exclusives whose packs all sit on Hard floor 5: three observations plus
     // one routed pack cover four; the fifth stays a conflict.

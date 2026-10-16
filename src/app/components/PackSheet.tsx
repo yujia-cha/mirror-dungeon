@@ -1,20 +1,20 @@
 /**
- * Everything about one theme pack, opened from any pack card: the card and name, the floors it
- * can sit on, entering it on the stage floor (or undoing that), and every exclusive gift it drops
- * (plus the pool gifts the route collects). The app makes no pack-level choice — which pack goes
- * where is the planner's, and giving something up is deselecting a gift.
+ * Everything about one theme pack, opened from any pack card or name: the card and name, the floors
+ * it can sit on, entering it on the stage floor (or undoing that), and the gifts only it gives. The
+ * app makes no pack-level choice — which pack goes where is the planner's, and giving something up
+ * is deselecting a gift.
  */
-import { Eye, LogIn, Plus, RotateCcw, X } from 'lucide-react';
+import { ArrowLeft, LogIn, RotateCcw } from 'lucide-react';
 import type { ThemePack } from '../../core/schema.ts';
 import type { GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
-import { observationClosed, type GiftStatus } from '../lib/plan-input.ts';
+import type { GiftStatus } from '../lib/plan-input.ts';
 import { bandMode } from '../lib/stage.ts';
 import { GiftIcon } from './GiftIcon.tsx';
-import { GiftTile } from './GiftTile.tsx';
+import { DetailSurface } from './BlockDetail.tsx';
 import { PackCard } from './PackCard.tsx';
-import { Badge, Button } from './ui.tsx';
+import { Badge, Button, LinkButton } from './ui.tsx';
 
 /** The run in progress, as the pack surfaces see it. */
 export interface RunContext {
@@ -50,6 +50,9 @@ export interface PackContext {
   onToggleObserved?: (giftId: number) => void;
   /** Add or remove a gift as a goal (from a pack's gift list). Carries the fusion tree with it. */
   onToggleWanted?: (giftId: number) => void;
+  /** Open a gift's / a pack's details — from a name or a tile inside a sheet, the sheet moves (M120). */
+  onOpenGift?: (giftId: number) => void;
+  onOpenPack?: (packId: number) => void;
   /** Present while a run is being tracked. */
   run?: RunContext;
   lang: Lang;
@@ -74,78 +77,59 @@ function packFloorsText(pack: ThemePack, lang: Lang): string {
     .join(' · ');
 }
 
-function GiftRow({ giftId, exclusive, ctx }: { giftId: number; exclusive: boolean; ctx: PackContext }) {
+/**
+ * One gift the pack alone gives (M120): the icon and the name both open the gift's details — never
+ * a got/missed toggle, that is the entered pack's tiles' job — and a goal (or an ingredient the
+ * route collects) is told by the frame around the icon, not by a badge or a button.
+ */
+function GiftRow({ giftId, ctx }: { giftId: number; ctx: PackContext }) {
   const gift = ctx.indexes.giftById.get(giftId);
   if (!gift) return null;
   const name = pick(gift.name, ctx.lang);
-  const wanted = ctx.wanted.has(giftId);
-  const pinned = ctx.observed.has(giftId);
-  // Observation happens at the start of a run, so the toggle only makes sense before floor 1 is left.
-  const canObserve =
-    wanted &&
-    ctx.onToggleObserved !== undefined &&
-    ctx.observable(giftId) &&
-    !observationClosed(ctx.run ?? { currentFloor: 1 });
+  const needed = ctx.needed.has(giftId);
   const condition = ctx.giftTitle(giftId);
   const status = ctx.run?.giftStatus(giftId) ?? null;
+  const open = ctx.onOpenGift;
+  const icon = (
+    <GiftIcon
+      gift={gift}
+      size={44}
+      judgement={ctx.judgements.get(giftId) ?? null}
+      status={status}
+      lang={ctx.lang}
+    />
+  );
+  const frame = `inline-flex flex-none rounded-md border-2 p-1 ${needed ? 'border-primary' : 'border-transparent'}`;
   return (
     <li
-      className="flex flex-col gap-1.5 py-1.5"
+      className="flex items-start gap-3 py-1.5"
       data-testid="pack-gift"
       data-gift={giftId}
-      data-wanted={wanted || undefined}
+      data-wanted={needed || undefined}
       data-status={status ?? undefined}
     >
-      <div className="flex items-start gap-3">
-        {ctx.run ? (
-          <GiftTile
-            gift={gift}
-            size={44}
-            status={status}
-            wanted={wanted}
-            judgement={ctx.judgements.get(giftId) ?? null}
-            onToggle={(next) => ctx.run?.onGiftStatus(giftId, next)}
-            lang={ctx.lang}
-          />
+      {open ? (
+        <button
+          type="button"
+          onClick={() => open(giftId)}
+          aria-label={t('giftDetail', ctx.lang, { name })}
+          className={`${frame} hover:bg-surface-muted`}
+          data-testid="pack-gift-open"
+        >
+          {icon}
+        </button>
+      ) : (
+        <span className={frame}>{icon}</span>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
+        {open ? (
+          <LinkButton onClick={() => open(giftId)} className="self-start text-left text-label">
+            {name}
+          </LinkButton>
         ) : (
-          <GiftIcon
-            gift={gift}
-            size={44}
-            judgement={ctx.judgements.get(giftId) ?? null}
-            status={status}
-            lang={ctx.lang}
-          />
+          <span className="text-label">{name}</span>
         )}
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className={wanted ? 'text-subheading' : 'text-label text-fg-muted'}>{name}</span>
-            {exclusive ? <Badge tone="sure">{t('giftExclusive', ctx.lang)}</Badge> : null}
-            {wanted ? <Badge tone="start">{t('giftWanted', ctx.lang)}</Badge> : null}
-          </div>
-          {condition ? <span className="text-caption text-fg-muted">{condition}</span> : null}
-        </div>
-        {canObserve ? (
-          <Button
-            size="sm"
-            variant={pinned ? 'primary' : 'ghost'}
-            onClick={() => ctx.onToggleObserved?.(giftId)}
-            ariaLabel={t(pinned ? 'observeSlotClear' : 'giftsObserve', ctx.lang, { name })}
-          >
-            <Eye size={12} aria-hidden />
-            {t(pinned ? 'observePinned' : 'settingsObserved', ctx.lang)}
-          </Button>
-        ) : null}
-        {ctx.onToggleWanted ? (
-          <Button
-            size="sm"
-            variant={wanted ? 'ghost' : 'secondary'}
-            onClick={() => ctx.onToggleWanted?.(giftId)}
-            ariaLabel={`${name} ${wanted ? t('giftRemoveGoal', ctx.lang) : t('giftAddGoal', ctx.lang)}`}
-          >
-            {wanted ? <X size={12} aria-hidden /> : <Plus size={12} aria-hidden />}
-            {wanted ? t('giftRemoveGoal', ctx.lang) : t('giftAddGoal', ctx.lang)}
-          </Button>
-        ) : null}
+        {condition ? <span className="text-caption text-fg-muted">{condition}</span> : null}
       </div>
     </li>
   );
@@ -194,30 +178,14 @@ function EnterActions({ packId, ctx }: { packId: number; ctx: PackContext }) {
 }
 
 /**
- * The sheet / popover body for a pack.
- *
- * `exclusiveOnly` (the route panel) lists only what this pack alone gives — its pack-limited
- * gifts and clear reward (M110): the route says which pack to take, and a general drop or an
- * ingredient any pack may hand out is no reason to take this one. Without it (the stage) the
- * pool gifts the route collects are listed too — a fusion goal's ingredients included, so the
- * pack the player is about to enter says what to pick up there (M65). The rows' toggles and
- * badges speak of the chosen goals only either way.
+ * The sheet / popover body for a pack. Only what this pack alone gives is listed — its pack-limited
+ * gifts and clear reward (M110 on the route panel, M120 everywhere): a general drop or an
+ * ingredient any pack may hand out is no reason to take this one.
  */
-export function PackSheetBody({
-  packId,
-  ctx,
-  exclusiveOnly = false,
-}: {
-  packId: number;
-  ctx: PackContext;
-  exclusiveOnly?: boolean;
-}) {
+export function PackSheetBody({ packId, ctx }: { packId: number; ctx: PackContext }) {
   const pack = ctx.indexes.packById.get(packId);
   if (!pack) return null;
-  const own = ctx.exclusivesOf(packId);
-  const exclusives = new Set(own);
-  const listed = exclusiveOnly ? own : [...own, ...pack.giftPool.filter((id) => ctx.needed.has(id))];
-  const gifts = [...new Set(listed)].sort(
+  const gifts = [...new Set(ctx.exclusivesOf(packId))].sort(
     (a, b) => Number(ctx.needed.has(b)) - Number(ctx.needed.has(a)) || a - b,
   );
   return (
@@ -235,9 +203,46 @@ export function PackSheetBody({
       </div>
       <ul className="divide-y divide-border border-t border-border">
         {gifts.map((id) => (
-          <GiftRow key={id} giftId={id} exclusive={exclusives.has(id)} ctx={ctx} />
+          <GiftRow key={id} giftId={id} ctx={ctx} />
         ))}
       </ul>
     </div>
+  );
+}
+
+/**
+ * A pack's details in the shell's one detail sheet (`PlanProvider`, M120): opened from a card, a
+ * portrait or a pack name anywhere, and walked back from with 「←」 when a name led here.
+ */
+export function PackDetailSheet({
+  pack,
+  ctx,
+  back,
+  onClose,
+}: {
+  pack: ThemePack;
+  ctx: PackContext;
+  back?: { name: string; onBack: () => void };
+  onClose: () => void;
+}) {
+  const name = pick(pack.name, ctx.lang);
+  return (
+    <DetailSurface mode="sheet" label={name} closeLabel={t('routeClose', ctx.lang)} onClose={onClose}>
+      <div key={pack.id} className="flex flex-col gap-3" data-testid="pack-detail">
+        {back ? (
+          <button
+            type="button"
+            onClick={back.onBack}
+            aria-label={t('giftDetailBack', ctx.lang, { name: back.name })}
+            className="inline-flex max-w-full items-center gap-1 self-start rounded-sm px-1 py-0.5 text-caption text-fg-muted hover:bg-surface-muted hover:text-fg"
+            data-testid="detail-back"
+          >
+            <ArrowLeft size={13} aria-hidden className="flex-none" />
+            <span className="truncate">{back.name}</span>
+          </button>
+        ) : null}
+        <PackSheetBody packId={pack.id} ctx={ctx} />
+      </div>
+    </DetailSurface>
   );
 }

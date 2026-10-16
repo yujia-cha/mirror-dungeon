@@ -1441,11 +1441,11 @@ describe('GiftsStep', () => {
       // About a third of the tile.
       expect(badge.querySelector('img')?.style.width).toBe('14px');
       expect(screen.getByTestId('gift-dim').contains(badge)).toBe(false);
-      // An inline icon keeps the small mark: a chip would cover half of a 20px picture (M100).
+      // An inline icon draws the same game icon, at half the tile (M120 — the old mark there read
+      // as a different badge).
       const { unmount: unmountInline } = render(<GiftIcon gift={gift} size={20} lang="ko" />);
       const inline = screen.getAllByTestId('gift-keyword').at(-1)!;
-      expect(inline.querySelector('img')).toBeNull();
-      expect(inline.className).toContain('bg-kw-combustion');
+      expect(inline.querySelector('img')?.style.width).toBe('10px');
       unmountInline();
       // 범용 still gets no badge.
       const general = data.gifts.find((g) => g.keyword === 'None')!;
@@ -2194,7 +2194,6 @@ describe('GiftDetailSheet', () => {
         indexes={indexes}
         lang="ko"
         onToggleWanted={() => undefined}
-        collected={false}
         plan={plan}
         onClose={() => undefined}
       />,
@@ -2611,18 +2610,29 @@ describe('RoutePlanPanel', () => {
       .getAllByTestId('pack-gift')
       .find((el) => el.hasAttribute('data-wanted'))!;
     expect(wantedRow).toHaveTextContent('달궈진 놋쇠');
-    expect(wantedRow).toHaveTextContent('전용');
-    // The run context is on: each gift is a pressable tile, and floor 4 is not on stage so no entry button.
-    expect(within(wantedRow).getByTestId('gift-tile-toggle')).toHaveAttribute('aria-pressed', 'false');
+    // M120: no 「전용」·「목표」 badge and no button but the gift's own — the frame says it is a goal.
+    expect(wantedRow).not.toHaveTextContent('전용');
+    expect(within(wantedRow).queryByTestId('gift-tile-toggle')).toBeNull();
+    expect(
+      within(wantedRow).queryByRole('button', { name: /관측 지정|목표에서 빼기|목표에 추가/ }),
+    ).toBeNull();
+    expect(within(wantedRow).getByTestId('pack-gift-open').className).toContain('border-primary');
+    // Floor 4 is not on stage, so no entry button.
     expect(within(sheet).queryByRole('button', { name: '화왕지절 입장' })).toBeNull();
+    // A gift opens its own details in the same sheet, and 「←」 walks back to the pack.
+    await user.click(within(wantedRow).getByRole('button', { name: '달궈진 놋쇠' }));
+    const giftSheet = screen.getByRole('dialog', { name: '달궈진 놋쇠' });
+    expect(within(giftSheet).getByTestId('gift-detail')).toBeInTheDocument();
+    await user.click(within(giftSheet).getByTestId('gift-detail-back'));
+    const back = screen.getByRole('dialog', { name: '화왕지절' });
     // The app makes no pack-level choice: no 「이 팩으로」 / 「이 팩 포기」, and no badge speaking of one.
     expect(
       within(sheet).queryByRole('button', { name: /이 팩으로|이 팩 포기|포함 지정|되돌리기/ }),
     ).toBeNull();
-    expect(sheet.textContent).not.toMatch(/포함 ·|포함 지정|포기한 팩/);
+    expect(back.textContent).not.toMatch(/포함 ·|포함 지정|포기한 팩/);
   });
 
-  it('lists only what the pack alone gives when opened from the route, the pool too on the stage (M110)', async () => {
+  it('lists only what the pack alone gives, from the route and from the stage alike (M110, M120)', async () => {
     // Arrange: a pack-limited goal of 화왕지절 and a general gift its pool also drops.
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -2632,14 +2642,13 @@ describe('RoutePlanPanel', () => {
     // Act
     await user.click(within(rows()).getByRole('button', { name: '화왕지절' }));
     const sheet = screen.getByRole('dialog', { name: '화왕지절' });
-    // Assert: only the pack's own gifts (9267, 9282), each marked 전용; the general goal is not there.
+    // Assert: only the pack's own gifts (9267, 9282); the general goal is not there.
     const ids = within(sheet)
       .getAllByTestId('pack-gift')
       .map((el) => Number(el.getAttribute('data-gift')));
     expect(ids.sort((a, b) => a - b)).toEqual([9267, 9282]);
-    for (const row of within(sheet).getAllByTestId('pack-gift')) expect(row).toHaveTextContent('전용');
     cleanup();
-    // The stage's sheet still lists the pool gift the route collects there.
+    // The stage's sheet is the same sheet: the pool gift is not listed there either (M120).
     renderPlanned(<RunStage onOpenGifts={() => undefined} />);
     for (let i = 0; i < 3; i += 1) await user.click(screen.getByRole('button', { name: '다음 층' }));
     await user.click(screen.getByRole('button', { name: '화왕지절 자세히' }));
@@ -2647,8 +2656,9 @@ describe('RoutePlanPanel', () => {
     expect(
       within(stageSheet)
         .getAllByTestId('pack-gift')
-        .map((el) => el.getAttribute('data-gift')),
-    ).toContain('9006');
+        .map((el) => Number(el.getAttribute('data-gift')))
+        .sort((a, b) => a - b),
+    ).toEqual([9267, 9282]);
   });
 
   it('opens a sheet from an observed tile and pins the observation from it', async () => {
@@ -3927,8 +3937,10 @@ describe('RunStage', () => {
     ).toContain('1109');
     await user.clear(search);
     await user.type(search, '2호선');
-    await user.click(within(packs[0]!).getByRole('button', { name: '2호선' }));
-    await user.click(screen.getByRole('button', { name: '굴레 목표에 추가' }));
+    // The name is a link to the pack's sheet too (M120), and a gift there opens its own sheet.
+    await user.click(within(packs[0]!).getByTestId('other-pack-name'));
+    await user.click(within(screen.getByTestId('pack-detail')).getByRole('button', { name: '굴레' }));
+    await user.click(within(screen.getByTestId('gift-detail')).getByRole('button', { name: '목표에 추가' }));
     expect(useApp.getState().wanted).toEqual([9267, 9754]);
     // 2호선 sits on Hard 4-5 too, so it joins the floor's route packs.
     expect(screen.getAllByTestId('stage-pack').map((c) => c.getAttribute('data-pack'))).toContain('1109');
@@ -4332,7 +4344,7 @@ describe('RunStage · start-of-run gifts', () => {
     expect(useApp.getState().run.startGifts).toEqual([]);
   });
 
-  it('closes the observation window once floor 1 is left: no empty slot, no drop, a disabled sheet button', async () => {
+  it('closes the observation window once floor 1 is left: no empty slot, no drop', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(LCB_DECK, 6);
     for (const id of [9191, 9410, 9419, 9423]) useApp.getState().toggleWanted(id);
@@ -4364,8 +4376,9 @@ describe('RunStage · start-of-run gifts', () => {
     // Entering a pack on floor 1 is not yet leaving it, but the frontier moves on entry: the
     // window closes with the entry, and reopens when the entry is taken back.
     expect(closedNote()).toBeNull();
+    // The gift sheet pins nothing any more (M120): the slots are the one way in.
     let sheet = await openSheet(9191, '프레스티지 카드');
-    expect(within(sheet).getByRole('button', { name: '프레스티지 카드 지정 해제' })).toBeEnabled();
+    expect(within(sheet).queryByRole('button', { name: /지정 해제|관측 지정/ })).toBeNull();
     await closeSheet(sheet);
 
     await user.click(screen.getByRole('button', { name: '공장 자동화 입장' }));
@@ -4378,9 +4391,7 @@ describe('RunStage · start-of-run gifts', () => {
     dragToSlot(9423, 0);
     expect(useApp.getState().options.observedGifts).toEqual(PINS);
     sheet = await openSheet(9191, '프레스티지 카드');
-    const button = within(sheet).getByRole('button', { name: '프레스티지 카드 지정 해제' });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('title', '1층을 떠난 뒤에는 관측을 바꿀 수 없습니다');
+    expect(within(sheet).queryByRole('button', { name: /지정 해제|관측 지정/ })).toBeNull();
     await closeSheet(sheet);
     // Letting a pin go is still allowed; the cell leaves and no 「+」 takes its place.
     await user.click(screen.getByRole('button', { name: '깨진 안경 지정 해제' }));
@@ -4392,8 +4403,6 @@ describe('RunStage · start-of-run gifts', () => {
     expect(useApp.getState().run.currentFloor).toBe(1);
     expect(closedNote()).toBeNull();
     expect(screen.queryAllByRole('button', { name: /^관측 지정 추가/ })).toHaveLength(1);
-    sheet = await openSheet(9191, '프레스티지 카드');
-    expect(within(sheet).getByRole('button', { name: '프레스티지 카드 지정 해제' })).toBeEnabled();
   });
 
   it('refuses a pin on a gift that cannot be observed, and forgets a stale record on load', () => {

@@ -76,6 +76,15 @@ export function defaultOptions(): PlanOptions {
   };
 }
 
+/** The observation slots this plan may spend: the rules' count, less those the player turned off. */
+export function observationBudget(options: Pick<PlanOptions, 'observationSlots'>, data: GameData): number {
+  const max = data.rules.giftObservation.max;
+  const slots = options.observationSlots;
+  return typeof slots === 'number' && Number.isFinite(slots)
+    ? Math.min(max, Math.max(0, Math.round(slots)))
+    : max;
+}
+
 /**
  * Planning into 평행중첩 requires every floor before it cleared on Hard.
  * Rather than produce an impossible plan, the options are corrected and the change is reported.
@@ -95,7 +104,7 @@ function normaliseOptions(
     const gift = indexes.giftById.get(id);
     return gift !== undefined && observable(gift, data.rules);
   });
-  const kept = observedGifts.slice(0, data.rules.giftObservation.max);
+  const kept = observedGifts.slice(0, observationBudget(next, data));
   const droppedObservations = (next.observedGifts ?? []).filter((id) => !kept.includes(id));
   next = { ...next, observedGifts: kept };
 
@@ -367,7 +376,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   // decision in this stage, so they go first — before the free starting gift and before the
   // planner's own recommendations — and they apply to any planned gift not yet in hand: one the
   // route would visit a pack for, or a general drop that observation turns into a certainty.
-  const budget = data.rules.giftObservation.max;
+  const budget = observationBudget(options, data);
   const observed: ObservedGift[] = [];
   /**
    * Spend one slot. Observation hands the gift over once, so exactly one requirement changes hands

@@ -13,7 +13,8 @@ import { useDismiss } from '../lib/useDismiss.ts';
 import { useOverlayChrome } from '../lib/useOverlayChrome.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 import type { PackContext } from './PackSheet.tsx';
-import { Button, CloseButton } from './ui.tsx';
+import { Button, CloseButton, LinkButton } from './ui.tsx';
+import { LinkedText } from './LinkedText.tsx';
 
 export type DetailMode = 'popover' | 'sheet';
 
@@ -149,9 +150,31 @@ export function ObservedDetailBody({ entry, ctx }: { entry: ObservedGift; ctx: P
           lang={ctx.lang}
         />
         <div className="flex min-w-0 flex-col">
-          <span className="text-subheading ">{pick(gift.name, ctx.lang)}</span>
+          {ctx.onOpenGift ? (
+            <LinkButton
+              onClick={() => ctx.onOpenGift?.(entry.giftId)}
+              className="self-start text-left text-subheading"
+            >
+              {pick(gift.name, ctx.lang)}
+            </LinkButton>
+          ) : (
+            <span className="text-subheading ">{pick(gift.name, ctx.lang)}</span>
+          )}
           <span className="text-caption text-fg-muted">
-            {t('routeObserved', ctx.lang)} · {why}
+            {t('routeObserved', ctx.lang)} ·{' '}
+            <LinkedText
+              text={why}
+              links={
+                entry.freedPack !== null && ctx.onOpenPack
+                  ? [
+                      {
+                        name: ctx.packName(entry.freedPack),
+                        onOpen: () => ctx.onOpenPack?.(entry.freedPack!),
+                      },
+                    ]
+                  : []
+              }
+            />
           </span>
         </div>
       </div>
