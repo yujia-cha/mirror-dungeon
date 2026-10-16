@@ -14,7 +14,7 @@ import { withJosa } from '../format.ts';
 import { pick, t } from '../i18n.ts';
 import { observationClosed } from '../lib/plan-input.ts';
 import { useApp } from '../store.ts';
-import { Card } from '../components/ui.tsx';
+import { Card, Select } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
 
 export function RouteOptions() {
@@ -39,28 +39,25 @@ export function RouteOptions() {
       <Card className="flex flex-col gap-2 px-4 py-3">
         <label className="flex flex-col gap-1">
           <span className="text-caption text-fg-subtle">{t('optionStartKeyword', lang)}</span>
-          <select
-            aria-label={t('optionStartKeyword', lang)}
+          {/* Only the keywords the season actually has a starting pool for. 범용 (`None`) is a gift
+              keyword but has no pool, so offering it handed the player no starting gift at all,
+              silently. Read from the rules rather than listed here, like everywhere else. */}
+          <Select<Keyword | 'auto'>
+            label={t('optionStartKeyword', lang)}
             value={options.startKeyword}
-            onChange={(event) => setOptions({ startKeyword: event.target.value as Keyword | 'auto' })}
-            className="h-[30px] rounded-full border border-border-control bg-surface-muted px-3 text-fg-muted"
-          >
-            <option value="auto">
-              {start?.autoKeyword
-                ? t('optionAutoResolved', lang, { keyword: keywordLabel(start.autoKeyword) })
-                : t('optionAuto', lang)}
-            </option>
-            {/* Only the keywords the season actually has a starting pool for. 범용 (`None`) is a
-                gift keyword but has no pool, so offering it handed the player no starting gift at
-                all, silently. Read from the rules rather than listed here, like everywhere else. */}
-            {data.enums.keywords
-              .filter((k) => data.rules.startGift.poolsByKeyword[k.id] !== undefined)
-              .map((k) => (
-                <option key={k.id} value={k.id}>
-                  {pick(k.name, lang)}
-                </option>
-              ))}
-          </select>
+            options={[
+              {
+                value: 'auto',
+                label: start?.autoKeyword
+                  ? t('optionAutoResolved', lang, { keyword: keywordLabel(start.autoKeyword) })
+                  : t('optionAuto', lang),
+              },
+              ...data.enums.keywords
+                .filter((k) => data.rules.startGift.poolsByKeyword[k.id] !== undefined)
+                .map((k) => ({ value: k.id, label: pick(k.name, lang) })),
+            ]}
+            onChange={(next) => setOptions({ startKeyword: next })}
+          />
         </label>
         {note && (
           <p className="text-caption text-fg-muted" data-testid="start-keyword-note">

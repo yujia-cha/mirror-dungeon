@@ -9,7 +9,8 @@
  *   reading stops at the first region that names a screen. A frame with an acquired popup costs one
  *   OCR call, not six.
  * - Each region is read with the light-text pass first and raw only when that finds nothing (M95:
- *   the map header is brown on red and the pass erases it).
+ *   the map header is brown on red and the pass erases it) — for titles, only those the layout
+ *   marks `raw` (M108).
  * - Names are matched against the candidates the caller passes, already narrowed by the run.
  *
  * No DOM, no timers: the caller owns the pixels and the clock.
@@ -65,6 +66,10 @@ export async function readFrame(
     ocrCalls += 1;
     return accept(await reader.ocr(region, false));
   };
+  const readLight = async (region: Region): Promise<string[]> => {
+    ocrCalls += 1;
+    return reader.ocr(region, true);
+  };
   const nameIn = async (region: Region, candidates: readonly NameCandidate[]): Promise<MatchResult> => {
     const found = await readEither(region, (lines) => {
       const m = matchName(lines, candidates);
@@ -75,12 +80,15 @@ export async function readFrame(
 
   let screen: Screen | null = null;
   for (const title of layout.titles) {
-    const found = await readEither(title.region, (lines) => {
+    const accept = (lines: string[]): Screen | null => {
       const s = classifyScreen(lines, ctx.lang);
       // A region only speaks for the screens whose title lives there: a dimmed full-screen title
       // must not be read as the popup it sits behind.
       return s !== null && title.screens.includes(s) ? s : null;
-    });
+    };
+    // Only titles the light pass can erase get the second, raw read (M108): on a frame that shows
+    // nothing, every title region is read, and the raw reads were half of it.
+    const found = title.raw ? await readEither(title.region, accept) : accept(await readLight(title.region));
     if (found) {
       screen = found;
       break;

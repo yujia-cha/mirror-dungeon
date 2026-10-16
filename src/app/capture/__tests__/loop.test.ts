@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { decide, finished, INITIAL_LOOP, READ_INTERVALS, REFRESH_MS } from '../loop.ts';
+import {
+  decide,
+  finished,
+  INITIAL_LOOP,
+  READ_INTERVALS,
+  REFRESH_MAX_MS,
+  REFRESH_MS,
+  type LoopState,
+} from '../loop.ts';
 
 const sig = new Uint8Array([1, 2, 3]);
 
@@ -32,6 +40,34 @@ describe('decide', () => {
     expect([first.decision, second.decision]).toEqual(['skip', 'skip']);
     expect(next.decision).toBe('read');
     expect(next.state.dirty).toBe(false);
+  });
+
+  it('waits twice as long for each further re-read of a still screen, up to the cap', () => {
+    // Arrange: a change read at t=0, then the screen holds still.
+    let state: LoopState = finished(decide(INITIAL_LOOP, sig, true, 0).state);
+    const reads: number[] = [];
+    // Act: tick every 100ms for a minute.
+    for (let t = 100; t <= 60_000; t += 100) {
+      const step = decide(state, sig, false, t);
+      state = step.decision === 'read' ? finished(step.state) : step.state;
+      if (step.decision === 'read') reads.push(t);
+    }
+    // Assert: 2s, then 4, 8, 16, 16, 16 … after the previous re-read.
+    expect(reads).toEqual([2000, 6000, 14_000, 30_000, 46_000]);
+    expect(state.refreshGap).toBe(REFRESH_MAX_MS);
+  });
+
+  it('starts the re-reads over after a change', () => {
+    // Arrange: two re-reads have stretched the gap to 8s.
+    let state: LoopState = finished(decide(INITIAL_LOOP, sig, true, 0).state);
+    state = finished(decide(state, sig, false, 2000).state);
+    state = finished(decide(state, sig, false, 6000).state);
+    expect(state.refreshGap).toBe(8000);
+    // Act
+    state = finished(decide(state, sig, true, 7000).state);
+    // Assert
+    expect(state.refreshGap).toBe(REFRESH_MS);
+    expect(decide(state, sig, false, 7000 + REFRESH_MS).decision).toBe('read');
   });
 
   it('keeps the same state object for a skipped, unchanged tick', () => {

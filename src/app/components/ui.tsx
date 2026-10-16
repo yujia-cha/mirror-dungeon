@@ -522,6 +522,56 @@ export function Skeleton({ className = '' }: { className?: string }) {
  * The select is transparent over the chip, which would hide its focus outline with it — the chip
  * draws the ring instead (`has-[:focus-visible]`). HasValue is the `primary` fill.
  */
+/**
+ * A form choice: the same frame as `TextField` (36px, `sm` radius, `border-control`, 44px under touch)
+ * with the native list underneath, so the platform's own picker opens. `FilterSelect` is the other
+ * select — a filter chip with an 「전체」 entry — and is not this.
+ */
+export function Select<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  disabled = false,
+  className = '',
+  testId,
+}: {
+  /** The accessible name; a visible label next to it should say the same. */
+  label: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+  disabled?: boolean;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <span
+      className={`relative inline-flex h-9 min-w-0 items-center rounded-sm border transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus touch:min-h-11 ${
+        disabled
+          ? 'border-border-control bg-surface-muted text-fg-subtle'
+          : 'border-border-control bg-surface text-fg hover:border-fg-subtle'
+      } ${className}`}
+    >
+      <select
+        aria-label={label}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value as T)}
+        className="h-full min-w-0 flex-1 appearance-none bg-transparent pr-8 pl-3 outline-none"
+        data-testid={testId}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={14} aria-hidden className="pointer-events-none absolute right-3 text-fg-subtle" />
+    </span>
+  );
+}
+
 export function FilterSelect<T extends string>({
   label,
   value,

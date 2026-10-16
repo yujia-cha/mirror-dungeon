@@ -253,6 +253,18 @@ export function PlanProvider({
       return setStageFloor(floor, { got, failed: [...failed] });
     };
     const leave = (packId: number): void => unvisitPack(packId, { reset: entryGiftsOf(packId) });
+    /**
+     * Record an entry the screen saw on `floor`, wherever the stage stands. The stage cannot step
+     * past the frontier, so a later floor is entered first and then shown; the floors walked past
+     * settle as 「다음 층」 would have settled them.
+     */
+    const enterAt = (floor: number, packId: number): void => {
+      const failed = new Set<number>();
+      for (let f = run.stageFloor; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
+      visitPack(packId, floor, { got: startSettle, failed: [...failed] });
+      // The store reads its own state, so this sees the frontier the entry just moved.
+      if (floor !== run.stageFloor) setStageFloor(floor);
+    };
     const canObserve = (id: number): boolean => {
       const gift = indexes.giftById.get(id);
       return gift ? observable(gift, data.rules) : false;
@@ -336,6 +348,7 @@ export function PlanProvider({
       next,
       goTo,
       leave,
+      enterAt,
       openGift,
     };
   }, [

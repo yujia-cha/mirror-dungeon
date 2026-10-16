@@ -546,9 +546,20 @@ const captureRegionSchema = z
 export const captureLayoutSchema = z.object({
   /** The capture size the regions were measured on. */
   reference: z.object({ width: z.number().int().positive(), height: z.number().int().positive() }),
-  /** Banner regions in reading order, each with the screens whose title can appear in it. */
+  /**
+   * Banner regions in reading order, each with the screens whose title can appear in it. `raw`:
+   * when the light-text pass finds no title there, read the untouched crop too — only for titles
+   * drawn in colours the pass erases (M108: the bench found two; the others never needed it, and
+   * the second read doubles what a frame showing nothing costs).
+   */
   titles: z
-    .array(z.object({ region: captureRegionSchema, screens: z.array(z.enum(CAPTURE_SCREENS)).min(1) }))
+    .array(
+      z.object({
+        region: captureRegionSchema,
+        screens: z.array(z.enum(CAPTURE_SCREENS)).min(1),
+        raw: z.boolean().optional(),
+      }),
+    )
     .min(1),
   names: z.object({
     popup: captureRegionSchema,

@@ -117,7 +117,10 @@ export class CaptureSession {
     video.muted = true;
     video.playsInline = true;
     video.srcObject = this.stream;
-    await video.play().catch(() => undefined);
+    // Not awaited: `play()` settles on the first frame, and a window that never repaints sends
+    // none — the session would sit in 「연결 중」 for good. A tick before the first frame sees
+    // `videoWidth === 0` and waits.
+    void video.play().catch(() => undefined);
     this.video = video;
     this.timer = setInterval(() => void this.tick(), this.intervalMs);
     this.options.onStatus('running');

@@ -110,6 +110,11 @@ export interface PlanState {
    * leaving it go too.
    */
   leave: (packId: number) => void;
+  /**
+   * Record an entry the screen reader saw (M107): walk to `floor` the way the floor strip does —
+   * every floor left behind settles — then enter `packId` there. The stage follows.
+   */
+  enterAt: (floor: number, packId: number) => void;
   /** Open the gift detail sheet (the same one the items tab uses) from anywhere in the shell. */
   openGift: (giftId: number) => void;
 }

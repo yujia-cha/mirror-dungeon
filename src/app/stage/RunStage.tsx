@@ -14,6 +14,7 @@ import { Button, Card, Notice } from '../components/ui.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 import { OtherEntryCard, OtherPacks, StagePackCard } from './EnterablePacks.tsx';
 import { PackArea } from './EnteredPack.tsx';
+import { CapturePanel } from './CapturePanel.tsx';
 import { FloorHeader } from './FloorHeader.tsx';
 
 /** How long the pack area takes to fold away after the player goes back (matches its CSS transition). */
@@ -124,6 +125,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
   return (
     <div className="flex flex-col gap-4" data-testid="run-stage" data-mode={stageMode}>
       <FloorHeader mode={stageMode} />
+      <CapturePanel />
       {body}
     </div>
   );

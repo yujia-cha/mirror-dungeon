@@ -26,7 +26,18 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text-summary', 'html'],
       include: ['src/**/*.{ts,tsx}', 'scripts/**/*.ts'],
-      exclude: ['src/main.tsx', 'src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts', '**/*.d.ts'],
+      // The capture CLIs run only on the owner's machine: they read gitignored game screenshots
+      // (local-fixtures/, never committed) and drive a browser, so CI cannot run them and their 0%
+      // says nothing. What they compute lives in scripts/lib/capture-*.ts, which is measured.
+      exclude: [
+        'src/main.tsx',
+        'src/**/*.test.{ts,tsx}',
+        'scripts/**/*.test.ts',
+        '**/*.d.ts',
+        'scripts/capture-spike.ts',
+        'scripts/capture-bench.ts',
+        'scripts/capture-bench-browser.ts',
+      ],
       // Measured at M58: 66.32 / 59.76 / 72.38 / 67.75.
       thresholds: { statements: 65.5, branches: 59, functions: 71.5, lines: 67 },
     },

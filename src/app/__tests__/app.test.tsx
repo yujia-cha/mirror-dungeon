@@ -4340,3 +4340,52 @@ describe('M78 · guide, header doors, clear confirm, observation suggestions', (
     expect(screen.queryByRole('button', { name: /추천 / })).toBeNull();
   });
 });
+
+describe('screen reader (M107)', () => {
+  const share = (getDisplayMedia: () => Promise<MediaStream>) =>
+    Object.defineProperty(navigator, 'mediaDevices', { value: { getDisplayMedia }, configurable: true });
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'mediaDevices');
+  });
+
+  it('stays off the stage where the browser cannot share a screen', () => {
+    renderPlanned(<RunStage onOpenGifts={() => undefined} />);
+    expect(screen.queryByTestId('capture-panel')).toBeNull();
+  });
+
+  it('starts from the stage and says, in words, that sharing was refused', async () => {
+    // Arrange: a browser that can share, and a player who says no.
+    const user = userEvent.setup();
+    share(() => Promise.reject(new DOMException('denied', 'NotAllowedError')));
+    renderPlanned(<RunStage onOpenGifts={() => undefined} />);
+    const panel = screen.getByTestId('capture-panel');
+    expect(within(panel).getByTestId('capture-status')).toHaveAttribute('data-status', 'idle');
+    // Act
+    await user.click(within(panel).getByRole('button', { name: '화면 인식 시작' }));
+    // Assert: the error is a sentence, and starting again is still offered.
+    const status = within(panel).getByTestId('capture-status');
+    await waitFor(() => expect(status).toHaveAttribute('data-error', 'denied'));
+    expect(status).toHaveTextContent('화면 공유를 허용하지 않았습니다');
+    expect(within(panel).getByRole('button', { name: '화면 인식 시작' })).toBeInTheDocument();
+    // The interval preset is a device setting, kept in the store.
+    await user.selectOptions(within(panel).getByTestId('capture-interval'), 'quality');
+    expect(useApp.getState().ui.captureInterval).toBe('quality');
+  });
+
+  it('records an entry seen on a later floor by walking there first (enterAt)', () => {
+    // Arrange: a probe that reaches the plan context.
+    let enterAt: ((floor: number, packId: number) => void) | null = null;
+    function Probe() {
+      enterAt = usePlan().enterAt;
+      return null;
+    }
+    renderPlanned(<Probe />);
+    // Act: the map header read 「3층 탐사 중」 over a pack while the app was still on floor 1.
+    act(() => enterAt!(3, 1008));
+    // Assert: floors 1 and 2 were passed without an entry, floor 3 holds the pack, the stage is there.
+    const { run } = useApp.getState();
+    expect(run.visits).toEqual({ 3: 1008 });
+    expect(run.stageFloor).toBe(3);
+    expect(run.currentFloor).toBe(4);
+  });
+});

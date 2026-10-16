@@ -11,7 +11,7 @@ const LAYOUT: CaptureLayout = {
     { region: R(0), screens: ['acquired'] },
     { region: R(1), screens: ['fusionConfirm'] },
     { region: R(2), screens: ['sell', 'fusion'] },
-    { region: R(3), screens: ['exploring'] },
+    { region: R(3), screens: ['exploring'], raw: true },
   ],
   names: { popup: R(4), selected: R(5), centerConfirm: R(6), mapHeader: R(3) },
   fusion: { count: R(7), five: [R(8), R(9), R(8), R(9), R(8)], three: [R(9), R(8), R(9)] },
@@ -60,20 +60,23 @@ describe('readFrame', () => {
     expect(ocrCalls).toBe(2);
   });
 
-  it('reads raw when the light pass finds nothing (the brown-on-red map header)', async () => {
+  it('reads raw only for titles marked raw, when the light pass finds nothing (the brown-on-red map header)', async () => {
+    // Arrange
     const { reader, calls } = fakeReader({ '0.3': { light: [], raw: ['1층 탐사 중', '속하지 못하는'] } });
+    // Act
     const { frame } = await readFrame(reader, LAYOUT, CTX);
+    // Assert: the unmarked titles get one light read each; the map header gets both.
     expect(frame).toMatchObject({ screen: 'exploring', floor: 1, pack: { status: 'match', id: 1002 } });
-    expect(calls.slice(0, 8)).toEqual([
-      '0:light',
-      '0:raw',
-      '0.1:light',
-      '0.1:raw',
-      '0.2:light',
-      '0.2:raw',
-      '0.3:light',
-      '0.3:raw',
-    ]);
+    expect(calls.slice(0, 5)).toEqual(['0:light', '0.1:light', '0.2:light', '0.3:light', '0.3:raw']);
+  });
+
+  it('never reads an unmarked title raw, even when only raw would find it', async () => {
+    const { reader, calls } = fakeReader({ '0': { light: [], raw: ['E.G.O 기프트를 획득했습니다.'] } });
+    const { frame, ocrCalls } = await readFrame(reader, LAYOUT, CTX);
+    expect(frame.screen).toBeNull();
+    expect(calls).not.toContain('0:raw');
+    // Four title regions, one raw for the marked one: what a frame showing nothing costs.
+    expect(ocrCalls).toBe(5);
   });
 
   it('does not let a region speak for a screen whose title lives elsewhere', async () => {

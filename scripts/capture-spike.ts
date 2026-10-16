@@ -44,27 +44,17 @@
  *        --raw. (Enlarging crops 2× was tried and read worse.)
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { createRequire } from 'node:module';
-import decodeWebp, { init as initWebp } from '@jsquash/webp/decode.js';
-import jpeg from 'jpeg-js';
-import { PNG } from 'pngjs';
-import { createWorker, type Worker } from 'tesseract.js';
+import { resolve } from 'node:path';
 import { z } from 'zod';
 import { loadGameDataFromDisk } from '../src/core/data/node.ts';
 import { matchName, type MatchResult, type NameCandidate } from '../src/app/capture/match-name.ts';
-import {
-  matchIcon,
-  prepareReference,
-  prepareSlot,
-  rankIcons,
-  type IconRef,
-} from '../src/app/capture/match-icon.ts';
-import { cropRgba, isolateLightText, type Region } from '../src/app/capture/preprocess.ts';
+import { matchIcon, prepareSlot, rankIcons, type IconRef } from '../src/app/capture/match-icon.ts';
+import type { Region } from '../src/app/capture/preprocess.ts';
 import { classifyScreen, parseFloor, SCREEN_TITLES } from '../src/app/capture/screens.ts';
 import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
 import { INITIAL_TRACKER, trackFrame } from '../src/app/capture/tracker.ts';
 import { captureLayoutSchema } from '../src/core/schema.ts';
+import { decodeImage as decode, loadIconRefs, LocalOcr } from './lib/capture-local.ts';
 import { flagValue, hasFlag } from './lib/io.ts';
 
 const regionSchema = z.tuple([z.number(), z.number(), z.number(), z.number()]);
@@ -92,23 +82,6 @@ const MAP_HEADER: Region = layout.names.mapHeader;
 /** Every banner region, for labelled screen items that give no region of their own. */
 const TITLE_REGIONS: Region[] = layout.titles.map((t) => t.region);
 
-/** Decoded RGBA pixels of a PNG or JPEG file. */
-function decode(bytes: Buffer): { data: Uint8Array; width: number; height: number } {
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) return jpeg.decode(bytes, { useTArray: true });
-  return PNG.sync.read(bytes);
-}
-
-/** Tesseract's own 3-letter codes for the two client languages we read. */
-const TESS_LANG = { ko: 'kor', en: 'eng' } as const;
-
-const require = createRequire(import.meta.url);
-
-/** The vendored traineddata folder for a language, from the @tesseract.js-data packages. */
-function langPath(lang: Label['lang'], model: 'best' | 'fast'): string {
-  const pkg = dirname(require.resolve(`@tesseract.js-data/${TESS_LANG[lang]}/package.json`));
-  return resolve(pkg, model === 'best' ? '4.0.0_best_int' : '4.0.0');
-}
-
 function fail(message: string): never {
   console.error(`capture-spike: ${message}`);
   process.exit(1);
@@ -135,19 +108,7 @@ async function main(): Promise<void> {
   const candidatesFor = (kind: 'pack' | 'gift', lang: Label['lang']): NameCandidate[] =>
     (kind === 'pack' ? data.packs : data.gifts).map((x) => ({ id: x.id, name: x.name[lang] }));
 
-  const workers = new Map<Label['lang'], Worker>();
-  const workerFor = async (lang: Label['lang']): Promise<Worker> => {
-    const existing = workers.get(lang);
-    if (existing) return existing;
-    const worker = await createWorker(TESS_LANG[lang], 1, {
-      langPath: langPath(lang, model),
-      gzip: true,
-      // The models are already on disk; the default cache writes a copy into the working directory.
-      cacheMethod: 'none',
-    });
-    workers.set(lang, worker);
-    return worker;
-  };
+  const ocr = new LocalOcr(model);
 
   const images = new Map<string, ReturnType<typeof decode>>();
   /** OCR the given regions of one shot (the whole shot when there are none), lines in order. */
@@ -161,17 +122,12 @@ async function main(): Promise<void> {
       image = decode(readFileSync(resolve(dir, label.file)));
       images.set(label.file, image);
     }
-    const worker = await workerFor(label.lang);
     const lines: string[] = [];
     let ms = 0;
     for (const region of regions.length > 0 ? regions : [[0, 0, 1, 1] as const]) {
-      const crop = cropRgba(image.data, image.width, image.height, region);
-      const png = new PNG({ width: crop.width, height: crop.height });
-      png.data = Buffer.from(raw ? crop.data : isolateLightText(crop.data));
-      const started = performance.now();
-      const { data: ocr } = await worker.recognize(PNG.sync.write(png));
-      ms += performance.now() - started;
-      lines.push(...ocr.text.split('\n').filter((line) => line.trim() !== ''));
+      const r = await ocr.region(image, region, label.lang, raw);
+      ms += r.ms;
+      lines.push(...r.lines);
     }
     return { lines, ms };
   };
@@ -179,20 +135,7 @@ async function main(): Promise<void> {
   /** Every gift's shipped icon, reduced for matching — decoded once, on the first icon item. */
   let refs: IconRef[] | null = null;
   const iconRefs = async (): Promise<IconRef[]> => {
-    if (refs) return refs;
-    await initWebp(
-      await WebAssembly.compile(readFileSync(require.resolve('@jsquash/webp/codec/dec/webp_dec.wasm'))),
-    );
-    refs = [];
-    for (const gift of data.gifts) {
-      const path = resolve('public/icons/gifts', `${gift.icon}.webp`);
-      if (!existsSync(path)) continue;
-      const bytes = readFileSync(path);
-      const image = await decodeWebp(
-        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-      );
-      refs.push(prepareReference(gift.id, image.data, image.width, image.height));
-    }
+    refs ??= await loadIconRefs(data.gifts);
     return refs;
   };
 
@@ -256,7 +199,7 @@ async function main(): Promise<void> {
       );
       console.log(`${file}  ${(frame.screen ?? '—').padEnd(13)} ${said.join(' · ')}`);
     }
-    for (const worker of workers.values()) await worker.terminate();
+    await ocr.terminate();
     console.log(
       `\n${shots.length} frames, ${(calls / shots.length).toFixed(1)} OCR calls and ${Math.round(ms / shots.length)}ms OCR per frame`,
     );
@@ -379,7 +322,7 @@ async function main(): Promise<void> {
       `${outcome.padEnd(9)} ${label.file}  read ${JSON.stringify(lines)} → ${answer}  [${Math.round(ms)}ms]`,
     );
   }
-  for (const worker of workers.values()) await worker.terminate();
+  await ocr.terminate();
 
   const n = parsed.data.items.length;
   const pct = (k: number) => (n === 0 ? '—' : `${((100 * k) / n).toFixed(1)}%`);

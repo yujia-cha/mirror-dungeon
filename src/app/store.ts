@@ -5,6 +5,7 @@ import type { PlanOptions } from '../core/types.ts';
 import { defaultOptions } from '../core/index.ts';
 import type { Lang } from './i18n.ts';
 import { observationClosed, type FusionGoalMap, type RunState } from './lib/plan-input.ts';
+import { DEFAULT_READ_INTERVAL, READ_INTERVALS, type ReadIntervalPreset } from './capture/loop.ts';
 
 export type LeftTab = 'deck' | 'gifts';
 export type RightTab = 'plan' | 'tracker';
@@ -22,6 +23,9 @@ export interface UiState {
   activeUnpickedOnly: boolean;
   /** How large gift tiles are drawn in the grids, tray, tracker and stage (`lib/icon-size.ts`). */
   giftIconScale: GiftIconScale;
+  /** Screen reader (M107): how often it looks, and the language the game client is in. */
+  captureInterval: ReadIntervalPreset;
+  captureLang: 'ko' | 'en';
 }
 
 /** Steps of the gift tile size setting; `md` is the size the layout was drawn at. */
@@ -81,7 +85,7 @@ interface AppState extends SharedState {
    * Record that `packId` was entered on `floor`; a pack is visited once, so an earlier floor for it
    * is replaced. `settle.got` marks gifts collected in the same update (the start-of-run gifts).
    */
-  visitPack: (packId: number, floor: number, settle?: { got?: number[] }) => void;
+  visitPack: (packId: number, floor: number, settle?: { got?: number[]; failed?: number[] }) => void;
   /** Drop the record; when it was the last decided floor, that floor becomes undecided again. */
   /** Undo an entry; `reset` names gift ids whose recorded status is cleared with it (the pack's own drops). */
   unvisitPack: (packId: number, opts?: { reset?: number[] }) => void;
@@ -267,6 +271,8 @@ export function defaultUi(): UiState {
     rightWidth: PANEL_WIDTH.default,
     activeUnpickedOnly: true,
     giftIconScale: 'md',
+    captureInterval: DEFAULT_READ_INTERVAL,
+    captureLang: 'ko',
   };
 }
 
@@ -292,6 +298,9 @@ export function sanitizeUi(raw: unknown): UiState {
   if (typeof source.activeUnpickedOnly === 'boolean') out.activeUnpickedOnly = source.activeUnpickedOnly;
   if ((GIFT_ICON_SCALES as readonly unknown[]).includes(source.giftIconScale))
     out.giftIconScale = source.giftIconScale as GiftIconScale;
+  if (typeof source.captureInterval === 'string' && source.captureInterval in READ_INTERVALS)
+    out.captureInterval = source.captureInterval as ReadIntervalPreset;
+  if (source.captureLang === 'ko' || source.captureLang === 'en') out.captureLang = source.captureLang;
   return out;
 }
 

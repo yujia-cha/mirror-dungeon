@@ -162,6 +162,62 @@ export const STRINGS = {
   giftsClear: { ko: '목표 비우기', en: 'Clear goals' },
   searchClear: { ko: '검색어 지우기', en: 'Clear search' },
   floorStrip: { ko: '층', en: 'Floors' },
+  // Screen reader (M107).
+  captureTitle: { ko: '화면 인식', en: 'Screen reader' },
+  captureStart: { ko: '화면 인식 시작', en: 'Start reading the screen' },
+  captureStop: { ko: '중지', en: 'Stop' },
+  captureIdle: {
+    ko: '게임 창을 공유하면 팩 입장과 기프트 획득을 자동으로 기록합니다',
+    en: 'Share the game window to record pack entries and gifts automatically',
+  },
+  captureStarting: { ko: '게임 창 연결 중', en: 'Connecting to the game window' },
+  captureRunning: { ko: '인식 중', en: 'Reading' },
+  capturePrivacy: {
+    ko: '화면은 이 브라우저 안에서만 읽고 어디로도 보내지 않습니다',
+    en: 'The screen is read in this browser only and sent nowhere',
+  },
+  captureErr_unsupported: {
+    ko: '이 브라우저는 화면 공유를 지원하지 않습니다',
+    en: 'This browser cannot share a screen',
+  },
+  captureErr_denied: {
+    ko: '화면 공유를 허용하지 않았습니다. 다시 시작하면 다시 묻습니다',
+    en: 'Screen sharing was not allowed. Starting again asks again',
+  },
+  captureErr_ended: { ko: '화면 공유가 끝났습니다', en: 'Screen sharing ended' },
+  captureErr_engine: {
+    ko: '글자 인식 엔진을 불러오지 못했습니다',
+    en: 'Could not load the text recognition engine',
+  },
+  captureErr_layout: { ko: '화면 배치 정보를 불러오지 못했습니다', en: 'Could not load the screen layout' },
+  captureInterval: { ko: '판독 간격', en: 'Read interval' },
+  captureInterval_economy: { ko: '최고 성능 · 1초', en: 'Lightest · 1 s' },
+  captureInterval_performance: { ko: '성능 · 0.5초', en: 'Light · 0.5 s' },
+  captureInterval_balanced: { ko: '밸런스 · 0.25초', en: 'Balanced · 0.25 s' },
+  captureInterval_quality: { ko: '품질 · 0.125초', en: 'Quality · 0.125 s' },
+  captureLang: { ko: '게임 언어', en: 'Game language' },
+  captureLang_ko: { ko: '한국어', en: 'Korean' },
+  captureLang_en: { ko: 'English (화면 제목 미확인)', en: 'English (screen titles not known yet)' },
+  captureLog: { ko: '기록', en: 'Log' },
+  captureLogEmpty: { ko: '아직 기록한 것이 없습니다', en: 'Nothing recorded yet' },
+  captureLogEnter: { ko: '{floor}층 입장 · {name}', en: 'Floor {floor} entered · {name}' },
+  captureLogGot: { ko: '획득 · {name}', en: 'Got · {name}' },
+  captureLogSold: { ko: '판매 · {name}', en: 'Sold · {name}' },
+  captureLogFused: { ko: '합성 · {name}', en: 'Fused · {name}' },
+  captureLogAnswer: { ko: '직접 고름 · {name}', en: 'Picked · {name}' },
+  captureUndo: { ko: '되돌리기', en: 'Undo' },
+  captureUndone: { ko: '되돌림', en: 'Undone' },
+  captureAskGift: { ko: '어느 기프트를 얻었나요?', en: 'Which gift did you get?' },
+  captureAskPack: {
+    ko: '{floor}층에서 어느 팩에 입장했나요?',
+    en: 'Which pack did you enter on floor {floor}?',
+  },
+  captureAskConsumed: {
+    ko: '{name} 합성에 쓴 기프트를 골라 주세요',
+    en: 'Pick the gifts the {name} fusion used',
+  },
+  captureAskApply: { ko: '적용', en: 'Apply' },
+  captureAskDismiss: { ko: '무시', en: 'Ignore' },
   giftsClearConfirm: {
     ko: '목표 {n}개와 조합 설정·관측 지정을 모두 뺍니다.',
     en: 'Removes all {n} goals with their fusion settings and observation pins.',
@@ -572,6 +628,10 @@ export const GUIDE_CARDS = [
       {
         ko: '「다음 층」으로 넘어가고 「입장 취소」로 되돌립니다. 층 칸을 눌러 지난 층을 다시 볼 수 있습니다.',
         en: '「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.',
+      },
+      {
+        ko: '데스크톱에서는 「화면 인식 시작」으로 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있고, 화면은 브라우저 밖으로 나가지 않습니다.',
+        en: 'On desktop, 「Start reading the screen」 shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone, and the screen never leaves the browser.',
       },
       {
         ko: '재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.',

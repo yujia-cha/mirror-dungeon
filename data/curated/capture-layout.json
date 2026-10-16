@@ -6,8 +6,8 @@
     { "region": [0.31, 0.69, 0.385, 0.055], "screens": ["fusionConfirm"], "_note": "fusion confirm line under the slots" },
     { "region": [0.28, 0.42, 0.44, 0.12], "screens": ["sellConfirm"], "_note": "centre confirm 「[이름]을(를) 코스트 300에 / 판매하시겠습니까?」" },
     { "region": [0.29, 0.19, 0.29, 0.06], "screens": ["purchase"], "_note": "purchase dialog title" },
-    { "region": [0.33, 0.075, 0.34, 0.09], "screens": ["fusionKeyword", "sell", "enhance", "fusion", "packSelect"], "_note": "full-screen title" },
-    { "region": [0.01, 0.13, 0.17, 0.09], "screens": ["exploring"], "_note": "map header 「N층 탐사 중」 over the pack name" }
+    { "region": [0.33, 0.075, 0.34, 0.09], "screens": ["fusionKeyword", "sell", "enhance", "fusion", "packSelect"], "raw": true, "_note": "full-screen title; the pack picker's 「N층 테마팩 선택」 is found only by the raw pass (M108 bench: 3 shots)" },
+    { "region": [0.01, 0.13, 0.17, 0.09], "screens": ["exploring"], "raw": true, "_note": "map header 「N층 탐사 중」 over the pack name; brown on red, which the light pass erases (M95, M108 bench: 2 shots)" }
   ],
   "names": {
     "popup": [0.2526, 0.56, 0.138, 0.1338],
