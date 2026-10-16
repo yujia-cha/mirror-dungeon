@@ -1,4 +1,5 @@
 import type { Gift } from './schema.ts';
+import { msg } from './messages.ts';
 import type { DeckStats, GameIndexes, Requirement, Unresolved, WantedGift } from './types.ts';
 
 const MAX_FUSION_DEPTH = 4;
@@ -199,7 +200,7 @@ export function expandRequirements(
       unresolved.push({
         giftId,
         reason: 'not-obtainable',
-        detail: { ko: '게임 데이터에 없는 기프트입니다.', en: 'Not present in the game data.' },
+        detail: msg('unresolved.notInData'),
       });
       return;
     }
@@ -223,10 +224,7 @@ export function expandRequirements(
         unresolved.push({
           giftId,
           reason: 'failed',
-          detail: {
-            ko: '미획득인 채로 층을 떠나 이 런에서는 더 얻을 수 없는 기프트입니다.',
-            en: 'Its floor was left with it not got, so it cannot be had this run.',
-          },
+          detail: msg('unresolved.failed'),
         });
         return;
       }
@@ -241,10 +239,7 @@ export function expandRequirements(
       unresolved.push({
         giftId,
         reason: 'fusion-ingredient-unresolved',
-        detail: {
-          ko: '조합 단계가 너무 깊어 재료를 모두 추적할 수 없습니다.',
-          en: 'The fusion chain is deeper than the planner follows.',
-        },
+        detail: msg('unresolved.fusionTooDeep'),
       });
       return;
     }
@@ -255,10 +250,7 @@ export function expandRequirements(
       unresolved.push({
         giftId,
         reason: 'fusion-ingredient-unresolved',
-        detail: {
-          ko: '조합 레시피를 찾을 수 없습니다.',
-          en: 'No fusion recipe is known for this gift.',
-        },
+        detail: msg('unresolved.noRecipe'),
       });
       return;
     }

@@ -3,6 +3,7 @@ import { STATUS_KEYWORDS } from './schema.ts';
 
 const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
 import type { ConditionReport, DeckStats, GameIndexes } from './types.ts';
+import { msg } from './messages.ts';
 
 type Scope = 'deployed' | 'formation' | 'reserve';
 
@@ -144,32 +145,29 @@ function conditionCount(condition: Condition, stats: DeckStats): number | null {
  * and localizes them, so the planner never hard-codes display names.
  */
 function describe(condition: Condition, have: number | null): { ko: string; en: string } {
+  const count = have ?? '?';
   switch (condition.type) {
     case 'keywordSkillCount': {
-      const list = condition.keywords.join(' 또는 ');
-      const use = condition.verb === 'consume' ? '소모' : '부여';
-      const verb = condition.verb === 'consume' ? 'consume' : 'inflict';
+      const params = {
+        keywords: { ko: condition.keywords.join(' 또는 '), en: condition.keywords.join(' or ') },
+        verb: msg(condition.verb === 'consume' ? 'cond.verbConsume' : 'cond.verbInflict'),
+        have: count,
+        scope: scopeText(condition.scope),
+      };
       // No `min` means the gift only scales with the count, so there is no bar to print.
       return condition.min === null
-        ? {
-            ko: `${list} ${use} 스킬 보유 인격 ${have ?? '?'}명 (${scopeKo(condition.scope)})`,
-            en: `${have ?? '?'} identities ${verb} ${condition.keywords.join(' or ')} (${condition.scope})`,
-          }
-        : {
-            ko: `${list} ${use} 스킬 보유 인격 ${have ?? '?'}/${condition.min} (${scopeKo(condition.scope)})`,
-            en: `${have ?? '?'}/${condition.min} identities ${verb} ${condition.keywords.join(' or ')} (${condition.scope})`,
-          };
+        ? msg('cond.keywordCount', params)
+        : msg('cond.keywordMin', { ...params, min: condition.min });
     }
     case 'factionCount':
-      return {
-        ko: `${condition.factions.join(' 또는 ')} 소속 ${have ?? '?'}/${condition.min}인 (${scopeKo(condition.scope)})`,
-        en: `${have ?? '?'}/${condition.min} identities from ${condition.factions.join(' or ')} (${condition.scope})`,
-      };
+      return msg('cond.faction', {
+        factions: { ko: condition.factions.join(' 또는 '), en: condition.factions.join(' or ') },
+        have: count,
+        min: condition.min,
+        scope: scopeText(condition.scope),
+      });
     case 'fullResonance':
-      return {
-        ko: `완전 공명 ${condition.min} 이상 필요 (전투 중 판정이라 덱만으로는 알 수 없음)`,
-        en: `needs ${condition.min}+ full resonance, which depends on in-battle play`,
-      };
+      return msg('cond.fullResonance', { min: condition.min });
     case 'unparsed':
       return { ko: condition.text.ko, en: condition.text.en };
   }
@@ -188,14 +186,14 @@ function subjectOf(condition: Condition): ConditionReport['subject'] {
   }
 }
 
-function scopeKo(scope: Scope): string {
+function scopeText(scope: Scope): { ko: string; en: string } {
   switch (scope) {
     case 'deployed':
-      return '출격 인원';
+      return msg('cond.scopeDeployed');
     case 'formation':
-      return '편성 인원';
+      return msg('cond.scopeFormation');
     case 'reserve':
-      return '대기 인원';
+      return msg('cond.scopeReserve');
   }
 }
 

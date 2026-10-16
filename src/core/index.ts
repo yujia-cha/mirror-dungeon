@@ -29,7 +29,7 @@ import {
 } from './search.ts';
 import { requirementKey } from './requirements.ts';
 import { chooseStart, observable } from './starting.ts';
-import { josa } from './text.ts';
+import { msg } from './messages.ts';
 
 export {
   conflictRootsOf,
@@ -118,10 +118,7 @@ function normaliseOptions(
     next = { ...next, hardFromFloor: 1 };
     warnings.push({
       code: 'parallel-requires-hard',
-      detail: {
-        ko: `평행중첩(${parallelFrom}층 이상)은 1~${parallelFrom - 1}층을 전부 Hard로 클리어해야 들어갈 수 있어, 1층부터 Hard로 계획했습니다.`,
-        en: `Floors ${parallelFrom}+ need floors 1-${parallelFrom - 1} cleared on Hard, so the plan switches to Hard from floor 1.`,
-      },
+      detail: msg('warn.parallelRequiresHard', { parallelFrom, lastHard: parallelFrom - 1 }),
     });
   }
 
@@ -171,10 +168,7 @@ function normaliseOptions(
     warnings.push({
       code: 'pack-option-dropped',
       packIds: droppedAll,
-      detail: {
-        ko: '알 수 없거나 그 층에 나오지 않거나 서로 모순되는 팩 지정은 제외했습니다.',
-        en: 'Pack choices that are unknown, not offered on that floor, or contradictory were dropped.',
-      },
+      detail: msg('warn.packOptionDropped'),
     });
   }
   next = { ...next, bannedPacks, preferredPacks, pinnedPacks };
@@ -301,20 +295,18 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       unresolved.push({
         giftId: requirement.giftId,
         reason: 'not-obtainable',
-        detail: {
-          ko: '이번 시즌에 획득할 수 없는 기프트입니다.',
-          en: 'Not obtainable in the current season.',
-        },
+        detail: msg('unresolved.notObtainable'),
       });
       continue;
     }
     if (gift.acquisition.kind === 'hiddenBattle') {
       // A random extra battle on EXTREME floors drops it; no pack choice makes that certain.
       const hidden = data.rules.hiddenBattle;
-      const floorsText =
+      const [from, to] =
         hidden && hidden.floors.length > 0
-          ? `${hidden.floors[0]}~${hidden.floors[hidden.floors.length - 1]}`
-          : '11~15';
+          ? [hidden.floors[0], hidden.floors[hidden.floors.length - 1]]
+          : [11, 15];
+      const floors = { ko: `${from}~${to}`, en: `${from}-${to}` }; // 11~15 / 11-15
       const pct =
         hidden?.probabilityPerFloor !== null && hidden?.probabilityPerFloor !== undefined
           ? Math.round(hidden.probabilityPerFloor * 100)
@@ -323,10 +315,10 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       unresolved.push({
         giftId: requirement.giftId,
         reason: 'chance-only',
-        detail: {
-          ko: `${floorsText}층 히든 전투 보상${pct !== null ? `(층당 ${pct}%)` : ''}으로만 나오는 기프트입니다. 루트로 정할 수 없습니다.`,
-          en: `Only a random hidden-battle reward on floors ${floorsText.replace('~', '-')}${pct !== null ? ` (${pct}% per floor)` : ''}; the route cannot plan for it.`,
-        },
+        detail:
+          pct !== null
+            ? msg('unresolved.chanceOnlyRate', { floors, pct })
+            : msg('unresolved.chanceOnly', { floors }),
       });
       continue;
     }
@@ -341,16 +333,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       unresolved.push({
         giftId: requirement.giftId,
         reason: 'no-pack-path',
-        detail:
-          gift.acquisition.kind === 'event'
-            ? {
-                ko: '선택지·이벤트로만 얻는 기프트라 팩 루트로 계획할 수 없습니다.',
-                en: 'Only obtained through a choice event, so no pack route can plan for it.',
-              }
-            : {
-                ko: '잔영은 조합·판매용 재료라 팩 루트로 계획할 수 없습니다.',
-                en: 'A fusion/sale material; no pack route can plan for it.',
-              },
+        detail: msg(gift.acquisition.kind === 'event' ? 'unresolved.eventOnly' : 'unresolved.materialOnly'),
       });
       continue;
     }
@@ -367,10 +350,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       unresolved.push({
         giftId: requirement.giftId,
         reason: 'hard-only',
-        detail: {
-          ko: 'Hard 난이도에서만 얻을 수 있는 기프트입니다. 난이도를 Hard로 바꾸세요.',
-          en: 'Obtainable on Hard difficulty only. Switch the plan to Hard.',
-        },
+        detail: msg('unresolved.hardOnly'),
       });
       requirement.via = 'unresolved';
     }
@@ -428,10 +408,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     warnings.push({
       code: 'observation-after-start',
       giftIds: [...new Set(afterStart)].sort((a, b) => a - b),
-      detail: {
-        ko: '기프트 관측은 1층을 떠나기 전에만 할 수 있어, 그 뒤에 지정한 관측은 적용하지 않았습니다.',
-        en: 'Gift observation only happens before floor 1 is left, so pins added later were not applied.',
-      },
+      detail: msg('warn.observationAfterStart'),
     });
   }
   const trimmed = [...new Set([...droppedObservations, ...notPlanned])];
@@ -439,10 +416,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     warnings.push({
       code: 'observation-trimmed',
       giftIds: trimmed,
-      detail: {
-        ko: `관측으로 지정한 기프트 중 관측할 수 없거나, 한도(${budget}개)를 넘거나, 이번 계획의 목표가 아닌 것은 제외했습니다.`,
-        en: `Some pinned observations were dropped: not observable, over the ${budget}-slot limit, or not a goal of this plan.`,
-      },
+      detail: msg('warn.observationTrimmed', { budget }),
     });
   }
 
@@ -708,6 +682,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   const bannedPacks = new Set(options.bannedPacks);
   for (const [i, giftId] of search.unresolvedGiftIds.entries()) {
     const gift = indexes.giftById.get(giftId);
+    const giftName = { ko: String(gift?.name.ko ?? giftId), en: String(gift?.name.en || giftId) };
     // A pack taken on a played floor cannot be entered again, so it is no source any more even
     // where its window still reaches a floor ahead.
     const packs = (indexes.packsByGift.get(giftId) ?? []).filter((packId) => !run.visited.has(packId));
@@ -735,12 +710,12 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       unresolved.push({
         giftId,
         reason: 'ingredient-shared',
-        detail: {
-          ko: `${josa(String(gift?.name.ko ?? giftId), '은/는')} 한 런에서 한 번만 얻을 수 있는데 ${josa(eaterName('ko').join('·'), '이/가')} 함께 먹습니다. 두 번째 몫을 줄 팩이 더 없습니다.`,
-          // The English used to be a fixed sentence with no names in it, so a reader in English was
-          // told two fusions were fighting over something without being told which, or over what.
-          en: `${gift?.name.en || giftId} can only be had once per run, and ${eaterName('en').join(' and ')} both consume it. No further pack can supply a second copy.`,
-        },
+        // The English used to be a fixed sentence with no names in it, so a reader in English was
+        // told two fusions were fighting over something without being told which, or over what.
+        detail: msg('unresolved.ingredientShared', {
+          gift: giftName,
+          eaters: { ko: eaterName('ko').join('·'), en: eaterName('en').join(' and ') },
+        }),
       });
       continue;
     }
@@ -748,24 +723,10 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       giftId,
       reason: anySlot ? 'pack-conflict' : onlyBanned ? 'pack-banned' : 'no-pack-in-range',
       detail: anySlot
-        ? {
-            ko: '다른 전용 기프트와 층이 겹쳐 한 런에 같이 넣을 수 없습니다.',
-            en: 'Its pack competes for the same floor as another wanted exclusive.',
-          }
+        ? msg('unresolved.packConflict')
         : onlyBanned
-          ? {
-              ko: '이 기프트를 주는 팩을 모두 제외했습니다.',
-              en: 'Every pack that supplies it has been excluded.',
-            }
-          : midRun
-            ? {
-                ko: `${josa(String(gift?.name.ko ?? giftId), '을/를')} 주는 팩이 남은 층에 없습니다.`,
-                en: 'No pack that supplies it appears on the floors still ahead.',
-              }
-            : {
-                ko: `${josa(String(gift?.name.ko ?? giftId), '을/를')} 주는 팩이 계획한 층 범위에 없습니다.`,
-                en: 'No pack that supplies it appears within the planned floors.',
-              },
+          ? msg('unresolved.packBanned')
+          : msg(midRun ? 'unresolved.noPackAhead' : 'unresolved.noPackInRange', { gift: giftName }),
     });
   }
   /*
@@ -791,10 +752,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       warnings.push({
         code: 'shared-ingredient',
         giftIds: shared,
-        detail: {
-          ko: `${josa(shared.map((id) => indexes.giftById.get(id)?.name.ko ?? String(id)).join('·'), '은/는')} 두 조합이 함께 먹습니다. 같은 기프트는 한 번에 하나만 가질 수 있으니, 먼저 조합해 소모한 뒤에야 두 번째 것이 다시 나옵니다.`,
-          en: 'Two fusions eat the same ingredient. A gift you hold is never offered again, so the first fusion has to happen before the second copy can drop.',
-        },
+        detail: msg('warn.sharedIngredient', {
+          gifts: shared.map((id) => indexes.giftById.get(id)?.name.ko ?? String(id)).join('·'),
+        }),
       });
     }
   }
@@ -803,10 +763,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     warnings.push({
       code: 'pack-option-dropped',
       packIds: search.unplacedPacks,
-      detail: {
-        ko: '포함하기로 한 팩 중 남은 층에 넣을 수 없는 것이 있습니다.',
-        en: 'Some packs you chose to include have no floor left in the plan.',
-      },
+      detail: msg('warn.packOptionUnplaced'),
     });
   }
 
@@ -900,14 +857,11 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       missing,
       ...(droppedIngredients ? { droppedIngredients } : {}),
       detail: droppedIngredients
-        ? {
-            ko: `재료 ${missing.join(', ')}을(를) 구할 수 없어 조합할 수 없습니다. 나머지 재료(${droppedIngredients.join(', ')})만을 위한 입장은 취소했습니다.`,
-            en: `Cannot be fused: ingredients ${missing.join(', ')} are not obtainable. Pack entries for the remaining ingredients (${droppedIngredients.join(', ')}) alone were dropped.`,
-          }
-        : {
-            ko: `재료 ${missing.join(', ')}을(를) 구할 수 없어 조합할 수 없습니다.`,
-            en: `Cannot be fused: ingredients ${missing.join(', ')} are not obtainable in this plan.`,
-          },
+        ? msg('unresolved.fusionMissingDropped', {
+            missing: missing.join(', '),
+            dropped: droppedIngredients.join(', '),
+          })
+        : msg('unresolved.fusionMissing', { missing: missing.join(', ') }),
     });
   }
 
@@ -924,10 +878,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     warnings.push({
       code: 'condition-unmet',
       giftIds: [...new Set(unmet.map((c) => c.giftId))].sort((a, b) => a - b),
-      detail: {
-        ko: `조건을 충족하지 못하는 기프트가 ${new Set(unmet.map((c) => c.giftId)).size}개 있습니다. 효과가 발동하지 않습니다.`,
-        en: `${new Set(unmet.map((c) => c.giftId)).size} gift(s) will not activate with this deck.`,
-      },
+      detail: msg('warn.conditionUnmet', { count: new Set(unmet.map((c) => c.giftId)).size }),
     });
   }
 
@@ -935,10 +886,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     warnings.push({
       code: 'general-drop-not-guaranteed',
       giftIds: [...new Set(generalDrops)].sort((a, b) => a - b),
-      detail: {
-        ko: '범용 드랍은 어느 팩에서나 나올 수 있을 뿐 반드시 나오지는 않습니다. 상점과 새로고침을 함께 쓰세요.',
-        en: 'General drops can come from any pack but are never guaranteed; use the shop and refreshes.',
-      },
+      detail: msg('warn.generalDropNotGuaranteed'),
     });
   }
 
@@ -947,30 +895,21 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     warnings.push({
       code: 'fusion-slots',
       giftIds: slotHeavy.map((f) => f.result),
-      detail: {
-        ko: `재료가 ${data.rules.fusion.maxShopSlots}개를 넘어 일반 상점에서는 한 번에 조합할 수 없습니다. 하위 재료부터 조합하세요.`,
-        en: `Needs more than ${data.rules.fusion.maxShopSlots} fusion slots, so fuse the sub-ingredients first.`,
-      },
+      detail: msg('warn.fusionSlots', { max: data.rules.fusion.maxShopSlots }),
     });
   }
 
   if (startObserved.length > 0 && !data.rules.giftObservation.verified) {
     warnings.push({
       code: 'gift-observation-unverified',
-      detail: {
-        ko: '기프트 관측 별빛 비용표는 인게임 확인이 필요한 값입니다(구버전 기준).',
-        en: 'The gift-observation starlight cost is taken from an older season and needs in-game confirmation.',
-      },
+      detail: msg('warn.giftObservationUnverified'),
     });
   }
 
   if (search.capped) {
     warnings.push({
       code: 'search-capped',
-      detail: {
-        ko: '탐색 한도에 도달해 최선에 가까운 결과만 보여 줍니다. 목표 기프트를 줄이면 더 정확해집니다.',
-        en: 'The search hit its node cap, so this is a near-best plan. Fewer goal gifts will sharpen it.',
-      },
+      detail: msg('warn.searchCapped'),
     });
   }
 
@@ -983,10 +922,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     if (hardOnlyPacks.length > 0) {
       warnings.push({
         code: 'hard-required',
-        detail: {
-          ko: 'Hard에서만 등장하는 팩이 필요한 기프트가 있습니다. 난이도를 Hard로 올리면 루트가 넓어집니다.',
-          en: 'Some wanted gifts only come from Hard-only packs; switching to Hard widens the route.',
-        },
+        detail: msg('warn.hardRequired'),
       });
     }
   }

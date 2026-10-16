@@ -41,9 +41,37 @@ export function stripRichText(text: string): string {
  * does not end in Hangul (a number, or an English fallback name) gets the bracketed form, which
  * is what a Korean writer does when the reading is unknown.
  */
-export function josa(word: string, pair: '을/를' | '이/가' | '은/는' | '과/와'): string {
+export function josa(word: string, pair: JosaPair): string {
   const [withBatchim, without] = pair.split('/') as [string, string];
   const code = word.codePointAt(word.length - 1) ?? 0;
   if (code < 0xac00 || code > 0xd7a3) return `${word}${withBatchim}(${without})`;
   return `${word}${(code - 0xac00) % 28 === 0 ? without : withBatchim}`;
+}
+
+export type JosaPair = '을/를' | '이/가' | '은/는' | '과/와';
+
+/**
+ * A placeholder in a sentence from `docs/copy.md`: `{name}`, or `{name|을/를}` to have the Korean
+ * particle chosen for whatever fills it. The generator and `fillTemplate` share this one grammar.
+ */
+export const PLACEHOLDER = /\{([A-Za-z][A-Za-z0-9]*)(?:\|(을\/를|이\/가|은\/는|과\/와))?\}/g;
+
+/** A value for a placeholder: the same in both languages, or one per language (a gift name). */
+export type TemplateValue = string | number | { ko: string; en: string };
+
+/**
+ * Fill one sentence. A particle is attached in Korean only; English has none to choose. A missing
+ * value throws — `msg()`'s types make that unreachable from core, so reaching it is a bug.
+ */
+export function fillTemplate(
+  template: string,
+  lang: 'ko' | 'en',
+  params: Readonly<Record<string, TemplateValue>>,
+): string {
+  return template.replace(PLACEHOLDER, (_, name: string, pair: JosaPair | undefined) => {
+    const value = params[name];
+    if (value === undefined) throw new Error(`fillTemplate: no value for {${name}} in 「${template}」`);
+    const text = typeof value === 'object' ? value[lang] : String(value);
+    return pair && lang === 'ko' ? josa(text, pair) : text;
+  });
 }
