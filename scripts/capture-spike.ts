@@ -19,7 +19,12 @@
  * floor and entered pack.
  *
  * A `"kind": "screen"` item checks which screen the shot is: `expect` is a key of SCREEN_TITLES,
- * and the banner regions in TITLE_REGIONS are read unless the item gives its own.
+ * and the banner regions in TITLE_REGIONS are read unless the item gives its own. `"expect":
+ * "none"` says the shot shows no screen the tracker acts on (an event, a reward picker), which is
+ * as much worth checking: such a shot must not pass for an acquired popup.
+ *
+ * A `"kind": "floor"` item reads the floor number (`expect` a number) from the map header, where
+ * 「N층 탐사 중」 sits above the entered pack's name.
  *
  * A `"kind": "icon"` item asks which gift an icon slot shows (`region` = the slot, frame
  * included), against the shipped icons in public/icons/gifts. It prints the rank of the expected
@@ -31,10 +36,14 @@
  * threshold. `--raw` reads only the untouched crop, to compare.
  * Shots may be PNG or JPEG (Steam saves JPEG).
  *
+ * `--replay` reads every shot in the folder in file-name order (Steam names them by time) as if it
+ * were the live capture, folds each frame into the tracker (`trackFrame`) and prints the events —
+ * labels are not needed for it.
+ *
  * Flags: --dir (default local-fixtures/capture), --model best|fast (default best = best_int),
  *        --raw. (Enlarging crops 2× was tried and read worse.)
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 import decodeWebp, { init as initWebp } from '@jsquash/webp/decode.js';
@@ -52,7 +61,8 @@ import {
   type IconRef,
 } from '../src/app/capture/match-icon.ts';
 import { cropRgba, isolateLightText, type Region } from '../src/app/capture/preprocess.ts';
-import { classifyScreen, SCREEN_TITLES } from '../src/app/capture/screens.ts';
+import { classifyScreen, parseFloor, SCREEN_TITLES, type Screen } from '../src/app/capture/screens.ts';
+import { INITIAL_TRACKER, trackFrame, type Frame } from '../src/app/capture/tracker.ts';
 import { flagValue, hasFlag } from './lib/io.ts';
 
 const regionSchema = z.tuple([z.number(), z.number(), z.number(), z.number()]);
@@ -60,7 +70,7 @@ const labelsSchema = z.object({
   items: z.array(
     z.object({
       file: z.string(),
-      kind: z.enum(['pack', 'gift', 'screen', 'icon']),
+      kind: z.enum(['pack', 'gift', 'screen', 'icon', 'floor']),
       lang: z.enum(['ko', 'en']),
       expect: z.union([z.number().int(), z.string(), z.null()]),
       region: regionSchema.optional(),
@@ -69,15 +79,28 @@ const labelsSchema = z.object({
 });
 type Label = z.infer<typeof labelsSchema>['items'][number];
 
+/** The name button of the acquired popup. */
+const POPUP_NAME: Region = [0.2526, 0.56, 0.138, 0.1338];
+/** The selected gift's name button on the sell (and enhance) screen. */
+const SELECTED_NAME: Region = [0.2344, 0.2131, 0.2057, 0.1586];
+/** The centre confirm: 「[이름]을(를) 코스트 300에 / 판매하시겠습니까?」. */
+const CENTER_CONFIRM: Region = [0.28, 0.42, 0.44, 0.12];
+
+/** The map's top-left header: 「N층 탐사 중」 over the entered pack's name. */
+const MAP_HEADER: Region = [0.01, 0.13, 0.17, 0.09];
+
 /**
  * Where the banners sit, measured on 1920×1009 captures: the popup title (획득), the purchase
- * dialog title, the full-screen title (판매·강화·합성·키워드 선택) and the fusion confirm line.
+ * dialog title, the full-screen title (판매·강화·합성·키워드 선택·N층 테마팩 선택), the fusion confirm
+ * line, the map header, and the centre confirm (판매).
  */
 const TITLE_REGIONS: Region[] = [
   [0.333, 0.205, 0.34, 0.07],
   [0.29, 0.19, 0.29, 0.06],
   [0.33, 0.075, 0.34, 0.09],
   [0.31, 0.69, 0.385, 0.055],
+  MAP_HEADER,
+  CENTER_CONFIRM,
 ];
 
 /** Decoded RGBA pixels of a PNG or JPEG file. */
@@ -184,20 +207,106 @@ async function main(): Promise<void> {
     return refs;
   };
 
+  if (hasFlag('--replay')) {
+    const shots = readdirSync(dir)
+      .filter((f) => /\.(jpe?g|png)$/i.test(f))
+      .sort();
+    const packs = candidatesFor('pack', 'ko');
+    const gifts = candidatesFor('gift', 'ko');
+    const giftName = (id: number) => data.gifts.find((g) => g.id === id)?.name.ko ?? String(id);
+    const packName = (id: number) => data.packs.find((p) => p.id === id)?.name.ko ?? String(id);
+    /** Read with the light-text pass, and raw too when `accept` finds nothing in it. */
+    const readEither = async <T>(file: string, regions: Region[], accept: (lines: string[]) => T | null) => {
+      const label: Label = { file, kind: 'screen', lang: 'ko', expect: null };
+      const first = await read(label, regions, rawOnly);
+      const got = accept(first.lines);
+      if (got !== null || rawOnly) return { value: got, lines: first.lines, ms: first.ms };
+      const again = await read(label, regions, true);
+      return { value: accept(again.lines), lines: again.lines, ms: first.ms + again.ms };
+    };
+    let state = INITIAL_TRACKER;
+    let ms = 0;
+    for (const file of shots) {
+      const title = await readEither<Screen>(file, TITLE_REGIONS, (lines) => classifyScreen(lines, 'ko'));
+      ms += title.ms;
+      const frame: Frame = { screen: title.value, floor: null, pack: null, gift: null };
+      const nameIn = async (region: Region, candidates: NameCandidate[]) => {
+        const r = await readEither(file, [region], (lines) => {
+          const m = matchName(lines, candidates);
+          return m.status === 'none' ? null : m;
+        });
+        ms += r.ms;
+        return r.value ?? ({ status: 'none' } as const);
+      };
+      if (frame.screen === 'exploring') {
+        const header = await readEither(file, [MAP_HEADER], parseFloor);
+        ms += header.ms;
+        frame.floor = header.value;
+        frame.pack = await nameIn(MAP_HEADER, packs);
+      } else if (frame.screen === 'acquired') frame.gift = await nameIn(POPUP_NAME, gifts);
+      else if (frame.screen === 'sellConfirm') frame.gift = await nameIn(CENTER_CONFIRM, gifts);
+      else if (frame.screen === 'sell') frame.gift = await nameIn(SELECTED_NAME, gifts);
+      const out = trackFrame(state, frame);
+      state = out.state;
+      const said = out.events.map((e) =>
+        e.kind === 'enter'
+          ? `ENTER ${e.floor}층 ${packName(e.packId)}`
+          : e.kind === 'got'
+            ? `GOT ${giftName(e.giftId)}`
+            : e.kind === 'sold'
+              ? `SOLD ${giftName(e.giftId)}`
+              : `UNSURE ${e.about} ${e.ids.map(e.about === 'enter' ? packName : giftName).join(' / ')}`,
+      );
+      console.log(`${file}  ${(frame.screen ?? '—').padEnd(13)} ${said.join(' · ')}`);
+    }
+    for (const worker of workers.values()) await worker.terminate();
+    console.log(`\n${shots.length} frames, ${Math.round(ms / shots.length)}ms OCR per frame`);
+    return;
+  }
+
   const tally: Record<Outcome, number> = { correct: 0, ambiguous: 0, wrong: 0, none: 0 };
   let totalMs = 0;
   for (const label of parsed.data.items) {
     if (label.kind === 'screen') {
-      if (!(typeof label.expect === 'string' && label.expect in SCREEN_TITLES)) {
-        fail(`${label.file}: screen must be one of ${Object.keys(SCREEN_TITLES).join(', ')}`);
+      if (!(typeof label.expect === 'string' && (label.expect in SCREEN_TITLES || label.expect === 'none'))) {
+        fail(`${label.file}: screen must be "none" or one of ${Object.keys(SCREEN_TITLES).join(', ')}`);
       }
-      const { lines, ms } = await read(label, label.region ? [label.region] : TITLE_REGIONS, rawOnly);
+      const want = label.expect === 'none' ? null : label.expect;
+      const regions = label.region ? [label.region] : TITLE_REGIONS;
+      let { lines, ms } = await read(label, regions, rawOnly);
+      let screen = classifyScreen(lines, label.lang);
+      // Some titles are darker than the threshold (the map header is brown on red): read raw too.
+      if (screen === null && !rawOnly) {
+        const again = await read(label, regions, true);
+        lines = [...lines, '‖', ...again.lines];
+        ms += again.ms;
+        screen = classifyScreen(again.lines, label.lang);
+      }
       totalMs += ms;
-      const screen = classifyScreen(lines, label.lang);
-      const outcome: Outcome = screen === null ? 'none' : screen === label.expect ? 'correct' : 'wrong';
+      const outcome: Outcome = screen === want ? 'correct' : screen === null ? 'none' : 'wrong';
       tally[outcome] += 1;
       console.log(
         `${outcome.padEnd(9)} ${label.file}  screen ${screen ?? '—'} (want ${label.expect})  read ${JSON.stringify(lines)}  [${Math.round(ms)}ms]`,
+      );
+      continue;
+    }
+
+    if (label.kind === 'floor') {
+      if (typeof label.expect !== 'number') fail(`${label.file}: a floor item expects a number`);
+      const region = label.region ?? MAP_HEADER;
+      let { lines, ms } = await read(label, [region], rawOnly);
+      let floor = parseFloor(lines);
+      if (floor === null && !rawOnly) {
+        const again = await read(label, [region], true);
+        lines = [...lines, '‖', ...again.lines];
+        ms += again.ms;
+        floor = parseFloor(again.lines);
+      }
+      totalMs += ms;
+      const outcome: Outcome = floor === label.expect ? 'correct' : floor === null ? 'none' : 'wrong';
+      tally[outcome] += 1;
+      console.log(
+        `${outcome.padEnd(9)} ${label.file}  floor ${floor ?? '—'} (want ${label.expect})  read ${JSON.stringify(lines)}  [${Math.round(ms)}ms]`,
       );
       continue;
     }

@@ -70,15 +70,75 @@ export function similarity(text: string, name: string): number {
 }
 
 /**
+ * How well `title` appears somewhere inside `text` (0..1): the edit distance of the best-matching
+ * stretch of `text` against all of `title`, over the title's length. A banner line often carries
+ * more than its title — a price beside it, or a name in the middle of a sentence — and what matters
+ * is whether the title is in there.
+ */
+export function containedSimilarity(text: string, title: string): number {
+  const x = [...normalizeName(text)];
+  const y = [...normalizeName(title)];
+  if (x.length === 0 || y.length === 0) return 0;
+  // Rows walk the title, columns the text; starting and ending anywhere in the text is free.
+  let prev = new Array<number>(x.length + 1).fill(0);
+  for (let i = 1; i <= y.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= x.length; j++) {
+      const cost = y[i - 1] === x[j - 1] ? 0 : 1;
+      row[j] = Math.min(prev[j]! + 1, row[j - 1]! + 1, prev[j - 1]! + cost);
+    }
+    prev = row;
+  }
+  return Math.max(0, 1 - Math.min(...prev) / y.length);
+}
+
+/**
+ * Sentences the game wraps a name in, with the name as the first group: the sell confirm puts it in
+ * brackets (「[빛나는 잔영]을(를) 코스트 300에…」), a buff toast says 「…효과로 잔영 획득」, an event
+ * result 「E.G.O 기프트 커피와 종이학 획득!」. The name is matched on its own, not inside the sentence.
+ */
+const NAME_HINTS: readonly RegExp[] = [/\[([^\]]+)\]/g, /효과로\s*(.+?)\s*획득/g, /기프트\s+(.+?)\s*획득/g];
+
+/**
+ * The pieces of OCR lines worth matching a name against: each line and its side-by-side parts, the
+ * names known sentences wrap, and each pair of neighbouring lines joined — a long name wraps inside
+ * its button (「붉게 물든」 / 「목화」), and Tesseract does not always return the two halves in order,
+ * so both orders are tried.
+ */
+export function namePieces(lines: readonly string[]): string[] {
+  const own = lines.flatMap((line) => [
+    ...line.split(SIDE_BY_SIDE),
+    ...NAME_HINTS.flatMap((hint) => [...line.matchAll(hint)].map((m) => m[1]!)),
+  ]);
+  const joined = lines
+    .slice(1)
+    .flatMap((line, i) => [joinLines(lines[i]!, line), joinLines(line, lines[i]!)]);
+  return [...own, ...joined];
+}
+
+/**
+ * Two OCR lines as one, without repeating the words where they overlap: Tesseract sometimes reads
+ * a wrapped name as 「붉게 물든」 + 「물든 목하」, and 「붉게 물든 목하」 is what the button says.
+ */
+function joinLines(first: string, second: string): string {
+  const a = first.trim().split(/\s+/);
+  const b = second.trim().split(/\s+/);
+  for (let k = Math.min(a.length, b.length); k > 0; k--) {
+    if (a.slice(-k).join(' ') === b.slice(0, k).join(' ')) return [...a, ...b.slice(k)].join(' ');
+  }
+  return [...a, ...b].join(' ');
+}
+
+/**
  * A wide gap inside an OCR line is two things side by side (a name and the price beside it), not
  * one name: Tesseract keeps the gap as a run of spaces. Names themselves use single spaces.
  */
 const SIDE_BY_SIDE = /\s{3,}/;
 
 /**
- * The closest candidate to any of the OCR'd `lines`. Each line — and each side-by-side piece of a
- * line — is tried on its own because a crop often catches a label or a price beside the name; the
- * best piece wins.
+ * The closest candidate to any of the OCR'd `lines`. Each line — each side-by-side piece of a line,
+ * and each name a known sentence wraps (`namePieces`) — is tried on its own because a crop often
+ * catches a label or a price beside the name; the best piece wins.
  *
  * Two candidates that tie (or nearly) come back as `ambiguous` with both ids, ordered by score
  * then id — deterministic, so the same frame always gives the same answer.
@@ -89,7 +149,7 @@ export function matchName(
   thresholds: MatchThresholds = DEFAULT_THRESHOLDS,
 ): MatchResult {
   const best = new Map<number, number>();
-  const pieces = lines.flatMap((line) => line.split(SIDE_BY_SIDE));
+  const pieces = namePieces(lines);
   for (const line of pieces) {
     if (normalizeName(line) === '') continue;
     for (const c of candidates) {

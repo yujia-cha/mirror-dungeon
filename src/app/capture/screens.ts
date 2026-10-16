@@ -11,11 +11,13 @@
  *   Hangul is compared.
  * - 「구매」, 「판매」 and 「강화」 differ by a syllable. A line therefore votes for its closest title
  *   only, not for every title above a threshold.
+ * - A line may hold more than its title — a floor number before 「층 탐사 중」, a gift name inside the
+ *   sell confirm — so a title counts when it is *contained* in the line (`containedSimilarity`).
  *
  * Pure. Titles and their order live here until the layout moves to curated data.
  */
 import type { Lang } from '../i18n.ts';
-import { similarity } from './match-name.ts';
+import { containedSimilarity } from './match-name.ts';
 
 /**
  * Banner titles, in the order they win when several are on screen: a popup sits over the screen
@@ -25,11 +27,18 @@ import { similarity } from './match-name.ts';
 export const SCREEN_TITLES = {
   acquired: { ko: 'E.G.O 기프트를 획득했습니다.', en: '' },
   fusionConfirm: { ko: '선택한 E.G.O 기프트를 조합하시겠습니까?', en: '' },
+  // The confirm wraps after the price (「[이름]을(를) 코스트 300에」 / 「판매하시겠습니까?」), so its title is
+  // the second line alone.
+  sellConfirm: { ko: '판매하시겠습니까?', en: '' },
   fusionKeyword: { ko: '합성 - 키워드 선택', en: '' },
   purchase: { ko: 'E.G.O 기프트 구매', en: '' },
   sell: { ko: 'E.G.O 기프트 판매', en: '' },
   enhance: { ko: 'E.G.O 기프트 강화', en: '' },
   fusion: { ko: 'E.G.O 기프트 합성', en: '' },
+  // Without the 「N층」 before it: OCR reads 층 as 증 or 중 and drops it as often as not, and the floor
+  // number is read on its own (`parseFloor`).
+  packSelect: { ko: '테마팩 선택', en: '' },
+  exploring: { ko: '층 탐사 중', en: '' },
 } as const satisfies Record<string, Record<Lang, string>>;
 
 export type Screen = keyof typeof SCREEN_TITLES;
@@ -60,10 +69,36 @@ export function classifyScreen(lines: readonly string[], lang: Lang): Screen | n
     let best: Screen | null = null;
     let bestScore = TITLE_MIN;
     for (const screen of titles) {
-      const score = similarity(text, comparable(SCREEN_TITLES[screen][lang], lang));
+      const score = containedSimilarity(text, comparable(SCREEN_TITLES[screen][lang], lang));
       if (score > bestScore || (score === bestScore && best === null)) [best, bestScore] = [screen, score];
     }
     if (best) seen.add(best);
   }
   return titles.find((screen) => seen.has(screen)) ?? null;
+}
+
+/** Characters OCR puts where a digit was: the game's numerals are a narrow display face. */
+const DIGIT_LOOKALIKES: Readonly<Record<string, string>> = {
+  I: '1',
+  l: '1',
+  '|': '1',
+  '!': '1',
+  O: '0',
+  o: '0',
+};
+
+/**
+ * The floor in 「3층 탐사 중」 or 「11층 테마팩 선택」, or null. Read from the number right before 「층」 —
+ * which OCR reads as 「증」 or 「중」 about as often as 「층」 — with the lookalikes OCR substitutes for
+ * digits put back.
+ */
+export function parseFloor(lines: readonly string[]): number | null {
+  for (const line of lines) {
+    const match = /([0-9Il|!Oo]{1,2})\s*[층증중]/.exec(line);
+    if (!match) continue;
+    const digits = [...match[1]!].map((ch) => DIGIT_LOOKALIKES[ch] ?? ch).join('');
+    const floor = Number(digits);
+    if (Number.isInteger(floor) && floor >= 1) return floor;
+  }
+  return null;
 }

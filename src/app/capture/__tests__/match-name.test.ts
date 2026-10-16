@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { editDistance, matchName, normalizeName, similarity } from '../match-name.ts';
+import {
+  containedSimilarity,
+  editDistance,
+  matchName,
+  namePieces,
+  normalizeName,
+  similarity,
+} from '../match-name.ts';
 
 const GIFTS = [
   { id: 1, name: '해진 우산' },
@@ -120,6 +127,77 @@ describe('matchName', () => {
     });
     expect(matchName(['해지 우산'], single, { minScore: 0.91, minMargin: 0 })).toEqual({
       status: 'none',
+    });
+  });
+});
+
+describe('containedSimilarity', () => {
+  it('scores a title inside a longer line as a full match', () => {
+    expect(
+      containedSimilarity('빛나는 잔영을를 코스트에 판매하시겠습니까', '코스트에 판매하시겠습니까'),
+    ).toBe(1);
+  });
+
+  it('forgives a slip inside the title, and finds nothing in unrelated text', () => {
+    // Arrange: one jamo off (ㅁ→ㄴ) inside the title.
+    const slipped = containedSimilarity('1층 탐사 증', '층 탐사 중');
+    // Act + Assert
+    expect(slipped).toBeGreaterThan(0.8);
+    expect(slipped).toBeLessThan(1);
+    expect(containedSimilarity('다음 층에서 특별한 상점 등장 확률', '층 탐사 중')).toBeLessThan(0.8);
+  });
+
+  it('is 0 for empty input', () => {
+    expect(containedSimilarity('', '층 탐사 중')).toBe(0);
+    expect(containedSimilarity('층 탐사 중', '')).toBe(0);
+  });
+});
+
+describe('namePieces', () => {
+  it('lifts the name out of the sentences the game wraps it in', () => {
+    // Arrange: a sell confirm, a buff toast and an event result.
+    const lines = [
+      '[빛나는 잔영]을(를) 코스트 300에',
+      '별의 가호<완전한 가능성>효과로 잔영 획득',
+      'E.G.O 기프트 커피와 종이학 획득!',
+    ];
+    // Act
+    const pieces = namePieces(lines);
+    // Assert
+    expect(pieces).toEqual(expect.arrayContaining(['빛나는 잔영', '잔영', '커피와 종이학']));
+  });
+
+  it('keeps a single plain line as it is', () => {
+    expect(namePieces(['해진 우산'])).toEqual(['해진 우산']);
+    expect(namePieces([])).toEqual([]);
+  });
+
+  it('joins neighbouring lines both ways, for a name wrapped inside its button', () => {
+    // Arrange: real OCR of 「붉게 물든 목화」, the halves out of order.
+    const lines = ['물든 목하', '붉게 물든'];
+    // Act + Assert
+    // Joined without repeating the overlap 「물든」; the other order is a plain join.
+    expect(namePieces(lines)).toEqual(expect.arrayContaining(['붉게 물든 목하', '물든 목하 붉게 물든']));
+    expect(
+      matchName(lines, [
+        { id: 1, name: '붉게 물든 목화' },
+        { id: 2, name: '흰 목화' },
+      ]),
+    ).toMatchObject({ status: 'match', id: 1 });
+  });
+});
+
+describe('matchName with a wrapped name', () => {
+  it('matches the bracketed name of a sell confirm', () => {
+    const gifts = [
+      { id: 1, name: '빛나는 잔영' },
+      { id: 2, name: '찬란한 잔영' },
+      { id: 3, name: '잔영' },
+    ];
+    expect(matchName(['[빛나는 잔영]을(를) 코스트 300에'], gifts)).toMatchObject({ status: 'match', id: 1 });
+    expect(matchName(['별의 가호<완전한 가능성>효과로 잔영 획득'], gifts)).toMatchObject({
+      status: 'match',
+      id: 3,
     });
   });
 });
