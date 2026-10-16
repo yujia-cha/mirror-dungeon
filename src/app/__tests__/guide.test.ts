@@ -1,48 +1,45 @@
 /**
- * The guide is the README's visitor sections, card for card. Each card's Korean title has to be a
- * heading in `README.md` (a leading 「1.」 aside), and the cards keep the README's order — so when
- * the README is rewritten, this is what says the guide needs the same change.
+ * The guide cards and README.md come from the same 「안내」 cards in `docs/copy.md` (M114), so a
+ * card is a README section by construction. What this checks is the generated result: README.md
+ * has a `## 제목` section per card, in card order, and each card's pictures sit inside its own
+ * section — so a README edited by hand, around the generator, shows up here as well as in
+ * `copy:check`.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { GUIDE_CARDS } from '../i18n.ts';
+import { GUIDE_CARDS, isGuideMedia } from '../i18n.ts';
 
 // The repository root: vitest runs from it, and jsdom's `import.meta.url` is not a file URL.
 const readme = readFileSync(resolve(process.cwd(), 'README.md'), 'utf8');
 
-/** Heading texts in document order, fenced code skipped, list numbering and HTML stripped. */
-function headings(markdown: string): string[] {
-  const out: string[] = [];
+/** `## ` sections of the README, fenced code skipped: title → body up to the next `## `. */
+function sections(markdown: string): { title: string; body: string }[] {
+  const out: { title: string; body: string }[] = [];
   let fenced = false;
   for (const line of markdown.split('\n')) {
     if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
-    if (fenced) continue;
-    const md = /^#{1,6}\s+(.*)$/.exec(line);
-    // A heading inside `<summary>` is how a collapsed section is titled.
-    const summary = /<summary>(?:<[^>]+>)*\s*(.*?)\s*(?:<\/[^>]+>)*<\/summary>/.exec(line);
-    const text = md?.[1] ?? summary?.[1];
-    if (text === undefined) continue;
-    out.push(
-      text
-        .replace(/<[^>]+>/g, '')
-        .replace(/^\d+\.\s*/, '')
-        .trim(),
-    );
+    const heading = fenced ? null : /^## (.+)$/.exec(line);
+    if (heading) out.push({ title: heading[1]!.trim(), body: '' });
+    else if (out.length > 0) out[out.length - 1]!.body += `${line}\n`;
   }
   return out;
 }
 
-describe('guide cards follow README.md', () => {
-  const titles = GUIDE_CARDS.map((card) => card.title.ko);
-  const found = headings(readme);
+describe('README.md carries the guide cards', () => {
+  const found = sections(readme);
+  const titles = found.map((s) => s.title);
 
-  it('names every card after a README heading', () => {
-    expect(titles.filter((title) => !found.includes(title))).toEqual([]);
+  it('has a section for every card, in card order', () => {
+    const positions = GUIDE_CARDS.map((card) => titles.indexOf(card.title.ko));
+    expect(positions.filter((p) => p < 0)).toEqual([]);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
-  it('keeps the README order', () => {
-    const positions = titles.map((title) => found.indexOf(title));
-    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  it("puts each card's pictures inside that card's section", () => {
+    for (const card of GUIDE_CARDS) {
+      const body = found.find((s) => s.title === card.title.ko)?.body ?? '';
+      for (const line of card.lines) if (isGuideMedia(line)) expect(body).toContain(`public/${line.src}`);
+    }
   });
 });

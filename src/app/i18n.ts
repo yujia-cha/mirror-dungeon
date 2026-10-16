@@ -28,15 +28,27 @@ export function pick(value: Localized | undefined, lang: Lang): string {
 }
 
 /**
- * The guide the header's 「?」 opens, one card per section. It follows the visitor-facing sections
- * of `README.md` — same titles, same order — so a reader who met the README on GitHub finds the
- * same map here; `src/app/__tests__/guide.test.ts` holds every Korean title to a README heading.
- * The development section is left out: it is for someone cloning the repository, not using the
- * site. Each card says the least that gets a first-time visitor through that part of the page.
+ * The guide the header's 「?」 opens, one card per section. Each card is also a section of
+ * `README.md` — both come from the 「안내」 part of `docs/copy.md` (M114), so the guide and the
+ * README share titles, order and pictures. A line is a sentence or a picture, in the order shown.
  */
+export interface GuideMedia {
+  /** Relative to `public/`, e.g. `guide/deck.webp`; the page prefixes `BASE_URL`. */
+  src: string;
+  kind: 'image' | 'video';
+  alt: Localized;
+  /** Pixel size of an image, so the page reserves its box before it loads. */
+  width?: number;
+  height?: number;
+}
+
 export interface GuideCard {
   title: Localized;
-  lines: Localized[];
+  lines: readonly (Localized | GuideMedia)[];
   /** The card ends with the link to `NOTICE`. */
   notice?: true;
+}
+
+export function isGuideMedia(line: Localized | GuideMedia): line is GuideMedia {
+  return 'src' in line;
 }

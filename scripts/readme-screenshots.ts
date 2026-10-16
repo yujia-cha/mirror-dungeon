@@ -1,21 +1,26 @@
 /**
- * The README's screenshots and its example share link, taken from a running copy of the app.
+ * The guide's and the README's screenshots and the example share link, taken from a running copy
+ * of the app.
  *
  *   npm run dev                                   (in another shell)
  *   npm run shots -- --url http://localhost:5173/
  *
- * Flags: --url (the app, default http://localhost:5173/), --out (default docs/screenshots),
+ * Flags: --url (the app, default http://localhost:5173/), --out (default public/guide),
  *        --dry (print the example link and stop).
+ *
+ * The pictures land in `public/guide/` as WebP (M114) — the folder the 「# 안내」 cards of
+ * `docs/copy.md` point at with `- 그림:`, so one command refreshes the guide and the README. They
+ * are encoded by the same Chromium (canvas `toBlob('image/webp')`), so no image codec is added.
  *
  * The example is one plan — a burn deck and six goals: a two-level fusion (진혼) and five gifts
  * that only a theme pack gives — so the pictures and the link show the same route. It is opened
  * through a share link rather than clicked together, which makes the shots repeatable after any
- * UI change. The app draws no game images (only owner-drawn art from `public/art/`), so nothing
- * Project Moon holds the rights to lands in `docs/screenshots/` beyond the names already in the
- * data. Chromium comes from `PW_CHROMIUM` when it is set (this container's is at
+ * UI change. These are app screens only: the game images they show are the gift and keyword
+ * icons and pack art the owner already allowed (M92/M99/M100); a game-client screen never goes
+ * here. Chromium comes from `PW_CHROMIUM` when it is set (this container's is at
  * `/opt/pw-browsers/chromium`).
  */
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, type Page } from '@playwright/test';
 import { appDefaultOptions, encodeShared } from '../src/app/store.ts';
@@ -42,7 +47,9 @@ console.log(`example link: ${SITE}${hash}`);
 if (hasFlag('--dry')) process.exit(0);
 
 const url = (flagValue('--url') ?? 'http://localhost:5173/').replace(/\/?$/, '/');
-const out = flagValue('--out') ?? 'docs/screenshots';
+const out = flagValue('--out') ?? 'public/guide';
+/** WebP quality: screenshots of flat UI stay sharp at 0.8 and land well under the 300 KB limit. */
+const QUALITY = 0.8;
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch(
@@ -67,6 +74,32 @@ async function open(
   return page;
 }
 
+/** Screenshot the page and write it as WebP, re-encoded through a canvas in the same page. */
+async function shoot(page: Page, name: string): Promise<void> {
+  const png = await page.screenshot();
+  const webp = await page.evaluate(
+    async ({ data, quality }) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${data}`;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      canvas.getContext('2d')!.drawImage(image, 0, 0);
+      const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/webp', quality));
+      if (!blob) throw new Error('this browser cannot encode WebP');
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let text = '';
+      for (const b of bytes) text += String.fromCharCode(b);
+      return btoa(text);
+    },
+    { data: png.toString('base64'), quality: QUALITY },
+  );
+  const file = join(out, `${name}.webp`);
+  writeFileSync(file, Buffer.from(webp, 'base64'));
+  console.log(`wrote ${file} (${Math.round(statSync(file).size / 1024)} KB)`);
+}
+
 /** The route is on screen once its summary counts what it collects. */
 async function routeReady(page: Page): Promise<void> {
   await page.getByText(/^획득/).first().waitFor();
@@ -88,9 +121,7 @@ for (const dark of [false, true]) {
   await routeReady(page);
   await skipTo(page, SKIP_TO_FLOOR);
   await page.waitForTimeout(400);
-  const file = join(out, `desktop-${dark ? 'dark' : 'light'}.png`);
-  await page.screenshot({ path: file });
-  console.log(`wrote ${file}`);
+  await shoot(page, `desktop-${dark ? 'dark' : 'light'}`);
   await page.context().close();
 }
 
@@ -101,9 +132,7 @@ for (const dark of [false, true]) {
   await page.getByTestId('page-right').waitFor();
   await routeReady(page);
   await page.waitForTimeout(400);
-  const file = join(out, 'mobile-route.png');
-  await page.screenshot({ path: file });
-  console.log(`wrote ${file}`);
+  await shoot(page, 'mobile-route');
   await page.context().close();
 }
 

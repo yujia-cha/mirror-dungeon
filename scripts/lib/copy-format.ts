@@ -7,8 +7,18 @@
  *
  *   # 화면 문구               the app's `STRINGS` — `## 화면` sections, `### key` entries
  *   # 루트 경고·미해결 사유     core's sentences — same entry shape, `warn.x`-style keys
- *   # 설명서 카드             the 「?」 guide — `## 한국어 제목 | English title` cards
- *   # README                 one ````markdown fence, written out as README.md
+ *   # 안내                   the 「?」 guide cards, each also a README section (M114)
+ *   # README                 one ````markdown fence: README.md, with `<!-- 카드: 제목 -->` markers
+ *
+ * A guide card is `## 한국어 제목 | English title` and lines in the order they show:
+ *   - ko: …  + - en: …        both the guide and the card's README section
+ *   - 설명서: … + - en: …      the guide only
+ *   - readme: …               the README only (Markdown as written)
+ *   - 그림: guide/x.webp | 대체 텍스트 | alt text   both (a file under public/guide/)
+ *   - notice: true            the guide card ends with the NOTICE link
+ * README.md is the fence with each marker replaced by its card: `## 제목`, then the card's ko and
+ * readme lines as list items and its pictures, in order. Every card has exactly one marker, in
+ * card order, so the guide and the README cannot drift apart in shape.
  *
  * An entry is its `### key` heading followed by `메모:` lines (optional), `- ko:` and `- en:`,
  * and a `- 쓰는 곳:` line the generator rewrites from a scan of `src/` (never edited by hand).
@@ -35,9 +45,19 @@ export interface CopyEntry extends CopyText {
   usageLine: number | null;
 }
 
+export type GuideItemModel =
+  /** `- ko:` + `- en:` — the guide and the README. */
+  | ({ kind: 'shared'; line: number } & CopyText)
+  /** `- 설명서:` + `- en:` — the guide only. */
+  | ({ kind: 'app'; line: number } & CopyText)
+  /** `- readme:` — the README only. */
+  | { kind: 'readme'; ko: string; line: number }
+  /** `- 그림:` — both. `src` is relative to `public/`. */
+  | { kind: 'media'; src: string; alt: CopyText; line: number };
+
 export interface GuideCardModel {
   title: CopyText;
-  lines: CopyText[];
+  items: GuideItemModel[];
   notice: boolean;
   line: number;
 }
@@ -47,7 +67,32 @@ export interface CopyDoc {
   messages: CopyEntry[];
   guide: GuideCardModel[];
   readme: string | null;
+  /** 0-based line where the README fence's body starts, for error line numbers. */
+  readmeLine: number;
 }
+
+export type MediaKind = 'image' | 'video';
+
+/** The pictures the guide accepts, by extension. GIF is read but warned about (heavy, no pause). */
+export const MEDIA_EXTENSIONS: Record<string, MediaKind> = {
+  webp: 'image',
+  png: 'image',
+  jpg: 'image',
+  jpeg: 'image',
+  gif: 'image',
+  mp4: 'video',
+  webm: 'video',
+};
+
+/** Size limits per file (owner decision, M114). */
+export const MEDIA_LIMITS: Record<MediaKind, number> = { image: 300 * 1024, video: 2 * 1024 * 1024 };
+
+export function mediaKind(src: string): MediaKind | null {
+  const ext = /\.([a-z0-9]+)$/i.exec(src)?.[1]?.toLowerCase();
+  return (ext && MEDIA_EXTENSIONS[ext]) || null;
+}
+
+const CARD_MARKER = /^<!-- 카드: (.+?) -->$/;
 
 export interface CopyIssue {
   /** 1-based, as an editor shows it. */
@@ -60,7 +105,7 @@ export const COPY_PATH = 'docs/copy.md';
 const PARTS = {
   '화면 문구': 'strings',
   '루트 경고·미해결 사유': 'messages',
-  '설명서 카드': 'guide',
+  안내: 'guide',
   README: 'readme',
 } as const;
 type Part = (typeof PARTS)[keyof typeof PARTS];
@@ -80,14 +125,14 @@ function strayBrace(text: string): boolean {
   return /[{}]/.test(text.replace(PLACEHOLDER, ''));
 }
 
-function valueLine(line: string, lang: 'ko' | 'en'): string | null {
+function valueLine(line: string, lang: string): string | null {
   const prefix = `- ${lang}:`;
   return line.startsWith(prefix) ? line.slice(prefix.length).trim() : null;
 }
 
 export function parseCopy(source: string): { doc: CopyDoc; issues: CopyIssue[] } {
   const lines = source.replace(/\r\n?/g, '\n').split('\n');
-  const doc: CopyDoc = { strings: [], messages: [], guide: [], readme: null };
+  const doc: CopyDoc = { strings: [], messages: [], guide: [], readme: null, readmeLine: 0 };
   const issues: CopyIssue[] = [];
   const issue = (index: number, message: string): void => {
     issues.push({ line: index + 1, message });
@@ -98,7 +143,7 @@ export function parseCopy(source: string): { doc: CopyDoc; issues: CopyIssue[] }
   let section = '';
   let entry: (Omit<CopyEntry, 'ko' | 'en'> & Partial<CopyText>) | null = null;
   let card: GuideCardModel | null = null;
-  let pendingKo: { text: string; line: number } | null = null;
+  let pendingKo: { text: string; line: number; kind: 'shared' | 'app' } | null = null;
   let fence: { marks: string; start: number; body: string[] } | null = null;
 
   const closeEntry = (): void => {
@@ -112,13 +157,21 @@ export function parseCopy(source: string): { doc: CopyDoc; issues: CopyIssue[] }
     entry = null;
   };
   const closePendingKo = (): void => {
-    if (pendingKo) issue(pendingKo.line, '설명서 줄의 「- ko:」 다음에 「- en:」이 와야 합니다');
+    if (pendingKo)
+      issue(
+        pendingKo.line,
+        `「- ${pendingKo.kind === 'app' ? '설명서' : 'ko'}:」 다음에 「- en:」이 와야 합니다`,
+      );
     pendingKo = null;
   };
   const closeCard = (): void => {
     closePendingKo();
     if (card) {
-      if (card.lines.length === 0) issue(card.line, `설명서 카드 「${card.title.ko}」에 줄이 없습니다`);
+      if (!card.items.some((item) => item.kind === 'shared' || item.kind === 'app'))
+        issue(
+          card.line,
+          `안내 카드 「${card.title.ko}」에 설명서에 나올 줄(「- ko:」·「- 설명서:」)이 없습니다`,
+        );
       doc.guide.push(card);
     }
     card = null;
@@ -130,7 +183,10 @@ export function parseCopy(source: string): { doc: CopyDoc; issues: CopyIssue[] }
     if (fence) {
       if (line.trimEnd() === fence.marks) {
         if (doc.readme !== null) issue(fence.start, 'README 울타리 블록은 하나만 둡니다');
-        else doc.readme = fence.body.join('\n') + '\n';
+        else {
+          doc.readme = fence.body.join('\n') + '\n';
+          doc.readmeLine = fence.start + 1;
+        }
         fence = null;
       } else fence.body.push(line);
       continue;
@@ -163,8 +219,8 @@ export function parseCopy(source: string): { doc: CopyDoc; issues: CopyIssue[] }
       section = h2[1]!.trim();
       if (part === 'guide') {
         const [ko, en, ...rest] = section.split(' | ').map((s) => s.trim());
-        if (!ko || !en || rest.length > 0) issue(i, '설명서 카드 제목은 「## 한국어 | English」 꼴입니다');
-        card = { title: { ko: ko ?? '', en: en ?? '' }, lines: [], notice: false, line: i };
+        if (!ko || !en || rest.length > 0) issue(i, '안내 카드 제목은 「## 한국어 | English」 꼴입니다');
+        card = { title: { ko: ko ?? '', en: en ?? '' }, items: [], notice: false, line: i };
       }
       continue;
     }
@@ -173,18 +229,34 @@ export function parseCopy(source: string): { doc: CopyDoc; issues: CopyIssue[] }
       if (line.trim() === '' || line.startsWith(NOTE_PREFIX)) continue;
       if (!card) continue; // prose before the first card
       const ko = valueLine(line, 'ko');
+      const appOnly = valueLine(line, '설명서');
       const en = valueLine(line, 'en');
-      if (ko !== null) {
+      const readme = valueLine(line, 'readme');
+      const media = valueLine(line, '그림');
+      if (ko !== null || appOnly !== null) {
         closePendingKo();
-        if (!ko) issue(i, '「- ko:」가 비어 있습니다');
-        pendingKo = { text: ko, line: i };
+        const text = (ko ?? appOnly)!;
+        if (!text) issue(i, `「- ${ko !== null ? 'ko' : '설명서'}:」가 비어 있습니다`);
+        pendingKo = { text, line: i, kind: ko !== null ? 'shared' : 'app' };
       } else if (en !== null) {
-        if (!pendingKo) issue(i, '「- en:」 앞에 「- ko:」가 있어야 합니다');
+        if (!pendingKo) issue(i, '「- en:」 앞에 「- ko:」나 「- 설명서:」가 있어야 합니다');
         else if (!en) issue(i, '「- en:」이 비어 있습니다');
-        else card.lines.push({ ko: pendingKo.text, en });
+        else card.items.push({ kind: pendingKo.kind, ko: pendingKo.text, en, line: pendingKo.line });
         pendingKo = null;
-      } else if (line.trim() === '- notice: true') card.notice = true;
-      else issue(i, `설명서 카드에서 읽을 수 없는 줄: ${line}`);
+      } else if (readme !== null) {
+        closePendingKo();
+        if (!readme) issue(i, '「- readme:」가 비어 있습니다');
+        else card.items.push({ kind: 'readme', ko: readme, line: i });
+      } else if (media !== null) {
+        closePendingKo();
+        const [src = '', altKo = '', altEn = '', ...rest] = media.split('|').map((part) => part.trim());
+        if (rest.length > 0 || !src) issue(i, '「- 그림: guide/파일 | 대체 텍스트 | alt text」 꼴입니다');
+        else if (!altKo || !altEn) issue(i, `그림 ${src}: 대체 텍스트를 한국어와 영어 둘 다 적어야 합니다`);
+        else card.items.push({ kind: 'media', src, alt: { ko: altKo, en: altEn }, line: i });
+      } else if (line.trim() === '- notice: true') {
+        closePendingKo();
+        card.notice = true;
+      } else issue(i, `안내 카드에서 읽을 수 없는 줄: ${line}`);
       continue;
     }
 
@@ -224,11 +296,11 @@ export function parseCopy(source: string): { doc: CopyDoc; issues: CopyIssue[] }
   for (const e of doc.strings) checkPlaceholders(e, false, issue);
   for (const e of doc.messages) checkPlaceholders(e, true, issue);
   for (const c of doc.guide)
-    for (const l of [c.title, ...c.lines])
-      for (const text of [l.ko, l.en])
-        if (strayBrace(text) || placeholdersOf(text).length > 0)
-          issue(c.line, `설명서 카드 「${c.title.ko}」에는 {자리표시}를 쓸 수 없습니다`);
+    for (const text of [c.title.ko, c.title.en, ...c.items.flatMap(itemTexts)])
+      if (strayBrace(text) || placeholdersOf(text).length > 0)
+        issue(c.line, `안내 카드 「${c.title.ko}」에는 {자리표시}를 쓸 수 없습니다`);
   if (doc.readme === null) issue(lines.length - 1, '「# README」 아래에 ````markdown 울타리 블록이 없습니다');
+  else checkCardMarkers(doc, issue);
 
   issues.sort((a, b) => a.line - b.line);
   return { doc, issues };
@@ -260,6 +332,92 @@ function checkPlaceholders(
       if (!enNames.has(name)) issue(entry.line, `${entry.key}: ko에만 있는 자리표시 {${name}}`);
 }
 
+function itemTexts(item: GuideItemModel): string[] {
+  if (item.kind === 'readme') return [item.ko];
+  if (item.kind === 'media') return [item.alt.ko, item.alt.en];
+  return [item.ko, item.en];
+}
+
+/** Every card has one `<!-- 카드: 제목 -->` in the README fence, and they come in card order. */
+function checkCardMarkers(doc: CopyDoc, issue: (index: number, message: string) => void): void {
+  const titles = doc.guide.map((card) => card.title.ko);
+  const seen: string[] = [];
+  (doc.readme ?? '').split('\n').forEach((text, offset) => {
+    const title = CARD_MARKER.exec(text.trim())?.[1]?.trim();
+    if (title === undefined) return;
+    const at = doc.readmeLine + offset;
+    if (!titles.includes(title))
+      issue(at, `README의 「<!-- 카드: ${title} -->」 — 그런 안내 카드가 없습니다`);
+    else if (seen.includes(title)) issue(at, `README에 「${title}」 카드 표식이 두 번 있습니다`);
+    else {
+      const expected = titles.find((t) => !seen.includes(t));
+      if (expected !== title)
+        issue(at, `README의 카드 순서가 안내 카드와 다릅니다 — 여기에는 「${expected}」가 와야 합니다`);
+      seen.push(title);
+    }
+  });
+  for (const card of doc.guide)
+    if (!seen.includes(card.title.ko))
+      issue(card.line, `README에 「<!-- 카드: ${card.title.ko} -->」 표식이 없습니다`);
+}
+
+/** What a file check needs to know about one picture; null when the file is missing. */
+export interface MediaProbe {
+  bytes: number;
+  width?: number;
+  height?: number;
+}
+
+/**
+ * Check every picture against the files on disk (`probe` reads them; this stays pure): the path
+ * stays under `public/guide/`, the extension is one the guide plays, the file exists, and it fits
+ * the size limit. GIF passes with a warning — a video plays the same motion lighter and can stop.
+ */
+export function checkMedia(
+  doc: CopyDoc,
+  probe: (src: string) => MediaProbe | null,
+): { issues: CopyIssue[]; warnings: CopyIssue[] } {
+  const issues: CopyIssue[] = [];
+  const warnings: CopyIssue[] = [];
+  for (const card of doc.guide)
+    for (const item of card.items) {
+      if (item.kind !== 'media') continue;
+      const at = item.line + 1;
+      const { src } = item;
+      if (!/^guide\/[\w.-]+(?:\/[\w.-]+)*$/.test(src) || src.split('/').includes('..')) {
+        issues.push({
+          line: at,
+          message: `그림 ${src}: public/guide/ 아래 경로여야 합니다 (예: guide/deck.webp)`,
+        });
+        continue;
+      }
+      const kind = mediaKind(src);
+      if (!kind) {
+        issues.push({
+          line: at,
+          message: `그림 ${src}: ${Object.keys(MEDIA_EXTENSIONS).join('·')}만 쓸 수 있습니다`,
+        });
+        continue;
+      }
+      const file = probe(src);
+      if (!file) {
+        issues.push({ line: at, message: `그림 ${src}: public/${src} 파일이 없습니다` });
+        continue;
+      }
+      if (file.bytes > MEDIA_LIMITS[kind])
+        issues.push({
+          line: at,
+          message: `그림 ${src}: ${Math.ceil(file.bytes / 1024)}KB — ${kind === 'image' ? '이미지' : '동영상'} 한도 ${MEDIA_LIMITS[kind] / 1024}KB를 넘습니다`,
+        });
+      if (src.toLowerCase().endsWith('.gif'))
+        warnings.push({
+          line: at,
+          message: `그림 ${src}: GIF는 무겁고 멈출 수 없습니다 — mp4나 webm을 권합니다`,
+        });
+    }
+  return { issues, warnings };
+}
+
 // ---- Output ------------------------------------------------------------------------------------
 
 const HEADER = (what: string): string =>
@@ -272,9 +430,12 @@ function notesAsComments(notes: string[], indent: string): string {
   return notes.map((note) => `${indent}// ${note}\n`).join('');
 }
 
-/** `src/app/strings.generated.ts` — before prettier. */
-export function renderStringsModule(doc: CopyDoc): string {
-  let out = HEADER('화면 문구」·「설명서 카드');
+/** `src/app/strings.generated.ts` — before prettier. `sizes` gives pictures their reserved box. */
+export function renderStringsModule(
+  doc: CopyDoc,
+  sizes: ReadonlyMap<string, MediaProbe> = new Map(),
+): string {
+  let out = HEADER('화면 문구」·「안내');
   out +=
     "import type { Localized } from '../core/schema.ts';\nimport type { GuideCard } from './i18n.ts';\n\n";
   out += 'export const STRINGS = {\n';
@@ -291,7 +452,15 @@ export function renderStringsModule(doc: CopyDoc): string {
   out += 'export const GUIDE_CARDS = [\n';
   for (const card of doc.guide) {
     out += `  {\n    title: { ko: ${lit(card.title.ko)}, en: ${lit(card.title.en)} },\n    lines: [\n`;
-    for (const l of card.lines) out += `      { ko: ${lit(l.ko)}, en: ${lit(l.en)} },\n`;
+    for (const item of card.items) {
+      if (item.kind === 'shared' || item.kind === 'app')
+        out += `      { ko: ${lit(item.ko)}, en: ${lit(item.en)} },\n`;
+      else if (item.kind === 'media') {
+        const size = sizes.get(item.src);
+        const box = size?.width && size.height ? `, width: ${size.width}, height: ${size.height}` : '';
+        out += `      { src: ${lit(item.src)}, kind: ${lit(mediaKind(item.src) ?? 'image')}, alt: { ko: ${lit(item.alt.ko)}, en: ${lit(item.alt.en)} }${box} },\n`;
+      }
+    }
     out += '    ],\n';
     if (card.notice) out += '    notice: true,\n';
     out += '  },\n';
@@ -331,8 +500,47 @@ export function renderMessagesModule(doc: CopyDoc): string {
 
 export const README_NOTICE = `<!-- 이 파일은 ${COPY_PATH}의 「README」에서 \`npm run copy\`가 만듭니다. 고칠 때는 그 파일을 고치세요. -->\n`;
 
+/** Pictures live under `public/`; the README links them by repository path, which GitHub resolves. */
+export const MEDIA_ROOT = 'public/';
+
+/**
+ * One card as a README section: `## 제목`, then its ko and readme lines as list items and its
+ * pictures as their own paragraphs, in the card's order. A video becomes an HTML `<video>` with a
+ * plain link inside, so a renderer that drops the tag still leaves a working link.
+ */
+export function renderCardSection(card: GuideCardModel): string {
+  const blocks: string[] = [];
+  let list: string[] = [];
+  const flush = (): void => {
+    if (list.length > 0) blocks.push(list.join('\n'));
+    list = [];
+  };
+  for (const item of card.items) {
+    if (item.kind === 'shared' || item.kind === 'readme') list.push(`- ${item.ko}`);
+    else if (item.kind === 'media') {
+      flush();
+      const path = MEDIA_ROOT + item.src;
+      blocks.push(
+        mediaKind(item.src) === 'video'
+          ? `<video src="${path}" controls muted loop playsinline width="100%">[${item.alt.ko}](${path})</video>`
+          : `![${item.alt.ko}](${path})`,
+      );
+    }
+  }
+  flush();
+  return [`## ${card.title.ko}`, ...blocks].join('\n\n');
+}
+
 export function renderReadme(doc: CopyDoc): string {
-  return README_NOTICE + (doc.readme ?? '');
+  const cards = new Map(doc.guide.map((card) => [card.title.ko, card]));
+  const body = (doc.readme ?? '')
+    .split('\n')
+    .map((text) => {
+      const card = cards.get(CARD_MARKER.exec(text.trim())?.[1]?.trim() ?? '');
+      return card ? renderCardSection(card) : text;
+    })
+    .join('\n');
+  return README_NOTICE + body;
 }
 
 // ---- Where each text is used ---------------------------------------------------------------------
@@ -418,7 +626,8 @@ export function unmatchedQuotes(doc: CopyDoc): { where: string; quote: string }[
         out.push({ where, quote });
     }
   };
-  for (const card of doc.guide) for (const l of card.lines) scan(`설명서 「${card.title.ko}」`, l.ko);
-  if (doc.readme) scan('README', doc.readme);
+  for (const card of doc.guide)
+    for (const item of card.items) if (item.kind === 'app') scan(`설명서 「${card.title.ko}」`, item.ko);
+  if (doc.readme) scan('README', renderReadme(doc).slice(README_NOTICE.length));
   return out;
 }

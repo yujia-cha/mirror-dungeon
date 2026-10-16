@@ -1,4 +1,4 @@
-// 생성 파일 — docs/copy.md의 「화면 문구」·「설명서 카드」에서 `npm run copy`가 만든다. 직접 고치지 않는다.
+// 생성 파일 — docs/copy.md의 「화면 문구」·「안내」에서 `npm run copy`가 만든다. 직접 고치지 않는다.
 import type { Localized } from '../core/schema.ts';
 import type { GuideCard } from './i18n.ts';
 
@@ -553,6 +553,16 @@ export const GUIDE_CARDS = [
   {
     title: { ko: '무엇을 해 주나', en: 'What it does' },
     lines: [
+      {
+        src: 'guide/desktop-light.webp',
+        kind: 'image',
+        alt: {
+          ko: '왼쪽에 목표 기프트, 가운데에 6층에서 들어갈 수 있는 팩, 오른쪽에 층별 루트 노선도가 있는 화면',
+          en: 'Goal gifts on the left, the packs to enter on floor 6 in the middle, the floor-by-floor route map on the right',
+        },
+        width: 1440,
+        height: 900,
+      },
       {
         ko: '덱과 목표 E.G.O 기프트를 고르면, 몇 층에서 어느 테마팩에 들어가야 하는지 루트를 계산합니다.',
         en: 'Pick a deck and the E.G.O gifts you want, and it plans the route: which theme pack to enter on which floor.',

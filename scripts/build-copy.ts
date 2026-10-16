@@ -10,10 +10,11 @@
  * for where each key is used, formats the TypeScript with the repository's prettier settings so
  * `format:check` stays green, and writes. Output is deterministic: same copy.md, same bytes.
  */
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import * as prettier from 'prettier';
 import {
+  checkMedia,
   COPY_PATH,
   findUsages,
   parseCopy,
@@ -22,8 +23,10 @@ import {
   renderStringsModule,
   unmatchedQuotes,
   withUsageLines,
+  type MediaProbe,
   type SourceFile,
 } from './lib/copy-format.ts';
+import { imageSize } from './lib/image-size.ts';
 import { repoPath, repoRoot } from './lib/io.ts';
 
 const check = process.argv.includes('--check');
@@ -72,6 +75,39 @@ if (issues.length > 0) {
   process.exit(1);
 }
 
+/** A guide picture on disk: its size in bytes and, for an image, its pixel box. */
+const probed = new Map<string, MediaProbe>();
+function probe(src: string): MediaProbe | null {
+  const path = repoPath('public', src);
+  if (!existsSync(path)) return null;
+  const bytes = readFileSync(path);
+  const box = imageSize(bytes);
+  const info: MediaProbe = { bytes: bytes.length, ...(box ?? {}) };
+  probed.set(src, info);
+  return info;
+}
+const media = checkMedia(doc, probe);
+for (const w of media.warnings) console.warn(`${COPY_PATH}:${w.line}: 경고 — ${w.message}`);
+// A picture no card points at is shipped for nothing (public/ is deployed whole) — say so.
+const guideDir = repoPath('public/guide');
+const used = new Set(
+  doc.guide.flatMap((card) => card.items.flatMap((i) => (i.kind === 'media' ? [i.src] : []))),
+);
+const unusedMedia = existsSync(guideDir)
+  ? readdirSync(guideDir)
+      .sort()
+      .filter((name) => !used.has(`guide/${name}`))
+  : [];
+if (unusedMedia.length > 0)
+  console.warn(
+    `경고 — 어느 카드도 쓰지 않는 public/guide 파일: ${unusedMedia.join(', ')} (지우거나 「- 그림:」으로 쓰세요)`,
+  );
+if (media.issues.length > 0) {
+  for (const i of media.issues) console.error(`${COPY_PATH}:${i.line}: ${i.message}`);
+  console.error(`\n${media.issues.length}개 문제 — 그림 파일이나 ${COPY_PATH}를 고친 뒤 다시 돌리세요.`);
+  process.exit(1);
+}
+
 const appFiles = sourcesUnder('src/app');
 const coreFiles = sourcesUnder('src/core');
 const usages = new Map([
@@ -88,7 +124,7 @@ const usages = new Map([
 ]);
 
 const outputs: [string, string][] = [
-  [STRINGS_OUT, await formatted(renderStringsModule(doc), STRINGS_OUT)],
+  [STRINGS_OUT, await formatted(renderStringsModule(doc, probed), STRINGS_OUT)],
   [MESSAGES_OUT, await formatted(renderMessagesModule(doc), MESSAGES_OUT)],
   [README_OUT, renderReadme(doc)],
   [COPY_PATH, withUsageLines(source, doc, usages)],

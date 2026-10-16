@@ -6,13 +6,99 @@
  * show is read back from the scroll position, but only once the track has settled on a card —
  * a smooth scroll passes through every position on the way, and reading those would make the
  * counter flicker. Cards off screen are `inert`, so Tab stays on the one being read.
+ *
+ * A card is sentences and pictures in the order `docs/copy.md` gives (M114). A sentence may carry
+ * `**bold**`, `` `code` `` and links (`parseInline`). An image reserves its box from the size the
+ * generator read, loads lazily and never outgrows the sheet; a video plays muted and looped only
+ * while its card is on show, and not at all on its own under 「동작 줄이기」 — then it waits on
+ * its first frame with the native controls, for the reader to start.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { GUIDE_CARDS, pick, t, type Lang } from '../i18n.ts';
+import { GUIDE_CARDS, isGuideMedia, pick, t, type GuideMedia, type Lang } from '../i18n.ts';
 import { DetailSurface } from '../components/BlockDetail.tsx';
 import { Button, IconButton } from '../components/ui.tsx';
 import { scrollBehavior } from '../lib/motion.ts';
+import { parseInline } from '../lib/inline-markdown.ts';
+import { useMediaQuery } from '../lib/useMediaQuery.ts';
+
+/** One guide sentence with its inline marks. */
+export function GuideText({ text }: { text: string }) {
+  return (
+    <>
+      {parseInline(text).map((token, i) => {
+        if (token.kind === 'strong') return <strong key={i}>{token.text}</strong>;
+        if (token.kind === 'code')
+          return (
+            <code key={i} className="rounded-xs bg-surface-sunken px-1">
+              {token.text}
+            </code>
+          );
+        if (token.kind === 'link')
+          return (
+            <a
+              key={i}
+              href={token.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-fg-muted underline hover:text-fg"
+            >
+              {token.text}
+            </a>
+          );
+        return <span key={i}>{token.text}</span>;
+      })}
+    </>
+  );
+}
+
+const MEDIA_CLASS =
+  'block h-auto max-h-[45dvh] w-full rounded-md border border-border bg-surface-sunken object-contain';
+
+/** A picture in a card. `active` is whether its card is the one on show. */
+export function GuideFigure({ media, lang, active }: { media: GuideMedia; lang: Lang; active: boolean }) {
+  const video = useRef<HTMLVideoElement>(null);
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const src = `${import.meta.env.BASE_URL}${media.src}`;
+  const alt = pick(media.alt, lang);
+
+  useEffect(() => {
+    const el = video.current;
+    if (!el) return;
+    // jsdom has no media playback; a browser that refuses autoplay just leaves the first frame.
+    if (active && !reduceMotion) void el.play?.()?.catch?.(() => undefined);
+    else el.pause?.();
+  }, [active, reduceMotion]);
+
+  if (media.kind === 'video')
+    return (
+      <video
+        ref={video}
+        src={src}
+        aria-label={alt}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        controls={reduceMotion}
+        className={`${MEDIA_CLASS} aspect-video`}
+        data-testid="guide-video"
+      />
+    );
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={media.width}
+      height={media.height}
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      className={MEDIA_CLASS}
+      data-testid="guide-image"
+    />
+  );
+}
 
 export function GuideSheet({
   lang,
@@ -88,12 +174,20 @@ export function GuideSheet({
             >
               <h3 className="text-title ">{pick(card.title, lang)}</h3>
               <ul className="flex flex-col gap-2 break-keep text-body text-fg">
-                {card.lines.map((line) => (
-                  <li key={line.ko} className="flex gap-2">
-                    <span className="mt-[0.6em] h-1 w-1 flex-none rounded-full bg-fg-subtle" aria-hidden />
-                    <span>{pick(line, lang)}</span>
-                  </li>
-                ))}
+                {card.lines.map((line) =>
+                  isGuideMedia(line) ? (
+                    <li key={line.src}>
+                      <GuideFigure media={line} lang={lang} active={i === index} />
+                    </li>
+                  ) : (
+                    <li key={line.ko} className="flex gap-2">
+                      <span className="mt-[0.6em] h-1 w-1 flex-none rounded-full bg-fg-subtle" aria-hidden />
+                      <span>
+                        <GuideText text={pick(line, lang)} />
+                      </span>
+                    </li>
+                  ),
+                )}
               </ul>
               {'notice' in card ? (
                 <a
