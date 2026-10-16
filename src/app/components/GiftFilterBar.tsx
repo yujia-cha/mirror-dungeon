@@ -70,10 +70,10 @@ export function GiftFilterBar({ state, enums, lang }: { state: GiftFilterState; 
 export function GiftNoMatch({ state, lang }: { state: GiftFilterState; lang: Lang }) {
   const query = state.filters.query.trim();
   return (
-    <Card className="flex flex-col items-center gap-2.5 px-4 py-8 text-center">
-      <Search size={28} className="text-fg-3" aria-hidden />
-      <div className="text-sm font-semibold">{t('giftsNoMatch', lang)}</div>
-      {query ? <div className="text-xs text-fg-3">「{query}」</div> : null}
+    <Card className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+      <Search size={28} className="text-fg-subtle" aria-hidden />
+      <div className="text-subheading ">{t('giftsNoMatch', lang)}</div>
+      {query ? <div className="text-caption text-fg-subtle">「{query}」</div> : null}
       <Button onClick={state.resetFilters}>
         <RefreshCw size={14} aria-hidden />
         {t('filterReset', lang)}

@@ -5,67 +5,79 @@
  * nothing is drawn in place of a missing picture.
  *
  * Three corners each say one thing: the tier top-left, the run status top-right, and the keyword
- * bottom-right (bottom-left is free since 「반드시」 left). The keyword badge is a small chip — the seven status
- * keywords each have a hue, the three attack types share one neutral ink and are told apart by
- * shape (slash a diamond, pierce a circle, blunt a square), and 범용 gets no badge at all. The
+ * bottom-right (bottom-left is free since 「반드시」 left). The keyword badge is the game's own keyword
+ * icon on a small round chip (M99); without the icon set it falls back to a coloured mark — the
+ * seven status keywords each have a hue, the three attack types share one neutral ink and are told
+ * apart by shape (slash a diamond, pierce a circle, blunt a square). 범용 gets no badge at all. The
  * condition judgement sits outside the tile as a ring (green = met, red = not met, grey = cannot
  * judge). These are the only places the palette uses hue.
  *
- * A dimmed tile keeps that badge at full colour: the dim is a `grayscale` filter, so everything
- * under it loses its hue — and for a gift the player has not collected yet, the badge was the one
- * thing still saying which keyword it is. So the dim wraps a layer inside the tile and the badge
- * sits outside that layer, beside it.
+ * The picture always keeps its colour (M99 — the player looks for this very icon in the game, and a
+ * grey one is hard to find). State is told by the frame and the corners instead: a dashed frame for
+ * a toggle not pressed yet (`pending`), the ink frame and ✓ for collected, a faded picture with ✕
+ * for missed, and a faded picture for a tile that cannot be pressed at all (`dim`).
  */
 import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import type { Gift, Keyword } from '../../core/schema.ts';
 import { pick, t, type Lang } from '../i18n.ts';
-import { giftIconUrl } from '../lib/assets.ts';
+import { giftIconUrl, keywordIconUrl } from '../lib/assets.ts';
 import { tierLabel } from '../lib/labels.ts';
 import { useKeywordName } from '../lib/useEnums.ts';
 import type { Judgement } from '../lib/judgement.ts';
 
-export type GiftIconSize = 20 | 32 | 44;
+/** In px: 20 inline, 32 in lists, 44 on the stage — tiles scale by the size setting (`lib/icon-size.ts`). */
+export type GiftIconSize = number;
 
 /**
- * The keyword badge: a hue for each status keyword, and one ink with a shape for the attack types.
- * `null` is 범용 — over a hundred gifts carry it, so a badge there would be noise, not information.
+ * The fallback keyword mark, drawn when the game's keyword icons are not shipped: a hue for each
+ * status keyword, and one ink with a shape for the attack types. Its `fill` is also the tile's
+ * keyword wash. `null` is 범용 — over a hundred gifts carry it, so a badge there would be noise.
  */
 const KEYWORD_BADGE: Record<Keyword, { fill: string; shape: string } | null> = {
-  Combustion: { fill: 'bg-kw-combustion', shape: 'rounded-[2px]' },
-  Laceration: { fill: 'bg-kw-laceration', shape: 'rounded-[2px]' },
-  Vibration: { fill: 'bg-kw-vibration', shape: 'rounded-[2px]' },
-  Burst: { fill: 'bg-kw-burst', shape: 'rounded-[2px]' },
-  Sinking: { fill: 'bg-kw-sinking', shape: 'rounded-[2px]' },
-  Breath: { fill: 'bg-kw-breath', shape: 'rounded-[2px]' },
-  Charge: { fill: 'bg-kw-charge', shape: 'rounded-[2px]' },
-  Slash: { fill: 'bg-kw-attack', shape: 'rotate-45 rounded-[1px]' },
+  Combustion: { fill: 'bg-kw-combustion', shape: 'rounded-xs' },
+  Laceration: { fill: 'bg-kw-laceration', shape: 'rounded-xs' },
+  Vibration: { fill: 'bg-kw-vibration', shape: 'rounded-xs' },
+  Burst: { fill: 'bg-kw-burst', shape: 'rounded-xs' },
+  Sinking: { fill: 'bg-kw-sinking', shape: 'rounded-xs' },
+  Breath: { fill: 'bg-kw-breath', shape: 'rounded-xs' },
+  Charge: { fill: 'bg-kw-charge', shape: 'rounded-xs' },
+  Slash: { fill: 'bg-kw-attack', shape: 'rotate-45 rounded-xs' },
   Penetrate: { fill: 'bg-kw-attack', shape: 'rounded-full' },
   Hit: { fill: 'bg-kw-attack', shape: 'rounded-none' },
   None: null,
 };
 
+/** The smallest tile that draws the game keyword icon as its badge; smaller ones draw the mark. */
+const BADGE_ICON_MIN_TILE = 28;
+
 const RING: Record<Judgement, string> = {
-  met: 'ring-2 ring-ok ring-offset-1 ring-offset-surface',
-  unmet: 'ring-2 ring-bad ring-offset-1 ring-offset-surface',
-  unknown: 'ring-2 ring-line-strong ring-offset-1 ring-offset-surface',
+  met: 'ring-2 ring-success ring-offset-1 ring-offset-surface',
+  unmet: 'ring-2 ring-danger ring-offset-1 ring-offset-surface',
+  // `border-control`, not `border-strong`: at 1.84:1 the grey ring read as no ring at all.
+  unknown: 'ring-2 ring-border-control ring-offset-1 ring-offset-surface',
 };
 
 const JUDGEMENT_KEY = { met: 'condMet', unmet: 'condUnmet', unknown: 'giftUnjudgeable' } as const;
 
 /**
- * How an inactive tile reads: greyscale drops the hue, the opacity pushes it back. A missed gift
- * goes further than one merely not collected yet, so that the cross badge is not the only
- * difference between them.
+ * How a faded picture reads — opacity only, never `grayscale` (M99). A tile that cannot be pressed
+ * (`dim`) sits in the 0.38–0.5 band a disabled control uses; a missed gift is a result rather than
+ * a lock and can still be pressed, so it stays a shade clearer, with its ✕ saying the rest.
  *
- * The icon applies this itself rather than letting a caller dim it from outside, for two reasons:
- * the name beside a tile keeps full contrast (small text taken down by `opacity` falls under
- * 4.5:1), and the keyword badge stays out of the filter (a caller's wrapper would cover it).
- * `DIM_HOVER` only does anything inside a `group`, which is how the tracker's tiles brighten.
+ * The icon applies this itself rather than letting a caller fade it from outside: the name beside
+ * a tile keeps full contrast (small text taken down by `opacity` falls under 4.5:1), and the keyword
+ * badge stays outside the faded layer.
  */
-const DIM = 'grayscale opacity-55';
-const DIM_FAILED = 'grayscale opacity-30';
-const DIM_HOVER = 'transition-[filter,opacity] group-hover:opacity-80';
+const DIM = 'opacity-45';
+const DIM_FAILED = 'opacity-50';
+
+/** The frame: dashed while a toggle is not pressed, ink once collected, the plain line otherwise. */
+function frameClass(status: 'got' | 'failed' | null, pending: boolean): string {
+  if (status === 'got') return 'border-primary';
+  if (pending) return 'border-dashed border-border-control';
+  return 'border-border';
+}
 
 export function GiftIcon({
   gift,
@@ -73,6 +85,7 @@ export function GiftIcon({
   judgement = null,
   name = false,
   status = null,
+  pending = false,
   dim = false,
   title,
   lang,
@@ -86,9 +99,11 @@ export function GiftIcon({
   title?: string;
   /** Run progress: collected (check badge) or missed (dimmed, cross badge). */
   status?: 'got' | 'failed' | null;
+  /** A run toggle not pressed yet: a dashed frame, the picture at full colour. */
+  pending?: boolean;
   /**
-   * This tile is inactive — not collected yet, or locked by another goal. The icon owns the dim
-   * (see `DIM`) so that only the picture goes grey; the name beside it and the keyword badge
+   * This tile cannot be pressed — locked by another goal, or only a suggestion. The icon owns the
+   * fade (see `DIM`) so that only the picture fades; the name beside it and the keyword badge
    * inside it stay at full contrast.
    */
   dim?: boolean;
@@ -114,10 +129,15 @@ export function GiftIcon({
   const tierAria = gift.tier === null ? null : tierLabel(gift.tier);
   const aria = [statusText, judged, label, keywordText, tierAria].filter(Boolean).join(' · ');
   const badge = KEYWORD_BADGE[gift.keyword] ?? null;
-  // A rotated square needs room for its diagonal, so the diamond is drawn a shade smaller.
-  const badgeSize = (size >= 32 ? 9 : 6) - (gift.keyword === 'Slash' ? 2 : 0);
+  // The game icon needs room to be read: about a third of the tile. On an inline icon (under 28px)
+  // its chip would cover half the picture, so there the small coloured mark stays. The mark keeps
+  // its old sizes, and a rotated square needs room for its diagonal, so the diamond is drawn a
+  // shade smaller.
+  const badgeIcon = badge && size >= BADGE_ICON_MIN_TILE ? keywordIconUrl(gift.keyword) : null;
+  const iconBadgeSize = Math.round(size * 0.32);
+  const markSize = (size >= 32 ? 9 : 6) - (gift.keyword === 'Slash' ? 2 : 0);
   const ring = judgement ? RING[judgement] : '';
-  const dimClass = status === 'failed' ? DIM_FAILED : dim ? `${DIM} ${DIM_HOVER}` : '';
+  const dimClass = status === 'failed' ? DIM_FAILED : dim ? DIM : '';
   const tile = (
     <span
       role="img"
@@ -127,10 +147,11 @@ export function GiftIcon({
       data-keyword={gift.keyword}
       data-judgement={judgement ?? 'none'}
       data-status={status ?? undefined}
-      className={`relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-line bg-surface-3 text-fg-3 ${ring}`}
+      data-pending={pending || undefined}
+      className={`relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border bg-surface-sunken text-fg-subtle ${frameClass(status, pending)} ${ring}`}
       style={{ width: size, height: size }}
     >
-      {/* Everything the dim may touch. The keyword badge is deliberately not in here. */}
+      {/* Everything the fade may touch. The keyword badge is deliberately not in here. */}
       <span className={`absolute inset-0 ${dimClass}`} data-testid="gift-dim" aria-hidden>
         {badge && !(hasArt && picture?.pixelArt) ? (
           /*
@@ -161,7 +182,7 @@ export function GiftIcon({
         ) : null}
         {status ? (
           <span
-            className={`absolute right-0 top-0 rounded-bl-sm p-px ${status === 'got' ? 'bg-ink text-ink-fg' : 'bg-surface text-fg'}`}
+            className={`absolute right-0 top-0 rounded-bl-sm p-px ${status === 'got' ? 'bg-primary text-primary-fg' : 'bg-surface text-fg'}`}
           >
             {status === 'got' ? (
               <Check size={size >= 32 ? 10 : 8} strokeWidth={3} />
@@ -172,17 +193,35 @@ export function GiftIcon({
         ) : null}
         {size >= 32 && gift.tier !== null ? (
           // 'EX' is a tier of its own; 'TEX' was a number template applied to a word.
-          <span className="absolute left-0 top-0 rounded-br-sm bg-surface px-0.5 font-num text-2xs leading-[12px] text-fg-2">
+          <span className="absolute left-0 top-0 rounded-br-sm bg-surface px-0.5 font-num text-micro text-fg-muted">
             {tierLabel(gift.tier)}
           </span>
         ) : null}
       </span>
-      {badge ? (
+      {badge && badgeIcon ? (
+        // On a round chip of the surface colour: the game icons are transparent, and over a busy
+        // painting they would lose the 3:1 a meaningful mark needs against what is next to it.
+        <span
+          data-testid="gift-keyword"
+          data-keyword={gift.keyword}
+          className="absolute bottom-px right-px inline-flex items-center justify-center rounded-full bg-surface p-px"
+          style={{ boxShadow: '0 0 0 1px var(--color-kw-outline)' }}
+          aria-hidden
+        >
+          <img
+            src={badgeIcon}
+            alt=""
+            loading="lazy"
+            className="block object-contain"
+            style={{ width: iconBadgeSize, height: iconBadgeSize }}
+          />
+        </span>
+      ) : badge ? (
         <span
           data-testid="gift-keyword"
           data-keyword={gift.keyword}
           className={`absolute bottom-0.5 right-0.5 ${badge.fill} ${badge.shape}`}
-          style={{ width: badgeSize, height: badgeSize, boxShadow: '0 0 0 1px var(--color-kw-outline)' }}
+          style={{ width: markSize, height: markSize, boxShadow: '0 0 0 1px var(--color-kw-outline)' }}
           aria-hidden
         />
       ) : null}
@@ -192,7 +231,7 @@ export function GiftIcon({
   return (
     <span className="flex min-w-0 flex-col items-center gap-0.5" style={{ width: Math.max(size, 52) }}>
       {tile}
-      <span className="line-clamp-2 w-full break-keep text-center text-xs leading-tight text-fg" aria-hidden>
+      <span className="line-clamp-2 w-full break-keep text-center text-caption text-fg" aria-hidden>
         {label}
       </span>
     </span>

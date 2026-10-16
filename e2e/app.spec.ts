@@ -18,6 +18,19 @@ test('opens under the Pages sub-path with its data', async ({ page }) => {
   await expect(icon).toBeVisible();
   expect(await icon.getAttribute('src')).toMatch(/\/mirror-dungeon\/icons\/gifts\/\d+\.webp$/);
   await expect.poll(() => icon.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  // The keyword badge is the game's keyword icon (M99), from the same sub-path. The tracker lists
+  // keyword gifts, so it has badges to look at.
+  await page.getByRole('tab', { name: '추적기' }).click();
+  const badge = page.locator('[data-testid^="tracker-"] [data-testid="gift-keyword"] img').first();
+  await expect(badge).toBeVisible();
+  expect(await badge.getAttribute('src')).toMatch(/\/mirror-dungeon\/icons\/keywords\/[A-Za-z]+\.webp$/);
+  await expect.poll(() => badge.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  // The pack cards draw the game's pack art (M100), shrunk by data:icons, from the same sub-path.
+  await page.getByText('다른 팩').first().click();
+  const art = page.locator('[data-testid="pack-image"] img').first();
+  await expect(art).toBeVisible();
+  expect(await art.getAttribute('src')).toMatch(/\/mirror-dungeon\/icons\/packs\/[^/]+\.webp$/);
+  await expect.poll(() => art.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(256);
   // No 404 anywhere — not the worker chunk, not a manifest, not a data file, not an icon.
   expect(failed).toEqual([]);
 });

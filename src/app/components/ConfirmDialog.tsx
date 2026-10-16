@@ -27,11 +27,22 @@ export function ConfirmDialog({
   lang: Lang;
 }) {
   return (
-    <DetailSurface mode="sheet" label={title} closeLabel={t('confirmCancel', lang)} onClose={onCancel}>
+    <DetailSurface
+      mode="sheet"
+      alert
+      describedBy={message ? 'confirm-dialog-message' : undefined}
+      label={title}
+      closeLabel={t('confirmCancel', lang)}
+      onClose={onCancel}
+    >
       <div className="flex flex-col gap-3" data-testid="confirm-dialog">
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-semibold">{title}</span>
-          {message ? <span className="text-xs text-fg-2">{message}</span> : null}
+          <h2 className="text-subheading">{title}</h2>
+          {message ? (
+            <span id="confirm-dialog-message" className="text-caption text-fg-muted">
+              {message}
+            </span>
+          ) : null}
         </div>
         <div className="flex justify-end gap-1.5">
           <Button variant="ghost" onClick={onCancel}>

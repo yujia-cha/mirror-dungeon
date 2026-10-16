@@ -46,7 +46,7 @@ export function TabBar<Id extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className="flex gap-1 border-b border-line bg-surface px-2 pt-2"
+      className="flex gap-1 border-b border-border bg-surface px-2 pt-2"
     >
       {tabs.map((entry) => {
         const on = entry.id === tab;
@@ -58,7 +58,7 @@ export function TabBar<Id extends string>({
             aria-selected={on}
             tabIndex={on ? 0 : -1}
             onClick={() => onTab(entry.id)}
-            className={`-mb-px border-b-2 px-2.5 pb-2 pt-1 text-sm ${on ? 'border-ink font-semibold text-fg' : 'border-transparent text-fg-2 hover:text-fg'}`}
+            className={`-mb-px border-b-2 px-3 pb-2 pt-1 text-subheading ${on ? 'border-primary text-fg' : 'border-transparent text-fg-muted hover:text-fg'}`}
           >
             {entry.label}
           </button>
@@ -111,7 +111,7 @@ export function SidePanel<Id extends string>({
         aria-label={label}
         data-testid={`panel-${side}`}
         style={{ width }}
-        className={`sticky top-14 flex h-[calc(100dvh-56px)] flex-none flex-col overflow-hidden bg-surface ${side === 'left' ? 'border-r' : 'border-l'} border-line`}
+        className={`sticky top-14 flex h-[calc(100dvh-56px)] flex-none flex-col overflow-hidden bg-surface ${side === 'left' ? 'border-r' : 'border-l'} border-border`}
       >
         {bar}
         <div className="@container min-h-0 flex-1 overflow-y-auto px-3 py-3">{children}</div>
@@ -127,16 +127,16 @@ export function SidePanel<Id extends string>({
       className="fixed inset-0 z-40 flex flex-col bg-bg"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="flex h-11 flex-none items-center gap-1 border-b border-line bg-surface px-1.5">
+      <div className="flex h-11 flex-none items-center gap-1 border-b border-border bg-surface px-1.5">
         <button
           type="button"
           onClick={onClose}
           aria-label={t('panelBack', lang)}
-          className="inline-flex h-8 w-8 flex-none items-center justify-center rounded-full text-fg-2 hover:bg-surface-2"
+          className="inline-flex size-8 flex-none items-center justify-center rounded-full text-fg-muted hover:bg-surface-muted active:bg-surface-sunken touch:size-11"
         >
           <ChevronLeft size={17} aria-hidden />
         </button>
-        <h1 className="truncate text-sm font-semibold">{label}</h1>
+        <h1 className="truncate text-subheading ">{label}</h1>
       </div>
       {bar}
       <div

@@ -10,7 +10,8 @@
  * it opens the same list with the suggestion first — one way in, and a stray press pins nothing.
  */
 import { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { CloseButton } from './ui.tsx';
 import type { GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
@@ -74,9 +75,10 @@ export function ObserveSlots({
       className="flex flex-col gap-1"
       data-testid="observe-slots"
       data-closed={closed || undefined}
+      role="group"
       aria-label={t('observeSlots', lang)}
     >
-      <p className="font-num text-xs text-fg-2" data-testid="observe-slots-count">
+      <p className="font-num text-caption text-fg-muted" data-testid="observe-slots-count">
         {t('observeSlotsCount', lang, { n: slots.length, max })}
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -85,12 +87,12 @@ export function ObserveSlots({
           const name = gift ? pick(gift.name, lang) : '';
           const tone =
             over === i
-              ? 'border-ink bg-surface-2 ring-1 ring-ink'
+              ? 'border-primary bg-surface-muted ring-1 ring-primary'
               : dragging
-                ? 'border-dashed border-line-control'
+                ? 'border-dashed border-border-control'
                 : gift
-                  ? 'border-line bg-surface'
-                  : 'border-dashed border-line-control';
+                  ? 'border-border bg-surface'
+                  : 'border-dashed border-border-control';
           // The empty cells take the suggestions in order, after the pins.
           const hintId = gift ? undefined : suggested[i - slots.length];
           const hint = hintId !== undefined ? indexes.giftById.get(hintId) : undefined;
@@ -113,18 +115,17 @@ export function ObserveSlots({
               {gift ? (
                 <>
                   <GiftIcon gift={gift} size={32} judgement={judgementOf(gift.id)} lang={lang} />
-                  <span className="min-w-0 flex-1 truncate text-xs">{name}</span>
-                  <span className="font-num text-2xs text-fg-3" aria-hidden>
+                  <span className="min-w-0 flex-1 truncate text-caption" title={name}>
+                    {name}
+                  </span>
+                  <span className="font-num text-micro text-fg-subtle" aria-hidden>
                     {i + 1}
                   </span>
-                  <button
-                    type="button"
+                  <CloseButton
+                    label={t('observeSlotClear', lang, { name })}
                     onClick={() => onUnpin(gift.id)}
-                    aria-label={t('observeSlotClear', lang, { name })}
-                    className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-sm text-fg-3 hover:bg-surface-2 hover:text-fg"
-                  >
-                    <X size={11} />
-                  </button>
+                    size="sm"
+                  />
                 </>
               ) : (
                 <button
@@ -137,14 +138,16 @@ export function ObserveSlots({
                     hint ? t('observeSlotAddSuggested', lang, { name: hintName }) : t('observeSlotAdd', lang)
                   }
                   data-suggested={hint?.id}
-                  className={`flex h-full w-full items-center rounded-md text-fg-3 hover:bg-surface-2 hover:text-fg ${hint ? 'gap-1.5 text-left' : 'justify-center'}`}
+                  className={`flex h-full w-full items-center rounded-md text-fg-subtle hover:bg-surface-muted hover:text-fg ${hint ? 'gap-1.5 text-left' : 'justify-center'}`}
                 >
                   {hint ? (
                     <>
                       <GiftIcon gift={hint} size={32} judgement={judgementOf(hint.id)} dim lang={lang} />
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-xs text-fg-2">{hintName}</span>
-                        <span className="text-2xs text-fg-3">{t('routeObservedRecommended', lang)}</span>
+                        <span className="truncate text-caption text-fg-muted">{hintName}</span>
+                        <span className="text-micro text-fg-subtle">
+                          {t('routeObservedRecommended', lang)}
+                        </span>
                       </span>
                       <Plus size={14} aria-hidden className="flex-none" />
                     </>
@@ -157,12 +160,14 @@ export function ObserveSlots({
                 <DetailSurface
                   id={popoverId(i)}
                   mode="popover"
+                  // A right-hand cell opens leftward, so the popover stays inside a narrow panel.
+                  placement={{ vertical: 'below', horizontal: i % 2 === 1 ? 'end' : 'start' }}
                   label={t('observeSlotAdd', lang)}
                   closeLabel={t('routeClose', lang)}
                   onClose={() => setOpenSlot(null)}
                 >
                   {candidates.length === 0 ? (
-                    <p className="text-xs text-fg-3">{t('observeSlotNone', lang)}</p>
+                    <p className="text-caption text-fg-subtle">{t('observeSlotNone', lang)}</p>
                   ) : (
                     <ul
                       className="flex max-h-[50dvh] flex-col gap-1 overflow-y-auto"
@@ -181,12 +186,12 @@ export function ObserveSlots({
                                 setOpenSlot(null);
                               }}
                               aria-label={t('giftsObserve', lang, { name: candidateName })}
-                              className="flex w-full items-center gap-2 rounded-sm px-1.5 py-1 text-left text-sm hover:bg-surface-2"
+                              className="flex w-full items-center gap-2 rounded-sm px-1.5 py-1 text-left text-body hover:bg-surface-muted"
                             >
                               <GiftIcon gift={candidate} size={32} judgement={judgementOf(id)} lang={lang} />
                               <span className="min-w-0 flex-1 truncate">{candidateName}</span>
                               {suggested.includes(id) ? (
-                                <span className="flex-none text-2xs text-fg-3">
+                                <span className="flex-none text-micro text-fg-subtle">
                                   {t('routeObservedRecommended', lang)}
                                 </span>
                               ) : null}
@@ -202,7 +207,7 @@ export function ObserveSlots({
           );
         })}
       </div>
-      {closed ? <p className="text-xs text-fg-2">{t('giftsObserveClosed', lang)}</p> : null}
+      {closed ? <p className="text-caption text-fg-muted">{t('giftsObserveClosed', lang)}</p> : null}
     </div>
   );
 }

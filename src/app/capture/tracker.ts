@@ -14,11 +14,15 @@
  *   same name seen again after a blink does not.
  * - `sold` — the sell confirm names a gift and the sell list comes back with nothing selected
  *   (confirmed). Back with the same gift still selected means 「취소」, and nothing is sold.
+ * - `fused` — the fusion confirm read its ingredients and the popup that follows names the result
+ *   (M101): the result is `got` as usual, and the ingredients it ate are to be unmarked. What it ate
+ *   is worked out before this file (`fusion.ts`); this only ties it to the result that came of it.
  * - `unsure` — a name that is close to more than one candidate. The UI asks instead of recording.
  *
  * Pure and deterministic: state in, state and events out. What an event does to the run is the
  * app's business, not this file's.
  */
+import type { Consumed } from './fusion.ts';
 import type { MatchResult } from './match-name.ts';
 import type { Screen } from './screens.ts';
 
@@ -31,12 +35,15 @@ export interface Frame {
   pack: MatchResult | null;
   /** The gift named by the popup, the sell confirm, or the sell list's selection. */
   gift: MatchResult | null;
+  /** On the fusion confirm: what the fusion would eat, read off its ingredient icons (`fusion.ts`). */
+  ingredients?: Consumed | null;
 }
 
 export type CaptureEvent =
   | { kind: 'enter'; floor: number; packId: number }
   | { kind: 'got'; giftId: number }
   | { kind: 'sold'; giftId: number }
+  | { kind: 'fused'; resultId: number; consumed: number[]; unsure: number[] }
   | { kind: 'unsure'; about: 'enter'; floor: number; ids: number[] }
   | { kind: 'unsure'; about: 'got'; ids: number[] };
 
@@ -47,9 +54,11 @@ export interface TrackerState {
   popupGifts: readonly number[];
   /** A gift whose sale awaits the sell list's answer. */
   selling: number | null;
+  /** What a confirmed fusion will eat, waiting for the popup that names its result. */
+  fusing: Consumed | null;
 }
 
-export const INITIAL_TRACKER: TrackerState = { entered: null, popupGifts: [], selling: null };
+export const INITIAL_TRACKER: TrackerState = { entered: null, popupGifts: [], selling: null, fusing: null };
 
 /** The gift a confirmed match names, or null. */
 function matchedId(result: MatchResult | null): number | null {
@@ -80,12 +89,23 @@ export function trackFrame(
     next = { ...next, selling: null };
   }
 
+  // A fusion waits through the confirm, the animation (no screen) and its popup; going back to the
+  // fusion screen or anywhere else means it was cancelled.
+  if (next.fusing && frame.screen !== null && frame.screen !== 'fusionConfirm' && frame.screen !== 'acquired')
+    next = { ...next, fusing: null };
+
   switch (frame.screen) {
     case 'acquired': {
       const gift = frame.gift;
       if (gift?.status === 'match' && !next.popupGifts.includes(gift.id)) {
         events.push({ kind: 'got', giftId: gift.id });
         next = { ...next, popupGifts: [...next.popupGifts, gift.id] };
+        // The first popup after a confirmed fusion is its result; a second (조합식 합성 can show
+        // two) is an ordinary gain.
+        if (next.fusing) {
+          events.push({ kind: 'fused', resultId: gift.id, ...next.fusing });
+          next = { ...next, fusing: null };
+        }
       } else if (gift?.status === 'ambiguous' && !gift.ids.some((id) => next.popupGifts.includes(id))) {
         events.push({ kind: 'unsure', about: 'got', ids: gift.ids });
         next = { ...next, popupGifts: [...next.popupGifts, ...gift.ids] };
@@ -107,6 +127,10 @@ export function trackFrame(
         // Asked once per floor: the answer, or a clean read later, settles it.
         next = { ...next, entered: { floor, packId: -1 } };
       }
+      break;
+    }
+    case 'fusionConfirm': {
+      if (frame.ingredients) next = { ...next, fusing: frame.ingredients };
       break;
     }
     case 'sellConfirm': {

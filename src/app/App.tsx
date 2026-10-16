@@ -8,13 +8,20 @@ import {
   loadArtManifest,
   loadGameData,
   loadGiftIconManifest,
+  loadKeywordIconManifest,
+  loadPackImageManifest,
   loadSeasonIndex,
 } from '../core/data/load.ts';
 import { t, type StringKey } from './i18n.ts';
 import { decodeShared, encodeShared, runInProgress, useApp } from './store.ts';
 import type { SharedState } from './store.ts';
 import { DEPLOYED_AT_START, defaultDeck } from './lib/default-deck.ts';
-import { setArtManifest, setGiftIconManifest } from './lib/assets.ts';
+import {
+  setArtManifest,
+  setGiftIconManifest,
+  setKeywordIconManifest,
+  setPackImageManifest,
+} from './lib/assets.ts';
 import { lastFloorOf } from './lib/stage.ts';
 import { ingredientTree } from './lib/entangle.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
@@ -201,11 +208,15 @@ export function App() {
       loadGameData(import.meta.env.BASE_URL, { validate: import.meta.env.DEV, season: openSeason }),
       loadArtManifest(import.meta.env.BASE_URL),
       loadGiftIconManifest(import.meta.env.BASE_URL),
+      loadKeywordIconManifest(import.meta.env.BASE_URL),
+      loadPackImageManifest(import.meta.env.BASE_URL),
     ])
-      .then(([next, manifest, icons]) => {
+      .then(([next, manifest, icons, keywordIcons, packImages]) => {
         if (cancelled) return;
         setArtManifest(manifest);
         setGiftIconManifest(icons);
+        setKeywordIconManifest(keywordIcons);
+        setPackImageManifest(packImages);
         // Goals this season never heard of cannot be drawn or planned, so they go — counted, not
         // quietly (the same rule the formation code follows for identities it does not know).
         // Built here rather than in a memo below: `adoptSeason` needs the recipe tree to judge
@@ -274,11 +285,12 @@ export function App() {
       <div className="flex min-h-dvh items-center justify-center px-4 py-10">
         <Card
           variant="strong"
-          className="flex max-w-[360px] flex-col items-center gap-2.5 px-6 py-6 text-center"
+          className="flex max-w-[360px] flex-col items-center gap-3 px-6 py-6 text-center"
+          role="alert"
         >
           <TriangleAlert size={28} aria-hidden />
-          <div className="text-sm font-semibold">{t('loadFailed', lang)}</div>
-          <div className="text-xs text-fg-3">
+          <div className="text-subheading ">{t('loadFailed', lang)}</div>
+          <div className="text-caption text-fg-subtle">
             {error.code ? t(error.code, lang, error.params) : error.text}
           </div>
           <Button variant="primary" onClick={() => setAttempt((n) => n + 1)}>
@@ -301,7 +313,7 @@ export function App() {
           {Array.from({ length: 8 }, (_, i) => (
             <div
               key={i}
-              className="flex h-[96px] flex-col gap-2 rounded-md border border-line bg-surface p-3"
+              className="flex h-[96px] flex-col gap-2 rounded-md border border-border bg-surface p-3"
             >
               <Skeleton className="h-2.5 w-2/5" />
               <Skeleton className="h-3.5 w-3/4" />
@@ -309,7 +321,7 @@ export function App() {
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-2 text-xs text-fg-3">
+        <div className="flex items-center gap-2 text-caption text-fg-subtle">
           <Hourglass size={13} aria-hidden />
           {t('loading', lang)}
         </div>

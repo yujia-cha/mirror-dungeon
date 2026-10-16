@@ -51,8 +51,8 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
   let body;
   if (stageMode === 'done') {
     body = (
-      <Card className="flex flex-col items-center gap-2.5 px-4 py-8 text-center" testId="stage-done">
-        <div className="text-sm font-semibold">{t('stageDone', lang, { last: lastFloor })}</div>
+      <Card className="flex flex-col items-center gap-3 px-4 py-8 text-center" testId="stage-done">
+        <div className="text-subheading ">{t('stageDone', lang, { last: lastFloor })}</div>
         {/* Only the run is dropped. The deck, the goals and the route options are the plan the
             player came here with, and the next dungeon reset uses the same one. */}
         <Button variant="primary" onClick={resetRun}>
@@ -75,12 +75,12 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
           </Notice>
         ) : null}
         <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-sm font-semibold">{t('stageEnterable', lang)}</span>
+          <span className="text-subheading ">{t('stageEnterable', lang)}</span>
         </div>
         {shown && routePacks.length === 0 && stageMode === 'undecided' ? (
-          <p className="text-xs text-fg-3">{t('stageNoRoutePack', lang)}</p>
+          <p className="text-caption text-fg-subtle">{t('stageNoRoutePack', lang)}</p>
         ) : null}
-        <div className="flex flex-wrap items-start gap-2.5 pb-3" data-testid="stage-packs">
+        <div className="flex flex-wrap items-start gap-3 pb-3" data-testid="stage-packs">
           {routePacks.map(({ packId, alternatives }) => {
             const pack = indexes.packById.get(packId);
             return pack ? (

@@ -11,19 +11,20 @@ import { useEffect, useState } from 'react';
 import { ChevronsDown, ChevronsUp } from 'lucide-react';
 import { pick, t } from '../i18n.ts';
 import { useApp } from '../store.ts';
+import { useTileIconSize } from '../lib/icon-size.ts';
 import { pullStyle, usePullGesture } from '../lib/usePullGesture.ts';
 import { GiftTile } from '../components/GiftTile.tsx';
 import { PackCard } from '../components/PackCard.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 
-const HANDLE_CLASS =
-  'flex h-9 w-full items-center justify-center gap-1 text-sm font-medium transition-colors';
+const HANDLE_CLASS = 'flex h-9 w-full items-center justify-center gap-1 text-label transition-colors';
 
 /** Opens from zero height on mount (`grid-template-rows` 0fr → 1fr) and folds the same way when `closing`. */
 export function PackArea({ packId, closing = false }: { packId: number; closing?: boolean }) {
   const { indexes, lang, ctx, needed, entryGiftsOf, next, leave, openGift } = usePlan();
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
+  const tileSize = useTileIconSize(44);
   /**
    * The open state is one-way: a frame after mount it turns on, and `closing` folds it from the
    * outside. Keeping those separate is what lets the effect run once — it used to re-run on
@@ -58,7 +59,7 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
       <div className="min-h-0 overflow-hidden">
         <div
           {...(closing ? {} : pull.handlers)}
-          className={`flex flex-col overflow-hidden rounded-md border border-ink bg-surface select-none ${pull.pulling ? 'shadow-pop' : 'shadow-card'} motion-reduce:transition-none`}
+          className={`flex flex-col overflow-hidden rounded-md border border-primary bg-surface select-none ${pull.pulling ? 'shadow-md' : 'shadow-sm'} motion-reduce:transition-none`}
           style={pullStyle(pull)}
           data-testid={closing ? undefined : 'entered-pack'}
           data-pack={packId}
@@ -69,28 +70,28 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
             type="button"
             onClick={() => leave(packId)}
             aria-label={t('stageBackPack', lang, { name })}
-            className={`${HANDLE_CLASS} border-b ${pastUp ? 'border-ink bg-ink text-ink-fg' : 'border-line text-fg-2 hover:bg-surface-2'}`}
+            className={`${HANDLE_CLASS} border-b ${pastUp ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:bg-surface-muted'}`}
             data-testid="area-back"
           >
             <ChevronsUp size={14} aria-hidden />
             {pastUp ? t('stageReleaseBack', lang) : t('stageUnenter', lang)}
           </button>
 
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 px-3 py-3.5">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 px-3 py-4">
             <div className="flex w-[112px] flex-col items-center gap-2 md:w-[150px]">
               <PackCard pack={pack} size={96} lang={lang} />
-              <span className="text-center text-sm font-semibold">{name}</span>
+              <span className="text-center text-subheading ">{name}</span>
             </div>
             <div className="flex min-w-0 flex-col gap-2">
               <div className="flex flex-wrap items-baseline gap-2">
-                <span className="text-sm font-semibold">{t('stageExclusives', lang)}</span>
-                <span className="font-num text-xs text-fg-3">{gifts.length}</span>
+                <span className="text-subheading ">{t('stageExclusives', lang)}</span>
+                <span className="font-num text-caption text-fg-subtle">{gifts.length}</span>
                 {goalCount > 0 ? (
-                  <span className="text-xs text-fg-2">{`${t('stageGoalsFirst', lang)} ${goalCount}`}</span>
+                  <span className="text-caption text-fg-muted">{`${t('stageGoalsFirst', lang)} ${goalCount}`}</span>
                 ) : null}
               </div>
               {gifts.length === 0 ? (
-                <p className="text-xs text-fg-3">{t('stageExclusivesNone', lang)}</p>
+                <p className="text-caption text-fg-subtle">{t('stageExclusivesNone', lang)}</p>
               ) : (
                 <div className="flex flex-wrap gap-2" data-testid="exclusive-gifts">
                   {gifts.map((id) => {
@@ -99,7 +100,7 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
                       <GiftTile
                         key={id}
                         gift={gift}
-                        size={44}
+                        size={tileSize}
                         status={giftStatus[id] ?? null}
                         wanted={needed.has(id)}
                         judgement={ctx.judgements.get(id) ?? null}
@@ -119,7 +120,7 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
             type="button"
             onClick={next}
             aria-label={t('stageNext', lang)}
-            className={`${HANDLE_CLASS} border-t ${pastDown ? 'border-ink bg-ink text-ink-fg' : 'border-line text-fg-2 hover:bg-surface-2'}`}
+            className={`${HANDLE_CLASS} border-t ${pastDown ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:bg-surface-muted'}`}
             data-testid="area-next"
           >
             <ChevronsDown size={14} aria-hidden />

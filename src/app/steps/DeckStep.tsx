@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy, Plus, RotateCcw, Search, X } from 'lucide-react';
+import { Check, Copy, Plus, RotateCcw, Search } from 'lucide-react';
 import type { GameData, Identity } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
@@ -12,7 +12,8 @@ import { deckSummaryChips } from '../lib/deck-summary.ts';
 import { fitShift } from '../lib/fit-inside.ts';
 import { useCursor } from '../lib/use-cursor.ts';
 import { stepIndex, useDismiss } from '../lib/useDismiss.ts';
-import { Button, Chip } from '../components/ui.tsx';
+import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
+import { Button, Checkbox, Chip, CloseButton, TextField } from '../components/ui.tsx';
 
 interface Props {
   data: GameData;
@@ -77,6 +78,8 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   const [query, setQuery] = useState('');
   const [openSinner, setOpenSinner] = useState<number | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  // 「기본 덱」 replaces twelve slots and the deployment at once, so it asks first (as 「목표 비우기」 does).
+  const [confirmDefault, setConfirmDefault] = useState(false);
   const [code, setCode] = useState('');
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
@@ -138,41 +141,45 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
+      {confirmDefault ? (
+        <ConfirmDialog
+          title={t('deckDefaultConfirm', lang)}
+          message={t('deckDefaultConfirmBody', lang)}
+          confirmLabel={t('deckDefault', lang)}
+          onConfirm={() => {
+            setConfirmDefault(false);
+            setDeck(defaultDeck(data), DEPLOYED_AT_START);
+          }}
+          onCancel={() => setConfirmDefault(false)}
+          lang={lang}
+        />
+      ) : null}
       <div className="relative flex flex-wrap items-center gap-2" ref={searchRef}>
-        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-sm border border-line-control bg-surface px-2.5 text-sm">
-          <Search size={14} aria-hidden className="flex-none text-fg-3" />
-          <input
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setListOpen(true);
-            }}
-            onFocus={() => setListOpen(true)}
-            onKeyDown={onSearchKey}
-            placeholder={t('deckSearchAll', lang)}
-            aria-label={t('deckSearchAll', lang)}
-            role="combobox"
-            aria-expanded={open}
-            aria-controls="deck-search-listbox"
-            aria-autocomplete="list"
-            aria-activedescendant={
-              open && globalResults[activeIndex] ? `deck-option-${globalResults[activeIndex].id}` : undefined
-            }
-            className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              aria-label={t('deckClose', lang)}
-              className="text-fg-3"
-            >
-              <X size={14} />
-            </button>
-          ) : null}
-        </label>
+        <TextField
+          value={query}
+          onChange={(value) => {
+            setQuery(value);
+            setListOpen(true);
+          }}
+          label={t('deckSearchAll', lang)}
+          placeholder={t('deckSearchAll', lang)}
+          icon={<Search size={14} aria-hidden />}
+          onClear={() => setQuery('')}
+          clearLabel={t('searchClear', lang)}
+          className="flex-1"
+          inputProps={{
+            onFocus: () => setListOpen(true),
+            onKeyDown: onSearchKey,
+            role: 'combobox',
+            'aria-expanded': open,
+            'aria-controls': 'deck-search-listbox',
+            'aria-autocomplete': 'list',
+            'aria-activedescendant':
+              open && globalResults[activeIndex] ? `deck-option-${globalResults[activeIndex].id}` : undefined,
+          }}
+        />
         <span
-          className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-line bg-surface-2 px-3 text-sm font-medium"
+          className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border bg-surface-muted px-3 text-label "
           title={full ? t('deckDeployedFull', lang, { max }) : undefined}
         >
           {t('deckDeployed', lang)}{' '}
@@ -180,15 +187,11 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
             {deployed.length}/{max}
           </span>
         </span>
-        <Button
-          onClick={() => setDeck(defaultDeck(data), DEPLOYED_AT_START)}
-          ariaLabel={t('deckDefault', lang)}
-          className="h-9"
-        >
+        <Button onClick={() => setConfirmDefault(true)} ariaLabel={t('deckDefault', lang)}>
           <RotateCcw size={14} aria-hidden />
           <span className="hidden @sm:inline">{t('deckDefault', lang)}</span>
         </Button>
-        <Button onClick={() => setImportOpen((v) => !v)} ariaLabel={t('deckImport', lang)} className="h-9">
+        <Button onClick={() => setImportOpen((v) => !v)} ariaLabel={t('deckImport', lang)}>
           <Copy size={14} aria-hidden />
           <span className="hidden @sm:inline">{t('deckImport', lang)}</span>
         </Button>
@@ -197,9 +200,9 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
             id="deck-search-listbox"
             role="listbox"
             aria-label={t('deckSearchAll', lang)}
-            className="absolute left-0 top-10 z-20 flex max-h-[420px] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-line-strong bg-surface shadow-pop"
+            className="absolute left-0 top-10 z-20 flex max-h-[420px] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-border-strong bg-surface shadow-md"
           >
-            <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs text-fg-3">
+            <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 text-caption text-fg-subtle">
               <span>
                 {globalResults.length > 0
                   ? t('deckSearchHint', lang, { n: globalResults.length })
@@ -227,20 +230,23 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                   data-picked={held || undefined}
                   onClick={() => pickIdentity(identity)}
                   onPointerMove={() => setActiveIndex(i)}
-                  className={`flex h-11 items-center gap-3 border-b border-line px-3 text-left hover:bg-surface-2 ${i === activeIndex ? 'bg-surface-2' : ''}`}
+                  className={`flex h-11 items-center gap-3 border-b border-border px-3 text-left hover:bg-surface-muted ${i === activeIndex ? 'bg-surface-muted' : ''}`}
                 >
                   <span
-                    className={`inline-flex h-4 w-4 flex-none items-center justify-center rounded-[4px] border ${held ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong'}`}
+                    className={`inline-flex h-4 w-4 flex-none items-center justify-center rounded-xs border ${held ? 'border-primary bg-primary text-primary-fg' : 'border-border-strong'}`}
                     aria-hidden
                   >
                     {held ? <Check size={11} strokeWidth={3} /> : null}
                   </span>
-                  <span className="w-16 flex-none text-xs font-medium text-fg-2">
+                  <span className="w-16 flex-none text-caption-strong text-fg-muted">
                     {pick(identity.sinner, lang)}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg">
+                  <span className="min-w-0 flex-1 truncate text-body text-fg">
                     {pick(identity.title, lang)}
-                    <span className="text-xs text-fg-3"> · {t('deckRank', lang, { n: identity.rank })}</span>
+                    <span className="text-caption text-fg-subtle">
+                      {' '}
+                      · {t('deckRank', lang, { n: identity.rank })}
+                    </span>
                   </span>
                   <span className="hidden gap-1 @sm:flex">
                     <KeywordChips identity={identity} data={data} lang={lang} />
@@ -251,25 +257,32 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           </div>
         ) : null}
       </div>
+      {/* Why the reserve boxes are greyed out, said where a touch reader can see it (not a title). */}
+      {full ? (
+        <p className="text-caption text-fg-muted" data-testid="deck-deployed-full">
+          {t('deckDeployedFull', lang, { max })}
+        </p>
+      ) : null}
       {importOpen ? (
         <form
-          className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface p-2"
+          className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface p-2"
           onSubmit={(event) => {
             event.preventDefault();
             applyImport();
           }}
         >
-          <input
+          <TextField
             value={code}
-            onChange={(event) => setCode(event.target.value)}
-            aria-label={t('deckImportPlaceholder', lang)}
+            onChange={setCode}
+            label={t('deckImportPlaceholder', lang)}
             placeholder={t('deckImportPlaceholder', lang)}
-            className="h-8 min-w-0 flex-1 rounded-sm border border-line-control bg-surface px-2 font-num text-xs outline-none"
+            numeric
+            className="flex-1"
           />
           <Button type="submit" variant="primary">
             {t('deckImportApply', lang)}
           </Button>
-          {importMessage ? <span className="w-full text-xs text-fg-2">{importMessage}</span> : null}
+          {importMessage ? <span className="w-full text-caption text-fg-muted">{importMessage}</span> : null}
         </form>
       ) : null}
 
@@ -288,30 +301,26 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
               className={`relative flex flex-col gap-1.5 rounded-md p-3 ${
                 identity
                   ? isDeployed
-                    ? 'border border-line-strong bg-surface shadow-card'
-                    : 'border border-line bg-surface-2'
-                  : 'border border-dashed border-line-strong'
+                    ? 'border border-border-strong bg-surface shadow-sm'
+                    : 'border border-border bg-surface-muted'
+                  : 'border border-dashed border-border-strong'
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-fg-2">{pick(sinner.name, lang)}</span>
+                <span className="text-caption-strong text-fg-muted">{pick(sinner.name, lang)}</span>
                 {identity ? (
-                  <label
-                    className={`inline-flex items-center gap-1.5 text-xs font-medium ${isDeployed ? 'text-fg' : 'text-fg-3'}`}
+                  <Checkbox
+                    checked={isDeployed}
+                    disabled={!isDeployed && full}
+                    onChange={() => toggleDeployed(identity.id, max)}
+                    ariaLabel={`${pick(sinner.name, lang)} ${t('deckDeployed', lang)}`}
                     title={!isDeployed && full ? t('deckDeployedFull', lang, { max }) : undefined}
+                    className={`gap-1.5 text-caption-strong ${isDeployed ? 'text-fg' : 'text-fg-subtle'}`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={isDeployed}
-                      disabled={!isDeployed && full}
-                      onChange={() => toggleDeployed(identity.id, max)}
-                      aria-label={`${pick(sinner.name, lang)} ${t('deckDeployed', lang)}`}
-                      className="h-4 w-4 accent-[var(--color-ink)]"
-                    />
                     {isDeployed ? t('deckDeployed', lang) : t('deckReserve', lang)}
-                  </label>
+                  </Checkbox>
                 ) : (
-                  <span className="text-xs text-fg-3">{t('deckReserve', lang)}</span>
+                  <span className="text-caption text-fg-subtle">{t('deckReserve', lang)}</span>
                 )}
               </div>
               <button
@@ -323,10 +332,8 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                 {identity ? (
                   <>
                     <span className="flex min-w-0 max-w-full items-baseline gap-1.5">
-                      <span className="truncate text-sm font-medium text-fg">
-                        {pick(identity.title, lang)}
-                      </span>
-                      <span className="flex-none text-xs text-fg-3">
+                      <span className="truncate text-label text-fg">{pick(identity.title, lang)}</span>
+                      <span className="flex-none text-caption text-fg-subtle">
                         {t('deckRank', lang, { n: identity.rank })}
                       </span>
                     </span>
@@ -335,7 +342,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                     </span>
                   </>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-sm text-fg-3">
+                  <span className="flex items-center gap-1.5 text-body text-fg-subtle">
                     <Plus size={13} aria-hidden />
                     {t('deckEmptySlot', lang)}
                   </span>
@@ -364,8 +371,8 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
         <div className="flex flex-wrap items-center gap-1.5">
           {chips.map((chip) => (
             <Chip key={chip.label} title={t('deckChipBasis', lang, { n: chip.count, total: chip.formation })}>
-              {chip.label} <b className="font-semibold text-fg">{chip.count}</b>
-              <span className="text-fg-3">/{chip.formation}</span>
+              {chip.label} <b className="text-fg">{chip.count}</b>
+              <span className="text-fg-subtle">/{chip.formation}</span>
             </Chip>
           ))}
         </div>
@@ -437,30 +444,30 @@ function SinnerPicker({
   return (
     <div
       ref={ref}
-      className="mt-1 flex flex-col overflow-hidden rounded-md border border-line-strong bg-surface shadow-pop @sm:absolute @sm:left-0 @sm:top-full @sm:z-20 @sm:mt-0 @sm:w-[min(340px,calc(100cqw-1.5rem))]"
+      className="mt-1 flex flex-col overflow-hidden rounded-md border border-border-strong bg-surface shadow-md @sm:absolute @sm:left-0 @sm:top-full @sm:z-20 @sm:mt-0 @sm:w-[min(340px,calc(100cqw-1.5rem))]"
       style={shift ? { left: shift } : undefined}
       data-testid="sinner-picker"
     >
-      <div className="flex items-center gap-2 border-b border-line px-2.5 py-2">
-        <input
-          ref={inputRef}
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <TextField
+          inputRef={inputRef}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={onKey}
-          role="combobox"
-          aria-expanded="true"
-          aria-controls={`sinner-listbox-${sinner}`}
-          aria-autocomplete="list"
-          aria-activedescendant={
-            identities[activeIndex] ? `sinner-option-${identities[activeIndex].id}` : undefined
-          }
+          onChange={setQuery}
+          label={t('deckSinnerSearch', lang, { sinner: sinnerName })}
           placeholder={t('deckSinnerSearch', lang, { sinner: sinnerName })}
-          aria-label={t('deckSinnerSearch', lang, { sinner: sinnerName })}
-          className="h-8 min-w-0 flex-1 rounded-sm border border-line-strong bg-surface px-2 text-xs outline-none"
+          className="flex-1"
+          inputProps={{
+            onKeyDown: onKey,
+            role: 'combobox',
+            'aria-expanded': true,
+            'aria-controls': `sinner-listbox-${sinner}`,
+            'aria-autocomplete': 'list',
+            'aria-activedescendant': identities[activeIndex]
+              ? `sinner-option-${identities[activeIndex].id}`
+              : undefined,
+          }}
         />
-        <button type="button" onClick={onClose} aria-label={t('deckClose', lang)} className="text-fg-3">
-          <X size={14} />
-        </button>
+        <CloseButton label={t('deckClose', lang)} onClick={onClose} />
       </div>
       <ul className="max-h-64 overflow-y-auto" role="listbox" id={`sinner-listbox-${sinner}`}>
         {selected !== null ? (
@@ -468,7 +475,7 @@ function SinnerPicker({
             <button
               type="button"
               onClick={() => onPick(null)}
-              className="flex h-9 w-full items-center px-3 text-left text-xs text-fg-2 hover:bg-surface-2"
+              className="flex h-9 w-full items-center px-3 text-left text-caption text-fg-muted hover:bg-surface-muted touch:min-h-11"
             >
               {t('deckClearSlot', lang)}
             </button>
@@ -486,18 +493,18 @@ function SinnerPicker({
               onClick={() => onPick(identity.id)}
               onPointerMove={() => setActiveIndex(i)}
               aria-pressed={identity.id === selected}
-              className={`flex min-h-11 w-full flex-wrap items-center gap-1.5 px-3 py-1.5 text-left text-sm hover:bg-surface-2 ${
-                identity.id === selected || i === activeIndex ? 'bg-surface-2' : ''
+              className={`flex min-h-11 w-full flex-wrap items-center gap-1.5 px-3 py-1.5 text-left text-body hover:bg-surface-muted ${
+                identity.id === selected || i === activeIndex ? 'bg-surface-muted' : ''
               }`}
             >
-              <span className="font-medium text-fg">{pick(identity.title, lang)}</span>
-              <span className="text-xs text-fg-3">{t('deckRank', lang, { n: identity.rank })}</span>
+              <strong className="text-fg">{pick(identity.title, lang)}</strong>
+              <span className="text-caption text-fg-subtle">{t('deckRank', lang, { n: identity.rank })}</span>
               <KeywordChips identity={identity} data={data} lang={lang} />
             </button>
           </li>
         ))}
       </ul>
-      <div className="border-t border-line px-3 py-1.5 text-xs text-fg-3">
+      <div className="border-t border-border px-3 py-1.5 text-caption text-fg-subtle">
         {t('deckShowing', lang, { total: all.length, n: identities.length })}
       </div>
     </div>

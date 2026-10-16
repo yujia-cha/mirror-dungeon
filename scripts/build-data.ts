@@ -105,6 +105,7 @@ import {
   type Meta,
   metaSchema,
   rulesSchema,
+  captureLayoutSchema,
   curatedSeasonSchema,
   type CuratedSeason,
   type Rules,
@@ -1010,6 +1011,7 @@ interface Lock {
   >;
 }
 const lock = readJson<Lock>(repoPath('data/sources.lock.json'));
+const CAPTURE_LAYOUT_CURATED = repoPath('data/curated/capture-layout.json');
 
 /**
  * A content hash of every input, so `dataVersion` changes exactly when the data does.
@@ -1022,7 +1024,9 @@ function inputsFingerprint(): string {
     for (const entry of readdirSync(dir).sort()) {
       const full = join(dir, entry);
       if (statSync(full).isDirectory()) walk(full);
-      else if (entry.endsWith('.json')) {
+      // The capture layout describes the game's screen, not its data: moving a region must not
+      // announce a new data version.
+      else if (entry.endsWith('.json') && full !== CAPTURE_LAYOUT_CURATED) {
         hash.update(entry);
         hash.update(readJsonStableBytes(full));
       }
@@ -1155,7 +1159,24 @@ writeJsonStable(join(SEASON_OUT, 'packs.json'), packs);
 // identities instead of going stale with the build that made it.
 writeJsonStable(join(OUT, 'enums.json'), enums);
 writeJsonStable(join(OUT, 'identities.json'), identities);
+// The screen tracker's layout (M103) is the game client's, not the dungeon's, so it is shared too.
+writeJsonStable(
+  join(OUT, 'capture-layout.json'),
+  captureLayoutSchema.parse(withoutNotes(readJson(CAPTURE_LAYOUT_CURATED))),
+);
 writeSeasonIndex();
+
+/** A curated file without its `_source` / `_note` keys, at every depth. */
+function withoutNotes(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutNotes);
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => !key.startsWith('_'))
+        .map(([key, inner]) => [key, withoutNotes(inner)]),
+    );
+  return value;
+}
 
 /**
  * Rebuild `index.json` from the season directories on disk — the one just written and the frozen

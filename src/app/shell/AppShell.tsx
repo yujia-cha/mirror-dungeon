@@ -21,7 +21,7 @@ import {
 import type { GameData, SeasonEntry } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
-import { useApp, type LeftTab, type RightTab } from '../store.ts';
+import { GIFT_ICON_SCALES, useApp, type LeftTab, type RightTab } from '../store.ts';
 import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
@@ -80,7 +80,7 @@ function PanelToggle({
       aria-controls={controls}
       data-testid={`toggle-${controls}`}
       data-open={open || undefined}
-      className={`inline-flex h-9 items-center gap-2 rounded-sm px-2 text-sm font-semibold text-fg hover:bg-surface-2 ${open ? 'bg-surface-2' : ''}`}
+      className={`inline-flex h-9 items-center gap-2 rounded-sm px-2 text-subheading text-fg hover:bg-surface-muted ${open ? 'bg-surface-muted' : ''}`}
     >
       <Mark size={17} aria-hidden />
       {label}
@@ -193,12 +193,14 @@ export function AppShell({
           */}
           <a
             href="#stage"
-            className="sr-only rounded-sm bg-ink px-3 py-2 text-sm font-medium text-ink-fg focus-visible:not-sr-only focus-visible:absolute focus-visible:left-3 focus-visible:top-3 focus-visible:z-40"
+            className="sr-only rounded-sm bg-primary px-3 py-2 text-label text-primary-fg focus-visible:not-sr-only focus-visible:absolute focus-visible:left-3 focus-visible:top-3 focus-visible:z-40"
             data-testid="skip-link"
           >
             {t('skipToStage', lang)}
           </a>
-          <header className="sticky top-0 z-30 flex h-[52px] flex-none items-center justify-between border-b border-line bg-surface px-4 lg:h-14 lg:px-6">
+          <header className="sticky top-0 z-30 flex h-[52px] flex-none items-center justify-between border-b border-border bg-surface px-4 lg:h-14 lg:px-6">
+            {/* The page's one h1: the header shows doors, not a title, so it is for assistive tech. */}
+            <h1 className="sr-only">{t('appTitle', lang)}</h1>
             {/*
             Two doors and a drawer of odds and ends. The panel buttons carry their own name, so the
             header needs no title to say where you are, and the four one-off actions sit behind 「⋯」
@@ -257,7 +259,7 @@ export function AppShell({
                             setMenu(false);
                             item.run();
                           }}
-                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-2"
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-body text-fg hover:bg-surface-muted active:bg-surface-sunken touch:min-h-11"
                         >
                           {item.icon}
                           {t(item.key, lang)}
@@ -265,6 +267,33 @@ export function AppShell({
                       </li>
                     ))}
                   </ul>
+                  {/*
+                    Not a menu action: picking a step keeps the menu open, so the tiles behind it
+                    can be seen changing before the next pick.
+                  */}
+                  <div
+                    role="group"
+                    aria-labelledby="gift-icon-size-label"
+                    className="mt-1 border-t border-border px-2 pb-1 pt-2"
+                    data-testid="gift-icon-size"
+                  >
+                    <div id="gift-icon-size-label" className="mb-1 text-caption text-fg-muted">
+                      {t('giftIconSize', lang)}
+                    </div>
+                    <div className="flex gap-1">
+                      {GIFT_ICON_SCALES.map((scale) => (
+                        <button
+                          key={scale}
+                          type="button"
+                          aria-pressed={ui.giftIconScale === scale}
+                          onClick={() => setUi({ giftIconScale: scale })}
+                          className="min-h-8 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-caption text-fg hover:bg-surface-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg"
+                        >
+                          {t(`giftIconSize_${scale}`, lang)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </DetailSurface>
               ) : null}
               <PanelToggle
@@ -295,7 +324,7 @@ export function AppShell({
                 <DeckStep data={data} indexes={indexes} stats={stats} lang={lang} />
               ) : null}
               {ui.leftTab === 'gifts' ? (
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-3">
                   <GiftsStep
                     data={data}
                     indexes={indexes}
@@ -340,7 +369,7 @@ export function AppShell({
                 data-testid="stage-body"
               >
                 <RunStage onOpenGifts={openGifts} />
-                <footer className="mt-auto border-t border-line pt-3 text-xs text-fg-3">
+                <footer className="mt-auto border-t border-border pt-3 text-caption text-fg-subtle">
                   <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                     <span>
                       {t('dataVersion', lang)} {data.meta.dataVersion}
@@ -353,7 +382,7 @@ export function AppShell({
                 */}
                     {seasons.length > 1 ? (
                       <select
-                        className="rounded border border-line bg-surface px-1.5 py-0.5 text-xs text-fg-2"
+                        className="rounded-sm border border-border-control bg-surface px-1.5 py-0.5 text-fg-muted"
                         aria-label={t('season', lang)}
                         data-testid="season-select"
                         value={data.meta.dungeon.id}
@@ -369,13 +398,13 @@ export function AppShell({
                       <span>{pick(data.meta.dungeon.name, lang)}</span>
                     )}
                     {data.meta.provisional ? (
-                      <span
-                        className="font-semibold text-fg-2"
+                      <strong
+                        className="text-fg-muted"
                         title={t('seasonProvisionalHint', lang)}
                         data-testid="season-provisional"
                       >
                         {t('seasonProvisional', lang)}
-                      </span>
+                      </strong>
                     ) : null}
                   </p>
                   <p className="mt-1">
@@ -383,7 +412,7 @@ export function AppShell({
                     {/* The credits and the takedown path are too long for a footer, so the notice
                     links to the file that holds them rather than growing a third line. */}
                     <a
-                      className="underline hover:text-fg-2"
+                      className="underline hover:text-fg-muted"
                       href={NOTICE_URL}
                       target="_blank"
                       rel="noreferrer noopener"

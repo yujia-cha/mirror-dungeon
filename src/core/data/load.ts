@@ -4,6 +4,8 @@ import {
   giftIconManifestSchema,
   giftsFileSchema,
   identitiesFileSchema,
+  keywordIconManifestSchema,
+  packImageManifestSchema,
   metaSchema,
   packsFileSchema,
   rulesSchema,
@@ -11,6 +13,8 @@ import {
   type ArtManifest,
   type GameData,
   type GiftIconManifest,
+  type KeywordIconManifest,
+  type PackImageManifest,
   type SeasonIndex,
 } from '../schema.ts';
 
@@ -22,6 +26,10 @@ const SHARED_FILES = ['enums', 'identities'] as const;
 const ART_MANIFEST_PATH = 'art/manifest.json';
 /** Written by `npm run data:icons`; the game gift icons the site ships (M92). */
 const GIFT_ICON_MANIFEST_PATH = 'icons/gifts/manifest.json';
+/** Written by `npm run data:icons`; the game keyword icons the gift badge draws (M99). */
+const KEYWORD_ICON_MANIFEST_PATH = 'icons/keywords/manifest.json';
+/** Written by `npm run data:icons`; the game theme pack art the pack cards draw (M100). */
+const PACK_IMAGE_MANIFEST_PATH = 'icons/packs/manifest.json';
 
 function normaliseBase(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
@@ -111,6 +119,32 @@ export async function loadGiftIconManifest(baseUrl = '/'): Promise<GiftIconManif
     });
     if (!response.ok) return null;
     return giftIconManifestSchema.parse(await response.json());
+  } catch {
+    return null;
+  }
+}
+
+/** Which game keyword icons ship (M99), or `null` — the badge then draws its coloured dot. Never throws. */
+export async function loadKeywordIconManifest(baseUrl = '/'): Promise<KeywordIconManifest | null> {
+  try {
+    const response = await fetch(`${normaliseBase(baseUrl)}${KEYWORD_ICON_MANIFEST_PATH}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    return keywordIconManifestSchema.parse(await response.json());
+  } catch {
+    return null;
+  }
+}
+
+/** Which game pack images ship (M100), or `null` — the cards then stay empty boxes. Never throws. */
+export async function loadPackImageManifest(baseUrl = '/'): Promise<PackImageManifest | null> {
+  try {
+    const response = await fetch(`${normaliseBase(baseUrl)}${PACK_IMAGE_MANIFEST_PATH}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    return packImageManifestSchema.parse(await response.json());
   } catch {
     return null;
   }

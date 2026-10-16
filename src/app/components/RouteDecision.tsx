@@ -18,12 +18,14 @@
  * name the contested floors (`conflictGroups`, core) — information only; the app makes no
  * pack-level choice.
  */
+import { useState } from 'react';
 import { Route, TriangleAlert } from 'lucide-react';
 import type { ConflictGroup } from '../../core/conflicts.ts';
 import type { DropAnalysis } from '../../core/index.ts';
 import type { RoutePlan } from '../../core/types.ts';
 import { t } from '../i18n.ts';
 import type { DropSelection } from '../shell/plan-context.ts';
+import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import type { PackContext } from './PackSheet.tsx';
 import { Button, Card, Chip, Skeleton } from './ui.tsx';
@@ -53,6 +55,7 @@ export function RouteDecision({
   onPreview,
 }: RouteDecisionProps) {
   const { lang, giftName, indexes } = ctx;
+  const [confirmDrop, setConfirmDrop] = useState(false);
   const conflicting = [
     ...new Set(plan.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId)),
   ];
@@ -81,10 +84,10 @@ export function RouteDecision({
 
   return (
     <Card variant="strong" className="overflow-visible" testId="route-decision">
-      <div className="flex flex-col gap-1.5 border-b border-line px-3 py-2">
+      <div className="flex flex-col gap-1.5 border-b border-border px-3 py-2">
         <div className="flex items-start gap-1.5">
           <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden />
-          <h2 className="text-sm font-semibold">
+          <h2 className="text-subheading ">
             {need !== null && need > 1
               ? t('routeDecisionTitleMany', lang, { names, n: need })
               : t('routeDecisionTitle', lang, { names })}
@@ -108,7 +111,7 @@ export function RouteDecision({
       </div>
 
       <div className="flex flex-col gap-1 px-3 py-2">
-        <div className="text-xs text-fg-3">{t('routeDecisionEffects', lang)}</div>
+        <div className="text-caption text-fg-subtle">{t('routeDecisionEffects', lang)}</div>
         <ul className="flex flex-col gap-0.5" data-testid="drop-effects">
           {effects.map((effect) => {
             const gift = indexes.giftById.get(effect.giftId);
@@ -118,7 +121,7 @@ export function RouteDecision({
             return (
               <li key={effect.giftId}>
                 <label
-                  className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_minmax(2.5rem,28%)_2rem] items-center gap-2 rounded-sm px-1 py-0.5 hover:bg-surface-2"
+                  className="grid grid-cols-[auto_auto_minmax(0,1fr)_minmax(2.5rem,28%)_2rem] items-center gap-2 rounded-sm px-1 py-0.5 hover:bg-surface-muted touch:min-h-11"
                   data-testid="drop-effect"
                   data-gift={effect.giftId}
                   data-reduces={effect.reduces}
@@ -128,7 +131,7 @@ export function RouteDecision({
                     checked={checked}
                     onChange={() => drops.toggle(effect.giftId)}
                     aria-label={`${name} ${t('routeDecisionCheck', lang)}`}
-                    className="accent-ink"
+                    className="size-4 accent-primary"
                   />
                   <span className="inline-flex flex-none">
                     {gift ? (
@@ -140,14 +143,14 @@ export function RouteDecision({
                       />
                     ) : null}
                   </span>
-                  <span className="min-w-0 truncate text-sm" title={name}>
+                  <span className="min-w-0 truncate text-body" title={name}>
                     {name}
                   </span>
-                  <span className="h-2.5 overflow-hidden rounded-sm bg-surface-2" aria-hidden>
-                    <span className="block h-full bg-ink" style={{ width: `${width}%` }} />
+                  <span className="h-2.5 overflow-hidden rounded-sm bg-surface-muted" aria-hidden>
+                    <span className="block h-full bg-primary" style={{ width: `${width}%` }} />
                   </span>
                   <span
-                    className="text-right font-num text-xs text-fg-2"
+                    className="text-right font-num text-caption text-fg-muted"
                     aria-label={t('routeDecisionReducesLabel', lang, { n: effect.reduces })}
                   >
                     −{effect.reduces}
@@ -158,7 +161,7 @@ export function RouteDecision({
           })}
           {analysisPending ? (
             <li
-              className="flex items-center gap-2 px-1 py-1 text-xs text-fg-3"
+              className="flex items-center gap-2 px-1 py-1 text-caption text-fg-subtle"
               data-testid="route-decision-pending"
               role="status"
             >
@@ -170,7 +173,7 @@ export function RouteDecision({
         </ul>
         {selection.length > 0 ? (
           <div
-            className="mt-1 rounded-sm bg-surface-2 px-2 py-1 text-xs text-fg-2"
+            className="mt-1 rounded-sm bg-surface-muted px-2 py-1 text-caption text-fg-muted"
             data-testid="drop-sum"
             aria-live="polite"
           >
@@ -180,14 +183,14 @@ export function RouteDecision({
             {real !== null && real !== barSum ? (
               <>
                 {' '}
-                <span className="font-semibold text-fg">{t('routeDecisionNotAdditive', lang)}</span>
+                <strong className="text-fg">{t('routeDecisionNotAdditive', lang)}</strong>
               </>
             ) : null}
           </div>
         ) : null}
         {analysis?.resolving ? (
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs" data-testid="drop-resolving">
-            <span className="min-w-0 text-fg-2">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-caption" data-testid="drop-resolving">
+            <span className="min-w-0 text-fg-muted">
               {t('routeDecisionResolves', lang, {
                 names: analysis.resolving.dropped.map(giftName).join(' + '),
               })}
@@ -199,10 +202,13 @@ export function RouteDecision({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 border-t border-line px-3 py-2">
+      <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-3 py-2">
         <span
-          className={`min-w-0 flex-[1_1_10rem] text-xs ${status.tone === 'ok' ? 'font-semibold text-ok' : status.tone === 'left' ? 'font-semibold text-fg' : 'text-fg-2'}`}
+          // Success is said by the ✓ in the words, in ink: green text was 3.5–4.0:1 and put hue
+          // where the system allows only the judgement ring.
+          className={`min-w-0 flex-[1_1_10rem] ${status.tone === 'plain' ? 'text-caption text-fg-muted' : 'text-caption-strong text-fg'}`}
           data-testid="drop-status"
+          data-tone={status.tone}
           aria-live="polite"
         >
           {selection.length > 0
@@ -212,10 +218,11 @@ export function RouteDecision({
         <Button size="sm" variant="ghost" disabled={selection.length === 0} onClick={drops.clear}>
           {t('routeDecisionClear', lang)}
         </Button>
-        <button
-          type="button"
+        <Button
+          size="sm"
+          variant={drops.previewing ? 'primary' : 'secondary'}
           disabled={selection.length === 0}
-          aria-pressed={drops.previewing}
+          pressed={drops.previewing}
           title={t('routeDecisionPreview', lang)}
           onClick={() => {
             if (drops.previewing) {
@@ -225,27 +232,33 @@ export function RouteDecision({
             drops.setPreviewing(true);
             onPreview?.();
           }}
-          className={`inline-flex h-7 flex-none items-center gap-1.5 whitespace-nowrap rounded-sm border px-2.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-fg-3 ${
-            drops.previewing
-              ? 'border-ink bg-ink text-ink-fg'
-              : 'border-line-strong bg-surface text-fg hover:bg-surface-2'
-          }`}
         >
           <Route size={14} aria-hidden />
           {t('routeDecisionPreview', lang)}
-        </button>
+        </Button>
         <Button
           size="sm"
           variant="primary"
           disabled={selection.length === 0}
-          onClick={() => {
-            const ids = [...selection];
-            drops.clear();
-            for (const id of ids) removeWanted(id);
-          }}
+          onClick={() => setConfirmDrop(true)}
         >
           {t('routeDecisionDropSelected', lang, { n: selection.length })}
         </Button>
+        {confirmDrop ? (
+          <ConfirmDialog
+            title={t('routeDecisionDropConfirm', lang, { n: selection.length })}
+            message={selection.map(giftName).join(' · ')}
+            confirmLabel={t('routeDecisionDropSelected', lang, { n: selection.length })}
+            onConfirm={() => {
+              const ids = [...selection];
+              setConfirmDrop(false);
+              drops.clear();
+              for (const id of ids) removeWanted(id);
+            }}
+            onCancel={() => setConfirmDrop(false)}
+            lang={lang}
+          />
+        ) : null}
       </div>
     </Card>
   );

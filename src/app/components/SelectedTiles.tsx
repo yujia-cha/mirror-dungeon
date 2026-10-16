@@ -6,10 +6,12 @@
  * observation pin darkens the border, and a fusion goal that shares an ingredient with another
  * wears the link mark in its top-left corner, as the grid tile does.
  */
-import { Link2, X } from 'lucide-react';
+import { Link2 } from 'lucide-react';
+import { CloseButton, LinkButton } from './ui.tsx';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { GameIndexes } from '../../core/types.ts';
 import { t, type Lang } from '../i18n.ts';
+import { tileColumns, useTileIconSize } from '../lib/icon-size.ts';
 import type { Judgement } from '../lib/judgement.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 
@@ -43,11 +45,9 @@ export function SelectedTiles({
   onOpen: (giftId: number) => void;
   onRemove: (giftId: number) => void;
 }) {
+  const size = useTileIconSize(32);
   return (
-    <div
-      className="grid gap-1.5 [grid-template-columns:repeat(auto-fill,minmax(64px,1fr))]"
-      data-testid="gift-chips"
-    >
+    <div className="grid gap-1.5" style={{ gridTemplateColumns: tileColumns(size) }} data-testid="gift-chips">
       {ids.map((id) => {
         const gift = indexes.giftById.get(id);
         const name = giftName(id);
@@ -66,40 +66,34 @@ export function SelectedTiles({
             // on iOS is turned off here.
             style={{ touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
             onContextMenu={(event) => event.preventDefault()}
-            className={`relative flex select-none flex-col items-center gap-[3px] rounded-md border bg-surface px-1 pb-1.5 pt-2 ${
-              isPinned ? 'border-ink' : 'border-line'
+            className={`relative flex select-none flex-col items-center gap-1 rounded-md border bg-surface px-1 pb-1.5 pt-2 ${
+              isPinned ? 'border-primary' : 'border-border'
             } ${dragging === id ? 'opacity-40' : ''}`}
           >
             {entangled.has(id) ? (
               <span
-                className="absolute left-0.5 top-0.5 z-10 text-fg-2"
+                className="absolute left-0.5 top-0.5 z-10 text-fg-muted"
                 aria-hidden
                 title={t('giftEntangled', lang)}
               >
                 <Link2 size={11} />
               </span>
             ) : null}
-            <button
-              type="button"
+            {/* 16px to see, so it does not cover the icon; 24px to press (44px on touch). */}
+            <CloseButton
+              variant="badge"
+              label={t('removeFromSelection', lang, { name })}
               onClick={() => onRemove(id)}
-              aria-label={t('removeFromSelection', lang, { name })}
-              title={t('removeFromSelection', lang, { name })}
-              // The circle stays 16px so it does not cover the icon; the pseudo-element around it
-              // makes the press area 24px (WCAG 2.5.8) — it was the 16px circle alone.
-              className="absolute -right-1 -top-1 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full border border-line bg-surface text-fg-3 after:absolute after:-inset-[5px] after:content-[''] hover:bg-surface-2 hover:text-fg"
-            >
-              <X size={11} aria-hidden />
-            </button>
-            {gift ? <GiftIcon gift={gift} size={32} judgement={judgementOf(id)} lang={lang} /> : null}
-            <button
-              type="button"
+              className="absolute -right-1 -top-1 z-10"
+            />
+            {gift ? <GiftIcon gift={gift} size={size} judgement={judgementOf(id)} lang={lang} /> : null}
+            <LinkButton
               onClick={() => onOpen(id)}
-              aria-haspopup="dialog"
-              aria-label={t('giftDetail', lang, { name })}
-              className="line-clamp-2 h-[28px] w-full break-keep text-center text-xs font-medium leading-tight text-fg underline-offset-2 hover:underline"
+              ariaLabel={t('giftDetail', lang, { name })}
+              className="line-clamp-2 h-[29px] w-full break-keep text-center text-caption-strong"
             >
               {name}
-            </button>
+            </LinkButton>
           </div>
         );
       })}

@@ -10,55 +10,58 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Grey palette (docs/design/ui-redesign.md). Acquisition certainty and past state are told apart
- * by fill, dash and weight — never by hue. Hue appears in exactly two places: the gift icon's
- * keyword badge and the judgement ring.
+ * The design system (M104, docs/design/system.md). Every value the UI uses has a ROLE, and the UI
+ * names the role, never the value: colours below, type roles as `text-*` utilities further down,
+ * a fixed spacing step list, three radii, three shadows. `src/app/__tests__/design-system.test.ts`
+ * fails on a class outside the system.
  *
- * `accent` says 「지금 할 일」 — today only the floor the stage stands on. It carries no hue of its
- * own: black on the light ground, white on the dark one, the strongest mark the palette has.
- * It never colours what already happened (an entered floor stays ink, a skipped one stays grey).
+ * Colour stays grey (direction A, the owner's choice): certainty and past state are told by fill,
+ * dash and weight. Hue appears only in the data colours (`kw-*`), the judgement ring
+ * (`success` / `danger`) and an error state (`danger`, always with an icon and words).
  */
 @theme {
   --color-*: initial;
+  /* Background — the page behind everything. */
   --color-bg: #f7f6f4;
+  /* Surface — panels, cards, sheets, tiles. */
   --color-surface: #ffffff;
-  --color-surface-2: #f0eeeb;
-  --color-surface-3: #e8e5e1;
-  --color-line: #e3e0dc;
-  --color-line-strong: #c4beb7;
+  /* Surface / muted — hover, pressed, selected rows, filled fields, tray headers. */
+  --color-surface-muted: #f0eeeb;
+  /* Surface / sunken — wells: the icon tile, an empty slot, a skipped floor. */
+  --color-surface-sunken: #e8e5e1;
+  /* Border — dividers and card edges (decorative). */
+  --color-border: #e3e0dc;
+  /* Border / strong — a rule that must be seen: section edges, dashed placeholders. */
+  --color-border-strong: #c4beb7;
   /*
-   * The edge of a control whose edge is how you find it — a text field, a select, an empty
-   * observation cell. WCAG 1.4.11 wants 3:1 there, and `line-strong` is 1.84:1 on `surface`.
-   * 3.74 on surface, 3.46 on bg, 3.23 on surface-2. Decorative rules keep `line`.
+   * Border / control — the edge of something you find by its edge: a field, a select, a chip, an
+   * empty observation cell. WCAG 1.4.11 wants 3:1 — 3.74 on surface, 3.46 on bg, 3.23 on muted.
    */
-  --color-line-control: #8a837c;
+  --color-border-control: #8a837c;
+  /* Text — body and names (17.6:1 on surface). */
   --color-fg: #1c1917;
-  --color-fg-2: #57534e;
-  --color-fg-3: #6f6963;
-  /* 확정 badge · primary button · fixed timetable block */
-  --color-ink: #292524;
-  --color-ink-fg: #ffffff;
-  /* Condition judgement, drawn as a ring around a gift icon (met / not met). */
-  --color-ok: #2f8f5b;
-  --color-bad: #c9403a;
-  /* 「지금 할 일」: pure black on the light ground — 19.44:1 on `bg`, and white on it is 21:1. */
+  /* Text / muted — secondary lines (7.06:1). */
+  --color-fg-muted: #57534e;
+  /* Text / subtle — hints, inactive cells (5.02:1 on bg; never on surface-sunken). */
+  --color-fg-subtle: #6f6963;
+  /* Primary — the main action, a selected chip, a collected tile's frame. */
+  --color-primary: #292524;
+  --color-primary-fg: #ffffff;
+  /* Accent — 「지금 할 일」: only the floor the stage stands on. No hue: black here, white in dark. */
   --color-accent: #000000;
   --color-accent-fg: #ffffff;
+  /* Success / Danger — the judgement ring; danger also marks an error state (with icon + words). */
+  --color-success: #2f8f5b;
+  --color-danger: #c9403a;
+  /* Focus — the keyboard focus outline on every control (7.06:1). */
+  --color-focus: #57534e;
+  /* Overlay — what a sheet lays over the page. */
+  --color-scrim: rgb(0 0 0 / 0.4);
   /*
-   * Gift keyword, drawn as the badge in the icon's bottom-right corner. The three attack types
-   * share `kw-attack` and are told apart by the badge's shape. `kw-outline` is the hairline that
-   * keeps a badge readable over artwork — 호흡 is white, so it needs one.
-   */
-  /*
-   * These are measured against `surface-3`, the icon tile the badge actually sits on — not
-   * against `surface`. With no artwork configured every tile is that grey, so the tile is the
-   * real ground. WCAG 1.4.11 wants 3:1 for a graphic that carries meaning, and this badge is the
-   * only thing that carries a gift's keyword. The hue and saturation of each are the ones the
-   * palette had; only the lightness came down until each cleared the bar.
-   *
-   * 호흡 is the exception: it was pure white, which is 1.00:1 on anything pale, so the light
-   * theme gives it a cool grey instead. It keeps its white in the dark theme below, where white
-   * is what reads.
+   * Data — a gift's keyword, as the tile's wash and the fallback badge mark. Measured against the
+   * sunken icon tile (3:1, WCAG 1.4.11): only the lightness came down from the game's hues. 호흡 is
+   * a cool grey here (white is 1:1 on anything pale) and white in the dark theme. The three attack
+   * types share one ink and are told apart by the mark's shape.
    */
   --color-kw-combustion: #ce5d10; /* 3.22 on the tile */
   --color-kw-laceration: #e0335f; /* 3.48 */
@@ -68,14 +71,7 @@
   --color-kw-breath: #6f747a; /* 3.75 */
   --color-kw-charge: #0d807e; /* 3.80 — 게임의 충전 시안, 3:1을 넘도록 명도만 내렸다 */
   --color-kw-attack: #1c1917; /* 13.93 */
-  /* The hairline that keeps a badge's edge crisp over artwork. Solid, not 35% — a translucent
-     one disappeared over a light sprite and did nothing for the fills it was meant to rescue. */
   --color-kw-outline: rgb(28 25 23 / 0.7);
-  /*
-   * What a sheet lays over the page. `bg-black/40` drew nothing: `--color-*: initial` above removes
-   * Tailwind's `black`, so the class generated no rule and every sheet opened on an undimmed page.
-   */
-  --color-scrim: rgb(0 0 0 / 0.4);
   --color-transparent: transparent;
   --color-current: currentColor;
 
@@ -89,62 +85,54 @@
   /* Only Tailwind's preflight reaches for this now (code · pre · kbd · samp); `src/` never does. */
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   /*
-   * Every number in the app, and now the same face as the body. The token stays rather than the
-   * class being removed at ~24 call sites: Tailwind generates `.font-num` *from this token*, and
-   * the route map's SVG reads it by name (`fontFamily="var(--font-num)"`). Swap this one line to
-   * try another face.
-   *
-   * `tnum` is not decoration. Nunito's figures were tabular by default (every advance 600/1000);
-   * Pretendard's are proportional (898–1278 at upem 2048, read from `hmtx`), so without this the
-   * floor strip and the counters would shift sideways as 9 ticks over to 10. Tailwind turns this
-   * companion key into a `font-feature-settings` declaration on `.font-num` itself.
+   * Every number in the app, the same face as the body. The token stays rather than the class
+   * being removed: Tailwind generates `.font-num` from it, and the route map's SVG reads it by
+   * name (`fontFamily="var(--font-num)"`). `tnum` is not decoration: Pretendard's figures are
+   * proportional, so without it the floor strip would shift sideways as 9 ticks over to 10.
    */
   --font-num: var(--font-sans);
   --font-num--font-feature-settings: 'tnum' 1;
-  /*
-   * The floor of the scale: tier chips, a tile's condition line, small counts. Never a gift's
-   * name — that is the thing the page is about and reads at `xs`. Before this token the same size
-   * was written as `text-[10px]` in a dozen places and `text-[9px]` in one.
-   */
-  --text-2xs: 10px;
-  --text-2xs--line-height: 1.3;
-  --text-xs: 11px;
-  --text-xs--line-height: 1.4;
-  --text-sm: 13px;
-  --text-sm--line-height: 1.45;
-  --text-base: 15px;
-  --text-base--line-height: 1.4;
-  --text-lg: 18px;
-  --text-lg--line-height: 1.3;
-  --text-xl: 22px;
-  --text-xl--line-height: 1.2;
 
+  /* No raw type sizes: text is set by role (the `text-*` utilities below). */
+  --text-*: initial;
+  --font-weight-*: initial;
+  --leading-*: initial;
+
+  /* Radius by component: xs badges inside a tile · sm controls and tiles · md cards and popovers · lg sheets. */
+  --radius-*: initial;
+  --radius-xs: 2px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --shadow-card: 0 1px 2px rgb(28 25 23 / 0.06), 0 1px 1px rgb(28 25 23 / 0.04);
-  --shadow-pop: 0 8px 24px rgb(28 25 23 / 0.14), 0 1px 2px rgb(28 25 23 / 0.08);
+
+  /* Shadow by elevation: sm a card on the page · md a popover or menu · lg a sheet, dialog or drag ghost. */
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px rgb(28 25 23 / 0.06), 0 1px 1px rgb(28 25 23 / 0.04);
+  --shadow-md: 0 8px 24px rgb(28 25 23 / 0.14), 0 1px 2px rgb(28 25 23 / 0.08);
+  --shadow-lg: 0 16px 48px rgb(28 25 23 / 0.22), 0 2px 6px rgb(28 25 23 / 0.1);
 }
 
 .dark {
   --color-bg: #131211;
   --color-surface: #1c1a18;
-  --color-surface-2: #252220;
-  --color-surface-3: #2e2a27;
-  --color-line: #332f2b;
-  --color-line-strong: #544e48;
-  /* 3.45 on surface, 3.72 on bg, 3.15 on surface-2. */
-  --color-line-control: #756e66;
+  --color-surface-muted: #252220;
+  --color-surface-sunken: #2e2a27;
+  --color-border: #332f2b;
+  --color-border-strong: #544e48;
+  /* 3.45 on surface, 3.72 on bg, 3.15 on muted. */
+  --color-border-control: #756e66;
   --color-fg: #ece8e3;
-  --color-fg-2: #b8b1a9;
-  --color-fg-3: #948d85;
-  --color-ink: #e7e2dc;
-  --color-ink-fg: #1c1917;
-  --color-ok: #4cc38a;
-  --color-bad: #f0665e;
-  /* Pure white on the dark ground — 18.71:1 on `bg`, and the near-black on it is 18.71:1. */
+  --color-fg-muted: #b8b1a9;
+  --color-fg-subtle: #948d85;
+  --color-primary: #e7e2dc;
+  --color-primary-fg: #1c1917;
+  /* Pure white on the dark ground — 18.71:1 on `bg`. */
   --color-accent: #ffffff;
   --color-accent-fg: #131211;
+  --color-success: #4cc38a;
+  --color-danger: #f0665e;
+  --color-focus: #b8b1a9;
+  --color-scrim: rgb(0 0 0 / 0.6);
   --color-kw-combustion: #f9913f;
   --color-kw-laceration: #f26a8d;
   --color-kw-vibration: #e8c04a;
@@ -155,14 +143,80 @@
   /* 검정은 어두운 배경에서 사라지므로 중성 회색으로 뒤집는다. 모양이 셋을 가른다. */
   --color-kw-attack: #a8a29e;
   --color-kw-outline: rgb(0 0 0 / 0.5);
-  --color-scrim: rgb(0 0 0 / 0.6);
-  --shadow-card: none;
-  --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.5);
+  /* A card needs no shadow on a dark ground; the floating layers need a deeper one. */
+  --shadow-sm: none;
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 16px 48px rgb(0 0 0 / 0.6);
 }
+
+/*
+ * Type roles. Each fixes size, weight and line height together; the UI never sets them apart.
+ * `font-num` (tabular figures) combines with any role. Sizes: 36 · 18 · 15 · 13 · 11 · 10, plus the
+ * input, which is 16px on a touch screen so iOS does not zoom into it (the owner's call, M104).
+ */
+@utility text-display {
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 700;
+}
+@utility text-title {
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+@utility text-heading {
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+@utility text-subheading {
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+@utility text-body {
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+@utility text-label {
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 500;
+}
+@utility text-caption {
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 400;
+}
+@utility text-caption-strong {
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+@utility text-micro {
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 500;
+}
+@utility text-input {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 400;
+  @media (pointer: coarse) {
+    font-size: 16px;
+  }
+}
+
+/*
+ * A touch screen (any coarse pointer — phones, tablets) gets 44px targets (the owner's call, M104):
+ * `touch:min-h-11`, `touch:size-11`. A mouse keeps the dense 24px minimum (WCAG 2.2).
+ */
+@custom-variant touch (@media (pointer: coarse));
 
 /* EXTREME floors: observation is impossible there, drawn as hatching. */
 @utility bg-hatch {
-  background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--color-line) 6px 7px);
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--color-border) 6px 7px);
 }
 
 html {
@@ -182,11 +236,11 @@ body {
 
 body {
   margin: 0;
-  @apply bg-bg text-fg font-sans text-sm antialiased;
+  @apply bg-bg text-fg font-sans text-body antialiased;
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-fg-2);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -228,6 +282,42 @@ body {
  * `tabular-nums` / `proportional-nums` utilities, which should stay able to win.
  */
 @layer base {
+  /*
+   * Anything that can be pressed shows the pointer (the owner's call, M104); something that cannot
+   * says so. One rule rather than a class on each of ~50 buttons, so a new button cannot forget it.
+   */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='option'],
+  summary,
+  select:not(:disabled),
+  label:has(> input:not(:disabled)) {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  /*
+   * Every field is set in the input role (16px on a touch screen, so iOS does not zoom in). Here
+   * rather than on each element, so no field can be left at another size; a size class on a field
+   * is a system violation the design-system test catches.
+   */
+  input,
+  select,
+  textarea {
+    @apply text-input;
+  }
+
+  /* Inline emphasis inside any role is the element, not a weight class: one weight, 600. */
+  b,
+  strong {
+    font-weight: 600;
+  }
+
   svg text[font-family] {
     font-feature-settings: 'tnum' 1;
   }

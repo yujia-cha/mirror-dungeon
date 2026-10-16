@@ -20,7 +20,7 @@ import { t } from '../i18n.ts';
 import type { LostFusion } from '../lib/fusion-lost.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 import type { PackContext } from './PackSheet.tsx';
-import { Card } from './ui.tsx';
+import { Card, LinkButton } from './ui.tsx';
 
 export function FusionLostNotice({
   lost,
@@ -44,20 +44,16 @@ export function FusionLostNotice({
     const gift = ctx.indexes.giftById.get(id);
     if (!gift) return null;
     const name = ctx.giftName(id);
-    const label = 'w-full break-keep text-center text-xs leading-tight text-fg';
+    const label = 'w-full break-keep text-center text-fg';
     return (
       <span key={id} title={name} className="flex w-14 flex-col items-center gap-0.5" data-gift={id}>
         <GiftIcon gift={gift} size={32} lang={lang} {...props} />
         {open ? (
-          <button
-            type="button"
-            onClick={open}
-            className={`${label} font-medium underline-offset-2 hover:underline`}
-          >
+          <LinkButton onClick={open} className={`${label} text-caption-strong`}>
             {name}
-          </button>
+          </LinkButton>
         ) : (
-          <span className={label} data-testid="fusion-lost-name">
+          <span className={`${label} text-caption`} data-testid="fusion-lost-name">
             {name}
           </span>
         )}
@@ -72,7 +68,7 @@ export function FusionLostNotice({
   );
   return (
     <Card variant="strong" testId="fusion-lost">
-      <div className="flex items-center gap-1.5 border-b border-line px-3 py-1.5 text-sm font-semibold">
+      <div className="flex items-center gap-1.5 border-b border-border px-3 py-1.5 text-subheading ">
         <TriangleAlert size={14} aria-hidden />
         {t('fusionLostTitle', lang)}
       </div>
@@ -99,11 +95,14 @@ export function FusionLostNotice({
           return (
             <li
               key={entry.result}
-              className="flex flex-col gap-1.5 border-b border-line px-3 py-2.5 last:border-b-0"
+              className="flex flex-col gap-1.5 border-b border-border px-3 py-3 last:border-b-0"
               data-testid="fusion-lost-row"
               data-gift={entry.result}
             >
-              <div className="flex flex-wrap items-start gap-1 text-fg-3" data-testid="fusion-lost-recipe">
+              <div
+                className="flex flex-wrap items-start gap-1 text-fg-subtle"
+                data-testid="fusion-lost-recipe"
+              >
                 {entry.missing.map((id) => icon(id, { status: 'failed' }))}
                 {rest.length > 0 ? sign(<Plus size={12} />) : null}
                 {choosable ? (
@@ -116,14 +115,16 @@ export function FusionLostNotice({
                     data-testid="fusion-lost-collect"
                     className={`inline-flex flex-col items-stretch gap-1 rounded-md border p-1 ${
                       collecting
-                        ? 'border-ink bg-surface-2'
-                        : 'border-dashed border-line-control hover:bg-surface-2'
+                        ? 'border-primary bg-surface-muted'
+                        : 'border-dashed border-border-control hover:bg-surface-muted'
                     }`}
                   >
                     <span className="flex items-start gap-0.5">{rest}</span>
                     <span
-                      className={`flex h-6 items-center justify-center gap-1 rounded-sm text-xs font-medium ${
-                        collecting ? 'bg-ink text-ink-fg' : 'border border-line-control bg-surface text-fg-2'
+                      className={`flex h-6 items-center justify-center gap-1 rounded-sm text-caption-strong ${
+                        collecting
+                          ? 'bg-primary text-primary-fg'
+                          : 'border border-border-control bg-surface text-fg-muted'
                       }`}
                       data-testid="fusion-lost-collect-state"
                       aria-hidden

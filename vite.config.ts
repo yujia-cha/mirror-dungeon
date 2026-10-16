@@ -6,6 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { injectPrecache, precacheList } from './scripts/lib/precache.ts';
 import { dataPreloadPaths, preloadTags } from './scripts/lib/preload.ts';
+import { ocrAssets } from './scripts/lib/ocr-assets.ts';
 
 // GitHub Pages serves the app under /<repo>/, so the deploy workflow sets VITE_BASE.
 // Local dev and `vite preview` fall back to '/'.
@@ -25,6 +26,8 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    // M103: the screen reader's OCR worker, cores and models from our own origin, not jsDelivr.
+    ocrAssets(),
     {
       // `%SITE_URL%` in index.html. Vite's own `%VITE_*%` replacement only covers variables that
       // reach the client bundle, and this one must not.

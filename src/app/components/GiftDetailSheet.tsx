@@ -5,7 +5,7 @@
  * walks back (the host keeps the trail).
  */
 import { useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, Check, Eye, Link2 } from 'lucide-react';
+import { ArrowLeft, Check, Eye, Link2, X } from 'lucide-react';
 import type { GameData, Gift } from '../../core/schema.ts';
 import { chooseRecipe, observable } from '../../core/index.ts';
 import type { ConditionReport, GameIndexes, RoutePlan } from '../../core/types.ts';
@@ -21,7 +21,7 @@ import { routeSourceOf, routeSourceText } from '../lib/route-source.ts';
 import { useApp } from '../store.ts';
 import { DetailSurface } from './BlockDetail.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
-import { Button } from './ui.tsx';
+import { Button, Checkbox } from './ui.tsx';
 
 /**
  * 「조합으로만 · 화왕지절 전용」 — the badges of the old list row, said as a sentence. A gift with
@@ -43,7 +43,7 @@ function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): string {
 }
 
 const PILL =
-  'inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pl-1 pr-2 text-xs';
+  'inline-flex items-center gap-1.5 rounded-full border border-border bg-surface py-0.5 pl-1 pr-2 text-caption';
 
 /** One ingredient. With `onOpen` it is a button that moves the sheet to that gift. */
 function Pill({
@@ -73,7 +73,7 @@ function Pill({
       type="button"
       onClick={() => onOpen(id)}
       aria-label={t('giftDetail', lang, { name })}
-      className={`${PILL} hover:bg-surface-2`}
+      className={`${PILL} hover:bg-surface-muted`}
       data-testid="recipe-item"
       data-gift={id}
     >
@@ -104,9 +104,9 @@ function Recipe({
   const mixed = gift.fusion?.mixed ?? null;
   if (!ingredients && !mixed) return null;
   return (
-    <div className="flex flex-col gap-2 px-2.5 pb-2.5 pt-2">
+    <div className="flex flex-col gap-2 px-3 pb-3 pt-2">
       {mixed && !ingredients ? (
-        <p className="text-xs text-fg-2">
+        <p className="text-caption text-fg-muted">
           {t('giftMixedRecipe', lang, {
             a: mixed.aCount,
             aOf: mixed.aPool.length,
@@ -125,8 +125,8 @@ function Recipe({
         const sub = child ? chooseRecipe(child, indexes, slots, goals) : null;
         if (!child || !sub) return null;
         return (
-          <div key={`sub-${id}`} className="ml-3 flex flex-col gap-1 border-l border-line pl-2.5">
-            <span className="text-xs text-fg-3">
+          <div key={`sub-${id}`} className="ml-3 flex flex-col gap-1 border-l border-border pl-3">
+            <span className="text-caption text-fg-subtle">
               {t('giftSubRecipe', lang, { name: pick(child.name, lang) })}
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -198,7 +198,7 @@ export function GiftDetailSheet({
   // must not drop focus to <body>.
   const contentRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
-  const titleRef = useRef<HTMLSpanElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const shownGift = useRef(gift.id);
   useEffect(() => {
     if (shownGift.current === gift.id) return;
@@ -214,6 +214,13 @@ export function GiftDetailSheet({
   const pinned = observedGifts.includes(gift.id);
   const canObserve = observable(gift, data.rules);
   const observeFull = !pinned && observedGifts.length >= observeMax;
+  const observeReason = observeClosed
+    ? t('giftsObserveClosed', lang)
+    : !canObserve
+      ? t('giftsObserveNotAllowed', lang)
+      : observeFull
+        ? t('giftsObserveFull', lang, { max: observeMax })
+        : undefined;
   const hasRecipe = Boolean(gift.fusion && (gift.fusion.recipes.length > 0 || gift.fusion.mixed));
   const routeSource = routeSourceOf(plan, gift.id);
   const blockedBy =
@@ -231,24 +238,24 @@ export function GiftDetailSheet({
             type="button"
             onClick={back.onBack}
             aria-label={t('giftDetailBack', lang, { name: back.name })}
-            className="inline-flex max-w-full items-center gap-1 self-start rounded-sm px-1 py-0.5 text-xs text-fg-2 hover:bg-surface-2 hover:text-fg"
+            className="inline-flex max-w-full items-center gap-1 self-start rounded-sm px-1 py-0.5 text-caption text-fg-muted hover:bg-surface-muted hover:text-fg"
             data-testid="gift-detail-back"
           >
             <ArrowLeft size={13} aria-hidden className="flex-none" />
             <span className="truncate">{back.name}</span>
           </button>
         ) : null}
-        <div className="flex items-start gap-2.5">
+        <div className="flex items-start gap-3">
           <GiftIcon gift={gift} size={44} judgement={judgementOf(reports)} lang={lang} />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span ref={titleRef} tabIndex={-1} className="text-base font-bold outline-none">
+            <h2 ref={titleRef} tabIndex={-1} className="text-heading outline-none">
               {name}
-            </span>
-            <span className="text-xs text-fg-3">{acquisitionLine(gift, indexes, lang)}</span>
+            </h2>
+            <span className="text-caption text-fg-subtle">{acquisitionLine(gift, indexes, lang)}</span>
             {/* Where this route gets the gift — the plan's own answer, not the acquisition class.
                 Absent for a gift the route says nothing about (not needed, in hand, unresolved). */}
             {routeSource ? (
-              <span className="text-xs text-fg-2" data-testid="gift-route-source">
+              <span className="text-caption text-fg-muted" data-testid="gift-route-source">
                 {t('giftRouteSource', lang, {
                   source: routeSourceText(routeSource, {
                     packName: (id) => pick(indexes.packById.get(id)?.name, lang),
@@ -272,48 +279,55 @@ export function GiftDetailSheet({
             {selected ? <Check size={13} aria-hidden /> : null}
             {t(selected ? 'giftRemoveGoal' : 'giftAddGoal', lang)}
           </Button>
-          {blockedBy ? <span className="text-xs text-fg-2">{blockedBy}</span> : null}
+          {blockedBy ? <span className="text-caption text-fg-muted">{blockedBy}</span> : null}
           {collected ? (
             <>
               <Button
                 variant={pinned ? 'primary' : 'secondary'}
                 onClick={() => toggleObserved(gift.id, { max: observeMax, observable: () => canObserve })}
-                disabled={observeClosed || !canObserve || observeFull}
+                disabled={observeReason !== undefined}
                 ariaLabel={t(pinned ? 'observeSlotClear' : 'giftsObserve', lang, { name })}
-                title={
-                  observeClosed
-                    ? t('giftsObserveClosed', lang)
-                    : !canObserve
-                      ? t('giftsObserveNotAllowed', lang)
-                      : observeFull
-                        ? t('giftsObserveFull', lang, { max: observeMax })
-                        : undefined
-                }
+                title={observeReason}
               >
                 <Eye size={13} aria-hidden />
                 {t(pinned ? 'observePinned' : 'settingsObserved', lang)}
               </Button>
+              {/* Why it cannot be pressed, where a touch reader sees it: a `title` never reaches one. */}
+              {observeReason ? (
+                <span className="text-caption text-fg-muted" data-testid="observe-reason">
+                  {observeReason}
+                </span>
+              ) : null}
             </>
           ) : null}
         </div>
 
         {reports.length > 0 ? (
           <div
-            className="flex flex-col gap-1 rounded-sm bg-surface-2 px-2.5 py-2"
+            className="flex flex-col gap-1 rounded-sm bg-surface-muted px-3 py-2"
             data-testid="gift-conditions"
           >
             {reports.map((report, i) => {
               const met = report.satisfied;
               const extra = reachedTierText(report, lang);
               return (
-                <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
+                <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-caption">
+                  {/* Met / not met is a mark and ink, like the tile's ring is a ring: no coloured text. */}
                   <span
-                    className={`font-num font-semibold ${!report.gate ? 'text-fg-2' : met ? 'text-ok' : 'text-bad'}`}
+                    className={`inline-flex items-center gap-0.5 font-num text-caption-strong ${report.gate ? 'text-fg' : 'text-fg-muted'}`}
+                    data-met={report.gate ? met : undefined}
                   >
+                    {report.gate ? (
+                      met ? (
+                        <Check size={11} strokeWidth={3} aria-hidden />
+                      ) : (
+                        <X size={11} strokeWidth={3} aria-hidden />
+                      )
+                    ) : null}
                     {conditionShort(report, data.enums, lang)}
                   </span>
-                  <span className="text-fg-3">{conditionText(report, data.enums, lang)}</span>
-                  {extra ? <span className="text-fg-3">{extra}</span> : null}
+                  <span className="text-fg-subtle">{conditionText(report, data.enums, lang)}</span>
+                  {extra ? <span className="text-fg-subtle">{extra}</span> : null}
                 </div>
               );
             })}
@@ -323,13 +337,13 @@ export function GiftDetailSheet({
         {/* `whitespace-pre-line`: the game writes a gift as several clauses separated by blank lines,
             with 「- 」 sub-lines under some of them. Without it CSS folds all of that into one run-on
             paragraph. */}
-        <p className="whitespace-pre-line text-xs leading-relaxed text-fg-2">
+        <p className="whitespace-pre-line text-caption text-fg-muted">
           {renderEffect(gift.desc, data.enums, lang)}
         </p>
 
         {entangled.length > 0 ? (
           <div
-            className="flex items-start gap-2 rounded-sm border border-line-strong px-2.5 py-2 text-xs text-fg-2"
+            className="flex items-start gap-2 rounded-sm border border-border-strong px-3 py-2 text-caption text-fg-muted"
             data-testid="gift-entangled"
           >
             <Link2 size={13} aria-hidden className="mt-0.5 flex-none" />
@@ -348,11 +362,11 @@ export function GiftDetailSheet({
         ) : null}
 
         {hasRecipe ? (
-          <details className="overflow-hidden rounded-sm border border-line" data-testid="gift-recipe">
-            <summary className="cursor-pointer bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-fg-2">
+          <details className="overflow-hidden rounded-sm border border-border" data-testid="gift-recipe">
+            <summary className="cursor-pointer bg-surface-muted px-3 py-1.5 text-caption-strong text-fg-muted">
               {t('giftMaterials', lang)}
               {gift.fusion?.recipes[0] ? (
-                <span className="ml-1.5 font-num text-2xs font-normal text-fg-3">
+                <span className="ml-1.5 font-num text-micro text-fg-subtle">
                   {gift.fusion.recipes[0].ingredients.length}
                 </span>
               ) : null}
@@ -366,21 +380,15 @@ export function GiftDetailSheet({
               onOpen={onOpenGift}
             />
             {selected ? (
-              <label
-                className="flex items-center gap-1.5 border-t border-line px-2.5 py-2 text-xs"
+              <Checkbox
+                checked={fusionGoal[gift.id] !== 'resultOnly'}
+                onChange={(checked) => setFusionGoal(gift.id, checked ? 'withIngredients' : 'resultOnly')}
+                ariaLabel={`${name} ${t('fusionGoalIngredients', lang)}`}
                 title={t('fusionGoalHint', lang)}
+                className="flex gap-1.5 border-t border-border px-3 py-2 text-caption"
               >
-                <input
-                  type="checkbox"
-                  checked={fusionGoal[gift.id] !== 'resultOnly'}
-                  onChange={(event) =>
-                    setFusionGoal(gift.id, event.target.checked ? 'withIngredients' : 'resultOnly')
-                  }
-                  aria-label={`${name} ${t('fusionGoalIngredients', lang)}`}
-                  className="h-[14px] w-[14px] accent-[var(--color-ink)]"
-                />
                 {t('fusionGoalIngredients', lang)}
-              </label>
+              </Checkbox>
             ) : null}
           </details>
         ) : null}

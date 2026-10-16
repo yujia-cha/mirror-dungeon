@@ -84,9 +84,9 @@ export function PanelResizer({
       }}
       onDoubleClick={() => onWidth(PANEL_WIDTH.default)}
       onKeyDown={onKey}
-      className={`group sticky top-14 z-10 h-[calc(100dvh-56px)] w-1.5 flex-none cursor-col-resize touch-none bg-line/0 transition-colors hover:bg-line-strong focus-visible:bg-ink focus-visible:outline-none ${dragging ? 'bg-ink' : ''}`}
+      className={`group sticky top-14 z-10 h-[calc(100dvh-56px)] w-1.5 flex-none cursor-col-resize touch-none bg-border/0 transition-colors hover:bg-border-strong focus-visible:bg-primary focus-visible:outline-none ${dragging ? 'bg-primary' : ''}`}
     >
-      <span className="pointer-events-none mx-auto block h-full w-px bg-line" aria-hidden />
+      <span className="pointer-events-none mx-auto block h-full w-px bg-border" aria-hidden />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import { MetroMap } from '../components/MetroMap.tsx';
 import { RouteDecision } from '../components/RouteDecision.tsx';
 import { Badge, Button, Card, SectionTitle } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
+import { scrollBehavior } from '../lib/motion.ts';
 
 export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const {
@@ -51,9 +52,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
 
   if (!plan || !shown) {
     return (
-      <Card className="flex flex-col items-center gap-2.5 px-4 py-8 text-center" testId="route-empty">
-        <Star size={28} className="text-fg-3" aria-hidden />
-        <div className="text-sm font-semibold">{t('routeEmpty', lang)}</div>
+      <Card className="flex flex-col items-center gap-3 px-4 py-8 text-center" testId="route-empty">
+        <Star size={28} className="text-fg-subtle" aria-hidden />
+        <div className="text-subheading ">{t('routeEmpty', lang)}</div>
         {onOpenGifts ? (
           <Button variant="primary" onClick={onOpenGifts}>
             {t('tabGifts', lang)}
@@ -83,7 +84,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     if (!mapEl) return;
     const container = mapEl.closest<HTMLElement>('.overflow-y-auto');
     if (container && typeof container.scrollTo === 'function') {
-      container.scrollTo({ top: mapEl.offsetTop - container.offsetTop, behavior: 'smooth' });
+      container.scrollTo({ top: mapEl.offsetTop - container.offsetTop, behavior: scrollBehavior() });
     } else if (typeof mapEl.scrollIntoView === 'function') {
       mapEl.scrollIntoView({ block: 'start' });
     }
@@ -98,8 +99,8 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         ] as const
       ).map(([key, value]) => (
         <span key={key} className="inline-flex items-baseline gap-1.5">
-          <span className="text-xs text-fg-3">{t(key, lang)}</span>
-          <span className="font-num text-lg font-bold text-fg">{value}</span>
+          <span className="text-caption text-fg-subtle">{t(key, lang)}</span>
+          <span className="font-num text-title text-fg">{value}</span>
         </span>
       ))}
       {capped ? (
@@ -159,9 +160,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         />
       </div>
       {otherWarnings.length > 0 ? (
-        <Card className="p-3.5">
+        <Card className="p-4">
           <SectionTitle>{t('routeWarnings', lang)}</SectionTitle>
-          <ul className="mt-2 flex flex-col gap-1 text-xs text-fg-2">
+          <ul className="mt-2 flex flex-col gap-1 text-caption text-fg-muted">
             {/* One code can come twice (`pack-option-dropped` for unknown pins and for unplaced preferences). */}
             {otherWarnings.map((w, i) => (
               <li key={`${w.code}:${i}`}>{warningText(w, giftName, packName, lang)}</li>

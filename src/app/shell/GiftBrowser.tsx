@@ -18,7 +18,7 @@ import { browsableParents, conditionReportsByGift, tilesFor } from '../lib/gift-
 import { useGiftFilters } from '../lib/useGiftFilters.ts';
 import { useLatest } from '../lib/useLatest.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
-import { Badge, IconButton } from '../components/ui.tsx';
+import { Badge, IconButton, TextField } from '../components/ui.tsx';
 import { GiftFilterBar, GiftNoMatch } from '../components/GiftFilterBar.tsx';
 import { GiftTileGrid } from '../components/GiftGrid.tsx';
 import { usePlan } from './plan-context.ts';
@@ -69,7 +69,7 @@ export function GiftBrowser({
   const title = t('giftsBrowseTitle', lang);
   const body = (
     <>
-      <div className="flex h-11 flex-none items-center gap-2 border-b border-line bg-surface px-3">
+      <div className="flex h-11 flex-none items-center gap-2 border-b border-border bg-surface px-3">
         {page ? (
           <button
             ref={(el) => {
@@ -78,15 +78,15 @@ export function GiftBrowser({
             type="button"
             onClick={onClose}
             aria-label={t('panelBack', lang)}
-            className="-ml-1.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full text-fg-2 hover:bg-surface-2"
+            className="-ml-1.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full text-fg-muted hover:bg-surface-muted"
           >
             <ChevronLeft size={17} aria-hidden />
           </button>
         ) : null}
         {page ? (
-          <h1 className="truncate text-sm font-semibold">{title}</h1>
+          <h1 className="truncate text-subheading ">{title}</h1>
         ) : (
-          <h2 className="truncate text-sm font-semibold">{title}</h2>
+          <h2 className="truncate text-subheading ">{title}</h2>
         )}
         <Badge tone="neutral">{t('giftsSelected', lang, { n: wanted.length })}</Badge>
         {page ? null : (
@@ -95,20 +95,19 @@ export function GiftBrowser({
           </IconButton>
         )}
       </div>
-      <div className="flex flex-none flex-col gap-2 border-b border-line px-3 py-2">
-        <label className="flex h-9 items-center gap-2 rounded-sm border border-line-control bg-surface px-2.5 text-sm">
-          <Search size={14} aria-hidden className="flex-none text-fg-3" />
-          <input
-            ref={(el) => {
-              if (!page) first.current = el;
-            }}
-            value={filters.query}
-            onChange={(event) => filterState.setQuery(event.target.value)}
-            placeholder={t('giftsSearch', lang)}
-            aria-label={t('giftsSearch', lang)}
-            className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
-          />
-        </label>
+      <div className="flex flex-none flex-col gap-2 border-b border-border px-3 py-2">
+        <TextField
+          inputRef={(el) => {
+            if (!page) first.current = el;
+          }}
+          value={filters.query}
+          onChange={filterState.setQuery}
+          label={t('giftsSearch', lang)}
+          placeholder={t('giftsSearch', lang)}
+          icon={<Search size={14} aria-hidden />}
+          onClear={() => filterState.setQuery('')}
+          clearLabel={t('searchClear', lang)}
+        />
         <GiftFilterBar state={filterState} enums={data.enums} lang={lang} />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-4" data-testid="gift-browser-scroller">

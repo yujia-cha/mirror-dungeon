@@ -145,6 +145,54 @@ describe('trackFrame — selling', () => {
   });
 });
 
+describe('trackFrame — fusion (M101)', () => {
+  const confirm = (consumed: number[], unsure: number[] = []) =>
+    frame({ screen: 'fusionConfirm', ingredients: { consumed, unsure } });
+
+  it('ties what the confirm read to the result the popup names', () => {
+    // Arrange: confirm (seen twice), the animation (no screen), then the result popup.
+    const frames = [confirm([9105, 9131]), confirm([9105, 9131]), frame({}), popup(match(9083))];
+    // Act
+    const { events, state } = run(frames);
+    // Assert
+    expect(events).toEqual([
+      { kind: 'got', giftId: 9083 },
+      { kind: 'fused', resultId: 9083, consumed: [9105, 9131], unsure: [] },
+    ]);
+    expect(state.fusing).toBeNull();
+  });
+
+  it('treats a second popup after the fusion as an ordinary gain', () => {
+    const { events } = run([confirm([1, 2]), popup(match(10)), popup(match(11))]);
+    expect(events.filter((e) => e.kind === 'fused')).toEqual([
+      { kind: 'fused', resultId: 10, consumed: [1, 2], unsure: [] },
+    ]);
+    expect(events.filter((e) => e.kind === 'got').map((e) => e.giftId)).toEqual([10, 11]);
+  });
+
+  it('forgets a fusion cancelled back to the fusion screen', () => {
+    const { events, state } = run([confirm([1, 2]), frame({ screen: 'fusion' }), popup(match(10))]);
+    expect(events).toEqual([{ kind: 'got', giftId: 10 }]);
+    expect(state.fusing).toBeNull();
+  });
+
+  it('carries the unsure gifts through for the UI to ask about', () => {
+    const { events } = run([confirm([9142], [9105, 9110, 9126]), popup(match(9083))]);
+    expect(events.at(-1)).toEqual({
+      kind: 'fused',
+      resultId: 9083,
+      consumed: [9142],
+      unsure: [9105, 9110, 9126],
+    });
+  });
+
+  it('waits for nothing when the confirm read no ingredients', () => {
+    const { events, state } = run([frame({ screen: 'fusionConfirm', ingredients: null }), popup(match(10))]);
+    expect(events).toEqual([{ kind: 'got', giftId: 10 }]);
+    expect(state.fusing).toBeNull();
+  });
+});
+
 describe('trackFrame — other screens', () => {
   it('emits nothing for screens the tracker does not act on', () => {
     const frames = [frame({}), frame({ screen: 'packSelect', floor: 1 }), frame({ screen: 'fusion' })];

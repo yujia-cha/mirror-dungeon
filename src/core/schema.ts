@@ -486,6 +486,84 @@ export const giftIconManifestSchema = z.object({
   icons: z.array(z.number().int()),
 });
 export type GiftIconManifest = z.infer<typeof giftIconManifestSchema>;
+
+/**
+ * `public/icons/keywords/manifest.json` — the game's keyword icons (M99), each `{Keyword}.webp`,
+ * drawn as the gift tile's keyword badge. A manifest of its own so that a takedown of one image set
+ * stops one thing: without it the badge falls back to a coloured dot.
+ */
+export const keywordIconManifestSchema = z.object({
+  source: z.object({ repo: z.string(), sha: z.string() }),
+  keywords: z.array(keywordSchema.exclude(['None'])),
+});
+export type KeywordIconManifest = z.infer<typeof keywordIconManifestSchema>;
+
+/**
+ * `public/icons/packs/manifest.json` — the game's theme pack art (M100), each `{sprite}.webp`,
+ * shrunk to `encode.width` and re-encoded at `encode.quality`. Its own manifest, like the others.
+ */
+export const packImageManifestSchema = z.object({
+  source: z.object({ repo: z.string(), sha: z.string() }),
+  encode: z.object({ width: z.number().int().positive(), quality: z.number().int().min(1).max(100) }),
+  packs: z.array(z.string()),
+});
+export type PackImageManifest = z.infer<typeof packImageManifestSchema>;
+
+/**
+ * The game screens the screen-capture tracker tells apart (M95), in the order one wins when several
+ * are on screen. The app keeps their titles (`src/app/capture/screens.ts`); the layout below says
+ * where on the screen each one is read.
+ */
+export const CAPTURE_SCREENS = [
+  'acquired',
+  'fusionConfirm',
+  'sellConfirm',
+  'fusionKeyword',
+  'purchase',
+  'sell',
+  'enhance',
+  'fusion',
+  'packSelect',
+  'exploring',
+] as const;
+export type CaptureScreen = (typeof CAPTURE_SCREENS)[number];
+
+/** A rectangle of the captured client area in fractions: x, y, width, height, inside the frame. */
+const captureRegionSchema = z
+  .tuple([
+    z.number().min(0).max(1),
+    z.number().min(0).max(1),
+    z.number().gt(0).max(1),
+    z.number().gt(0).max(1),
+  ])
+  .refine(([x, y, w, h]) => x + w <= 1 + 1e-9 && y + h <= 1 + 1e-9, 'region runs off the frame');
+
+/**
+ * `public/data/capture-layout.json` — where the game draws what the tracker reads (M103), from
+ * `data/curated/capture-layout.json`. Shared by every season: it is the client's layout, not the
+ * dungeon's.
+ */
+export const captureLayoutSchema = z.object({
+  /** The capture size the regions were measured on. */
+  reference: z.object({ width: z.number().int().positive(), height: z.number().int().positive() }),
+  /** Banner regions in reading order, each with the screens whose title can appear in it. */
+  titles: z
+    .array(z.object({ region: captureRegionSchema, screens: z.array(z.enum(CAPTURE_SCREENS)).min(1) }))
+    .min(1),
+  names: z.object({
+    popup: captureRegionSchema,
+    selected: captureRegionSchema,
+    centerConfirm: captureRegionSchema,
+    mapHeader: captureRegionSchema,
+  }),
+  /** The fusion confirm: its 「선택한 기프트 N/M」 header and the two slot shapes it comes in. */
+  fusion: z.object({
+    count: captureRegionSchema,
+    five: z.array(captureRegionSchema).length(5),
+    three: z.array(captureRegionSchema).length(3),
+  }),
+});
+export type CaptureLayout = z.infer<typeof captureLayoutSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];
 
 /**

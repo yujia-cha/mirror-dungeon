@@ -33,7 +33,16 @@ import { prioritiseGifts } from '../lib/gift-priority.ts';
 import { judgementOf } from '../lib/judgement.ts';
 import { useChipDrag } from '../lib/useChipDrag.ts';
 import { useGiftFilters } from '../lib/useGiftFilters.ts';
-import { Badge, Button, Card, FilterSelect } from '../components/ui.tsx';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  FilterSelect,
+  IconButton,
+  LinkButton,
+  TextField,
+} from '../components/ui.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { GiftNoMatch } from '../components/GiftFilterBar.tsx';
 import { GiftTileGrid } from '../components/GiftGrid.tsx';
@@ -211,7 +220,7 @@ export function GiftsStep({
     />
   );
   const emptyLine = (text: string) => (
-    <div className="px-3 py-3 text-sm text-fg-3" data-testid="gift-active-empty">
+    <div className="px-3 py-3 text-body text-fg-subtle" data-testid="gift-active-empty">
       {text}
     </div>
   );
@@ -236,34 +245,32 @@ export function GiftsStep({
           The fold toggle and the checkbox sit side by side rather than nested: a control inside a
           button is not HTML, and ticking the box must not fold the section.
         */}
-        <div className="flex h-9 items-stretch border-b border-line bg-surface-2">
+        <div className="flex h-9 items-stretch border-b border-border bg-surface-muted">
           <button
             type="button"
             onClick={() => setCollapsed((shut) => !shut)}
             aria-expanded={!collapsed}
             className="flex min-w-0 flex-1 items-center justify-between gap-1 px-3 text-left"
           >
-            <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+            <span className="flex min-w-0 items-center gap-2 text-subheading ">
               <span className="truncate">{t('giftsActive', lang)}</span>
-              <span className="font-num text-xs text-fg-3">{shown.length}</span>
+              <span className="font-num text-caption text-fg-subtle">{shown.length}</span>
               {collapsed && chosen > 0 ? (
                 <Badge tone="neutral">{t('giftsSelected', lang, { n: chosen })}</Badge>
               ) : null}
             </span>
-            <span className="flex-none text-fg-3">
+            <span className="flex-none text-fg-subtle">
               {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
             </span>
           </button>
-          <label className="flex flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap border-l border-line px-2.5 text-xs font-medium text-fg-2">
-            <input
-              type="checkbox"
-              checked={unpickedOnly}
-              onChange={(event) => setUi({ activeUnpickedOnly: event.target.checked })}
-              className="h-[14px] w-[14px] accent-[var(--color-ink)]"
-              data-testid="gift-unpicked-only"
-            />
+          <Checkbox
+            checked={unpickedOnly}
+            onChange={(checked) => setUi({ activeUnpickedOnly: checked })}
+            className="flex-none whitespace-nowrap border-l border-border px-3 text-caption-strong text-fg-muted"
+            testId="gift-unpicked-only"
+          >
             {t('giftsUnpickedOnly', lang)}
-          </label>
+          </Checkbox>
         </div>
         {collapsed ? null : content}
       </Card>
@@ -281,9 +288,9 @@ export function GiftsStep({
   let body: React.ReactNode;
   if (deck.length === 0) {
     body = (
-      <Card className="flex flex-col items-center gap-2.5 px-4 py-8 text-center">
-        <User size={28} className="text-fg-3" aria-hidden />
-        <div className="text-sm font-semibold">{t('giftsDeckEmpty', lang)}</div>
+      <Card className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+        <User size={28} className="text-fg-subtle" aria-hidden />
+        <div className="text-subheading ">{t('giftsDeckEmpty', lang)}</div>
         {onGoDeck ? (
           <Button variant="primary" onClick={onGoDeck}>
             <ChevronLeft size={14} aria-hidden />
@@ -297,12 +304,12 @@ export function GiftsStep({
   } else if (searching) {
     body = (
       <Card className="overflow-hidden">
-        <div className="flex h-9 items-center gap-2 border-b border-line bg-surface-2 px-3 text-sm font-semibold">
-          {t('giftsResults', lang)} <span className="font-num text-xs text-fg-3">{results.length}</span>
+        <div className="flex h-9 items-center gap-2 border-b border-border bg-surface-muted px-3 text-subheading ">
+          {t('giftsResults', lang)}{' '}
+          <span className="font-num text-caption text-fg-subtle">{results.length}</span>
         </div>
-        <div className="max-h-[60dvh] overflow-y-auto" data-testid="gift-scroller">
-          {grid(results)}
-        </div>
+        {/* No scroll of its own: the panel already scrolls, and a box inside it trapped the wheel. */}
+        <div data-testid="gift-scroller">{grid(results)}</div>
       </Card>
     );
   } else {
@@ -328,34 +335,31 @@ export function GiftsStep({
   ];
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-1.5">
-        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-sm border border-line-control bg-surface px-2.5 text-sm">
-          <Search size={14} aria-hidden className="flex-none text-fg-3" />
-          <input
-            value={query}
-            onChange={(event) => filterState.setQuery(event.target.value)}
-            placeholder={t('giftsSearch', lang)}
-            aria-label={t('giftsSearch', lang)}
-            className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-3"
-          />
-        </label>
+        <TextField
+          value={query}
+          onChange={filterState.setQuery}
+          label={t('giftsSearch', lang)}
+          placeholder={t('giftsSearch', lang)}
+          icon={<Search size={14} aria-hidden />}
+          onClear={() => filterState.setQuery('')}
+          clearLabel={t('searchClear', lang)}
+          className="flex-1"
+        />
         {/*
           The door to every gift and the filters; it takes the query along. While the browser is
           open beside the tab it is the way back: >> turns to << and closes it.
         */}
         {onBrowse ? (
-          <button
-            type="button"
+          <IconButton
             onClick={() => (browseOpen ? onCloseBrowse?.() : onBrowse(query))}
-            aria-label={t(browseOpen ? 'giftsBrowseHide' : 'giftsBrowseAll', lang)}
-            title={t(browseOpen ? 'giftsBrowseHide' : 'giftsBrowseAll', lang)}
-            aria-expanded={browseOpen}
-            className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-sm border border-line-control bg-surface text-fg-2 hover:bg-surface-2 hover:text-fg"
-            data-testid="gift-browse-all"
+            label={t(browseOpen ? 'giftsBrowseHide' : 'giftsBrowseAll', lang)}
+            expanded={browseOpen}
+            testId="gift-browse-all"
           >
             {browseOpen ? <ChevronsLeft size={16} aria-hidden /> : <ChevronsRight size={16} aria-hidden />}
-          </button>
+          </IconButton>
         ) : null}
       </div>
       {/*
@@ -383,7 +387,8 @@ export function GiftsStep({
 
       {wanted.length > 0 ? (
         <div
-          className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2 px-2.5 py-2"
+          className="flex flex-col gap-1.5 rounded-md border border-border bg-surface-muted px-3 py-2"
+          role="group"
           aria-label={t('giftsSelected', lang, { n: wanted.length })}
         >
           {/*
@@ -391,10 +396,10 @@ export function GiftsStep({
             order things were chosen in, and a filter hides chips without unselecting anything.
           */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-0.5 text-xs font-medium text-fg-2">
+            <span className="mr-0.5 text-caption-strong text-fg-muted">
               {t('giftsSelected', lang, { n: wanted.length })}
               {shownChips.length !== wanted.length ? (
-                <span className="ml-1 font-num text-fg-3">{`· ${shownChips.length}`}</span>
+                <span className="ml-1 font-num text-fg-subtle">{`· ${shownChips.length}`}</span>
               ) : null}
             </span>
             <FilterSelect
@@ -420,15 +425,14 @@ export function GiftsStep({
                 allLabel={t('filterAll', lang)}
               />
             ) : null}
-            <button
-              type="button"
+            <LinkButton
               onClick={() => setConfirmClear(true)}
-              aria-haspopup="dialog"
-              className="-my-1 ml-auto px-1 py-1.5 text-xs text-fg-3 underline hover:text-fg"
-              data-testid="gifts-clear"
+              muted
+              className="-my-1 ml-auto px-1 py-1.5 text-caption"
+              testId="gifts-clear"
             >
               {t('giftsClear', lang)}
-            </button>
+            </LinkButton>
           </div>
           <SelectedTiles
             ids={shownChips}
@@ -462,7 +466,7 @@ export function GiftsStep({
       {draggedGift
         ? createPortal(
             <div
-              className="pointer-events-none fixed z-[70] -translate-x-1/2 -translate-y-1/2 rounded-md bg-surface p-1 shadow-pop"
+              className="pointer-events-none fixed z-[70] -translate-x-1/2 -translate-y-1/2 rounded-md bg-surface p-1 shadow-md"
               style={{ left: drag.state.x, top: drag.state.y }}
               data-testid="chip-ghost"
               aria-hidden

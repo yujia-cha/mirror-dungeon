@@ -61,8 +61,10 @@ import {
   type IconRef,
 } from '../src/app/capture/match-icon.ts';
 import { cropRgba, isolateLightText, type Region } from '../src/app/capture/preprocess.ts';
-import { classifyScreen, parseFloor, SCREEN_TITLES, type Screen } from '../src/app/capture/screens.ts';
-import { INITIAL_TRACKER, trackFrame, type Frame } from '../src/app/capture/tracker.ts';
+import { classifyScreen, parseFloor, SCREEN_TITLES } from '../src/app/capture/screens.ts';
+import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
+import { INITIAL_TRACKER, trackFrame } from '../src/app/capture/tracker.ts';
+import { captureLayoutSchema } from '../src/core/schema.ts';
 import { flagValue, hasFlag } from './lib/io.ts';
 
 const regionSchema = z.tuple([z.number(), z.number(), z.number(), z.number()]);
@@ -79,29 +81,16 @@ const labelsSchema = z.object({
 });
 type Label = z.infer<typeof labelsSchema>['items'][number];
 
-/** The name button of the acquired popup. */
-const POPUP_NAME: Region = [0.2526, 0.56, 0.138, 0.1338];
-/** The selected gift's name button on the sell (and enhance) screen. */
-const SELECTED_NAME: Region = [0.2344, 0.2131, 0.2057, 0.1586];
-/** The centre confirm: 「[이름]을(를) 코스트 300에 / 판매하시겠습니까?」. */
-const CENTER_CONFIRM: Region = [0.28, 0.42, 0.44, 0.12];
-
-/** The map's top-left header: 「N층 탐사 중」 over the entered pack's name. */
-const MAP_HEADER: Region = [0.01, 0.13, 0.17, 0.09];
-
 /**
- * Where the banners sit, measured on 1920×1009 captures: the popup title (획득), the purchase
- * dialog title, the full-screen title (판매·강화·합성·키워드 선택·N층 테마팩 선택), the fusion confirm
- * line, the map header, and the centre confirm (판매).
+ * Where the game draws what is read — the same layout the app loads (`data/curated/capture-layout.json`,
+ * built into public/data by `npm run data:build`).
  */
-const TITLE_REGIONS: Region[] = [
-  [0.333, 0.205, 0.34, 0.07],
-  [0.29, 0.19, 0.29, 0.06],
-  [0.33, 0.075, 0.34, 0.09],
-  [0.31, 0.69, 0.385, 0.055],
-  MAP_HEADER,
-  CENTER_CONFIRM,
-];
+const layout = captureLayoutSchema.parse(
+  JSON.parse(readFileSync(resolve('public/data/capture-layout.json'), 'utf8')),
+);
+const MAP_HEADER: Region = layout.names.mapHeader;
+/** Every banner region, for labelled screen items that give no region of their own. */
+const TITLE_REGIONS: Region[] = layout.titles.map((t) => t.region);
 
 /** Decoded RGBA pixels of a PNG or JPEG file. */
 function decode(bytes: Buffer): { data: Uint8Array; width: number; height: number } {
@@ -215,39 +204,45 @@ async function main(): Promise<void> {
     const gifts = candidatesFor('gift', 'ko');
     const giftName = (id: number) => data.gifts.find((g) => g.id === id)?.name.ko ?? String(id);
     const packName = (id: number) => data.packs.find((p) => p.id === id)?.name.ko ?? String(id);
-    /** Read with the light-text pass, and raw too when `accept` finds nothing in it. */
-    const readEither = async <T>(file: string, regions: Region[], accept: (lines: string[]) => T | null) => {
-      const label: Label = { file, kind: 'screen', lang: 'ko', expect: null };
-      const first = await read(label, regions, rawOnly);
-      const got = accept(first.lines);
-      if (got !== null || rawOnly) return { value: got, lines: first.lines, ms: first.ms };
-      const again = await read(label, regions, true);
-      return { value: accept(again.lines), lines: again.lines, ms: first.ms + again.ms };
-    };
     let state = INITIAL_TRACKER;
     let ms = 0;
+    let calls = 0;
+    // What the run holds so far, for the fusion confirm's slots: the gifts the replay has seen got.
+    const held = new Set<number>();
+    const allRefs = await iconRefs();
+    const MATERIALS = new Set(data.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id));
     for (const file of shots) {
-      const title = await readEither<Screen>(file, TITLE_REGIONS, (lines) => classifyScreen(lines, 'ko'));
-      ms += title.ms;
-      const frame: Frame = { screen: title.value, floor: null, pack: null, gift: null };
-      const nameIn = async (region: Region, candidates: NameCandidate[]) => {
-        const r = await readEither(file, [region], (lines) => {
-          const m = matchName(lines, candidates);
-          return m.status === 'none' ? null : m;
-        });
-        ms += r.ms;
-        return r.value ?? ({ status: 'none' } as const);
+      const label: Label = { file, kind: 'screen', lang: 'ko', expect: null };
+      const reader: RegionReader = {
+        ocr: async (region, light) => {
+          const r = await read(label, [region], rawOnly || !light);
+          ms += r.ms;
+          return r.lines;
+        },
+        slot: async (region) => {
+          let image = images.get(file);
+          if (!image) {
+            image = decode(readFileSync(resolve(dir, file)));
+            images.set(file, image);
+          }
+          return prepareSlot(image.data, image.width, image.height, region);
+        },
       };
-      if (frame.screen === 'exploring') {
-        const header = await readEither(file, [MAP_HEADER], parseFloor);
-        ms += header.ms;
-        frame.floor = header.value;
-        frame.pack = await nameIn(MAP_HEADER, packs);
-      } else if (frame.screen === 'acquired') frame.gift = await nameIn(POPUP_NAME, gifts);
-      else if (frame.screen === 'sellConfirm') frame.gift = await nameIn(CENTER_CONFIRM, gifts);
-      else if (frame.screen === 'sell') frame.gift = await nameIn(SELECTED_NAME, gifts);
+      const { frame, ocrCalls } = await readFrame(reader, layout, {
+        lang: 'ko',
+        packs,
+        gifts,
+        held: allRefs.filter((ref) => held.has(ref.id)),
+        materials: allRefs.filter((ref) => MATERIALS.has(ref.id)),
+      });
+      calls += ocrCalls;
       const out = trackFrame(state, frame);
       state = out.state;
+      for (const e of out.events) {
+        if (e.kind === 'got') held.add(e.giftId);
+        if (e.kind === 'sold') held.delete(e.giftId);
+        if (e.kind === 'fused') for (const id of e.consumed) held.delete(id);
+      }
       const said = out.events.map((e) =>
         e.kind === 'enter'
           ? `ENTER ${e.floor}층 ${packName(e.packId)}`
@@ -255,12 +250,16 @@ async function main(): Promise<void> {
             ? `GOT ${giftName(e.giftId)}`
             : e.kind === 'sold'
               ? `SOLD ${giftName(e.giftId)}`
-              : `UNSURE ${e.about} ${e.ids.map(e.about === 'enter' ? packName : giftName).join(' / ')}`,
+              : e.kind === 'fused'
+                ? `FUSED ${giftName(e.resultId)} ← ${e.consumed.map(giftName).join(', ') || '—'}${e.unsure.length ? ` (? ${e.unsure.map(giftName).join(' / ')})` : ''}`
+                : `UNSURE ${e.about} ${e.ids.map(e.about === 'enter' ? packName : giftName).join(' / ')}`,
       );
       console.log(`${file}  ${(frame.screen ?? '—').padEnd(13)} ${said.join(' · ')}`);
     }
     for (const worker of workers.values()) await worker.terminate();
-    console.log(`\n${shots.length} frames, ${Math.round(ms / shots.length)}ms OCR per frame`);
+    console.log(
+      `\n${shots.length} frames, ${(calls / shots.length).toFixed(1)} OCR calls and ${Math.round(ms / shots.length)}ms OCR per frame`,
+    );
     return;
   }
 

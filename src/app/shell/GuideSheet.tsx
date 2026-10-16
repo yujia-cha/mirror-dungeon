@@ -11,6 +11,8 @@ import { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GUIDE_CARDS, pick, t, type Lang } from '../i18n.ts';
 import { DetailSurface } from '../components/BlockDetail.tsx';
+import { Button, IconButton } from '../components/ui.tsx';
+import { scrollBehavior } from '../lib/motion.ts';
 
 export function GuideSheet({
   lang,
@@ -31,7 +33,7 @@ export function GuideSheet({
     setIndex(to);
     const el = track.current;
     // jsdom has no element `scrollTo`; the index above is what the page reads either way.
-    el?.scrollTo?.({ left: to * el.clientWidth, behavior: 'smooth' });
+    el?.scrollTo?.({ left: to * el.clientWidth, behavior: scrollBehavior() });
   };
 
   const onScroll = (): void => {
@@ -60,8 +62,8 @@ export function GuideSheet({
         }}
       >
         <div className="flex items-baseline gap-2 pr-8">
-          <h2 className="text-base font-semibold">{t('guide', lang)}</h2>
-          <span className="font-num text-xs text-fg-3" aria-hidden>
+          <h2 className="text-heading ">{t('guide', lang)}</h2>
+          <span className="font-num text-caption text-fg-subtle" aria-hidden>
             {index + 1} / {total}
           </span>
         </div>
@@ -84,18 +86,18 @@ export function GuideSheet({
               data-current={i === index || undefined}
               className="flex w-full flex-none snap-start snap-always flex-col gap-2 px-0.5"
             >
-              <h3 className="text-lg font-semibold">{pick(card.title, lang)}</h3>
-              <ul className="flex flex-col gap-2 break-keep text-sm leading-relaxed text-fg">
+              <h3 className="text-title ">{pick(card.title, lang)}</h3>
+              <ul className="flex flex-col gap-2 break-keep text-body text-fg">
                 {card.lines.map((line) => (
                   <li key={line.ko} className="flex gap-2">
-                    <span className="mt-[0.6em] h-1 w-1 flex-none rounded-full bg-fg-3" aria-hidden />
+                    <span className="mt-[0.6em] h-1 w-1 flex-none rounded-full bg-fg-subtle" aria-hidden />
                     <span>{pick(line, lang)}</span>
                   </li>
                 ))}
               </ul>
               {'notice' in card ? (
                 <a
-                  className="text-sm text-fg-2 underline hover:text-fg"
+                  className="text-body text-fg-muted underline hover:text-fg"
                   href={noticeUrl}
                   target="_blank"
                   rel="noreferrer noopener"
@@ -110,44 +112,32 @@ export function GuideSheet({
         <p className="sr-only" aria-live="polite" data-testid="guide-live">
           {cardLabel(index)}
         </p>
-        <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
-          <button
-            type="button"
+        <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+          <IconButton
             onClick={() => go(index - 1)}
             disabled={index === 0}
-            aria-label={t('guidePrev', lang)}
-            title={t('guidePrev', lang)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-line-control text-fg hover:bg-surface-2 disabled:border-line disabled:text-fg-3 disabled:hover:bg-transparent"
+            label={t('guidePrev', lang)}
+            size="lg"
           >
             <ChevronLeft size={18} aria-hidden />
-          </button>
+          </IconButton>
           <span className="flex items-center gap-1.5" aria-hidden>
             {GUIDE_CARDS.map((card, i) => (
               <span
                 key={card.title.ko}
-                className={`h-1.5 rounded-full transition-all ${i === index ? 'w-4 bg-ink' : 'w-1.5 bg-line-strong'}`}
+                // No transition: the design system animates colour and transform, never width.
+                className={`h-1.5 rounded-full ${i === index ? 'w-4 bg-primary' : 'w-1.5 bg-border-strong'}`}
               />
             ))}
           </span>
           {last ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 items-center rounded-sm bg-ink px-4 text-sm font-medium text-ink-fg"
-              data-testid="guide-done"
-            >
+            <Button variant="primary" size="lg" onClick={onClose} testId="guide-done">
               {t('guideDone', lang)}
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={() => go(index + 1)}
-              aria-label={t('guideNext', lang)}
-              title={t('guideNext', lang)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-line-control text-fg hover:bg-surface-2"
-            >
+            <IconButton onClick={() => go(index + 1)} label={t('guideNext', lang)} size="lg">
               <ChevronRight size={18} aria-hidden />
-            </button>
+            </IconButton>
           )}
         </div>
       </div>

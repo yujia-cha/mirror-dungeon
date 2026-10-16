@@ -3,14 +3,13 @@
  * memories, so the ones still marked as held are listed to be unmarked in place. Raised by the
  * T4 tracker.
  */
-import { X } from 'lucide-react';
 import type { Gift } from '../../core/schema.ts';
 import type { GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { fusionConsumption } from '../lib/tracker.ts';
 import type { GiftStatus } from '../lib/plan-input.ts';
 import { GiftIcon } from './GiftIcon.tsx';
-import { Button, Notice } from './ui.tsx';
+import { Button, CloseButton, Notice } from './ui.tsx';
 
 export function FusionNotice({
   gift,
@@ -36,24 +35,17 @@ export function FusionNotice({
           <span className="flex-1">
             {t('trackerFusionNotice', lang, { a: consumption.aCount, b: consumption.bCount })}
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('routeClose', lang)}
-            className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-full hover:bg-surface-2"
-          >
-            <X size={13} aria-hidden />
-          </button>
+          <CloseButton label={t('routeClose', lang)} onClick={onClose} size="sm" />
         </div>
         {consumption.aGot.length + consumption.bGot.length > 0 ? (
           <ul className="flex flex-col gap-1">
-            <li className="text-xs text-fg-3">{t('trackerFusionHeld', lang)}</li>
+            <li className="text-caption text-fg-subtle">{t('trackerFusionHeld', lang)}</li>
             {[...consumption.aGot, ...consumption.bGot].map((id) => {
               const held = indexes.giftById.get(id);
               return held ? (
                 <li key={id} className="flex items-center gap-2">
                   <GiftIcon gift={held} size={20} status="got" lang={lang} />
-                  <span className="min-w-0 flex-1 truncate text-sm">{pick(held.name, lang)}</span>
+                  <span className="min-w-0 flex-1 truncate text-body">{pick(held.name, lang)}</span>
                   <Button
                     size="sm"
                     variant="secondary"

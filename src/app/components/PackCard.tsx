@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import type { ThemePack } from '../../core/schema.ts';
 import { pick, type Lang } from '../i18n.ts';
-import { packImageUrl } from '../lib/assets.ts';
+import { packImage } from '../lib/assets.ts';
 
 export type PackCardSize = 20 | 28 | 48 | 64 | 96;
 
@@ -29,7 +29,7 @@ export function PackCard({
   testId?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const url = packImageUrl(pack.sprite);
+  const picture = packImage(pack.sprite);
   const name = pick(pack.name, lang);
   const height = Math.round((size * 15) / 8);
   const image = (
@@ -37,17 +37,18 @@ export function PackCard({
       role="img"
       aria-label={name}
       data-testid="pack-image"
-      className="inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-line bg-surface-3 text-fg-3"
+      className="inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border border-border bg-surface-sunken text-fg-subtle"
       style={{ width: size, height }}
     >
-      {url && !failed ? (
+      {picture && !failed ? (
+        // The owner's drawings are pixel art; the game's pack art is painted and scales smoothly.
         <img
-          src={url}
+          src={picture.url}
           alt=""
           loading="lazy"
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"
-          style={{ imageRendering: 'pixelated' }}
+          style={picture.pixelArt ? { imageRendering: 'pixelated' } : undefined}
         />
       ) : null}
     </span>
@@ -57,7 +58,8 @@ export function PackCard({
       {image}
       {caption ? (
         <span
-          className={`line-clamp-2 w-full break-keep text-center leading-tight text-fg ${size >= 64 ? 'text-xs' : 'text-2xs'}`}
+          // A pack's name is content (the route map's, above all), so it keeps the caption floor.
+          className="line-clamp-2 w-full break-keep text-center text-caption text-fg"
           style={{ width: Math.max(size, 52) }}
         >
           {name}

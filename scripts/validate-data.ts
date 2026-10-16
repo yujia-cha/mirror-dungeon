@@ -28,6 +28,8 @@ import {
 import { familyOf, seasonOf } from './lib/season-files.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
 import { GIFT_ICON_DIR, MAX_ICON_BYTES, giftsAcrossSeasons, isWebp } from './lib/gift-icons.ts';
+import { KEYWORD_ICON_DIR, MAX_KEYWORD_ICON_BYTES, UPSTREAM_KEYWORD_FILES } from './lib/keyword-icons.ts';
+import { MAX_PACK_IMAGE_BYTES, PACK_IMAGE_DIR, packsAcrossSeasons } from './lib/pack-images.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
 import {
   derivedKeywords,
@@ -55,6 +57,10 @@ import {
   type ArtManifest,
   artManifestSchema,
   giftIconManifestSchema,
+  keywordIconManifestSchema,
+  packImageManifestSchema,
+  captureLayoutSchema,
+  CAPTURE_SCREENS,
   enumsSchema,
   giftsFileSchema,
   identitiesFileSchema,
@@ -177,6 +183,9 @@ if (meta && enums && rules && gifts && packs && identities) {
   checkFreshness();
   checkArt(gifts, packs);
   checkGiftIcons(gifts);
+  checkKeywordIcons();
+  checkPackImages(packs);
+  checkCaptureLayout();
 }
 
 /**
@@ -268,6 +277,114 @@ function checkArt(gifts: Gift[], packs: ThemePack[]): void {
         `${keys.size - drawn} of ${keys.size} ${kind} have no artwork yet; those tiles are drawn without one.`,
       );
   }
+}
+
+interface IconSetCheck {
+  dir: string;
+  /** What the set is, for messages: "keyword icons", "pack images". */
+  label: string;
+  /** Parse the manifest and return its keys, or the schema error. */
+  parse: (raw: unknown) => { keys: string[] } | { error: string };
+  /** Keys a file may have. */
+  legal: ReadonlySet<string>;
+  maxBytes: number;
+  /** Said when the set is absent: what the app does without it. */
+  absent: string;
+}
+
+/**
+ * A set of game images under `public/icons/` (M99, M100): the manifest matches the folder, every file
+ * has a legal key, each a WebP of sane size. A missing set is only a warning — the app has a way to
+ * draw without it — and so is a legal key with no file.
+ */
+function checkIconSet(set: IconSetCheck): void {
+  const dir = repoPath(set.dir);
+  const files = existsSync(dir)
+    ? readdirSync(dir)
+        .filter((f) => f.endsWith('.webp'))
+        .map((f) => f.slice(0, -5))
+        .sort()
+    : [];
+  const raw = readJsonIfExists<unknown>(join(dir, 'manifest.json'));
+  if (raw === null) {
+    if (files.length > 0)
+      err('icons', `${set.dir} has ${files.length} file(s) but no manifest.json. Run: npm run data:icons`);
+    else warn('icons', `no ${set.label}; ${set.absent}. Run: npm run data:icons`);
+    return;
+  }
+  const parsed = set.parse(raw);
+  if ('error' in parsed) {
+    err('icons', `${set.dir}/manifest.json does not match its schema: ${parsed.error}`);
+    return;
+  }
+  const listed = new Set(parsed.keys);
+  for (const key of listed) {
+    if (!files.includes(key)) err('icons', `manifest lists ${key} but ${set.dir}/${key}.webp is missing`);
+  }
+  for (const key of files) {
+    const path = join(dir, `${key}.webp`);
+    if (!listed.has(key))
+      err('icons', `${set.dir}/${key}.webp is not in the manifest. Run: npm run data:icons`);
+    if (!set.legal.has(key))
+      err('icons', `${set.dir}/${key}.webp has no ${set.label} key of any published season`);
+    const bytes = readFileSync(path);
+    if (!isWebp(bytes)) err('icons', `${set.dir}/${key}.webp is not a WebP file`);
+    if (bytes.length > set.maxBytes) err('icons', `${set.dir}/${key}.webp is ${bytes.length} bytes`);
+  }
+  const missing = [...set.legal].filter((key) => !listed.has(key)).sort();
+  if (missing.length > 0)
+    warn(
+      'icons',
+      `${missing.length} ${set.label} missing (${missing.slice(0, 5).join(', ')}…). Run: npm run data:icons`,
+    );
+}
+
+/**
+ * The screen tracker's layout (M103): it parses, and every screen the tracker knows has a title
+ * region to be read from — a screen with none would silently never be recognised.
+ */
+function checkCaptureLayout(): void {
+  const raw = readJsonIfExists<unknown>(join(OUT, 'capture-layout.json'));
+  if (raw === null) {
+    err('schema', 'public/data/capture-layout.json is missing. Run: npm run data:build');
+    return;
+  }
+  const parsed = captureLayoutSchema.safeParse(raw);
+  if (!parsed.success) {
+    err('schema', `public/data/capture-layout.json: ${parsed.error.message}`);
+    return;
+  }
+  const covered = new Set(parsed.data.titles.flatMap((t) => t.screens));
+  const missing = CAPTURE_SCREENS.filter((screen) => !covered.has(screen));
+  if (missing.length > 0) err('invariant', `capture layout has no title region for ${missing.join(', ')}`);
+}
+
+function checkKeywordIcons(): void {
+  checkIconSet({
+    dir: KEYWORD_ICON_DIR,
+    label: 'keyword icons',
+    parse: (raw) => {
+      const parsed = keywordIconManifestSchema.safeParse(raw);
+      return parsed.success ? { keys: parsed.data.keywords } : { error: parsed.error.message };
+    },
+    legal: new Set(Object.keys(UPSTREAM_KEYWORD_FILES)),
+    maxBytes: MAX_KEYWORD_ICON_BYTES,
+    absent: 'the gift badge draws coloured dots',
+  });
+}
+
+function checkPackImages(packs: ThemePack[]): void {
+  checkIconSet({
+    dir: PACK_IMAGE_DIR,
+    label: 'pack images',
+    parse: (raw) => {
+      const parsed = packImageManifestSchema.safeParse(raw);
+      return parsed.success ? { keys: parsed.data.packs } : { error: parsed.error.message };
+    },
+    legal: new Set([...packsAcrossSeasons(OUT), ...packs].map((p) => p.sprite)),
+    maxBytes: MAX_PACK_IMAGE_BYTES,
+    absent: 'the pack cards stay empty boxes',
+  });
 }
 
 /**

@@ -36,7 +36,7 @@ import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-prior
 import { hasDeckCondition } from '../lib/gift-filters.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { tierLabel } from '../lib/labels.ts';
-import { setArtManifest, setGiftIconManifest } from '../lib/assets.ts';
+import { setArtManifest, setGiftIconManifest, setKeywordIconManifest } from '../lib/assets.ts';
 import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
@@ -688,6 +688,10 @@ describe('run store', () => {
     expect(sanitizeUi({}).activeUnpickedOnly).toBe(true);
     expect(sanitizeUi({ activeUnpickedOnly: false }).activeUnpickedOnly).toBe(false);
     expect(sanitizeUi({ activeUnpickedOnly: 'no' }).activeUnpickedOnly).toBe(true);
+    // The gift tile size is one of its steps, 「보통」 otherwise.
+    expect(sanitizeUi({}).giftIconScale).toBe('md');
+    expect(sanitizeUi({ giftIconScale: 'xl' }).giftIconScale).toBe('xl');
+    expect(sanitizeUi({ giftIconScale: 'huge' }).giftIconScale).toBe('md');
   });
 
   it('keeps a saved run only where it still makes sense', () => {
@@ -1007,6 +1011,9 @@ describe('DeckStep', () => {
     renderDeck();
     expect(screen.getAllByText('인격 선택')).toHaveLength(12);
     await user.click(screen.getByRole('button', { name: '기본 덱' }));
+    // It replaces twelve slots at once, so it asks first.
+    expect(useApp.getState().deck).toEqual([]);
+    await user.click(within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '기본 덱' }));
     expect(useApp.getState().deck).toEqual(defaultDeck(data));
     expect(useApp.getState().deck).toHaveLength(12);
     // Nobody is deployed until the player says so.
@@ -1180,7 +1187,7 @@ describe('GiftIcon', () => {
     expect(r.badge).toHaveAttribute('data-keyword', 'Combustion');
     expect(r.badge!.className).toContain('bg-kw-combustion');
     // The keyword left the border behind; the tile keeps one neutral line.
-    expect(r.el.className).toContain('border-line');
+    expect(r.el.className).toContain('border-border');
     expect(r.el.className).not.toContain('border-kw-');
     expect(r.el.className).not.toMatch(/ring-(ok|bad)/);
     // Tier top-left, keyword bottom-right.
@@ -1200,10 +1207,10 @@ describe('GiftIcon', () => {
     expect(r.badge).toBeNull();
     r.unmount();
     r = icon(9088, 'met');
-    expect(r.el.className).toContain('ring-ok');
+    expect(r.el.className).toContain('ring-success');
     r.unmount();
     r = icon(9088, 'unmet');
-    expect(r.el.className).toContain('ring-bad');
+    expect(r.el.className).toContain('ring-danger');
     r.unmount();
   });
 });
@@ -1347,30 +1354,69 @@ describe('GiftsStep', () => {
     }
   });
 
-  it('dims the square and not the name, the same way with artwork or without', () => {
+  it('fades the square and not the name, and never turns it grey (M99)', () => {
     const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
     const { unmount } = render(<GiftIcon gift={gift} size={44} dim lang="ko" />);
-    expect(screen.getByTestId('gift-dim').className).toContain('grayscale opacity-55');
-    expect(screen.getByTestId('gift-icon').className).not.toContain('grayscale');
+    expect(screen.getByTestId('gift-dim').className).toContain('opacity-45');
+    expect(screen.getByTestId('gift-dim').className).not.toContain('grayscale');
+    expect(screen.getByTestId('gift-icon').className).not.toContain('opacity');
     unmount();
     render(<GiftIcon gift={gift} size={44} lang="ko" />);
-    expect(screen.getByTestId('gift-dim').className).not.toContain('grayscale');
+    expect(screen.getByTestId('gift-dim').className).not.toContain('opacity');
   });
 
   /*
-   * The dim is a `grayscale` filter, and a filter takes every descendant with it. With the badge
-   * inside, an uncollected gift lost the one thing still naming its keyword: the tile went grey,
-   * so 진동 and 화상 looked alike. A missed gift dims harder still, and keeps it too.
+   * The picture keeps its colour in every state — the player looks for that icon in the game. A
+   * toggle not pressed yet says so with a dashed frame, a collected one with the ink frame and ✓.
    */
-  it('keeps the keyword badge in full colour on a gift not collected yet, and on a missed one', () => {
+  it("tells a run toggle's state by the frame, not by greying the picture", () => {
+    const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
+    const { unmount } = render(<GiftIcon gift={gift} size={44} pending lang="ko" />);
+    const pending = screen.getByTestId('gift-icon');
+    expect(pending.className).toContain('border-dashed');
+    expect(pending).toHaveAttribute('data-pending', 'true');
+    expect(screen.getByTestId('gift-dim').className).toBe('absolute inset-0 ');
+    unmount();
+    render(<GiftIcon gift={gift} size={44} status="got" lang="ko" />);
+    const got = screen.getByTestId('gift-icon');
+    expect(got.className).toContain('border-primary');
+    expect(got.className).not.toContain('border-dashed');
+  });
+
+  /*
+   * The badge sits outside the faded layer: for a gift not collected yet it is the one thing that
+   * names its keyword at a glance. Without the keyword icon set it is the coloured mark; with it,
+   * the game's own icon on a round chip (M99).
+   */
+  it('keeps the keyword badge outside the fade, as the game icon when the set ships', () => {
     const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
     for (const props of [{ dim: true }, { status: 'failed' as const }]) {
       const { unmount } = render(<GiftIcon gift={gift} size={44} {...props} lang="ko" />);
       const badge = screen.getByTestId('gift-keyword');
       expect(badge.className).toContain('bg-kw-combustion');
       expect(screen.getByTestId('gift-dim').contains(badge)).toBe(false);
-      expect(screen.getByTestId('gift-dim').className).toContain('grayscale');
       unmount();
+    }
+    setKeywordIconManifest({ source: { repo: 'r', sha: 's' }, keywords: ['Combustion'] });
+    try {
+      const { container } = render(<GiftIcon gift={gift} size={44} status="failed" lang="ko" />);
+      const badge = screen.getByTestId('gift-keyword');
+      expect(badge.querySelector('img')?.getAttribute('src')).toBe('/icons/keywords/Combustion.webp');
+      // About a third of the tile.
+      expect(badge.querySelector('img')?.style.width).toBe('14px');
+      expect(screen.getByTestId('gift-dim').contains(badge)).toBe(false);
+      // An inline icon keeps the small mark: a chip would cover half of a 20px picture (M100).
+      const { unmount: unmountInline } = render(<GiftIcon gift={gift} size={20} lang="ko" />);
+      const inline = screen.getAllByTestId('gift-keyword').at(-1)!;
+      expect(inline.querySelector('img')).toBeNull();
+      expect(inline.className).toContain('bg-kw-combustion');
+      unmountInline();
+      // 범용 still gets no badge.
+      const general = data.gifts.find((g) => g.keyword === 'None')!;
+      render(<GiftIcon gift={general} size={44} lang="ko" />, { container });
+      expect(screen.queryByTestId('gift-keyword')).toBeNull();
+    } finally {
+      setKeywordIconManifest(null);
     }
   });
 
@@ -1440,7 +1486,7 @@ describe('GiftsStep', () => {
     const box = screen.getByRole('textbox', { name: '기프트 검색' });
     const door = screen.getByRole('button', { name: '모두 보기' });
     // The last thing on the search box's row.
-    expect(door.parentElement).toBe(box.closest('label')!.parentElement);
+    expect(door.parentElement).toContainElement(box);
     expect(door.parentElement!.lastElementChild).toBe(door);
     expect(door).toHaveAttribute('title', '모두 보기');
     await user.click(door);
@@ -1780,7 +1826,7 @@ describe('GiftsStep', () => {
     // The tray is the same grid as the item tiles — one container, the tiles its direct children.
     const tray = screen.getByTestId('gift-chips');
     expect(tray.className).toContain('grid');
-    expect(tray.className).toContain('[grid-template-columns:repeat(auto-fill,minmax(64px,1fr))]');
+    expect(tray.style.gridTemplateColumns.replace(/\s/g, '')).toBe('repeat(auto-fill,minmax(64px,1fr))');
     const tiles = within(tray).getAllByTestId('gift-chip');
     expect(tiles.map((el) => el.parentElement)).toEqual([tray, tray]);
     // Each tile carries the 32px icon and a name button, like a grid tile.
@@ -1789,6 +1835,15 @@ describe('GiftsStep', () => {
     await user.click(within(first).getByRole('button', { name: '상납된 시가 자세히' }));
     expect(screen.getByRole('dialog', { name: '상납된 시가' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
+    // The size setting (M98) scales the tray's tiles and widens its columns to fit them.
+    act(() => useApp.getState().setUi({ giftIconScale: 'lg' }));
+    expect(within(first).getByTestId('gift-icon').style.width).toBe('44px');
+    expect(tray.style.gridTemplateColumns.replace(/\s/g, '')).toBe('repeat(auto-fill,minmax(68px,1fr))');
+    act(() => useApp.getState().setUi({ giftIconScale: 'md' }));
+    // The ✕ sits in the corner, placed by the tile (the badge sets no position that could fight it).
+    const corner = within(first).getByRole('button', { name: '상납된 시가 목표에서 빼기' });
+    expect(corner.className.split(' ')).toContain('absolute');
+    expect(corner.className.split(' ')).not.toContain('relative');
     // The ✕ in the corner takes the gift out of the selection; the other tile stays.
     await user.click(within(first).getByRole('button', { name: '상납된 시가 목표에서 빼기' }));
     expect(useApp.getState().wanted).toEqual([9267]);
@@ -2627,6 +2682,9 @@ describe('RoutePlanPanel', () => {
     // Removing is the app's one deselection: the goal leaves, and the card with the conflict.
     await user.click(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' }));
     await user.click(screen.getByRole('button', { name: '선택한 1개 목표에서 빼기' }));
+    await user.click(
+      within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '선택한 1개 목표에서 빼기' }),
+    );
     expect(useApp.getState().wanted).toHaveLength(CLEAR_REWARDS.length - 1);
     expect(useApp.getState().wanted).not.toContain(9251);
     expect(screen.queryByTestId('route-decision')).toBeNull();
@@ -2687,6 +2745,9 @@ describe('RoutePlanPanel', () => {
     expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
     expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −2 · 함께 뺀 실제 −2');
     await user.click(screen.getByRole('button', { name: '선택한 2개 목표에서 빼기' }));
+    await user.click(
+      within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '선택한 2개 목표에서 빼기' }),
+    );
     expect(useApp.getState().wanted).not.toContain(9255);
     expect(useApp.getState().wanted).not.toContain(9827);
     expect(useApp.getState().wanted).toContain(9250);
@@ -2768,6 +2829,9 @@ describe('RoutePlanPanel', () => {
     expect(screen.getByRole('checkbox', { name: '보급형 K사 앰플 뺄 목표로 고르기' })).toBeChecked();
     // Removing it takes the conflict away, and the card with it.
     await user.click(screen.getByRole('button', { name: '선택한 1개 목표에서 빼기' }));
+    await user.click(
+      within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '선택한 1개 목표에서 빼기' }),
+    );
     expect(screen.queryByTestId('route-decision')).toBeNull();
   });
 
@@ -3026,6 +3090,16 @@ describe('AppShell', () => {
     expect(popover.className).not.toMatch(/w-\[320px\]/);
     await user.keyboard('{Escape}');
     expect(screen.queryByTestId('header-menu')).toBeNull();
+    // The gift tile size: a step keeps the menu open and the grid's tiles follow it.
+    await openMenu();
+    const sizes = screen.getByTestId('gift-icon-size');
+    expect(within(sizes).getByRole('button', { name: '보통' }).getAttribute('aria-pressed')).toBe('true');
+    await user.click(within(sizes).getByRole('button', { name: '크게' }));
+    expect(useApp.getState().ui.giftIconScale).toBe('lg');
+    expect(screen.getByTestId('header-menu')).toBeTruthy();
+    expect(within(sizes).getByRole('button', { name: '크게' }).getAttribute('aria-pressed')).toBe('true');
+    await user.click(within(sizes).getByRole('button', { name: '보통' }));
+    await user.keyboard('{Escape}');
     await reset();
     await user.click(within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '취소' }));
     expect(useApp.getState().wanted).toEqual([9267, 9423, 9249]); // as picked, not by id
@@ -3326,8 +3400,9 @@ describe('RunStage', () => {
       expect(cell.textContent).toMatch(/^\d+$/);
       expect(cell.querySelector('.rounded-full')).toBeNull();
       // No band shading: 1-5, 6-10 and 11-15 are drawn the same.
+      // (The hover state may use `surface-muted`; the resting fill may not.)
       expect(cell.className).not.toContain('bg-hatch');
-      expect(cell.className).not.toContain('bg-surface-2');
+      expect(cell.className.split(' ')).not.toContain('bg-surface-muted');
     }
     expect(cells.some((cell) => cell.getAttribute('data-pack'))).toBe(true);
   });

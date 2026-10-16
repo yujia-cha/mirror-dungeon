@@ -14,8 +14,10 @@
  * - A line may hold more than its title — a floor number before 「층 탐사 중」, a gift name inside the
  *   sell confirm — so a title counts when it is *contained* in the line (`containedSimilarity`).
  *
- * Pure. Titles and their order live here until the layout moves to curated data.
+ * Pure. The titles live here; which part of the screen each is read from is the curated capture
+ * layout (`data/curated/capture-layout.json`, M103), and the order is `CAPTURE_SCREENS`.
  */
+import type { CaptureScreen } from '../../core/schema.ts';
 import type { Lang } from '../i18n.ts';
 import { containedSimilarity } from './match-name.ts';
 
@@ -39,9 +41,10 @@ export const SCREEN_TITLES = {
   // number is read on its own (`parseFloor`).
   packSelect: { ko: '테마팩 선택', en: '' },
   exploring: { ko: '층 탐사 중', en: '' },
-} as const satisfies Record<string, Record<Lang, string>>;
+} as const satisfies Record<CaptureScreen, Record<Lang, string>>;
 
-export type Screen = keyof typeof SCREEN_TITLES;
+/** One of the screens in `CAPTURE_SCREENS`; this file holds their titles. */
+export type Screen = CaptureScreen;
 
 /** A line counts as a title at this similarity. */
 export const TITLE_MIN = 0.8;

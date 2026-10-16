@@ -10,6 +10,7 @@ import { trackerGifts, type TrackerGroupId } from '../lib/tracker.ts';
 import { FusionNotice } from '../components/FusionNotice.tsx';
 import { GiftTile } from '../components/GiftTile.tsx';
 import { Card, SectionTitle } from '../components/ui.tsx';
+import { useTileIconSize } from '../lib/icon-size.ts';
 import { usePlan } from '../shell/plan-context.ts';
 
 const GROUP_KEY: Record<
@@ -31,13 +32,14 @@ export function Tracker() {
   const { data, indexes, lang, goals, openGift } = usePlan();
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
+  const tileSize = useTileIconSize(32);
   const groups = useMemo(() => trackerGifts(data, indexes), [data, indexes]);
   const [notice, setNotice] = useState<number | null>(null);
   const noticeGift = notice !== null ? indexes.giftById.get(notice) : undefined;
 
   return (
     <div className="flex flex-col gap-3" data-testid="tracker">
-      <div className="text-sm font-semibold">{t('trackerTitle', lang)}</div>
+      <h2 className="text-subheading">{t('trackerTitle', lang)}</h2>
       {noticeGift ? (
         <FusionNotice
           gift={noticeGift}
@@ -49,10 +51,10 @@ export function Tracker() {
         />
       ) : null}
       {groups.map((group) => (
-        <Card key={group.id} className="px-3 py-2.5" testId={`tracker-${group.id}`}>
+        <Card key={group.id} className="px-3 py-3" testId={`tracker-${group.id}`}>
           <SectionTitle
             right={
-              <span className="font-num text-xs text-fg-3">{`${group.gifts.filter((g) => giftStatus[g.id] === 'got').length}/${group.gifts.length}`}</span>
+              <span className="font-num text-caption text-fg-subtle">{`${group.gifts.filter((g) => giftStatus[g.id] === 'got').length}/${group.gifts.length}`}</span>
             }
           >
             {t(GROUP_KEY[group.id], lang)}
@@ -62,7 +64,7 @@ export function Tracker() {
               <GiftTile
                 key={gift.id}
                 gift={gift}
-                size={32}
+                size={tileSize}
                 status={giftStatus[gift.id] ?? null}
                 wanted={goals.has(gift.id)}
                 onToggle={(next) => {

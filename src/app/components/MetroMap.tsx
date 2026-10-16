@@ -75,7 +75,7 @@ function bandFill(kind: Band['kind'], hatchId: string): string {
   return kind === 'extreme'
     ? `url(#${hatchId})`
     : kind === 'parallel'
-      ? 'var(--color-surface-2)'
+      ? 'var(--color-surface-muted)'
       : 'transparent';
 }
 
@@ -162,7 +162,7 @@ function ObservedTile({
   const body = (
     <>
       <GiftIcon gift={gift} size={32} judgement={ctx.judgements.get(entry.giftId) ?? null} lang={ctx.lang} />
-      <span className="text-xs text-fg">{name}</span>
+      <span className="text-caption text-fg">{name}</span>
     </>
   );
   const title = history ? `${name} · ${why}` : `${name} · ${t('routeObserved', ctx.lang)} · ${why}`;
@@ -175,7 +175,7 @@ function ObservedTile({
       title={title}
       data-testid="observed-tile"
       data-pinned={entry.pinned || undefined}
-      className="inline-flex items-center gap-1.5 rounded-sm px-1 hover:bg-surface-2"
+      className="inline-flex items-center gap-1.5 rounded-sm px-1 hover:bg-surface-muted"
     >
       {body}
     </button>
@@ -290,7 +290,7 @@ export function MetroMap({
           onOpen={() => setOpen({ kind: 'pack', packId: pack.packId, key, mode })}
           lang={lang}
         />
-        {compact ? <span className="truncate text-xs font-medium">{pick(theme.name, lang)}</span> : null}
+        {compact ? <span className="truncate text-caption-strong ">{pick(theme.name, lang)}</span> : null}
         {detailFor(key, mode)}
       </div>
     );
@@ -313,7 +313,7 @@ export function MetroMap({
     : plan.start.observed.slice(0, slots);
   const startRow = (mode: DetailMode): ReactNode =>
     startGift || startKeyword || slots > 0 ? (
-      <div className="flex flex-col gap-1 px-3 py-2 text-xs text-fg-2" data-testid="start-cell">
+      <div className="flex flex-col gap-1 px-3 py-2 text-caption text-fg-muted" data-testid="start-cell">
         {startGift ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="start-line">
             <span className="inline-flex items-center gap-1.5" title={t('routeStartGift', lang)}>
@@ -329,7 +329,7 @@ export function MetroMap({
         ) : startKeyword ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="start-line">
             <span className="inline-flex items-center gap-1" title={t('optionStartKeyword', lang)}>
-              <Star size={11} aria-hidden className="text-fg-3" />
+              <Star size={11} aria-hidden className="text-fg-subtle" />
               {t('routeStart', lang)} {startKeyword}
             </span>
           </div>
@@ -378,7 +378,8 @@ export function MetroMap({
               : Array.from({ length: Math.max(0, slots - observedEntries.length) }, (_, i) => (
                   <span
                     key={`empty-${i}`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-dashed border-line-strong text-fg-3"
+                    role="img"
+                    className="inline-flex size-8 items-center justify-center rounded-sm border border-dashed border-border-control text-fg-subtle"
                     title={t('routeObservedEmpty', lang)}
                     aria-label={t('routeObservedEmpty', lang)}
                     data-testid="observed-empty"
@@ -387,7 +388,7 @@ export function MetroMap({
                   </span>
                 ))}
             {observedEntries.length === 0 ? (
-              <span className="text-fg-3" data-testid="observed-none">
+              <span className="text-fg-subtle" data-testid="observed-none">
                 {t(history ? 'routeStartHeldNone' : 'routeObservedNone', lang)}
               </span>
             ) : null}
@@ -450,7 +451,7 @@ export function MetroMap({
               patternTransform="rotate(135)"
             >
               <rect width="7" height="7" fill="var(--color-surface)" />
-              <rect width="1" height="7" x="6" fill="var(--color-line)" />
+              <rect width="1" height="7" x="6" fill="var(--color-border)" />
             </pattern>
           </defs>
           {bands.map((band) => (
@@ -468,11 +469,17 @@ export function MetroMap({
             y1={LINE_Y}
             x2={W - 20}
             y2={LINE_Y}
-            stroke="var(--color-line-strong)"
+            stroke="var(--color-border-strong)"
             strokeWidth={4}
           />
-          <circle cx={LEFT - 24} cy={LINE_Y} r={9} fill="var(--color-ink)" />
-          <text x={LEFT - 24} y={LINE_Y + 24} textAnchor="middle" fontSize={11} fill="var(--color-fg-2)">
+          <circle cx={LEFT - 24} cy={LINE_Y} r={9} fill="var(--color-primary)" />
+          <text
+            x={LEFT - 24}
+            y={LINE_Y + 24}
+            textAnchor="middle"
+            className="text-caption"
+            fill="var(--color-fg-muted)"
+          >
             {t('routeStart', lang)}
           </text>
           {Array.from({ length: lastFloor }, (_, i) => i + 1).map((f) => (
@@ -489,10 +496,10 @@ export function MetroMap({
                 x={x(f)}
                 y={LINE_Y + 24}
                 textAnchor="middle"
-                fontSize={12}
+                // Type by role, as CSS: SVG text takes `font-size`/`font-weight` from a class too.
+                className={run && f === run.currentFloor ? 'text-caption-strong' : 'text-caption'}
                 fontFamily="var(--font-num)"
                 fill="var(--color-fg)"
-                fontWeight={run && f === run.currentFloor ? 700 : undefined}
               >
                 {f}
               </text>
@@ -517,7 +524,7 @@ export function MetroMap({
                     width={st - 12}
                     height={18}
                     rx={4}
-                    fill="var(--color-ink)"
+                    fill="var(--color-primary)"
                   />
                 ) : (
                   <>
@@ -526,7 +533,7 @@ export function MetroMap({
                       y1={y}
                       x2={x2}
                       y2={y}
-                      stroke="var(--color-fg-2)"
+                      stroke="var(--color-fg-muted)"
                       strokeWidth={3}
                       strokeDasharray="6 5"
                       strokeLinecap="round"
@@ -536,7 +543,7 @@ export function MetroMap({
                       cy={y}
                       r={4}
                       fill="var(--color-surface)"
-                      stroke="var(--color-fg-2)"
+                      stroke="var(--color-fg-muted)"
                       strokeWidth={2}
                     />
                     <circle
@@ -544,7 +551,7 @@ export function MetroMap({
                       cy={y}
                       r={4}
                       fill="var(--color-surface)"
-                      stroke="var(--color-fg-2)"
+                      stroke="var(--color-fg-muted)"
                       strokeWidth={2}
                     />
                     {segment.partial
@@ -554,7 +561,7 @@ export function MetroMap({
                             cx={x(p.floor)}
                             cy={y}
                             r={7}
-                            fill="var(--color-ink)"
+                            fill="var(--color-primary)"
                             data-testid="suggested"
                             data-floor={p.floor}
                           />
@@ -570,7 +577,7 @@ export function MetroMap({
                       y1={y + 8}
                       x2={x(f)}
                       y2={LINE_Y - 8}
-                      stroke="var(--color-line-strong)"
+                      stroke="var(--color-border-strong)"
                       strokeWidth={1}
                       strokeDasharray="2 3"
                     />
@@ -589,7 +596,7 @@ export function MetroMap({
                 if (el) cardRefs.current.set(segment.key, el);
                 else cardRefs.current.delete(segment.key);
               }}
-              className={`absolute flex flex-col gap-1.5 rounded-md px-2 py-1.5 shadow-card ${segment.passed ? 'border border-ink bg-surface-2' : segment.fixed ? 'border border-ink bg-surface' : 'border-[1.5px] border-dashed border-fg-2 bg-surface'}`}
+              className={`absolute flex flex-col gap-1.5 rounded-md px-2 py-1.5 shadow-sm ${segment.passed ? 'border border-primary bg-surface-muted' : segment.fixed ? 'border border-primary bg-surface' : 'border-2 border-dashed border-fg-muted bg-surface'}`}
               style={{ left: cl, width: cw, bottom: H - y + 14 }}
               data-testid="segment"
               data-from={segment.from}
@@ -635,7 +642,7 @@ export function MetroMap({
               patternTransform="rotate(135)"
             >
               <rect width="7" height="7" fill="var(--color-surface)" />
-              <rect width="1" height="7" x="6" fill="var(--color-line)" />
+              <rect width="1" height="7" x="6" fill="var(--color-border)" />
             </pattern>
           </defs>
           {bands.map((band) => (
@@ -653,7 +660,7 @@ export function MetroMap({
             y1={y(1) - 20}
             x2={LX}
             y2={y(lastFloor) + 20}
-            stroke="var(--color-line-strong)"
+            stroke="var(--color-border-strong)"
             strokeWidth={4}
           />
           {Array.from({ length: lastFloor }, (_, i) => i + 1).map((f) => (
@@ -663,10 +670,10 @@ export function MetroMap({
                 x={LX - 16}
                 y={y(f) + 4}
                 textAnchor="end"
-                fontSize={12}
+                // Type by role, as CSS: SVG text takes `font-size`/`font-weight` from a class too.
+                className={run && f === run.currentFloor ? 'text-caption-strong' : 'text-caption'}
                 fontFamily="var(--font-num)"
                 fill="var(--color-fg)"
-                fontWeight={run && f === run.currentFloor ? 700 : undefined}
               >
                 {f}
               </text>
@@ -689,7 +696,7 @@ export function MetroMap({
                     width={16}
                     height={SP - 12}
                     rx={4}
-                    fill="var(--color-ink)"
+                    fill="var(--color-primary)"
                   />
                 ) : (
                   <>
@@ -698,7 +705,7 @@ export function MetroMap({
                       y1={y(segment.from)}
                       x2={xx}
                       y2={y(segment.to)}
-                      stroke="var(--color-fg-2)"
+                      stroke="var(--color-fg-muted)"
                       strokeWidth={3}
                       strokeDasharray="6 5"
                       strokeLinecap="round"
@@ -708,7 +715,7 @@ export function MetroMap({
                       cy={y(segment.from)}
                       r={4}
                       fill="var(--color-surface)"
-                      stroke="var(--color-fg-2)"
+                      stroke="var(--color-fg-muted)"
                       strokeWidth={2}
                     />
                     <circle
@@ -716,7 +723,7 @@ export function MetroMap({
                       cy={y(segment.to)}
                       r={4}
                       fill="var(--color-surface)"
-                      stroke="var(--color-fg-2)"
+                      stroke="var(--color-fg-muted)"
                       strokeWidth={2}
                     />
                     {segment.partial
@@ -726,7 +733,7 @@ export function MetroMap({
                             cx={xx}
                             cy={y(p.floor)}
                             r={7}
-                            fill="var(--color-ink)"
+                            fill="var(--color-primary)"
                             data-testid="suggested"
                             data-floor={p.floor}
                           />
@@ -752,7 +759,7 @@ export function MetroMap({
           return (
             <div
               key={segment.key}
-              className={`absolute flex ${compact ? 'flex-row items-center gap-2' : 'flex-col gap-1'} overflow-hidden rounded-md px-1.5 py-1 shadow-card ${segment.passed ? 'border border-ink bg-surface-2' : segment.fixed ? 'border border-ink bg-surface' : 'border-[1.5px] border-dashed border-fg-2 bg-surface'}`}
+              className={`absolute flex ${compact ? 'flex-row items-center gap-2' : 'flex-col gap-1'} overflow-hidden rounded-md px-1.5 py-1 shadow-sm ${segment.passed ? 'border border-primary bg-surface-muted' : segment.fixed ? 'border border-primary bg-surface' : 'border-2 border-dashed border-fg-muted bg-surface'}`}
               style={{ left: cl, top: y(segment.from) - SP / 2 + 4, width: cw, height: SP * span - 8 }}
               data-testid="segment"
               data-from={segment.from}
@@ -775,7 +782,7 @@ export function MetroMap({
   );
 
   return (
-    <div className="rounded-md border border-line bg-surface shadow-card">
+    <div className="rounded-md border border-border bg-surface shadow-sm">
       {desktop}
       {phone}
     </div>

@@ -35,15 +35,15 @@ export function RouteOptions() {
         : t('startKeywordFree', lang);
 
   return (
-    <div className="flex flex-col gap-2.5" data-testid="route-options">
-      <Card className="flex flex-col gap-2 px-3.5 py-3">
+    <div className="flex flex-col gap-3" data-testid="route-options">
+      <Card className="flex flex-col gap-2 px-4 py-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-fg-3">{t('optionStartKeyword', lang)}</span>
+          <span className="text-caption text-fg-subtle">{t('optionStartKeyword', lang)}</span>
           <select
             aria-label={t('optionStartKeyword', lang)}
             value={options.startKeyword}
             onChange={(event) => setOptions({ startKeyword: event.target.value as Keyword | 'auto' })}
-            className="h-[30px] rounded-full border border-line-control bg-surface-2 px-2.5 text-xs text-fg-2"
+            className="h-[30px] rounded-full border border-border-control bg-surface-muted px-3 text-fg-muted"
           >
             <option value="auto">
               {start?.autoKeyword
@@ -63,7 +63,7 @@ export function RouteOptions() {
           </select>
         </label>
         {note && (
-          <p className="text-xs text-fg-2" data-testid="start-keyword-note">
+          <p className="text-caption text-fg-muted" data-testid="start-keyword-note">
             {note}
           </p>
         )}

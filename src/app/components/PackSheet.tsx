@@ -94,7 +94,7 @@ function GiftRow({ giftId, exclusive, ctx }: { giftId: number; exclusive: boolea
       data-wanted={wanted || undefined}
       data-status={status ?? undefined}
     >
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-3">
         {ctx.run ? (
           <GiftTile
             gift={gift}
@@ -116,11 +116,11 @@ function GiftRow({ giftId, exclusive, ctx }: { giftId: number; exclusive: boolea
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className={`text-sm ${wanted ? 'font-semibold' : 'font-medium text-fg-2'}`}>{name}</span>
+            <span className={wanted ? 'text-subheading' : 'text-label text-fg-muted'}>{name}</span>
             {exclusive ? <Badge tone="sure">{t('giftExclusive', ctx.lang)}</Badge> : null}
             {wanted ? <Badge tone="start">{t('giftWanted', ctx.lang)}</Badge> : null}
           </div>
-          {condition ? <span className="text-xs text-fg-2">{condition}</span> : null}
+          {condition ? <span className="text-caption text-fg-muted">{condition}</span> : null}
         </div>
         {canObserve ? (
           <Button
@@ -203,19 +203,19 @@ export function PackSheetBody({ packId, ctx }: { packId: number; ctx: PackContex
     ...new Set([...pack.exclusiveGifts, ...pack.giftPool.filter((id) => ctx.needed.has(id))]),
   ].sort((a, b) => Number(ctx.needed.has(b)) - Number(ctx.needed.has(a)) || a - b);
   return (
-    <div className="flex flex-col gap-2.5" data-testid="pack-sheet-body">
+    <div className="flex flex-col gap-3" data-testid="pack-sheet-body">
       <div className="flex items-start gap-3">
         <PackCard pack={pack} size={96} lang={ctx.lang} />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <span className="text-base font-semibold">{pick(pack.name, ctx.lang)}</span>
-          <span className="text-xs text-fg-2">{packFloorsText(pack, ctx.lang)}</span>
+          <span className="text-heading ">{pick(pack.name, ctx.lang)}</span>
+          <span className="text-caption text-fg-muted">{packFloorsText(pack, ctx.lang)}</span>
           <EnterActions packId={packId} ctx={ctx} />
         </div>
       </div>
-      <div className="text-xs font-medium text-fg-2">
-        {t('packGifts', ctx.lang)} <span className="font-num text-fg-3">{gifts.length}</span>
+      <div className="text-caption-strong text-fg-muted">
+        {t('packGifts', ctx.lang)} <span className="font-num text-fg-subtle">{gifts.length}</span>
       </div>
-      <ul className="divide-y divide-line border-t border-line">
+      <ul className="divide-y divide-border border-t border-border">
         {gifts.map((id) => (
           <GiftRow key={id} giftId={id} exclusive={exclusives.has(id)} ctx={ctx} />
         ))}

@@ -20,7 +20,13 @@ export interface UiState {
   rightWidth: number;
   /** 「지금 덱으로 활성」 shows only what is left to decide (`isMarked` tiles hidden). On by default. */
   activeUnpickedOnly: boolean;
+  /** How large gift tiles are drawn in the grids, tray, tracker and stage (`lib/icon-size.ts`). */
+  giftIconScale: GiftIconScale;
 }
+
+/** Steps of the gift tile size setting; `md` is the size the layout was drawn at. */
+export const GIFT_ICON_SCALES = ['sm', 'md', 'lg', 'xl'] as const;
+export type GiftIconScale = (typeof GIFT_ICON_SCALES)[number];
 
 /** How wide a side panel may be dragged: narrow enough to read, never eating the whole stage. */
 export const PANEL_WIDTH = { min: 260, max: 560, default: 336 } as const;
@@ -260,6 +266,7 @@ export function defaultUi(): UiState {
     leftWidth: PANEL_WIDTH.default,
     rightWidth: PANEL_WIDTH.default,
     activeUnpickedOnly: true,
+    giftIconScale: 'md',
   };
 }
 
@@ -283,6 +290,8 @@ export function sanitizeUi(raw: unknown): UiState {
   out.leftWidth = clampPanelWidth(source.leftWidth);
   out.rightWidth = clampPanelWidth(source.rightWidth);
   if (typeof source.activeUnpickedOnly === 'boolean') out.activeUnpickedOnly = source.activeUnpickedOnly;
+  if ((GIFT_ICON_SCALES as readonly unknown[]).includes(source.giftIconScale))
+    out.giftIconScale = source.giftIconScale as GiftIconScale;
   return out;
 }
 

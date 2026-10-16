@@ -6,14 +6,14 @@
  */
 import { useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Eye, X } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import type { ObservedGift } from '../../core/types.ts';
 import { pick, t } from '../i18n.ts';
 import { useDismiss } from '../lib/useDismiss.ts';
 import { useOverlayChrome } from '../lib/useOverlayChrome.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 import type { PackContext } from './PackSheet.tsx';
-import { Button } from './ui.tsx';
+import { Button, CloseButton } from './ui.tsx';
 
 export type DetailMode = 'popover' | 'sheet';
 
@@ -27,6 +27,8 @@ export function DetailSurface({
   onClose,
   placement,
   variant = 'detail',
+  alert = false,
+  describedBy,
   children,
 }: {
   /** The surface's DOM id, so a control with `aria-controls` can close what it opened. */
@@ -40,6 +42,9 @@ export function DetailSurface({
   /** Popover only: `menu` drops the close row and the fixed width — Escape, a press outside and the
    *  control that opened it (`aria-controls`) already close it. */
   variant?: 'detail' | 'menu';
+  /** Sheet only: a confirmation that interrupts (`alertdialog`), described by `describedBy`. */
+  alert?: boolean;
+  describedBy?: string;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -70,23 +75,19 @@ export function DetailSurface({
         <div
           ref={ref}
           id={id}
-          role="dialog"
+          role={alert ? 'alertdialog' : 'dialog'}
           aria-modal="true"
           aria-label={label}
+          aria-describedby={describedBy}
           data-testid="block-sheet"
           {...stop}
-          className="fixed inset-x-0 bottom-0 z-[60] max-h-[80dvh] overflow-y-auto rounded-t-md border-t border-line-strong bg-surface px-4 pb-6 pt-2 shadow-pop lg:inset-x-auto lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2 lg:rounded-md lg:border"
+          // A sheet: the large radius and the deepest shadow (design system §4–5). Its bottom clears
+          // the home indicator. No drag handle — nothing drags it, so a handle would promise a swipe.
+          style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}
+          className="fixed inset-x-0 bottom-0 z-[60] max-h-[80dvh] overflow-y-auto rounded-t-lg border-t border-border-strong bg-surface px-4 pt-2 shadow-lg lg:inset-x-auto lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2 lg:rounded-lg lg:border"
         >
-          <div className="mb-2 flex items-center">
-            <span className="mx-auto h-1 w-10 rounded-full bg-line-strong" aria-hidden />
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={closeLabel}
-              className="absolute right-3 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-2 hover:bg-surface-2"
-            >
-              <X size={14} aria-hidden />
-            </button>
+          <div className="mb-2 flex justify-end">
+            <CloseButton label={closeLabel} onClick={onClose} className="-mr-2" />
           </div>
           {children}
         </div>
@@ -104,19 +105,12 @@ export function DetailSurface({
       aria-label={label}
       data-testid="block-popover"
       {...stop}
-      className={`absolute z-30 rounded-md border border-line-strong bg-surface text-fg shadow-pop ${variant === 'menu' ? 'w-max p-1.5' : 'w-[320px] p-3'}`}
+      className={`absolute z-30 rounded-md border border-border-strong bg-surface text-fg shadow-md ${variant === 'menu' ? 'w-max p-1.5' : 'w-[min(320px,calc(100vw-2rem))] p-3'}`}
       style={{ ...vertical, ...horizontal }}
     >
       {variant === 'menu' ? null : (
         <div className="mb-1 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={closeLabel}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-2 hover:bg-surface-2"
-          >
-            <X size={13} aria-hidden />
-          </button>
+          <CloseButton label={closeLabel} onClick={onClose} size="sm" />
         </div>
       )}
       {children}
@@ -135,7 +129,7 @@ export function ObservedDetailBody({ entry, ctx }: { entry: ObservedGift; ctx: P
       : t('routeObservedRescue', ctx.lang);
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-3">
         <GiftIcon
           gift={gift}
           size={44}
@@ -143,14 +137,14 @@ export function ObservedDetailBody({ entry, ctx }: { entry: ObservedGift; ctx: P
           lang={ctx.lang}
         />
         <div className="flex min-w-0 flex-col">
-          <span className="text-sm font-semibold">{pick(gift.name, ctx.lang)}</span>
-          <span className="text-xs text-fg-2">
+          <span className="text-subheading ">{pick(gift.name, ctx.lang)}</span>
+          <span className="text-caption text-fg-muted">
             {t('routeObserved', ctx.lang)} · {why}
           </span>
         </div>
       </div>
       {ctx.giftTitle(entry.giftId) ? (
-        <span className="text-xs text-fg-2">{ctx.giftTitle(entry.giftId)}</span>
+        <span className="text-caption text-fg-muted">{ctx.giftTitle(entry.giftId)}</span>
       ) : null}
       {ctx.onToggleObserved ? (
         <Button

@@ -17,10 +17,10 @@ Limbus Company의 게임 데이터·텍스트·에셋에 대한 권리는 **Proj
 이 프로젝트는 **비상업 팬 프로젝트**이며 Project Moon과 제휴하거나 승인받지 않았습니다.
 
 `data/`와 `public/data/`에 담긴 게임 데이터는 플래너가 동작하는 데 필요한 범위에서만
-재배포합니다. 게임 이미지는 **기프트 아이콘 한 종류만** 담습니다 — 아래 「기프트 아이콘」.
-팩 일러스트·인격 그림 등 다른 게임 이미지는 담지 않습니다.
+재배포합니다. 게임 이미지는 **기프트 아이콘·키워드 아이콘·테마팩 그림**만 담습니다 — 아래 「게임 아이콘」.
+인격 그림 등 다른 게임 이미지는 담지 않습니다.
 
-## 기프트 아이콘
+## 게임 아이콘
 
 `public/icons/gifts/`의 E.G.O 기프트 아이콘은 **Project Moon의 게임 에셋**입니다. 게임 화면을
 읽어 런을 기록하는 기능이 합성 재료를 아이콘으로만 알아볼 수 있어서 싣고, 같은 아이콘을 기프트
@@ -28,23 +28,34 @@ Limbus Company의 게임 데이터·텍스트·에셋에 대한 권리는 **Proj
 `data/sources.lock.json`)이고, 그 저장소도 권리를 Project Moon에 둡니다. 권리자가 요청하면
 이 폴더를 지우고 아이콘 없이 동작하는 방식으로 돌아갑니다(아래 「삭제 요청」).
 
+`public/icons/keywords/`의 키워드 아이콘 10개(화상·출혈·진동·파열·침잠·호흡·충전·참격·관통·타격)도
+Project Moon의 게임 에셋입니다. 기프트 타일 모서리에서 그 기프트의 키워드를 알려 주는 표시로 쓰고,
+출처는 같은 저장소의 `assets/icons/`입니다. 요청이 오면 이 폴더만 지우고 색 점 표시로 돌아갑니다.
+
+`public/icons/packs/`의 테마팩 그림도 Project Moon의 게임 에셋입니다. 팩 카드의 그림으로 쓰고, 같은
+저장소의 `assets/theme_packs/`를 화면에 필요한 크기(폭 256px)로 줄여 담습니다. 요청이 오면 이
+폴더만 지우고 그림 없는 카드로 돌아갑니다.
+
 The E.G.O gift icons under `public/icons/gifts/` are Project Moon's game assets, included
-because the screen-capture tracker needs them to recognise fusion ingredients; the gift tiles show them too. They are copied from
-eldritchtools/limbus-assets and will be removed on the rights holder's request.
+because the screen-capture tracker needs them to recognise fusion ingredients; the gift tiles show them too. The ten
+keyword icons under `public/icons/keywords/` are Project Moon's game assets too, drawn as each gift tile's keyword
+badge, and so is the theme pack art under `public/icons/packs/`, shrunk to 256px wide for the pack cards. All three
+sets are copied from eldritchtools/limbus-assets and will be removed on the rights holder's request.
 
 ## 자작 아트
 
 `public/art/` 아래의 그림은 **이 저장소 소유자가 직접 그린 것**이며 권리도 소유자에게 있습니다.
 게임 에셋이 아니므로 이 저장소에 담을 수 있고, 그래서 담습니다. 아직 그리지 않은 자리는 기프트면
-게임 아이콘(위 「기프트 아이콘」)을, 팩이면 빈 상자를 둡니다.
+게임 아이콘을, 팩이면 게임 팩 그림을 둡니다(위 「게임 아이콘」).
 
 The drawings under `public/art/` are original work by this repository's owner, who holds their
-rights. They are not game assets; where none is drawn yet, a gift tile shows its game icon.
+rights. They are not game assets; where none is drawn yet, a gift tile shows its game icon and a pack card
+its game art.
 
 Limbus Company game data, text and assets are the property of **Project Moon**. This is a
 **non-commercial fan project**, not affiliated with or endorsed by Project Moon. Game data is
 redistributed only to the extent the planner needs it. The only game images included are the gift
-icons described above.
+icons, keyword icons and theme pack art described above.
 
 ## 데이터 출처
 
@@ -58,7 +69,7 @@ icons described above.
 - **eldritchtools/limbus-assets** — https://github.com/eldritchtools/limbus-assets
   limbus.tools의 가공 데이터. 게임 원본이 아니라 **제3자가 직접 가공한 편집물**이며,
   정적 데이터에 없는 인격의 키워드를 채우고 얼어 있는 거울 던전 데이터를 교차검증하는 데
-  씁니다. 기프트 아이콘(`public/icons/gifts/`)도 이곳의 사본입니다. 이 저장소가 내보내는 `public/data/identities.json`의 `keywordSource: "derived"`
+  씁니다. 기프트 아이콘(`public/icons/gifts/`)·키워드 아이콘(`public/icons/keywords/`)·팩 그림(`public/icons/packs/`)도 이곳의 사본입니다. 이 저장소가 내보내는 `public/data/identities.json`의 `keywordSource: "derived"`
   항목이 여기서 옵니다.
 
 ## 서체

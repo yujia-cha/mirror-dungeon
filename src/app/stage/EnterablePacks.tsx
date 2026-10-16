@@ -25,12 +25,12 @@ import { DetailSurface } from '../components/BlockDetail.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { PackCard } from '../components/PackCard.tsx';
 import { PackSheetBody, type PackContext } from '../components/PackSheet.tsx';
-import { Badge, Button } from '../components/ui.tsx';
+import { Badge, Button, LinkButton, TextField } from '../components/ui.tsx';
 
 const CARD_CLASS =
-  'relative flex w-[128px] flex-none flex-col items-center gap-2 rounded-md border bg-surface px-2.5 pt-2.5 select-none';
+  'relative flex w-[128px] flex-none flex-col items-center gap-2 rounded-md border bg-surface px-3 pt-3 select-none';
 const FOOT_CLASS =
-  '-mx-2.5 mt-0.5 flex h-[34px] w-[calc(100%+20px)] items-center justify-center gap-1 rounded-b-md border-t text-sm font-medium transition-colors';
+  '-mx-3 mt-0.5 flex h-[34px] w-[calc(100%+20px)] items-center justify-center gap-1 rounded-b-md border-t text-label transition-colors';
 const MAX_ICONS = 5;
 
 /** The pack's exclusive gifts as small icons, the wanted ones ringed; at most `MAX_ICONS`, then 「+n」. */
@@ -52,7 +52,7 @@ function ExclusiveIcons({
   const more = exclusives.length - shown.length;
   return (
     <div
-      className={`flex min-h-5 flex-wrap gap-[3px] ${justify === 'center' ? 'justify-center' : ''}`}
+      className={`flex min-h-5 flex-wrap gap-1 ${justify === 'center' ? 'justify-center' : ''}`}
       data-testid={testId}
     >
       {shown.map((id) => {
@@ -63,7 +63,7 @@ function ExclusiveIcons({
         return (
           <span
             key={id}
-            className={`inline-flex rounded-sm ${wanted ? 'ring-1 ring-ink' : ''}`}
+            className={`inline-flex rounded-sm ${wanted ? 'ring-1 ring-primary' : ''}`}
             data-wanted={wanted || undefined}
           >
             <GiftIcon gift={gift} size={20} status={ctx.run?.giftStatus(id) ?? null} lang={ctx.lang} />
@@ -71,7 +71,7 @@ function ExclusiveIcons({
         );
       })}
       {more > 0 ? (
-        <span className="inline-flex h-5 items-center px-1 font-num text-2xs text-fg-3">
+        <span className="inline-flex h-5 items-center px-1 font-num text-micro text-fg-subtle">
           {t('stageExclusiveMore', ctx.lang, { n: more })}
         </span>
       ) : null}
@@ -85,29 +85,27 @@ export function OtherEntryCard({ onSkip, lang }: { onSkip: () => void; lang: Lan
   return (
     <div
       {...pull.handlers}
-      className={`${CARD_CLASS} border-dashed border-line-strong ${pull.pulling ? 'z-10 shadow-pop' : ''} motion-reduce:transition-none`}
+      className={`${CARD_CLASS} border-dashed border-border-strong ${pull.pulling ? 'z-10 shadow-md' : ''} motion-reduce:transition-none`}
       style={pullStyle(pull)}
       data-testid="other-entry-card"
       data-pulling={pull.pulling || undefined}
       data-past={pull.past ?? undefined}
     >
       <span
-        className="inline-flex h-[180px] w-24 flex-none items-center justify-center rounded-sm border border-dashed border-line-strong bg-surface-3 text-fg-3"
+        className="inline-flex h-[180px] w-24 flex-none items-center justify-center rounded-sm border border-dashed border-border-strong bg-surface-sunken text-fg-subtle"
         aria-hidden
       >
         {/* Not a missing-artwork placeholder — this card has no pack. `opacity-40` put it at
             1.65:1, so it is only the contrast that was wrong. */}
-        <DoorOpen size={40} strokeWidth={1.5} className="text-fg-2" />
+        <DoorOpen size={40} strokeWidth={1.5} className="text-fg-muted" />
       </span>
-      <span className="text-center text-xs font-medium leading-tight text-fg">
-        {t('stageOtherEntry', lang)}
-      </span>
+      <span className="text-center text-caption-strong text-fg">{t('stageOtherEntry', lang)}</span>
       <div className="min-h-5" />
       <button
         type="button"
         onClick={onSkip}
         aria-label={t('stageOtherEntry', lang)}
-        className={`${FOOT_CLASS} border-dashed ${pull.past ? 'border-ink bg-ink text-ink-fg' : 'border-line-strong text-fg-2 hover:bg-surface-2'}`}
+        className={`${FOOT_CLASS} border-dashed ${pull.past ? 'border-primary bg-primary text-primary-fg' : 'border-border-strong text-fg-muted hover:bg-surface-muted'}`}
       >
         {pull.past ? t('stageReleaseNext', lang) : t('stageNext', lang)}
         <ChevronsDown size={14} aria-hidden />
@@ -139,7 +137,7 @@ export function StagePackCard({
   return (
     <div
       {...pull.handlers}
-      className={`${CARD_CLASS} border-line ${pull.pulling ? 'z-10 shadow-pop' : 'shadow-card'} motion-reduce:transition-none`}
+      className={`${CARD_CLASS} border-border ${pull.pulling ? 'z-10 shadow-md' : 'shadow-sm'} motion-reduce:transition-none`}
       style={pullStyle(pull)}
       data-testid="stage-pack"
       data-pack={pack.id}
@@ -147,15 +145,13 @@ export function StagePackCard({
       data-past={pull.past ?? undefined}
     >
       <PackCard pack={pack} size={96} lang={lang} />
-      <button
-        type="button"
+      <LinkButton
         onClick={() => onOpen(pack.id)}
-        aria-haspopup="dialog"
-        aria-label={t('stagePackDetail', lang, { name })}
-        className="line-clamp-2 w-full break-keep text-center text-xs font-medium leading-tight text-fg underline-offset-2 hover:underline"
+        ariaLabel={t('stagePackDetail', lang, { name })}
+        className="line-clamp-2 w-full break-keep text-center text-caption-strong"
       >
         {name}
-      </button>
+      </LinkButton>
       {alternatives.length > 0 ? (
         <span data-testid="pack-alternatives" data-alternatives={alternatives.join(',')}>
           <Badge tone="neutral" title={alternatives.map((id) => ctx.packName(id)).join(', ')}>
@@ -174,7 +170,7 @@ export function StagePackCard({
         type="button"
         onClick={() => onEnter(pack.id)}
         aria-label={t('stageEnterPack', lang, { name })}
-        className={`${FOOT_CLASS} ${pull.past ? 'border-ink bg-ink text-ink-fg' : 'border-line text-fg-2 hover:bg-surface-2'}`}
+        className={`${FOOT_CLASS} ${pull.past ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:bg-surface-muted'}`}
       >
         {pull.past ? t('stageReleaseEnter', lang) : t('stageEnter', lang)}
         <ChevronsDown size={14} aria-hidden />
@@ -224,24 +220,24 @@ export function OtherPacks({
     );
   }, [offered, exclude, sameGifts, ctx, query, lang, exclusivesOf]);
   return (
-    <details className="rounded-md border border-line bg-surface" data-testid="other-packs">
-      <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-fg-2">
-        {t('stageOtherPacks', lang)} <span className="font-num text-xs text-fg-3">{packs.length}</span>
+    <details className="rounded-md border border-border bg-surface" data-testid="other-packs">
+      <summary className="cursor-pointer px-3 py-2 text-label text-fg-muted">
+        {t('stageOtherPacks', lang)}{' '}
+        <span className="font-num text-caption text-fg-subtle">{packs.length}</span>
       </summary>
-      <div className="flex flex-col gap-2 border-t border-line px-3 py-2">
-        <label className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line-control bg-surface-2 px-2.5 text-xs text-fg-2">
-          <Search size={12} aria-hidden />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-label={t('stageOtherSearch', lang)}
-            placeholder={t('stageOtherSearch', lang)}
-            className="min-w-0 flex-1 bg-transparent text-xs text-fg outline-none placeholder:text-fg-3"
-          />
-        </label>
+      <div className="flex flex-col gap-2 border-t border-border px-3 py-2">
+        <TextField
+          value={query}
+          onChange={setQuery}
+          label={t('stageOtherSearch', lang)}
+          placeholder={t('stageOtherSearch', lang)}
+          icon={<Search size={14} aria-hidden />}
+          onClear={() => setQuery('')}
+          clearLabel={t('searchClear', lang)}
+          inputProps={{ type: 'search' }}
+        />
         {packs.length === 0 ? (
-          <p className="text-xs text-fg-3">{t('stageOtherNone', lang)}</p>
+          <p className="text-caption text-fg-subtle">{t('stageOtherNone', lang)}</p>
         ) : (
           <ul className="grid gap-1.5 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
             {packs.map((pack) => {
@@ -249,14 +245,14 @@ export function OtherPacks({
               return (
                 <li
                   key={pack.id}
-                  className="relative flex items-center gap-2 rounded-sm border border-line px-2 py-1.5"
+                  className="relative flex items-center gap-2 rounded-sm border border-border px-2 py-1.5"
                   data-testid="other-pack"
                   data-pack={pack.id}
                 >
                   <PackCard pack={pack} size={28} onOpen={setOpen} lang={lang} />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-sm">{name}</span>
+                      <span className="truncate text-body">{name}</span>
                       {sameGifts?.has(pack.id) ? (
                         <span data-testid="other-pack-same">
                           <Badge tone="neutral">{t('stageSameGifts', lang)}</Badge>

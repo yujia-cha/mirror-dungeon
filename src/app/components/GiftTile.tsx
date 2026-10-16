@@ -1,9 +1,10 @@
 /**
  * A gift the player marks as got or not, laid out like the items grid: the icon is the toggle and
- * the name opens the gift's details. The look carries the state — not got is greyscale and dimmed,
- * got is full colour with a check, missed (decided by the run) is dimmed harder with a cross and a
- * press turns it into got. A goal gift wears a ring so it stands out among the rest of a pack's
- * drops. Without `onOpen` the name is plain text.
+ * the name opens the gift's details. The picture always keeps its colour — the player is looking
+ * for this icon in the game — and the frame carries the state (M99): not got is a dashed frame, got
+ * is the ink frame with a check on a filled tile, missed (decided by the run) fades the picture
+ * with a cross and a press turns it into got. A goal gift wears a ring so it stands out among the
+ * rest of a pack's drops. Without `onOpen` the name is plain text.
  */
 import type { Gift } from '../../core/schema.ts';
 import { pick, t, type Lang } from '../i18n.ts';
@@ -12,6 +13,7 @@ import { tierLabel } from '../lib/labels.ts';
 import type { GiftStatus } from '../lib/plan-input.ts';
 import { useKeywordName } from '../lib/useEnums.ts';
 import { GiftIcon, type GiftIconSize } from './GiftIcon.tsx';
+import { LinkButton } from './ui.tsx';
 
 export function GiftTile({
   gift,
@@ -56,8 +58,8 @@ export function GiftTile({
   return (
     <div
       className={`relative flex select-none flex-col items-center gap-1 rounded-md border p-1.5 text-center ${
-        wanted ? 'border-ink ring-1 ring-ink' : 'border-line'
-      } ${status === null || status === 'failed' ? '' : 'bg-surface'}`}
+        wanted ? 'border-primary ring-1 ring-primary' : 'border-border'
+      } ${status === 'got' ? 'bg-surface-muted' : ''}`}
       style={{ width }}
       data-testid="gift-tile"
       data-gift={gift.id}
@@ -65,10 +67,9 @@ export function GiftTile({
       data-wanted={wanted || undefined}
     >
       {/*
-        「아직 안 얻음」 is a dim, and `GiftIcon` owns it — setting it on a wrapper would take the
-        icon's keyword badge into the same `grayscale`, and that badge is the only thing still saying
-        which keyword an uncollected gift has. The name stays outside it: at 10px a dimmed name
-        would sit under the 4.5:1 the floor strip is careful about.
+        「아직 안 얻음」 is the icon's dashed frame (`pending`), not a fade: the toggle can be pressed,
+        and a faded control reads as one that cannot. `GiftIcon` owns every state look, so the name
+        beside it keeps full contrast.
       */}
       <button
         type="button"
@@ -84,23 +85,21 @@ export function GiftTile({
           size={size}
           judgement={judgement}
           status={status}
-          dim={status === null}
+          pending={status === null}
           lang={lang}
         />
       </button>
       {onOpen ? (
-        <button
-          type="button"
+        <LinkButton
           onClick={onOpen}
-          aria-haspopup="dialog"
-          aria-label={t('giftDetail', lang, { name })}
-          className="line-clamp-2 w-full break-keep text-xs leading-tight text-fg underline-offset-2 hover:underline"
+          ariaLabel={t('giftDetail', lang, { name })}
+          className="line-clamp-2 w-full break-keep text-caption"
         >
           {name}
-        </button>
+        </LinkButton>
       ) : (
         // The toggle's label already says the name.
-        <span className="line-clamp-2 w-full break-keep text-xs leading-tight text-fg" aria-hidden>
+        <span className="line-clamp-2 w-full break-keep text-caption text-fg" aria-hidden>
           {name}
         </span>
       )}

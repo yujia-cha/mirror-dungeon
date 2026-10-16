@@ -4,18 +4,28 @@
  * request for art that is not there means hundreds of 404s while the 558 slots are still filling.
  */
 import { afterEach, describe, expect, it } from 'vitest';
-import { giftIconUrl, packImageUrl, setArtManifest, setGiftIconManifest } from '../assets.ts';
+import {
+  giftIconUrl,
+  keywordIconUrl,
+  packImage,
+  setArtManifest,
+  setGiftIconManifest,
+  setKeywordIconManifest,
+  setPackImageManifest,
+} from '../assets.ts';
 
 afterEach(() => {
   setArtManifest(null);
   setGiftIconManifest(null);
+  setKeywordIconManifest(null);
+  setPackImageManifest(null);
 });
 
 describe('with no art and no asset host', () => {
   it('returns nothing, so the tile is drawn without a picture', () => {
     setArtManifest(null);
     expect(giftIconUrl(9088)).toBeNull();
-    expect(packImageUrl('Canto_I')).toBeNull();
+    expect(packImage('Canto_I')).toBeNull();
   });
 });
 
@@ -23,10 +33,10 @@ describe('with local art', () => {
   it('serves only what the manifest lists, so a missing drawing is never requested', () => {
     setArtManifest({ gifts: [9088], packs: ['Canto_I'] });
     expect(giftIconUrl(9088)).toEqual({ url: '/art/gifts/9088.png', pixelArt: true });
-    expect(packImageUrl('Canto_I')).toBe('/art/packs/Canto_I.png');
+    expect(packImage('Canto_I')).toEqual({ url: '/art/packs/Canto_I.png', pixelArt: true });
     // Not listed: no request at all rather than a 404 per tile.
     expect(giftIconUrl(9089)).toBeNull();
-    expect(packImageUrl('Canto_II')).toBeNull();
+    expect(packImage('Canto_II')).toBeNull();
   });
 
   it('carries BASE_URL, because GitHub Pages serves the site from a sub-path', () => {
@@ -45,7 +55,7 @@ describe('with local art', () => {
 
   it('escapes a pack sprite so an odd character cannot break the path', () => {
     setArtManifest({ gifts: [], packs: ['A B/C'] });
-    expect(packImageUrl('A B/C')).toContain('art/packs/A%20B%2FC.png');
+    expect(packImage('A B/C')?.url).toContain('art/packs/A%20B%2FC.png');
   });
 });
 
@@ -75,8 +85,49 @@ describe('with the game gift icons (M94)', () => {
     expect(giftIconUrl(9088)).toEqual({ url: '/art/gifts/9088.png', pixelArt: true });
   });
 
-  it('never gives packs a game image', () => {
+  it('does not make the gift icon set a source of pack art', () => {
     setGiftIconManifest(icons([9088]));
-    expect(packImageUrl('Canto_I')).toBeNull();
+    expect(packImage('Canto_I')).toBeNull();
+  });
+});
+
+describe('with the game pack art (M100)', () => {
+  const packs = (keys: string[]) => ({
+    source: { repo: 'r', sha: 's' },
+    encode: { width: 256, quality: 75 },
+    packs: keys,
+  });
+
+  it('serves a listed sprite from public/icons/packs, painted (not pixelated)', () => {
+    // Arrange
+    setPackImageManifest(packs(['Canto_I']));
+    // Act
+    const picture = packImage('Canto_I');
+    // Assert
+    expect(picture).toEqual({ url: `${import.meta.env.BASE_URL}icons/packs/Canto_I.webp`, pixelArt: false });
+    expect(packImage('Canto_II')).toBeNull();
+  });
+
+  it("lets the owner's drawing win over the game art", () => {
+    setPackImageManifest(packs(['Canto_I']));
+    setArtManifest({ gifts: [], packs: ['Canto_I'] });
+    expect(packImage('Canto_I')).toEqual({ url: '/art/packs/Canto_I.png', pixelArt: true });
+  });
+});
+
+describe('keyword icons (M99)', () => {
+  it('serves a listed keyword from public/icons/keywords under the base path', () => {
+    // Arrange
+    setKeywordIconManifest({ source: { repo: 'r', sha: 's' }, keywords: ['Combustion', 'Slash'] });
+    // Act + Assert
+    expect(keywordIconUrl('Slash')).toBe(`${import.meta.env.BASE_URL}icons/keywords/Slash.webp`);
+  });
+
+  it('requests nothing for a keyword the manifest does not list, or with no manifest', () => {
+    setKeywordIconManifest({ source: { repo: 'r', sha: 's' }, keywords: ['Combustion'] });
+    expect(keywordIconUrl('Sinking')).toBeNull();
+    expect(keywordIconUrl('None')).toBeNull();
+    setKeywordIconManifest(null);
+    expect(keywordIconUrl('Combustion')).toBeNull();
   });
 });
