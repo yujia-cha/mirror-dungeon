@@ -263,7 +263,9 @@ export function AppShell({
                               setMenu(false);
                               item.run();
                             }}
-                            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-body text-fg hover:bg-surface-muted active:bg-surface-sunken touch:min-h-11"
+                            // One size with the icon-size steps below (M122): the same 36px row, the
+                            // same label type, so the menu reads as one set of controls.
+                            className="flex min-h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-label text-fg hover:bg-surface-muted active:bg-surface-sunken touch:min-h-11"
                           >
                             {item.icon}
                             {t(item.key, lang)}
@@ -291,7 +293,7 @@ export function AppShell({
                             type="button"
                             aria-pressed={ui.giftIconScale === scale}
                             onClick={() => setUi({ giftIconScale: scale })}
-                            className="min-h-8 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-caption text-fg hover:bg-surface-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg"
+                            className="min-h-9 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-label text-fg hover:bg-surface-muted active:bg-surface-sunken aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg touch:min-h-11"
                           >
                             {t(`giftIconSize_${scale}`, lang)}
                           </button>

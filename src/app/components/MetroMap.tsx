@@ -13,7 +13,6 @@ import { pick, t } from '../i18n.ts';
 import { segmentsFor, stackBlocks, type Segment } from '../lib/metro.ts';
 import { useElementWidth, useMeasuredHeights } from '../lib/useElementWidth.ts';
 import { DetailSurface, ObservedDetailBody, type DetailMode } from './BlockDetail.tsx';
-import { LinkButton } from './ui.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { PackCard } from './PackCard.tsx';
 import { PackSheetBody, type PackContext } from './PackSheet.tsx';
@@ -287,34 +286,40 @@ export function MetroMap({
         <span className="sr-only" data-testid="segment-floors">
           {floorLabel(segment)}
         </span>
-        <PackCard
-          pack={theme}
-          size={compact ? 20 : 28}
-          caption={!compact}
-          // The shell's one detail sheet when there is one (M120); a local surface otherwise.
-          // A compact row's name beside it is the link, so the portrait is not a second button.
-          onOpen={
-            compact && ctx.onOpenPack
-              ? undefined
-              : () =>
-                  ctx.onOpenPack
-                    ? ctx.onOpenPack(pack.packId)
-                    : setOpen({ kind: 'pack', packId: pack.packId, key, mode })
-          }
-          lang={lang}
-        />
-        {compact ? (
-          ctx.onOpenPack ? (
-            <LinkButton
-              onClick={() => ctx.onOpenPack?.(pack.packId)}
-              className="truncate text-caption-strong"
-            >
+        {compact && ctx.onOpenPack ? (
+          // A one-floor pack (compact row): the portrait and the name are one button, so a press
+          // on either opens the pack (M122 — the portrait alone did nothing) and a reader hears
+          // the name once.
+          <button
+            type="button"
+            onClick={() => ctx.onOpenPack?.(pack.packId)}
+            aria-haspopup="dialog"
+            aria-label={pick(theme.name, lang)}
+            className="flex min-w-0 items-center gap-1.5 rounded-sm text-left hover:bg-surface-muted"
+            data-testid="segment-pack-open"
+          >
+            <PackCard pack={theme} size={20} lang={lang} />
+            <span className="truncate text-caption-strong text-fg underline decoration-border-strong underline-offset-2">
               {pick(theme.name, lang)}
-            </LinkButton>
-          ) : (
-            <span className="truncate text-caption-strong ">{pick(theme.name, lang)}</span>
-          )
-        ) : null}
+            </span>
+          </button>
+        ) : (
+          <>
+            <PackCard
+              pack={theme}
+              size={compact ? 20 : 28}
+              caption={!compact}
+              // The shell's one detail sheet when there is one (M120); a local surface otherwise.
+              onOpen={() =>
+                ctx.onOpenPack
+                  ? ctx.onOpenPack(pack.packId)
+                  : setOpen({ kind: 'pack', packId: pack.packId, key, mode })
+              }
+              lang={lang}
+            />
+            {compact ? <span className="truncate text-caption-strong ">{pick(theme.name, lang)}</span> : null}
+          </>
+        )}
         {detailFor(key, mode)}
       </div>
     );

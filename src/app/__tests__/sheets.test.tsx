@@ -143,4 +143,21 @@ describe('one detail sheet for gifts and packs (M120)', () => {
     expect(screen.getByTestId('pack-detail')).toBeInTheDocument();
     expect(screen.queryByTestId('detail-back')).toBeNull();
   });
+
+  it('opens a one-floor pack from its portrait on the route map, not only from its name (M122)', async () => {
+    // Arrange: 화왕지절 entered on floor 4 — a one-floor (compact) row on the map.
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267);
+    useApp.getState().visitPack(1402, 4);
+    renderPlanned(<RoutePlanPanel onOpenGifts={() => undefined} />);
+    const row = screen.getAllByTestId('segment-pack').find((el) => el.getAttribute('data-pack') === '1402')!;
+
+    // Act: press the picture.
+    await user.click(within(row).getByTestId('pack-image'));
+
+    // Assert: the pack's sheet, and the row is one button with the name (heard once).
+    expect(screen.getByTestId('pack-detail')).toBeInTheDocument();
+    expect(within(row).getAllByRole('button')).toHaveLength(1);
+  });
 });

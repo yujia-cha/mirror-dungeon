@@ -151,10 +151,12 @@ export function sinnerOf(identityId: number): number {
   return Math.floor(identityId / 100) % 100;
 }
 
+/**
+ * The theme a first visit starts in: dark (M122, owner's call — the game is dark, and the app is
+ * used beside it). The player's own choice (「테마 변경」) is saved and wins from then on.
+ */
 function prefersDark(): boolean {
-  return typeof window === 'undefined' || typeof window.matchMedia !== 'function'
-    ? true
-    : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return true;
 }
 
 /**

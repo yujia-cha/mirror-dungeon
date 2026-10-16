@@ -3244,7 +3244,12 @@ describe('AppShell', () => {
       within(screen.getByTestId('header-menu'))
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['초기화', '링크 복사', 'English', '화면 전환']);
+    ).toEqual(['초기화', '링크 복사', 'English', '테마 변경']);
+    // One size with the icon-size steps below (M122): both are 36px rows of label type.
+    for (const b of within(screen.getByTestId('header-menu')).getAllByRole('button'))
+      expect(b.className).toMatch(/\bmin-h-9\b.*\btext-label\b|\btext-label\b.*\bmin-h-9\b/);
+    for (const b of within(screen.getByTestId('gift-icon-size')).getAllByRole('button'))
+      expect(b.className).toMatch(/\bmin-h-9\b.*\btext-label\b|\btext-label\b.*\bmin-h-9\b/);
     // A menu, not a detail: no close row above the first item (it drew an empty band on a phone,
     // where the fixed-width popover ran off the right edge and hid the ✕), and anchored to the
     // header's right edge so it stays on screen.
@@ -3887,6 +3892,9 @@ describe('RunStage', () => {
     const row = rows.find((r) => sources.includes(r.getAttribute('data-pack')!))!;
     const icons = within(row).getAllByTestId('gift-icon');
     expect(icons.length).toBeGreaterThan(1);
+    // On a line of their own and larger than on a card, so the keyword badge leaves the picture
+    // readable (M122).
+    expect(icons[0]!.style.width).toBe('32px');
     expect(row.querySelectorAll('[data-wanted]')).toHaveLength(1);
     expect(within(row).getByRole('img', { name: /^달궈진 놋쇠 ·/ })).toBeInTheDocument();
     expect(row).not.toHaveTextContent('목표');
@@ -3973,7 +3981,8 @@ describe('RunStage', () => {
     expect(useApp.getState().run).toMatchObject({ currentFloor: 1, stageFloor: 1, visits: {} });
     expect(useApp.getState().deck).toEqual(deck);
     expect(useApp.getState().wanted).toEqual([9267]);
-  });
+    // Fifteen floors of clicks: generous under a loaded machine, as CI runners can be.
+  }, 20_000);
 
   it('draws every route pack of the floor as the same card, planned one first, then the dashed one', async () => {
     const user = userEvent.setup();
@@ -4148,7 +4157,8 @@ describe('RunStage', () => {
     expect(screen.getByTestId('run-stage')).toHaveAttribute('data-mode', 'entered');
     await user.click(within(screen.getByTestId('entered-pack')).getByTestId('area-next'));
     expect(screen.getByTestId('run-stage')).toHaveAttribute('data-mode', 'done');
-  });
+    // Fifteen floors of clicks: generous under a loaded machine, as CI runners can be.
+  }, 20_000);
 
   it('keeps the entry undone from a pack sheet in step with 「입장 취소」', async () => {
     const user = userEvent.setup();

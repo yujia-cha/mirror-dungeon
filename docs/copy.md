@@ -76,8 +76,8 @@
 - 쓰는 곳: src/app/shell/AppShell.tsx
 
 ### themeToggle
-- ko: 화면 전환
-- en: Toggle theme
+- ko: 테마 변경
+- en: Change theme
 - 쓰는 곳: src/app/shell/AppShell.tsx
 
 ### giftIconSize

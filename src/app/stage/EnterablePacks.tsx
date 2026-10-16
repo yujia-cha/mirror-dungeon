@@ -39,12 +39,15 @@ function ExclusiveIcons({
   exclusivesOf,
   justify,
   testId,
+  size = 20,
 }: {
   packId: number;
   ctx: PackContext;
   exclusivesOf: (packId: number) => number[];
   justify: 'center' | 'start';
   testId: string;
+  /** Icon size: 20 on a stage card, larger in the 「다른 팩」 rows where they get a line of their own. */
+  size?: number;
 }) {
   // What the route collects first: 18 packs carry more than `MAX_ICONS` exclusives, and a goal past
   // the fifth by id hid behind 「+n」 with its ring, so the card no longer said the pack held it.
@@ -69,12 +72,15 @@ function ExclusiveIcons({
             className={`inline-flex rounded-sm ${wanted ? 'ring-1 ring-primary' : ''}`}
             data-wanted={wanted || undefined}
           >
-            <GiftIcon gift={gift} size={20} status={ctx.run?.giftStatus(id) ?? null} lang={ctx.lang} />
+            <GiftIcon gift={gift} size={size} status={ctx.run?.giftStatus(id) ?? null} lang={ctx.lang} />
           </span>
         );
       })}
       {more > 0 ? (
-        <span className="inline-flex h-5 items-center px-1 font-num text-micro text-fg-subtle">
+        <span
+          className="inline-flex items-center px-1 font-num text-micro text-fg-subtle"
+          style={{ height: size }}
+        >
           {t('stageExclusiveMore', ctx.lang, { n: more })}
         </span>
       ) : null}
@@ -249,50 +255,56 @@ export function OtherPacks({
               return (
                 <li
                   key={pack.id}
-                  className="relative flex items-center gap-2 rounded-sm border border-border px-2 py-1.5"
+                  // Picture · name · entry on one line, the gifts on a line of their own below
+                  // (M122): squeezed beside the name at 20px, the keyword badge covered half of
+                  // each icon.
+                  className="relative flex flex-col gap-1.5 rounded-sm border border-border px-2 py-1.5"
                   data-testid="other-pack"
                   data-pack={pack.id}
                 >
-                  <PackCard pack={pack} size={28} onOpen={open} lang={lang} />
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <LinkButton
-                        onClick={() => open(pack.id)}
-                        ariaLabel={t('stagePackDetail', lang, { name })}
-                        className="truncate text-left text-body"
-                        testId="other-pack-name"
-                      >
-                        {name}
-                      </LinkButton>
-                      {sameGifts?.has(pack.id) ? (
-                        <span data-testid="other-pack-same">
-                          <Badge tone="neutral">{t('stageSameGifts', lang)}</Badge>
-                        </span>
-                      ) : null}
-                    </span>
-                    <ExclusiveIcons
-                      packId={pack.id}
-                      ctx={ctx}
-                      exclusivesOf={exclusivesOf}
-                      justify="start"
-                      testId="other-pack-gifts"
-                    />
-                  </div>
-                  {/* A pack is entered once a run. One already recorded says where, instead of
+                  <div className="flex items-center gap-2">
+                    <PackCard pack={pack} size={28} onOpen={open} lang={lang} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <LinkButton
+                          onClick={() => open(pack.id)}
+                          ariaLabel={t('stagePackDetail', lang, { name })}
+                          className="truncate text-left text-body"
+                          testId="other-pack-name"
+                        >
+                          {name}
+                        </LinkButton>
+                        {sameGifts?.has(pack.id) ? (
+                          <span data-testid="other-pack-same">
+                            <Badge tone="neutral">{t('stageSameGifts', lang)}</Badge>
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                    {/* A pack is entered once a run. One already recorded says where, instead of
                       offering a second entry that would quietly move it to this floor. */}
-                  {visitedAt(pack.id) !== null ? (
-                    <Badge tone="sure">{t('runVisitedShort', lang, { floor: visitedAt(pack.id)! })}</Badge>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => onEnter(pack.id)}
-                      ariaLabel={t('stageEnterPack', lang, { name })}
-                    >
-                      <LogIn size={12} aria-hidden />
-                      {t('stageEnter', lang)}
-                    </Button>
-                  )}
+                    {visitedAt(pack.id) !== null ? (
+                      <Badge tone="sure">{t('runVisitedShort', lang, { floor: visitedAt(pack.id)! })}</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => onEnter(pack.id)}
+                        ariaLabel={t('stageEnterPack', lang, { name })}
+                      >
+                        <LogIn size={12} aria-hidden />
+                        {t('stageEnter', lang)}
+                      </Button>
+                    )}
+                  </div>
+                  <ExclusiveIcons
+                    packId={pack.id}
+                    ctx={ctx}
+                    exclusivesOf={exclusivesOf}
+                    justify="start"
+                    testId="other-pack-gifts"
+                    size={32}
+                  />
                 </li>
               );
             })}

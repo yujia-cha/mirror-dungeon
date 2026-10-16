@@ -20,7 +20,7 @@ export const STRINGS = {
     en: 'Resets the deck, gifts, route settings and run record.',
   },
   langToggle: { ko: 'English', en: '한국어' },
-  themeToggle: { ko: '화면 전환', en: 'Toggle theme' },
+  themeToggle: { ko: '테마 변경', en: 'Change theme' },
   giftIconSize: { ko: '기프트 아이콘 크기', en: 'Gift icon size' },
   giftIconSize_sm: { ko: '작게', en: 'Small' },
   giftIconSize_md: { ko: '보통', en: 'Medium' },

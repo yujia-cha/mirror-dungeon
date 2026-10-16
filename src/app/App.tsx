@@ -164,6 +164,8 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
+    // The browser bar too (M122) — the page's `bg` in each theme, as `index.html` sets it first.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#131211' : '#f7f6f4');
   }, [dark]);
 
   useEffect(() => {

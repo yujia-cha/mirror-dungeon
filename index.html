@@ -19,8 +19,9 @@
          `start_url` and `scope` inside it are relative for the same reason. -->
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="canonical" href="%SITE_URL%" />
-    <meta name="theme-color" content="#f7f6f4" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1c1917" media="(prefers-color-scheme: dark)" />
+    <!-- The browser bar follows the app's theme, not the system's (M122): the script below and
+         `App` set it, because the app starts dark whatever the system prefers. -->
+    <meta name="theme-color" content="#131211" />
 
     <!--
       The app is passed around as a share link (`#s=…`), so the unfurl in KakaoTalk, Discord and
@@ -60,10 +61,12 @@
           var saved = JSON.parse(window.localStorage.getItem('md-route-planner') || 'null');
           if (saved && saved.state && typeof saved.state.dark === 'boolean') dark = saved.state.dark;
         } catch (e) {
-          /* private mode, blocked storage, or a half-written blob — fall through to the query */
+          /* private mode, blocked storage, or a half-written blob — fall through to the default */
         }
-        if (dark === undefined) dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        // A first visit starts dark (M122), like the store's default.
+        if (dark === undefined) dark = true;
         if (dark) document.documentElement.classList.add('dark');
+        else document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f6f4');
       })();
     </script>
   </head>
