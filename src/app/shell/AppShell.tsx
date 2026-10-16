@@ -8,6 +8,7 @@ import { useState } from 'react';
 import {
   CircleHelp,
   Globe,
+  MessageSquareText,
   MoreHorizontal,
   Moon,
   PanelLeft,
@@ -45,6 +46,7 @@ const NOTICE_URL = 'https://github.com/yujia-cha/mirror-dungeon/blob/main/NOTICE
 import { SidePanel } from './SidePanel.tsx';
 import { GiftBrowser } from './GiftBrowser.tsx';
 import { GuideSheet } from './GuideSheet.tsx';
+import { FeedbackSheet } from './FeedbackSheet.tsx';
 import { CaptureMenu } from './CapturePanel.tsx';
 import { CaptureProvider } from '../capture/CaptureProvider.tsx';
 import { usePageHistory } from '../lib/usePageHistory.ts';
@@ -218,6 +220,9 @@ export function AppShell({
   // the device's back closes the guide first, as it does a gift sheet.
   const [guide, setGuide] = useState(false);
   usePageHistory(guide, () => setGuide(false), !desktop);
+  // The feedback form (M127) is a sheet the same way.
+  const [feedback, setFeedback] = useState(false);
+  usePageHistory(feedback, () => setFeedback(false), !desktop);
   const reset = (): void => {
     setConfirmReset(false);
     resetAll(defaultDeck(data), DEPLOYED_AT_START);
@@ -305,6 +310,12 @@ export function AppShell({
                             key: 'themeToggle',
                             icon: dark ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />,
                             run: onToggleDark,
+                          },
+                          // M127: a GitHub issue the app fills in (FeedbackSheet).
+                          {
+                            key: 'feedback',
+                            icon: <MessageSquareText size={14} aria-hidden />,
+                            run: () => setFeedback(true),
                           },
                         ] as const
                       ).map((item) => (
@@ -506,6 +517,7 @@ export function AppShell({
               <GiftBrowser key={browserSeed.n} page initialQuery={browserSeed.query} onClose={closeBrowser} />
             ) : null}
             {guide ? <GuideSheet lang={lang} noticeUrl={NOTICE_URL} onClose={() => setGuide(false)} /> : null}
+            {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}
             {confirmReset ? (
               <ConfirmDialog
                 title={t('resetAll', lang)}

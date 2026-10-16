@@ -587,6 +587,143 @@ export const STRINGS = {
     en: 'Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. To run it yourself, put it in local-fixtures/sessions/ of the development repository and run npm run capture:feedback. It contains game screens, so keep it out of public places such as issues and chat rooms.',
   },
 
+  // ── 피드백 보내기 (⋯ 메뉴와 그 창)
+  feedback: { ko: '피드백 보내기', en: 'Send feedback' },
+  feedbackIntro: {
+    ko: '버그·제안·데이터 오류를 GitHub 이슈로 보냅니다. 내용만 쓰면 앱 상태와 기록은 자동으로 붙습니다.',
+    en: 'Report a bug, an idea or a data error as a GitHub issue. Write what happened; the app attaches its state and logs.',
+  },
+  feedbackKindLabel: { ko: '종류', en: 'Type' },
+  feedbackKind_bug: { ko: '버그', en: 'Bug' },
+  feedbackKind_idea: { ko: '제안', en: 'Suggestion' },
+  feedbackKind_data: { ko: '데이터 오류', en: 'Data error' },
+  feedbackKind_other: { ko: '기타', en: 'Other' },
+  feedbackTitleLabel: { ko: '제목 (선택)', en: 'Title (optional)' },
+  feedbackTitlePlaceholder: {
+    ko: '비워 두면 내용의 첫 줄을 씁니다',
+    en: 'Left empty, the first line of the message is used',
+  },
+  feedbackMessageLabel: { ko: '내용', en: 'Message' },
+  feedbackMessagePlaceholder: {
+    ko: '무엇을 했고, 무엇이 일어났고, 무엇을 기대했는지 적어 주세요.',
+    en: 'What you did, what happened, and what you expected.',
+  },
+  feedbackMessageRequired: { ko: '내용을 적어 주세요.', en: 'Please write a message.' },
+  feedbackAttach: { ko: '함께 보낼 것', en: 'Attach' },
+  feedbackAttachState: {
+    ko: '앱 상태 첨부 (덱·목표·설정·런·루트 요약)',
+    en: 'App state (deck, goals, settings, run, route summary)',
+  },
+  feedbackAttachLog: { ko: '오류·조작 기록 첨부', en: 'Error and action log' },
+  feedbackAttachDiag: { ko: '피드백용 진단 기록 첨부 ({n}건)', en: 'Feedback diagnostics ({n} records)' },
+  feedbackDiagTitle: { ko: '피드백용 진단 기록', en: 'Feedback diagnostics' },
+  feedbackDiagRecord: { ko: '기록하기', en: 'Record' },
+  feedbackDiagHint: {
+    ko: '켜 두면 오류·런 변경·층별 루트 결과와 화면 인식이 읽은 내용(글자만, 게임 화면 제외)을 이 기기에만 남깁니다. 피드백을 보낼 때만 함께 갑니다.',
+    en: "While on, errors, run changes, each floor's route outcome and what the screen reader read (text only, no game screens) stay on this device. They leave it only with feedback you send.",
+  },
+  feedbackDiagCount: { ko: '기록 {n}건', en: '{n} records' },
+  feedbackDiagEmpty: { ko: '아직 기록이 없습니다', en: 'Nothing recorded yet' },
+  feedbackDiagClear: { ko: '지우기', en: 'Clear' },
+  feedbackShot: { ko: '앱 화면을 클립보드에 복사', en: 'Copy the app screen to the clipboard' },
+  feedbackShotHint: {
+    ko: '이 앱의 화면만 찍습니다(게임 화면은 찍지 않습니다). 이슈 본문에 Ctrl+V(붙여넣기)로 붙일 수 있습니다.',
+    en: "Takes only this app's screen, never the game's. Paste it into the issue body with Ctrl+V.",
+  },
+  feedbackShotCopied: {
+    ko: '앱 화면을 복사했습니다 · 이슈 본문에 Ctrl+V로 붙여 넣으세요',
+    en: 'App screen copied · paste it into the issue body with Ctrl+V',
+  },
+  feedbackShotDownloaded: {
+    ko: '이 브라우저는 그림을 복사하지 못해 PNG로 내려받았습니다 · 이슈 본문에 끌어다 놓으세요',
+    en: 'This browser cannot copy pictures, so it was downloaded as a PNG · drag it into the issue body',
+  },
+  feedbackShotFailed: { ko: '앱 화면을 찍지 못했습니다', en: 'Could not take the app screen' },
+  feedbackPrivacy: {
+    ko: '이슈는 공개됩니다. 덱·목표·설정과 체크한 기록이 함께 올라가고, 게임 화면은 보내지 않습니다.',
+    en: 'Issues are public. Your deck, goals, settings and the ticked logs go with it; no game screens are sent.',
+  },
+  feedbackOpen: { ko: 'GitHub에서 이슈 열기', en: 'Open the issue on GitHub' },
+  feedbackCopy: { ko: '내용 복사', en: 'Copy text' },
+  feedbackCopied: {
+    ko: '내용을 복사했습니다 · GitHub 이슈 본문에 붙여 넣으세요',
+    en: 'Text copied · paste it into the GitHub issue body',
+  },
+  feedbackCopyHint: {
+    ko: 'GitHub 계정이 필요합니다. 이슈 창이 열리지 않거나 본문이 비어 있으면 「내용 복사」 뒤 본문에 붙여 넣으세요.',
+    en: 'You need a GitHub account. If the issue page does not open or its body is empty, use 「Copy text」 and paste it in.',
+  },
+  feedbackTrimmed: {
+    ko: '기록이 길어 주소에는 일부만 담았습니다. 전체는 「내용 복사」에 있습니다.',
+    en: 'The logs are long, so the link carries part of them. 「Copy text」 has everything.',
+  },
+  feedbackTooLong: {
+    ko: '내용이 길어 주소에 담지 못합니다. 「GitHub에서 이슈 열기」를 누르면 전체를 클립보드에 복사하니 본문에 붙여 넣으세요.',
+    en: 'The message is too long for the link. 「Open the issue on GitHub」 copies everything to the clipboard; paste it into the body.',
+  },
+
+  // ── 피드백 이슈 본문 (GitHub에 미리 채워지는 글)
+  // {kind}는 종류(버그·제안…), {text}는 방문자가 쓴 제목이나 내용의 첫 줄.
+  feedbackIssueTitle: { ko: '[{kind}] {text}', en: '[{kind}] {text}' },
+  feedbackBodyMessage: { ko: '내용', en: 'Message' },
+  feedbackBodyEnv: { ko: '환경', en: 'Environment' },
+  feedbackBodyEnvData: { ko: '데이터 {dataVersion} · {season}', en: 'Data {dataVersion} · {season}' },
+  feedbackBodyEnvDevice: {
+    ko: '{browser} · 화면 {viewport} · {input} · 언어 {lang} · {theme}',
+    en: '{browser} · viewport {viewport} · {input} · language {lang} · {theme}',
+  },
+  feedbackBodyTouch: { ko: '터치', en: 'touch' },
+  feedbackBodyMouse: { ko: '마우스', en: 'mouse' },
+  feedbackBodyDark: { ko: '다크', en: 'dark' },
+  feedbackBodyLight: { ko: '라이트', en: 'light' },
+  feedbackBodyState: { ko: '상태', en: 'State' },
+  // 마크다운 링크. {url}은 덱·목표·설정을 담은 공유 링크.
+  feedbackBodyPlanLink: {
+    ko: '[이 계획 열기]({url}) — 덱·목표·설정',
+    en: '[Open this plan]({url}) — deck, goals, settings',
+  },
+  feedbackBodyRun: {
+    ko: '런: 진행 {current}층 · 보는 층 {stage}층 · 입장 {visits} · 획득 {got} · 미획득 {failed}',
+    en: 'Run: frontier floor {current} · viewing floor {stage} · entries {visits} · got {got} · not got {failed}',
+  },
+  feedbackBodyRunNone: { ko: '런: 시작 전', en: 'Run: not started' },
+  feedbackBodyRoute: {
+    ko: '루트: 획득 {covered}/{total} · 미해결 {unresolved} · 참고 {warnings}',
+    en: 'Route: got {covered}/{total} · unresolved {unresolved} · notes {warnings}',
+  },
+  feedbackBodyRouteNone: { ko: '루트: 목표 없음', en: 'Route: no goals' },
+  feedbackBodyNone: { ko: '없음', en: 'none' },
+  feedbackBodyNotAttached: { ko: '첨부하지 않음', en: 'Not attached' },
+  feedbackBodyScreen: { ko: '화면', en: 'Screen' },
+  feedbackBodyScreenPaste: {
+    ko: '(앱 화면을 클립보드에 복사했습니다. 이 줄 아래에 Ctrl+V로 붙여 넣어 주세요.)',
+    en: '(The app screen was copied to the clipboard. Paste it below this line with Ctrl+V.)',
+  },
+  feedbackBodyLog: { ko: '기록', en: 'Logs' },
+  feedbackBodyErrors: { ko: '최근 오류', en: 'Recent errors' },
+  feedbackBodyActions: { ko: '최근 조작', en: 'Recent actions' },
+  feedbackBodyNoLog: { ko: '기록된 오류·조작이 없습니다.', en: 'No errors or actions recorded.' },
+  feedbackBodyDiag: {
+    ko: '피드백용 진단 기록 {n}건 ({detail})',
+    en: 'Feedback diagnostics: {n} records ({detail})',
+  },
+  feedbackBodyTrimmed: {
+    ko: '기록 일부 생략 — 주소 길이 제한',
+    en: 'Some logs left out — link length limit',
+  },
+  feedbackBodyPayload: {
+    ko: '자동 첨부 데이터 (소유자가 해독합니다)',
+    en: 'Attached data (for the owner to decode)',
+  },
+  feedbackBodyPasteHere: {
+    ko: '내용이 길어 주소에 담지 못했습니다. 앱이 클립보드에 복사한 전체 내용을 여기에 붙여 넣어 주세요(Ctrl+V).',
+    en: 'The report was too long for the link. Paste the full text the app copied to your clipboard here (Ctrl+V).',
+  },
+  feedbackBodyFooter: {
+    ko: '이 이슈는 앱의 「피드백 보내기」로 만들었습니다.',
+    en: 'This issue was made with 「Send feedback」 in the app.',
+  },
+
   // ── 추적기 탭
   trackerTitle: { ko: 'T4 기프트 추적', en: 'T4 gift tracker' },
   trackerGroupKeyword: { ko: '키워드', en: 'Keyword' },
@@ -753,6 +890,10 @@ export const GUIDE_CARDS = [
       {
         ko: '코드는 MIT 라이선스이고, 게임 데이터와 텍스트에는 적용되지 않습니다.',
         en: 'The code is MIT-licensed; that does not extend to the game data and text.',
+      },
+      {
+        ko: '버그나 데이터 오류는 ⋯ 메뉴의 「피드백 보내기」로 알려 주세요. 공개 GitHub 이슈로 열리고, 덱·목표·설정과 체크한 기록이 함께 붙습니다(게임 화면은 보내지 않습니다).',
+        en: 'Report a bug or a data error with 「Send feedback」 in the ⋯ menu. It opens a public GitHub issue with your deck, goals, settings and the logs you tick (no game screens).',
       },
     ],
     notice: true,

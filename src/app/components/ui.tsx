@@ -7,6 +7,7 @@
  * - CloseButton — ✕, square (sheets, pickers, fields) or a small round badge (tile corners)
  * - LinkButton — a name that opens its details: always underlined, so a touch reader sees it is one
  * - TextField — Default · Hover · Focus · Filled (clear ✕) · Error · Disabled
+ * - TextArea — the same frame, multi-line, with a visible label (M127)
  * - Checkbox · FilterSelect — native controls, styled, with the focus ring kept
  * - Card · SectionTitle · Notice · Toast · Badge · Chip · Skeleton — static
  *
@@ -382,6 +383,80 @@ export function TextField({
           <CloseButton label={clearLabel ?? label} onClick={onClear} size="sm" className="-mr-1" />
         ) : null}
       </label>
+      {invalid ? (
+        <p id={errorId} className="flex items-center gap-1 text-caption text-fg" role="alert">
+          <CircleAlert size={12} className="flex-none text-danger" aria-hidden />
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A multi-line field (M127): the `TextField` frame — `border-control`, `sm` radius, the frame shows
+ * focus (`focus-within`), `danger` and an error line under it for Error, muted for Disabled — around
+ * a native textarea that grows from `rows` and is resized by the reader only vertically. The text
+ * is the input role, so a touch screen gets 16px (no iOS zoom). The label is visible: a form of
+ * several fields needs to say which is which, not leave it to placeholders.
+ */
+export function TextArea({
+  id,
+  value,
+  onChange,
+  label,
+  placeholder,
+  rows = 5,
+  maxLength,
+  required = false,
+  error,
+  disabled = false,
+  className = '',
+  testId,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  /** The visible label above the field, which is also its accessible name. */
+  label: string;
+  placeholder?: string;
+  rows?: number;
+  maxLength?: number;
+  required?: boolean;
+  /** An error sentence: the frame turns `danger` and the sentence shows under it with an icon. */
+  error?: string | null;
+  disabled?: boolean;
+  className?: string;
+  testId?: string;
+}) {
+  const invalid = Boolean(error);
+  const errorId = `${id}-error`;
+  return (
+    <div className={`flex min-w-0 flex-col gap-1 ${className}`}>
+      <label htmlFor={id} className="text-label text-fg">
+        {label}
+      </label>
+      <div
+        className={`flex min-w-0 rounded-sm border bg-surface transition-colors duration-150 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus ${
+          invalid ? 'border-danger' : 'border-border-control hover:border-fg-subtle'
+        } ${disabled ? 'bg-surface-muted text-fg-subtle' : ''}`}
+      >
+        <textarea
+          id={id}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          maxLength={maxLength}
+          required={required}
+          aria-required={required || undefined}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? errorId : undefined}
+          disabled={disabled}
+          data-testid={testId}
+          className="min-w-0 flex-1 resize-y bg-transparent px-3 py-2 text-fg outline-none placeholder:text-fg-subtle disabled:cursor-not-allowed"
+        />
+      </div>
       {invalid ? (
         <p id={errorId} className="flex items-center gap-1 text-caption text-fg" role="alert">
           <CircleAlert size={12} className="flex-none text-danger" aria-hidden />

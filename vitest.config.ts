@@ -38,6 +38,9 @@ export default defineConfig({
         'scripts/capture-bench.ts',
         'scripts/capture-bench-browser.ts',
         'scripts/capture-feedback.ts',
+        // M127: reads an issue body from a file or stdin and writes local-fixtures/; what it
+        // computes is scripts/lib/feedback-decode.ts, which is measured.
+        'scripts/feedback-decode.ts',
         // A measurement for the review (M115); what it measures is core, tested in planner.test.ts.
         'scripts/measure-drop-causes.ts',
       ],

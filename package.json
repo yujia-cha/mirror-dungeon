@@ -46,12 +46,14 @@
     "capture:spike": "tsx scripts/capture-spike.ts",
     "capture:bench": "tsx scripts/capture-bench.ts",
     "capture:bench:browser": "tsx scripts/capture-bench-browser.ts",
-    "capture:feedback": "tsx scripts/capture-feedback.ts"
+    "capture:feedback": "tsx scripts/capture-feedback.ts",
+    "feedback:decode": "tsx scripts/feedback-decode.ts"
   },
   "dependencies": {
     "fflate": "^0.8.2",
     "lucide-react": "^1.48.0",
     "lz-string": "^1.5.0",
+    "modern-screenshot": "^4.7.0",
     "pako": "^2.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

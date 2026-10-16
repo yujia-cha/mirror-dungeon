@@ -3402,7 +3402,7 @@ describe('AppShell', () => {
       within(screen.getByTestId('header-menu'))
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['초기화', '링크 복사', 'English', '테마 변경']);
+    ).toEqual(['초기화', '링크 복사', 'English', '테마 변경', '피드백 보내기']);
     // One size with the icon-size steps below (M122): both are 36px rows of label type.
     for (const b of within(screen.getByTestId('header-menu')).getAllByRole('button'))
       expect(b.className).toMatch(/\bmin-h-9\b.*\btext-label\b|\btext-label\b.*\bmin-h-9\b/);

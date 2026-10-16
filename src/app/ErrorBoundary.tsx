@@ -10,6 +10,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { RefreshCw, TriangleAlert, Trash2 } from 'lucide-react';
 import { PERSIST_KEY } from './store.ts';
+import { feedbackLog } from './lib/feedback-log.ts';
 import { Button, Card } from './components/ui.tsx';
 
 /**
@@ -50,6 +51,9 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
     // There is no telemetry in this app by design, so the console is the only record. Keep the
     // component stack: it is what tells a bug report which panel threw.
     console.error('Unhandled render error', error, info.componentStack);
+    // And the feedback form's log (M127), so a report sent after 「다시 시도」 says what threw. The
+    // component stack leads: it names the panel, where the JS stack names React internals.
+    feedbackLog.error('render', error, info.componentStack ?? error.stack);
   }
 
   render(): ReactNode {

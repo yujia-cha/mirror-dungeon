@@ -1212,7 +1212,7 @@
 ### routeClose
 - ko: 닫기
 - en: Close
-- 쓰는 곳: src/app/components/FusionNotice.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/MetroMap.tsx, src/app/components/ObserveSlots.tsx, src/app/components/PackSheet.tsx, src/app/shell/AppShell.tsx, src/app/shell/CapturePanel.tsx, src/app/shell/GuideSheet.tsx
+- 쓰는 곳: src/app/components/FusionNotice.tsx, src/app/components/GiftDetailSheet.tsx, src/app/components/MetroMap.tsx, src/app/components/ObserveSlots.tsx, src/app/components/PackSheet.tsx, src/app/shell/AppShell.tsx, src/app/shell/CapturePanel.tsx, src/app/shell/FeedbackSheet.tsx, src/app/shell/GuideSheet.tsx
 
 ### packGifts
 - ko: 이 팩의 기프트
@@ -1813,6 +1813,326 @@
 - en: Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. To run it yourself, put it in local-fixtures/sessions/ of the development repository and run npm run capture:feedback. It contains game screens, so keep it out of public places such as issues and chat rooms.
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
+## 피드백 보내기 (⋯ 메뉴와 그 창)
+
+헤더 「⋯」의 「피드백 보내기」가 여는 창입니다. 보내기는 GitHub 이슈로 하고, 앱은 주소에 내용을 미리 채워 열어 줄 뿐 직접 보내지 않습니다.
+
+### feedback
+- ko: 피드백 보내기
+- en: Send feedback
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackIntro
+- ko: 버그·제안·데이터 오류를 GitHub 이슈로 보냅니다. 내용만 쓰면 앱 상태와 기록은 자동으로 붙습니다.
+- en: Report a bug, an idea or a data error as a GitHub issue. Write what happened; the app attaches its state and logs.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackKindLabel
+- ko: 종류
+- en: Type
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackKind_bug
+- ko: 버그
+- en: Bug
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+
+### feedbackKind_idea
+- ko: 제안
+- en: Suggestion
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+
+### feedbackKind_data
+- ko: 데이터 오류
+- en: Data error
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+
+### feedbackKind_other
+- ko: 기타
+- en: Other
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+
+### feedbackTitleLabel
+- ko: 제목 (선택)
+- en: Title (optional)
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackTitlePlaceholder
+- ko: 비워 두면 내용의 첫 줄을 씁니다
+- en: Left empty, the first line of the message is used
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackMessageLabel
+- ko: 내용
+- en: Message
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackMessagePlaceholder
+- ko: 무엇을 했고, 무엇이 일어났고, 무엇을 기대했는지 적어 주세요.
+- en: What you did, what happened, and what you expected.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackMessageRequired
+- ko: 내용을 적어 주세요.
+- en: Please write a message.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackAttach
+- ko: 함께 보낼 것
+- en: Attach
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackAttachState
+- ko: 앱 상태 첨부 (덱·목표·설정·런·루트 요약)
+- en: App state (deck, goals, settings, run, route summary)
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackAttachLog
+- ko: 오류·조작 기록 첨부
+- en: Error and action log
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackAttachDiag
+- ko: 피드백용 진단 기록 첨부 ({n}건)
+- en: Feedback diagnostics ({n} records)
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackDiagTitle
+- ko: 피드백용 진단 기록
+- en: Feedback diagnostics
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackDiagRecord
+- ko: 기록하기
+- en: Record
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackDiagHint
+- ko: 켜 두면 오류·런 변경·층별 루트 결과와 화면 인식이 읽은 내용(글자만, 게임 화면 제외)을 이 기기에만 남깁니다. 피드백을 보낼 때만 함께 갑니다.
+- en: While on, errors, run changes, each floor's route outcome and what the screen reader read (text only, no game screens) stay on this device. They leave it only with feedback you send.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackDiagCount
+- ko: 기록 {n}건
+- en: {n} records
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackDiagEmpty
+- ko: 아직 기록이 없습니다
+- en: Nothing recorded yet
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackDiagClear
+- ko: 지우기
+- en: Clear
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackShot
+- ko: 앱 화면을 클립보드에 복사
+- en: Copy the app screen to the clipboard
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackShotHint
+- ko: 이 앱의 화면만 찍습니다(게임 화면은 찍지 않습니다). 이슈 본문에 Ctrl+V(붙여넣기)로 붙일 수 있습니다.
+- en: Takes only this app's screen, never the game's. Paste it into the issue body with Ctrl+V.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackShotCopied
+- ko: 앱 화면을 복사했습니다 · 이슈 본문에 Ctrl+V로 붙여 넣으세요
+- en: App screen copied · paste it into the issue body with Ctrl+V
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackShotDownloaded
+- ko: 이 브라우저는 그림을 복사하지 못해 PNG로 내려받았습니다 · 이슈 본문에 끌어다 놓으세요
+- en: This browser cannot copy pictures, so it was downloaded as a PNG · drag it into the issue body
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackShotFailed
+- ko: 앱 화면을 찍지 못했습니다
+- en: Could not take the app screen
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackPrivacy
+- ko: 이슈는 공개됩니다. 덱·목표·설정과 체크한 기록이 함께 올라가고, 게임 화면은 보내지 않습니다.
+- en: Issues are public. Your deck, goals, settings and the ticked logs go with it; no game screens are sent.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackOpen
+- ko: GitHub에서 이슈 열기
+- en: Open the issue on GitHub
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackCopy
+- ko: 내용 복사
+- en: Copy text
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackCopied
+- ko: 내용을 복사했습니다 · GitHub 이슈 본문에 붙여 넣으세요
+- en: Text copied · paste it into the GitHub issue body
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackCopyHint
+- ko: GitHub 계정이 필요합니다. 이슈 창이 열리지 않거나 본문이 비어 있으면 「내용 복사」 뒤 본문에 붙여 넣으세요.
+- en: You need a GitHub account. If the issue page does not open or its body is empty, use 「Copy text」 and paste it in.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackTrimmed
+- ko: 기록이 길어 주소에는 일부만 담았습니다. 전체는 「내용 복사」에 있습니다.
+- en: The logs are long, so the link carries part of them. 「Copy text」 has everything.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+### feedbackTooLong
+- ko: 내용이 길어 주소에 담지 못합니다. 「GitHub에서 이슈 열기」를 누르면 전체를 클립보드에 복사하니 본문에 붙여 넣으세요.
+- en: The message is too long for the link. 「Open the issue on GitHub」 copies everything to the clipboard; paste it into the body.
+- 쓰는 곳: src/app/shell/FeedbackSheet.tsx
+
+## 피드백 이슈 본문 (GitHub에 미리 채워지는 글)
+
+「피드백 보내기」가 GitHub 새 이슈 주소에 채우는 제목과 본문입니다. 방문자가 GitHub에서 그대로 보고 고칠 수 있습니다.
+
+### feedbackIssueTitle
+메모: {kind}는 종류(버그·제안…), {text}는 방문자가 쓴 제목이나 내용의 첫 줄.
+- ko: [{kind}] {text}
+- en: [{kind}] {text}
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyMessage
+- ko: 내용
+- en: Message
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyEnv
+- ko: 환경
+- en: Environment
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyEnvData
+- ko: 데이터 {dataVersion} · {season}
+- en: Data {dataVersion} · {season}
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyEnvDevice
+- ko: {browser} · 화면 {viewport} · {input} · 언어 {lang} · {theme}
+- en: {browser} · viewport {viewport} · {input} · language {lang} · {theme}
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyTouch
+- ko: 터치
+- en: touch
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyMouse
+- ko: 마우스
+- en: mouse
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyDark
+- ko: 다크
+- en: dark
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyLight
+- ko: 라이트
+- en: light
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyState
+- ko: 상태
+- en: State
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyPlanLink
+메모: 마크다운 링크. {url}은 덱·목표·설정을 담은 공유 링크.
+- ko: [이 계획 열기]({url}) — 덱·목표·설정
+- en: [Open this plan]({url}) — deck, goals, settings
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyRun
+- ko: 런: 진행 {current}층 · 보는 층 {stage}층 · 입장 {visits} · 획득 {got} · 미획득 {failed}
+- en: Run: frontier floor {current} · viewing floor {stage} · entries {visits} · got {got} · not got {failed}
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyRunNone
+- ko: 런: 시작 전
+- en: Run: not started
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyRoute
+- ko: 루트: 획득 {covered}/{total} · 미해결 {unresolved} · 참고 {warnings}
+- en: Route: got {covered}/{total} · unresolved {unresolved} · notes {warnings}
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyRouteNone
+- ko: 루트: 목표 없음
+- en: Route: no goals
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyNone
+- ko: 없음
+- en: none
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyNotAttached
+- ko: 첨부하지 않음
+- en: Not attached
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyScreen
+- ko: 화면
+- en: Screen
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyScreenPaste
+- ko: (앱 화면을 클립보드에 복사했습니다. 이 줄 아래에 Ctrl+V로 붙여 넣어 주세요.)
+- en: (The app screen was copied to the clipboard. Paste it below this line with Ctrl+V.)
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyLog
+- ko: 기록
+- en: Logs
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyErrors
+- ko: 최근 오류
+- en: Recent errors
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyActions
+- ko: 최근 조작
+- en: Recent actions
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyNoLog
+- ko: 기록된 오류·조작이 없습니다.
+- en: No errors or actions recorded.
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyDiag
+- ko: 피드백용 진단 기록 {n}건 ({detail})
+- en: Feedback diagnostics: {n} records ({detail})
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyTrimmed
+- ko: 기록 일부 생략 — 주소 길이 제한
+- en: Some logs left out — link length limit
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyPayload
+- ko: 자동 첨부 데이터 (소유자가 해독합니다)
+- en: Attached data (for the owner to decode)
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyPasteHere
+- ko: 내용이 길어 주소에 담지 못했습니다. 앱이 클립보드에 복사한 전체 내용을 여기에 붙여 넣어 주세요(Ctrl+V).
+- en: The report was too long for the link. Paste the full text the app copied to your clipboard here (Ctrl+V).
+- 쓰는 곳: src/app/feedback/body.ts
+
+### feedbackBodyFooter
+- ko: 이 이슈는 앱의 「피드백 보내기」로 만들었습니다.
+- en: This issue was made with 「Send feedback」 in the app.
+- 쓰는 곳: src/app/feedback/body.ts
+
 ## 추적기 탭
 
 ### trackerTitle
@@ -2240,6 +2560,8 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - en: Game data and text belong to Project Moon. This is a non-commercial fan project, not affiliated with or endorsed by Project Moon.
 - 설명서: 코드는 MIT 라이선스이고, 게임 데이터와 텍스트에는 적용되지 않습니다.
 - en: The code is MIT-licensed; that does not extend to the game data and text.
+- ko: 버그나 데이터 오류는 ⋯ 메뉴의 「피드백 보내기」로 알려 주세요. 공개 GitHub 이슈로 열리고, 덱·목표·설정과 체크한 기록이 함께 붙습니다(게임 화면은 보내지 않습니다).
+- en: Report a bug or a data error with 「Send feedback」 in the ⋯ menu. It opens a public GitHub issue with your deck, goals, settings and the logs you tick (no game screens).
 - notice: true
 
 # README

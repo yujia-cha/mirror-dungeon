@@ -27,6 +27,7 @@ import { ingredientTree } from './lib/entangle.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
 import { ConfirmDialog } from './components/ConfirmDialog.tsx';
 import { AppShell } from './shell/AppShell.tsx';
+import { feedbackLog } from './lib/feedback-log.ts';
 
 /**
  * A load failure the error card can say in the reader's language. `code` is set for the causes
@@ -45,6 +46,13 @@ const FAILURE_KEY = {
 } as const satisfies Record<DataLoadError['cause'], StringKey>;
 
 function loadFailure(cause: unknown): LoadFailure {
+  // Into the feedback log too (M127): a report sent after this says which file failed and why.
+  feedbackLog.error(
+    'load',
+    cause instanceof DataLoadError
+      ? `DataLoadError ${cause.cause} ${cause.label} ${cause.status ?? ''}`
+      : cause,
+  );
   if (cause instanceof DataLoadError) {
     return { code: FAILURE_KEY[cause.cause], params: { label: cause.label, status: cause.status ?? '' } };
   }

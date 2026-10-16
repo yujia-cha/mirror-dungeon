@@ -7,11 +7,13 @@
  * events through the plan's run actions, and the popover and the header button read it through
  * `useCaptureSession` (`capture-context.ts`). The diagnostics need the session's state and the
  * session needs the diagnostics' hooks; each reads the other through a getter, not a render value.
+ * The visitor's feedback diagnostics (M127, `feedback/`) are a separate record merged in beside them.
  */
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { CaptureContext } from './capture-context.ts';
 import { useDiagnostics } from './diagnostics/useDiagnostics.ts';
 import { useCapture } from './useCapture.ts';
+import { mergeCaptureHooks, useVisitorDiagnostics } from '../feedback/useVisitorDiagnostics.ts';
 
 export function CaptureProvider({ children }: { children: ReactNode }) {
   const session = useRef<ReturnType<typeof useCapture> | null>(null);
@@ -24,7 +26,10 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       [],
     ),
   );
-  const capture = useCapture(diagnostics.hooks);
+  // The visitor's own text-only record (M127) listens to the same session, separately.
+  const visitor = useVisitorDiagnostics();
+  const hooks = useMemo(() => mergeCaptureHooks(visitor, diagnostics.hooks), [visitor, diagnostics.hooks]);
+  const capture = useCapture(hooks);
   useEffect(() => {
     session.current = capture;
   });
