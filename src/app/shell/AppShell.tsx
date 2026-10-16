@@ -21,7 +21,7 @@ import {
 import type { GameData, SeasonEntry } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
-import { GIFT_ICON_SCALES, useApp, type LeftTab, type RightTab } from '../store.ts';
+import { GIFT_ICON_SCALES, TEXT_SCALES, useApp, type LeftTab, type RightTab } from '../store.ts';
 import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
@@ -90,6 +90,53 @@ function PanelToggle({
   );
 }
 
+/**
+ * A size setting in the 「⋯」 menu: a titled row of the four steps 작게 · 보통 · 크게 · 아주 크게.
+ * The gift icon size (M98) and the text size (M123) both use it, so the two rows share one look —
+ * the same 36px buttons of label type as the menu items above them (44px on a touch screen).
+ */
+function SizeSteps<S extends 'sm' | 'md' | 'lg' | 'xl'>({
+  id,
+  label,
+  lang,
+  value,
+  steps,
+  onPick,
+}: {
+  id: string;
+  label: string;
+  lang: Lang;
+  value: S;
+  steps: readonly S[];
+  onPick: (step: S) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-labelledby={`${id}-label`}
+      className="mt-1 border-t border-border px-2 pb-1 pt-2"
+      data-testid={id}
+    >
+      <div id={`${id}-label`} className="mb-1 text-caption text-fg-muted">
+        {label}
+      </div>
+      <div className="flex gap-1">
+        {steps.map((step) => (
+          <button
+            key={step}
+            type="button"
+            aria-pressed={value === step}
+            onClick={() => onPick(step)}
+            className="min-h-9 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-label text-fg hover:bg-surface-muted active:bg-surface-sunken aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg touch:min-h-11"
+          >
+            {t(`sizeStep_${step}`, lang)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({
   data,
   indexes,
@@ -135,14 +182,16 @@ export function AppShell({
   });
   const drawer = drawerState.desktop === desktop ? drawerState.side : null;
   const setDrawer = (side: Drawer): void => setDrawerState({ desktop, side });
-  const leftOpen = desktop ? ui.leftOpen : drawer === 'left';
+  // The browser opens from the items tab. On a phone that tab is the left page, and the browser
+  // page opens over it rather than in its place (M124): the left page stays open underneath,
+  // covered, so its history entry stays and the browser's stacks on top. One back closes the
+  // browser and shows the tab as it was left — the query typed in it and its scroll included.
+  const leftOpen = desktop ? ui.leftOpen : drawer === 'left' || drawer === 'browser';
   const rightOpen = desktop ? ui.rightOpen : drawer === 'right';
   const browserOpen = drawer === 'browser';
   // On a phone a panel is a full-screen page portalled to the body, so the shell behind it is
   // inert: nothing under the page takes focus or a press, and it leaves the accessibility tree.
   const pageOpen = !desktop && drawer !== null;
-  // The browser opens from the items tab. On a phone that tab is the left page, which the browser
-  // page replaces; closing the browser brings the tab back rather than the stage.
   // It opens on the query typed in the tab. On a desktop the tab stays beside it and its >> turns
   // to a << that closes it; the next open remounts it on whatever the tab holds then.
   const [browserSeed, setBrowserSeed] = useState({ query: '', n: 0 });
@@ -239,7 +288,10 @@ export function AppShell({
                     closeLabel={t('routeClose', lang)}
                     onClose={() => setMenu(false)}
                   >
-                    <ul className="flex w-max min-w-[9rem] flex-col gap-0.5" data-testid="header-menu">
+                    {/* Full width, never `w-max` (M122): the menu is as wide as its widest section (the size
+                        steps), and every row has to span it — a list sized to its own labels left
+                        the four actions shorter than the steps below them. */}
+                    <ul className="flex w-full min-w-[9rem] flex-col gap-0.5" data-testid="header-menu">
                       {(
                         [
                           {
@@ -274,32 +326,26 @@ export function AppShell({
                       ))}
                     </ul>
                     {/*
-                    Not a menu action: picking a step keeps the menu open, so the tiles behind it
-                    can be seen changing before the next pick.
+                    Not menu actions: picking a step keeps the menu open, so the tiles (or the text)
+                    behind it can be seen changing before the next pick. The two groups are one
+                    component so they cannot drift apart in size or type (M122/M123).
                   */}
-                    <div
-                      role="group"
-                      aria-labelledby="gift-icon-size-label"
-                      className="mt-1 border-t border-border px-2 pb-1 pt-2"
-                      data-testid="gift-icon-size"
-                    >
-                      <div id="gift-icon-size-label" className="mb-1 text-caption text-fg-muted">
-                        {t('giftIconSize', lang)}
-                      </div>
-                      <div className="flex gap-1">
-                        {GIFT_ICON_SCALES.map((scale) => (
-                          <button
-                            key={scale}
-                            type="button"
-                            aria-pressed={ui.giftIconScale === scale}
-                            onClick={() => setUi({ giftIconScale: scale })}
-                            className="min-h-9 flex-1 whitespace-nowrap rounded-sm border border-border-control px-2 text-label text-fg hover:bg-surface-muted active:bg-surface-sunken aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-fg touch:min-h-11"
-                          >
-                            {t(`giftIconSize_${scale}`, lang)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <SizeSteps
+                      id="gift-icon-size"
+                      label={t('giftIconSize', lang)}
+                      lang={lang}
+                      value={ui.giftIconScale}
+                      steps={GIFT_ICON_SCALES}
+                      onPick={(giftIconScale) => setUi({ giftIconScale })}
+                    />
+                    <SizeSteps
+                      id="type-size"
+                      label={t('textSize', lang)}
+                      lang={lang}
+                      value={ui.textScale}
+                      steps={TEXT_SCALES}
+                      onPick={(textScale) => setUi({ textScale })}
+                    />
                   </DetailSurface>
                 ) : null}
                 <PanelToggle
@@ -325,6 +371,7 @@ export function AppShell({
                 onTab={(leftTab) => setUi({ leftTab })}
                 lang={lang}
                 width={ui.leftWidth}
+                covered={!desktop && browserOpen}
               >
                 {ui.leftTab === 'deck' ? (
                   <DeckStep data={data} indexes={indexes} stats={stats} lang={lang} />

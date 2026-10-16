@@ -1,27 +1,44 @@
 /**
- * 「모두 보기」: every gift in one grid, with a search box and the filters (keyword, condition, tier,
- * sin), and no 활성 split — the tile's ring says which is which. The items tab opens it from the >>
- * at the end of its search row, handing over what was typed there (`initialQuery`). On a desktop it takes the stage's place between the
- * two panels; on a phone it is a full-screen page like the panels, closed by its ← or the back
- * gesture (`usePageHistory`). Escape closes it on either; a gift sheet opened from a tile takes the
- * key first (`DetailSurface` stops it before it reaches the document).
+ * 「모두 보기」: the gifts in two tabs (M121). 「추천 기프트」 opens first, every time — the gifts the
+ * current deck sets off (`lib/recommend.ts`), with its own filters (획득 · 조합 · 키워드 · 정렬).
+ * 「모든 기프트」 is every gift in one grid with the filters (keyword, condition, tier, sin) and no
+ * 활성 split — the tile's ring says which is which. The search box above them serves both tabs.
+ *
+ * The items tab opens it from the >> at the end of its search row, handing over what was typed
+ * there (`initialQuery`). On a desktop it takes the stage's place between the two panels; on a
+ * phone it is a full-screen page like the panels, closed by its ← or the back gesture
+ * (`usePageHistory`). Escape closes it on either; a gift sheet opened from a tile takes the key
+ * first (`DetailSurface` stops it before it reaches the document).
  *
  * Its filters are its own (`useGiftFilters`): what is typed here is not typed back into the tab.
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, Search, X } from 'lucide-react';
 import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
-import { classifyGift, compareEntries } from '../lib/gift-priority.ts';
-import { browsableParents, conditionReportsByGift, tilesFor } from '../lib/gift-tile.ts';
+import { classifyGift, compareEntries, type GiftEntry } from '../lib/gift-priority.ts';
+import { browsableParents, conditionReportsByGift, tilesFor, type GiftTileData } from '../lib/gift-tile.ts';
+import { matchesGiftName } from '../lib/gift-filters.ts';
+import {
+  DEFAULT_RECOMMEND_FILTERS,
+  deployedConditionReports,
+  matchesRecommendFilters,
+  recommendFiltersActive,
+  recommendedGifts,
+  type RecommendFilters,
+} from '../lib/recommend.ts';
 import { useGiftFilters } from '../lib/useGiftFilters.ts';
 import { useLatest } from '../lib/useLatest.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
 import { Badge, IconButton, TextField } from '../components/ui.tsx';
 import { GiftFilterBar, GiftNoMatch } from '../components/GiftFilterBar.tsx';
 import { GiftTileGrid } from '../components/GiftGrid.tsx';
+import { RecommendFilterBar, RecommendedSections } from '../components/RecommendedGifts.tsx';
+import { TabBar, type PanelTab } from './SidePanel.tsx';
 import { usePlan } from './plan-context.ts';
+
+type BrowserTab = 'recommended' | 'all';
 
 export function GiftBrowser({
   page,
@@ -37,18 +54,55 @@ export function GiftBrowser({
   const { data, indexes, stats, lang, childrenOf, entangled, blocked, toggleGoal, openGift, giftName } =
     usePlan();
   const wanted = useApp((s) => s.wanted);
+  const deckSize = useApp((s) => s.deck.length);
   const filterState = useGiftFilters(initialQuery);
   const { filters, matcher } = filterState;
+  // Not remembered: the browser mounts afresh on every open (`key`), and opens on 추천 each time.
+  const [tab, setTab] = useState<BrowserTab>('recommended');
+  const [recFilters, setRecFilters] = useState<RecommendFilters>(DEFAULT_RECOMMEND_FILTERS);
 
   const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
   const entangledIds = useMemo(() => new Set(entangled.keys()), [entangled]);
-  // One list in the tab's own order — pack-bound first, closer first, then id — without the fold.
+  // 「모든 기프트」: one list in the tab's own order — pack-bound first, closer first, then id — without the fold.
   const tiles = useMemo(() => {
     const entries = browsableParents(data, indexes, wanted, childrenOf, matcher)
       .map((gift) => classifyGift(gift, conditionByGift.get(gift.id) ?? []))
       .sort(compareEntries);
     return tilesFor(entries, childrenOf, wanted, conditionByGift, matcher.attrs);
   }, [data, indexes, wanted, childrenOf, matcher, conditionByGift]);
+
+  // 「추천 기프트」: every gift on offer judged on its own (an upgrade child too, as its own tile —
+  // its parent's lock still reaches it through `blocked`), then the tab's filters and the query.
+  const deployedByGift = useMemo(
+    () => deployedConditionReports(data, stats, indexes),
+    [data, stats, indexes],
+  );
+  const recommendation = useMemo(
+    () =>
+      recommendedGifts(
+        data.gifts.filter((gift) => gift.obtainable || wanted.includes(gift.id)),
+        conditionByGift,
+        deployedByGift,
+      ),
+    [data, wanted, conditionByGift, deployedByGift],
+  );
+  const recommended = useMemo(() => {
+    const keep = (entry: GiftEntry): boolean =>
+      matchesGiftName(entry.gift, filters) && matchesRecommendFilters(entry.gift, recFilters);
+    return { deck: recommendation.deck.filter(keep), free: recommendation.free.filter(keep) };
+  }, [recommendation, filters, recFilters]);
+  const recNarrowed = recommendFiltersActive(recFilters) || filters.query.trim() !== '';
+  const resetRecommended = useCallback((): void => {
+    setRecFilters(DEFAULT_RECOMMEND_FILTERS);
+    filterState.setQuery('');
+  }, [filterState]);
+  let deckEmpty: string;
+  if (recommendation.deck.length > 0) deckEmpty = t('giftsNoMatch', lang);
+  else if (deckSize === 0) deckEmpty = t('giftsDeckEmpty', lang);
+  else deckEmpty = t('recDeckNone', lang);
+  // A deck starts with nobody deployed, and most conditions count the deployed: say so, or the
+  // nearly empty list reads as a verdict on the deck.
+  const recNotice = deckSize > 0 && stats.deployed.length === 0 ? t('recNoDeployed', lang) : undefined;
 
   usePageHistory(true, onClose, page);
   const close = useLatest(onClose);
@@ -66,7 +120,56 @@ export function GiftBrowser({
     first.current?.focus();
   }, []);
 
-  const title = t('giftsBrowseTitle', lang);
+  const grid = (list: GiftTileData[]) => (
+    <GiftTileGrid
+      tiles={list}
+      wanted={wanted}
+      entangled={entangledIds}
+      blocked={blocked}
+      giftName={giftName}
+      enums={data.enums}
+      lang={lang}
+      onToggle={toggleGoal}
+      onOpen={openGift}
+    />
+  );
+
+  const title = t('giftsBrowseAll', lang);
+  const tabs: PanelTab<BrowserTab>[] = [
+    { id: 'recommended', label: t('giftsBrowseRecommended', lang) },
+    { id: 'all', label: t('giftsBrowseTitle', lang) },
+  ];
+  const tabLabel = tabs.find((entry) => entry.id === tab)!.label;
+
+  let list: React.ReactNode;
+  if (tab === 'recommended') {
+    list =
+      recNarrowed && recommended.deck.length === 0 && recommended.free.length === 0 ? (
+        <div className="p-2">
+          <GiftNoMatch query={filters.query} onReset={resetRecommended} lang={lang} />
+        </div>
+      ) : (
+        <RecommendedSections
+          deck={recommended.deck}
+          free={recommended.free}
+          sort={recFilters.sort}
+          deckEmpty={deckEmpty}
+          notice={recNotice}
+          grid={(entries) => grid(entries.map((entry) => ({ entry })))}
+          enums={data.enums}
+          lang={lang}
+        />
+      );
+  } else if (tiles.length === 0) {
+    list = (
+      <div className="p-2">
+        <GiftNoMatch query={filters.query} onReset={filterState.resetFilters} lang={lang} />
+      </div>
+    );
+  } else {
+    list = grid(tiles);
+  }
+
   const body = (
     <>
       <div className="flex h-11 flex-none items-center gap-2 border-b border-border bg-surface px-3">
@@ -78,7 +181,7 @@ export function GiftBrowser({
             type="button"
             onClick={onClose}
             aria-label={t('panelBack', lang)}
-            className="-ml-1.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full text-fg-muted hover:bg-surface-muted"
+            className="-ml-1.5 inline-flex size-8 flex-none items-center justify-center rounded-full text-fg-muted hover:bg-surface-muted active:bg-surface-sunken touch:size-11"
           >
             <ChevronLeft size={17} aria-hidden />
           </button>
@@ -95,39 +198,36 @@ export function GiftBrowser({
           </IconButton>
         )}
       </div>
-      <div className="flex flex-none flex-col gap-2 border-b border-border px-3 py-2">
-        <TextField
-          inputRef={(el) => {
-            if (!page) first.current = el;
-          }}
-          value={filters.query}
-          onChange={filterState.setQuery}
-          label={t('giftsSearch', lang)}
-          placeholder={t('giftsSearch', lang)}
-          icon={<Search size={14} aria-hidden />}
-          onClear={() => filterState.setQuery('')}
-          clearLabel={t('searchClear', lang)}
-        />
-        <GiftFilterBar state={filterState} enums={data.enums} lang={lang} />
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-4" data-testid="gift-browser-scroller">
-        {tiles.length === 0 ? (
-          <div className="p-2">
-            <GiftNoMatch state={filterState} lang={lang} />
-          </div>
-        ) : (
-          <GiftTileGrid
-            tiles={tiles}
-            wanted={wanted}
-            entangled={entangledIds}
-            blocked={blocked}
-            giftName={giftName}
-            enums={data.enums}
-            lang={lang}
-            onToggle={toggleGoal}
-            onOpen={openGift}
+      <TabBar tabs={tabs} tab={tab} onTab={setTab} label={title} />
+      <div role="tabpanel" aria-label={tabLabel} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex flex-none flex-col gap-2 border-b border-border px-3 py-2">
+          <TextField
+            inputRef={(el) => {
+              if (!page) first.current = el;
+            }}
+            value={filters.query}
+            onChange={filterState.setQuery}
+            label={t('giftsSearch', lang)}
+            placeholder={t('giftsSearch', lang)}
+            icon={<Search size={14} aria-hidden />}
+            onClear={() => filterState.setQuery('')}
+            clearLabel={t('searchClear', lang)}
           />
-        )}
+          {tab === 'recommended' ? (
+            <RecommendFilterBar
+              filters={recFilters}
+              onChange={setRecFilters}
+              onReset={() => setRecFilters(DEFAULT_RECOMMEND_FILTERS)}
+              enums={data.enums}
+              lang={lang}
+            />
+          ) : (
+            <GiftFilterBar state={filterState} enums={data.enums} lang={lang} />
+          )}
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-4" data-testid="gift-browser-scroller">
+          {list}
+        </div>
       </div>
     </>
   );

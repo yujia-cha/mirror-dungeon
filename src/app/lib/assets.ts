@@ -16,6 +16,9 @@
  * drawing at a time, so most of them are absent for a long while and an optimistic `<img>` would
  * mean hundreds of 404s per page. The `onError` fallback in the components still covers a file
  * that goes missing after the manifest was built.
+ *
+ * A picture drawn once is held for the life of the page (`holdImage`, M125), so the next `<img>`
+ * for the same URL paints in its first frame instead of flashing the bare tile.
  */
 import type {
   ArtManifest,
@@ -102,4 +105,42 @@ export function packImage(sprite: string): Picture | null {
   if (localArt.packs.has(sprite)) return { url: `${localBase()}art/packs/${key}.png`, pixelArt: true };
   if (gamePacks.has(sprite)) return { url: `${localBase()}icons/packs/${key}.webp`, pixelArt: false };
   return null;
+}
+
+/**
+ * Every picture this page has drawn, each held by one detached `Image` (M125).
+ *
+ * Why: tiles mount and unmount all the time — a floor change, a tab switch, a sheet, the 「다른 팩」
+ * list. The browser's memory cache keeps an image only while something references it, so once the
+ * last `<img>` for a URL is gone and a garbage collection runs, the next `<img>` asks again —
+ * through the service worker or the HTTP cache, both asynchronous — and paints at least one frame
+ * of the bare tile before the picture: the flicker. A live reference keeps the resource, and a new
+ * `<img>` for it is complete at insertion, `loading="lazy"` or not, fresh or stale headers alike.
+ * Measured in a real browser (`docs/review/M125.md`): moving floors 4 → 1 → 4 three times went
+ * from 250+ blank first frames and 400+ refetches to none.
+ *
+ * Bounded by the manifests: only URLs from `giftIconUrl`, `keywordIconUrl` and `packImage` get
+ * here, and each is held once — about 580 small files today (≈7 MB encoded, all of them only if
+ * the player looks at every gift and pack). Nothing is fetched by holding: the call comes from the
+ * `<img>`'s own `load`, when the browser already has the file, and a failed load is never held.
+ */
+const held = new Map<string, HTMLImageElement>();
+
+/** Keep `url` (already loaded by an `<img>`) decoded and in the memory cache for this page. */
+export function holdImage(url: string): void {
+  if (held.has(url) || typeof Image === 'undefined') return;
+  const copy = new Image();
+  // Never painted, so it must not hold up a frame while the browser decodes it.
+  copy.decoding = 'async';
+  copy.src = url;
+  held.set(url, copy);
+}
+
+/** For tests: how many pictures are held, and forget them all. */
+export function heldImageCount(): number {
+  return held.size;
+}
+
+export function releaseHeldImages(): void {
+  held.clear();
 }

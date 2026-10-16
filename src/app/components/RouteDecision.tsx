@@ -191,17 +191,19 @@ export function RouteDecision({
                       />
                     ) : null}
                   </span>
-                  <span className="flex min-w-0 items-center gap-1">
+                  {/* The role chips wrap under the name rather than run over the bar (M123: a
+                      larger 「글자 크기」 made two chips wider than the column). */}
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
                     {ctx.onOpenGift ? (
                       // A button inside the label: pressing the name opens the gift, not the box.
                       <LinkButton
                         onClick={() => ctx.onOpenGift?.(effect.giftId)}
-                        className="min-w-0 truncate text-left text-body"
+                        className="min-w-0 max-w-full truncate text-left text-body"
                       >
                         {name}
                       </LinkButton>
                     ) : (
-                      <span className="min-w-0 truncate text-body" title={name}>
+                      <span className="min-w-0 max-w-full truncate text-body" title={name}>
                         {name}
                       </span>
                     )}

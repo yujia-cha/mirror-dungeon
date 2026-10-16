@@ -13,8 +13,10 @@ test('opens under the Pages sub-path with its data', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByTestId('app-shell')).toBeVisible();
   await expect(page.getByTestId('run-stage')).toBeVisible();
-  // A gift tile draws the game icon (M94) from under the sub-path, and it actually decodes.
-  const icon = page.locator('[data-testid="gift-icon"] img').first();
+  // A gift tile draws the game icon (M94) from under the sub-path, and it actually decodes. The
+  // items tab lists gifts only for a query since M121, so it asks for one.
+  await page.getByTestId('panel-left').getByRole('textbox', { name: '기프트 검색' }).fill('진혼');
+  const icon = page.getByTestId('panel-left').locator('[data-testid="gift-icon"] img').first();
   await expect(icon).toBeVisible();
   expect(await icon.getAttribute('src')).toMatch(/\/mirror-dungeon\/icons\/gifts\/\d+\.webp$/);
   await expect.poll(() => icon.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
@@ -117,9 +119,13 @@ test('a formation code imports in the browser (M62)', async ({ page }) => {
   expect(state.deployed).toEqual([10101, 10301, 10501]);
 });
 
-test('a sinner picker opened from the right column stays inside the panel (M63)', async ({ page }) => {
-  // It was pinned to the slot's left edge at 340px, so a right-column slot ran past the panel's
-  // right edge and the panel body clipped the search field.
+test('a sinner picker opens as a sheet the panel cannot clip, at any panel width (M63, M126)', async ({
+  page,
+}) => {
+  // M63: it floated under its slot at 340px, and a right-column slot ran past the panel's edge so
+  // the panel body clipped the search field. M126 made it a sheet portaled to the body: whatever the
+  // panel width, it lies inside the viewport, its field takes focus, Escape closes it, and focus
+  // goes back to the slot.
   for (const width of [420, 490, 560]) {
     await page.addInitScript((w) => {
       localStorage.setItem(
@@ -130,22 +136,28 @@ test('a sinner picker opened from the right column stays inside the panel (M63)'
     await page.goto('./');
     const panel = page.getByTestId('panel-left');
     const body = panel.locator('.\\@container').first();
-    const slots = panel.locator('li button[aria-expanded]');
+    const slots = panel.locator('li button[aria-haspopup="dialog"]');
     await expect(slots.first()).toBeVisible();
+    const viewport = page.viewportSize()!;
     // Every slot, so whichever column ends up rightmost at this width is covered.
     const count = await slots.count();
     for (let i = 0; i < count; i++) {
       await slots.nth(i).click();
       const picker = page.getByTestId('sinner-picker');
       await expect(picker).toBeVisible();
-      const [box, bounds] = [await picker.boundingBox(), await body.boundingBox()];
-      expect(box!.x).toBeGreaterThanOrEqual(bounds!.x);
-      expect(box!.x + box!.width).toBeLessThanOrEqual(bounds!.x + bounds!.width);
+      const sheet = page.getByTestId('block-sheet');
+      const box = (await sheet.boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+      // Not inside the panel: the panel cannot clip what is not in it.
+      expect(await panel.locator('[data-testid="sinner-picker"]').count()).toBe(0);
       await expect(picker.getByRole('combobox')).toBeFocused();
+      await expect(picker.getByRole('group', { name: '검색어 조합' })).toBeVisible();
       // Focusing the field must not scroll the panel body sideways either.
       expect(await body.evaluate((el) => el.scrollLeft)).toBe(0);
       await page.keyboard.press('Escape');
       await expect(picker).toHaveCount(0);
+      await expect(slots.nth(i)).toBeFocused();
     }
   }
 });
@@ -166,6 +178,9 @@ test('the >> beside the gift search opens 「모두 보기」 over the stage wit
   await expect(page.getByTestId('run-stage')).toBeHidden();
   // Two search boxes exist (the tab's and the browser's); the browser's opened on the tab's query.
   await expect(browser.getByRole('textbox', { name: '기프트 검색' })).toHaveValue('진혼');
+  // It opens on 「추천 기프트」 (M121); the default deck deploys nobody, so 진혼 is in 「모든 기프트」.
+  await expect(browser.getByRole('tab', { name: '추천 기프트' })).toHaveAttribute('aria-selected', 'true');
+  await browser.getByRole('tab', { name: '모든 기프트' }).click();
   await browser.getByRole('button', { name: '진혼', exact: true }).click();
   await expect(page.getByTestId('gift-chip')).toHaveCount(1);
   await browser.getByRole('button', { name: '닫기' }).click();
@@ -178,4 +193,66 @@ test('the >> beside the gift search opens 「모두 보기」 over the stage wit
   await expect(browser).toHaveCount(0);
   await expect(page.getByTestId('run-stage')).toBeVisible();
   await expect(page.getByRole('button', { name: '모두 보기', exact: true })).toBeVisible();
+});
+
+test('every row of the 「⋯」 menu spans the menu, at every text size (M122)', async ({ page }) => {
+  // The menu is as wide as its widest section; a section sized to its own content left the four
+  // actions shorter than the size steps below them. Measured in a real layout, so it catches any
+  // section that stops stretching — whatever is added to the menu next.
+  await page.goto('./');
+  await expect(page.getByTestId('run-stage')).toBeVisible();
+  await page.getByRole('button', { name: '더 보기' }).click();
+  const popover = page.getByTestId('block-popover');
+  for (const step of ['작게', '보통', '크게', '아주 크게']) {
+    await page.getByTestId('type-size').getByRole('button', { name: step, exact: true }).click();
+    const widths = await popover.evaluate((root) => {
+      const inner = root.clientWidth - parseFloat(getComputedStyle(root).paddingLeft) * 2;
+      const rows = [
+        ...root.querySelectorAll('[data-testid="header-menu"] button'),
+        ...root.querySelectorAll('[role="group"]'),
+      ].map((el) => el.getBoundingClientRect().width);
+      return { inner, rows };
+    });
+    for (const width of widths.rows) expect(Math.abs(width - widths.inner)).toBeLessThanOrEqual(1);
+  }
+});
+
+test('「글자 크기」 scales the type roles, survives a reload, and fits (M123)', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByTestId('run-stage')).toBeVisible();
+  const bodySize = () => page.evaluate(() => getComputedStyle(document.body).fontSize);
+  expect(await bodySize()).toBe('13px');
+
+  await page.getByRole('button', { name: '더 보기' }).click();
+  await page.getByTestId('type-size').getByRole('button', { name: '아주 크게' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-text-scale', 'xl');
+  expect(await bodySize()).toBe('16.9px'); // 13 × 1.3
+  await page.keyboard.press('Escape');
+
+  await page.reload();
+  await expect(page.getByTestId('run-stage')).toBeVisible();
+  expect(await bodySize()).toBe('16.9px');
+  // At the largest step the page still does not scroll sideways.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+});
+
+test('the saved 「글자 크기」 is on the page before any app script runs (M123)', async ({
+  browser,
+  baseURL,
+}) => {
+  // No service worker, so every script request reaches the route below.
+  const context = await browser.newContext({ baseURL, serviceWorkers: 'block' });
+  await context.addInitScript(() => {
+    window.localStorage.setItem(
+      'md-route-planner',
+      JSON.stringify({ state: { ui: { textScale: 'lg' } }, version: 7 }),
+    );
+  });
+  // Only `index.html`'s inline pre-paint script may run: the app bundle never arrives.
+  await context.route(/\.(js|tsx?)(\?.*)?$/, (route) => route.abort());
+  const page = await context.newPage();
+  await page.goto('./');
+  await expect(page.locator('html')).toHaveAttribute('data-text-scale', 'lg');
+  expect(await page.evaluate(() => getComputedStyle(document.body).fontSize)).toBe('14.95px'); // 13 × 1.15
+  await context.close();
 });

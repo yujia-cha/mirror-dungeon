@@ -1,47 +1,27 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Check, ClipboardPaste, Plus, RotateCcw, Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, ClipboardPaste, Eraser, Plus, RotateCcw, Search, Swords } from 'lucide-react';
 import type { GameData, Identity } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
-import { matchesQuery } from '../lib/hangul.ts';
 import { sinnerOf, useApp } from '../store.ts';
-import { factionName, identityKeywordLabel } from '../format.ts';
+import { identityKeywordLabel } from '../format.ts';
 import { identitiesFromFormationCode } from '../lib/formation-code.ts';
 import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { deckSummaryChips } from '../lib/deck-summary.ts';
-import { fitShift } from '../lib/fit-inside.ts';
 import { useCursor } from '../lib/use-cursor.ts';
 import { stepIndex, useDismiss } from '../lib/useDismiss.ts';
+import { useDesktop } from '../lib/useMediaQuery.ts';
+import { usePageHistory } from '../lib/usePageHistory.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
-import { Button, Checkbox, Chip, CloseButton, TextField } from '../components/ui.tsx';
+import { attackTypeLabels, searchIdentities, sinLabels, type SearchMode } from '../lib/identity-search.ts';
+import { DetailSurface } from '../components/BlockDetail.tsx';
+import { Badge, Button, Checkbox, Chip, TextField } from '../components/ui.tsx';
 
 interface Props {
   data: GameData;
   indexes: GameIndexes;
   stats: DeckStats;
   lang: Lang;
-}
-
-/**
- * Several words search as OR: 「화상 침잠」 finds every identity carrying either keyword, so a
- * party can be assembled from one query. A single word behaves as it always did.
- */
-function matches(identity: Identity, needles: string[], data: GameData): boolean {
-  if (needles.length === 0) return true;
-  const haystack = [
-    identity.title.ko,
-    identity.title.en,
-    identity.sinner.ko,
-    identity.sinner.en,
-    ...identity.factions.flatMap((f) => [factionName(f, data.enums, 'ko'), factionName(f, data.enums, 'en')]),
-    ...Object.entries(identity.keywords).flatMap(([k, info]) => [
-      identityKeywordLabel(k as never, info, data.enums, 'ko').label,
-      identityKeywordLabel(k as never, info, data.enums, 'en').label,
-    ]),
-  ]
-    .join(' ')
-    .toLowerCase();
-  return needles.some((needle) => matchesQuery(haystack, needle));
 }
 
 function KeywordChips({ identity, data, lang }: { identity: Identity; data: GameData; lang: Lang }) {
@@ -66,6 +46,133 @@ function KeywordChips({ identity, data, lang }: { identity: Identity; data: Game
   );
 }
 
+/**
+ * What else a search row says about an identity, after its keywords: its attack types on one chip
+ * (a ⚔ tells it from the keyword chips without a colour) and its sins as plain text. Both are
+ * searchable, so a row never matches on something it does not show.
+ */
+function IdentityMeta({ identity, data, lang }: { identity: Identity; data: GameData; lang: Lang }) {
+  const attacks = attackTypeLabels(identity, data.enums, lang);
+  const sins = sinLabels(identity, lang);
+  return (
+    <span className="flex flex-wrap items-center gap-1" data-testid="identity-meta">
+      <KeywordChips identity={identity} data={data} lang={lang} />
+      {attacks.length > 0 ? (
+        <Chip title={t('deckAttackTypes', lang)}>
+          <Swords size={10} aria-hidden />
+          <span className="sr-only">{t('deckAttackTypes', lang)} </span>
+          {attacks.join(' · ')}
+        </Chip>
+      ) : null}
+      {sins.length > 0 ? (
+        <span className="text-caption text-fg-subtle" title={t('deckSins', lang)}>
+          <span className="sr-only">{t('deckSins', lang)} </span>
+          {sins.join(' · ')}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * OR / AND for a query of several words, shared by the global search and the sinner picker. Two
+ * toggle buttons rather than a select: the choice is binary and both options stay in view.
+ */
+function ModeToggle({
+  mode,
+  onChange,
+  lang,
+}: {
+  mode: SearchMode;
+  onChange: (mode: SearchMode) => void;
+  lang: Lang;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={t('deckSearchMode', lang)}
+      className="flex flex-none gap-1"
+      data-testid="search-mode"
+    >
+      <Button
+        variant={mode === 'or' ? 'primary' : 'secondary'}
+        pressed={mode === 'or'}
+        onClick={() => onChange('or')}
+        title={t('deckSearchModeOrHint', lang)}
+      >
+        {t('deckSearchModeOr', lang)}
+      </Button>
+      <Button
+        variant={mode === 'and' ? 'primary' : 'secondary'}
+        pressed={mode === 'and'}
+        onClick={() => onChange('and')}
+        title={t('deckSearchModeAndHint', lang)}
+      >
+        {t('deckSearchModeAnd', lang)}
+      </Button>
+    </div>
+  );
+}
+
+/** The leading box of a search row: filled with a check while the identity is in the deck. */
+function HeldMark({ held }: { held: boolean }) {
+  return (
+    <span
+      className={`mt-0.5 inline-flex h-4 w-4 flex-none items-center justify-center rounded-xs border ${held ? 'border-primary bg-primary text-primary-fg' : 'border-border-strong'}`}
+      aria-hidden
+    >
+      {held ? <Check size={11} strokeWidth={3} /> : null}
+    </span>
+  );
+}
+
+/**
+ * One search result, the same in both searches: name and 성 on the first line (the sinner leads in
+ * the global list), 「편성 중」 when it is the one in the deck, then keywords · attack types · sins,
+ * and — when the sinner's slot holds some other identity that is not the LCB base — which one a
+ * pick would replace. The badge and that line are words, not a tint.
+ */
+function IdentityRowBody({
+  identity,
+  data,
+  lang,
+  held,
+  sinnerLabel,
+  replaces,
+}: {
+  identity: Identity;
+  data: GameData;
+  lang: Lang;
+  held: boolean;
+  sinnerLabel?: string;
+  replaces?: Identity;
+}) {
+  return (
+    <span className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+        {sinnerLabel ? (
+          <span className="flex-none text-caption-strong text-fg-muted">{sinnerLabel}</span>
+        ) : null}
+        <span className="min-w-0 text-body text-fg">{pick(identity.title, lang)}</span>
+        <span className="flex-none text-caption text-fg-subtle">
+          {t('deckRank', lang, { n: identity.rank })}
+        </span>
+        {held ? (
+          <span className="self-center" data-testid="deck-in-deck">
+            <Badge tone="neutral">{t('deckInDeck', lang)}</Badge>
+          </span>
+        ) : null}
+      </span>
+      <IdentityMeta identity={identity} data={data} lang={lang} />
+      {replaces ? (
+        <span className="text-caption text-fg-muted" data-testid="deck-current">
+          {t('deckCurrent', lang, { identity: pick(replaces.title, lang) })}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function DeckStep({ data, indexes, stats, lang }: Props) {
   const deck = useApp((s) => s.deck);
   const deployed = useApp((s) => s.deployed);
@@ -83,20 +190,30 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   const [code, setCode] = useState('');
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
+  // OR keeps what several words always did (any of them); AND narrows — 「화상 파우스트」. One choice
+  // for both searches, held for the visit only.
+  const [mode, setMode] = useState<SearchMode>('or');
+
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const bySinner = useMemo(() => new Map(deck.map((id) => [sinnerOf(id), id])), [deck]);
+  // The LCB base identities: a slot holding one of these is the default, not a choice worth naming.
+  const defaults = useMemo(() => new Set(defaultDeck(data)), [data]);
+  /** The identity a pick of `identity` would replace, when that one is a deliberate (non-LCB) choice. */
+  const replacedBy = (identity: Identity): Identity | undefined => {
+    const current = bySinner.get(identity.sinnerId);
+    if (current === undefined || current === identity.id || defaults.has(current)) return undefined;
+    return indexes.identityById.get(current);
+  };
   const needle = query.trim().toLowerCase();
-  // The highlight resets itself when the query changes; see `useCursor`.
-  const [activeIndex, setActiveIndex] = useCursor(needle);
-  const needles = useMemo(() => needle.split(/\s+/).filter(Boolean), [needle]);
+  // The highlight resets itself when the query or the mode changes; see `useCursor`.
+  const [activeIndex, setActiveIndex] = useCursor(`${mode}:${needle}`);
   const globalResults = useMemo(() => {
-    if (needles.length === 0) return [];
-    return data.identities
-      .filter((identity) => matches(identity, needles, data))
+    if (needle === '') return [];
+    return searchIdentities(data.identities, { query: needle, mode, enums: data.enums })
       .sort((a, b) => a.sinnerId - b.sinnerId || b.rank - a.rank || a.id - b.id)
       .slice(0, 40);
-  }, [data, needles]);
+  }, [data, needle, mode]);
   // The list stays up while picking, so several identities can be taken from one search; Escape and
   // an outside press close it without wiping the query, and the ✕ inside the field clears the text.
   const [listOpen, setListOpen] = useState(false);
@@ -154,7 +271,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           lang={lang}
         />
       ) : null}
-      <div className="relative flex flex-wrap items-center gap-2" ref={searchRef}>
+      <div className="relative flex items-center gap-2" ref={searchRef}>
         <TextField
           value={query}
           onChange={(value) => {
@@ -178,29 +295,13 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
               open && globalResults[activeIndex] ? `deck-option-${globalResults[activeIndex].id}` : undefined,
           }}
         />
-        <span
-          className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border bg-surface-muted px-3 text-label "
-          title={full ? t('deckDeployedFull', lang, { max }) : undefined}
-        >
-          {t('deckDeployed', lang)}{' '}
-          <span className="font-num">
-            {deployed.length}/{max}
-          </span>
-        </span>
-        <Button onClick={() => setConfirmDefault(true)} ariaLabel={t('deckDefault', lang)}>
-          <RotateCcw size={14} aria-hidden />
-          <span className="hidden @sm:inline">{t('deckDefault', lang)}</span>
-        </Button>
-        <Button onClick={() => setImportOpen((v) => !v)} ariaLabel={t('deckImport', lang)}>
-          <ClipboardPaste size={14} aria-hidden />
-          <span className="hidden @sm:inline">{t('deckImport', lang)}</span>
-        </Button>
+        <ModeToggle mode={mode} onChange={setMode} lang={lang} />
         {open ? (
           <div
             id="deck-search-listbox"
             role="listbox"
             aria-label={t('deckSearchAll', lang)}
-            className="absolute left-0 top-10 z-20 flex max-h-[420px] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-border-strong bg-surface shadow-md"
+            className="absolute left-0 top-full z-20 mt-1 flex max-h-[420px] w-full max-w-[560px] flex-col overflow-y-auto rounded-md border border-border-strong bg-surface shadow-md"
           >
             <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 text-caption text-fg-subtle">
               <span>
@@ -230,32 +331,41 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                   data-picked={held || undefined}
                   onClick={() => pickIdentity(identity)}
                   onPointerMove={() => setActiveIndex(i)}
-                  className={`flex h-11 items-center gap-3 border-b border-border px-3 text-left hover:bg-surface-muted ${i === activeIndex ? 'bg-surface-muted' : ''}`}
+                  className={`flex min-h-11 flex-none items-start gap-3 border-b border-border px-3 py-2 text-left hover:bg-surface-muted ${i === activeIndex ? 'bg-surface-muted' : ''}`}
                 >
-                  <span
-                    className={`inline-flex h-4 w-4 flex-none items-center justify-center rounded-xs border ${held ? 'border-primary bg-primary text-primary-fg' : 'border-border-strong'}`}
-                    aria-hidden
-                  >
-                    {held ? <Check size={11} strokeWidth={3} /> : null}
-                  </span>
-                  <span className="w-16 flex-none text-caption-strong text-fg-muted">
-                    {pick(identity.sinner, lang)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-body text-fg">
-                    {pick(identity.title, lang)}
-                    <span className="text-caption text-fg-subtle">
-                      {' '}
-                      · {t('deckRank', lang, { n: identity.rank })}
-                    </span>
-                  </span>
-                  <span className="hidden gap-1 @sm:flex">
-                    <KeywordChips identity={identity} data={data} lang={lang} />
-                  </span>
+                  <HeldMark held={held} />
+                  <IdentityRowBody
+                    identity={identity}
+                    data={data}
+                    lang={lang}
+                    held={held}
+                    sinnerLabel={pick(identity.sinner, lang)}
+                    replaces={replacedBy(identity)}
+                  />
                 </button>
               );
             })}
           </div>
         ) : null}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border bg-surface-muted px-3 text-label "
+          title={full ? t('deckDeployedFull', lang, { max }) : undefined}
+        >
+          {t('deckDeployed', lang)}{' '}
+          <span className="font-num">
+            {deployed.length}/{max}
+          </span>
+        </span>
+        <Button onClick={() => setConfirmDefault(true)} ariaLabel={t('deckDefault', lang)}>
+          <RotateCcw size={14} aria-hidden />
+          <span className="hidden @sm:inline">{t('deckDefault', lang)}</span>
+        </Button>
+        <Button onClick={() => setImportOpen((v) => !v)} ariaLabel={t('deckImport', lang)}>
+          <ClipboardPaste size={14} aria-hidden />
+          <span className="hidden @sm:inline">{t('deckImport', lang)}</span>
+        </Button>
       </div>
       {/* Why the reserve boxes are greyed out, said where a touch reader can see it (not a title). */}
       {full ? (
@@ -327,6 +437,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                 type="button"
                 onClick={() => setOpenSinner(open ? null : sinner.id)}
                 aria-expanded={open}
+                aria-haspopup="dialog"
                 className="flex min-w-0 flex-col items-start gap-1 rounded-sm text-left hover:underline"
               >
                 {identity ? (
@@ -354,7 +465,9 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                   sinnerName={pick(sinner.name, lang)}
                   data={data}
                   lang={lang}
-                  selected={id}
+                  selected={identity ?? null}
+                  mode={mode}
+                  onMode={setMode}
                   onPick={(picked) => {
                     setDeckSlot(sinner.id, picked, DEPLOYED_AT_START);
                     setOpenSinner(null);
@@ -381,15 +494,25 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
   );
 }
 
-/** The panel body's own horizontal padding (`px-3`), kept clear on both sides. */
-const PICKER_PAD = 12;
-
+/**
+ * One sinner's identities, searched the way the global search is (`searchIdentities` fixed to the
+ * sinner, the same OR / AND, the same rows) — M126.
+ *
+ * It used to float under its slot at 340px: inside a two-column panel the field truncated
+ * 「파우스트 인…」, keyword chips wrapped under names, and a right-column slot had to be measured and
+ * slid back inside the panel. Now it is a sheet: portaled to the body so no panel clips it, a bottom
+ * sheet on a phone and a 520px dialog on a desktop, with the background held still, Tab kept inside,
+ * Escape, the backdrop and (on a phone) the device's back closing it, and focus going back to the
+ * slot that opened it (`DetailSurface` + `useOverlayChrome` + `usePageHistory`).
+ */
 function SinnerPicker({
   sinner,
   sinnerName,
   data,
   lang,
   selected,
+  mode,
+  onMode,
   onPick,
   onClose,
 }: {
@@ -397,40 +520,36 @@ function SinnerPicker({
   sinnerName: string;
   data: GameData;
   lang: Lang;
-  selected: number | null;
+  selected: Identity | null;
+  mode: SearchMode;
+  onMode: (mode: SearchMode) => void;
   onPick: (identityId: number | null) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const ref = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const needle = query.trim().toLowerCase();
-  const [activeIndex, setActiveIndex] = useCursor(needle);
-  const all = data.identities.filter((identity) => identity.sinnerId === sinner);
-  const identities = all
-    .filter((identity) => matches(identity, needle.split(/\s+/).filter(Boolean), data))
-    .sort((a, b) => b.rank - a.rank || a.id - b.id);
-  useDismiss(ref, onClose, true);
-  // From `@sm` up the picker floats under its slot, and a slot in the right column has less room to
-  // the panel's edge than the picker is wide: the panel body clipped it. Measure and slide it left.
-  const [shift, setShift] = useState(0);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const fit = (): void => {
-      const bounds = el.parentElement?.closest('.\\@container');
-      if (!bounds || getComputedStyle(el).position !== 'absolute') return setShift(0);
-      const box = el.getBoundingClientRect();
-      const base = box.left - (Number.parseFloat(el.style.left) || 0);
-      setShift(fitShift({ left: base, right: base + box.width }, bounds.getBoundingClientRect(), PICKER_PAD));
-    };
-    fit();
-    // Not `autoFocus`: that scrolls the panel body sideways to the field before the shift lands,
-    // and the panel stays scrolled after the picker closes.
+  const [activeIndex, setActiveIndex] = useCursor(`${mode}:${needle}`);
+  const all = useMemo(
+    () => data.identities.filter((identity) => identity.sinnerId === sinner),
+    [data, sinner],
+  );
+  const identities = useMemo(
+    () =>
+      searchIdentities(all, { query: needle, mode, enums: data.enums, sinnerId: sinner }).sort(
+        (a, b) => b.rank - a.rank || a.id - b.id,
+      ),
+    [all, needle, mode, data.enums, sinner],
+  );
+  // The field, not the sheet's ✕, takes focus. This runs after `DetailSurface`'s own effect (a
+  // parent's effects follow its children's), so that one has already noted the slot as the place
+  // to hand focus back to.
+  useEffect(() => {
     inputRef.current?.focus({ preventScroll: true });
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
   }, []);
+  // On a phone the deck is a page of its own, and the device's back closes this sheet first.
+  const desktop = useDesktop();
+  usePageHistory(true, onClose, !desktop);
   const onKey = (event: React.KeyboardEvent<HTMLInputElement>): void => {
     const next = stepIndex(event.key, activeIndex, identities.length);
     if (next !== null) {
@@ -441,72 +560,88 @@ function SinnerPicker({
       onPick(identities[activeIndex].id);
     }
   };
+  const title = t('deckPickerTitle', lang, { sinner: sinnerName });
   return (
-    <div
-      ref={ref}
-      className="mt-1 flex flex-col overflow-hidden rounded-md border border-border-strong bg-surface shadow-md @sm:absolute @sm:left-0 @sm:top-full @sm:z-20 @sm:mt-0 @sm:w-[min(340px,calc(100cqw-1.5rem))]"
-      style={shift ? { left: shift } : undefined}
-      data-testid="sinner-picker"
-    >
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <TextField
-          inputRef={inputRef}
-          value={query}
-          onChange={setQuery}
-          label={t('deckSinnerSearch', lang, { sinner: sinnerName })}
-          placeholder={t('deckSinnerSearch', lang, { sinner: sinnerName })}
-          className="flex-1"
-          inputProps={{
-            onKeyDown: onKey,
-            role: 'combobox',
-            'aria-expanded': true,
-            'aria-controls': `sinner-listbox-${sinner}`,
-            'aria-autocomplete': 'list',
-            'aria-activedescendant': identities[activeIndex]
-              ? `sinner-option-${identities[activeIndex].id}`
-              : undefined,
-          }}
-        />
-        <CloseButton label={t('deckClose', lang)} onClick={onClose} />
-      </div>
-      <ul className="max-h-64 overflow-y-auto" role="listbox" id={`sinner-listbox-${sinner}`}>
-        {selected !== null ? (
-          <li>
-            <button
-              type="button"
-              onClick={() => onPick(null)}
-              className="flex h-9 w-full items-center px-3 text-left text-caption text-fg-muted hover:bg-surface-muted touch:min-h-11"
-            >
+    <DetailSurface mode="sheet" label={title} closeLabel={t('deckClose', lang)} onClose={onClose}>
+      <div className="flex flex-col gap-3" data-testid="sinner-picker">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-subheading text-fg">{title}</h2>
+          <span className="flex-none text-caption text-fg-subtle" data-testid="sinner-picker-count">
+            {t('deckShowing', lang, { total: all.length, n: identities.length })}
+          </span>
+        </div>
+        {selected ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0 text-caption text-fg-muted">
+              {t('deckCurrent', lang, { identity: pick(selected.title, lang) })}
+            </span>
+            <Button size="sm" onClick={() => onPick(null)}>
+              <Eraser size={12} aria-hidden />
               {t('deckClearSlot', lang)}
-            </button>
-          </li>
+            </Button>
+          </div>
         ) : null}
-        {identities.map((identity, i) => (
-          <li
-            key={identity.id}
-            role="option"
-            id={`sinner-option-${identity.id}`}
-            aria-selected={i === activeIndex}
-          >
-            <button
-              type="button"
-              onClick={() => onPick(identity.id)}
-              onPointerMove={() => setActiveIndex(i)}
-              aria-pressed={identity.id === selected}
-              className={`flex min-h-11 w-full flex-wrap items-center gap-1.5 px-3 py-1.5 text-left text-body hover:bg-surface-muted ${
-                identity.id === selected || i === activeIndex ? 'bg-surface-muted' : ''
-              }`}
-            >
-              <strong className="text-fg">{pick(identity.title, lang)}</strong>
-              <span className="text-caption text-fg-subtle">{t('deckRank', lang, { n: identity.rank })}</span>
-              <KeywordChips identity={identity} data={data} lang={lang} />
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="border-t border-border px-3 py-1.5 text-caption text-fg-subtle">
-        {t('deckShowing', lang, { total: all.length, n: identities.length })}
+        <div className="flex items-center gap-2">
+          <TextField
+            inputRef={inputRef}
+            value={query}
+            onChange={setQuery}
+            label={t('deckSinnerSearch', lang, { sinner: sinnerName })}
+            placeholder={t('deckSinnerSearch', lang, { sinner: sinnerName })}
+            icon={<Search size={14} aria-hidden />}
+            onClear={() => setQuery('')}
+            clearLabel={t('searchClear', lang)}
+            className="flex-1"
+            inputProps={{
+              onKeyDown: onKey,
+              role: 'combobox',
+              'aria-expanded': true,
+              'aria-controls': `sinner-listbox-${sinner}`,
+              'aria-autocomplete': 'list',
+              'aria-activedescendant': identities[activeIndex]
+                ? `sinner-option-${identities[activeIndex].id}`
+                : undefined,
+            }}
+          />
+          <ModeToggle mode={mode} onChange={onMode} lang={lang} />
+        </div>
+        <ul
+          className="-mx-4 max-h-[min(420px,50dvh)] overflow-y-auto border-y border-border"
+          role="listbox"
+          id={`sinner-listbox-${sinner}`}
+          aria-label={title}
+        >
+          {identities.length === 0 ? (
+            <li className="px-4 py-3 text-caption text-fg-subtle">{t('deckSearchNone', lang)}</li>
+          ) : null}
+          {identities.map((identity, i) => {
+            const held = identity.id === selected?.id;
+            return (
+              <li
+                key={identity.id}
+                role="option"
+                id={`sinner-option-${identity.id}`}
+                aria-selected={i === activeIndex}
+                className="border-b border-border last:border-b-0"
+              >
+                <button
+                  type="button"
+                  onClick={() => onPick(identity.id)}
+                  onPointerMove={() => setActiveIndex(i)}
+                  aria-pressed={held}
+                  data-picked={held || undefined}
+                  className={`flex min-h-11 w-full items-start gap-3 px-4 py-2 text-left hover:bg-surface-muted ${
+                    i === activeIndex ? 'bg-surface-muted' : ''
+                  }`}
+                >
+                  <HeldMark held={held} />
+                  <IdentityRowBody identity={identity} data={data} lang={lang} held={held} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
-    </div>
+    </DetailSurface>
   );
 }

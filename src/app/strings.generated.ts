@@ -22,10 +22,11 @@ export const STRINGS = {
   langToggle: { ko: 'English', en: '한국어' },
   themeToggle: { ko: '테마 변경', en: 'Change theme' },
   giftIconSize: { ko: '기프트 아이콘 크기', en: 'Gift icon size' },
-  giftIconSize_sm: { ko: '작게', en: 'Small' },
-  giftIconSize_md: { ko: '보통', en: 'Medium' },
-  giftIconSize_lg: { ko: '크게', en: 'Large' },
-  giftIconSize_xl: { ko: '아주 크게', en: 'Extra large' },
+  textSize: { ko: '글자 크기', en: 'Text size' },
+  sizeStep_sm: { ko: '작게', en: 'Small' },
+  sizeStep_md: { ko: '보통', en: 'Medium' },
+  sizeStep_lg: { ko: '크게', en: 'Large' },
+  sizeStep_xl: { ko: '아주 크게', en: 'Extra large' },
   loading: { ko: '게임 데이터를 불러오는 중', en: 'Loading game data' },
   loadFailed: { ko: '게임 데이터를 불러오지 못했습니다', en: 'Could not load the game data' },
   retry: { ko: '다시 시도', en: 'Retry' },
@@ -129,14 +130,25 @@ export const STRINGS = {
   deckSinnerSearch: { ko: '{sinner} 인격 검색', en: 'Search {sinner} identities' },
   deckShowing: { ko: '{total}명 중 {n}명', en: '{n} of {total}' },
   deckClose: { ko: '닫기', en: 'Close' },
+  // 검색어 여러 개를 어떻게 합칠지 고르는 두 버튼의 묶음 이름.
+  deckSearchMode: { ko: '검색어 조합', en: 'Match' },
+  deckSearchModeOr: { ko: '하나라도', en: 'Any' },
+  deckSearchModeAnd: { ko: '모두', en: 'All' },
+  deckSearchModeOrHint: { ko: '검색어 중 하나라도 맞는 인격 (OR)', en: 'Identities matching any word (OR)' },
+  deckSearchModeAndHint: {
+    ko: '검색어가 모두 맞는 인격 (AND) — 예: 화상 파우스트',
+    en: 'Identities matching every word (AND) — e.g. Burn Faust',
+  },
+  // 지금 덱의 그 수감자 칸에 들어 있는 인격의 검색 결과 행에 붙는 배지.
+  deckInDeck: { ko: '편성 중', en: 'In deck' },
+  // 그 수감자 칸에 LCB 수감자가 아닌 인격이 있을 때, 다른 인격 행 아래에 적는다(고르면 그것을 바꾼다).
+  deckCurrent: { ko: '현재 편성: {identity}', en: 'In deck: {identity}' },
+  deckPickerTitle: { ko: '{sinner} 인격 선택', en: 'Choose a {sinner} identity' },
+  deckAttackTypes: { ko: '공격 유형', en: 'Attack types' },
+  deckSins: { ko: '죄악 속성', en: 'Sin affinities' },
 
   // ── 기프트 탭
   giftsSearch: { ko: '기프트 검색', en: 'Search gifts' },
-  giftsActive: { ko: '현재 활성', en: 'Active now' },
-  // 이미 목표이거나 목표가 가져간 것(isMarked)을 숨긴다.
-  giftsUnpickedOnly: { ko: '목표가 아닌 것만 보기', en: 'Non-goals only' },
-  giftsActiveAllPicked: { ko: '모두 목표입니다', en: 'All are goals' },
-  giftsActiveNone: { ko: '현재 활성인 기프트가 없습니다', en: 'Nothing is active right now' },
   giftsResults: { ko: '검색 결과', en: 'Search results' },
   giftsDeckEmpty: { ko: '덱이 비어 있습니다', en: 'The deck is empty' },
   giftsNoMatch: { ko: '일치하는 기프트 없음', en: 'No gift matches' },
@@ -150,14 +162,43 @@ export const STRINGS = {
   giftsSortPicked: { ko: '추가한 순서', en: 'As added' },
   giftsSortName: { ko: '이름', en: 'Name' },
   giftsPack: { ko: '팩', en: 'Pack' },
+  // 기프트 탭이 검색 중이 아닐 때 탭 아래에 서는 문. 「모두 보기」 브라우저를 「추천 기프트」 탭으로 연다.
+  giftsRecommendOpen: { ko: '추천 기프트 보기', en: 'See recommended gifts' },
   removeFromSelection: { ko: '{name} 목표에서 빼기', en: 'Remove {name} from goals' },
 
   // ── 모두 보기 (전체 기프트 격자)
-  // 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 필터가 있는 전체 기프트 격자. 데스크톱은 스테이지 자리, 휴대폰은 페이지.
+  // 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 「추천 기프트」·「모든 기프트」 두 탭. 데스크톱은 스테이지 자리, 휴대폰은 페이지. 브라우저의 제목이기도 하다.
   giftsBrowseAll: { ko: '모두 보기', en: 'Browse all' },
+  // 「모두 보기」의 둘째 탭 — 전체 기프트와 필터.
   giftsBrowseTitle: { ko: '모든 기프트', en: 'All gifts' },
+  // 「모두 보기」의 첫 탭(열 때마다 이 탭으로 열린다) — 지금 덱으로 발동할 수 있는 기프트(M121).
+  giftsBrowseRecommended: { ko: '추천 기프트', en: 'Recommended' },
   giftsBrowseClose: { ko: '닫기', en: 'Close' },
   giftsBrowseHide: { ko: '모두 보기 닫기', en: 'Close browse all' },
+
+  // ── 추천 기프트 (모두 보기의 첫 탭)
+  // 임계값 있는 조건을 모두 채우거나, 임계값 없는 조건(편성된 수에 따라 강화)에 출격한 인격이 한 명이라도 세어지는 기프트(대기 인원은 세지 않는다).
+  recDeckTitle: { ko: '덱 조건 충족', en: 'Deck conditions met' },
+  // 조건이 없어 어느 덱에서나 발동하는 기프트 중 팩 전용(테마팩 한정·클리어 보상)인 것. 범용은 덱과 상관없어 추천하지 않는다.
+  recFreeTitle: { ko: '조건 없이 발동 · 팩 전용', en: 'No condition · pack-only' },
+  recAcquisition: { ko: '획득', en: 'Source' },
+  // 테마팩 한정·클리어 보상(isPackBound).
+  recAcqPack: { ko: '팩 전용', en: 'Pack-only' },
+  // 팩 전용이 아닌 것 전부 — 범용 드랍, 조합, 시작 기프트 등.
+  recAcqGeneral: { ko: '범용', en: 'General' },
+  recFusion: { ko: '조합 기프트 포함', en: 'Include fusions' },
+  recSortKeyword: { ko: '키워드별', en: 'By keyword' },
+  // 팩 전용 먼저, 그다음 조건 진행률, id(compareEntries).
+  recSortPack: { ko: '팩 전용 먼저', en: 'Pack-only first' },
+  recDeckNone: {
+    ko: '지금 덱으로 조건을 채우는 기프트가 없습니다',
+    en: 'The deck meets no gift condition right now',
+  },
+  // 덱 조건 충족이 비었고 출격한 인격이 0명일 때. 조건 대부분이 출격 인원을 센다.
+  recNoDeployed: {
+    ko: '출격한 인격이 없습니다. 조건 대부분은 출격 인원으로 셉니다.',
+    en: 'No identity is deployed. Most conditions count deployed identities.',
+  },
 
   // ── 기프트 필터·획득 분류·죄악
   filterReset: { ko: '필터 초기화', en: 'Reset filters' },
@@ -634,6 +675,10 @@ export const GUIDE_CARDS = [
         en: 'Press a sinner’s slot to pick an identity, or paste the game’s formation code into 「Import code」.',
       },
       {
+        ko: '인격 검색은 이름·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣고 「모두」를 고르면 전부 맞는 인격만 남습니다(`화상 파우스트`).',
+        en: 'The identity search reads names, factions, keywords, attack types and sins. With several words, 「All」 keeps only identities matching every one (`Burn Faust`).',
+      },
+      {
         ko: '조건부 기프트는 「출격」으로 선택된 인격을 기준으로 셉니다.',
         en: 'Conditional gifts count the identities set to 「Deployed」.',
       },
@@ -647,8 +692,8 @@ export const GUIDE_CARDS = [
         en: 'In the Gifts tab, press an icon to add it as a goal.',
       },
       {
-        ko: '탭에는 현재 활성화 가능한 기프트만 나옵니다. 나머지는 검색하거나 검색창 끝의 >>로 찾습니다.',
-        en: 'The tab lists only the gifts you can activate now. Find the rest by search or with >> at the end of the search box.',
+        ko: '검색창 끝의 >>를 누르면 「추천 기프트」가 먼저 열립니다. 지금 덱으로 발동할 수 있는 기프트만 모았고, 「모든 기프트」 탭에 전체가 있습니다.',
+        en: 'The >> at the end of the search box opens 「Recommended」 first: the gifts your deck can set off now. The 「All gifts」 tab has every gift.',
       },
       {
         ko: '아이콘의 바깥 링은 조건 판정을 표시합니다. (초록 충족 · 빨강 미충족)',

@@ -11,39 +11,92 @@ interface Layer {
 const owners: Layer[] = [];
 
 /**
- * How many `history.back()` calls this module made itself and has not yet seen come back.
+ * What every entry this module pushes carries: how many layer entries stand at and below it, so
+ * the app's own entry is depth 0, a page over it 1, a sheet over the page 2.
  *
- * `back()` is asynchronous, so a layer that closes itself and is replaced in the same tick (the
- * phone's panel toggle does exactly that: close the left page, open the right one) would have the
- * new layer eat the old one's `popstate`. Each self-inflicted pop is counted here and swallowed.
+ * The history is reconciled to the layers by depth rather than by counting our own traversals
+ * (M124). The count was the bug's accomplice: a layer closing as another opened in one commit was a
+ * `history.back()` and a `pushState` back to back, and Chrome applies the push at once and the back
+ * later — so the back undid the *new* entry, the new page owned nothing, and the next back (its ←
+ * or the device's) left the app. Counting also drifted for good whenever two backs collapsed into
+ * one traversal, which then swallowed the user's next real back. A depth read off the entry the
+ * browser actually landed on cannot drift.
  */
-let pendingSelfPops = 0;
+interface Marker {
+  layer: number;
+}
+
+/** The depth of an entry; 0 for the app's own entry and for anything this module did not push. */
+function depthOf(state: unknown): number {
+  const layer = (state as Partial<Marker> | null)?.layer;
+  return typeof layer === 'number' && Number.isInteger(layer) && layer > 0 ? layer : 0;
+}
+
+/**
+ * A traversal this module started and has not yet seen land. It is asynchronous, so while it is in
+ * flight the current entry still reads the old depth; nothing else moves the history until it lands.
+ */
+let traversing = false;
+let syncQueued = false;
+
+/**
+ * Make the history as deep as the open layers: push the entries a new layer needs, or go back over
+ * the ones closed layers left behind — every one of them in a single traversal.
+ */
+function sync(): void {
+  if (traversing) return;
+  const current = depthOf(window.history.state);
+  const want = owners.length;
+  if (current < want) {
+    for (let depth = current + 1; depth <= want; depth += 1) {
+      window.history.pushState({ layer: depth } satisfies Marker, '');
+    }
+  } else if (current > want) {
+    traversing = true;
+    window.history.go(want - current);
+  }
+}
+
+/**
+ * Releases wait for the end of the tick. One layer closing as another opens is a hand-over (the
+ * route page's 「기프트」 closes it and opens the items page in one commit): by then the new layer has
+ * taken the old one's place, the depth already matches, and the history is not touched at all.
+ */
+function queueSync(): void {
+  if (syncQueued) return;
+  syncQueued = true;
+  queueMicrotask(() => {
+    syncQueued = false;
+    sync();
+  });
+}
 
 /**
  * One listener for every layer, installed once.
  *
  * It cannot live inside the hook: a layer that unmounts while open hands its entry back, and if
- * the listener went away with the component nothing would be left to swallow that pop and the
- * count would drift for good.
+ * the listener went away with the component nothing would be left to see that traversal land.
  */
 if (typeof window !== 'undefined') {
   window.addEventListener('popstate', () => {
-    if (pendingSelfPops > 0) {
-      pendingSelfPops -= 1;
-      return;
+    const landed = depthOf(window.history.state);
+    if (traversing) {
+      // Our own traversal: the layers it gave back are already closed.
+      traversing = false;
+    } else {
+      // The user went back (or a link navigated the tab): close every layer above where it landed,
+      // topmost first. Clear each owner first: its entry is gone, so it must not hand it back a
+      // second time when its own state catches up and the effect tears down.
+      while (owners.length > landed) {
+        const layer = owners.pop()!;
+        layer.owner.current = null;
+        layer.close();
+      }
     }
-    const layer = owners.pop();
-    if (!layer) return;
-    // Clear the owner first: the entry is gone, so the layer must not hand it back a second time
-    // when its own state catches up and the effect tears down.
-    layer.owner.current = null;
-    layer.close();
+    // A layer that opened while a traversal was in flight, or a forward step onto an entry no layer
+    // owns, leaves the depth off by some: settle it now.
+    sync();
   });
-}
-
-function giveBack(): void {
-  pendingSelfPops += 1;
-  window.history.back();
 }
 
 /**
@@ -69,7 +122,7 @@ export function usePageHistory(open: boolean, onClose: () => void, enabled: bool
       const at = owners.findIndex((layer) => layer.owner === token);
       if (at !== -1) owners.splice(at, 1);
       token.current = null;
-      giveBack();
+      queueSync();
     };
     if (!enabled || !open) {
       release();
@@ -78,7 +131,7 @@ export function usePageHistory(open: boolean, onClose: () => void, enabled: bool
     if (token.current) return;
     token.current = Symbol('history-layer');
     owners.push({ owner: token, close: () => close.current() });
-    window.history.pushState({ layer: true }, '');
+    sync();
     return release;
   }, [open, enabled, close]);
 }

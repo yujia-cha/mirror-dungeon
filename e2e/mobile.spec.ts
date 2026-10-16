@@ -92,3 +92,153 @@ test('the guide turns its cards by scrolling and closes on back', async ({ page 
   await expect(page.getByTestId('guide')).toHaveCount(0);
   await expect(page.getByTestId('stage-floor')).toBeVisible();
 });
+
+/**
+ * M121: on a phone 「모두 보기」 is a page of its own, and it opens on 「추천 기프트」. Its tabs and the
+ * filter row have to fit the width — the page never scrolls sideways — and the tabs are 44px tall
+ * for a finger.
+ */
+test('the gift browser page opens on 추천 기프트 and its tabs and filters fit the phone', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: '덱' }).click();
+  await page.getByRole('tab', { name: '기프트' }).click();
+  await page.getByTestId('gift-recommend-open').click();
+  const browser = page.getByTestId('gift-browser');
+  await expect(browser).toBeVisible();
+  const recommended = browser.getByRole('tab', { name: '추천 기프트' });
+  await expect(recommended).toHaveAttribute('aria-selected', 'true');
+  await expect(browser.getByTestId('recommend-filters')).toBeVisible();
+  expect((await recommended.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  await browser.getByRole('tab', { name: '모든 기프트' }).click();
+  await expect(browser.getByTestId('gift-filters')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  await browser.getByRole('button', { name: '뒤로' }).click();
+  await expect(browser).toHaveCount(0);
+});
+
+/**
+ * A sinner's identity picker on a phone (M126): a bottom sheet across the screen rather than a
+ * narrow popover inside the slot's column, so the field, the OR / AND buttons and each row's
+ * keyword chips have the width they need, and the page never scrolls sideways.
+ */
+test('a sinner picker is a full-width bottom sheet on a phone', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: '덱' }).click();
+  const deckPage = page.getByTestId('page-left');
+  await deckPage.getByRole('tab', { name: '덱' }).click();
+  await deckPage.locator('li button[aria-haspopup="dialog"]').nth(1).click();
+  const sheet = page.getByTestId('block-sheet');
+  await expect(sheet.getByTestId('sinner-picker')).toBeVisible();
+  const viewport = page.viewportSize()!;
+  const box = (await sheet.boundingBox())!;
+  expect(box.x).toBe(0);
+  expect(box.width).toBe(viewport.width);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  // The device's back closes the sheet, not the deck page under it.
+  await page.goBack();
+  await expect(sheet).toHaveCount(0);
+  await expect(deckPage).toBeVisible();
+  await deckPage.locator('li button[aria-haspopup="dialog"]').nth(1).click();
+  await sheet.getByRole('button', { name: '모두' }).click();
+  await sheet.getByRole('combobox').fill('화상');
+  await expect(sheet.getByRole('option')).toHaveCount(2);
+  await sheet.getByRole('option').first().getByRole('button').click();
+  await expect(sheet).toHaveCount(0);
+  await expect(deckPage.getByText('LCE E.G.O:: 홍염살')).toBeVisible();
+});
+
+/**
+ * M124: 「모두 보기」 is a page over the items page, and both ways out — its ← and the device back —
+ * land on the items tab as it was left. It used to close the items page and open its own in one
+ * commit, a `history.back()` right before a `pushState`; Chrome let that back undo the new entry,
+ * so the next back left the app. Each step waits for the history to stand as deep as the open
+ * layers (the marker `usePageHistory` writes) before pressing back, as a person would.
+ */
+test('「모두 보기」 closes onto the items page by ← and by back, with or without a sheet, never leaving the app', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await expect(page.getByTestId('stage-floor')).toBeVisible();
+  const home = page.url();
+  const depth = () => page.evaluate(() => (history.state as { layer?: number } | null)?.layer ?? 0);
+  const back = async (layers: number) => {
+    await expect.poll(depth).toBe(layers);
+    await page.goBack();
+  };
+  const items = page.getByTestId('page-left');
+  const search = items.getByRole('textbox', { name: '기프트 검색' });
+  const browser = page.getByTestId('gift-browser');
+  const expectOnItems = async () => {
+    await expect(browser).toHaveCount(0);
+    await expect(items).toBeVisible();
+    await expect(items.getByRole('tab', { name: '기프트', selected: true })).toBeVisible();
+    await expect(search).toHaveValue('진혼');
+    expect(page.url()).toBe(home);
+  };
+
+  await page.getByRole('button', { name: '덱' }).click();
+  await page.getByRole('tab', { name: '기프트' }).click();
+  await search.fill('진혼');
+
+  // The device back.
+  await items.getByRole('button', { name: '모두 보기' }).click();
+  await expect(browser).toBeVisible();
+  await expect(items).toBeHidden();
+  expect(page.url()).toBe(home);
+  await back(2);
+  await expectOnItems();
+
+  // The page's own ←, which hands focus back to the >> it came from.
+  await items.getByRole('button', { name: '모두 보기' }).click();
+  await browser.getByRole('button', { name: '뒤로' }).click();
+  await expectOnItems();
+  await expect(items.getByRole('button', { name: '모두 보기' })).toBeFocused();
+
+  // A gift sheet opened from the browser: one back closes the sheet, the next the browser.
+  await items.getByRole('button', { name: '모두 보기' }).click();
+  // The browser opens on 「추천 기프트」 (M121); the gift is on the all-gifts tab.
+  await browser.getByRole('tab', { name: '모든 기프트' }).click();
+  await browser.getByRole('button', { name: '진혼 자세히' }).first().click();
+  await expect(page.getByTestId('gift-detail')).toBeVisible();
+  await back(3);
+  await expect(page.getByTestId('gift-detail')).toHaveCount(0);
+  await expect(browser).toBeVisible();
+  await back(2);
+  await expectOnItems();
+
+  // The sheet closed by its own button, then the browser by ←.
+  await items.getByRole('button', { name: '모두 보기' }).click();
+  // The browser opens on 「추천 기프트」 (M121); the gift is on the all-gifts tab.
+  await browser.getByRole('tab', { name: '모든 기프트' }).click();
+  await browser.getByRole('button', { name: '진혼 자세히' }).first().click();
+  await page.getByTestId('block-sheet').getByRole('button', { name: '닫기' }).click();
+  await browser.getByRole('button', { name: '뒤로' }).click();
+  await expectOnItems();
+
+  // The next back is the items page's own, and the app is still there after it.
+  await back(1);
+  await expect(items).toHaveCount(0);
+  await expect(page.getByTestId('stage-floor')).toBeVisible();
+  expect(page.url()).toBe(home);
+});
+
+test('the route page hands its entry to the items page it opens, so one back closes that page in the app', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await expect(page.getByTestId('stage-floor')).toBeVisible();
+  const home = page.url();
+  await page.getByRole('button', { name: '전체 루트' }).click();
+  await page.getByTestId('route-empty').getByRole('button', { name: '기프트' }).click();
+  await expect(page.getByTestId('page-left')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => (history.state as { layer?: number } | null)?.layer ?? 0))
+    .toBe(1);
+  await page.goBack();
+  await expect(page.getByTestId('page-left')).toHaveCount(0);
+  await expect(page.getByTestId('stage-floor')).toBeVisible();
+  expect(page.url()).toBe(home);
+});

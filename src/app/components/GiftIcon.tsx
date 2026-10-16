@@ -21,7 +21,7 @@ import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import type { Gift, Keyword } from '../../core/schema.ts';
 import { pick, t, type Lang } from '../i18n.ts';
-import { giftIconUrl, keywordIconUrl } from '../lib/assets.ts';
+import { giftIconUrl, holdImage, keywordIconUrl } from '../lib/assets.ts';
 import { tierLabel } from '../lib/labels.ts';
 import { useKeywordName } from '../lib/useEnums.ts';
 import type { Judgement } from '../lib/judgement.ts';
@@ -151,7 +151,9 @@ export function GiftIcon({
       data-judgement={judgement ?? 'none'}
       data-status={status ?? undefined}
       data-pending={pending || undefined}
-      className={`relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border bg-surface-sunken text-fg-subtle ${frameClass(status, pending)} ${ring}`}
+      // `type-scale-none` (M123): the tier chip is part of the picture, which 「글자 크기」 does not
+      // grow, so it stays at the drawn size; the name beside the square does follow the setting.
+      className={`type-scale-none relative inline-flex flex-none items-center justify-center overflow-hidden rounded-sm border bg-surface-sunken text-fg-subtle ${frameClass(status, pending)} ${ring}`}
       style={{ width: size, height: size }}
     >
       {/* Everything the fade may touch. The keyword badge is deliberately not in here. */}
@@ -175,6 +177,7 @@ export function GiftIcon({
             alt=""
             loading="lazy"
             draggable={false}
+            onLoad={() => holdImage(picture.url)}
             onError={() => setFailedUrl(picture.url)}
             className={
               picture.pixelArt
@@ -217,6 +220,7 @@ export function GiftIcon({
             alt=""
             loading="lazy"
             draggable={false}
+            onLoad={() => holdImage(badgeIcon)}
             className="block object-contain"
             style={{ width: iconBadgeSize, height: iconBadgeSize }}
           />

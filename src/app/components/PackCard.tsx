@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import type { ThemePack } from '../../core/schema.ts';
 import { pick, type Lang } from '../i18n.ts';
-import { packImage } from '../lib/assets.ts';
+import { holdImage, packImage } from '../lib/assets.ts';
 
 export type PackCardSize = 20 | 28 | 48 | 64 | 96;
 
@@ -28,8 +28,10 @@ export function PackCard({
   lang: Lang;
   testId?: string;
 }) {
-  const [failed, setFailed] = useState(false);
   const picture = packImage(pack.sprite);
+  // Keyed by the url, like `GiftIcon`: a 404 must not follow the card to the next pack it draws.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const failed = picture !== null && failedUrl === picture.url;
   const name = pick(pack.name, lang);
   const height = Math.round((size * 15) / 8);
   const image = (
@@ -47,7 +49,8 @@ export function PackCard({
           alt=""
           loading="lazy"
           draggable={false}
-          onError={() => setFailed(true)}
+          onLoad={() => holdImage(picture.url)}
+          onError={() => setFailedUrl(picture.url)}
           className="h-full w-full object-cover"
           style={picture.pixelArt ? { imageRendering: 'pixelated' } : undefined}
         />

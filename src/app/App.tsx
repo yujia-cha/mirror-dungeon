@@ -69,6 +69,7 @@ function readIncoming(): Incoming {
 export function App() {
   const lang = useApp((s) => s.lang);
   const dark = useApp((s) => s.dark);
+  const textScale = useApp((s) => s.ui.textScale);
   const deck = useApp((s) => s.deck);
   const deployed = useApp((s) => s.deployed);
   const wanted = useApp((s) => s.wanted);
@@ -167,6 +168,12 @@ export function App() {
     // The browser bar too (M122) — the page's `bg` in each theme, as `index.html` sets it first.
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#131211' : '#f7f6f4');
   }, [dark]);
+
+  useEffect(() => {
+    // 「글자 크기」 (M123): `src/index.css` scales every type role by this attribute. `index.html`
+    // sets it before the first paint from the same saved key; this keeps it in step afterwards.
+    document.documentElement.dataset.textScale = textScale;
+  }, [textScale]);
 
   useEffect(() => {
     document.documentElement.lang = lang;

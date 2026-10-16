@@ -51,15 +51,19 @@
 
     <script>
       /*
-       * The theme, before the first paint. `index.html` used to hard-code `class="dark"`, so a
-       * reader who prefers light saw a dark flash on every load. The store owns the setting once
-       * React is up; this only has to agree with it, so it reads the same persisted key.
+       * The theme and the text size (M123), before the first paint. `index.html` used to hard-code
+       * `class="dark"`, so a reader who prefers light saw a dark flash on every load. The store owns
+       * both settings once React is up; this only has to agree with it, so it reads the same
+       * persisted key and accepts only the store's steps (anything else is 「보통」, no attribute).
        */
       (function () {
         var dark;
         try {
           var saved = JSON.parse(window.localStorage.getItem('md-route-planner') || 'null');
           if (saved && saved.state && typeof saved.state.dark === 'boolean') dark = saved.state.dark;
+          var scale = saved && saved.state && saved.state.ui && saved.state.ui.textScale;
+          if (scale === 'sm' || scale === 'md' || scale === 'lg' || scale === 'xl')
+            document.documentElement.setAttribute('data-text-scale', scale);
         } catch (e) {
           /* private mode, blocked storage, or a half-written blob — fall through to the default */
         }

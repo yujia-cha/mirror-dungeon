@@ -290,7 +290,7 @@ export function CaptureMenu() {
         ) : null}
         {asking ? (
           <span
-            className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-micro text-primary-fg"
+            className="inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-micro text-primary-fg"
             data-testid="capture-asking"
           >
             {asking}

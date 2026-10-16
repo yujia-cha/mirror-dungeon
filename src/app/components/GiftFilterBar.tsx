@@ -66,15 +66,18 @@ export function GiftFilterBar({ state, enums, lang }: { state: GiftFilterState; 
   );
 }
 
-/** The card shown when the filters leave nothing: the query, if any, and a way back. */
-export function GiftNoMatch({ state, lang }: { state: GiftFilterState; lang: Lang }) {
-  const query = state.filters.query.trim();
+/**
+ * The card shown when the filters leave nothing: the query, if any, and a way back. Both browser
+ * tabs and the items tab's search use it, each with its own reset.
+ */
+export function GiftNoMatch({ query, onReset, lang }: { query: string; onReset: () => void; lang: Lang }) {
+  const shown = query.trim();
   return (
     <Card className="flex flex-col items-center gap-3 px-4 py-8 text-center">
       <Search size={28} className="text-fg-subtle" aria-hidden />
       <div className="text-subheading ">{t('giftsNoMatch', lang)}</div>
-      {query ? <div className="text-caption text-fg-subtle">「{query}」</div> : null}
-      <Button onClick={state.resetFilters}>
+      {shown ? <div className="text-caption text-fg-subtle">「{shown}」</div> : null}
+      <Button onClick={onReset}>
         <RefreshCw size={14} aria-hidden />
         {t('filterReset', lang)}
       </Button>

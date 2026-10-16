@@ -6,8 +6,13 @@
  * it has no backdrop, and it does not close on a stray press or on Escape. It closes from its
  * back button or from the device's back gesture, both of which go through the one history entry
  * `usePageHistory` owns.
+ *
+ * Another page can open over it (`covered`: the 「모두 보기」 browser over the items tab, M124). The
+ * page stays mounted underneath — hidden and inert, its history entry kept — so the browser's own
+ * entry stacks on top and closing it uncovers the tab as it was: the same query, the same scroll,
+ * focus back on the control that opened it.
  */
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useRovingTabs } from '../lib/useRovingTabs.ts';
@@ -58,7 +63,7 @@ export function TabBar<Id extends string>({
             aria-selected={on}
             tabIndex={on ? 0 : -1}
             onClick={() => onTab(entry.id)}
-            className={`-mb-px border-b-2 px-3 pb-2 pt-1 text-subheading ${on ? 'border-primary text-fg' : 'border-transparent text-fg-muted hover:text-fg'}`}
+            className={`-mb-px border-b-2 px-3 pb-2 pt-1 text-subheading touch:min-h-11 ${on ? 'border-primary text-fg' : 'border-transparent text-fg-muted hover:text-fg'}`}
           >
             {entry.label}
           </button>
@@ -80,6 +85,7 @@ export function SidePanel<Id extends string>({
   onTab,
   lang,
   width,
+  covered = false,
   children,
 }: {
   id: string;
@@ -95,6 +101,8 @@ export function SidePanel<Id extends string>({
   lang: Lang;
   /** Desktop width in px, dragged by the divider next to the panel. */
   width: number;
+  /** Phone only: another page is open over this one, which stays mounted but hidden. */
+  covered?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -102,6 +110,18 @@ export function SidePanel<Id extends string>({
   useEffect(() => {
     if (open && !desktop) ref.current?.querySelector<HTMLButtonElement>('button')?.focus();
   }, [open, desktop]);
+  // A layout effect, so the opener is read before the covering page moves focus in its own effect.
+  const opener = useRef<HTMLElement | null>(null);
+  const hidden = covered && open && !desktop;
+  useLayoutEffect(() => {
+    if (hidden) {
+      const active = document.activeElement;
+      opener.current = active instanceof HTMLElement && ref.current?.contains(active) ? active : null;
+      return;
+    }
+    if (opener.current?.isConnected) opener.current.focus();
+    opener.current = null;
+  }, [hidden]);
   if (!open) return null;
   const bar = <TabBar tabs={tabs} tab={tab} onTab={onTab} label={label} />;
   if (desktop) {
@@ -124,7 +144,9 @@ export function SidePanel<Id extends string>({
       ref={ref}
       id={id}
       data-testid={`page-${side}`}
-      className="fixed inset-0 z-40 flex flex-col bg-bg"
+      data-covered={hidden || undefined}
+      inert={hidden || undefined}
+      className={`fixed inset-0 z-40 flex flex-col bg-bg ${hidden ? 'invisible' : ''}`}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex h-11 flex-none items-center gap-1 border-b border-border bg-surface px-1.5">

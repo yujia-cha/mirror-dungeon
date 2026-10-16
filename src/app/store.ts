@@ -19,10 +19,13 @@ export interface UiState {
   /** Desktop panel widths in px, dragged by the divider between panel and stage. */
   leftWidth: number;
   rightWidth: number;
-  /** 「지금 덱으로 활성」 shows only what is left to decide (`isMarked` tiles hidden). On by default. */
-  activeUnpickedOnly: boolean;
   /** How large gift tiles are drawn in the grids, tray, tracker and stage (`lib/icon-size.ts`). */
   giftIconScale: GiftIconScale;
+  /**
+   * How large all text is drawn (M123): one factor on every type role, set on `<html>` as
+   * `data-text-scale` (`src/index.css`). `index.html` applies it before the first paint too.
+   */
+  textScale: TextScale;
   /** Screen reader (M107): how often it looks, and the language the game client is in. */
   captureInterval: ReadIntervalPreset;
   captureLang: 'ko' | 'en';
@@ -38,6 +41,10 @@ export interface UiState {
 /** Steps of the gift tile size setting; `md` is the size the layout was drawn at. */
 export const GIFT_ICON_SCALES = ['sm', 'md', 'lg', 'xl'] as const;
 export type GiftIconScale = (typeof GIFT_ICON_SCALES)[number];
+
+/** Steps of the text size setting (M123); `md` is the size the type roles were drawn at. */
+export const TEXT_SCALES = ['sm', 'md', 'lg', 'xl'] as const;
+export type TextScale = (typeof TEXT_SCALES)[number];
 
 /** How wide a side panel may be dragged: narrow enough to read, never eating the whole stage. */
 export const PANEL_WIDTH = { min: 260, max: 560, default: 336 } as const;
@@ -277,8 +284,8 @@ export function defaultUi(): UiState {
     rightTab: 'plan',
     leftWidth: PANEL_WIDTH.default,
     rightWidth: PANEL_WIDTH.default,
-    activeUnpickedOnly: true,
     giftIconScale: 'md',
+    textScale: 'md',
     captureInterval: DEFAULT_READ_INTERVAL,
     captureLang: 'ko',
     diagEnabled: false,
@@ -306,9 +313,12 @@ export function sanitizeUi(raw: unknown): UiState {
   if (source.rightTab === 'plan' || source.rightTab === 'tracker') out.rightTab = source.rightTab;
   out.leftWidth = clampPanelWidth(source.leftWidth);
   out.rightWidth = clampPanelWidth(source.rightWidth);
-  if (typeof source.activeUnpickedOnly === 'boolean') out.activeUnpickedOnly = source.activeUnpickedOnly;
+  // `activeUnpickedOnly` went with the 「현재 활성」 section (M121): built from the defaults, the
+  // saved key is simply not copied over.
   if ((GIFT_ICON_SCALES as readonly unknown[]).includes(source.giftIconScale))
     out.giftIconScale = source.giftIconScale as GiftIconScale;
+  if ((TEXT_SCALES as readonly unknown[]).includes(source.textScale))
+    out.textScale = source.textScale as TextScale;
   if (typeof source.captureInterval === 'string' && source.captureInterval in READ_INTERVALS)
     out.captureInterval = source.captureInterval as ReadIntervalPreset;
   if (source.captureLang === 'ko' || source.captureLang === 'en') out.captureLang = source.captureLang;

@@ -32,7 +32,7 @@ import {
   withoutLegacyGot,
 } from '../store.ts';
 import { planInputFor } from '../lib/plan-input.ts';
-import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-priority.ts';
+import { classifyGift, compareEntries, isPackBound, prioritiseGifts } from '../lib/gift-priority.ts';
 import { hasDeckCondition } from '../lib/gift-filters.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { tierLabel } from '../lib/labels.ts';
@@ -720,14 +720,26 @@ describe('run store', () => {
     expect(sanitizeUi({ leftWidth: 900, rightWidth: 40 })).toMatchObject({ leftWidth: 560, rightWidth: 260 });
     expect(sanitizeUi({ leftWidth: 412.6 }).leftWidth).toBe(413);
     expect(sanitizeUi({ leftWidth: 'wide' }).leftWidth).toBe(336);
-    // 「선택하지 않은 것만 보기」 is on unless the device saved it off.
-    expect(sanitizeUi({}).activeUnpickedOnly).toBe(true);
-    expect(sanitizeUi({ activeUnpickedOnly: false }).activeUnpickedOnly).toBe(false);
-    expect(sanitizeUi({ activeUnpickedOnly: 'no' }).activeUnpickedOnly).toBe(true);
+    // 「목표가 아닌 것만 보기」 went with 「현재 활성」 (M121): a device that saved it loads without it.
+    expect(sanitizeUi({ activeUnpickedOnly: false })).not.toHaveProperty('activeUnpickedOnly');
+    expect(sanitizeUi({ activeUnpickedOnly: false })).toEqual(defaultUi());
     // The gift tile size is one of its steps, 「보통」 otherwise.
     expect(sanitizeUi({}).giftIconScale).toBe('md');
     expect(sanitizeUi({ giftIconScale: 'xl' }).giftIconScale).toBe('xl');
     expect(sanitizeUi({ giftIconScale: 'huge' }).giftIconScale).toBe('md');
+    // The text size (M123) likewise: a saved state from before it existed loads as 「보통」, and
+    // anything that is not a step (an old icon-scale-like typo, a number, a case slip) does too.
+    expect(sanitizeUi({}).textScale).toBe('md');
+    expect(sanitizeUi({ leftOpen: false }).textScale).toBe('md');
+    for (const step of ['sm', 'md', 'lg', 'xl'] as const)
+      expect(sanitizeUi({ textScale: step }).textScale).toBe(step);
+    for (const bad of ['huge', 'XL', 1.3, null, true])
+      expect(sanitizeUi({ textScale: bad }).textScale).toBe('md');
+    // Unrelated keys survive next to it.
+    expect(sanitizeUi({ textScale: 'xl', giftIconScale: 'sm' })).toMatchObject({
+      textScale: 'xl',
+      giftIconScale: 'sm',
+    });
   });
 
   it('keeps a saved run only where it still makes sense', () => {
@@ -1252,7 +1264,7 @@ describe('GiftIcon', () => {
 });
 
 describe('text the screen gets wrong', () => {
-  it('writes the EX tier as EX, in the icon and in the 「모두 보기」 tier filter', () => {
+  it('writes the EX tier as EX, in the icon and in the 「모두 보기」 tier filter', async () => {
     // 9799 어떤 철학 and 9800 부 are the season's two obtainable EX gifts; `T{tier}` read 「TEX」.
     const ex = indexes.giftById.get(9799)!;
     expect(ex.tier).toBe('EX');
@@ -1260,8 +1272,9 @@ describe('text the screen gets wrong', () => {
     expect(screen.getByTestId('gift-icon')).toHaveTextContent('EX');
     expect(screen.getByTestId('gift-icon').textContent).not.toContain('TEX');
     useApp.getState().setDeck(BURN_DECK, 7);
-    // The filters live in the browser only; the items tab keeps a search box.
+    // The filters live in the browser only (its 「모든 기프트」 tab); the items tab keeps a search box.
     renderPlanned(<GiftBrowser page={false} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('tab', { name: '모든 기프트' }));
     const tiers = within(screen.getByLabelText('등급'))
       .getAllByRole('option')
       .map((o) => o.textContent);
@@ -1460,8 +1473,8 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
-    // 진혼 wants combustion, which this deck has, so it is in 활성; 먹장구름 wants sinking, which it
-    // does not, so a search finds it.
+    // 진혼 wants combustion, which this deck has; 먹장구름 wants sinking, which it does not.
+    await search(user, '진혼');
     expect(within(tile(9088)).getByTestId('gift-icon')).toHaveAttribute('data-judgement', 'met');
     await search(user, '먹장구름');
     expect(within(tile(9211)).getByTestId('gift-icon')).toHaveAttribute('data-judgement', 'unmet');
@@ -1470,10 +1483,9 @@ describe('GiftsStep', () => {
   it('folds 요리 비법 전서 under 진혼, lets it be chosen alone, and locks it once 진혼 is chosen', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
-    // Every tile stays on screen, chosen or locked, so the lock can be read off it.
-    useApp.getState().setUi({ activeUnpickedOnly: false });
     renderGifts();
-    // 진혼 is active with this deck, so it sits in the first section with its child right after it.
+    // A search for 진혼 brings its child along, right after it.
+    await search(user, '진혼');
     expect(tile(9157)).toBeDefined();
     const order = screen.getAllByTestId('gift-tile').map((el) => el.getAttribute('data-gift'));
     expect(order.indexOf('9157')).toBeGreaterThan(order.indexOf('9088'));
@@ -1544,6 +1556,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderPlanned(<GiftBrowser page={false} onClose={() => undefined} />);
+    await user.click(screen.getByRole('tab', { name: '모든 기프트' }));
     await user.selectOptions(screen.getByLabelText('조건'), 'none');
     const shown = screen.getAllByTestId('gift-tile').map((el) => Number(el.getAttribute('data-gift')));
     expect(shown.length).toBeGreaterThan(0);
@@ -1559,20 +1572,13 @@ describe('GiftsStep', () => {
     expect(gated.every((id) => hasDeckCondition(indexes.giftById.get(id)!))).toBe(true);
   });
 
-  it('shows the deciding condition as a count and folds the one section', async () => {
+  it('shows the deciding condition as a count', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
     // 진혼 needs 5 화상 identities and the burn deck has 7; 연성진동 wants 5 진동 and is short.
+    await search(user, '진혼');
     expect(tile(9088)).toHaveTextContent('화상 7/5');
-    // One section only: 「거의 활성」 and 「기타」 are both gone.
-    expect(screen.queryByRole('button', { name: /거의 활성/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^기타/ })).toBeNull();
-    const header = screen.getByRole('button', { name: /현재 활성/, expanded: true });
-    await user.click(header);
-    expect(screen.getByRole('button', { name: /현재 활성/, expanded: false })).toBeInTheDocument();
-    expect(screen.queryByTestId('gift-tile')).toBeNull();
-    // A gift short of its condition is a search away.
     await search(user, '연성진동');
     expect(tile(9092)).toHaveTextContent('진동 2/5');
   });
@@ -1607,6 +1613,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
+    await search(user, '진혼');
     await user.click(within(tile(9088)).getByRole('button', { name: '진혼 자세히' }));
     const sheet = screen.getByRole('dialog', { name: '진혼' });
     const stops = within(sheet)
@@ -1675,6 +1682,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
+    await search(user, '진혼');
     await user.click(within(tile(9088)).getByRole('button', { name: '진혼 자세히' }));
     // The game writes a gift as several clauses split by blank lines; without `whitespace-pre-line`
     // CSS folds them into one run-on paragraph.
@@ -1687,6 +1695,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
+    await search(user, '진혼');
     await user.click(within(tile(9088)).getByRole('button', { name: '진혼 자세히' }));
     const sheet = screen.getByTestId('gift-detail');
     expect(sheet).toHaveTextContent('조합');
@@ -1710,6 +1719,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
+    await search(user, '진혼');
     await user.click(within(tile(9088)).getByRole('button', { name: '진혼 자세히' }));
     const recipe = () => within(screen.getByTestId('gift-detail')).getByTestId('gift-recipe');
     await user.click(within(recipe()).getByText('조합식'));
@@ -1890,7 +1900,7 @@ describe('GiftsStep', () => {
     ).toEqual(['9267']);
   });
 
-  it('puts the search results under the box that asked for them, and back at the foot when the query goes', async () => {
+  it('puts the search results under the box that asked for them, and lists nothing once the query goes', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9267);
@@ -1898,13 +1908,13 @@ describe('GiftsStep', () => {
     const box = screen.getByRole('textbox', { name: '기프트 검색' });
     const slots = () => screen.getByTestId('observe-slots');
     const grid = () => screen.getAllByTestId('gift-grid')[0]!;
-    // With no query the grid sits below the slots and the selection tray, where it always did.
-    expect(grid().compareDocumentPosition(slots())).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+    // With no query there is no grid at all: 「현재 활성」 is gone (M121).
+    expect(screen.queryByTestId('gift-grid')).toBeNull();
     await user.type(box, '달궈진');
     // While searching it comes first: the results belong to the box above them.
     expect(grid().compareDocumentPosition(slots())).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     await user.clear(box);
-    expect(grid().compareDocumentPosition(slots())).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+    expect(screen.queryByTestId('gift-grid')).toBeNull();
   });
 
   it('sorts the selection tray by keyword or by name, and holds the order things were picked in by default', async () => {
@@ -2100,86 +2110,229 @@ describe('GiftsStep', () => {
     expect(useApp.getState().fusionGoal).toEqual({});
   });
 
-  it('answers a search with one list from every gift, not from the 활성 section', async () => {
+  it('answers a search with one list from every gift, the ones this deck activates first', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
-    expect(screen.getByRole('button', { name: /현재 활성/ })).toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), '진');
-    // The 활성 header is gone: a search answers from every gift, not from the section.
-    expect(screen.queryByRole('button', { name: /현재 활성/ })).toBeNull();
-    // 진혼 is active with this deck and 연성진동 is not; the second one is reached only by a
-    // search now. One list, and 활성 still comes first.
+    // 진혼 is active with this deck and 연성진동 is not; both are in the one list, 활성 first.
     const scroller = screen.getByTestId('gift-scroller');
     expect(within(scroller).getByRole('button', { name: '진혼' })).toBeInTheDocument();
     expect(within(scroller).getByRole('button', { name: '연성진동' })).toBeInTheDocument();
     const order = screen.getAllByTestId('gift-tile').map((el) => el.getAttribute('data-gift'));
     expect(order.indexOf('9088')).toBeLessThan(order.indexOf('9092'));
-    // The tile keeps saying which is which, so the split carried nothing the tiles do not.
+    // The tile keeps saying which is which.
     expect(within(tile(9088)).getByTestId('gift-icon')).toHaveAttribute('data-judgement', 'met');
     expect(within(tile(9092)).getByTestId('gift-icon')).toHaveAttribute('data-judgement', 'unmet');
   });
 
-  it('shows only what is left to decide in 활성 by default, and everything once the box is cleared', async () => {
+  it('has no 「현재 활성」 section any more: without a query it lists no gifts and points at 추천 기프트 (M121)', async () => {
+    // Arrange
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
-    renderGifts();
-    const box = screen.getByRole('checkbox', { name: '목표가 아닌 것만 보기' });
-    expect(box).toBeChecked();
-    expect(useApp.getState().ui.activeUnpickedOnly).toBe(true);
-    // Beside the fold toggle, not inside it: ticking it must not fold the section.
-    const header = () => screen.getByRole('button', { name: /현재 활성/ });
-    expect(header()).not.toContainElement(box);
-    const ids = () => screen.queryAllByTestId('gift-tile').map((el) => el.getAttribute('data-gift'));
-    expect(ids()).toEqual(expect.arrayContaining(['9088', '9157']));
-    // Choosing 진혼 settles it and 요리 비법 전서 under it, so both leave the section.
-    await user.click(within(tile(9088)).getByRole('button', { name: '진혼' }));
-    expect(ids()).not.toContain('9088');
-    expect(ids()).not.toContain('9157');
-    // The header counts the tiles on show.
-    expect(within(header()).getByText(String(ids().length))).toBeInTheDocument();
-    await user.click(box);
-    expect(useApp.getState().ui.activeUnpickedOnly).toBe(false);
-    expect(header()).toHaveAttribute('aria-expanded', 'true');
-    expect(ids()).toEqual(expect.arrayContaining(['9088', '9157']));
-    expect(within(header()).getByText(String(ids().length))).toBeInTheDocument();
-    // A search ignores the box: a picked gift has to stay reachable to be unpicked.
-    await user.click(box);
-    await search(user, '진혼');
-    expect(
-      within(screen.getByTestId('gift-scroller')).getByRole('button', { name: '진혼' }),
-    ).toBeInTheDocument();
-  });
-
-  it('keeps 활성 and its box once everything in it is picked, and says so in one line', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(BURN_DECK, 7);
-    renderGifts();
-    expect(screen.getAllByTestId('gift-tile').length).toBeGreaterThan(1);
-    // The icon is the toggle, and a picked (or locked) tile leaves the section.
-    for (let guard = 0; guard < 20; guard += 1) {
-      const open = screen.queryAllByTestId('gift-tile')[0];
-      if (open === undefined) break;
-      await user.click(within(open).getAllByRole('button')[0]!);
-    }
-    expect(screen.getByTestId('gift-active-empty')).toHaveTextContent('모두 목표입니다');
-    expect(screen.getByRole('button', { name: /현재 활성/ })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: '목표가 아닌 것만 보기' })).toBeChecked();
-    // Dropping one goal brings its tile straight back.
-    const chosen = useApp.getState().wanted[0]!;
-    await act(async () => {
-      useApp.getState().removeWanted(chosen);
-    });
-    expect(screen.queryByTestId('gift-active-empty')).toBeNull();
-    expect(screen.getAllByTestId('gift-tile').length).toBeGreaterThan(0);
-  });
-
-  it('says so in one line when nothing is active with this deck', () => {
-    // One LCB identity meets no deck condition, so 활성 has nothing to show.
-    useApp.getState().setDeck([10101], 1);
-    renderGifts();
-    expect(screen.getByTestId('gift-active-empty')).toHaveTextContent('현재 활성인 기프트가 없습니다');
+    const onBrowse = vi.fn();
+    const { deck, deployed } = useApp.getState();
+    renderPlanned(
+      <GiftsStep
+        data={data}
+        indexes={indexes}
+        stats={statsFor(deck, deployed)}
+        lang="ko"
+        onBrowse={onBrowse}
+      />,
+    );
+    // Act
+    const door = screen.getByTestId('gift-recommend-open');
+    await user.click(door);
+    // Assert
+    expect(screen.queryByRole('button', { name: /현재 활성/ })).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: '목표가 아닌 것만 보기' })).toBeNull();
     expect(screen.queryByTestId('gift-tile')).toBeNull();
+    expect(door).toHaveTextContent('추천 기프트 보기');
+    expect(onBrowse).toHaveBeenCalledWith('');
+  });
+
+  it('draws no door to 추천 기프트 without somewhere to go, or while the browser is open', () => {
+    // Arrange
+    useApp.getState().setDeck(BURN_DECK, 7);
+    const { deck, deployed } = useApp.getState();
+    // Act
+    const { unmount } = renderGifts();
+    const withoutBrowse = screen.queryByTestId('gift-recommend-open');
+    unmount();
+    renderPlanned(
+      <GiftsStep
+        data={data}
+        indexes={indexes}
+        stats={statsFor(deck, deployed)}
+        lang="ko"
+        onBrowse={() => undefined}
+        browseOpen
+      />,
+    );
+    // Assert
+    expect(withoutBrowse).toBeNull();
+    expect(screen.queryByTestId('gift-recommend-open')).toBeNull();
+  });
+});
+
+describe('GiftBrowser 추천 기프트 (M121)', () => {
+  const renderBrowser = () => renderPlanned(<GiftBrowser page={false} onClose={() => undefined} />);
+  const ids = (scope: HTMLElement): number[] =>
+    within(scope)
+      .queryAllByTestId('gift-tile')
+      .map((el) => Number(el.getAttribute('data-gift')));
+  const deckSection = () => screen.getByTestId('recommend-deck');
+  const freeSection = () => screen.queryByTestId('recommend-free');
+  const shown = () => ids(screen.getByTestId('gift-browser-scroller'));
+
+  it('opens on 추천 기프트: the gifts the deck meets, and the unconditional pack-bound ones apart', () => {
+    // Arrange
+    useApp.getState().setDeck(BURN_DECK, 7);
+    // Act
+    renderBrowser();
+    // Assert
+    const tab = screen.getByRole('tab', { name: '추천 기프트' });
+    expect(tab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: '추천 기프트' })).toBeInTheDocument();
+    // 진혼 (화상 7/5) is met, 연성진동 (진동 2/5) is not.
+    expect(ids(deckSection())).toContain(9088);
+    expect(ids(deckSection())).not.toContain(9092);
+    expect(deckSection()).toHaveTextContent('덱 조건 충족');
+    // 붉은색 넥타이 has no condition and one pack; 지옥나비의 꿈 has no condition and drops anywhere.
+    expect(freeSection()).toHaveTextContent('조건 없이 발동 · 팩 전용');
+    expect(ids(freeSection()!)).toContain(9215);
+    expect(shown()).not.toContain(9001);
+    expect(
+      ids(freeSection()!).every((id) => {
+        const gift = indexes.giftById.get(id)!;
+        return gift.conditions.length === 0 && isPackBound(gift);
+      }),
+    ).toBe(true);
+    // The section heads count what they show.
+    expect(within(deckSection()).getByRole('heading', { level: 3 })).toHaveTextContent(
+      String(ids(deckSection()).length),
+    );
+  });
+
+  it('groups by keyword by default, and the other order drops the groups', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderBrowser();
+    const order: string[] = data.enums.keywords.map((k) => k.id);
+    const groups = () =>
+      within(deckSection())
+        .queryAllByTestId('recommend-keyword')
+        .map((el) => el.getAttribute('data-keyword')!);
+    // Act
+    const byKeyword = groups();
+    const firstHead = within(deckSection()).getAllByTestId('recommend-keyword')[0]!.textContent;
+    await user.selectOptions(screen.getByLabelText('정렬'), 'pack');
+    // Assert
+    expect(byKeyword.length).toBeGreaterThan(0);
+    expect([...byKeyword].sort((a, b) => order.indexOf(a) - order.indexOf(b))).toEqual(byKeyword);
+    expect(firstHead).toContain('화상');
+    expect(groups()).toEqual([]);
+    expect(ids(deckSection())).toContain(9088);
+  });
+
+  it('narrows by 획득, by 조합 and by keyword, and one reset brings everything back', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderBrowser();
+    const everything = shown();
+    // Act + Assert: 팩 전용 keeps only pack-bound gifts — 진혼 is a fusion, so it goes.
+    await user.selectOptions(screen.getByLabelText('획득'), 'pack');
+    expect(shown().every((id) => isPackBound(indexes.giftById.get(id)!))).toBe(true);
+    expect(shown()).not.toContain(9088);
+    // 범용 is the rest, and the unconditional section is all pack-bound, so it goes.
+    await user.selectOptions(screen.getByLabelText('획득'), 'general');
+    expect(shown().every((id) => !isPackBound(indexes.giftById.get(id)!))).toBe(true);
+    expect(shown()).toContain(9088);
+    expect(freeSection()).toBeNull();
+    await user.selectOptions(screen.getByLabelText('획득'), 'all');
+    // 조합 기프트 포함 off drops every fusion.
+    await user.click(screen.getByRole('checkbox', { name: '조합 기프트 포함' }));
+    expect(shown()).not.toContain(9088);
+    expect(shown().every((id) => indexes.giftById.get(id)!.fusion === null)).toBe(true);
+    // One keyword only.
+    await user.selectOptions(screen.getByLabelText('키워드'), 'Vibration');
+    expect(shown().length).toBeGreaterThan(0);
+    expect(shown().every((id) => indexes.giftById.get(id)!.keyword === 'Vibration')).toBe(true);
+    await user.click(screen.getByRole('button', { name: '필터 초기화' }));
+    expect(shown()).toEqual(everything);
+  });
+
+  it('answers the shared search box too, and says so when nothing is left', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderBrowser();
+    const box = screen.getByRole('textbox', { name: '기프트 검색' });
+    // Act
+    await user.type(box, '진혼');
+    const narrowed = shown();
+    await user.clear(box);
+    await user.type(box, '연성진동');
+    // Assert: 진혼 is recommended, 연성진동 is not — the box does not reach past the recommendation.
+    expect(narrowed).toContain(9088);
+    expect(narrowed.every((id) => indexes.giftById.get(id)!.name.ko.includes('진혼'))).toBe(true);
+    expect(screen.getByText('일치하는 기프트 없음')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '필터 초기화' }));
+    expect(box).toHaveValue('');
+    expect(shown()).toContain(9088);
+  });
+
+  it('shows a goal as a goal, toggles it from the icon and opens its sheet from the name', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9215);
+    renderBrowser();
+    const tileOf = (id: number) =>
+      screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
+    // Act
+    await user.click(within(tileOf(9088)).getByRole('button', { name: '진혼' }));
+    await user.click(within(tileOf(9088)).getByRole('button', { name: '진혼 자세히' }));
+    // Assert
+    expect(tileOf(9215)).toHaveAttribute('data-selected', 'true');
+    expect(useApp.getState().wanted).toEqual([9215, 9088]);
+    expect(tileOf(9088)).toHaveAttribute('data-selected', 'true');
+    expect(screen.getByRole('dialog', { name: '진혼' })).toBeInTheDocument();
+  });
+
+  it('says why 덱 조건 충족 is empty, and warns when nobody is deployed', () => {
+    // Arrange + Act: an empty deck.
+    const { unmount } = renderBrowser();
+    // Assert
+    expect(within(deckSection()).getByTestId('recommend-empty')).toHaveTextContent('덱이 비어 있습니다');
+    expect(screen.queryByTestId('recommend-notice')).toBeNull();
+    // The deck-independent section is still there.
+    expect(freeSection()).not.toBeNull();
+    unmount();
+    // Arrange + Act: the default deck, which starts with nobody deployed.
+    useApp.getState().setDeck(LCB_DECK, 0, []);
+    renderBrowser();
+    // Assert: a reserve count may still be met, so the section is not empty — the notice says why
+    // it is so short.
+    expect(screen.getByTestId('recommend-notice')).toHaveTextContent('출격한 인격이 없습니다');
+  });
+
+  it('moves between the two tabs with the arrow keys', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderBrowser();
+    // Act
+    screen.getByRole('tab', { name: '추천 기프트' }).focus();
+    await user.keyboard('{ArrowRight}');
+    // Assert
+    expect(screen.getByRole('tab', { name: '모든 기프트' })).toHaveFocus();
+    expect(screen.getByRole('tab', { name: '모든 기프트' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('gift-filters')).toBeInTheDocument();
+    expect(screen.queryByTestId('recommend-filters')).toBeNull();
   });
 });
 
@@ -3183,6 +3336,7 @@ describe('AppShell', () => {
     renderShell();
     await user.click(screen.getByRole('button', { name: '덱' }));
     const page = screen.getByTestId('page-left');
+    await user.type(within(page).getByRole('textbox', { name: '기프트 검색' }), '진혼');
     const tile = within(page)
       .getAllByTestId('gift-tile')
       .find((el) => el.getAttribute('data-gift') === '9088')!;
@@ -3199,6 +3353,10 @@ describe('AppShell', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     renderShell();
     await user.click(screen.getByRole('button', { name: '덱' }));
+    await user.type(
+      within(screen.getByTestId('page-left')).getByRole('textbox', { name: '기프트 검색' }),
+      '진혼',
+    );
     const openSheet = async () => {
       const page = screen.getByTestId('page-left');
       const tile = within(page)
@@ -3268,6 +3426,31 @@ describe('AppShell', () => {
     expect(screen.getByTestId('header-menu')).toBeTruthy();
     expect(within(sizes).getByRole('button', { name: '크게' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(within(sizes).getByRole('button', { name: '보통' }));
+    // The text size (M123): its own group right below, the same four steps in the same buttons.
+    const textSizes = screen.getByTestId('type-size');
+    expect(textSizes.previousElementSibling).toBe(sizes);
+    expect(textSizes).toHaveAccessibleName('글자 크기');
+    expect(
+      within(textSizes)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['작게', '보통', '크게', '아주 크게']);
+    expect(within(textSizes).getByRole('button', { name: '보통' }).getAttribute('aria-pressed')).toBe('true');
+    const sizeButtons = within(sizes).getAllByRole('button');
+    within(textSizes)
+      .getAllByRole('button')
+      .forEach((b, i) => expect(b.className).toBe(sizeButtons[i]!.className));
+    for (const b of within(textSizes).getAllByRole('button'))
+      expect(b.className).toMatch(/\bmin-h-9\b.*\btext-label\b.*\btouch:min-h-11\b/);
+    expect(textSizes.firstElementChild!.className).toBe(sizes.firstElementChild!.className);
+    await user.click(within(textSizes).getByRole('button', { name: '아주 크게' }));
+    expect(useApp.getState().ui.textScale).toBe('xl');
+    expect(useApp.getState().ui.giftIconScale).toBe('md');
+    expect(screen.getByTestId('header-menu')).toBeTruthy();
+    expect(within(textSizes).getByRole('button', { name: '아주 크게' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    await user.click(within(textSizes).getByRole('button', { name: '보통' }));
     await user.keyboard('{Escape}');
     await reset();
     await user.click(within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '취소' }));
@@ -3380,11 +3563,14 @@ describe('AppShell', () => {
     // The covered stage takes no focus and shows nothing through.
     expect(screen.getByTestId('stage-body')).toHaveAttribute('inert');
     expect(screen.getByTestId('stage-body')).toHaveClass('hidden');
-    // One grid, no 활성 fold, and the box takes focus with the query already in it.
-    expect(within(browser).queryByRole('button', { name: /현재 활성/ })).toBeNull();
+    // It opens on 추천 기프트, and the box takes focus with the query already in it.
+    expect(within(browser).getByRole('tab', { name: '추천 기프트', selected: true })).toBeInTheDocument();
     const browserBox = within(browser).getByRole('textbox', { name: '기프트 검색' });
     expect(browserBox).toHaveFocus();
     expect(browserBox).toHaveValue('진혼');
+    // 「모든 기프트」 is the one grid with no 활성 fold, as before.
+    await user.click(within(browser).getByRole('tab', { name: '모든 기프트' }));
+    expect(within(browser).queryByRole('button', { name: /현재 활성/ })).toBeNull();
     const shown = within(browser)
       .getAllByTestId('gift-tile')
       .map((el) => el.getAttribute('data-gift'));
@@ -3414,35 +3600,150 @@ describe('AppShell', () => {
     expect(screen.queryByTestId('gift-browser')).toBeNull();
     expect(screen.getByTestId('stage-body')).not.toHaveAttribute('inert');
     expect(screen.getByTestId('run-stage')).toBeInTheDocument();
-    // Reopened on an empty query it shows every gift; Escape closes it; the goal picked in it stayed.
+    // Reopened on an empty query it is back on 추천 기프트, and 「모든 기프트」 shows every gift;
+    // Escape closes it; the goal picked in it stayed.
     await user.clear(tabBox);
     await user.click(screen.getByRole('button', { name: '모두 보기' }));
     const reopened = screen.getByTestId('gift-browser');
+    expect(within(reopened).getByRole('tab', { name: '추천 기프트', selected: true })).toBeInTheDocument();
+    await user.click(within(reopened).getByRole('tab', { name: '모든 기프트' }));
     expect(within(reopened).getAllByTestId('gift-tile').length).toBeGreaterThan(100);
     await user.keyboard('{Escape}');
     expect(screen.queryByTestId('gift-browser')).toBeNull();
     expect(useApp.getState().wanted).toEqual([9088]);
   });
 
-  it('opens 「모두 보기」 as its own page on a phone, and its ← returns to the items page', async () => {
+  /**
+   * M124. The browser page opens over the items page instead of in its place. It used to close the
+   * left page and open its own in one commit — a `history.back()` and a `pushState` back to back —
+   * and Chrome let the back undo the new entry, so the next back (← or the device's) left the app.
+   * The items page now stays mounted under it (hidden, inert, its entry kept), so opening pushes one
+   * entry and goes back on none, and closing uncovers the tab exactly as it was left.
+   *
+   * The device back is a real `history.back()`: jsdom traverses asynchronously, like a browser, so
+   * the test waits for where the history lands (the depth `usePageHistory` writes on its entries)
+   * rather than for a fixed time — that is what kept this test from failing under load.
+   */
+  it('opens 「모두 보기」 over the items page on a phone; ← and the device back both return to it, query intact', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderShell();
     await user.click(screen.getByRole('button', { name: '덱' }));
     const page = screen.getByTestId('page-left');
-    await user.click(within(page).getByRole('button', { name: '모두 보기' }));
-    // The items page steps aside for the browser page; the shell stays inert behind it.
-    expect(screen.queryByTestId('page-left')).toBeNull();
-    const browser = screen.getByTestId('gift-browser');
+    await user.type(within(page).getByRole('textbox', { name: '기프트 검색' }), '진혼');
+    const items = (): HTMLElement => screen.getByTestId('page-left');
+    const query = (): string =>
+      (within(items()).getByRole('textbox', { name: '기프트 검색' }) as HTMLInputElement).value;
+    const openBrowser = async (): Promise<HTMLElement> => {
+      await user.click(within(items()).getByRole('button', { name: '모두 보기' }));
+      return screen.getByTestId('gift-browser');
+    };
+    /** The device back, once the history stands as deep as the open pages (one per layer). */
+    const deviceBack = async (layers: number): Promise<void> => {
+      await waitFor(() =>
+        expect((window.history.state as { layer?: number } | null)?.layer ?? 0).toBe(layers),
+      );
+      act(() => window.history.back());
+    };
+    const expectBackOnItems = (): void => {
+      expect(screen.queryByTestId('gift-browser')).toBeNull();
+      expect(items()).toBe(page);
+      expect(items()).not.toHaveAttribute('data-covered');
+      expect(items()).not.toHaveAttribute('inert');
+      expect(within(items()).getByRole('tab', { name: '기프트', selected: true })).toBeInTheDocument();
+      expect(query()).toBe('진혼');
+      expect(screen.getByTestId('app-shell')).toHaveAttribute('inert');
+    };
+
+    const push = vi.spyOn(window.history, 'pushState');
+    const back = vi.spyOn(window.history, 'back');
+    const go = vi.spyOn(window.history, 'go');
+    const browser = await openBrowser();
+    // Stacked over the items page, which stays mounted beneath it with its entry.
     expect(browser.parentElement).toBe(document.body);
+    expect(items()).toBe(page);
+    expect(page).toHaveAttribute('data-covered');
+    expect(page).toHaveAttribute('inert');
     expect(screen.getByTestId('app-shell')).toHaveAttribute('inert');
-    expect(within(browser).getByRole('heading', { level: 1 })).toHaveTextContent('모든 기프트');
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push.mock.calls[0]?.[2]).toBeUndefined();
+    await act(async () => undefined);
+    expect(back).not.toHaveBeenCalled();
+    expect(go).not.toHaveBeenCalled();
+    expect(within(browser).getByRole('heading', { level: 1 })).toHaveTextContent('모두 보기');
+    // The two tabs are there on a phone too, 추천 기프트 first.
+    expect(within(browser).getByRole('tab', { name: '추천 기프트', selected: true })).toBeInTheDocument();
+    await user.click(within(browser).getByRole('tab', { name: '모든 기프트' }));
+    expect(within(browser).getByRole('tab', { name: '모든 기프트', selected: true })).toBeInTheDocument();
     expect(within(browser).queryByRole('button', { name: '닫기' })).toBeNull();
+    expect((within(browser).getByRole('textbox', { name: '기프트 검색' }) as HTMLInputElement).value).toBe(
+      '진혼',
+    );
+
+    // ← hands the browser's entry back and uncovers the tab; focus returns to the >> it came from.
     await user.click(within(browser).getByRole('button', { name: '뒤로' }));
-    expect(screen.queryByTestId('gift-browser')).toBeNull();
+    expectBackOnItems();
+    expect(within(items()).getByRole('button', { name: '모두 보기' })).toHaveFocus();
+
+    // The device back closes the browser alone.
+    await openBrowser();
+    await deviceBack(2);
+    await waitFor(() => expect(screen.queryByTestId('gift-browser')).toBeNull());
+    expectBackOnItems();
+
+    // A gift sheet opened from the browser takes the first back, the browser the second.
+    const again = await openBrowser();
+    const tile = within(again)
+      .getAllByTestId('gift-tile')
+      .find((el) => el.getAttribute('data-gift') === '9088')!;
+    await user.click(within(tile).getByRole('button', { name: '진혼 자세히' }));
+    expect(screen.getByTestId('gift-detail')).toBeInTheDocument();
+    await deviceBack(3);
+    await waitFor(() => expect(screen.queryByTestId('gift-detail')).toBeNull());
+    expect(screen.getByTestId('gift-browser')).toBeInTheDocument();
+    await deviceBack(2);
+    await waitFor(() => expect(screen.queryByTestId('gift-browser')).toBeNull());
+    expectBackOnItems();
+
+    // And again with the sheet closed by its own button, then ← on the browser.
+    const third = await openBrowser();
+    const tile3 = within(third)
+      .getAllByTestId('gift-tile')
+      .find((el) => el.getAttribute('data-gift') === '9088')!;
+    await user.click(within(tile3).getByRole('button', { name: '진혼 자세히' }));
+    await user.click(within(screen.getByTestId('block-sheet')).getByRole('button', { name: '닫기' }));
+    expect(screen.queryByTestId('gift-detail')).toBeNull();
+    await user.click(within(screen.getByTestId('gift-browser')).getByRole('button', { name: '뒤로' }));
+    expectBackOnItems();
+
+    // The next device back is the items page's own: it closes, and the shell is live again.
+    await deviceBack(1);
+    await waitFor(() => expect(screen.queryByTestId('page-left')).toBeNull());
+    expect(screen.getByTestId('app-shell')).not.toHaveAttribute('inert');
+    // Four full grids of every gift: about 1.5 s alone, so the default 5 s ran out on a loaded machine.
+  }, 15_000);
+
+  // M124: the route page's 「기프트」 closes it and opens the items page in one commit. The items
+  // page takes the route page's entry over instead of pushing a second one behind a pending back.
+  it("hands the route page's history entry to the items page it opens, so one back closes that page", async () => {
+    const user = userEvent.setup();
+    renderShell();
+    await user.click(screen.getByRole('button', { name: '전체 루트' }));
+    const push = vi.spyOn(window.history, 'pushState');
+    const back = vi.spyOn(window.history, 'back');
+    const go = vi.spyOn(window.history, 'go');
+    await user.click(within(screen.getByTestId('page-right')).getByRole('button', { name: '기프트' }));
+    await act(async () => undefined);
+    expect(screen.queryByTestId('page-right')).toBeNull();
     expect(screen.getByTestId('page-left')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '기프트', selected: true })).toBeInTheDocument();
-    expect(screen.getByTestId('app-shell')).toHaveAttribute('inert');
+    expect(push).not.toHaveBeenCalled();
+    expect(back).not.toHaveBeenCalled();
+    expect(go).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+    expect((window.history.state as { layer?: number } | null)?.layer).toBe(1);
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.queryByTestId('page-left')).toBeNull());
+    expect(screen.getByTestId('app-shell')).not.toHaveAttribute('inert');
   });
 });
 

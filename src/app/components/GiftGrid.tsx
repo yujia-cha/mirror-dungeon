@@ -125,7 +125,7 @@ export function GiftTileGrid({
             <LinkButton
               onClick={() => onOpen(gift.id)}
               ariaLabel={t('giftDetail', lang, { name })}
-              className="line-clamp-2 h-[29px] w-full break-keep text-center text-caption-strong"
+              className="line-clamp-2 h-[2.6em] w-full break-keep text-center text-caption-strong"
             >
               {name}
             </LinkButton>

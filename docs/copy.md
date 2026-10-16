@@ -85,22 +85,27 @@
 - en: Gift icon size
 - 쓰는 곳: src/app/shell/AppShell.tsx
 
-### giftIconSize_sm
+### textSize
+- ko: 글자 크기
+- en: Text size
+- 쓰는 곳: src/app/shell/AppShell.tsx
+
+### sizeStep_sm
 - ko: 작게
 - en: Small
 - 쓰는 곳: src/app/shell/AppShell.tsx (동적)
 
-### giftIconSize_md
+### sizeStep_md
 - ko: 보통
 - en: Medium
 - 쓰는 곳: src/app/shell/AppShell.tsx (동적)
 
-### giftIconSize_lg
+### sizeStep_lg
 - ko: 크게
 - en: Large
 - 쓰는 곳: src/app/shell/AppShell.tsx (동적)
 
-### giftIconSize_xl
+### sizeStep_xl
 - ko: 아주 크게
 - en: Extra large
 - 쓰는 곳: src/app/shell/AppShell.tsx (동적)
@@ -385,33 +390,65 @@
 - en: Close
 - 쓰는 곳: src/app/steps/DeckStep.tsx
 
+### deckSearchMode
+메모: 검색어 여러 개를 어떻게 합칠지 고르는 두 버튼의 묶음 이름.
+- ko: 검색어 조합
+- en: Match
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckSearchModeOr
+- ko: 하나라도
+- en: Any
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckSearchModeAnd
+- ko: 모두
+- en: All
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckSearchModeOrHint
+- ko: 검색어 중 하나라도 맞는 인격 (OR)
+- en: Identities matching any word (OR)
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckSearchModeAndHint
+- ko: 검색어가 모두 맞는 인격 (AND) — 예: 화상 파우스트
+- en: Identities matching every word (AND) — e.g. Burn Faust
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckInDeck
+메모: 지금 덱의 그 수감자 칸에 들어 있는 인격의 검색 결과 행에 붙는 배지.
+- ko: 편성 중
+- en: In deck
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckCurrent
+메모: 그 수감자 칸에 LCB 수감자가 아닌 인격이 있을 때, 다른 인격 행 아래에 적는다(고르면 그것을 바꾼다).
+- ko: 현재 편성: {identity}
+- en: In deck: {identity}
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckPickerTitle
+- ko: {sinner} 인격 선택
+- en: Choose a {sinner} identity
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckAttackTypes
+- ko: 공격 유형
+- en: Attack types
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
+### deckSins
+- ko: 죄악 속성
+- en: Sin affinities
+- 쓰는 곳: src/app/steps/DeckStep.tsx
+
 ## 기프트 탭
 
 ### giftsSearch
 - ko: 기프트 검색
 - en: Search gifts
 - 쓰는 곳: src/app/shell/GiftBrowser.tsx, src/app/steps/GiftsStep.tsx
-
-### giftsActive
-- ko: 현재 활성
-- en: Active now
-- 쓰는 곳: src/app/steps/GiftsStep.tsx
-
-### giftsUnpickedOnly
-메모: 이미 목표이거나 목표가 가져간 것(isMarked)을 숨긴다.
-- ko: 목표가 아닌 것만 보기
-- en: Non-goals only
-- 쓰는 곳: src/app/steps/GiftsStep.tsx
-
-### giftsActiveAllPicked
-- ko: 모두 목표입니다
-- en: All are goals
-- 쓰는 곳: src/app/steps/GiftsStep.tsx
-
-### giftsActiveNone
-- ko: 현재 활성인 기프트가 없습니다
-- en: Nothing is active right now
-- 쓰는 곳: src/app/steps/GiftsStep.tsx
 
 ### giftsResults
 - ko: 검색 결과
@@ -421,12 +458,12 @@
 ### giftsDeckEmpty
 - ko: 덱이 비어 있습니다
 - en: The deck is empty
-- 쓰는 곳: src/app/steps/GiftsStep.tsx
+- 쓰는 곳: src/app/shell/GiftBrowser.tsx, src/app/steps/GiftsStep.tsx
 
 ### giftsNoMatch
 - ko: 일치하는 기프트 없음
 - en: No gift matches
-- 쓰는 곳: src/app/components/GiftFilterBar.tsx
+- 쓰는 곳: src/app/components/GiftFilterBar.tsx, src/app/shell/GiftBrowser.tsx
 
 ### giftsSelected
 - ko: 목표 {n}
@@ -446,7 +483,7 @@
 ### giftsSort
 - ko: 정렬
 - en: Sort
-- 쓰는 곳: src/app/steps/GiftsStep.tsx
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx, src/app/steps/GiftsStep.tsx
 
 ### giftsSortPicked
 - ko: 추가한 순서
@@ -463,6 +500,12 @@
 - en: Pack
 - 쓰는 곳: src/app/steps/GiftsStep.tsx
 
+### giftsRecommendOpen
+메모: 기프트 탭이 검색 중이 아닐 때 탭 아래에 서는 문. 「모두 보기」 브라우저를 「추천 기프트」 탭으로 연다.
+- ko: 추천 기프트 보기
+- en: See recommended gifts
+- 쓰는 곳: src/app/steps/GiftsStep.tsx
+
 ### removeFromSelection
 - ko: {name} 목표에서 빼기
 - en: Remove {name} from goals
@@ -471,14 +514,21 @@
 ## 모두 보기 (전체 기프트 격자)
 
 ### giftsBrowseAll
-메모: 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 필터가 있는 전체 기프트 격자. 데스크톱은 스테이지 자리, 휴대폰은 페이지.
+메모: 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 「추천 기프트」·「모든 기프트」 두 탭. 데스크톱은 스테이지 자리, 휴대폰은 페이지. 브라우저의 제목이기도 하다.
 - ko: 모두 보기
 - en: Browse all
-- 쓰는 곳: src/app/steps/GiftsStep.tsx
+- 쓰는 곳: src/app/shell/GiftBrowser.tsx
 
 ### giftsBrowseTitle
+메모: 「모두 보기」의 둘째 탭 — 전체 기프트와 필터.
 - ko: 모든 기프트
 - en: All gifts
+- 쓰는 곳: src/app/shell/GiftBrowser.tsx
+
+### giftsBrowseRecommended
+메모: 「모두 보기」의 첫 탭(열 때마다 이 탭으로 열린다) — 지금 덱으로 발동할 수 있는 기프트(M121).
+- ko: 추천 기프트
+- en: Recommended
 - 쓰는 곳: src/app/shell/GiftBrowser.tsx
 
 ### giftsBrowseClose
@@ -491,17 +541,75 @@
 - en: Close browse all
 - 쓰는 곳: src/app/steps/GiftsStep.tsx
 
+## 추천 기프트 (모두 보기의 첫 탭)
+
+### recDeckTitle
+메모: 임계값 있는 조건을 모두 채우거나, 임계값 없는 조건(편성된 수에 따라 강화)에 출격한 인격이 한 명이라도 세어지는 기프트(대기 인원은 세지 않는다).
+- ko: 덱 조건 충족
+- en: Deck conditions met
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recFreeTitle
+메모: 조건이 없어 어느 덱에서나 발동하는 기프트 중 팩 전용(테마팩 한정·클리어 보상)인 것. 범용은 덱과 상관없어 추천하지 않는다.
+- ko: 조건 없이 발동 · 팩 전용
+- en: No condition · pack-only
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recAcquisition
+- ko: 획득
+- en: Source
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recAcqPack
+메모: 테마팩 한정·클리어 보상(isPackBound).
+- ko: 팩 전용
+- en: Pack-only
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recAcqGeneral
+메모: 팩 전용이 아닌 것 전부 — 범용 드랍, 조합, 시작 기프트 등.
+- ko: 범용
+- en: General
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recFusion
+- ko: 조합 기프트 포함
+- en: Include fusions
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recSortKeyword
+- ko: 키워드별
+- en: By keyword
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recSortPack
+메모: 팩 전용 먼저, 그다음 조건 진행률, id(compareEntries).
+- ko: 팩 전용 먼저
+- en: Pack-only first
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recDeckNone
+- ko: 지금 덱으로 조건을 채우는 기프트가 없습니다
+- en: The deck meets no gift condition right now
+- 쓰는 곳: src/app/shell/GiftBrowser.tsx
+
+### recNoDeployed
+메모: 덱 조건 충족이 비었고 출격한 인격이 0명일 때. 조건 대부분이 출격 인원을 센다.
+- ko: 출격한 인격이 없습니다. 조건 대부분은 출격 인원으로 셉니다.
+- en: No identity is deployed. Most conditions count deployed identities.
+- 쓰는 곳: src/app/shell/GiftBrowser.tsx
+
 ## 기프트 필터·획득 분류·죄악
 
 ### filterReset
 - ko: 필터 초기화
 - en: Reset filters
-- 쓰는 곳: src/app/components/GiftFilterBar.tsx
+- 쓰는 곳: src/app/components/GiftFilterBar.tsx, src/app/components/RecommendedGifts.tsx
 
 ### filterKeyword
 - ko: 키워드
 - en: Keyword
-- 쓰는 곳: src/app/components/GiftFilterBar.tsx, src/app/steps/GiftsStep.tsx
+- 쓰는 곳: src/app/components/GiftFilterBar.tsx, src/app/components/RecommendedGifts.tsx, src/app/steps/GiftsStep.tsx
 
 ### filterCondition
 메모: 덱이 기프트를 판정하는지(hasDeckCondition): 임계값 있는 키워드 수나 소속 수. 효과 강화·완전 공명은 덱 조건이 아니다.
@@ -532,7 +640,7 @@
 ### filterAll
 - ko: 전체
 - en: All
-- 쓰는 곳: src/app/components/GiftFilterBar.tsx, src/app/steps/GiftsStep.tsx
+- 쓰는 곳: src/app/components/GiftFilterBar.tsx, src/app/components/RecommendedGifts.tsx, src/app/steps/GiftsStep.tsx
 
 ### acqSure
 - ko: 팩 한정
@@ -2069,25 +2177,30 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: **덱 탭**에서 수감자 칸을 눌러 인격을 고르거나, 게임의 **편성 코드**를 「코드 가져오기」에 붙여 넣습니다. 코드에 출격 순서가 있으면 그대로 따릅니다.
 - readme: 조건부 기프트(「출격 인원 중 화상 부여 스킬 3개 이상」 같은 것)는 대부분 **출격한 인격**만 셉니다. 칸의 「대기」를 눌러 「출격」으로 바꿔 출격 인원을 정해 두어야 조건 판정이 맞습니다.
 - readme: 덱 아래 칩(「화상 2/5」)은 출격 인원 / 편성 전체의 스킬 수입니다.
+- readme: 인격 검색은 이름·수감자·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣으면 「하나라도」는 하나라도 맞는 인격, 「모두」는 전부 맞는 인격입니다(`화상 파우스트` + 「모두」 = 화상을 쓰는 파우스트 인격). 결과에는 키워드와 공격 유형이 함께 보이고, 지금 덱에 든 인격에는 「편성 중」이 붙습니다.
 - 설명서: 왼쪽 위 「덱」 버튼이 덱과 기프트 패널을 엽니다.
 - en: The 「Deck」 button at the top left opens the deck and gift panel.
 - 설명서: 수감자 칸을 눌러 인격을 고르거나, 게임의 편성 코드를 「코드 가져오기」에 붙여 넣습니다.
 - en: Press a sinner’s slot to pick an identity, or paste the game’s formation code into 「Import code」.
+- 설명서: 인격 검색은 이름·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣고 「모두」를 고르면 전부 맞는 인격만 남습니다(`화상 파우스트`).
+- en: The identity search reads names, factions, keywords, attack types and sins. With several words, 「All」 keeps only identities matching every one (`Burn Faust`).
 - 설명서: 조건부 기프트는 「출격」으로 선택된 인격을 기준으로 셉니다.
 - en: Conditional gifts count the identities set to 「Deployed」.
 
 ## 기프트 | Gifts
 
-- readme: **기프트 탭**의 타일 격자에서 목표로 삼을 기프트를 누릅니다(아이콘을 누르면 목표에 추가, 이름을 누르면 상세). 탭에는 **「현재 활성」**(내 덱이 조건을 채우는 기프트)만 있고, 기본으로 **「목표가 아닌 것만 보기」**가 켜져 있어 이미 목표인 것은 숨습니다(체크를 끄면 모두 보입니다). 나머지 기프트는 검색으로 찾습니다 — 검색은 전체 기프트에서, 부분 문자열로, 초성만 치면 초성 검색입니다.
-- readme: 검색창 오른쪽 끝의 **`>>`(모두 보기)**는 전체 기프트를 넓은 격자로 엽니다(데스크톱은 가운데 스테이지 자리, 휴대폰은 새 페이지). 열려 있는 동안 같은 버튼이 **`<<`**로 바뀌어 누르면 다시 스테이지로 돌아옵니다. 탭에 친 검색어를 그대로 가져가며, 필터(키워드·조건·등급·죄악)는 여기에 있습니다. 「조건」 필터의 **「조건 없음」**은 덱이 판정할 조건이 없는 기프트만 남깁니다(편성 수에 따라 강화되는 것과 완전 공명 조건은 덱 조건이 아닙니다).
+- readme: **기프트 탭**에서 기프트를 찾아 목표로 삼습니다(타일의 아이콘을 누르면 목표에 추가, 이름을 누르면 상세). 검색은 전체 기프트에서, 부분 문자열로 찾고, 초성만 치면 초성 검색입니다. 검색 결과는 검색창 바로 아래에 나옵니다.
+- readme: 검색창 오른쪽 끝의 **`>>`(모두 보기)**나 탭 아래의 「추천 기프트 보기」는 기프트를 넓은 격자로 엽니다(데스크톱은 가운데 스테이지 자리, 휴대폰은 새 페이지). 열려 있는 동안 같은 버튼이 **`<<`**로 바뀌어 누르면 다시 스테이지로 돌아옵니다. 탭에 친 검색어를 그대로 가져가며, 탭은 둘입니다.
+- readme: **「추천 기프트」**는 열 때마다 먼저 열리는 탭으로, 지금 덱으로 발동할 수 있는 기프트만 모았습니다. 「덱 조건 충족」은 덱의 스킬·소속이 조건을 모두 채우는 기프트이고(편성된 수에 따라 강화되는 기프트는 출격한 인격이 한 명이라도 세어지면 들어갑니다), 「조건 없이 발동 · 팩 전용」은 조건이 없어 어느 덱에서나 발동하는 팩 전용 기프트입니다. 「획득」(팩 전용 · 범용)·「조합 기프트 포함」·「키워드」로 거르고, 「정렬」로 「키워드별」과 「팩 전용 먼저」를 고릅니다. 이미 목표인 기프트도 테두리와 ✓를 달고 그대로 나옵니다.
+- readme: **「모든 기프트」**는 전체 기프트와 필터(키워드·조건·등급·죄악)입니다. 「조건」 필터의 **「조건 없음」**은 덱이 판정할 조건이 없는 기프트만 남깁니다(편성 수에 따라 강화되는 것과 완전 공명 조건은 덱 조건이 아닙니다).
 - readme: 타일의 **바깥 링**이 조건 판정입니다(초록 충족 · 빨강 미충족 · 회색 조건 없음). 우하 배지는 키워드입니다.
 - readme: 조합으로만 나오는 기프트를 고르면 재료까지 루트가 모으러 갑니다. 상세 시트의 「재료도 목표」를 끄면 결과만 목표로 둡니다. 조합식의 재료를 누르면 그 기프트의 설명으로 넘어가고, 맨 위 「←」로 돌아옵니다.
 - readme: **시작 키워드**는 탭 맨 아래에 있습니다. 「자동」은 고른 기프트를 따라, 시작 기프트 풀에 목표가 든 키워드를 고릅니다(그런 풀이 없으면 덱의 주 키워드). 그 아래 한 줄이 어떤 시작 기프트를 받는지, 혹은 목표와 상관이 없어 아무 키워드나 골라도 되는지 알려 줍니다.
 - readme: **관측**: 검색창 아래 슬롯(최대 3칸)에 기프트를 넣으면 「관측 지정」으로 「기프트 관측」에서 받습니다. 조합 결과는 관측할 수 없으므로 조합에 관측을 쓰려면 **재료**를 넣습니다. 관측은 1층을 떠나기 전까지만 바꿀 수 있습니다.
 - 설명서: 기프트 탭에서 아이콘을 눌러 목표에 추가합니다.
 - en: In the Gifts tab, press an icon to add it as a goal.
-- 설명서: 탭에는 현재 활성화 가능한 기프트만 나옵니다. 나머지는 검색하거나 검색창 끝의 >>로 찾습니다.
-- en: The tab lists only the gifts you can activate now. Find the rest by search or with >> at the end of the search box.
+- 설명서: 검색창 끝의 >>를 누르면 「추천 기프트」가 먼저 열립니다. 지금 덱으로 발동할 수 있는 기프트만 모았고, 「모든 기프트」 탭에 전체가 있습니다.
+- en: The >> at the end of the search box opens 「Recommended」 first: the gifts your deck can set off now. The 「All gifts」 tab has every gift.
 - 설명서: 아이콘의 바깥 링은 조건 판정을 표시합니다. (초록 충족 · 빨강 미충족)
 - en: The ring around an icon shows the condition (green met · red not met).
 - 설명서: 관측 칸에 관측 가능한 기프트를 넣으면 기프트 관측으로 받습니다. 1층을 떠나면 바꿀 수 없습니다.
@@ -2109,7 +2222,7 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: 「다음 층」(또는 아래로 당기기)으로 넘어가고, 「입장 취소」(위로 당기기)는 입장을 취소하며 그 팩에서 표시한 것을 지웁니다. 층 스트립을 눌러 지난 층을 다시 볼 수 있습니다.
 - readme: 루트는 현재 층부터 다시 계산됩니다. 계획에 없는 팩에 들어가도 됩니다.
 - readme: **화면 인식**(데스크톱 Chrome·Edge·Firefox): 헤더의 「화면 인식」 버튼을 눌러 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다(버튼에 개수가 뜹니다). 창을 닫아도 인식은 계속됩니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.
-- readme: **⋯ 메뉴**의 「링크 복사」가 덱·목표·설정을 담은 공유 링크를 만듭니다(런 진행은 담지 않습니다). 「초기화」는 덱을 기본 LCB 수감자로, 목표·설정·런을 처음으로 되돌립니다.
+- readme: **⋯ 메뉴**의 「링크 복사」가 덱·목표·설정을 담은 공유 링크를 만듭니다(런 진행은 담지 않습니다). 「초기화」는 덱을 기본 LCB 수감자로, 목표·설정·런을 처음으로 되돌립니다. 「테마 변경」·「기프트 아이콘 크기」·「글자 크기」도 여기 있고, 이 기기에만 저장됩니다.
 - 설명서: 가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.
 - en: On the stage in the middle, press 「Enter」 on a pack card or pull the card down.
 - 설명서: 얻은 기프트는 아이콘을 눌러 획득으로 표시하세요. 표시하지 않고 층을 떠나면 「미획득」으로 남고, 다른 팩이 주는 것은 남은 층에서 다시 찾습니다.

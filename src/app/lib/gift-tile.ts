@@ -23,8 +23,7 @@ export interface GiftTileData {
 /**
  * Whether a tile has anything left to decide: it is a goal already, or a goal already carries it —
  * an upgrade child under a chosen parent, or a gift some goal's recipe consumes. This is what the
- * ✓ and the lock draw, and it is what 「선택하지 않은 것만 보기」 hides from the 「지금 덱으로 활성」
- * section in `GiftsStep`.
+ * ✓ and the border draw (`GiftTileGrid`).
  */
 export function isMarked(
   tile: GiftTileData,
