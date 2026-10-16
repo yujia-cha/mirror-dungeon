@@ -476,6 +476,16 @@ export const artManifestSchema = z.object({
   packs: z.array(z.string()),
 });
 export type ArtManifest = z.infer<typeof artManifestSchema>;
+
+/**
+ * `public/icons/gifts/manifest.json` — the game's gift icons the app ships for screen capture
+ * (M92), each `{icon}.webp`, and the upstream commit they came from. Written by `npm run data:icons`.
+ */
+export const giftIconManifestSchema = z.object({
+  source: z.object({ repo: z.string(), sha: z.string() }),
+  icons: z.array(z.number().int()),
+});
+export type GiftIconManifest = z.infer<typeof giftIconManifestSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];
 
 /**

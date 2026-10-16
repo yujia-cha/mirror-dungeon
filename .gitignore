@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 *.log
 test-results/
 playwright-report/
+
+# game screenshots for the screen-capture spike — Project Moon's images, never committed
+local-fixtures/

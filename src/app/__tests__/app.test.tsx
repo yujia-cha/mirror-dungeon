@@ -36,6 +36,7 @@ import { classifyGift, compareEntries, prioritiseGifts } from '../lib/gift-prior
 import { hasDeckCondition } from '../lib/gift-filters.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
 import { tierLabel } from '../lib/labels.ts';
+import { setArtManifest, setGiftIconManifest } from '../lib/assets.ts';
 import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { GiftIcon } from '../components/GiftIcon.tsx';
@@ -1319,6 +1320,31 @@ describe('GiftsStep', () => {
     expect(icons[0]!).toHaveAccessibleName(new RegExp(tinted.name.ko));
     expect(icons[0]!.querySelector('.bg-kw-combustion')).not.toBeNull();
     expect(icons[1]!.querySelector('[class*="bg-kw-"]')).toBeNull();
+  });
+
+  it("draws the game icon smoothly over the keyword wash, and the owner's pixel art over nothing", () => {
+    // Arrange: the game icon is listed; then the owner draws the same gift.
+    const gift = data.gifts.find((g) => g.keyword === 'Combustion')!;
+    setGiftIconManifest({ source: { repo: 'r', sha: 's' }, icons: [gift.icon] });
+    try {
+      // Act
+      const { unmount } = render(<GiftIcon gift={gift} size={44} lang="ko" />);
+      // Assert: a WebP with no pixelated scaling, and the wash still under it.
+      const img = screen.getByTestId('gift-dim').querySelector('img')!;
+      expect(img.getAttribute('src')).toBe(`${import.meta.env.BASE_URL}icons/gifts/${gift.icon}.webp`);
+      expect(img.style.imageRendering).toBe('');
+      expect(screen.getByTestId('gift-dim').querySelector('.bg-kw-combustion')).not.toBeNull();
+      unmount();
+      setArtManifest({ gifts: [gift.icon], packs: [] });
+      render(<GiftIcon gift={gift} size={44} lang="ko" />);
+      const art = screen.getByTestId('gift-dim').querySelector('img')!;
+      expect(art.getAttribute('src')).toContain(`art/gifts/${gift.icon}.png`);
+      expect(art.style.imageRendering).toBe('pixelated');
+      expect(screen.getByTestId('gift-dim').querySelector('.bg-kw-combustion')).toBeNull();
+    } finally {
+      setGiftIconManifest(null);
+      setArtManifest(null);
+    }
   });
 
   it('dims the square and not the name, the same way with artwork or without', () => {

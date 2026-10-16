@@ -1,7 +1,8 @@
 /**
- * An E.G.O gift as a square tile. Artwork loads from the asset host or `public/art/` when there is
- * any for this gift; with none, the tile keeps its own ground and a wash of the gift's keyword
- * colour — nothing is drawn in place of the missing picture.
+ * An E.G.O gift as a square tile. The picture comes from the asset host, the owner's art or the
+ * game's own icon (`lib/assets.ts`). Under it lies a wash of the gift's keyword colour: it shows
+ * through the game icon's transparent background, and with no picture at all it is the whole tile —
+ * nothing is drawn in place of a missing picture.
  *
  * Three corners each say one thing: the tier top-left, the run status top-right, and the keyword
  * bottom-right (bottom-left is free since 「반드시」 left). The keyword badge is a small chip — the seven status
@@ -93,7 +94,8 @@ export function GiftIcon({
   dim?: boolean;
   lang: Lang;
 }) {
-  const url = giftIconUrl(gift.icon);
+  const picture = giftIconUrl(gift.icon);
+  const url = picture?.url ?? null;
   // Keyed by the url: a 404 must not follow the component to the next gift it is asked to draw.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const failed = failedUrl !== null && failedUrl === url;
@@ -130,25 +132,32 @@ export function GiftIcon({
     >
       {/* Everything the dim may touch. The keyword badge is deliberately not in here. */}
       <span className={`absolute inset-0 ${dimClass}`} data-testid="gift-dim" aria-hidden>
-        {hasArt ? (
-          // `pixelated` because the artwork is pixel art: smooth scaling turns it to mush, and none
-          // of 20/32/44px is an integer divisor of the source, so the browser is always scaling.
-          <img
-            src={url}
-            alt=""
-            loading="lazy"
-            onError={() => setFailedUrl(url)}
-            className="h-full w-full object-cover"
-            style={{ imageRendering: 'pixelated' }}
-          />
-        ) : badge ? (
+        {badge && !(hasArt && picture?.pixelArt) ? (
           /*
-           * No artwork: a wash of the gift's keyword colour and nothing else. The wash is the
-           * keyword badge's own `bg-kw-*` at 25%, so it adds no new palette entry, and a 범용 gift
-           * gets no wash at all — the same way it gets no badge. Which gift this is comes from the
-           * name beside the tile and from `aria-label`, never from inside the square.
+           * The ground: a wash of the gift's keyword colour — the keyword badge's own `bg-kw-*` at
+           * 25%, so it adds no new palette entry; a 범용 gift gets no wash, the same way it gets no
+           * badge. It sits under a game icon (transparent) and alone when there is no picture; the
+           * owner's pixel art covers the square, so there it is left out. Which gift this is comes
+           * from the name beside the tile and from `aria-label`, never from inside the square.
            */
           <span className={`absolute inset-0 ${badge.fill} opacity-25`} />
+        ) : null}
+        {hasArt && picture ? (
+          // Pixel art scales `pixelated` (none of 20/32/44px divides the source, so smooth scaling
+          // would blur it); the game's icons are painted and scale smoothly, inset a little so the
+          // tier chip and keyword badge do not sit on the drawing's edge.
+          <img
+            src={picture.url}
+            alt=""
+            loading="lazy"
+            onError={() => setFailedUrl(picture.url)}
+            className={
+              picture.pixelArt
+                ? 'relative h-full w-full object-cover'
+                : 'relative h-full w-full object-contain p-[6%]'
+            }
+            style={picture.pixelArt ? { imageRendering: 'pixelated' } : undefined}
+          />
         ) : null}
         {status ? (
           <span

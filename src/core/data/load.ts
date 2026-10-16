@@ -1,6 +1,7 @@
 import {
   artManifestSchema,
   enumsSchema,
+  giftIconManifestSchema,
   giftsFileSchema,
   identitiesFileSchema,
   metaSchema,
@@ -9,6 +10,7 @@ import {
   seasonIndexSchema,
   type ArtManifest,
   type GameData,
+  type GiftIconManifest,
   type SeasonIndex,
 } from '../schema.ts';
 
@@ -18,6 +20,8 @@ const SEASON_FILES = ['meta', 'rules', 'gifts', 'packs'] as const;
 const SHARED_FILES = ['enums', 'identities'] as const;
 /** Written by `npm run art`; says which hand-drawn files exist so the app requests only those. */
 const ART_MANIFEST_PATH = 'art/manifest.json';
+/** Written by `npm run data:icons`; the game gift icons the site ships (M92). */
+const GIFT_ICON_MANIFEST_PATH = 'icons/gifts/manifest.json';
 
 function normaliseBase(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
@@ -91,6 +95,22 @@ export async function loadArtManifest(baseUrl = '/'): Promise<ArtManifest | null
     });
     if (!response.ok) return null;
     return artManifestSchema.parse(await response.json());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Which game gift icons ship (M92), or `null`. Never throws, for the same reason as the art
+ * manifest: a tile without a picture is a finished tile, so a missing manifest is not an error.
+ */
+export async function loadGiftIconManifest(baseUrl = '/'): Promise<GiftIconManifest | null> {
+  try {
+    const response = await fetch(`${normaliseBase(baseUrl)}${GIFT_ICON_MANIFEST_PATH}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    return giftIconManifestSchema.parse(await response.json());
   } catch {
     return null;
   }

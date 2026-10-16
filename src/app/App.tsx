@@ -3,12 +3,18 @@ import { RefreshCw, TriangleAlert, Hourglass } from 'lucide-react';
 import type { GameData, SeasonIndex } from '../core/schema.ts';
 import type { GameIndexes } from '../core/types.ts';
 import { analyseDeck, buildIndexes } from '../core/index.ts';
-import { DataLoadError, loadArtManifest, loadGameData, loadSeasonIndex } from '../core/data/load.ts';
+import {
+  DataLoadError,
+  loadArtManifest,
+  loadGameData,
+  loadGiftIconManifest,
+  loadSeasonIndex,
+} from '../core/data/load.ts';
 import { t, type StringKey } from './i18n.ts';
 import { decodeShared, encodeShared, runInProgress, useApp } from './store.ts';
 import type { SharedState } from './store.ts';
 import { DEPLOYED_AT_START, defaultDeck } from './lib/default-deck.ts';
-import { setArtManifest } from './lib/assets.ts';
+import { setArtManifest, setGiftIconManifest } from './lib/assets.ts';
 import { lastFloorOf } from './lib/stage.ts';
 import { ingredientTree } from './lib/entangle.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
@@ -194,10 +200,12 @@ export function App() {
     Promise.all([
       loadGameData(import.meta.env.BASE_URL, { validate: import.meta.env.DEV, season: openSeason }),
       loadArtManifest(import.meta.env.BASE_URL),
+      loadGiftIconManifest(import.meta.env.BASE_URL),
     ])
-      .then(([next, manifest]) => {
+      .then(([next, manifest, icons]) => {
         if (cancelled) return;
         setArtManifest(manifest);
+        setGiftIconManifest(icons);
         // Goals this season never heard of cannot be drawn or planned, so they go — counted, not
         // quietly (the same rule the formation code follows for identities it does not know).
         // Built here rather than in a memo below: `adoptSeason` needs the recipe tree to judge

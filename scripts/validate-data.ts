@@ -9,10 +9,10 @@
  * describes exactly one season, so they run against that season. Every other season on disk is a
  * frozen build that nothing can change but a hand edit, so it gets the schema and index checks.
  *
- * Messages are prefixed [schema] / [ref] / [invariant] / [stale] / [art]; the validate-data skill
+ * Messages are prefixed [schema] / [ref] / [invariant] / [stale] / [art] / [icons]; the validate-data skill
  * explains what each class usually means and how to fix it.
  */
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { z } from 'zod';
 import { hasFlag, flagValue, readJson, readJsonIfExists, repoPath, rootIsOverridden } from './lib/io.ts';
@@ -27,6 +27,7 @@ import {
 } from './lib/raw.ts';
 import { familyOf, seasonOf } from './lib/season-files.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
+import { GIFT_ICON_DIR, MAX_ICON_BYTES, giftsAcrossSeasons, isWebp } from './lib/gift-icons.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
 import {
   derivedKeywords,
@@ -53,6 +54,7 @@ import {
   STATUS_KEYWORDS,
   type ArtManifest,
   artManifestSchema,
+  giftIconManifestSchema,
   enumsSchema,
   giftsFileSchema,
   identitiesFileSchema,
@@ -174,6 +176,7 @@ if (meta && enums && rules && gifts && packs && identities) {
   checkSeasonSnapshot();
   checkFreshness();
   checkArt(gifts, packs);
+  checkGiftIcons(gifts);
 }
 
 /**
@@ -265,6 +268,67 @@ function checkArt(gifts: Gift[], packs: ThemePack[]): void {
         `${keys.size - drawn} of ${keys.size} ${kind} have no artwork yet; those tiles are drawn without one.`,
       );
   }
+}
+
+/**
+ * The game's gift icons under `public/icons/gifts/` (M92, `npm run data:icons`).
+ *
+ * Like the hand-drawn art, having **none** is not an error: the site works without them and only the
+ * screen tracker's fusion check needs them. What is an error is a manifest and a directory that
+ * disagree, a key no season uses, or a file that is not a WebP icon. A manifest from a commit other
+ * than the one `sources.lock.json` pins, or a partial set, is a warning — the fix is a re-run.
+ */
+function checkGiftIcons(gifts: Gift[]): void {
+  const dir = repoPath(GIFT_ICON_DIR);
+  const files = existsSync(dir)
+    ? readdirSync(dir)
+        .filter((f) => f.endsWith('.webp'))
+        .map((f) => f.slice(0, -5))
+        .sort()
+    : [];
+  const raw = readJsonIfExists<unknown>(join(dir, 'manifest.json'));
+  if (raw === null) {
+    if (files.length > 0)
+      err(
+        'icons',
+        `${GIFT_ICON_DIR} has ${files.length} icon(s) but no manifest.json. Run: npm run data:icons`,
+      );
+    return;
+  }
+  const parsed = giftIconManifestSchema.safeParse(raw);
+  if (!parsed.success) {
+    err(
+      'icons',
+      `${GIFT_ICON_DIR}/manifest.json does not match giftIconManifestSchema: ${parsed.error.message}`,
+    );
+    return;
+  }
+  const manifest = parsed.data;
+  const listed = new Set(manifest.icons.map(String));
+  const onDisk = new Set(files);
+  const legal = new Set([...giftsAcrossSeasons(OUT), ...gifts].map((g) => String(g.icon)));
+  for (const key of listed) {
+    if (!onDisk.has(key)) err('icons', `manifest lists ${key} but ${GIFT_ICON_DIR}/${key}.webp is missing`);
+  }
+  for (const key of onDisk) {
+    const path = join(dir, `${key}.webp`);
+    if (!listed.has(key))
+      err('icons', `${GIFT_ICON_DIR}/${key}.webp is not in the manifest. Run: npm run data:icons`);
+    if (!legal.has(key))
+      err('icons', `${GIFT_ICON_DIR}/${key}.webp is not a gift icon of any published season`);
+    const bytes = readFileSync(path);
+    if (!isWebp(bytes)) err('icons', `${GIFT_ICON_DIR}/${key}.webp is not a WebP file`);
+    if (bytes.length > MAX_ICON_BYTES) err('icons', `${GIFT_ICON_DIR}/${key}.webp is ${bytes.length} bytes`);
+  }
+  const pinned = readJson<{ sources: Record<string, { sha?: string }> }>(repoPath('data/sources.lock.json'))
+    .sources.eldritchtools?.sha;
+  if (pinned && manifest.source.sha !== pinned)
+    warn(
+      'icons',
+      `gift icons come from ${manifest.source.sha.slice(0, 8)} but sources.lock.json pins ${pinned.slice(0, 8)}. Run: npm run data:icons`,
+    );
+  const missing = gifts.filter((g) => !onDisk.has(String(g.icon))).length;
+  if (missing > 0) warn('icons', `${missing} of ${gifts.length} gifts have no icon. Run: npm run data:icons`);
 }
 
 function checkReferences(gifts: Gift[], packs: ThemePack[], identities: Identity[], enums: Enums): void {

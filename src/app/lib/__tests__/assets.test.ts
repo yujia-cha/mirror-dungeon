@@ -4,9 +4,12 @@
  * request for art that is not there means hundreds of 404s while the 558 slots are still filling.
  */
 import { afterEach, describe, expect, it } from 'vitest';
-import { giftIconUrl, packImageUrl, setArtManifest } from '../assets.ts';
+import { giftIconUrl, packImageUrl, setArtManifest, setGiftIconManifest } from '../assets.ts';
 
-afterEach(() => setArtManifest(null));
+afterEach(() => {
+  setArtManifest(null);
+  setGiftIconManifest(null);
+});
 
 describe('with no art and no asset host', () => {
   it('returns nothing, so the tile is drawn without a picture', () => {
@@ -19,7 +22,7 @@ describe('with no art and no asset host', () => {
 describe('with local art', () => {
   it('serves only what the manifest lists, so a missing drawing is never requested', () => {
     setArtManifest({ gifts: [9088], packs: ['Canto_I'] });
-    expect(giftIconUrl(9088)).toBe('/art/gifts/9088.png');
+    expect(giftIconUrl(9088)).toEqual({ url: '/art/gifts/9088.png', pixelArt: true });
     expect(packImageUrl('Canto_I')).toBe('/art/packs/Canto_I.png');
     // Not listed: no request at all rather than a 404 per tile.
     expect(giftIconUrl(9089)).toBeNull();
@@ -30,18 +33,50 @@ describe('with local art', () => {
     // `import.meta.env.BASE_URL` is '/' under vitest; the assertion that matters is that the URL
     // is relative to it rather than an absolute '/art/...' baked at build time.
     setArtManifest({ gifts: [9088], packs: [] });
-    expect(giftIconUrl(9088)).toBe(`${import.meta.env.BASE_URL}art/gifts/9088.png`);
+    expect(giftIconUrl(9088)?.url).toBe(`${import.meta.env.BASE_URL}art/gifts/9088.png`);
   });
 
   it('keys gifts on `icon`, which differs from `id` for 31 of the 446', () => {
     // 흑단 브로치 is id 9403 / icon 1005 — keying on the id would look for the wrong file.
     setArtManifest({ gifts: [1005], packs: [] });
-    expect(giftIconUrl(1005)).toContain('art/gifts/1005.png');
+    expect(giftIconUrl(1005)?.url).toContain('art/gifts/1005.png');
     expect(giftIconUrl(9403)).toBeNull();
   });
 
   it('escapes a pack sprite so an odd character cannot break the path', () => {
     setArtManifest({ gifts: [], packs: ['A B/C'] });
     expect(packImageUrl('A B/C')).toContain('art/packs/A%20B%2FC.png');
+  });
+});
+
+describe('with the game gift icons (M94)', () => {
+  const icons = (list: number[]) => ({
+    source: { repo: 'eldritchtools/limbus-assets', sha: 'abc' },
+    icons: list,
+  });
+
+  it('serves a listed icon as WebP under BASE_URL, scaled smoothly', () => {
+    // Arrange
+    setGiftIconManifest(icons([9088]));
+    // Act
+    const picture = giftIconUrl(9088);
+    // Assert
+    expect(picture).toEqual({ url: `${import.meta.env.BASE_URL}icons/gifts/9088.webp`, pixelArt: false });
+  });
+
+  it('requests nothing for an icon the manifest does not list', () => {
+    setGiftIconManifest(icons([9088]));
+    expect(giftIconUrl(9089)).toBeNull();
+  });
+
+  it("lets the owner's drawing win over the game icon", () => {
+    setGiftIconManifest(icons([9088]));
+    setArtManifest({ gifts: [9088], packs: [] });
+    expect(giftIconUrl(9088)).toEqual({ url: '/art/gifts/9088.png', pixelArt: true });
+  });
+
+  it('never gives packs a game image', () => {
+    setGiftIconManifest(icons([9088]));
+    expect(packImageUrl('Canto_I')).toBeNull();
   });
 });

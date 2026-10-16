@@ -13,7 +13,12 @@ test('opens under the Pages sub-path with its data', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByTestId('app-shell')).toBeVisible();
   await expect(page.getByTestId('run-stage')).toBeVisible();
-  // No 404 anywhere — not the worker chunk, not the art manifest, not a data file.
+  // A gift tile draws the game icon (M94) from under the sub-path, and it actually decodes.
+  const icon = page.locator('[data-testid="gift-icon"] img').first();
+  await expect(icon).toBeVisible();
+  expect(await icon.getAttribute('src')).toMatch(/\/mirror-dungeon\/icons\/gifts\/\d+\.webp$/);
+  await expect.poll(() => icon.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  // No 404 anywhere — not the worker chunk, not a manifest, not a data file, not an icon.
   expect(failed).toEqual([]);
 });
 
