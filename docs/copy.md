@@ -186,8 +186,8 @@
 - 쓰는 곳: src/app/shell/GiftBrowser.tsx, src/app/stage/EnterablePacks.tsx, src/app/steps/DeckStep.tsx, src/app/steps/GiftsStep.tsx
 
 ### skipToStage
-메모: 건너뛰기 링크. 「무대」는 가운데 열을 어디서나 부르는 이름이다.
-- ko: 무대로 건너뛰기
+메모: 건너뛰기 링크. 「스테이지」는 가운데 열을 어디서나 부르는 이름이다.
+- ko: 스테이지로 건너뛰기
 - en: Skip to the stage
 - 쓰는 곳: src/app/shell/AppShell.tsx
 
@@ -247,8 +247,8 @@
 - 쓰는 곳: src/app/steps/GiftsStep.tsx
 
 ### deckSearchAll
-- ko: 전체 인격 검색 · 이름 · 소속 · 키워드(여러 개 가능)
-- en: Search all identities · name · faction · keywords (several allowed)
+- ko: 전체 인격 검색 · 이름 · 소속 · 키워드
+- en: Search all identities · name · faction · keywords
 - 쓰는 곳: src/app/steps/DeckStep.tsx
 
 ### deckSearchHint
@@ -272,8 +272,8 @@
 - 쓰는 곳: src/app/steps/DeckStep.tsx
 
 ### deckDefaultConfirmBody
-- ko: 지금 덱과 출격 설정이 바뀝니다. 되돌릴 수 없습니다.
-- en: The current deck and deployment are replaced. This cannot be undone.
+- ko: 지금 덱과 출격 설정이 바뀝니다.
+- en: The current deck and deployment are replaced.
 - 쓰는 곳: src/app/steps/DeckStep.tsx
 
 ### deckSearchNone
@@ -396,8 +396,8 @@
 - 쓰는 곳: src/app/shell/GiftBrowser.tsx, src/app/steps/GiftsStep.tsx
 
 ### giftsActive
-- ko: 지금 덱으로 활성
-- en: Active with this deck
+- ko: 현재 활성
+- en: Active now
 - 쓰는 곳: src/app/steps/GiftsStep.tsx
 
 ### giftsUnpickedOnly
@@ -412,8 +412,8 @@
 - 쓰는 곳: src/app/steps/GiftsStep.tsx
 
 ### giftsActiveNone
-- ko: 지금 덱으로 활성인 기프트가 없습니다
-- en: Nothing is active with this deck
+- ko: 현재 활성인 기프트가 없습니다
+- en: Nothing is active right now
 - 쓰는 곳: src/app/steps/GiftsStep.tsx
 
 ### giftsResults
@@ -474,7 +474,7 @@
 ## 모두 보기 (전체 기프트 격자)
 
 ### giftsBrowseAll
-메모: 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 필터가 있는 전체 기프트 격자. 데스크톱은 무대 자리, 휴대폰은 페이지.
+메모: 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 필터가 있는 전체 기프트 격자. 데스크톱은 스테이지 자리, 휴대폰은 페이지.
 - ko: 모두 보기
 - en: Browse all
 - 쓰는 곳: src/app/steps/GiftsStep.tsx
@@ -927,8 +927,8 @@
 
 ### routeDecisionEffects
 메모: M80: 목표마다 「혼자 뺐을 때 줄어드는 충돌」 막대를 그리고, 막대를 더하지 않고 고른 집합을 플래너로 실제 계산한다.
-- ko: 혼자 뺐을 때 줄어드는 충돌
-- en: Conflicts cleared by leaving one out
+- ko: 뺐을 때 줄어드는 충돌
+- en: Conflicts cleared when left out
 - 쓰는 곳: src/app/components/RouteDecision.tsx
 
 ### routeDecisionCheck
@@ -1146,7 +1146,7 @@
 - en: Pack entries for the remaining ingredients ({names}) alone were dropped.
 - 쓰는 곳: src/app/components/FusionLostNotice.tsx
 
-## 무대 (가운데 런 화면)
+## 스테이지 (가운데 런 화면)
 
 ### floorStrip
 - ko: 층
@@ -1676,8 +1676,8 @@
 - 쓰는 곳: src/app/App.tsx
 
 ### confirmSharedMessage
-- ko: 공유 링크는 보낸 사람의 덱·목표·설정으로 덮어씁니다. 지금 런의 기록은 되돌릴 수 없습니다.
-- en: The link replaces your deck, goals and settings with the sender's. The current run record cannot be recovered.
+- ko: 보낸 사람의 덱·목표·설정으로 덮어씁니다. 지금 런의 기록은 되돌릴 수 없습니다.
+- en: Replaces your deck, goals and settings with the sender's. The current run record cannot be recovered.
 - 쓰는 곳: src/app/App.tsx
 
 ### confirmSharedConfirm
@@ -1956,14 +1956,14 @@
 
 ## 무엇을 해 주나 | What it does
 
-- ko: 덱과 목표 E.G.O 기프트를 고르면, 그 기프트를 모으려면 몇 층에서 어느 테마팩에 들어가야 하는지 계산합니다.
-- en: Pick a deck and the E.G.O gifts you want, and it works out which theme pack to enter on which floor to collect them.
+- ko: 덱과 목표 E.G.O 기프트를 고르면, 몇 층에서 어느 테마팩에 들어가야 하는지 루트를 계산합니다.
+- en: Pick a deck and the E.G.O gifts you want, and it plans the route: which theme pack to enter on which floor.
 - ko: 계산 순서: 조합 기프트를 재료로 펼치고 → 팩이 필요 없는 범용 드랍을 빼고 → 관측·시작 기프트를 정한 뒤 → 기프트마다 그것을 주는 팩을 골라 층에 앉힙니다.
 - en: In order: fusions are unfolded into ingredients → general drops, which need no pack, are set aside → observation and the starting gift are chosen → each gift gets a pack that gives it, seated on a floor.
-- ko: 전부 얻을 수 없으면 무엇을 목표에서 빼야 하는지, 왜 얻을 수 없는지 알려 줍니다.
-- en: When not everything fits, it says which goal to drop and why a gift cannot be had.
-- ko: 덱과 목표는 ⋯ 메뉴의 「링크 복사」로 공유할 수 있습니다.
-- en: Share the deck and goals with 「Copy link」 in the ⋯ menu.
+- ko: 전부 얻을 수 없으면 무엇을 목표에서 빼야 하는지 알려 줍니다.
+- en: When not everything fits, it says which goal to drop.
+- ko: 덱과 목표는 메뉴의 「링크 복사」로 공유할 수 있습니다.
+- en: Share the deck and goals with 「Copy link」 in the menu.
 
 ## 덱 | Deck
 
@@ -1971,39 +1971,37 @@
 - en: The 「Deck」 button at the top left opens the deck and gift panel.
 - ko: 수감자 칸을 눌러 인격을 고르거나, 게임의 편성 코드를 「코드 가져오기」에 붙여 넣습니다.
 - en: Press a sinner’s slot to pick an identity, or paste the game’s formation code into 「Import code」.
-- ko: 조건부 기프트는 대부분 출격한 인격만 셉니다. 칸의 「대기」를 눌러 「출격」으로 바꿔야 조건 판정이 맞습니다.
-- en: Most conditional gifts count deployed identities only. Switch a slot from 「Reserve」 to 「Deployed」 for the conditions to read right.
+- ko: 조건부 기프트는 「출격」으로 선택된 인격을 기준으로 셉니다.
+- en: Conditional gifts count the identities set to 「Deployed」.
 
 ## 기프트 | Gifts
 
-- ko: 기프트 탭에서 아이콘을 누르면 목표에 추가, 이름을 누르면 상세입니다.
-- en: In the Gifts tab, press an icon to add it as a goal, its name for the details.
-- ko: 탭에는 지금 덱으로 활성인 기프트만 나옵니다. 나머지는 검색하거나 검색창 끝의 >>(모두 보기)로 찾습니다. 초성 검색도 됩니다.
-- en: The tab lists the gifts your deck activates. Find the rest by search or with >> (Browse all) at the end of the search box.
-- ko: 아이콘의 바깥 링은 조건 판정(초록 충족 · 빨강 미충족), 오른쪽 아래 배지는 키워드입니다.
-- en: The ring around an icon is the condition (green met · red not met); the bottom-right badge is the keyword.
-- ko: 검색창 아래 관측 칸에 기프트를 넣으면 기프트 관측으로 받습니다. 조합 결과는 관측할 수 없으니 재료를 넣습니다. 1층을 떠나면 바꿀 수 없습니다.
-- en: Put a gift in an observation cell below the search box to take it through Gift Observation. A fusion cannot be observed — pin its ingredients. It locks once you leave floor 1.
+- ko: 기프트 탭에서 아이콘을 눌러 목표에 추가합니다.
+- en: In the Gifts tab, press an icon to add it as a goal.
+- ko: 탭에는 현재 활성화 가능한 기프트만 나옵니다. 나머지는 검색하거나 검색창 끝의 >>로 찾습니다.
+- en: The tab lists only the gifts you can activate now. Find the rest by search or with >> at the end of the search box.
+- ko: 아이콘의 바깥 링은 조건 판정을 표시합니다. (초록 충족 · 빨강 미충족)
+- en: The ring around an icon shows the condition (green met · red not met).
+- ko: 관측 칸에 관측 가능한 기프트를 넣으면 기프트 관측으로 받습니다. 1층을 떠나면 바꿀 수 없습니다.
+- en: Put an observable gift in an observation cell to take it through Gift Observation. It locks once you leave floor 1.
 
 ## 루트 | Route
 
 - ko: 오른쪽 위 「전체 루트」가 층별 테마팩을 노선도로 보여 줍니다.
 - en: 「Full route」 at the top right draws the packs floor by floor as a route map.
-- ko: 「획득 M/T」는 목표 중 루트가 가져다주는 수입니다. 어느 팩에서나 나올 수 있는 범용 드랍도 세지만, 반드시 나오지는 않습니다.
-- en: 「Got M/T」 counts the goals the route brings, general drops included — those can come from any pack but are never guaranteed.
-- ko: 전부 얻을 수 없으면 요약 아래 카드가 목표마다 혼자 뺐을 때 줄어드는 충돌을 막대로 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.
-- en: When not everything fits, a card under the summary shows, per goal, how many conflicts leaving it out alone clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.
+- ko: 전부 얻을 수 없으면 기프트마다 뺐을 때 줄어드는 충돌을 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.
+- en: When not everything fits, it shows how many conflicts leaving out each gift clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.
 
 ## 런 | Run
 
-- ko: 가운데 무대에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.
+- ko: 가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.
 - en: On the stage in the middle, press 「Enter」 on a pack card or pull the card down.
 - ko: 얻은 기프트는 아이콘을 눌러 획득으로 표시하세요. 표시하지 않고 층을 떠나면 「미획득」으로 남고, 다른 팩이 주는 것은 남은 층에서 다시 찾습니다.
 - en: Mark what you got by pressing its icon. Leaving a floor without marking records it as 「Not got」, and what another pack gives is routed again on the floors left.
 - ko: 「다음 층」으로 넘어가고 「입장 취소」로 되돌립니다. 층 칸을 눌러 지난 층을 다시 볼 수 있습니다.
 - en: 「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.
-- ko: 데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있고, 화면은 브라우저 밖으로 나가지 않습니다.
-- en: On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone, and the screen never leaves the browser.
+- ko: 데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있습니다.
+- en: On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone.
 - ko: 재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.
 - en: When a missed ingredient makes a fusion impossible, the top of 「Full route」 says so and the route is re-planned. By default the fusion is given up (「Don't collect」); press the remaining ingredients to switch to 「Collect」.
 
@@ -2036,7 +2034,7 @@
 
 ## 쓰는 법
 
-배포된 사이트(https://yujia-cha.github.io/mirror-dungeon/)를 열면 바로 런 화면입니다. 가운데 무대에 지금 층과 들어갈 수 있는 테마팩이 있고, 헤더 왼쪽의 「덱」 버튼이 여는 패널에서 덱과 원하는 기프트를 고르고, 오른쪽의 「전체 루트」 버튼이 여는 패널에서 전체 루트·추적기를 봅니다. 모바일에서는 두 패널이 각각 전체 화면 페이지로 열립니다.
+배포된 사이트(https://yujia-cha.github.io/mirror-dungeon/)를 열면 바로 런 화면입니다. 가운데 스테이지에 지금 층과 들어갈 수 있는 테마팩이 있고, 헤더 왼쪽의 「덱」 버튼이 여는 패널에서 덱과 원하는 기프트를 고르고, 오른쪽의 「전체 루트」 버튼이 여는 패널에서 전체 루트·추적기를 봅니다. 모바일에서는 두 패널이 각각 전체 화면 페이지로 열립니다.
 
 ### 1. 덱
 
@@ -2046,8 +2044,8 @@
 
 ### 2. 기프트
 
-- **기프트 탭**의 타일 격자에서 목표로 삼을 기프트를 누릅니다(아이콘을 누르면 목표에 추가, 이름을 누르면 상세). 탭에는 **「지금 덱으로 활성」**(내 덱이 조건을 채우는 기프트)만 있고, 기본으로 **「목표가 아닌 것만 보기」**가 켜져 있어 이미 목표인 것은 숨습니다(체크를 끄면 모두 보입니다). 나머지 기프트는 검색으로 찾습니다 — 검색은 전체 기프트에서, 부분 문자열로, 초성만 치면 초성 검색입니다.
-- 검색창 오른쪽 끝의 **`>>`(모두 보기)**는 전체 기프트를 넓은 격자로 엽니다(데스크톱은 가운데 무대 자리, 휴대폰은 새 페이지). 열려 있는 동안 같은 버튼이 **`<<`**로 바뀌어 누르면 다시 무대로 돌아옵니다. 탭에 친 검색어를 그대로 가져가며, 필터(키워드·조건·등급·죄악)는 여기에 있습니다. 「조건」 필터의 **「조건 없음」**은 덱이 판정할 조건이 없는 기프트만 남깁니다(편성 수에 따라 강화되는 것과 완전 공명 조건은 덱 조건이 아닙니다).
+- **기프트 탭**의 타일 격자에서 목표로 삼을 기프트를 누릅니다(아이콘을 누르면 목표에 추가, 이름을 누르면 상세). 탭에는 **「현재 활성」**(내 덱이 조건을 채우는 기프트)만 있고, 기본으로 **「목표가 아닌 것만 보기」**가 켜져 있어 이미 목표인 것은 숨습니다(체크를 끄면 모두 보입니다). 나머지 기프트는 검색으로 찾습니다 — 검색은 전체 기프트에서, 부분 문자열로, 초성만 치면 초성 검색입니다.
+- 검색창 오른쪽 끝의 **`>>`(모두 보기)**는 전체 기프트를 넓은 격자로 엽니다(데스크톱은 가운데 스테이지 자리, 휴대폰은 새 페이지). 열려 있는 동안 같은 버튼이 **`<<`**로 바뀌어 누르면 다시 스테이지로 돌아옵니다. 탭에 친 검색어를 그대로 가져가며, 필터(키워드·조건·등급·죄악)는 여기에 있습니다. 「조건」 필터의 **「조건 없음」**은 덱이 판정할 조건이 없는 기프트만 남깁니다(편성 수에 따라 강화되는 것과 완전 공명 조건은 덱 조건이 아닙니다).
 - 타일의 **바깥 링**이 조건 판정입니다(초록 충족 · 빨강 미충족 · 회색 조건 없음). 우하 배지는 키워드입니다.
 - 조합으로만 나오는 기프트를 고르면 재료까지 루트가 모으러 갑니다. 상세 시트의 「재료도 목표」를 끄면 결과만 목표로 둡니다. 조합식의 재료를 누르면 그 기프트의 설명으로 넘어가고, 맨 위 「←」로 돌아옵니다.
 - **시작 키워드**는 탭 맨 아래에 있습니다. 「자동」은 고른 기프트를 따라, 시작 기프트 풀에 목표가 든 키워드를 고릅니다(그런 풀이 없으면 덱의 주 키워드). 그 아래 한 줄이 어떤 시작 기프트를 받는지, 혹은 목표와 상관이 없어 아무 키워드나 골라도 되는지 알려 줍니다.
@@ -2061,7 +2059,7 @@
 
 ### 4. 런
 
-- 무대의 팩 카드에서 **입장**하면(버튼 또는 카드를 아래로 당기기) 그 팩에서 챙길 기프트 타일이 나옵니다. **얻은 것은 아이콘을 눌러 획득 표시**하세요(이름을 누르면 상세) — 표시하지 않고 층을 떠나면 「미획득」으로 기록됩니다. 미획득은 「그 팩에서 못 얻음」이라, 다른 팩이 주는 기프트는 남은 층에서 다시 루팅되고, 그 팩에서만 나오는 기프트는 이 런에서 끝입니다.
+- 스테이지의 팩 카드에서 **입장**하면(버튼 또는 카드를 아래로 당기기) 그 팩에서 챙길 기프트 타일이 나옵니다. **얻은 것은 아이콘을 눌러 획득 표시**하세요(이름을 누르면 상세) — 표시하지 않고 층을 떠나면 「미획득」으로 기록됩니다. 미획득은 「그 팩에서 못 얻음」이라, 다른 팩이 주는 기프트는 남은 층에서 다시 루팅되고, 그 팩에서만 나오는 기프트는 이 런에서 끝입니다.
 - 「다음 층」(또는 아래로 당기기)으로 넘어가고, 「입장 취소」(위로 당기기)는 입장을 취소하며 그 팩에서 표시한 것을 지웁니다. 층 스트립을 눌러 지난 층을 다시 볼 수 있습니다.
 - 루트는 현재 층부터 다시 계산됩니다. 계획에 없는 팩에 들어가도 됩니다.
 - **화면 인식**(데스크톱 Chrome·Edge·Firefox): 헤더의 「화면 인식」 버튼을 눌러 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다(버튼에 개수가 뜹니다). 창을 닫아도 인식은 계속됩니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.

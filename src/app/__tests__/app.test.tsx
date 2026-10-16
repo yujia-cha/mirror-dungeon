@@ -1534,9 +1534,9 @@ describe('GiftsStep', () => {
     // One section only: 「거의 활성」 and 「기타」 are both gone.
     expect(screen.queryByRole('button', { name: /거의 활성/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /^기타/ })).toBeNull();
-    const header = screen.getByRole('button', { name: /지금 덱으로 활성/, expanded: true });
+    const header = screen.getByRole('button', { name: /현재 활성/, expanded: true });
     await user.click(header);
-    expect(screen.getByRole('button', { name: /지금 덱으로 활성/, expanded: false })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /현재 활성/, expanded: false })).toBeInTheDocument();
     expect(screen.queryByTestId('gift-tile')).toBeNull();
     // A gift short of its condition is a search away.
     await search(user, '연성진동');
@@ -2070,10 +2070,10 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderGifts();
-    expect(screen.getByRole('button', { name: /지금 덱으로 활성/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /현재 활성/ })).toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), '진');
     // The 활성 header is gone: a search answers from every gift, not from the section.
-    expect(screen.queryByRole('button', { name: /지금 덱으로 활성/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /현재 활성/ })).toBeNull();
     // 진혼 is active with this deck and 연성진동 is not; the second one is reached only by a
     // search now. One list, and 활성 still comes first.
     const scroller = screen.getByTestId('gift-scroller');
@@ -2094,7 +2094,7 @@ describe('GiftsStep', () => {
     expect(box).toBeChecked();
     expect(useApp.getState().ui.activeUnpickedOnly).toBe(true);
     // Beside the fold toggle, not inside it: ticking it must not fold the section.
-    const header = () => screen.getByRole('button', { name: /지금 덱으로 활성/ });
+    const header = () => screen.getByRole('button', { name: /현재 활성/ });
     expect(header()).not.toContainElement(box);
     const ids = () => screen.queryAllByTestId('gift-tile').map((el) => el.getAttribute('data-gift'));
     expect(ids()).toEqual(expect.arrayContaining(['9088', '9157']));
@@ -2129,7 +2129,7 @@ describe('GiftsStep', () => {
       await user.click(within(open).getAllByRole('button')[0]!);
     }
     expect(screen.getByTestId('gift-active-empty')).toHaveTextContent('모두 목표입니다');
-    expect(screen.getByRole('button', { name: /지금 덱으로 활성/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /현재 활성/ })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: '목표가 아닌 것만 보기' })).toBeChecked();
     // Dropping one goal brings its tile straight back.
     const chosen = useApp.getState().wanted[0]!;
@@ -2144,7 +2144,7 @@ describe('GiftsStep', () => {
     // One LCB identity meets no deck condition, so 활성 has nothing to show.
     useApp.getState().setDeck([10101], 1);
     renderGifts();
-    expect(screen.getByTestId('gift-active-empty')).toHaveTextContent('지금 덱으로 활성인 기프트가 없습니다');
+    expect(screen.getByTestId('gift-active-empty')).toHaveTextContent('현재 활성인 기프트가 없습니다');
     expect(screen.queryByTestId('gift-tile')).toBeNull();
   });
 });
@@ -2666,7 +2666,7 @@ describe('RoutePlanPanel', () => {
     expect(screen.getByTestId('route-summary').nextElementSibling).toBe(card);
     expect(card.nextElementSibling).toContainElement(rows());
     expect(card).toHaveTextContent('전부 얻을 수 없습니다 · 박수 짝짝! 중 하나를 목표에서 빼야 합니다');
-    expect(card).toHaveTextContent('혼자 뺐을 때 줄어드는 충돌');
+    expect(card).toHaveTextContent('뺐을 때 줄어드는 충돌');
     // Six goals for five floors: leaving any one of them out clears the one conflict.
     const bars = within(card).getAllByTestId('drop-effect');
     expect(bars.map((bar) => Number(bar.getAttribute('data-gift'))).sort()).toEqual(
@@ -3243,7 +3243,7 @@ describe('AppShell', () => {
     expect(screen.getByTestId('stage-body')).toHaveAttribute('inert');
     expect(screen.getByTestId('stage-body')).toHaveClass('hidden');
     // One grid, no 활성 fold, and the box takes focus with the query already in it.
-    expect(within(browser).queryByRole('button', { name: /지금 덱으로 활성/ })).toBeNull();
+    expect(within(browser).queryByRole('button', { name: /현재 활성/ })).toBeNull();
     const browserBox = within(browser).getByRole('textbox', { name: '기프트 검색' });
     expect(browserBox).toHaveFocus();
     expect(browserBox).toHaveValue('진혼');

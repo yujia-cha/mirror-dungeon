@@ -65,8 +65,8 @@ export const STRINGS = {
   },
   aboutSource: { ko: '출처와 라이선스', en: 'Sources and licence' },
   searchClear: { ko: '검색어 지우기', en: 'Clear search' },
-  // 건너뛰기 링크. 「무대」는 가운데 열을 어디서나 부르는 이름이다.
-  skipToStage: { ko: '무대로 건너뛰기', en: 'Skip to the stage' },
+  // 건너뛰기 링크. 「스테이지」는 가운데 열을 어디서나 부르는 이름이다.
+  skipToStage: { ko: '스테이지로 건너뛰기', en: 'Skip to the stage' },
 
   // ── 패널과 탭
   // 휴대폰 페이지의 제목은 그 페이지를 여는 헤더 문 이름이다.
@@ -86,8 +86,8 @@ export const STRINGS = {
   // ── 덱 탭
   toDeck: { ko: '덱 탭으로', en: 'To the deck tab' },
   deckSearchAll: {
-    ko: '전체 인격 검색 · 이름 · 소속 · 키워드(여러 개 가능)',
-    en: 'Search all identities · name · faction · keywords (several allowed)',
+    ko: '전체 인격 검색 · 이름 · 소속 · 키워드',
+    en: 'Search all identities · name · faction · keywords',
   },
   deckSearchHint: { ko: '{n}명', en: '{n} found' },
   deckSearchPicked: { ko: '덱에 {n}명', en: '{n} in the deck' },
@@ -97,8 +97,8 @@ export const STRINGS = {
     en: 'Reset the deck to the 12 LCB sinners?',
   },
   deckDefaultConfirmBody: {
-    ko: '지금 덱과 출격 설정이 바뀝니다. 되돌릴 수 없습니다.',
-    en: 'The current deck and deployment are replaced. This cannot be undone.',
+    ko: '지금 덱과 출격 설정이 바뀝니다.',
+    en: 'The current deck and deployment are replaced.',
   },
   deckSearchNone: { ko: '일치하는 인격 없음', en: 'No identity matches' },
   deckDeployedFull: { ko: '출격은 최대 {max}명입니다', en: 'Up to {max} can be deployed' },
@@ -136,11 +136,11 @@ export const STRINGS = {
 
   // ── 기프트 탭
   giftsSearch: { ko: '기프트 검색', en: 'Search gifts' },
-  giftsActive: { ko: '지금 덱으로 활성', en: 'Active with this deck' },
+  giftsActive: { ko: '현재 활성', en: 'Active now' },
   // 이미 목표이거나 목표가 가져간 것(isMarked)을 숨긴다.
   giftsUnpickedOnly: { ko: '목표가 아닌 것만 보기', en: 'Non-goals only' },
   giftsActiveAllPicked: { ko: '모두 목표입니다', en: 'All are goals' },
-  giftsActiveNone: { ko: '지금 덱으로 활성인 기프트가 없습니다', en: 'Nothing is active with this deck' },
+  giftsActiveNone: { ko: '현재 활성인 기프트가 없습니다', en: 'Nothing is active right now' },
   giftsResults: { ko: '검색 결과', en: 'Search results' },
   giftsDeckEmpty: { ko: '덱이 비어 있습니다', en: 'The deck is empty' },
   giftsNoMatch: { ko: '일치하는 기프트 없음', en: 'No gift matches' },
@@ -157,7 +157,7 @@ export const STRINGS = {
   removeFromSelection: { ko: '{name} 목표에서 빼기', en: 'Remove {name} from goals' },
 
   // ── 모두 보기 (전체 기프트 격자)
-  // 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 필터가 있는 전체 기프트 격자. 데스크톱은 무대 자리, 휴대폰은 페이지.
+  // 「모두 보기」 브라우저(탭 검색줄 끝의 >>): 필터가 있는 전체 기프트 격자. 데스크톱은 스테이지 자리, 휴대폰은 페이지.
   giftsBrowseAll: { ko: '모두 보기', en: 'Browse all' },
   giftsBrowseTitle: { ko: '모든 기프트', en: 'All gifts' },
   giftsBrowseClose: { ko: '닫기', en: 'Close' },
@@ -293,7 +293,7 @@ export const STRINGS = {
     en: 'They do not all fit one run · remove {n} of {names} from the goals',
   },
   // M80: 목표마다 「혼자 뺐을 때 줄어드는 충돌」 막대를 그리고, 막대를 더하지 않고 고른 집합을 플래너로 실제 계산한다.
-  routeDecisionEffects: { ko: '혼자 뺐을 때 줄어드는 충돌', en: 'Conflicts cleared by leaving one out' },
+  routeDecisionEffects: { ko: '뺐을 때 줄어드는 충돌', en: 'Conflicts cleared when left out' },
   routeDecisionCheck: { ko: '뺄 목표로 고르기', en: 'pick to remove' },
   routeDecisionReducesLabel: { ko: '충돌 {n}개 줄어듦', en: 'clears {n} conflicts' },
   routeDecisionBarSum: { ko: '막대 합 −{sum}', en: 'Bars add to −{sum}' },
@@ -354,7 +354,7 @@ export const STRINGS = {
     en: 'Pack entries for the remaining ingredients ({names}) alone were dropped.',
   },
 
-  // ── 무대 (가운데 런 화면)
+  // ── 스테이지 (가운데 런 화면)
   floorStrip: { ko: '층', en: 'Floors' },
   runActive: { ko: '진행 중', en: 'In progress' },
   runCurrentFloor: { ko: '현재 층', en: 'Current floor' },
@@ -526,8 +526,8 @@ export const STRINGS = {
     en: 'Discard the run in progress and open the link?',
   },
   confirmSharedMessage: {
-    ko: '공유 링크는 보낸 사람의 덱·목표·설정으로 덮어씁니다. 지금 런의 기록은 되돌릴 수 없습니다.',
-    en: "The link replaces your deck, goals and settings with the sender's. The current run record cannot be recovered.",
+    ko: '보낸 사람의 덱·목표·설정으로 덮어씁니다. 지금 런의 기록은 되돌릴 수 없습니다.',
+    en: "Replaces your deck, goals and settings with the sender's. The current run record cannot be recovered.",
   },
   confirmSharedConfirm: { ko: '링크 열기', en: 'Open the link' },
   confirmSeasonTitle: {
@@ -554,20 +554,20 @@ export const GUIDE_CARDS = [
     title: { ko: '무엇을 해 주나', en: 'What it does' },
     lines: [
       {
-        ko: '덱과 목표 E.G.O 기프트를 고르면, 그 기프트를 모으려면 몇 층에서 어느 테마팩에 들어가야 하는지 계산합니다.',
-        en: 'Pick a deck and the E.G.O gifts you want, and it works out which theme pack to enter on which floor to collect them.',
+        ko: '덱과 목표 E.G.O 기프트를 고르면, 몇 층에서 어느 테마팩에 들어가야 하는지 루트를 계산합니다.',
+        en: 'Pick a deck and the E.G.O gifts you want, and it plans the route: which theme pack to enter on which floor.',
       },
       {
         ko: '계산 순서: 조합 기프트를 재료로 펼치고 → 팩이 필요 없는 범용 드랍을 빼고 → 관측·시작 기프트를 정한 뒤 → 기프트마다 그것을 주는 팩을 골라 층에 앉힙니다.',
         en: 'In order: fusions are unfolded into ingredients → general drops, which need no pack, are set aside → observation and the starting gift are chosen → each gift gets a pack that gives it, seated on a floor.',
       },
       {
-        ko: '전부 얻을 수 없으면 무엇을 목표에서 빼야 하는지, 왜 얻을 수 없는지 알려 줍니다.',
-        en: 'When not everything fits, it says which goal to drop and why a gift cannot be had.',
+        ko: '전부 얻을 수 없으면 무엇을 목표에서 빼야 하는지 알려 줍니다.',
+        en: 'When not everything fits, it says which goal to drop.',
       },
       {
-        ko: '덱과 목표는 ⋯ 메뉴의 「링크 복사」로 공유할 수 있습니다.',
-        en: 'Share the deck and goals with 「Copy link」 in the ⋯ menu.',
+        ko: '덱과 목표는 메뉴의 「링크 복사」로 공유할 수 있습니다.',
+        en: 'Share the deck and goals with 「Copy link」 in the menu.',
       },
     ],
   },
@@ -583,8 +583,8 @@ export const GUIDE_CARDS = [
         en: 'Press a sinner’s slot to pick an identity, or paste the game’s formation code into 「Import code」.',
       },
       {
-        ko: '조건부 기프트는 대부분 출격한 인격만 셉니다. 칸의 「대기」를 눌러 「출격」으로 바꿔야 조건 판정이 맞습니다.',
-        en: 'Most conditional gifts count deployed identities only. Switch a slot from 「Reserve」 to 「Deployed」 for the conditions to read right.',
+        ko: '조건부 기프트는 「출격」으로 선택된 인격을 기준으로 셉니다.',
+        en: 'Conditional gifts count the identities set to 「Deployed」.',
       },
     ],
   },
@@ -592,20 +592,20 @@ export const GUIDE_CARDS = [
     title: { ko: '기프트', en: 'Gifts' },
     lines: [
       {
-        ko: '기프트 탭에서 아이콘을 누르면 목표에 추가, 이름을 누르면 상세입니다.',
-        en: 'In the Gifts tab, press an icon to add it as a goal, its name for the details.',
+        ko: '기프트 탭에서 아이콘을 눌러 목표에 추가합니다.',
+        en: 'In the Gifts tab, press an icon to add it as a goal.',
       },
       {
-        ko: '탭에는 지금 덱으로 활성인 기프트만 나옵니다. 나머지는 검색하거나 검색창 끝의 >>(모두 보기)로 찾습니다. 초성 검색도 됩니다.',
-        en: 'The tab lists the gifts your deck activates. Find the rest by search or with >> (Browse all) at the end of the search box.',
+        ko: '탭에는 현재 활성화 가능한 기프트만 나옵니다. 나머지는 검색하거나 검색창 끝의 >>로 찾습니다.',
+        en: 'The tab lists only the gifts you can activate now. Find the rest by search or with >> at the end of the search box.',
       },
       {
-        ko: '아이콘의 바깥 링은 조건 판정(초록 충족 · 빨강 미충족), 오른쪽 아래 배지는 키워드입니다.',
-        en: 'The ring around an icon is the condition (green met · red not met); the bottom-right badge is the keyword.',
+        ko: '아이콘의 바깥 링은 조건 판정을 표시합니다. (초록 충족 · 빨강 미충족)',
+        en: 'The ring around an icon shows the condition (green met · red not met).',
       },
       {
-        ko: '검색창 아래 관측 칸에 기프트를 넣으면 기프트 관측으로 받습니다. 조합 결과는 관측할 수 없으니 재료를 넣습니다. 1층을 떠나면 바꿀 수 없습니다.',
-        en: 'Put a gift in an observation cell below the search box to take it through Gift Observation. A fusion cannot be observed — pin its ingredients. It locks once you leave floor 1.',
+        ko: '관측 칸에 관측 가능한 기프트를 넣으면 기프트 관측으로 받습니다. 1층을 떠나면 바꿀 수 없습니다.',
+        en: 'Put an observable gift in an observation cell to take it through Gift Observation. It locks once you leave floor 1.',
       },
     ],
   },
@@ -617,12 +617,8 @@ export const GUIDE_CARDS = [
         en: '「Full route」 at the top right draws the packs floor by floor as a route map.',
       },
       {
-        ko: '「획득 M/T」는 목표 중 루트가 가져다주는 수입니다. 어느 팩에서나 나올 수 있는 범용 드랍도 세지만, 반드시 나오지는 않습니다.',
-        en: '「Got M/T」 counts the goals the route brings, general drops included — those can come from any pack but are never guaranteed.',
-      },
-      {
-        ko: '전부 얻을 수 없으면 요약 아래 카드가 목표마다 혼자 뺐을 때 줄어드는 충돌을 막대로 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.',
-        en: 'When not everything fits, a card under the summary shows, per goal, how many conflicts leaving it out alone clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.',
+        ko: '전부 얻을 수 없으면 기프트마다 뺐을 때 줄어드는 충돌을 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.',
+        en: 'When not everything fits, it shows how many conflicts leaving out each gift clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.',
       },
     ],
   },
@@ -630,7 +626,7 @@ export const GUIDE_CARDS = [
     title: { ko: '런', en: 'Run' },
     lines: [
       {
-        ko: '가운데 무대에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.',
+        ko: '가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.',
         en: 'On the stage in the middle, press 「Enter」 on a pack card or pull the card down.',
       },
       {
@@ -642,8 +638,8 @@ export const GUIDE_CARDS = [
         en: '「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.',
       },
       {
-        ko: '데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있고, 화면은 브라우저 밖으로 나가지 않습니다.',
-        en: 'On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone, and the screen never leaves the browser.',
+        ko: '데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있습니다.',
+        en: 'On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone.',
       },
       {
         ko: '재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.',
