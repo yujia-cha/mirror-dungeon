@@ -118,11 +118,11 @@ export interface PlanState {
    */
   enterAt: (floor: number, packId: number) => void;
   /**
-   * Record what the run start handed over (M138, the overlay): `got` in hand, the `observed` ones
-   * pinned, a pinned observation the player left out (`skipped`) unpinned, the start closed.
+   * Record what the run start handed over (M138, the overlay): `got` in hand, `dropped` not, the
+   * `observed` ones pinned, then the start settled (M140 — a pin on a gift not in hand comes off).
    */
-  confirmStart: (picks: { got: number[]; observed: number[]; skipped: number[] }) => void;
-  /** Reopen a closed start while floor 1 is still ahead; what it recorded goes back to unrecorded. */
+  confirmStart: (picks: { got: number[]; dropped: number[]; observed: number[] }) => void;
+  /** Reopen a closed start while floor 1 is still ahead; the statuses stay, its record goes. */
   reopenStart: () => void;
   /** Open the gift detail sheet (the same one the items tab uses) from anywhere in the shell. */
   openGift: (giftId: number) => void;

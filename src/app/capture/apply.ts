@@ -16,7 +16,8 @@
  * - `unsure` → nothing changes; the player is asked to pick.
  * - At the run start (M135): a popup's gift from the observation (`got` with source `observation`)
  *   is also pinned as observed — a spent observation on floor 1 (M134) — when the pin is legal
- *   (`recordObserved`); `startDone` closes the start (`markStartDone`). Only a popup records a
+ *   (`recordObserved`); `startDone` settles the start (`settleStart`, M140): what the popups
+ *   recorded is what it gave, and a pin on a gift no popup showed comes off. Only a popup records a
  *   gift (M136): nothing is marked from what a picker showed picked.
  *
  * Pure: event and run state in, actions and questions out. `execute` runs them through the run
@@ -54,8 +55,11 @@ export type CaptureAction =
   | { kind: 'status'; changes: StatusChange[] }
   /** A gift pinned as observed (M135). Kept only when the store took the pin. */
   | { kind: 'observe'; giftId: number }
-  /** The run start closed (M135). */
-  | { kind: 'startDone' };
+  /**
+   * The run start closed (M135) and settled (M140). `unpinned` is filled in by `execute`: the pins
+   * the settlement took off, which its undo puts back.
+   */
+  | { kind: 'startDone'; unpinned?: number[] };
 
 /**
  * A step that takes an action back. `revisit` re-enters a pack without settling anything (it was
@@ -207,7 +211,11 @@ export function inverseOf(actions: readonly CaptureAction[]): CaptureStep[] {
   return [...actions].reverse().flatMap((action): CaptureStep[] => {
     if (action.kind === 'status') return [{ kind: 'status', changes: swap(action.changes) }];
     if (action.kind === 'observe') return [{ kind: 'unobserve', giftId: action.giftId }];
-    if (action.kind === 'startDone') return [{ kind: 'startOpen' }];
+    if (action.kind === 'startDone')
+      return [
+        { kind: 'startOpen' },
+        ...(action.unpinned ?? []).map((giftId): CaptureStep => ({ kind: 'observe', giftId })),
+      ];
     const steps: CaptureStep[] = [{ kind: 'leave', packId: action.packId }];
     if (action.movedFrom !== null)
       steps.push({ kind: 'revisit', floor: action.movedFrom, packId: action.packId });
@@ -233,8 +241,10 @@ export interface RunOps {
   /** Pin a gift as observed under the store's rules (`recordObserved`); whether it was pinned. */
   observe(giftId: number): boolean;
   unobserve(giftId: number): void;
-  /** Close or reopen the run start (`markStartDone`). */
-  setStartDone(done: boolean): void;
+  /** Settle and close the run start (`settleStart`); the pins it took off. */
+  settleStart(): number[];
+  /** Reopen the run start (`markStartDone(false)`). */
+  reopenStart(): void;
 }
 
 /**
@@ -262,11 +272,10 @@ export function execute(steps: readonly CaptureStep[], ops: RunOps): CaptureActi
         ops.unobserve(step.giftId);
         break;
       case 'startDone':
-        ops.setStartDone(true);
-        applied.push(step);
+        applied.push({ kind: 'startDone', unpinned: ops.settleStart() });
         break;
       case 'startOpen':
-        ops.setStartDone(false);
+        ops.reopenStart();
         break;
       case 'leave':
         ops.leave(step.packId);

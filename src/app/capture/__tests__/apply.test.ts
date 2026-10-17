@@ -161,9 +161,16 @@ describe('actionsFor at the run start (M135)', () => {
     expect(out).toEqual({ actions: [], ask: { kind: 'gift', ids: [5, 6] } });
   });
 
-  it('takes a pin and the closed start back', () => {
-    expect(inverseOf([{ kind: 'observe', giftId: 5 }, { kind: 'startDone' }])).toEqual([
+  it('takes a pin and the closed start back, putting back the pins the settlement took off (M140)', () => {
+    expect(
+      inverseOf([
+        { kind: 'observe', giftId: 5 },
+        { kind: 'startDone', unpinned: [6, 7] },
+      ]),
+    ).toEqual([
       { kind: 'startOpen' },
+      { kind: 'observe', giftId: 6 },
+      { kind: 'observe', giftId: 7 },
       { kind: 'unobserve', giftId: 5 },
     ]);
   });
@@ -232,7 +239,8 @@ describe('execute', () => {
       return useApp.getState().options.observedGifts.includes(giftId);
     },
     unobserve: (giftId) => useApp.getState().toggleObserved(giftId, { max: 3, observable: () => true }),
-    setStartDone: (done) => useApp.getState().markStartDone(done),
+    settleStart: () => useApp.getState().settleStart(),
+    reopenStart: () => useApp.getState().markStartDone(false),
   };
   const apply = (event: Parameters<typeof actionsFor>[0]) => {
     const { run, options } = useApp.getState();
@@ -356,6 +364,24 @@ describe('execute', () => {
     // Assert
     expect(useApp.getState().run.startDone).toBe(true);
     expect(pins()).toEqual([9230]);
+  });
+
+  it('settles the start on what the popups showed: a pin no popup showed comes off, and undo puts it back (M140)', () => {
+    // Arrange: two pins; only 9191's popup was read.
+    const limits = { max: 3, observable: () => true };
+    useApp.getState().toggleObserved(9191, limits);
+    useApp.getState().toggleObserved(9230, limits);
+    apply({ kind: 'got', giftId: 9191, source: 'observation' });
+    // Act: floor 1's pack picker closes the start.
+    const applied = apply({ kind: 'startDone' });
+    const settled = { pins: [...pins()], startGifts: useApp.getState().run.startGifts };
+    execute(inverseOf(applied), ops);
+    // Assert
+    expect(applied).toEqual([{ kind: 'startDone', unpinned: [9230] }]);
+    expect(settled).toEqual({ pins: [9191], startGifts: [9191] });
+    expect(useApp.getState().run.startDone).toBeUndefined();
+    expect(useApp.getState().run.startGifts).toEqual([]);
+    expect([...pins()].sort((a, b) => a - b)).toEqual([9191, 9230]);
   });
 
   it('closes the start and reopens it on undo (markStartDone)', () => {

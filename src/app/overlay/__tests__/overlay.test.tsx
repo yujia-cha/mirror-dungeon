@@ -222,9 +222,32 @@ describe('OverlayView run start (M138)', () => {
     expect(rows[1]).toHaveAttribute('aria-pressed', 'false');
     expect(plan.confirmStart).toHaveBeenCalledWith({
       got: [GIFT_A, GIFT_C],
+      dropped: [GIFT_B],
       observed: [GIFT_C],
-      skipped: [GIFT_B],
     });
+  });
+
+  it('with the reader running, starts on only what floor 1 collected, listing an unplanned gift too (M140)', () => {
+    // Arrange: the reader saw the pinned GIFT_B and an unplanned gift; the start gift's popup went by.
+    const extra = data.gifts[3]!.id;
+    plan.shown = startPlan();
+    useApp.setState({ run: { ...emptyRun(), giftStatus: { [GIFT_B]: 'got', [extra]: 'got' } } });
+    const target = document.createElement('div');
+    // Act
+    render(<OverlayView target={target} log={new FeedbackLog()} />, {
+      wrapper: withCapture(captureOf({ status: 'running' })),
+    });
+    // Assert
+    const rows = within(target).getAllByTestId('overlay-start-gift');
+    expect(
+      rows.map((row) => [Number(row.getAttribute('data-gift')), row.getAttribute('aria-pressed')]),
+    ).toEqual([
+      [GIFT_A, 'false'],
+      [GIFT_B, 'true'],
+      [GIFT_C, 'false'],
+      [extra, 'true'],
+    ]);
+    expect(rows[3]).toHaveTextContent('획득');
   });
 
   it('says the start is confirmed on floor 1 and offers to choose again', async () => {

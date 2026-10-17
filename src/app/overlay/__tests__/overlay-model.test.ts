@@ -11,6 +11,8 @@ import {
   recentLines,
   remainingIn,
   startCandidates,
+  startEvidence,
+  startInitiallyOn,
   startPicks,
 } from '../overlay-model.ts';
 
@@ -160,7 +162,7 @@ describe('clockOf', () => {
   });
 });
 
-describe('startCandidates (M138)', () => {
+describe('startCandidates (M138, M140)', () => {
   const plan = {
     start: {
       startGifts: [9044],
@@ -171,21 +173,42 @@ describe('startCandidates (M138)', () => {
       ],
     },
   } as unknown as RoutePlan;
+  const floor1 = (giftStatus: Record<number, GiftStatus> = {}) => ({ currentFloor: 1, giftStatus });
 
-  it('lists the start gifts, then the observations, once each, while the start is open', () => {
-    expect(startCandidates(plan, { currentFloor: 1 })).toEqual([
+  it('lists the start gifts, then the observations, then what floor 1 collected beyond them, once each', () => {
+    expect(startCandidates(plan, floor1({ 9086: 'got', 9500: 'got', 9600: 'failed' }))).toEqual([
       { giftId: 9044, kind: 'start' },
       { giftId: 9086, kind: 'pinned' },
       { giftId: 9088, kind: 'recommended' },
+      { giftId: 9500, kind: 'got' },
     ]);
   });
 
-  it('is null once the start is closed, past floor 1, without a plan, or with nothing expected', () => {
-    expect(startCandidates(plan, { currentFloor: 1, startDone: true })).toBeNull();
-    expect(startCandidates(plan, { currentFloor: 2 })).toBeNull();
-    expect(startCandidates(null, { currentFloor: 1 })).toBeNull();
+  it('is null once the start is closed, past floor 1, without a plan, or with nothing to list', () => {
+    expect(startCandidates(plan, { ...floor1(), startDone: true })).toBeNull();
+    expect(startCandidates(plan, { currentFloor: 2, giftStatus: {} })).toBeNull();
+    expect(startCandidates(null, floor1())).toBeNull();
     const empty = { start: { startGifts: [], observed: [] } } as unknown as RoutePlan;
-    expect(startCandidates(empty, { currentFloor: 1 })).toBeNull();
+    expect(startCandidates(empty, floor1())).toBeNull();
+    expect(startCandidates(empty, floor1({ 9500: 'got' }))).toEqual([{ giftId: 9500, kind: 'got' }]);
+  });
+});
+
+describe('startEvidence and startInitiallyOn (M140)', () => {
+  const candidates = [
+    { giftId: 1, kind: 'start' as const },
+    { giftId: 2, kind: 'pinned' as const },
+  ];
+
+  it('is what floor 1 marked collected, and nothing past it', () => {
+    expect(startEvidence({ currentFloor: 1, giftStatus: { 1: 'got', 2: 'failed' } })).toEqual([1]);
+    expect(startEvidence({ currentFloor: 2, giftStatus: { 1: 'got' } })).toEqual([]);
+  });
+
+  it('starts on the evidence with the reader running, and on everything without it', () => {
+    expect([...startInitiallyOn(candidates, [2], true)]).toEqual([2]);
+    expect([...startInitiallyOn(candidates, [], true)]).toEqual([]);
+    expect([...startInitiallyOn(candidates, [2], false)]).toEqual([1, 2]);
   });
 });
 
@@ -194,13 +217,18 @@ describe('startPicks (M138)', () => {
     { giftId: 1, kind: 'start' as const },
     { giftId: 2, kind: 'pinned' as const },
     { giftId: 3, kind: 'recommended' as const },
+    { giftId: 4, kind: 'got' as const },
   ];
 
-  it('collects what is on, pins the observations among them, and unpins a pin left off', () => {
-    expect(startPicks(candidates, new Set([1, 3]))).toEqual({ got: [1, 3], observed: [3], skipped: [2] });
+  it('collects what is on, drops what is off, and pins only the planned observations among what is on', () => {
+    expect(startPicks(candidates, new Set([1, 3, 4]))).toEqual({
+      got: [1, 3, 4],
+      dropped: [2],
+      observed: [3],
+    });
   });
 
-  it('records nothing and unpins every pin when everything is off', () => {
-    expect(startPicks(candidates, new Set())).toEqual({ got: [], observed: [], skipped: [2] });
+  it('records nothing when everything is off', () => {
+    expect(startPicks(candidates, new Set())).toEqual({ got: [], dropped: [1, 2, 3, 4], observed: [] });
   });
 });

@@ -68,7 +68,8 @@ export function PlanProvider({
   const unvisitPack = useApp((s) => s.unvisitPack);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
   const confirmStartIn = useApp((s) => s.confirmStart);
-  const reopenStart = useApp((s) => s.reopenStart);
+  const markStartDone = useApp((s) => s.markStartDone);
+  const settleStart = useApp((s) => s.settleStart);
   const nextFloor = useApp((s) => s.nextFloor);
   const setStageFloor = useApp((s) => s.setStageFloor);
   // The goals the decision card has checked to leave out, and whether the map shows that route.
@@ -232,13 +233,12 @@ export function PlanProvider({
     // selected must hand over that route's observations, never the ones it replaced.
     const startGifts = shown ? [...shown.start.observed.map((o) => o.giftId), ...shown.start.startGifts] : [];
     /**
-     * Leaving floor 1 for the first time is when the start-of-run gifts land in hand. Read at that
-     * moment, never from a plan one toggle behind (M118): while the worker is still answering, the
-     * plan on show is the previous input's, and a pin or a goal changed just before leaving would
-     * record the old observations as 획득. Then the same plan is computed here, once, on the spot.
+     * The plan's guess at the start: every observation and start gift collected. Read at the moment
+     * floor 1 is left, never from a plan one toggle behind (M118): while the worker is still
+     * answering, the plan on show is the previous input's, and a pin or a goal changed just before
+     * leaving would record the old observations as 획득. Then the same plan is computed here, once.
      */
-    const startSettle = (): number[] => {
-      if (run.currentFloor !== 1) return [];
+    const startGuess = (): number[] => {
       const stale = planPending || (previewing && dropPending);
       if (!stale) return startGifts;
       // The route alone: the drop analysis that `runPlan` adds says nothing about the start.
@@ -248,6 +248,20 @@ export function PlanProvider({
           ? planRoute(input, data, indexes)
           : null;
       return fresh ? [...fresh.start.observed.map((o) => o.giftId), ...fresh.start.startGifts] : [];
+    };
+    /**
+     * The run start on the way off floor 1 while it is still open; what the move records as
+     * collected. With the screen reader running, what it recorded is the answer (시작 정산, M140):
+     * the start is settled — a pin no popup showed comes off — and closed for good. Without it
+     * nobody recorded anything, so the plan's guess is recorded instead (the owner's call), as a
+     * guess: the start stays open, and coming back to floor 1 takes it back and decides again.
+     */
+    const closeStart = (): number[] => {
+      const now = useApp.getState();
+      if (now.run.currentFloor !== 1 || now.run.startDone) return [];
+      if (!now.captureLive) return startGuess();
+      settleStart();
+      return [];
     };
     /**
      * What the route expects a pack entered on `floor` to hand over — the plan on show decides, so
@@ -264,24 +278,23 @@ export function PlanProvider({
       return entryGifts(packId, expected, run.giftStatus, indexes, exclusivesOf);
     };
     /**
-     * What leaving `floor` records: the start-of-run gifts when floor 1 is behind for the first
-     * time, and the drops the route expected of a pack entered there that the player never marked.
-     * Every way off a floor settles the same — 「다음 층」 and a forward step on the floor strip alike.
+     * What leaving `floor` records as missed: the drops the route expected of a pack entered there
+     * that the player never marked. Every way off a floor settles the same — 「다음 층」 and a
+     * forward step on the floor strip alike — and each also takes the run start (`closeStart`).
      */
-    const settleFor = (floor: number): { got: number[]; failed: number[] } => {
+    const settleFor = (floor: number): { failed: number[] } => {
       const entered = run.visits[floor];
       return {
-        got: startSettle(),
         failed: entered !== undefined ? autoFailedFor(expectedIn(floor, entered), run.giftStatus) : [],
       };
     };
-    const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: startSettle() });
-    const next = (): void => nextFloor(settleFor(run.stageFloor));
+    const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: closeStart() });
+    const next = (): void => nextFloor({ got: closeStart(), ...settleFor(run.stageFloor) });
     /** Show `floor`; walking forward settles every floor left behind on the way. */
     const goTo = (floor: number): void => {
       const from = run.stageFloor;
       if (floor <= from) return setStageFloor(floor);
-      const got = startSettle();
+      const got = closeStart();
       const failed = new Set<number>();
       for (let f = from; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
       return setStageFloor(floor, { got, failed: [...failed] });
@@ -308,7 +321,7 @@ export function PlanProvider({
     const enterAt = (floor: number, packId: number): void => {
       const failed = new Set<number>();
       for (let f = run.stageFloor; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
-      visitPack(packId, floor, { got: startSettle(), failed: [...failed] });
+      visitPack(packId, floor, { got: closeStart(), failed: [...failed] });
       // The store reads its own state, so this sees the frontier the entry just moved.
       if (floor !== run.stageFloor) setStageFloor(floor);
     };
@@ -402,9 +415,9 @@ export function PlanProvider({
       goTo,
       leave,
       enterAt,
-      confirmStart: (picks: { got: number[]; observed: number[]; skipped: number[] }) =>
+      confirmStart: (picks: { got: number[]; dropped: number[]; observed: number[] }) =>
         confirmStartIn(picks, { max: observationBudget(options, data), observable: canObserve }),
-      reopenStart,
+      reopenStart: () => markStartDone(false),
       openGift,
       openPack,
     };
@@ -440,7 +453,8 @@ export function PlanProvider({
     blocked,
     toggleObserved,
     confirmStartIn,
-    reopenStart,
+    markStartDone,
+    settleStart,
     toggleGoal,
     visitPack,
     unvisitPack,

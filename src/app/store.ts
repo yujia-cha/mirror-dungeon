@@ -144,20 +144,29 @@ interface AppState extends SharedState {
   recordObserved: (giftId: number, limits: ObserveLimits) => void;
   /**
    * The player says what the run start actually handed over (M138, the overlay's 「확인하고 진행」):
-   * `got` lands in hand and is remembered (`run.startGifts`), the `observed` ones among them are pinned
-   * under `recordObserved`'s rules, a pinned observation left out (`skipped`) is unpinned — it did
-   * not happen — and the start closes. The plan
+   * `got` lands in hand, `dropped` (a candidate turned off) is not, the `observed` ones among `got`
+   * are pinned under `recordObserved`'s rules, and the start is settled (`settleStart`). The plan
    * then routes every recommendation the player did not take. Floor 1 with the start open only.
    */
   confirmStart: (
-    picks: { got: number[]; observed: number[]; skipped: number[] },
+    picks: { got: number[]; dropped: number[]; observed: number[] },
     limits: ObserveLimits,
   ) => void;
   /**
-   * Take back a closed start while floor 1 is still ahead: the gifts `confirmStart` recorded
-   * (`run.startGifts`) go back to unrecorded and the start reopens.
+   * 시작 정산 (M140): close the run start on what it actually handed over. The plan assumes every
+   * observation (pinned or recommended) and start gift is collected; whatever is marked collected
+   * on floor 1 when the start closes — popups, `got` (the plan's guess, when nobody watched), the
+   * overlay — is the answer: it is `run.startGifts`, and a pin on a gift not among it was never
+   * observed and comes off. The plan then routes what the start did not give. Floor 1 with the
+   * start open only; returns the pins it took off (the screen reader's undo puts them back).
    */
-  reopenStart: () => void;
+  settleStart: (got?: number[]) => number[];
+  /**
+   * Whether the screen reader is running (M140, never saved): the start is then settled on what
+   * it saw, not on the plan's guess.
+   */
+  captureLive: boolean;
+  setCaptureLive: (live: boolean) => void;
   setGiftStatus: (giftId: number, status: 'got' | 'failed' | null) => void;
   /**
    * 「남은 재료 모으기」 on a fusion the run lost: keep entering packs for its remaining
@@ -854,7 +863,11 @@ export const useApp = create<AppState>()(
           if ((state.run.startDone === true) === done) return {};
           const run = { ...state.run };
           if (done) run.startDone = true;
-          else delete run.startDone;
+          else {
+            delete run.startDone;
+            // A reopened start is decided again; its record goes with it (statuses stay).
+            if (run.currentFloor === 1) run.startGifts = [];
+          }
           return { run };
         }),
       recordObserved: (giftId, limits) =>
@@ -871,38 +884,52 @@ export const useApp = create<AppState>()(
             return {};
           return { options: { ...options, observedGifts: [...options.observedGifts, giftId] } };
         }),
-      confirmStart: ({ got, observed, skipped }, limits) =>
+      confirmStart: ({ got, dropped, observed }, limits) => {
+        const { run } = get();
+        if (run.currentFloor !== 1 || run.startDone) return;
         set((state) => {
-          const { run, options } = state;
-          if (run.currentFloor !== 1 || run.startDone) return {};
-          const startGifts = [...new Set(got)];
-          const giftStatus = { ...run.giftStatus };
-          for (const id of startGifts) giftStatus[id] = 'got';
-          // A pin the player left out was never observed; a new one follows `recordObserved`'s
-          // rules (a free slot, an observable gift the route collects) — the gift is in hand now.
-          const left = new Set(skipped);
-          const observedGifts = options.observedGifts.filter((id) => !left.has(id));
+          const giftStatus = { ...state.run.giftStatus };
+          for (const id of dropped) if (giftStatus[id] === 'got') delete giftStatus[id];
+          for (const id of got) giftStatus[id] = 'got';
+          // A new pin follows `recordObserved`'s rules (a free slot, an observable gift the route
+          // collects) — the gift is in hand now, which is what makes it a spent observation.
+          const observedGifts = [...state.options.observedGifts];
           const collected = collectedGifts(state.wanted, state.fusionGoal);
           for (const id of observed) {
-            if (observedGifts.includes(id) || !startGifts.includes(id)) continue;
+            if (observedGifts.includes(id) || !got.includes(id)) continue;
             if (observedGifts.length >= limits.max || !collected.has(id) || !limits.observable(id)) continue;
             observedGifts.push(id);
           }
-          return {
-            run: { ...run, giftStatus, startGifts, startDone: true },
-            options: { ...options, observedGifts },
-          };
-        }),
-      reopenStart: () =>
-        set((state) => {
-          const { run } = state;
-          if (run.currentFloor !== 1 || !run.startDone) return {};
-          const giftStatus = { ...run.giftStatus };
-          for (const id of run.startGifts) if (giftStatus[id] === 'got') delete giftStatus[id];
-          const next: RunState = { ...run, giftStatus, startGifts: [] };
-          delete next.startDone;
-          return { run: next };
-        }),
+          return { run: { ...state.run, giftStatus }, options: { ...state.options, observedGifts } };
+        });
+        get().settleStart();
+      },
+      settleStart: (got = []) => {
+        const { run, options } = get();
+        if (run.currentFloor !== 1 || run.startDone) return [];
+        const giftStatus = { ...run.giftStatus };
+        for (const id of got) giftStatus[id] = 'got';
+        const collected = new Set(
+          Object.entries(giftStatus)
+            .filter(([, status]) => status === 'got')
+            .map(([id]) => Number(id)),
+        );
+        const unpinned = options.observedGifts.filter((id) => !collected.has(id));
+        set({
+          run: { ...run, giftStatus, startGifts: [...collected], startDone: true },
+          ...(unpinned.length > 0
+            ? {
+                options: {
+                  ...options,
+                  observedGifts: options.observedGifts.filter((id) => collected.has(id)),
+                },
+              }
+            : {}),
+        });
+        return unpinned;
+      },
+      captureLive: false,
+      setCaptureLive: (live) => set((state) => (state.captureLive === live ? {} : { captureLive: live })),
       setGiftStatus: (giftId, status) =>
         set((state) => {
           const giftStatus = { ...state.run.giftStatus };

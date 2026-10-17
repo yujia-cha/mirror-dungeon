@@ -627,11 +627,11 @@ export const STRINGS = {
   // 오버레이 창의 제목 표시줄(`document.title`).
   overlayTitle: { ko: '거울 던전 오버레이', en: 'Mirror Dungeon overlay' },
   overlayCaptureOff: { ko: '화면 인식 꺼짐', en: 'Screen reader off' },
-  // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 시작 기프트와 관측(지정·추천)을 늘어놓고, 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하고 나머지는 루트가 다시 찾는다.
+  // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 시작 기프트와 관측(지정·추천), 1층에서 이미 얻은 것을 늘어놓는다. 화면 인식이 돌고 있으면 그것이 본 것만 켜져 있고(M140), 아니면 전부 켜져 있다. 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하고, 얻지 못한 관측은 관측하지 않은 것으로 보아 지정을 풀고 루트가 다시 찾는다.
   overlayStartTitle: { ko: '시작 시 획득', en: 'Collected at start' },
   overlayStartHint: {
-    ko: '게임에서 실제로 얻은 것만 켜 두고 확인하세요. 끈 것은 루트가 다시 찾습니다',
-    en: 'Keep on only what the game actually gave, then confirm. The route looks for the rest again',
+    ko: '게임에서 실제로 얻은 것만 켜 두고 확인하세요. 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다',
+    en: 'Keep on only what the game actually gave, then confirm. An observation not received counts as not made, and the route looks for it again',
   },
   overlayStartConfirm: { ko: '확인하고 진행', en: 'Confirm and continue' },
   // 시작을 확인한 뒤 1층을 떠나기 전까지 남는 한 줄. {n}은 기록한 기프트 수.

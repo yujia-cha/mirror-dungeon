@@ -61,8 +61,8 @@ test('opens the overlay window from the screen reader popover and mirrors the pa
 /**
  * The run start in the overlay (M138): the window lists the start gifts and observations the plan
  * expects, all on. A press in the PiP window reaches React (it listens on the portal's container):
- * turning one off and confirming records only the rest, closes the start, and 「다시 고르기」 opens
- * it again.
+ * turning one off and confirming records only the rest, settles and closes the start, and
+ * 「다시 고르기」 opens it again.
  */
 test('confirms the run start from the overlay window, recording only what is left on', async ({
   page,
@@ -102,8 +102,10 @@ test('confirms the run start from the overlay window, recording only what is lef
   await expect(section).toHaveCount(0);
   await expect(pip.getByTestId('overlay-start-done')).toContainText(`획득 ${ids.length - 1}`);
 
-  // 「다시 고르기」 takes it back.
+  // 「다시 고르기」 opens the start again; what was collected stays collected (M140).
   await pip.getByTestId('overlay-start-reopen').click();
-  await expect.poll(saved).toEqual({ status: ids.map(() => null), startDone: false });
+  await expect
+    .poll(saved)
+    .toEqual({ status: ids.map((id) => (id === dropped ? null : 'got')), startDone: false });
   await expect(pip.getByTestId('overlay-start')).toBeVisible();
 });

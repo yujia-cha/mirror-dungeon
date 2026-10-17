@@ -14,8 +14,9 @@
  * - **The next pack** is the route pack the stage would put first on the frontier
  *   (`run.currentFloor`), the floor the player decides next.
  * - **The start candidates** (M138) are what the plan expects the run start to hand over while it
- *   is still open: the start gifts and the observations, pinned or recommended. The player says
- *   which ones the game actually gave (`confirmStart`); the rest is routed again.
+ *   is still open — the start gifts and the observations, pinned or recommended — and what floor 1
+ *   already collected (M140). The player says which ones the game actually gave (`confirmStart`);
+ *   the rest is routed again.
  */
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
 import type { FeedbackLogEntry } from '../lib/feedback-log.ts';
@@ -142,22 +143,33 @@ export function clockOf(at: number): string {
     .join(':');
 }
 
-export type StartCandidateKind = 'start' | 'pinned' | 'recommended';
+export type StartCandidateKind = 'start' | 'pinned' | 'recommended' | 'got';
 
 export interface StartCandidate {
   giftId: number;
-  /** How the plan came to it: a start gift, a pin of the player's, or the planner's recommendation. */
+  /**
+   * How it came up: a start gift, a pin of the player's, the planner's recommendation — or a gift
+   * already marked collected on floor 1 that the plan did not expect (another observation, a boon).
+   */
   kind: StartCandidateKind;
 }
 
+/** The gifts marked collected on floor 1 so far: what the run start has handed over (M140). */
+export function startEvidence(run: Pick<RunState, 'currentFloor' | 'giftStatus'>): number[] {
+  if (run.currentFloor !== 1) return [];
+  return Object.entries(run.giftStatus)
+    .filter(([, status]) => status === 'got')
+    .map(([id]) => Number(id));
+}
+
 /**
- * The run start the plan expects, while it is open (`observationClosed` false): the start gifts
- * first, then the observations in the plan's order. Null once the start is closed, without a plan,
- * or when it expects nothing.
+ * The run start, while it is open (`observationClosed` false): the start gifts first, then the
+ * observations in the plan's order, then what floor 1 already collected beyond them. Null once the
+ * start is closed, without a plan, or when there is nothing to list.
  */
 export function startCandidates(
   plan: Pick<RoutePlan, 'start'> | null,
-  run: Pick<RunState, 'currentFloor' | 'startDone'>,
+  run: Pick<RunState, 'currentFloor' | 'startDone' | 'giftStatus'>,
 ): StartCandidate[] | null {
   if (!plan || observationClosed(run)) return null;
   const out: StartCandidate[] = [];
@@ -169,18 +181,32 @@ export function startCandidates(
   };
   for (const id of plan.start.startGifts) add(id, 'start');
   for (const o of plan.start.observed) add(o.giftId, o.pinned ? 'pinned' : 'recommended');
+  for (const id of startEvidence(run)) add(id, 'got');
   return out.length > 0 ? out : null;
+}
+
+/**
+ * Which candidates start on (M140). With the screen reader running, what it recorded is the
+ * answer — a popup it did not see was not collected — so only the evidence is on and the player
+ * turns on what it missed. Without it, the plan's guess: everything on.
+ */
+export function startInitiallyOn(
+  candidates: readonly StartCandidate[],
+  evidence: readonly number[],
+  live: boolean,
+): Set<number> {
+  return new Set(live ? evidence : candidates.map((c) => c.giftId));
 }
 
 /** What 「확인하고 진행」 records for the candidates the player left on (`taken`). */
 export function startPicks(
   candidates: readonly StartCandidate[],
   taken: ReadonlySet<number>,
-): { got: number[]; observed: number[]; skipped: number[] } {
-  const isObservation = (c: StartCandidate): boolean => c.kind !== 'start';
+): { got: number[]; dropped: number[]; observed: number[] } {
+  const isObservation = (c: StartCandidate): boolean => c.kind === 'pinned' || c.kind === 'recommended';
   return {
     got: candidates.filter((c) => taken.has(c.giftId)).map((c) => c.giftId),
+    dropped: candidates.filter((c) => !taken.has(c.giftId)).map((c) => c.giftId),
     observed: candidates.filter((c) => isObservation(c) && taken.has(c.giftId)).map((c) => c.giftId),
-    skipped: candidates.filter((c) => c.kind === 'pinned' && !taken.has(c.giftId)).map((c) => c.giftId),
   };
 }

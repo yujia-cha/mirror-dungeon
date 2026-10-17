@@ -79,6 +79,12 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const interval = useApp((s) => s.ui.captureInterval);
   const gameLang = useApp((s) => s.ui.captureLang);
   const [status, setStatus] = useState<CaptureStatus>('idle');
+  // The store hears whether the reader is watching (M140): a start left with it running is
+  // settled on what it saw, not on the plan's guess.
+  useEffect(() => {
+    useApp.getState().setCaptureLive(status === 'running');
+  }, [status]);
+  useEffect(() => () => useApp.getState().setCaptureLive(false), []);
   const [error, setError] = useState<CaptureError | null>(null);
   const [log, setLog] = useState<CaptureLogEntry[]>([]);
   const [questions, setQuestions] = useState<CaptureQuestion[]>([]);
@@ -123,7 +129,8 @@ export function useCapture(hooks: CaptureHooks = {}) {
         if (store.options.observedGifts.includes(giftId))
           store.toggleObserved(giftId, { max: 0, observable: () => false });
       },
-      setStartDone: (done) => useApp.getState().markStartDone(done),
+      settleStart: () => useApp.getState().settleStart(),
+      reopenStart: () => useApp.getState().markStartDone(false),
     };
     applying.current = true;
     try {

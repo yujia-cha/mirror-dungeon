@@ -2682,7 +2682,7 @@ describe('start stage (M134)', () => {
   });
 });
 
-describe('run start confirmed (M138)', () => {
+describe('run start settled (M138, M140)', () => {
   const limits = { max: 3, observable: () => true };
   /** BURN_DECK with 9267 and 9423: the planner recommends observing 9423 at the start. */
   const arrange = () => {
@@ -2691,77 +2691,144 @@ describe('run start confirmed (M138)', () => {
     useApp.getState().toggleWanted(9423);
     return planRoute(planInputFor(useApp.getState()), data, indexes);
   };
+  const replan = () => planRoute(planInputFor(useApp.getState()), data, indexes);
   const routed = (plan: ReturnType<typeof planRoute>, id: number) =>
     plan.floors.some((floor) => floor.pickups.some((pickup) => pickup.giftId === id)) ||
     plan.unresolved.some((u) => u.giftId === id);
+  /** The plan context's run actions, reached through a probe. */
+  const probe = () => {
+    const ref: { current: ReturnType<typeof usePlan> | null } = { current: null };
+    function Probe() {
+      ref.current = usePlan();
+      return null;
+    }
+    renderPlanned(<Probe />);
+    return ref;
+  };
 
-  it('routes a recommended observation the player did not take, through leaving floor 1', () => {
+  it('settles on what floor 1 collected: a pin without it comes off, and no false warning stays', () => {
+    // Arrange: both goals pinned; only 9423's popup came (9267 is not observable in the game).
+    arrange();
+    useApp.getState().toggleObserved(9267, limits);
+    useApp.getState().toggleObserved(9423, limits);
+    useApp.getState().setGiftStatus(9423, 'got');
+    // Act
+    const unpinned = useApp.getState().settleStart();
+    // Assert
+    expect(unpinned).toEqual([9267]);
+    expect(useApp.getState().options.observedGifts).toEqual([9423]);
+    expect(useApp.getState().run).toMatchObject({ currentFloor: 1, startDone: true, startGifts: [9423] });
+    const after = replan();
+    expect(after.warnings.map((w) => w.code)).not.toContain('observation-after-start');
+    expect(after.start.observed).toEqual([{ giftId: 9423, pinned: true, freedPack: null }]);
+    expect(routed(after, 9267)).toBe(true);
+  });
+
+  it('marks a guess collected first, then settles on it', () => {
+    arrange();
+    useApp.getState().toggleObserved(9267, limits);
+    expect(useApp.getState().settleStart([9423])).toEqual([9267]);
+    expect(useApp.getState().run.giftStatus).toMatchObject({ 9423: 'got' });
+    expect(useApp.getState().run.startGifts).toEqual([9423]);
+  });
+
+  it('does nothing past floor 1 or once the start is closed', () => {
+    arrange();
+    useApp.getState().markStartDone();
+    expect(useApp.getState().settleStart([9423])).toEqual([]);
+    useApp.getState().confirmStart({ got: [9423], dropped: [], observed: [9423] }, limits);
+    expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
+
+    useApp.getState().resetRun();
+    useApp.getState().visitPack(1002, 1);
+    useApp.getState().confirmStart({ got: [9423], dropped: [], observed: [9423] }, limits);
+    expect(useApp.getState().run.startDone).toBeUndefined();
+    expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
+  });
+
+  it('routes a recommended observation the overlay left off, through leaving floor 1', () => {
     // Arrange
     const before = arrange();
     expect(before.start.observed).toContainEqual(expect.objectContaining({ giftId: 9423, pinned: false }));
     // Act: the start gifts came, the recommended observation did not.
-    useApp.getState().confirmStart({ got: before.start.startGifts, observed: [], skipped: [] }, limits);
-    // Assert: the start is closed and only what came is in hand.
+    useApp.getState().confirmStart({ got: before.start.startGifts, dropped: [9423], observed: [] }, limits);
+    // Assert
     const { run } = useApp.getState();
     expect(run).toMatchObject({ currentFloor: 1, startDone: true, startGifts: before.start.startGifts });
     expect(run.giftStatus[9423]).toBeUndefined();
-    const after = planRoute(planInputFor(useApp.getState()), data, indexes);
+    const after = replan();
     expect(after.start.observed).toEqual([]);
     expect(planInputFor(useApp.getState()).options.ownedGifts).not.toContain(9423);
     expect(routed(after, 9423)).toBe(true);
-    // Leaving floor 1 settles nothing from the plan's guess: the record stays what was confirmed.
-    useApp.getState().visitPack(1002, 1, { got: [] });
+    useApp.getState().visitPack(1002, 1);
     expect(useApp.getState().run.startGifts).toEqual(before.start.startGifts);
     expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
   });
 
-  it('pins a taken observation and unpins a pinned one the game did not give', () => {
+  it('pins a taken observation, unmarks a dropped one, and unpins every pin not in hand', () => {
     arrange();
     useApp.getState().toggleObserved(9267, limits);
-    // Act: 9423 (recommended) came, the pinned 9267 did not.
-    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [9267] }, limits);
+    useApp.getState().setGiftStatus(9267, 'got');
+    // Act: 9423 (recommended) came; the pinned 9267 was marked by mistake and is turned off.
+    useApp.getState().confirmStart({ got: [9423], dropped: [9267], observed: [9423] }, limits);
     // Assert
     expect(useApp.getState().options.observedGifts).toEqual([9423]);
     expect(useApp.getState().run.giftStatus).toMatchObject({ 9423: 'got' });
     expect(useApp.getState().run.giftStatus[9267]).toBeUndefined();
   });
 
-  it('does nothing past floor 1 or once the start is closed', () => {
+  it('keeps the settled record when an entry takes the run back to floor 1', () => {
     arrange();
-    useApp.getState().markStartDone();
-    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
-    expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
-
-    useApp.getState().resetRun();
+    useApp.getState().confirmStart({ got: [9423], dropped: [], observed: [9423] }, limits);
     useApp.getState().visitPack(1002, 1);
-    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
-    expect(useApp.getState().run.startDone).toBeUndefined();
-    expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
-  });
-
-  it('keeps the confirmed record when an entry takes the run back to floor 1', () => {
-    arrange();
-    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
-    useApp.getState().visitPack(1002, 1, { got: [] });
     useApp.getState().unvisitPack(1002);
     expect(useApp.getState().run).toMatchObject({ currentFloor: 1, startDone: true, startGifts: [9423] });
     expect(useApp.getState().run.giftStatus[9423]).toBe('got');
   });
 
-  it('reopens on floor 1, taking back what the confirmation recorded', () => {
+  it('reopens on floor 1: the start is decided again, what was collected stays collected', () => {
     arrange();
-    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
+    useApp.getState().confirmStart({ got: [9423], dropped: [], observed: [9423] }, limits);
+    const plan = probe();
     // Act
-    useApp.getState().reopenStart();
+    act(() => plan.current!.reopenStart());
     // Assert
     const { run } = useApp.getState();
     expect(run.startDone).toBeUndefined();
     expect(run.startGifts).toEqual([]);
-    expect(run.giftStatus[9423]).toBeUndefined();
+    expect(run.giftStatus[9423]).toBe('got');
     expect(observationClosed(run)).toBe(false);
   });
 
-  it('keeps the record of a confirmed start in a saved run on floor 1, and drops it otherwise', () => {
+  it('leaving floor 1 with the reader running settles on what it recorded, not on the plan', () => {
+    // Arrange: the reader is watching and recorded nothing; the plan expects 9423 observed.
+    const before = arrange();
+    expect(before.start.observed.map((o) => o.giftId)).toContain(9423);
+    useApp.getState().setCaptureLive(true);
+    const plan = probe();
+    // Act: enter a floor-1 pack.
+    act(() => plan.current!.enter(1002));
+    // Assert
+    const { run } = useApp.getState();
+    expect(run.giftStatus[9423]).toBeUndefined();
+    expect(run).toMatchObject({ currentFloor: 2, startDone: true, startGifts: [] });
+    useApp.getState().setCaptureLive(false);
+  });
+
+  it('leaving floor 1 without the reader records the plan’s guess, as a guess', () => {
+    const before = arrange();
+    const guess = [...before.start.observed.map((o) => o.giftId), ...before.start.startGifts];
+    const plan = probe();
+    act(() => plan.current!.next());
+    const { run } = useApp.getState();
+    expect(guess.length).toBeGreaterThan(0);
+    for (const id of guess) expect(run.giftStatus[id]).toBe('got');
+    expect([...run.startGifts].sort((a, b) => a - b)).toEqual([...new Set(guess)].sort((a, b) => a - b));
+    // A guess, not a fact: the start is not closed, so coming back to floor 1 decides it again.
+    expect(run.startDone).toBeUndefined();
+  });
+
+  it('keeps the record of a settled start in a saved run on floor 1, and drops it otherwise', () => {
     const saved = { ...emptyRun(), giftStatus: { 9423: 'got' as const }, startGifts: [9423] };
     expect(sanitizeRun({ ...saved, startDone: true }).startGifts).toEqual([9423]);
     expect(sanitizeRun(saved).startGifts).toEqual([]);

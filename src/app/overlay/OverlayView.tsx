@@ -30,6 +30,8 @@ import {
   recentLines,
   remainingIn,
   startCandidates,
+  startEvidence,
+  startInitiallyOn,
   startPicks,
   type StartCandidate,
 } from './overlay-model.ts';
@@ -58,16 +60,18 @@ const START_TAG = {
   start: 'routeStartGift',
   pinned: 'observePinned',
   recommended: 'routeObservedRecommended',
+  got: 'giftStatusGot',
 } as const;
 
 /**
- * The run start the plan expects (M138): every candidate starts on — the plan's own guess — and the
- * player turns off what the game did not give. Keyed by the candidates, so a recalculated start
- * starts over from all on.
+ * The run start the plan expects (M138) and what floor 1 already collected (M140). The toggles
+ * start from `initial` (`startInitiallyOn`: the reader's evidence, or everything when nobody
+ * watched) and the player fixes what differs. Keyed by both, so a recalculated start or a popup
+ * the reader just saw starts it over.
  */
-function StartChoice({ candidates }: { candidates: StartCandidate[] }) {
+function StartChoice({ candidates, initial }: { candidates: StartCandidate[]; initial: Set<number> }) {
   const { indexes, lang, confirmStart } = usePlan();
-  const [taken, setTaken] = useState(() => new Set(candidates.map((c) => c.giftId)));
+  const [taken, setTaken] = useState(() => new Set(initial));
   const toggle = (id: number): void =>
     setTaken((prev) => {
       const next = new Set(prev);
@@ -129,6 +133,8 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
   const next = nextPack(shown, run, lastFloor, indexes);
   const left = remainingIn(run, expectedIn);
   const start = startCandidates(shown, run);
+  const evidence = startEvidence(run);
+  const startOn = start ? startInitiallyOn(start, evidence, running) : null;
   const recent = recentLines(feedback, capture.log, (entry) => logText(entry, indexes, lang, packName));
 
   let status;
@@ -177,7 +183,11 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
       </section>
 
       {start ? (
-        <StartChoice key={start.map((c) => `${c.kind}:${c.giftId}`).join(',')} candidates={start} />
+        <StartChoice
+          key={`${start.map((c) => `${c.kind}:${c.giftId}`).join(',')}|${[...startOn!].join(',')}`}
+          candidates={start}
+          initial={startOn!}
+        />
       ) : run.currentFloor === 1 && run.startDone ? (
         <div className="flex min-w-0 items-center gap-2" data-testid="overlay-start-done">
           <span className="min-w-0 flex-1 text-caption text-fg-muted">
