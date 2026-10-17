@@ -96,6 +96,7 @@ function Section({
   lang,
   testId,
   flat = false,
+  keywordOrder,
 }: {
   title: string;
   entries: readonly GiftEntry[];
@@ -108,6 +109,8 @@ function Section({
   testId: string;
   /** Never split into keyword groups, whatever the sort (the E.G.O section — owner's call). */
   flat?: boolean;
+  /** The keyword groups' order (`keywordGroupOrder` — the deck's keywords first). */
+  keywordOrder: readonly Keyword[];
 }) {
   const keywordName = (keyword: Keyword): string =>
     pick(enums.keywords.find((k) => k.id === keyword)?.name, lang) || keyword;
@@ -119,10 +122,7 @@ function Section({
       </div>
     );
   } else if (sort === 'keyword' && !flat) {
-    content = groupByKeyword(
-      entries,
-      enums.keywords.map((k) => k.id as Keyword),
-    ).map((group) => (
+    content = groupByKeyword(entries, keywordOrder).map((group) => (
       <div key={group.keyword} data-testid="recommend-keyword" data-keyword={group.keyword}>
         <h4 className="flex items-center gap-1.5 px-3 pt-2 text-caption-strong text-fg-muted">
           {keywordName(group.keyword)}
@@ -155,6 +155,7 @@ export function RecommendedSections({
   grid,
   enums,
   lang,
+  keywordOrder,
 }: {
   deck: readonly GiftEntry[];
   free: readonly GiftEntry[];
@@ -168,6 +169,7 @@ export function RecommendedSections({
   grid: (entries: readonly GiftEntry[]) => ReactNode;
   enums: Enums;
   lang: Lang;
+  keywordOrder: readonly Keyword[];
 }) {
   return (
     <div className="flex flex-col gap-3 p-2">
@@ -184,6 +186,7 @@ export function RecommendedSections({
         grid={grid}
         enums={enums}
         lang={lang}
+        keywordOrder={keywordOrder}
         testId="recommend-deck"
       />
       {/* Deck-independent, so it is drawn only when it has something: an empty one says nothing. */}
@@ -196,6 +199,7 @@ export function RecommendedSections({
           grid={grid}
           enums={enums}
           lang={lang}
+          keywordOrder={keywordOrder}
           testId="recommend-free"
         />
       ) : null}
@@ -208,6 +212,7 @@ export function RecommendedSections({
           grid={grid}
           enums={enums}
           lang={lang}
+          keywordOrder={keywordOrder}
           testId="recommend-ego"
           flat
         />

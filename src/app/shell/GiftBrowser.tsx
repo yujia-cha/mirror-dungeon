@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, Search, X } from 'lucide-react';
 import { skillGiftLookup } from '../../core/index.ts';
+import type { Keyword } from '../../core/schema.ts';
 import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { classifyGift, compareEntries, type GiftEntry } from '../lib/gift-priority.ts';
@@ -29,7 +30,7 @@ import {
   recommendedGifts,
   type RecommendFilters,
 } from '../lib/recommend.ts';
-import { orderRecommended } from '../lib/recommend-rank.ts';
+import { keywordGroupOrder, orderRecommended } from '../lib/recommend-rank.ts';
 import { useGiftFilters } from '../lib/useGiftFilters.ts';
 import { useLatest } from '../lib/useLatest.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
@@ -90,6 +91,15 @@ export function GiftBrowser({
         { deployed: stats.deployed },
       ),
     [data, wanted, conditionByGift, effectsByGift, stats],
+  );
+  // 「키워드별」 groups: the deck's own keywords first, most deployed first (owner's call, M133).
+  const keywordOrder = useMemo(
+    () =>
+      keywordGroupOrder(
+        data.enums.keywords.map((k) => k.id as Keyword),
+        stats.keywordCounts.deployed,
+      ),
+    [data.enums, stats],
   );
   const recommended = useMemo(() => {
     const keep = (entry: GiftEntry): boolean =>
@@ -189,6 +199,7 @@ export function GiftBrowser({
           }
           enums={data.enums}
           lang={lang}
+          keywordOrder={keywordOrder}
         />
       );
   } else if (tiles.length === 0) {

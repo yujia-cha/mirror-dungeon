@@ -12,6 +12,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeCantoX } from '../../core/__tests__/before-canto-x.ts';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes, defaultOptions, evaluateConditions } from '../../core/index.ts';
+import type { Keyword } from '../../core/schema.ts';
+import { keywordGroupOrder } from '../lib/recommend-rank.ts';
 import { conditionText, reachedTierText } from '../condition-text.ts';
 import { josa } from '../../core/text.ts';
 import {
@@ -2234,7 +2236,13 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderBrowser();
-    const order: string[] = data.enums.keywords.map((k) => k.id);
+    // The groups follow the deck's keywords, most deployed first (M133) — the same function the tab uses.
+    const deployed = useApp.getState().deployed;
+    const stats = analyseDeck(BURN_DECK, indexes, data.rules.deployment, deployed);
+    const order: string[] = keywordGroupOrder(
+      data.enums.keywords.map((k) => k.id as Keyword),
+      stats.keywordCounts.deployed,
+    );
     const groups = () =>
       within(deckSection())
         .queryAllByTestId('recommend-keyword')

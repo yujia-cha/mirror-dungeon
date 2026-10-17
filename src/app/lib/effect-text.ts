@@ -88,7 +88,7 @@ export function requirementText(
 
 /**
  * One chip per deployed identity that meets the requirement (M131): `label` is the sinner and the
- * slots (「이상 S1·S3」 — a deck holds one identity per sinner, so the sinner tells them apart),
+ * slots (「이상 1.3」 — a deck holds one identity per sinner, so the sinner tells them apart),
  * `full` the whole identity name with the slots, for the chip's title and accessible name. Empty
  * when nobody meets it (the line draws 「없음」), and for an E.G.O skill requirement, which is always
  * met and reads 「조건 없음」 instead.
@@ -101,9 +101,11 @@ export function whoChips(
   if (report.requirement.type === 'egoSkill') return [];
   return report.matches.map(({ id, slots }) => {
     const identity = identityById.get(id);
-    const slotText = slots.length > 0 ? ` ${t('effSlot', lang, { slots: slots.join('·S') })}` : '';
+    // The chip reads 「파우스트 1.2.3」 (owner's call, M133); its title and spoken name say 「스킬 1, 3」.
+    const shown = slots.length > 0 ? ` ${slots.join('.')}` : '';
+    const spoken = slots.length > 0 ? ` ${t('effSlot', lang, { slots: slots.join(', ') })}` : '';
     const sinner = identity ? pick(identity.sinner, lang) : String(id);
-    return { id, label: `${sinner}${slotText}`, full: `${identityLabel(identity, id, lang)}${slotText}` };
+    return { id, label: `${sinner}${shown}`, full: `${identityLabel(identity, id, lang)}${spoken}` };
   });
 }
 

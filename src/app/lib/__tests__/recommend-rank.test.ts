@@ -12,6 +12,7 @@ import { classifyGift, compareEntries } from '../gift-priority.ts';
 import { effectReportsByGift, recommendedGifts } from '../recommend.ts';
 import {
   compareRecommended,
+  keywordGroupOrder,
   comparePackFirst,
   orderRecommended,
   recommendationScore,
@@ -168,5 +169,54 @@ describe('the ranking on real data', () => {
     expect(ranked.every((score) => score >= 1 && score <= 7)).toBe(true);
     expect([...ranked].sort((a, b) => b - a)).toEqual(ranked);
     expect(new Set(ranked).size).toBeGreaterThan(1);
+  });
+});
+
+describe('keywordGroupOrder', () => {
+  const ENUM = [
+    'Combustion',
+    'Laceration',
+    'Vibration',
+    'Burst',
+    'Sinking',
+    'Breath',
+    'Charge',
+    'Slash',
+    'Penetrate',
+    'Hit',
+    'None',
+  ] as const;
+
+  it("puts the deck's keywords first, then 키워드 없음, the keywords it lacks, the attack types", () => {
+    // Arrange: the owner's 충전·진동 deck — 진동 5, 충전 5, 화상 2, 출혈 2, the rest 0.
+    const counts = { Vibration: 5, Charge: 5, Combustion: 2, Laceration: 2, Bullet: 1 };
+    // Act
+    const order = keywordGroupOrder(ENUM, counts);
+    // Assert: a tie keeps the enums order (진동 before 충전).
+    expect(order).toEqual([
+      'Vibration',
+      'Charge',
+      'Combustion',
+      'Laceration',
+      'None',
+      'Burst',
+      'Sinking',
+      'Breath',
+      'Slash',
+      'Penetrate',
+      'Hit',
+    ]);
+  });
+
+  it('puts 키워드 없음 first and keeps the enums order when nobody is deployed', () => {
+    expect(keywordGroupOrder(ENUM, {})).toEqual(['None', ...ENUM.filter((k) => k !== 'None')]);
+  });
+
+  it('ranks by count, not by the enums order', () => {
+    expect(keywordGroupOrder(ENUM, { Breath: 1, Sinking: 6 }).slice(0, 3)).toEqual([
+      'Sinking',
+      'Breath',
+      'None',
+    ]);
   });
 });

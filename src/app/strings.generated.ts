@@ -191,7 +191,7 @@ export const STRINGS = {
   // 팩 전용이 아닌 것 전부 — 범용 드랍, 조합, 시작 기프트 등.
   recAcqGeneral: { ko: '범용', en: 'General' },
   recFusion: { ko: '조합 기프트 포함', en: 'Include fusions' },
-  // 기본 정렬. 「덱 조건 충족」·「조건 없이 발동 · 팩 전용」 절 안을 enums 순서의 키워드 묶음으로 나누고, 묶음 안은 효과가 적용되는 인격 수가 많은 순(M131, `lib/recommend-rank.ts` — 같으면 팩 전용 먼저·조건 진행률·id). 「E.G.O 스킬 조건」 절은 묶지 않고 같은 순서로 한 격자에 늘어놓는다(소유자 결정).
+  // 기본 정렬. 「덱 조건 충족」·「조건 없이 발동 · 팩 전용」 절 안을 키워드 묶음으로 나누고(묶음 순서는 덱이 가진 키워드(출격 인격이 많은 순) → 키워드 없음 → 덱에 없는 키워드 → 참격·관통·타격, 같으면 원래 순서, M133), 묶음 안은 효과가 적용되는 인격 수가 많은 순(M131, `lib/recommend-rank.ts` — 같으면 팩 전용 먼저·조건 진행률·id). 「E.G.O 스킬 조건」 절은 묶지 않고 같은 순서로 한 격자에 늘어놓는다(소유자 결정).
   recSortKeyword: { ko: '키워드별', en: 'By keyword' },
   // 팩 전용 먼저, 그 안에서 효과가 적용되는 인격 수가 많은 순(M131, `lib/recommend-rank.ts`), 같으면 조건 진행률·id(compareEntries).
   recSortPack: { ko: '팩 전용 먼저', en: 'Pack-only first' },
@@ -271,8 +271,8 @@ export const STRINGS = {
   effNone: { ko: '없음', en: 'None' },
   // 효과 줄 아래 칩 묶음 끝(M131): 「N인 이상」 요구의 개수(채운 수/필요 수).
   effCount: { ko: '{have}/{need}명', en: '{have}/{need}' },
-  // 효과 줄 아래 인격 칩에서 수감자 이름 뒤의 스킬 슬롯 목록(M131). 예: 「S1·S3」.
-  effSlot: { ko: 'S{slots}', en: 'S{slots}' },
+  // 효과 줄 아래 인격 칩의 `title`·`aria-label`에서 인격 이름 뒤의 스킬 번호(M131). 칩 글자는 「파우스트 1.2.3」처럼 번호만 점으로 잇고(M133, 소유자 결정), 화면 낭독·마우스 올림은 이 문장으로 읽는다. 예: 「스킬 1, 3」.
+  effSlot: { ko: '스킬 {slots}', en: 'skill {slots}' },
   // 그 키워드를 부여·획득·소모하는 기본 스킬.
   effReqKeyword: { ko: '{keywords} 스킬', en: '{keywords} skill' },
   // 「스킬 N」을 지정한 키워드 스킬.

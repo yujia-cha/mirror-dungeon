@@ -7,6 +7,7 @@
  * goal, a gift some goal's recipe already consumes (포함), or a fusion that would fight a goal
  * over an ingredient (얽힘). `title` says which goal did it.
  */
+import { useEffect, useRef } from 'react';
 import { CornerDownRight, Check, Link2 } from 'lucide-react';
 import { LinkButton } from './ui.tsx';
 import type { Enums, Gift } from '../../core/schema.ts';
@@ -16,6 +17,7 @@ import { t, pick, type Lang } from '../i18n.ts';
 import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
 import { tileColumns, useTileIconSize } from '../lib/icon-size.ts';
 import { judgementOf } from '../lib/judgement.ts';
+import { preloadGlyphs } from '../lib/fonts.ts';
 import { GiftIcon } from './GiftIcon.tsx';
 
 export function GiftTileGrid({
@@ -47,8 +49,17 @@ export function GiftTileGrid({
   scores?: ReadonlyMap<number, number>;
 }) {
   const size = useTileIconSize(32);
+  // Every tile is `content-visibility: auto` (below), so the browser would shape — and fetch the
+  // Pretendard slice for — a name only as the scroll reaches it: a slice arriving every second or
+  // so re-drew the text while scrolling (M133). The grid's whole text is in the DOM either way, so
+  // its slices are asked for once, here, whenever the tiles change.
+  const gridRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    preloadGlyphs(gridRef.current?.textContent ?? '');
+  }, [tiles, blocked, lang]);
   return (
     <div
+      ref={gridRef}
       className="grid gap-1.5 p-2"
       style={{ gridTemplateColumns: tileColumns(size) }}
       data-testid="gift-grid"

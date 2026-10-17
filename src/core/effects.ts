@@ -205,7 +205,7 @@ export function identityMeets(identity: Identity, requirement: EffectRequirement
 }
 
 /**
- * Which of its base skills carry a met requirement — 「이상 S1·S3」 in the sheet's hover. Empty for
+ * Which of its base skills carry a met requirement — 「이상 1.3」 in the sheet's chips. Empty for
  * a requirement the identity meets as a whole (소속, 버프, 방어 스킬) or one read off the totals.
  */
 export function slotsMeeting(identity: Identity, requirement: EffectRequirement): Array<1 | 2 | 3> {

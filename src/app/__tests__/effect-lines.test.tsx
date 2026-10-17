@@ -49,14 +49,14 @@ describe('effect lines (M129, chips M131)', () => {
     const slots = identity
       .skills!.filter((s) => s.sin === 'PRIDE' && s.attackType === 'Penetrate')
       .map((s) => s.slot);
-    const slotText = `S${slots.join('·S')}`;
-    const full = `${identity.title.ko} ${identity.sinner.ko} ${slotText}`;
+    // The chip reads 「이상 1.3」 (no S); its name says 「스킬 1, 3」 (M133).
+    const full = `${identity.title.ko} ${identity.sinner.ko} 스킬 ${slots.join(', ')}`;
     // Act
     const effects = renderFor([10104]);
     // Assert
     expect(effects[2]).toHaveAttribute('data-active', 'true');
     const who = within(effects[2]!).getByTestId('effect-who');
-    const chip = within(who).getByText(`${identity.sinner.ko} ${slotText}`);
+    const chip = within(who).getByText(`${identity.sinner.ko} ${slots.join('.')}`);
     expect(chip).toHaveAttribute('aria-label', full);
     expect(chip).toHaveAttribute('title', full);
   });

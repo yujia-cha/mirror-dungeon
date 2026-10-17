@@ -9,7 +9,7 @@
  *
  * Active: a 2px solid bar. Not active: a 1px dashed bar and the subtle ink, with the word read out
  * — never colour alone. Notes carry no bar and no chip line. Under the body, inside the bar, each
- * requirement is named and followed by one chip per identity that meets it (「이상 S1·S3」), a
+ * requirement is named and followed by one chip per identity that meets it (「이상 1.3」), a
  * dashed 「없음」 when nobody does, and 「n/m명」 when it asks for more than one; an effect that asks
  * nothing reads 「조건 없음」.
  */

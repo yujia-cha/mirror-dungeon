@@ -22,6 +22,7 @@
  * Pure.
  */
 import type { GiftEffectsReport } from '../../core/index.ts';
+import { ATTACK_TYPES, type Keyword } from '../../core/schema.ts';
 import { compareEntries, isPackBound, type GiftEntry } from './gift-priority.ts';
 
 /** What a score may depend on beyond the gift's own report. */
@@ -55,6 +56,30 @@ export function compareRecommended(
 /** 「팩 전용 먼저」: pack-bound first, then by score, then the usual order. */
 export function comparePackFirst(a: GiftEntry, b: GiftEntry, scoreOf: ScoreOf): number {
   return Number(isPackBound(b.gift)) - Number(isPackBound(a.gift)) || compareRecommended(a, b, scoreOf);
+}
+
+/**
+ * The order of the keyword groups under 「키워드별」 (owner's call, M133): the deck's own keywords first,
+ * most deployed identities first — a 충전·진동 deck (5 each) shows 진동·충전, then the 화상·출혈 it
+ * also has — then 키워드 없음, then the status keywords it lacks, then the attack types. A tie keeps
+ * the enums order. `deployedCounts` is `DeckStats.keywordCounts.deployed`.
+ */
+export function keywordGroupOrder(
+  keywords: readonly Keyword[],
+  deployedCounts: Partial<Record<string, number>>,
+): Keyword[] {
+  const isAttack = (keyword: Keyword): boolean => (ATTACK_TYPES as readonly string[]).includes(keyword);
+  const count = (keyword: Keyword): number =>
+    keyword === 'None' || isAttack(keyword) ? 0 : (deployedCounts[keyword] ?? 0);
+  // 0 the deck's keywords · 1 키워드 없음 · 2 the status keywords it lacks · 3 attack types.
+  const tier = (keyword: Keyword): number =>
+    isAttack(keyword) ? 3 : keyword === 'None' ? 1 : count(keyword) > 0 ? 0 : 2;
+  return keywords
+    .map((keyword, index) => ({ keyword, index }))
+    .sort(
+      (a, b) => tier(a.keyword) - tier(b.keyword) || count(b.keyword) - count(a.keyword) || a.index - b.index,
+    )
+    .map(({ keyword }) => keyword);
 }
 
 /**
