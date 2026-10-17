@@ -29,28 +29,46 @@
  *   (`requestVideoFrameCallback`), `BURST_TICK_MS` being the backstop for a screen that holds still.
  * - **While busy** (M141) → a skipped tick no longer only marks the loop dirty: a popup seen under a
  *   busy read is queued (`backlog.ts`) and read after it, before the loop is free. The dirty read
- *   of the newest frame still follows.
+ *   of the newest frame still follows. Since M142 a queued popup also makes the ticks follow the
+ *   frames for `QUEUED_FAST_MS` (`fastTicks`), as the burst does once that popup is read.
  * - **After the burst** → a popup read that found no popup saw only the title, so the first tick
  *   after the burst reads in full even when nothing changed (`owed`): what the popups gave way to
  *   (a map, the pack picker) is read late, never lost.
+ * - **Ranges and load** (M142) → a preset is a range the tick interval floats in, and the re-read
+ *   schedule is the load level's (`pace.ts`: activity pulls the interval to the range's `min`, a
+ *   still screen relaxes it to `max`; a strained machine re-reads unchanged screens later).
+ * - **A moving screen of nothing** (M142) → a full read that found no screen while the screen
+ *   changed under it (a battle) holds the next change read back for `holdMs` — the range's `max`:
+ *   with the ticks at `min`, a battle was otherwise read back to back, OCR all the while (the
+ *   stress bench: 96% of a minute of battle on balanced, 84% at the fixed 250 ms before). The
+ *   ticks go on; a popup region that settles into something new reads at once (`urgent`), and so
+ *   does the full read a burst owes.
  *
  * Pure: the caller owns the clock and the timer.
  */
+import { BASE_REFRESH, type IntervalRange, type RefreshPolicy } from './pace.ts';
 
-/** Read interval presets, the four of the reference site's assist mode. `balanced` is the default. */
+/**
+ * Read interval presets, the four of the reference site's assist mode. `balanced` is the default.
+ * Since M142 each is a range, ms, the tick interval floats in (`pace.ts`): `min` while anything
+ * moves or popups may come, `max` on a screen that holds still. Each `max` is no longer than the
+ * fixed interval it replaced (quality's 125 aside: 150, since quality's ticks sit at 80 whenever
+ * anything moves), so a still screen ticks no less often than before M142 did on balanced and
+ * below, and activity ticks faster than before on every preset.
+ */
 export const READ_INTERVALS = {
-  economy: 1000,
-  performance: 500,
-  balanced: 250,
-  quality: 125,
-} as const;
+  economy: { min: 250, max: 1000 },
+  performance: { min: 150, max: 500 },
+  balanced: { min: 100, max: 250 },
+  quality: { min: 80, max: 150 },
+} as const satisfies Record<string, IntervalRange>;
 export type ReadIntervalPreset = keyof typeof READ_INTERVALS;
 export const DEFAULT_READ_INTERVAL: ReadIntervalPreset = 'balanced';
 
 /** An unchanged screen is read again after this long… */
-export const REFRESH_MS = 2000;
-/** …then after twice as long each time, up to this. */
-export const REFRESH_MAX_MS = 16_000;
+export const REFRESH_MS = BASE_REFRESH.firstMs;
+/** …then after twice as long each time, up to this (at load level 0 — `refreshFor`, M142). */
+export const REFRESH_MAX_MS = BASE_REFRESH.maxMs;
 /** How long after a popup was read the reads look for popups only (M136). */
 export const POPUP_BURST_MS = 3000;
 /** During the burst, the first re-read of an unchanged screen comes this soon (M136). */
@@ -67,18 +85,38 @@ export const BURST_TICK_MS = 80;
  */
 export const FRAME_RATE = { idle: 8, burst: 30 } as const;
 
+/**
+ * After a tick queued a popup under a busy read (M142), the ticks follow the share's frames this
+ * long, as in a burst — the reads do not change. A popup queued under a busy read has not been read
+ * yet, so no burst has begun: on a slow machine (a full read of seconds) the popups clicked through
+ * after it would otherwise be ticked on at the preset's interval and the share's idle rate, and a
+ * popup shown for a frame or two would slip between the ticks.
+ */
+export const QUEUED_FAST_MS = 1000;
+
 /** Reads are popup reads until `burstUntil` (M136). */
 export function inBurst(state: LoopState, now: number): boolean {
   return now < state.burstUntil;
 }
 
+/** Ticks follow the share's frames: in a burst, or just after a popup was queued (M142). */
+export function fastTicks(state: LoopState, now: number): boolean {
+  return inBurst(state, now) || now < state.fastUntil;
+}
+
+/** A tick queued a popup under the busy read (`backlog.ts`): tick fast for `QUEUED_FAST_MS` (M142). */
+export function queuedPopup(state: LoopState, now: number): LoopState {
+  return { ...state, fastUntil: Math.max(state.fastUntil, now + QUEUED_FAST_MS) };
+}
+
 /**
- * How long until the next tick: `BURST_TICK_MS` in a popup burst, the preset's interval otherwise
- * (M139). In the burst it is the backstop of the per-frame tick (M141), and the whole of it where
- * the browser has no `requestVideoFrameCallback`.
+ * How long until the next tick: `BURST_TICK_MS` while ticks are fast (a popup burst, or a popup
+ * just queued — `fastTicks`), the interval otherwise (M139; since M142 the interval floats in the
+ * preset's range, `pace.ts`). While fast it is the backstop of the per-frame tick (M141), and the
+ * whole of it where the browser has no `requestVideoFrameCallback`.
  */
 export function tickDelay(state: LoopState, now: number, intervalMs: number): number {
-  return inBurst(state, now) ? Math.min(intervalMs, BURST_TICK_MS) : intervalMs;
+  return fastTicks(state, now) ? Math.min(intervalMs, BURST_TICK_MS) : intervalMs;
 }
 
 export interface LoopState {
@@ -95,6 +133,13 @@ export interface LoopState {
   burstUntil: number;
   /** A popup read found no popup: the next read after the burst is a full one, changed or not. */
   owed: boolean;
+  /** Until when ticks follow the frames because a popup was queued (M142); `-Infinity` when not. */
+  fastUntil: number;
+  /**
+   * Until when a change waits to be read (M142): the last full read found nothing while the screen
+   * moved under it — a battle. `-Infinity` when nothing holds.
+   */
+  holdUntil: number;
 }
 
 export const INITIAL_LOOP: LoopState = {
@@ -105,6 +150,8 @@ export const INITIAL_LOOP: LoopState = {
   refreshGap: REFRESH_MS,
   burstUntil: -Infinity,
   owed: false,
+  fastUntil: -Infinity,
+  holdUntil: -Infinity,
 };
 
 export type Decision = 'read' | 'skip';
@@ -114,15 +161,19 @@ export type ReadMode = 'full' | 'popup';
 /**
  * Fold one tick. `isChanged` compares this tick's signature with `state.lastRead` (pass the
  * `changed` result). On 'read' the caller starts a read of `mode` and calls `finished` when it is
- * done.
+ * done. `refresh` is the load level's re-read schedule (`refreshFor`, M142). `urgent`: the popup's
+ * regions settled into something new since the last read (M142) — read now even while a moving
+ * screen holds the reads back (`holdUntil`).
  */
 export function decide(
   state: LoopState,
   signature: Uint8Array,
   isChanged: boolean,
   now: number,
-  refreshMs = REFRESH_MS,
+  refresh: RefreshPolicy = BASE_REFRESH,
+  urgent = false,
 ): { state: LoopState; decision: Decision; mode: ReadMode } {
+  const refreshMs = refresh.firstMs;
   const burst = inBurst(state, now);
   const mode: ReadMode = burst ? 'popup' : 'full';
   if (state.busy) {
@@ -133,6 +184,10 @@ export function decide(
     };
   }
   const fresh = isChanged || state.dirty || (!burst && state.owed);
+  // A moving screen that read as nothing is read again at the range's slow end, not the tick's
+  // (M142): the ticks stay fast for what may come, the OCR does not run back to back on a battle.
+  if (fresh && !burst && !urgent && !state.owed && now < state.holdUntil)
+    return { state, decision: 'skip', mode };
   // Only the first re-read since a change comes sooner in the burst: `refreshGap` is still at its
   // start then, and doubles after it as ever.
   const gap = burst && state.refreshGap <= refreshMs ? BURST_REFRESH_MS : state.refreshGap;
@@ -144,7 +199,9 @@ export function decide(
       lastReadAt: now,
       busy: true,
       dirty: false,
-      refreshGap: fresh ? refreshMs : Math.min(state.refreshGap * 2, Math.max(refreshMs, REFRESH_MAX_MS)),
+      refreshGap: fresh
+        ? refreshMs
+        : Math.min(state.refreshGap * refresh.growth, Math.max(refreshMs, refresh.maxMs)),
       // A full read settles what the popup reads left unread.
       owed: burst ? state.owed : false,
     },
@@ -159,6 +216,12 @@ export interface ReadOutcome {
   at: number;
   /** It read an acquired popup. */
   popup: boolean;
+  /**
+   * It was a full read that named no screen (M142). With `holdMs`, if the screen changed under it,
+   * the next change read waits that long (`holdUntil`).
+   */
+  nothing?: boolean;
+  holdMs?: number;
   /** It was a popup read that found none (`Frame.partial`). */
   partial: boolean;
 }
@@ -175,5 +238,16 @@ export function finished(state: LoopState, outcome?: ReadOutcome): LoopState {
     busy: false,
     burstUntil: outcome.popup ? outcome.at + POPUP_BURST_MS : state.burstUntil,
     owed: outcome.partial ? true : outcome.popup ? false : state.owed,
+    // Nothing read while the screen moved holds the next change read back (M142); a popup read
+    // that found none says nothing either way; anything named lets go.
+    // The queued popup reads that follow it (partial) count from the last of them.
+    holdUntil:
+      outcome.nothing && outcome.holdMs && state.dirty
+        ? outcome.at + outcome.holdMs
+        : outcome.partial
+          ? state.holdUntil > -Infinity && outcome.holdMs
+            ? Math.max(state.holdUntil, outcome.at + outcome.holdMs)
+            : state.holdUntil
+          : -Infinity,
   };
 }

@@ -38,6 +38,8 @@ export default defineConfig({
         'scripts/capture-bench.ts',
         'scripts/capture-bench-browser.ts',
         'scripts/capture-feedback.ts',
+        // M142: prints the stress table; what it runs is scripts/lib/capture-stress.ts, measured.
+        'scripts/capture-stress.ts',
         // M127: reads an issue body from a file or stdin and writes local-fixtures/; what it
         // computes is scripts/lib/feedback-decode.ts, which is measured.
         'scripts/feedback-decode.ts',

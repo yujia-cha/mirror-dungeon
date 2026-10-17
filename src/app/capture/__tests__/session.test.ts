@@ -180,7 +180,7 @@ describe('CaptureSession reads', () => {
       if (stopped) afterStop.push('events');
     });
     const created = new CaptureSession({
-      intervalMs: 5,
+      interval: { min: 5, max: 5 },
       context: () => ({
         lang: 'ko',
         packs: [],
@@ -260,7 +260,7 @@ describe('CaptureSession backlog (M141)', () => {
     const onEvents = vi.fn();
     const onRead = vi.fn();
     const created = new CaptureSession({
-      intervalMs: 5,
+      interval: { min: 5, max: 5 },
       context: () => ({
         lang: 'ko',
         packs: [],
@@ -293,4 +293,106 @@ describe('CaptureSession backlog (M141)', () => {
     expect(width! * height!).toBeLessThan(1920 * 1009 * 0.25);
     expect(created.stats.queued).toBe(1);
   });
+});
+
+describe('CaptureSession environment (M142)', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ json: async () => LAYOUT })),
+    );
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoWidth', 'get').mockReturnValue(1920);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoHeight', 'get').mockReturnValue(1009);
+    const ctx = {
+      drawImage: () => undefined,
+      getImageData: (_x: number, _y: number, w: number, h: number) => ({
+        data: new Uint8ClampedArray(w * h * 4),
+        width: w,
+        height: h,
+      }),
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+    engine.recognize.mockReset();
+    engine.recognize.mockResolvedValue([] as never);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const context = () => ({
+    lang: 'ko' as const,
+    packs: [],
+    gifts: [],
+    held: [],
+    materials: [],
+    iconUrl: () => null,
+    startOpen: false,
+  });
+
+  it('tells the environment periodically: the range, the interval, the level and what was asked', async () => {
+    // Arrange
+    const { release } = fakeShare();
+    release();
+    const onEnv = vi.fn();
+    const created = new CaptureSession({
+      interval: { min: 5, max: 40 },
+      envPeriodMs: 30,
+      context,
+      onEvents: vi.fn(),
+      onStatus: vi.fn(),
+      onEnv,
+    });
+    // Act
+    await created.start();
+    await vi.waitFor(() => expect(onEnv).toHaveBeenCalled());
+    created.stop();
+    // Assert
+    expect(onEnv.mock.calls[0]![0]).toMatchObject({
+      reason: 'periodic',
+      fps: { requested: 8, delivered: null },
+      range: { min: 5, max: 40 },
+      level: 0,
+      queueDropped: 0,
+    });
+    const { interval } = onEnv.mock.calls[0]![0] as { interval: number };
+    expect(interval).toBeGreaterThanOrEqual(5);
+    expect(interval).toBeLessThanOrEqual(40);
+  });
+
+  it('tells a level change at once when the page’s thread holds the ticks back', async () => {
+    // Arrange: every OCR call blocks the page for 80 ms, so the timer ticks fire late.
+    const { release } = fakeShare();
+    release();
+    engine.recognize.mockImplementation(async () => {
+      const until = performance.now() + 80;
+      while (performance.now() < until) {
+        // busy: the page's thread is held
+      }
+      return [] as never;
+    });
+    const onEnv = vi.fn();
+    const created = new CaptureSession({
+      interval: { min: 5, max: 5 },
+      context,
+      onEvents: vi.fn(),
+      onStatus: vi.fn(),
+      onEnv,
+    });
+    // Act
+    await created.start();
+    await vi.waitFor(
+      () => expect(onEnv.mock.calls.some(([e]) => (e as { reason: string }).reason === 'level')).toBe(true),
+      { timeout: 8000 },
+    );
+    created.stop();
+    // Assert
+    const told = onEnv.mock.calls.map(([e]) => e as { reason: string; level: number; stats: unknown });
+    const level = told.find((e) => e.reason === 'level')!;
+    expect(level.level).toBeGreaterThanOrEqual(1);
+    expect(level.stats).toMatchObject({ lateness: { p90: expect.any(Number) } });
+    expect(created.level).toBeGreaterThanOrEqual(1);
+  }, 10_000);
 });

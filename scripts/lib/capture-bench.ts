@@ -13,27 +13,49 @@
  * busy all the while; in a popup burst the ticks come on every new frame — the next shot boundary
  * — with the `BURST_TICK_MS` timer as the backstop on a screen that holds still.
  *
+ * And M142's: the tick interval floats in the preset's range and the load level cuts the optional
+ * reads (`pace.ts`), fed the same measures the session feeds it — and the environment can be made
+ * hostile (`StressKnobs`): frames that arrive late, irregularly or not at all, slower reads, late
+ * timers and stalls of the page's thread. `capture:stress` sweeps them.
+ *
  * The caller supplies the two costly parts — a shot's signature and reading a shot — so this file
  * stays free of pixels and engines and its rules can be tested with fakes.
  */
 import {
+  admit,
   emptyBacklog,
+  shouldQueue,
+  motionSince,
   popupPart,
   push,
-  shouldQueue,
   take,
   type Backlog,
 } from '../../src/app/capture/backlog.ts';
 import { changed } from '../../src/app/capture/change.ts';
 import {
   decide,
+  fastTicks,
   finished,
-  inBurst,
+  FRAME_RATE,
   INITIAL_LOOP,
+  queuedPopup,
   tickDelay,
   type LoopState,
   type ReadMode,
 } from '../../src/app/capture/loop.ts';
+import {
+  followFrames,
+  initialPace,
+  leanReads,
+  paceDrop,
+  paceLateness,
+  paceRead,
+  paceTick,
+  refreshFor,
+  type IntervalRange,
+  type LoadLevel,
+  type PaceState,
+} from '../../src/app/capture/pace.ts';
 import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame } from '../../src/app/capture/tracker.ts';
 
 /** A shot on screen from `start` (inclusive) to `end` (exclusive), in ms. */
@@ -69,8 +91,42 @@ export interface ShotRead {
   ocrCalls: number;
 }
 
+/**
+ * What can go wrong with the environment (M142, `capture:stress`). Each knob is deterministic — the
+ * random ones draw from `seed` — so a run is the same every time.
+ */
+export interface StressKnobs {
+  /**
+   * The share's frames: the session asks `FRAME_RATE.idle` and, while ticks are fast,
+   * `FRAME_RATE.burst` (override with `idleFps`/`burstFps`). `drop` of them never arrive (0..1),
+   * and each arrives up to `jitterMs` early or late. A tick sees the newest frame that arrived;
+   * fast ticks come on each arriving frame. Omitted = every moment of the timeline is seen, as
+   * before M142.
+   */
+  frames?: { idleFps?: number; burstFps?: number; drop?: number; jitterMs?: number };
+  /** Every read takes this many times as long (a slower machine). Default 1. */
+  readCost?: number;
+  /** Every timer tick fires up to this much late (uniform). Default 0. */
+  lateMs?: number;
+  /**
+   * The page's thread is stuck in these spans: no tick, frame callback or landing read runs inside
+   * one; what was due runs when it ends, and sees the newest frame then.
+   */
+  stalls?: readonly { start: number; end: number }[];
+  seed?: number;
+}
+
 export interface SimulateInput {
-  intervalMs: number;
+  /** A fixed interval: the range `{ min: intervalMs, max: intervalMs }`. Ignored with `range`. */
+  intervalMs?: number;
+  /** The preset's range (M142): the tick interval floats in it (`pace.ts`). */
+  range?: IntervalRange;
+  /**
+   * M142's rules: the load ladder, the hold on a moving screen of nothing, the animation guard and
+   * fast ticks after a queued popup. False = the loop of M141 (give it a fixed range), for
+   * comparison. Default: on with `range`, off with a fixed `intervalMs` (the tests of M108–M141).
+   */
+  adaptive?: boolean;
   /**
    * When the first tick fires (default: one interval in, as setInterval does). The timer's phase
    * against the screens is arbitrary in the browser; the bench averages a few.
@@ -81,14 +137,18 @@ export interface SimulateInput {
   signature: (shot: number, t: number) => Uint8Array;
   /**
    * Read a shot; `held` is what the run holds now (for the fusion confirm), `mode` whether the loop
-   * asked for a full read or a popup read of the popup burst (M136).
+   * asked for a full read or a popup read of the popup burst (M136), `lean` whether the load ladder
+   * cuts the optional raw pass (M142).
    */
-  read: (shot: number, held: ReadonlySet<number>, mode: ReadMode) => Promise<ShotRead>;
+  read: (shot: number, held: ReadonlySet<number>, mode: ReadMode, lean: boolean) => Promise<ShotRead>;
   /**
    * Where the popup's regions sit in a signature (`popupRegionIndices`, M141): the backlog compares
    * only those. Omitted = the whole signature.
    */
   popupRegions?: readonly number[];
+  stress?: StressKnobs;
+  /** Told each step as it happens — for debugging a run, never for its results. */
+  log?: (line: string) => void;
 }
 
 export interface TimedEvent {
@@ -110,6 +170,14 @@ export interface SimulateResult {
   /** Reads of shots queued under a busy read (M141), and queued shots pushed out unread. */
   queued: number;
   queueDropped: number;
+  /**
+   * The shots the page could have seen (M142): on a frame that arrived, while that frame was the
+   * newest outside a stall. A shot that never was is no miss.
+   */
+  observable: Set<number>;
+  /** The highest load level reached, and the share of the time spent at each (M142). */
+  maxLevel: LoadLevel;
+  levelMs: [number, number, number];
 }
 
 /** When the next shot comes on screen after `t` — the share's next frame — or Infinity. */
@@ -132,14 +200,128 @@ export function foldHeld(held: Set<number>, event: CaptureEvent): void {
   else if (event.kind === 'fused') for (const id of event.consumed) held.delete(id);
 }
 
+/** A small deterministic generator (mulberry32): the stress knobs' only source of chance. */
+export function seeded(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** When something due at `t` runs: at once, or when the stall it falls in ends. */
+function afterStalls(stalls: readonly { start: number; end: number }[], t: number): number {
+  let at = t;
+  for (const s of stalls) if (at >= s.start && at < s.end) at = s.end;
+  return at;
+}
+
+/**
+ * The share's frames as they arrive (M142): one every 1000/fps ms at the rate asked at that time,
+ * some never arriving, each a little early or late. Generated lazily, in order, as the clock asks.
+ */
+class FrameStream {
+  /** Frames that arrived: when, and the shot they show. Ascending. */
+  readonly arrived: { t: number; shot: number }[] = [];
+  private base = 0;
+  private last = -Infinity;
+  constructor(
+    private readonly timeline: readonly Span[],
+    private readonly fpsAt: (t: number) => number,
+    private readonly drop: number,
+    private readonly jitterMs: number,
+    private readonly random: () => number,
+  ) {}
+
+  /** Make frames until one has arrived after `t` (or the timeline ends). */
+  private fill(t: number): void {
+    const end = this.timeline.length > 0 ? this.timeline[this.timeline.length - 1]!.end : 0;
+    while ((this.arrived.at(-1)?.t ?? -Infinity) <= t && this.base < end) {
+      const period = 1000 / this.fpsAt(this.base);
+      this.base += period;
+      const jitter = (this.random() * 2 - 1) * this.jitterMs;
+      // Early or late, but never on the heels of the frame before: half a period at least.
+      const at = Math.max(this.last + period / 2, this.base + jitter);
+      const dropped = this.random() < this.drop;
+      if (dropped || at >= end) continue;
+      this.last = at;
+      const shot = shotAt(this.timeline, at);
+      if (shot !== null) this.arrived.push({ t: at, shot });
+    }
+  }
+
+  /** Which frame (its index in `arrived`) is the newest to have arrived by `t`, or -1 before the first. */
+  frameAt(t: number): number {
+    this.fill(t);
+    for (let i = this.arrived.length - 1; i >= 0; i--) if (this.arrived[i]!.t <= t) return i;
+    return -1;
+  }
+
+  /** The shot on the newest frame that arrived by `t`, or null before the first. */
+  shotAt(t: number): number | null {
+    const i = this.frameAt(t);
+    return i < 0 ? null : this.arrived[i]!.shot;
+  }
+
+  /** When the next frame arrives after `t`, or Infinity. */
+  nextAfter(t: number): number {
+    this.fill(t);
+    for (const f of this.arrived) if (f.t > t) return f.t;
+    return Infinity;
+  }
+}
+
+/** Whether `[from, to)` has a moment outside every stall. */
+function outsideStalls(stalls: readonly { start: number; end: number }[], from: number, to: number): boolean {
+  let at = from;
+  for (const s of [...stalls].sort((a, b) => a.start - b.start)) {
+    if (s.end <= at) continue;
+    if (s.start > at) return at < to;
+    at = Math.max(at, s.end);
+    if (at >= to) return false;
+  }
+  return at < to;
+}
+
 export async function simulate(input: SimulateInput): Promise<SimulateResult> {
-  const { intervalMs, timeline, signature, read } = input;
+  const { timeline, signature, read } = input;
+  const stress = input.stress ?? {};
+  const stalls = stress.stalls ?? [];
+  const random = seeded(stress.seed ?? 1);
+  const readCost = stress.readCost ?? 1;
+  const lateMs = stress.lateMs ?? 0;
+  const range: IntervalRange = input.range ?? { min: input.intervalMs ?? 250, max: input.intervalMs ?? 250 };
+  const adaptive = input.adaptive ?? input.range !== undefined;
   const part = (sig: Uint8Array) => (input.popupRegions ? popupPart(sig, input.popupRegions) : sig);
   const durationMs = timeline.length > 0 ? timeline[timeline.length - 1]!.end : 0;
   let loop: LoopState = INITIAL_LOOP;
+  let pace: PaceState = initialPace(range, 0);
   let tracker = INITIAL_TRACKER;
   let backlog: Backlog<number> = emptyBacklog();
+  let lastScreen: Frame['screen'] = null;
+  let tickedBefore: Uint8Array | null = null;
+  let popupTicks: [Uint8Array | null, Uint8Array | null] = [null, null];
+  let movingSince: number | null = null;
+  let tickedFrame = -1;
+  /** The read in flight is of a change or a queued popup, not a re-read (M142). */
+  let readingChange = false;
   const held = new Set<number>();
+  const level = (): LoadLevel => (adaptive ? pace.level : 0);
+  const frames = stress.frames
+    ? new FrameStream(
+        timeline,
+        (t) =>
+          fastTicks(loop, t)
+            ? (stress.frames!.burstFps ?? FRAME_RATE.burst)
+            : (stress.frames!.idleFps ?? FRAME_RATE.idle),
+        stress.frames.drop ?? 0,
+        stress.frames.jitterMs ?? 0,
+        random,
+      )
+    : null;
   const out: SimulateResult = {
     ticks: 0,
     reads: 0,
@@ -149,28 +331,65 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
     durationMs,
     queued: 0,
     queueDropped: 0,
+    observable: new Set(),
+    maxLevel: 0,
+    levelMs: [0, 0, 0],
   };
-  /** The read in flight: it ends at `until` with these results. */
+  /** The read in flight: its OCR ends at `until`, and it lands (on the page's thread) at `lands`. */
   // Set in the helpers below: cast, so the loop does not read it as always null.
-  let pending = null as { until: number; shot: number; result: ShotRead } | null;
-  /** The next tick booked. */
-  let t = input.firstTickMs ?? intervalMs;
-
+  let pending = null as {
+    at: number;
+    until: number;
+    lands: number;
+    shot: number;
+    mode: ReadMode;
+    result: ShotRead;
+  } | null;
+  /** The next tick booked: when it is due, when it runs, and whether a timer brings it (lateness). */
+  type Booked = { due: number; at: number; timer: boolean };
+  const timerAt = (due: number): Booked => ({
+    due,
+    at: afterStalls(stalls, due + (lateMs > 0 ? random() * lateMs : 0)),
+    timer: true,
+  });
+  /** A fast tick from `from` (M141, M142): the next frame, or the timer as the backstop. */
+  const fastTick = (from: number): Booked => {
+    const frame = Math.max(from + 1, frames ? frames.nextAfter(from) : nextBoundary(timeline, from));
+    const backstop = timerAt(from + tickDelay(loop, from, pace.interval));
+    // Both are booked; whichever runs first (a late timer loses to the frame, M141).
+    const onFrame = { due: frame, at: afterStalls(stalls, frame), timer: false };
+    return onFrame.at <= backstop.at ? onFrame : backstop;
+  };
   /**
-   * A burst's next tick from `from` (M141): the share's next frame, the timer as the backstop —
-   * at least 1 ms on, as a callback comes no sooner than the next turn.
+   * The tick after `from`: the floating interval — on the next frame too while it sits at the
+   * range's `min` (`followFrames`, M142) — or fast ticks (M139, M141).
    */
-  const burstTick = (from: number): number =>
-    Math.max(from + 1, Math.min(from + tickDelay(loop, from, intervalMs), nextBoundary(timeline, from)));
-  /** The tick after `from`: the preset's interval, or the burst's (M139, M141). */
-  const book = (from: number): number => (inBurst(loop, from) ? burstTick(from) : from + intervalMs);
+  const book = (from: number): Booked =>
+    fastTicks(loop, from) || (adaptive && followFrames(pace))
+      ? fastTick(from)
+      : timerAt(from + pace.interval);
+  let next: Booked = timerAt(input.firstTickMs ?? range.min);
+  let levelAt = 0;
+  const noteLevel = (now: number): void => {
+    out.levelMs[level()] += Math.max(0, now - levelAt);
+    levelAt = now;
+    out.maxLevel = Math.max(out.maxLevel, level()) as LoadLevel;
+  };
 
   const startRead = async (shot: number, at: number, mode: ReadMode): Promise<void> => {
-    const result = await read(shot, held, mode);
+    const result = await read(shot, held, mode, leanReads(level()));
+    const ms = result.ms * readCost;
     out.reads += 1;
     out.ocrCalls += result.ocrCalls;
-    out.ocrMs += result.ms;
-    pending = { until: at + result.ms, shot, result };
+    out.ocrMs += ms;
+    pending = {
+      at,
+      until: at + ms,
+      lands: afterStalls(stalls, at + ms),
+      shot,
+      mode,
+      result: { ...result, ms },
+    };
   };
 
   /**
@@ -180,53 +399,125 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
    */
   const land = async (): Promise<void> => {
     if (!pending) return;
-    const { until, shot, result } = pending;
+    const { at, lands, shot, mode, result } = pending;
+    input.log?.(
+      `${Math.round(lands)} land ${mode} shot ${shot} → ${result.frame.screen ?? '-'}${result.frame.partial ? ' (partial)' : ''}`,
+    );
     pending = null;
+    noteLevel(lands);
+    // The page measures a read from its start to when it lands — a stall in between counts.
+    pace = paceRead(pace, lands, mode, lands - at);
+    if (!result.frame.partial) lastScreen = result.frame.screen;
     const folded = trackFrame(tracker, result.frame);
     tracker = folded.state;
     for (const event of folded.events) {
       foldHeld(held, event);
-      out.events.push({ event, at: until, shot });
+      out.events.push({ event, at: lands, shot });
     }
     loop = finished(loop, {
-      at: until,
+      at: lands,
       popup: result.frame.screen === 'acquired',
       partial: result.frame.partial === true,
+      // A moving screen of nothing holds the next change read back (M142).
+      nothing: result.frame.screen === null && result.frame.partial !== true,
+      holdMs: adaptive ? range.max : 0,
     });
-    if (inBurst(loop, until)) t = Math.min(t, burstTick(until));
-    const next = take(backlog);
-    if (!next.entry) return;
-    backlog = next.backlog;
+    if (fastTicks(loop, lands)) {
+      const sooner = fastTick(lands);
+      if (sooner.at < next.at) next = sooner;
+    }
+    const taken = take(backlog);
+    if (!taken.entry) return;
+    backlog = taken.backlog;
     loop = { ...loop, busy: true };
+    readingChange = true;
     out.queued += 1;
-    await startRead(next.entry.payload, until, 'popup');
+    await startRead(taken.entry.payload, lands, 'popup');
   };
 
   for (;;) {
-    if (pending && pending.until <= t) {
+    if (pending && pending.lands <= next.at) {
       await land();
       continue;
     }
+    const t = next.at;
     if (t >= durationMs) break;
-    const shot = shotAt(timeline, t);
-    if (shot === null) break;
+    const shot = frames ? frames.shotAt(t) : shotAt(timeline, t);
+    if (shot === null) {
+      next = book(t);
+      if (shotAt(timeline, t) === null) break;
+      continue;
+    }
+    noteLevel(t);
+    if (next.timer) pace = paceLateness(pace, t, t - next.due);
     out.ticks += 1;
-    const sig = signature(shot, t);
-    const step = decide(loop, sig, changed(loop.lastRead, sig), t);
+    input.log?.(
+      `${Math.round(t)} tick shot ${shot}${loop.busy ? ' busy' : ''} level ${level()} interval ${pace.interval}`,
+    );
+    // A frame shows the screen as it was when the share took it, not when the tick looks.
+    const frame = frames ? frames.frameAt(t) : out.ticks;
+    const sig = signature(shot, frames ? frames.arrived[frame]!.t : t);
+    pace = paceTick(pace, {
+      now: t,
+      changed: changed(tickedBefore, sig),
+      burst: fastTicks(loop, t),
+      unread:
+        changed(loop.lastRead, sig) ||
+        (loop.busy && readingChange) ||
+        loop.dirty ||
+        backlog.entries.length > 0,
+      screen: lastScreen,
+    });
+    tickedBefore = sig;
+    const popupNow = part(sig);
+    // Motion is told frame to frame, as the session's frame watch does (M142).
+    if (frame !== tickedFrame) {
+      tickedFrame = frame;
+      const [before, previous] = popupTicks;
+      popupTicks = [previous, popupNow];
+      movingSince = motionSince(movingSince, before, previous, popupNow, t);
+    }
+    const urgent = movingSince === null && changed(loop.lastRead ? part(loop.lastRead) : null, popupNow);
+    const fresh = changed(loop.lastRead, sig) || loop.dirty || loop.owed;
+    const step = decide(loop, sig, changed(loop.lastRead, sig), t, refreshFor(level()), urgent);
     loop = step.state;
     if (step.decision === 'skip') {
-      // A busy tick whose popup changed queues its shot (M141).
+      // A busy tick whose popup changed queues its shot (M141); since M142 the ticks go fast
+      // after it, and a region in motion queues a frame or two only (`admit`).
       const reading = loop.lastRead ? part(loop.lastRead) : null;
-      if (shouldQueue(backlog, loop.busy, reading, part(sig))) {
-        const pushed = push(backlog, part(sig), shot);
+      const admitted = adaptive
+        ? admit(backlog, loop.busy, reading, popupNow, movingSince === null ? null : t - movingSince)
+        : { queue: shouldQueue(backlog, loop.busy, reading, popupNow), moving: false };
+      if (admitted.queue) {
+        const pushed = push(backlog, popupNow, shot, admitted.moving);
+        input.log?.(`${Math.round(t)} queue shot ${shot}${admitted.moving ? ' moving' : ''}`);
         backlog = pushed.backlog;
-        if (pushed.evicted !== null) out.queueDropped += 1;
+        if (adaptive) loop = queuedPopup(loop, t);
+        if (pushed.evicted !== null) {
+          input.log?.(`${Math.round(t)} evict shot ${pushed.evicted}`);
+          out.queueDropped += 1;
+          pace = paceDrop(pace, t);
+        }
       }
-    } else await startRead(shot, t, step.mode);
-    t = book(t);
+    } else {
+      input.log?.(`${Math.round(t)} read ${step.mode} shot ${shot}`);
+      readingChange = fresh;
+      await startRead(shot, t, step.mode);
+    }
+    next = book(t);
   }
   // What is still in flight or queued is read, as the session would.
   while (pending) await land();
+  noteLevel(Math.max(levelAt, durationMs));
+  // What the page could have seen: each frame that arrived, while it was the newest, outside a stall.
+  if (frames) {
+    frames.shotAt(durationMs);
+    frames.arrived.forEach((f, i) => {
+      const until = frames.arrived[i + 1]?.t ?? durationMs;
+      if (outsideStalls(stalls, f.t, until)) out.observable.add(f.shot);
+      input.log?.(`${Math.round(f.t)} frame shot ${f.shot}`);
+    });
+  } else for (const s of timeline) if (outsideStalls(stalls, s.start, s.end)) out.observable.add(s.shot);
   return out;
 }
 

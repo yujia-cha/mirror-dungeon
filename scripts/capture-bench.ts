@@ -154,6 +154,7 @@ async function main(): Promise<void> {
     shot: number,
     held: ReadonlySet<number>,
     mode: ReadMode = 'full',
+    lean = false,
   ): Promise<ShotRead> => {
     const cost = { ms: 0 };
     const { frame, ocrCalls } = await readFrame(readerFor(shot, cost), layout, {
@@ -163,6 +164,7 @@ async function main(): Promise<void> {
       held: [...held].map((id) => refById.get(id)).filter((r): r is IconRef => r !== undefined),
       materials,
       popupOnly: mode === 'popup',
+      lean,
       iconRefs: async (ids) => ids.flatMap((id) => refById.get(id) ?? []),
     });
     return { frame, ms: cost.ms, ocrCalls };
@@ -262,14 +264,14 @@ async function main(): Promise<void> {
             screens[shot] === null ? animatedSignature(signatures[shot]!, t) : signatures[shot]!
         : (shot: number) => signatures[shot]!;
     for (const preset of presets) {
-      const intervalMs = READ_INTERVALS[preset];
+      const range = READ_INTERVALS[preset];
       // Shots are timed to the second, so a tick at a whole multiple of the interval would land
       // on every screen's first moment. The timer's phase is arbitrary: average a few.
       const runs: { run: SimulateResult; missed: string[]; extra: string[]; lat: number[] }[] = [];
       for (const phase of PHASES) {
         const run = await simulate({
-          intervalMs,
-          firstTickMs: phase * intervalMs,
+          range,
+          firstTickMs: phase * range.min,
           timeline,
           signature: signatureAt,
           read: readShot,
@@ -288,7 +290,7 @@ async function main(): Promise<void> {
       const lat = runs.flatMap((r) => r.lat);
       const busy = mean((r) => (r.run.durationMs > 0 ? (100 * r.run.ocrMs) / r.run.durationMs : 0));
       console.log(
-        `| ${dwell === 'steam' || dwell === 'animated' ? `${dwell} (≤${maxDwellMs / 1000}s)` : `${dwell}ms`} | ${preset} | ${intervalMs}ms | ${Math.round(mean((r) => r.run.ticks))} | ${Math.round(mean((r) => r.run.reads))} | ${Math.round(mean((r) => r.run.ocrCalls))} | ${busy.toFixed(1)}% | ${mean((r) => r.missed.length).toFixed(1)} | ${mean((r) => r.extra.length).toFixed(1)} | ${Math.round(percentile(lat, 50))} / ${Math.round(percentile(lat, 95))} ms |`,
+        `| ${dwell === 'steam' || dwell === 'animated' ? `${dwell} (≤${maxDwellMs / 1000}s)` : `${dwell}ms`} | ${preset} | ${range.min}–${range.max}ms | ${Math.round(mean((r) => r.run.ticks))} | ${Math.round(mean((r) => r.run.reads))} | ${Math.round(mean((r) => r.run.ocrCalls))} | ${busy.toFixed(1)}% | ${mean((r) => r.missed.length).toFixed(1)} | ${mean((r) => r.extra.length).toFixed(1)} | ${Math.round(percentile(lat, 50))} / ${Math.round(percentile(lat, 95))} ms |`,
       );
     }
   }

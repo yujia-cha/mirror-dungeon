@@ -66,6 +66,11 @@ export function mergeCaptureHooks(first: CaptureHooks, owner: CaptureHooks): Cap
       first.onRunMark?.(mark);
       owner.onRunMark?.(mark);
     },
+    // The environment (M142): numbers only, for the owner's record.
+    onEnv: (env) => {
+      first.onEnv?.(env);
+      owner.onEnv?.(env);
+    },
   };
 }
 

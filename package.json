@@ -49,6 +49,7 @@
     "capture:spike": "tsx scripts/capture-spike.ts",
     "capture:bench": "tsx scripts/capture-bench.ts",
     "capture:bench:browser": "tsx scripts/capture-bench-browser.ts",
+    "capture:stress": "tsx scripts/capture-stress.ts",
     "capture:feedback": "tsx scripts/capture-feedback.ts",
     "feedback:decode": "tsx scripts/feedback-decode.ts"
   },

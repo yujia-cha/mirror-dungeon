@@ -3,15 +3,19 @@ import {
   BURST_REFRESH_MS,
   BURST_TICK_MS,
   decide,
+  fastTicks,
   finished,
   INITIAL_LOOP,
   POPUP_BURST_MS,
+  QUEUED_FAST_MS,
+  queuedPopup,
   READ_INTERVALS,
   REFRESH_MAX_MS,
   REFRESH_MS,
   tickDelay,
   type LoopState,
 } from '../loop.ts';
+import { refreshFor } from '../pace.ts';
 
 const sig = new Uint8Array([1, 2, 3]);
 
@@ -82,8 +86,13 @@ describe('decide', () => {
 });
 
 describe('READ_INTERVALS', () => {
-  it('offers the four presets from slowest to fastest', () => {
-    expect(Object.values(READ_INTERVALS)).toEqual([1000, 500, 250, 125]);
+  it('offers the four presets from slowest to fastest, each a range (M142)', () => {
+    // Act
+    const ranges = Object.values(READ_INTERVALS);
+    // Assert
+    expect(ranges.map((r) => r.min)).toEqual([250, 150, 100, 80]);
+    expect(ranges.map((r) => r.max)).toEqual([1000, 500, 250, 150]);
+    for (const r of ranges) expect(r.min).toBeLessThan(r.max);
   });
 });
 
@@ -161,18 +170,18 @@ describe('tickDelay (M139)', () => {
 
   it('ticks at the preset interval outside a burst', () => {
     // Act
-    const delay = tickDelay(INITIAL_LOOP, 1000, READ_INTERVALS.balanced);
+    const delay = tickDelay(INITIAL_LOOP, 1000, READ_INTERVALS.balanced.max);
     // Assert
-    expect(delay).toBe(READ_INTERVALS.balanced);
+    expect(delay).toBe(READ_INTERVALS.balanced.max);
   });
 
   it('ticks every BURST_TICK_MS while the burst lasts, and not a moment longer', () => {
     // Act
-    const inside = tickDelay(burst, 200 + POPUP_BURST_MS - 1, READ_INTERVALS.balanced);
-    const atEnd = tickDelay(burst, 200 + POPUP_BURST_MS, READ_INTERVALS.balanced);
+    const inside = tickDelay(burst, 200 + POPUP_BURST_MS - 1, READ_INTERVALS.balanced.max);
+    const atEnd = tickDelay(burst, 200 + POPUP_BURST_MS, READ_INTERVALS.balanced.max);
     // Assert
     expect(inside).toBe(BURST_TICK_MS);
-    expect(atEnd).toBe(READ_INTERVALS.balanced);
+    expect(atEnd).toBe(READ_INTERVALS.balanced.max);
   });
 
   it('never ticks slower in a burst than the preset asks', () => {
@@ -180,5 +189,95 @@ describe('tickDelay (M139)', () => {
     const fast = tickDelay(burst, 500, BURST_TICK_MS / 2);
     // Assert
     expect(fast).toBe(BURST_TICK_MS / 2);
+  });
+});
+
+describe('decide with a load level’s re-reads (M142)', () => {
+  it('keeps the first re-read at 2 s and spaces the later ones by the policy', () => {
+    // Arrange: a change read at t=0, then the screen holds still; level 1's policy.
+    const policy = refreshFor(1);
+    let state: LoopState = finished(decide(INITIAL_LOOP, sig, true, 0, policy).state);
+    const reads: number[] = [];
+    // Act: tick every 100 ms for three minutes.
+    for (let t = 100; t <= 180_000; t += 100) {
+      const step = decide(state, sig, false, t, policy);
+      state = step.decision === 'read' ? finished(step.state) : step.state;
+      if (step.decision === 'read') reads.push(t);
+    }
+    // Assert: 2 s, then 8, 32, 64, 64 … after the previous re-read.
+    expect(reads.slice(0, 5)).toEqual([2000, 10_000, 42_000, 106_000, 170_000]);
+  });
+});
+
+describe('the hold on a moving screen of nothing (M142)', () => {
+  const NOTHING_READ = { popup: false, partial: false, nothing: true, holdMs: 250 };
+  /** A full read at 0 under which the screen moved, done at 600. */
+  function heldAt600(): LoopState {
+    let state = decide(INITIAL_LOOP, sig, true, 0).state;
+    state = decide(state, sig, true, 300).state; // dirty while busy
+    return finished(state, { at: 600, ...NOTHING_READ });
+  }
+
+  it('waits holdMs after a read of nothing the screen moved under, then reads the change', () => {
+    // Arrange
+    const held = heldAt600();
+    // Act + Assert
+    expect(held.holdUntil).toBe(850);
+    expect(decide(held, sig, true, 849).decision).toBe('skip');
+    expect(decide(held, sig, true, 850).decision).toBe('read');
+  });
+
+  it('holds nothing when the screen held still under the read, or the read named a screen', () => {
+    // Arrange
+    const still = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 600, ...NOTHING_READ });
+    let busy = decide(INITIAL_LOOP, sig, true, 0).state;
+    busy = decide(busy, sig, true, 300).state;
+    const named = finished(busy, { at: 600, ...NOTHING_READ, nothing: false });
+    // Act + Assert
+    expect(still.holdUntil).toBe(-Infinity);
+    expect(named.holdUntil).toBe(-Infinity);
+    expect(decide(named, sig, true, 601).decision).toBe('read');
+  });
+
+  it('lets a settled popup region through at once (`urgent`)', () => {
+    // Act
+    const step = decide(heldAt600(), sig, true, 700, undefined, true);
+    // Assert
+    expect(step.decision).toBe('read');
+  });
+
+  it('counts the hold from the last queued popup read that follows the read', () => {
+    // Arrange: the queue is drained after the read; its popup reads find nothing.
+    const held = { ...heldAt600(), busy: true };
+    // Act
+    const after = finished(held, { at: 800, popup: false, partial: true, holdMs: 250 });
+    // Assert
+    expect(after.holdUntil).toBe(1050);
+  });
+
+  it('never holds back the full read a burst owes', () => {
+    // Arrange
+    const owed: LoopState = { ...heldAt600(), owed: true };
+    // Act + Assert
+    expect(decide(owed, sig, false, 700).decision).toBe('read');
+  });
+});
+
+describe('fast ticks after a queued popup (M142)', () => {
+  it('ticks every BURST_TICK_MS for QUEUED_FAST_MS after a popup was queued, reads unchanged', () => {
+    // Arrange
+    const queued = queuedPopup(INITIAL_LOOP, 1000);
+    // Act + Assert
+    expect(fastTicks(queued, 1000 + QUEUED_FAST_MS - 1)).toBe(true);
+    expect(fastTicks(queued, 1000 + QUEUED_FAST_MS)).toBe(false);
+    expect(tickDelay(queued, 1500, 250)).toBe(BURST_TICK_MS);
+    expect(decide(queued, sig, true, 1500).mode).toBe('full');
+  });
+
+  it('extends, never shortens, the fast window', () => {
+    // Act
+    const twice = queuedPopup(queuedPopup(INITIAL_LOOP, 1000), 500);
+    // Assert
+    expect(twice.fastUntil).toBe(1000 + QUEUED_FAST_MS);
   });
 });

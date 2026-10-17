@@ -1926,24 +1926,29 @@
 - 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureInterval_economy
-- ko: 최고 성능 · 1초
-- en: Lightest · 1 s
+- ko: 최고 성능 · 0.25~1초
+- en: Lightest · 0.25–1 s
 - 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_performance
-- ko: 성능 · 0.5초
-- en: Light · 0.5 s
+- ko: 성능 · 0.15~0.5초
+- en: Light · 0.15–0.5 s
 - 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_balanced
-- ko: 밸런스 · 0.25초
-- en: Balanced · 0.25 s
+- ko: 밸런스 · 0.1~0.25초
+- en: Balanced · 0.1–0.25 s
 - 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_quality
-- ko: 품질 · 0.125초
-- en: Quality · 0.125 s
+- ko: 품질 · 0.08~0.15초
+- en: Quality · 0.08–0.15 s
 - 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
+
+### captureStrained
+- ko: 이 환경에서는 판독이 밀려 간격을 늘렸습니다 · 팝업은 그대로 읽습니다
+- en: Reads fall behind on this machine, so the reader waits longer between them · Popups are still read at once
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureLang
 - ko: 게임 언어

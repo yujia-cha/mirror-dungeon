@@ -23,6 +23,8 @@
  *   came closest to (M136, `popupIcon`): 「변형 추출 : AEDD」 reads 「변형추줄: ^ㅅ600」.
  * - The popup burst (M136, `popupOnly`): right after a popup the loop asks for the popup's title
  *   only and stops there when none shows, so a click-through of popups is read at the tick rate.
+ * - A strained machine (M142, `lean`): the pack picker's raw pass is skipped once the run start is
+ *   closed — the one read the load ladder cuts here.
  *
  * No DOM, no timers: the caller owns the pixels and the clock.
  */
@@ -71,7 +73,20 @@ export interface ReadContext {
   iconRefs?: (ids: readonly number[]) => Promise<IconRef[]>;
   /** A read of the popup burst (M136): the popup's title only, nothing else when it is not there. */
   popupOnly?: boolean;
+  /**
+   * The machine is strained (load level 2, `leanReads` in `pace.ts`, M142): skip the raw pass of
+   * titles this phase of the run does not need (`RAW_FOR_START_ONLY`). Nothing else changes.
+   */
+  lean?: boolean;
 }
+
+/**
+ * Screens whose title's raw pass only the run start needs (M142). Once the start is closed the
+ * pack picker records nothing — the map header records the entry, and is never cut — so on a
+ * strained machine its title is read with the light pass alone. While the start is open the pack
+ * picker closes it (`startDone`), and its raw pass stays.
+ */
+export const RAW_FOR_START_ONLY: ReadonlySet<Screen> = new Set(['packSelect']);
 
 /** What one frame read, and how many OCR calls it took (for the bench). */
 export interface ReadResult {
@@ -135,17 +150,23 @@ export async function readFrame(
     accept: (lines: string[]) => T | null,
   ): Promise<T | null> =>
     (await readOnce(region, step, true, accept)) ?? (await readOnce(region, step, false, accept));
-  /** A title region as the layout says to read it: light, light then raw, or raw only. */
+  /**
+   * A title region as the layout says to read it: light, light then raw, or raw only — and, on a
+   * strained machine, without a raw pass this phase does not need (M142).
+   */
   const readTitle = <T>(
     title: CaptureLayout['titles'][number],
     step: Step,
     accept: (lines: string[]) => T | null,
-  ): Promise<T | null> =>
-    title.raw === 'only'
+  ): Promise<T | null> => {
+    const optionalRaw =
+      ctx.lean === true && !ctx.startOpen && title.screens.every((s) => RAW_FOR_START_ONLY.has(s));
+    return title.raw === 'only'
       ? readOnce(title.region, step, false, accept)
-      : title.raw
+      : title.raw && !optionalRaw
         ? readEither(title.region, step, accept)
         : readOnce(title.region, step, true, accept);
+  };
   /** A name in `region`; every line OCR gave goes into `seen` when it is passed. */
   const nameIn = async (
     region: Region,

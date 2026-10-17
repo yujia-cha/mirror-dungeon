@@ -147,6 +147,19 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
           </Button>
         )}
       </div>
+      {/*
+        The load ladder (M142): when this machine makes the reader cut optional reads, one line
+        says so. A live region that is always there (empty and out of the flow until it speaks), so
+        a screen reader hears the change.
+      */}
+      <p
+        role="status"
+        className={capture.strained ? 'text-body text-fg-muted' : 'sr-only'}
+        data-testid="capture-strain"
+        data-strained={capture.strained || undefined}
+      >
+        {capture.strained ? t('captureStrained', lang) : ''}
+      </p>
 
       {/* The run's start, while the reader has it open (M143): the lock itself stays where it is. */}
       {(running || starting) && !observationClosed(run) ? (

@@ -837,6 +837,9 @@ export const diagTraceStepSchema = z.object({
 });
 export type DiagTraceStep = z.infer<typeof diagTraceStepSchema>;
 
+/** A measure's p50/p90 over its recent samples, ms (M142); `n` how many, where counted. */
+const diagPercentilesSchema = z.object({ p50: z.number(), p90: z.number(), n: z.number().optional() });
+
 const diagFloorGiftSchema = z.object({ giftId: z.number(), status: z.enum(['got', 'failed']).nullable() });
 
 export const diagRecordSchema = z.discriminatedUnion('kind', [
@@ -963,6 +966,30 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     reads: z.array(z.number()),
     manual: z.array(z.number()),
     frameIds: z.array(z.string()),
+  }),
+  z.object({
+    /**
+     * The environment the reader ran in (M142), every 10 s and whenever the load level moved
+     * (`reason`): the share's frame rate asked and delivered (null where the browser does not say),
+     * how late the timer ticks fired and what reads took (p50/p90 of the recent samples, null with
+     * none), backlog overflow since the record before, the preset's range, the tick interval and
+     * the load level (0–2, `pace.ts`). Missing in bundles before M142.
+     */
+    kind: z.literal('env'),
+    t: z.number(),
+    reason: z.enum(['periodic', 'level']),
+    fps: z.object({
+      requested: z.number(),
+      delivered: z.number().nullable(),
+      setting: z.number().nullable(),
+    }),
+    lateness: diagPercentilesSchema.nullable(),
+    readFull: diagPercentilesSchema.nullable(),
+    readPopup: diagPercentilesSchema.nullable(),
+    queueDropped: z.number(),
+    range: z.object({ min: z.number(), max: z.number() }),
+    interval: z.number(),
+    level: z.number(),
   }),
   z.object({
     /** A run that ended (the last floor left) or was thrown away for a new one. */

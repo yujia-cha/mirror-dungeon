@@ -405,3 +405,52 @@ describe('screen titles and the layout schema', () => {
     expect(Object.keys(SCREEN_TITLES)).toEqual([...CAPTURE_SCREENS]);
   });
 });
+
+describe('readFrame on a strained machine (M142, `lean`)', () => {
+  /** The test layout with the pack picker's title, raw-marked, before the map header. */
+  const WITH_PACKS: CaptureLayout = {
+    ...LAYOUT,
+    titles: [
+      ...LAYOUT.titles.slice(0, -1),
+      { region: [0.25, 0, 0.05, 0.05], screens: ['packSelect'], raw: true },
+      LAYOUT.titles.at(-1)!,
+    ],
+  };
+
+  it('skips the pack picker’s raw pass once the start is closed, and nothing else', async () => {
+    // Arrange: a frame of nothing.
+    const { reader, calls } = fakeReader({});
+    // Act
+    const lean = await readFrame(reader, WITH_PACKS, { ...CTX, lean: true });
+    const full = await readFrame(fakeReader({}).reader, WITH_PACKS, CTX);
+    // Assert: the map header keeps both passes.
+    expect(calls).toContain('0.25:light');
+    expect(calls).not.toContain('0.25:raw');
+    expect(calls).toContain('0.3:raw');
+    expect(lean.ocrCalls).toBe(full.ocrCalls - 1);
+  });
+
+  it('keeps the pack picker’s raw pass while the start is open: it closes the start', async () => {
+    // Arrange: the pack picker, which only the raw pass reads.
+    const { reader, calls } = fakeReader({ '0.25': { light: [], raw: ['1층 테마팩 선택'] } });
+    // Act
+    const { frame } = await readFrame(reader, WITH_PACKS, { ...CTX, lean: true, startOpen: true });
+    // Assert
+    expect(frame.screen).toBe('packSelect');
+    expect(calls).toContain('0.25:raw');
+  });
+
+  it('reads a popup the same, lean or not', async () => {
+    // Arrange
+    const answers = {
+      '0': { light: ['E.G.O 기프트를 획득했습니다.'] },
+      '0.4': { light: [], raw: ['작고 나쁜 인형'] },
+    };
+    // Act
+    const lean = await readFrame(fakeReader(answers).reader, WITH_PACKS, { ...CTX, lean: true });
+    const full = await readFrame(fakeReader(answers).reader, WITH_PACKS, CTX);
+    // Assert
+    expect(lean.frame).toEqual(full.frame);
+    expect(lean.ocrCalls).toBe(full.ocrCalls);
+  });
+});

@@ -185,6 +185,7 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
         else preview?.close();
       },
       onAsk: () => recorderRef.current?.onAsk(),
+      onEnv: (env) => recorderRef.current?.onEnv(env),
       onApplied: (logId, event, actions, fromRead) =>
         recorderRef.current?.onApplied(logId, event, actions, fromRead),
       onUndo: (logId) => recorderRef.current?.onUndo(logId),

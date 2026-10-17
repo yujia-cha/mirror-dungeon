@@ -33,6 +33,7 @@ import {
   type CaptureError,
   type CaptureGeometry,
   type CaptureStatus,
+  type EnvReport,
   type FrameSource,
   type ReadReport,
   type TickReport,
@@ -76,6 +77,8 @@ export interface CaptureHooks {
   onGeometry?: (geometry: CaptureGeometry) => void;
   /** The run was started with the reader (new or continued), or rolled back to before it (M143). */
   onRunMark?: (mark: RunMark) => void;
+  /** The environment the reader runs in (M142): every 10 s, and when the load level moves. */
+  onEnv?: (env: EnvReport) => void;
 }
 
 /** A run-start marker (M143): what the player chose, and the run it was chosen on. */
@@ -118,6 +121,8 @@ export function useCapture(hooks: CaptureHooks = {}) {
   }, [status]);
   useEffect(() => () => useApp.getState().setCaptureLive(false), []);
   const [error, setError] = useState<CaptureError | null>(null);
+  /** The machine is strained: the reader cut optional reads (M142, `pace.ts`). */
+  const [strained, setStrained] = useState(false);
   const [log, setLog] = useState<CaptureLogEntry[]>([]);
   const [questions, setQuestions] = useState<CaptureQuestion[]>([]);
   const session = useRef<CaptureSession | null>(null);
@@ -246,6 +251,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const start = useCallback(async () => {
     session.current?.stop();
     setError(null);
+    setStrained(false);
     /**
      * Callbacks that speak only while their session is the current one (M116): a session replaced
      * or stopped can still finish a read or see its share end, and must not overwrite the status
@@ -257,7 +263,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
         if (session.current === created) fn(...args);
       };
     const created: CaptureSession = new CaptureSession({
-      intervalMs: READ_INTERVALS[useApp.getState().ui.captureInterval],
+      interval: READ_INTERVALS[useApp.getState().ui.captureInterval],
       context,
       onEvents: own(onEvents),
       onStatus: own((next: CaptureStatus, why?: CaptureError) => {
@@ -270,6 +276,10 @@ export function useCapture(hooks: CaptureHooks = {}) {
       ),
       wantImage: () => latest.current.hooks.wantImage?.() ?? false,
       onGeometry: own((geometry: CaptureGeometry) => latest.current.hooks.onGeometry?.(geometry)),
+      onEnv: own((env: EnvReport) => {
+        setStrained(env.level > 0);
+        latest.current.hooks.onEnv?.(env);
+      }),
       // Not `own`: a preview a stale session hands over must still be freed.
       onTick: (tick: TickReport, preview: FrameSource | null) => {
         const onTick = session.current === created ? latest.current.hooks.onTick : undefined;
@@ -388,7 +398,9 @@ export function useCapture(hooks: CaptureHooks = {}) {
       undo,
       answer,
       applying,
+      // Only while reading: a stopped session's last level says nothing.
+      strained: strained && status === 'running',
     }),
-    [status, error, log, questions, start, begin, stop, rollback, undo, answer],
+    [status, error, log, questions, start, begin, stop, rollback, undo, answer, strained],
   );
 }

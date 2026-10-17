@@ -20,6 +20,7 @@ type Read = Extract<DiagRecord, { kind: 'read' }>;
 type Applied = Extract<DiagRecord, { kind: 'applied' }>;
 type Manual = Extract<DiagRecord, { kind: 'manual' }>;
 type Strip = Extract<DiagRecord, { kind: 'strip' }>;
+type Env = Extract<DiagRecord, { kind: 'env' }>;
 
 /** The ids of a bundle's filmstrip previews, which are not full-size frames. */
 export function previewIds(bundle: DiagnosticsBundle): Set<string> {
@@ -200,6 +201,98 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
           }
         : null,
   };
+}
+
+/** The environment the reader ran in (M142): what the bundle's `env` records add up to. */
+export interface EnvironmentReport {
+  records: number;
+  levelChanges: number;
+  /** Frames per second asked (the distinct rates) and delivered (median and lowest of the records). */
+  fps: {
+    requested: number[];
+    deliveredMedian: number | null;
+    deliveredMin: number | null;
+    setting: number | null;
+  };
+  /** Tick lateness: the median of the records' p50 and the highest p90, ms. */
+  lateness: { p50: number; p90: number } | null;
+  readFull: { p50: number; p90: number } | null;
+  readPopup: { p50: number; p90: number } | null;
+  queueDropped: number;
+  ranges: string[];
+  /** The tick interval seen: lowest and highest. */
+  interval: { min: number; max: number };
+  maxLevel: number;
+  /** How long the reader spent at each load level, ms (from one record to the next). */
+  levelMs: [number, number, number];
+}
+
+const median = (values: readonly number[]): number | null => {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor((sorted.length - 1) / 2)]!;
+};
+
+/** The `env` records summed up (M142); null for a bundle without any (before M142). */
+export function environmentReport(bundle: DiagnosticsBundle): EnvironmentReport | null {
+  const envs = bundle.records.filter((r): r is Env => r.kind === 'env').sort((a, b) => a.t - b.t);
+  if (envs.length === 0) return null;
+  const pair = (pick: (e: Env) => { p50: number; p90: number } | null) => {
+    const all = envs.map(pick).filter((p): p is { p50: number; p90: number } => p !== null);
+    return all.length
+      ? { p50: median(all.map((p) => p.p50))!, p90: Math.max(...all.map((p) => p.p90)) }
+      : null;
+  };
+  const delivered = envs.map((e) => e.fps.delivered).filter((v): v is number => v !== null);
+  const settings = envs.map((e) => e.fps.setting).filter((v): v is number => v !== null);
+  const levelMs: [number, number, number] = [0, 0, 0];
+  envs.forEach((e, i) => {
+    const next = envs[i + 1];
+    const level = Math.min(2, Math.max(0, e.level)) as 0 | 1 | 2;
+    if (next) levelMs[level] += next.t - e.t;
+  });
+  return {
+    records: envs.length,
+    levelChanges: envs.filter((e) => e.reason === 'level').length,
+    fps: {
+      requested: [...new Set(envs.map((e) => e.fps.requested))].sort((a, b) => a - b),
+      deliveredMedian: median(delivered),
+      deliveredMin: delivered.length ? Math.min(...delivered) : null,
+      setting: median(settings),
+    },
+    lateness: pair((e) => e.lateness),
+    readFull: pair((e) => e.readFull),
+    readPopup: pair((e) => e.readPopup),
+    queueDropped: envs.reduce((sum, e) => sum + e.queueDropped, 0),
+    ranges: [...new Set(envs.map((e) => `${e.range.min}–${e.range.max}ms`))],
+    interval: {
+      min: Math.min(...envs.map((e) => e.interval)),
+      max: Math.max(...envs.map((e) => e.interval)),
+    },
+    maxLevel: Math.max(...envs.map((e) => e.level)),
+    levelMs,
+  };
+}
+
+/** The 「환경」 section of the report (M142), or nothing for a bundle without `env` records. */
+export function environmentLines(env: EnvironmentReport | null): string[] {
+  if (!env) return [];
+  const ms = (p: { p50: number; p90: number } | null) =>
+    p ? `p50 ${p.p50}ms · p90 ${p.p90}ms` : '기록 없음';
+  const total = env.levelMs[0] + env.levelMs[1] + env.levelMs[2];
+  const share = (i: 0 | 1 | 2) => (total > 0 ? `${Math.round((100 * env.levelMs[i]) / total)}%` : '-');
+  return [
+    '## 환경',
+    '',
+    `- 환경 기록 ${env.records}건 · 부하 단계 변화 ${env.levelChanges}회`,
+    `- 프레임률: 요청 ${env.fps.requested.join('/')} · 전달 중앙값 ${env.fps.deliveredMedian ?? '모름'} (최저 ${env.fps.deliveredMin ?? '모름'}) · 트랙 설정 ${env.fps.setting ?? '모름'}`,
+    `- 틱 지연: ${ms(env.lateness)}`,
+    `- 판독 시간: 전체 ${ms(env.readFull)} · 팝업 ${ms(env.readPopup)}`,
+    `- 대기열 넘침 ${env.queueDropped}`,
+    `- 간격 범위 ${env.ranges.join(', ')} · 틱 간격 ${env.interval.min}~${env.interval.max}ms`,
+    `- 부하 단계: 최고 ${env.maxLevel} · 단계별 시간 0 ${share(0)} · 1 ${share(1)} · 2 ${share(2)}`,
+    '',
+  ];
 }
 
 /** The spike's label shape (`scripts/capture-spike.ts`). */
@@ -483,6 +576,7 @@ export function formatReport(
     `라벨: 확실 ${labels.certain}개(labels.json) · 확인 안 됨 ${labels.unconfirmed}개(labels-unconfirmed.json)`,
     '',
   );
+  lines.push(...environmentLines(environmentReport(bundle)));
   lines.push('## 루트', '');
   const rate = route.recommended ? Math.round((100 * route.followed) / route.recommended) : 0;
   lines.push(

@@ -43,7 +43,7 @@ import {
   type DiagRecord,
   type DiagnosticsBundle,
 } from '../../../core/schema.ts';
-import type { FrameSource, ReadReport, TickReport } from '../session.ts';
+import type { EnvReport, FrameSource, ReadReport, TickReport } from '../session.ts';
 import { memoryStore, type DiagStore, type StoredFrame } from './store.ts';
 
 /** Reads kept in memory for a hand-made change to look back on. */
@@ -430,6 +430,30 @@ export class DiagRecorder {
     this.busyTicks = 0;
     this.busyChanges = 0;
     this.add({ kind: 'session', ...input });
+  }
+
+  /**
+   * The environment the reader runs in (M142): every 10 s and when the load level moves. Text only,
+   * so it is kept with or without pictures.
+   */
+  onEnv(env: EnvReport): void {
+    if (!this.recording) return;
+    const { stats } = env;
+    this.add(
+      {
+        kind: 'env',
+        reason: env.reason,
+        fps: env.fps,
+        lateness: stats.lateness,
+        readFull: stats.fullRead,
+        readPopup: stats.popupRead,
+        queueDropped: env.queueDropped,
+        range: { min: env.range.min, max: env.range.max },
+        interval: env.interval,
+        level: env.level,
+      },
+      env.t,
+    );
   }
 
   /** The reader applied `event` as log entry `logId` (`fromRead`: the latest read made it). */

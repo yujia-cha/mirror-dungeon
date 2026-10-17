@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { captureLayoutSchema, type DiagnosticsBundle, type DiagRecord } from '../../src/core/schema.ts';
 import {
   captureGeometries,
+  environmentLines,
+  environmentReport,
   formatReport,
   labelsFrom,
   parseBundle,
@@ -415,5 +417,86 @@ describe('filmstrips (M134)', () => {
     const { unconfirmed } = labelsFrom(b, layout);
     // Assert
     expect(unconfirmed.map((l) => l.file)).not.toContain('frames/p10-2.jpg');
+  });
+});
+
+describe('the environment (M142)', () => {
+  const env = (t: number, over: Partial<Extract<DiagRecord, { kind: 'env' }>> = {}): DiagRecord => ({
+    kind: 'env',
+    t,
+    reason: 'periodic',
+    fps: { requested: 8, delivered: 7.5, setting: 8 },
+    lateness: { p50: 3, p90: 20 },
+    readFull: { p50: 500, p90: 900, n: 4 },
+    readPopup: { p50: 34, p90: 40, n: 2 },
+    queueDropped: 0,
+    range: { min: 100, max: 250 },
+    interval: 250,
+    level: 0,
+    ...over,
+  });
+
+  it('sums the env records up: rates, percentiles, overflow, intervals and time at each level', () => {
+    // Arrange: 10 s calm, then 20 s at level 1, then the last record.
+    const b = bundle();
+    b.records.push(
+      env(0),
+      env(10_000, {
+        reason: 'level',
+        level: 1,
+        fps: { requested: 30, delivered: 4, setting: 30 },
+        lateness: { p50: 9, p90: 120 },
+        queueDropped: 2,
+        interval: 100,
+      }),
+      env(30_000, { readFull: { p50: 700, p90: 2100 } }),
+    );
+    // Act
+    const r = environmentReport(b)!;
+    // Assert
+    expect(r).toMatchObject({
+      records: 3,
+      levelChanges: 1,
+      fps: { requested: [8, 30], deliveredMedian: 7.5, deliveredMin: 4, setting: 8 },
+      lateness: { p50: 3, p90: 120 },
+      readFull: { p50: 500, p90: 2100 },
+      readPopup: { p50: 34, p90: 40 },
+      queueDropped: 2,
+      ranges: ['100–250ms'],
+      interval: { min: 100, max: 250 },
+      maxLevel: 1,
+      levelMs: [10_000, 20_000, 0],
+    });
+  });
+
+  it('writes a 「환경」 section for a bundle that has them, and none for one before M142', () => {
+    // Arrange
+    const b = bundle();
+    b.records.push(env(0), env(10_000, { level: 2, reason: 'level' }));
+    const names = { gift: (id: number) => `G${id}`, pack: (id: number) => `P${id}` };
+    const label = { certain: 0, unconfirmed: 0 };
+    // Act
+    const text = formatReport(
+      b,
+      recognitionReport(b),
+      routeReport(b, () => 'general'),
+      label,
+      names,
+    );
+    const old = formatReport(
+      bundle(),
+      recognitionReport(bundle()),
+      routeReport(bundle(), () => 'general'),
+      label,
+      names,
+    );
+    // Assert
+    expect(text).toContain('## 환경');
+    expect(text).toContain('- 프레임률: 요청 8 · 전달 중앙값 7.5 (최저 7.5) · 트랙 설정 8');
+    expect(text).toContain('- 틱 지연: p50 3ms · p90 20ms');
+    expect(text).toContain('- 부하 단계: 최고 2 · 단계별 시간 0 100% · 1 0% · 2 0%');
+    expect(old).not.toContain('## 환경');
+    expect(environmentReport(bundle())).toBeNull();
+    expect(environmentLines(null)).toEqual([]);
   });
 });

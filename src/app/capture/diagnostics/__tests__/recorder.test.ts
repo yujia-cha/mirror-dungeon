@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { diagnosticsBundleSchema } from '../../../../core/schema.ts';
-import type { FrameSource, ReadReport, TickReport } from '../../session.ts';
+import type { EnvReport, FrameSource, ReadReport, TickReport } from '../../session.ts';
 import {
   DiagRecorder,
   MAX_FRAMES,
@@ -206,6 +206,44 @@ describe('DiagRecorder', () => {
     expect(reads[0]).not.toHaveProperty('queueDropped');
     expect(reads[1]).toMatchObject({ t: 6, queueDropped: 2 });
     expect(reads[1]).not.toHaveProperty('queued');
+  });
+
+  it('records the environment as text, with or without pictures, and the schema takes it (M142)', async () => {
+    // Arrange
+    const { r } = await recorder();
+    const env: EnvReport = {
+      t: 7,
+      reason: 'level',
+      fps: { requested: 8, delivered: 7.5, setting: null },
+      stats: {
+        lateness: { p50: 4, p90: 61 },
+        fullRead: { p50: 600, p90: 1700, n: 5 },
+        popupRead: null,
+        deliveredFps: 7.5,
+      },
+      queueDropped: 1,
+      range: { min: 100, max: 250 },
+      interval: 150,
+      level: 1,
+    };
+    // Act
+    r.onEnv(env);
+    const { bundle } = await r.exportBundle(META);
+    // Assert
+    expect(diagnosticsBundleSchema.safeParse(bundle).success).toBe(true);
+    expect(bundle.records.find((rec) => rec.kind === 'env')).toEqual({
+      kind: 'env',
+      t: 7,
+      reason: 'level',
+      fps: { requested: 8, delivered: 7.5, setting: null },
+      lateness: { p50: 4, p90: 61 },
+      readFull: { p50: 600, p90: 1700, n: 5 },
+      readPopup: null,
+      queueDropped: 1,
+      range: { min: 100, max: 250 },
+      interval: 150,
+      level: 1,
+    });
   });
 
   it('says how much exported data is still on the device until it is cleared', async () => {

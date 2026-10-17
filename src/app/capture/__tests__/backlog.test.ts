@@ -2,8 +2,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { captureLayoutSchema } from '../../../core/schema.ts';
 import {
+  admit,
+  ANIMATION_GUARD_MS,
+  animating,
   BACKLOG_MAX,
   emptyBacklog,
+  motionSince,
   popupBox,
   popupPart,
   popupRegionIndices,
@@ -152,5 +156,64 @@ describe('popup regions', () => {
     expect(inside(open, observation)).toBe(true);
     // Well short of the frame: the copy is a crop, not the picture.
     expect(closed[2]! * closed[3]!).toBeLessThan(0.25);
+  });
+});
+
+describe('the animation guard (M142)', () => {
+  it('calls a region animating only when it changed on two frames in a row', () => {
+    // Act + Assert
+    expect(animating(sig(0), sig(100), sig(200))).toBe(true);
+    expect(animating(sig(0), sig(0), sig(200))).toBe(false);
+    expect(animating(sig(0), sig(100), sig(100))).toBe(false);
+    expect(animating(null, sig(100), sig(200))).toBe(false);
+  });
+
+  it('dates the motion from its first moving frame and forgets it on a still one', () => {
+    // Act
+    const started = motionSince(null, sig(0), sig(100), sig(200), 1000);
+    const going = motionSince(started, sig(100), sig(200), sig(30), 1100);
+    const stopped = motionSince(going, sig(200), sig(30), sig(30), 1200);
+    // Assert
+    expect([started, going, stopped]).toEqual([1000, 1000, null]);
+  });
+
+  it('queues a still-born popup, and a moving one only within ANIMATION_GUARD_MS', () => {
+    // Arrange
+    const backlog = emptyBacklog<number>();
+    // Act
+    const still = admit(backlog, true, READING, sig(100), null);
+    const early = admit(backlog, true, READING, sig(100), ANIMATION_GUARD_MS);
+    const late = admit(backlog, true, READING, sig(100), ANIMATION_GUARD_MS + 1);
+    // Assert
+    expect(still).toEqual({ queue: true, moving: false });
+    expect(early).toEqual({ queue: true, moving: true });
+    expect(late).toEqual({ queue: false, moving: false });
+  });
+
+  it('admits nothing shouldQueue would not', () => {
+    expect(admit(emptyBacklog<number>(), false, READING, sig(100), null).queue).toBe(false);
+  });
+
+  it('drops a moving newcomer to a full queue rather than a popup queued before it', () => {
+    // Arrange: a full queue of popups that came out of still regions.
+    const full = feed(Array.from({ length: BACKLOG_MAX }, (_, i) => 10 + i * 10));
+    // Act
+    const pushed = push(full, sig(250), 999, true);
+    // Assert
+    expect(pushed.evicted).toBe(999);
+    expect(pushed.backlog.entries.map((e) => e.payload)).toEqual(full.entries.map((e) => e.payload));
+    expect(pushed.backlog.dropped).toBe(1);
+  });
+
+  it('makes room for a still-born popup by dropping the oldest moving entry first', () => {
+    // Arrange: one moving entry in the middle of a full queue.
+    let backlog = emptyBacklog<number>();
+    for (let i = 0; i < BACKLOG_MAX; i++) backlog = push(backlog, sig(10 + i * 10), i, i === 5).backlog;
+    // Act
+    const pushed = push(backlog, sig(5), 100);
+    // Assert
+    expect(pushed.evicted).toBe(5);
+    expect(pushed.backlog.entries.at(-1)!.payload).toBe(100);
+    expect(pushed.backlog.entries).toHaveLength(BACKLOG_MAX);
   });
 });
