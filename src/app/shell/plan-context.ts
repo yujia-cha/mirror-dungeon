@@ -117,6 +117,13 @@ export interface PlanState {
    * every floor left behind settles — then enter `packId` there. The stage follows.
    */
   enterAt: (floor: number, packId: number) => void;
+  /**
+   * Record what the run start handed over (M138, the overlay): `got` in hand, the `observed` ones
+   * pinned, a pinned observation the player left out (`skipped`) unpinned, the start closed.
+   */
+  confirmStart: (picks: { got: number[]; observed: number[]; skipped: number[] }) => void;
+  /** Reopen a closed start while floor 1 is still ahead; what it recorded goes back to unrecorded. */
+  reopenStart: () => void;
   /** Open the gift detail sheet (the same one the items tab uses) from anywhere in the shell. */
   openGift: (giftId: number) => void;
   /** Open a pack's details in the same sheet (M120). */

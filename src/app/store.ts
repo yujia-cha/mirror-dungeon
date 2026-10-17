@@ -130,7 +130,8 @@ interface AppState extends SharedState {
   /**
    * The run start is over while floor 1 is still ahead (M134): the start gifts and 기프트 관측 are
    * spent, so the plan stops choosing or recommending them (`run.startDone`). For the screen reader,
-   * which sees the observation screen left or floor 1's pack select (M135); no button sets it.
+   * which sees the observation screen left or floor 1's pack select (M135); the overlay's
+   * 「확인하고 진행」 closes it through `confirmStart` instead (M138).
    * `false` reopens the start — the reader's undo, nothing else.
    */
   markStartDone: (done?: boolean) => void;
@@ -141,6 +142,22 @@ interface AppState extends SharedState {
    * observation the run already spent (M134), which is what the reader records. Never unpins.
    */
   recordObserved: (giftId: number, limits: ObserveLimits) => void;
+  /**
+   * The player says what the run start actually handed over (M138, the overlay's 「확인하고 진행」):
+   * `got` lands in hand and is remembered (`run.startGifts`), the `observed` ones among them are pinned
+   * under `recordObserved`'s rules, a pinned observation left out (`skipped`) is unpinned — it did
+   * not happen — and the start closes. The plan
+   * then routes every recommendation the player did not take. Floor 1 with the start open only.
+   */
+  confirmStart: (
+    picks: { got: number[]; observed: number[]; skipped: number[] },
+    limits: ObserveLimits,
+  ) => void;
+  /**
+   * Take back a closed start while floor 1 is still ahead: the gifts `confirmStart` recorded
+   * (`run.startGifts`) go back to unrecorded and the start reopens.
+   */
+  reopenStart: () => void;
   setGiftStatus: (giftId: number, status: 'got' | 'failed' | null) => void;
   /**
    * 「남은 재료 모으기」 on a fusion the run lost: keep entering packs for its remaining
@@ -430,9 +447,9 @@ export function sanitizeRun(raw: unknown): RunState {
   // Up to the done floor, never past it: the stage stands one beyond the last floor when the run
   // is over, and that is where the done card lives.
   out.stageFloor = Math.min(MAX_RUN_DONE_FLOOR, out.currentFloor, Math.max(1, stage));
-  // The start-of-run record only means something once floor 1 is behind, and only for gifts
-  // still marked as collected.
-  if (out.currentFloor > 1 && Array.isArray(source.startGifts)) {
+  // The start-of-run record only means something once floor 1 is behind or the start was confirmed,
+  // and only for gifts still marked as collected.
+  if ((out.currentFloor > 1 || source.startDone === true) && Array.isArray(source.startGifts)) {
     out.startGifts = [
       ...new Set(
         source.startGifts.filter(
@@ -510,7 +527,8 @@ function withoutPack(visits: Record<number, number>, packId: number): Record<num
 /**
  * Move the frontier. Leaving floor 1 is when `settle.got` — the start-of-run gifts — lands in hand
  * and is remembered; coming back to floor 1 takes that record out again (a status the player
- * changed by hand in the meantime is left alone).
+ * changed by hand in the meantime is left alone). A closed start (`run.startDone`) is a fact of the
+ * game, not a guess from the plan: what `confirmStart` recorded stays through both moves.
  */
 function moveFrontier(
   run: RunState,
@@ -520,8 +538,8 @@ function moveFrontier(
   let giftStatus = withStatus(run.giftStatus, settle);
   let startGifts = run.startGifts;
   if (run.currentFloor === 1 && currentFloor > 1) {
-    startGifts = [...new Set(settle?.got ?? [])];
-  } else if (run.currentFloor > 1 && currentFloor === 1) {
+    startGifts = [...new Set([...(run.startDone ? run.startGifts : []), ...(settle?.got ?? [])])];
+  } else if (run.currentFloor > 1 && currentFloor === 1 && !run.startDone) {
     giftStatus = { ...giftStatus };
     for (const id of run.startGifts) if (giftStatus[id] === 'got') delete giftStatus[id];
     startGifts = [];
@@ -852,6 +870,38 @@ export const useApp = create<AppState>()(
           )
             return {};
           return { options: { ...options, observedGifts: [...options.observedGifts, giftId] } };
+        }),
+      confirmStart: ({ got, observed, skipped }, limits) =>
+        set((state) => {
+          const { run, options } = state;
+          if (run.currentFloor !== 1 || run.startDone) return {};
+          const startGifts = [...new Set(got)];
+          const giftStatus = { ...run.giftStatus };
+          for (const id of startGifts) giftStatus[id] = 'got';
+          // A pin the player left out was never observed; a new one follows `recordObserved`'s
+          // rules (a free slot, an observable gift the route collects) — the gift is in hand now.
+          const left = new Set(skipped);
+          const observedGifts = options.observedGifts.filter((id) => !left.has(id));
+          const collected = collectedGifts(state.wanted, state.fusionGoal);
+          for (const id of observed) {
+            if (observedGifts.includes(id) || !startGifts.includes(id)) continue;
+            if (observedGifts.length >= limits.max || !collected.has(id) || !limits.observable(id)) continue;
+            observedGifts.push(id);
+          }
+          return {
+            run: { ...run, giftStatus, startGifts, startDone: true },
+            options: { ...options, observedGifts },
+          };
+        }),
+      reopenStart: () =>
+        set((state) => {
+          const { run } = state;
+          if (run.currentFloor !== 1 || !run.startDone) return {};
+          const giftStatus = { ...run.giftStatus };
+          for (const id of run.startGifts) if (giftStatus[id] === 'got') delete giftStatus[id];
+          const next: RunState = { ...run, giftStatus, startGifts: [] };
+          delete next.startDone;
+          return { run: next };
         }),
       setGiftStatus: (giftId, status) =>
         set((state) => {

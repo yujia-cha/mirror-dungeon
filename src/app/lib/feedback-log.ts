@@ -247,6 +247,8 @@ export function describeRun(prev: RunState, next: RunState): string[] {
   if (prev.currentFloor !== next.currentFloor)
     out.push(`frontier F${prev.currentFloor} → F${next.currentFloor}`);
   if (prev.stageFloor !== next.stageFloor) out.push(`stage F${prev.stageFloor} → F${next.stageFloor}`);
+  if ((prev.startDone === true) !== (next.startDone === true))
+    out.push(next.startDone ? 'start done' : 'start open');
   return out;
 }
 

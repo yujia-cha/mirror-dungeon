@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { shareHash } from './share.ts';
 
 /**
  * The overlay window (M132): Document Picture-in-Picture opened from the 「화면 인식」 popover. The
@@ -55,4 +56,54 @@ test('opens the overlay window from the screen reader popover and mirrors the pa
   await page.getByTestId('overlay-toggle').click();
   await expect(page.getByTestId('overlay-toggle')).toHaveText('오버레이 창 열기');
   await expect.poll(() => pip.isClosed()).toBe(true);
+});
+
+/**
+ * The run start in the overlay (M138): the window lists the start gifts and observations the plan
+ * expects, all on. A press in the PiP window reaches React (it listens on the portal's container):
+ * turning one off and confirming records only the rest, closes the start, and 「다시 고르기」 opens
+ * it again.
+ */
+test('confirms the run start from the overlay window, recording only what is left on', async ({
+  page,
+  context,
+}) => {
+  await page.goto(`./${shareHash([9191, 9809], 8)}`);
+  await page.getByTestId('capture-open').click();
+  if (!(await page.evaluate(() => 'documentPictureInPicture' in window))) test.skip();
+  const [pip] = await Promise.all([context.waitForEvent('page'), page.getByTestId('overlay-toggle').click()]);
+
+  const section = pip.getByTestId('overlay-start');
+  await expect(section).toBeVisible();
+  const rows = section.getByTestId('overlay-start-gift');
+  const ids = (await rows.evaluateAll((all) =>
+    all.map((row) => Number(row.getAttribute('data-gift'))),
+  )) as number[];
+  expect(ids.length).toBeGreaterThan(0);
+  for (const row of await rows.all()) await expect(row).toHaveAttribute('aria-pressed', 'true');
+
+  // The last one did not come.
+  const dropped = ids[ids.length - 1]!;
+  await rows.last().click();
+  await expect(rows.last()).toHaveAttribute('aria-pressed', 'false');
+  await section.getByTestId('overlay-start-confirm').click();
+
+  const saved = () =>
+    page.evaluate((all) => {
+      const state = JSON.parse(localStorage.getItem('md-route-planner') ?? '{}').state ?? {};
+      return {
+        status: all.map((id) => state.run?.giftStatus?.[id] ?? null),
+        startDone: state.run?.startDone ?? false,
+      };
+    }, ids);
+  await expect
+    .poll(saved)
+    .toEqual({ status: ids.map((id) => (id === dropped ? null : 'got')), startDone: true });
+  await expect(section).toHaveCount(0);
+  await expect(pip.getByTestId('overlay-start-done')).toContainText(`획득 ${ids.length - 1}`);
+
+  // 「다시 고르기」 takes it back.
+  await pip.getByTestId('overlay-start-reopen').click();
+  await expect.poll(saved).toEqual({ status: ids.map(() => null), startDone: false });
+  await expect(pip.getByTestId('overlay-start')).toBeVisible();
 });

@@ -67,6 +67,8 @@ export function PlanProvider({
   const visitPack = useApp((s) => s.visitPack);
   const unvisitPack = useApp((s) => s.unvisitPack);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
+  const confirmStartIn = useApp((s) => s.confirmStart);
+  const reopenStart = useApp((s) => s.reopenStart);
   const nextFloor = useApp((s) => s.nextFloor);
   const setStageFloor = useApp((s) => s.setStageFloor);
   // The goals the decision card has checked to leave out, and whether the map shows that route.
@@ -400,6 +402,9 @@ export function PlanProvider({
       goTo,
       leave,
       enterAt,
+      confirmStart: (picks: { got: number[]; observed: number[]; skipped: number[] }) =>
+        confirmStartIn(picks, { max: observationBudget(options, data), observable: canObserve }),
+      reopenStart,
       openGift,
       openPack,
     };
@@ -434,6 +439,8 @@ export function PlanProvider({
     entangled,
     blocked,
     toggleObserved,
+    confirmStartIn,
+    reopenStart,
     toggleGoal,
     visitPack,
     unvisitPack,

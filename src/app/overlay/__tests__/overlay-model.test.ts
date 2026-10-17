@@ -4,7 +4,15 @@ import { buildIndexes } from '../../../core/index.ts';
 import type { FloorPlan, RoutePlan } from '../../../core/types.ts';
 import type { FeedbackLogEntry } from '../../lib/feedback-log.ts';
 import type { GiftStatus } from '../../lib/plan-input.ts';
-import { clockOf, lastEntry, nextPack, recentLines, remainingIn } from '../overlay-model.ts';
+import {
+  clockOf,
+  lastEntry,
+  nextPack,
+  recentLines,
+  remainingIn,
+  startCandidates,
+  startPicks,
+} from '../overlay-model.ts';
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
@@ -149,5 +157,50 @@ describe('recentLines', () => {
 describe('clockOf', () => {
   it('pads each part to two digits', () => {
     expect(clockOf(new Date(2026, 0, 2, 3, 4, 5).getTime())).toBe('03:04:05');
+  });
+});
+
+describe('startCandidates (M138)', () => {
+  const plan = {
+    start: {
+      startGifts: [9044],
+      observed: [
+        { giftId: 9086, pinned: true, freedPack: null },
+        { giftId: 9044, pinned: false, freedPack: null },
+        { giftId: 9088, pinned: false, freedPack: null },
+      ],
+    },
+  } as unknown as RoutePlan;
+
+  it('lists the start gifts, then the observations, once each, while the start is open', () => {
+    expect(startCandidates(plan, { currentFloor: 1 })).toEqual([
+      { giftId: 9044, kind: 'start' },
+      { giftId: 9086, kind: 'pinned' },
+      { giftId: 9088, kind: 'recommended' },
+    ]);
+  });
+
+  it('is null once the start is closed, past floor 1, without a plan, or with nothing expected', () => {
+    expect(startCandidates(plan, { currentFloor: 1, startDone: true })).toBeNull();
+    expect(startCandidates(plan, { currentFloor: 2 })).toBeNull();
+    expect(startCandidates(null, { currentFloor: 1 })).toBeNull();
+    const empty = { start: { startGifts: [], observed: [] } } as unknown as RoutePlan;
+    expect(startCandidates(empty, { currentFloor: 1 })).toBeNull();
+  });
+});
+
+describe('startPicks (M138)', () => {
+  const candidates = [
+    { giftId: 1, kind: 'start' as const },
+    { giftId: 2, kind: 'pinned' as const },
+    { giftId: 3, kind: 'recommended' as const },
+  ];
+
+  it('collects what is on, pins the observations among them, and unpins a pin left off', () => {
+    expect(startPicks(candidates, new Set([1, 3]))).toEqual({ got: [1, 3], observed: [3], skipped: [2] });
+  });
+
+  it('records nothing and unpins every pin when everything is off', () => {
+    expect(startPicks(candidates, new Set())).toEqual({ got: [], observed: [], skipped: [2] });
   });
 });

@@ -40,6 +40,8 @@ const plan = {
   shown: null as RoutePlan | null,
   packName: packLabel,
   expectedIn: (floor: number, _packId: number): number[] => (floor === 1 ? [GIFT_A, GIFT_B, GIFT_C] : []),
+  confirmStart: vi.fn(),
+  reopenStart: vi.fn(),
 };
 vi.mock('../../shell/plan-context.ts', () => ({ usePlan: () => plan }));
 
@@ -92,6 +94,8 @@ function fakePictureInPicture() {
 beforeEach(() => {
   useApp.setState({ run: emptyRun(), lang: 'ko', lastFloor: 15 });
   plan.shown = null;
+  plan.confirmStart.mockClear();
+  plan.reopenStart.mockClear();
 });
 
 afterEach(() => {
@@ -142,7 +146,7 @@ describe('OverlayView (M132)', () => {
       [...left.querySelectorAll('[data-gift]')].map((row) => Number(row.getAttribute('data-gift'))),
     ).toEqual([GIFT_A, GIFT_C]);
     expect(left).toHaveTextContent(giftLabel(GIFT_A));
-    // View only: nothing in the window can be pressed or followed.
+    // Past the start nothing in the window can be pressed or followed.
     expect(overlay.querySelectorAll('button, a, input, [role="button"]')).toHaveLength(0);
     const recent = within(overlay).getByTestId('overlay-recent');
     const lines = within(recent).getAllByRole('listitem');
@@ -182,6 +186,68 @@ describe('OverlayView (M132)', () => {
     expect(within(target).getByTestId('overlay-next')).toHaveAttribute('data-kind', 'done');
     // Past the end the floor reads the last floor, like the stage header.
     expect(within(target).getByTestId('overlay-floor')).toHaveTextContent('15/ 15');
+  });
+});
+
+describe('OverlayView run start (M138)', () => {
+  const startPlan = () =>
+    ({
+      floors: [],
+      start: {
+        startGifts: [GIFT_A],
+        observed: [
+          { giftId: GIFT_B, pinned: true, freedPack: null },
+          { giftId: GIFT_C, pinned: false, freedPack: null },
+        ],
+      },
+    }) as unknown as RoutePlan;
+
+  it('lists the expected start all on, and confirms only what is left on', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    plan.shown = startPlan();
+    const target = document.createElement('div');
+    document.body.append(target);
+    render(<OverlayView target={target} log={new FeedbackLog()} />, { wrapper: withCapture(captureOf()) });
+    const section = within(target).getByTestId('overlay-start');
+    const rows = within(section).getAllByTestId('overlay-start-gift');
+    expect(rows.map((row) => row.getAttribute('data-kind'))).toEqual(['start', 'pinned', 'recommended']);
+    expect(rows.every((row) => row.getAttribute('aria-pressed') === 'true')).toBe(true);
+    expect(rows[1]).toHaveTextContent('지정됨');
+    expect(rows[2]).toHaveTextContent('추천');
+    // Act: the pinned observation did not come.
+    await user.click(rows[1]!);
+    await user.click(within(section).getByTestId('overlay-start-confirm'));
+    // Assert
+    expect(rows[1]).toHaveAttribute('aria-pressed', 'false');
+    expect(plan.confirmStart).toHaveBeenCalledWith({
+      got: [GIFT_A, GIFT_C],
+      observed: [GIFT_C],
+      skipped: [GIFT_B],
+    });
+  });
+
+  it('says the start is confirmed on floor 1 and offers to choose again', async () => {
+    const user = userEvent.setup();
+    plan.shown = startPlan();
+    useApp.setState({ run: { ...emptyRun(), startDone: true, startGifts: [GIFT_A, GIFT_C] } });
+    const target = document.createElement('div');
+    document.body.append(target);
+    render(<OverlayView target={target} log={new FeedbackLog()} />, { wrapper: withCapture(captureOf()) });
+
+    expect(within(target).queryByTestId('overlay-start')).toBeNull();
+    expect(within(target).getByTestId('overlay-start-done')).toHaveTextContent('시작 확인 · 획득 2');
+    await user.click(within(target).getByTestId('overlay-start-reopen'));
+    expect(plan.reopenStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows nothing about the start past floor 1', () => {
+    plan.shown = startPlan();
+    useApp.setState({ run: { ...emptyRun(), currentFloor: 2, stageFloor: 2, startGifts: [GIFT_A] } });
+    const target = document.createElement('div');
+    render(<OverlayView target={target} log={new FeedbackLog()} />, { wrapper: withCapture(captureOf()) });
+    expect(within(target).queryByTestId('overlay-start')).toBeNull();
+    expect(within(target).queryByTestId('overlay-start-done')).toBeNull();
   });
 });
 

@@ -28,7 +28,9 @@ export interface RunState {
   /**
    * The gifts recorded as collected when floor 1 was first left: the observed gifts and the
    * starting gift. Taken back again if the run returns to floor 1 (an entry undone, a skip taken
-   * back), so a revisited decision never leaves phantom "in hand" gifts behind.
+   * back), so a revisited decision never leaves phantom "in hand" gifts behind — unless the start
+   * was confirmed (`startDone` with `confirmStart`, M138): then it was set at that moment, says what
+   * the game gave, and stays.
    */
   startGifts: number[];
   /**
@@ -41,7 +43,8 @@ export interface RunState {
    * The run start is behind the player while floor 1 is still ahead (M134): the start gifts and
    * 기프트 관측 are chosen once the observation screen is passed, before floor 1's pack. Set by
    * `markStartDone` (the screen reader, when it sees that screen confirmed or floor 1's pack
-   * select) and kept until the run is thrown away — returning the frontier to floor 1 (an entry
+   * select) or `confirmStart` (the overlay, M138 — which also records what came in `startGifts`)
+   * and kept until the run is thrown away — returning the frontier to floor 1 (an entry
    * undone) does not reopen the start: in the game the boons, start gifts and observations stay
    * spent. Device only, never shared.
    */

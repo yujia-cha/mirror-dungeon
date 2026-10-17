@@ -2682,6 +2682,92 @@ describe('start stage (M134)', () => {
   });
 });
 
+describe('run start confirmed (M138)', () => {
+  const limits = { max: 3, observable: () => true };
+  /** BURN_DECK with 9267 and 9423: the planner recommends observing 9423 at the start. */
+  const arrange = () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267);
+    useApp.getState().toggleWanted(9423);
+    return planRoute(planInputFor(useApp.getState()), data, indexes);
+  };
+  const routed = (plan: ReturnType<typeof planRoute>, id: number) =>
+    plan.floors.some((floor) => floor.pickups.some((pickup) => pickup.giftId === id)) ||
+    plan.unresolved.some((u) => u.giftId === id);
+
+  it('routes a recommended observation the player did not take, through leaving floor 1', () => {
+    // Arrange
+    const before = arrange();
+    expect(before.start.observed).toContainEqual(expect.objectContaining({ giftId: 9423, pinned: false }));
+    // Act: the start gifts came, the recommended observation did not.
+    useApp.getState().confirmStart({ got: before.start.startGifts, observed: [], skipped: [] }, limits);
+    // Assert: the start is closed and only what came is in hand.
+    const { run } = useApp.getState();
+    expect(run).toMatchObject({ currentFloor: 1, startDone: true, startGifts: before.start.startGifts });
+    expect(run.giftStatus[9423]).toBeUndefined();
+    const after = planRoute(planInputFor(useApp.getState()), data, indexes);
+    expect(after.start.observed).toEqual([]);
+    expect(planInputFor(useApp.getState()).options.ownedGifts).not.toContain(9423);
+    expect(routed(after, 9423)).toBe(true);
+    // Leaving floor 1 settles nothing from the plan's guess: the record stays what was confirmed.
+    useApp.getState().visitPack(1002, 1, { got: [] });
+    expect(useApp.getState().run.startGifts).toEqual(before.start.startGifts);
+    expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
+  });
+
+  it('pins a taken observation and unpins a pinned one the game did not give', () => {
+    arrange();
+    useApp.getState().toggleObserved(9267, limits);
+    // Act: 9423 (recommended) came, the pinned 9267 did not.
+    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [9267] }, limits);
+    // Assert
+    expect(useApp.getState().options.observedGifts).toEqual([9423]);
+    expect(useApp.getState().run.giftStatus).toMatchObject({ 9423: 'got' });
+    expect(useApp.getState().run.giftStatus[9267]).toBeUndefined();
+  });
+
+  it('does nothing past floor 1 or once the start is closed', () => {
+    arrange();
+    useApp.getState().markStartDone();
+    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
+    expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
+
+    useApp.getState().resetRun();
+    useApp.getState().visitPack(1002, 1);
+    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
+    expect(useApp.getState().run.startDone).toBeUndefined();
+    expect(useApp.getState().run.giftStatus[9423]).toBeUndefined();
+  });
+
+  it('keeps the confirmed record when an entry takes the run back to floor 1', () => {
+    arrange();
+    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
+    useApp.getState().visitPack(1002, 1, { got: [] });
+    useApp.getState().unvisitPack(1002);
+    expect(useApp.getState().run).toMatchObject({ currentFloor: 1, startDone: true, startGifts: [9423] });
+    expect(useApp.getState().run.giftStatus[9423]).toBe('got');
+  });
+
+  it('reopens on floor 1, taking back what the confirmation recorded', () => {
+    arrange();
+    useApp.getState().confirmStart({ got: [9423], observed: [9423], skipped: [] }, limits);
+    // Act
+    useApp.getState().reopenStart();
+    // Assert
+    const { run } = useApp.getState();
+    expect(run.startDone).toBeUndefined();
+    expect(run.startGifts).toEqual([]);
+    expect(run.giftStatus[9423]).toBeUndefined();
+    expect(observationClosed(run)).toBe(false);
+  });
+
+  it('keeps the record of a confirmed start in a saved run on floor 1, and drops it otherwise', () => {
+    const saved = { ...emptyRun(), giftStatus: { 9423: 'got' as const }, startGifts: [9423] };
+    expect(sanitizeRun({ ...saved, startDone: true }).startGifts).toEqual([9423]);
+    expect(sanitizeRun(saved).startGifts).toEqual([]);
+  });
+});
+
 describe('RoutePlanPanel', () => {
   const renderRoute = () => renderPlanned(<RoutePlanPanel onOpenGifts={() => undefined} />);
 

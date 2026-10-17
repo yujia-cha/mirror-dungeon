@@ -4,12 +4,15 @@
  * few things that happened. Drawn into the window's body through a portal, so it reads the same
  * plan, store and session as the page.
  *
- * View only (the owner's call). Every listener the app's floating layers use (`useDismiss`,
- * `DetailSurface`, the sheets) is on the page's `document`, which a press in this window never
- * reaches — so nothing here opens a sheet or a popover, and names are plain words, not links. Being
- * a glance while the game runs, it would be the wrong place to change the run anyway.
+ * A glance, not a second app (the owner's call). Every listener the app's floating layers use
+ * (`useDismiss`, `DetailSurface`, the sheets) is on the page's `document`, which a press in this
+ * window never reaches — so nothing here opens a sheet or a popover, and names are plain words, not
+ * links. The one thing it does change is the run start (M138): plain buttons, whose React handlers
+ * do reach this window (React listens on the portal's container), say which start gifts and
+ * observations the game actually gave, because that is decided in the game while this window is
+ * the one in view.
  */
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { TriangleAlert } from 'lucide-react';
 import { pick, t } from '../i18n.ts';
@@ -19,9 +22,17 @@ import { useCaptureSession } from '../capture/capture-context.ts';
 import { logText, statusTextOf } from '../capture/capture-text.ts';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { PackCard } from '../components/PackCard.tsx';
-import { Badge } from '../components/ui.tsx';
+import { Badge, Button } from '../components/ui.tsx';
 import { usePlan } from '../shell/plan-context.ts';
-import { clockOf, nextPack, recentLines, remainingIn } from './overlay-model.ts';
+import {
+  clockOf,
+  nextPack,
+  recentLines,
+  remainingIn,
+  startCandidates,
+  startPicks,
+  type StartCandidate,
+} from './overlay-model.ts';
 
 /** One copy of the log's entries per revision, so `useSyncExternalStore` sees a stable snapshot. */
 const snapshots = new WeakMap<FeedbackLog, { revision: number; entries: FeedbackLogEntry[] }>();
@@ -43,9 +54,71 @@ function SectionTitle({ children }: { children: string }) {
   return <h2 className="text-caption-strong text-fg-muted">{children}</h2>;
 }
 
+const START_TAG = {
+  start: 'routeStartGift',
+  pinned: 'observePinned',
+  recommended: 'routeObservedRecommended',
+} as const;
+
+/**
+ * The run start the plan expects (M138): every candidate starts on — the plan's own guess — and the
+ * player turns off what the game did not give. Keyed by the candidates, so a recalculated start
+ * starts over from all on.
+ */
+function StartChoice({ candidates }: { candidates: StartCandidate[] }) {
+  const { indexes, lang, confirmStart } = usePlan();
+  const [taken, setTaken] = useState(() => new Set(candidates.map((c) => c.giftId)));
+  const toggle = (id: number): void =>
+    setTaken((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  return (
+    <section className="flex flex-col gap-2" data-testid="overlay-start">
+      <SectionTitle>{t('overlayStartTitle', lang)}</SectionTitle>
+      <p className="text-caption text-fg-muted">{t('overlayStartHint', lang)}</p>
+      <ul className="flex flex-col gap-1" data-uniform="width">
+        {candidates.map((c) => {
+          const gift = indexes.giftById.get(c.giftId);
+          if (!gift) return null;
+          const on = taken.has(c.giftId);
+          return (
+            <li key={c.giftId} className="flex">
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggle(c.giftId)}
+                className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-sm px-1 py-1 text-left hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                data-testid="overlay-start-gift"
+                data-gift={c.giftId}
+                data-kind={c.kind}
+              >
+                <GiftIcon gift={gift} size={32} lang={lang} status={on ? 'got' : null} pending={!on} />
+                <span className="min-w-0 flex-1 break-keep text-caption text-fg">
+                  {pick(gift.name, lang)}
+                </span>
+                <span className="flex-none text-caption text-fg-subtle">{t(START_TAG[c.kind], lang)}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <Button
+        variant="primary"
+        onClick={() => confirmStart(startPicks(candidates, taken))}
+        testId="overlay-start-confirm"
+      >
+        {t('overlayStartConfirm', lang)}
+      </Button>
+    </section>
+  );
+}
+
 /** The window's contents. `log` is the page's feedback log unless a test hands in its own. */
 export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
-  const { indexes, lang, shown, packName, expectedIn } = usePlan();
+  const { indexes, lang, shown, packName, expectedIn, reopenStart } = usePlan();
   const capture = useCaptureSession();
   const run = useApp((s) => s.run);
   const lastFloor = useApp((s) => s.lastFloor);
@@ -55,6 +128,7 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
   const asking = capture.questions.length;
   const next = nextPack(shown, run, lastFloor, indexes);
   const left = remainingIn(run, expectedIn);
+  const start = startCandidates(shown, run);
   const recent = recentLines(feedback, capture.log, (entry) => logText(entry, indexes, lang, packName));
 
   let status;
@@ -101,6 +175,19 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
           </div>
         ) : null}
       </section>
+
+      {start ? (
+        <StartChoice key={start.map((c) => `${c.kind}:${c.giftId}`).join(',')} candidates={start} />
+      ) : run.currentFloor === 1 && run.startDone ? (
+        <div className="flex min-w-0 items-center gap-2" data-testid="overlay-start-done">
+          <span className="min-w-0 flex-1 text-caption text-fg-muted">
+            {t('overlayStartDone', lang, { n: run.startGifts.length })}
+          </span>
+          <Button size="sm" variant="ghost" onClick={reopenStart} testId="overlay-start-reopen">
+            {t('overlayStartReopen', lang)}
+          </Button>
+        </div>
+      ) : null}
 
       <section className="flex flex-col gap-2" data-testid="overlay-next" data-kind={next.kind}>
         <SectionTitle>

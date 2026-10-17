@@ -13,10 +13,13 @@
  *   would tell the player to look for it in a pack they cannot go back to.
  * - **The next pack** is the route pack the stage would put first on the frontier
  *   (`run.currentFloor`), the floor the player decides next.
+ * - **The start candidates** (M138) are what the plan expects the run start to hand over while it
+ *   is still open: the start gifts and the observations, pinned or recommended. The player says
+ *   which ones the game actually gave (`confirmStart`); the rest is routed again.
  */
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
 import type { FeedbackLogEntry } from '../lib/feedback-log.ts';
-import type { RunState } from '../lib/plan-input.ts';
+import { observationClosed, type RunState } from '../lib/plan-input.ts';
 import { enterablePacks } from '../lib/stage.ts';
 import { runDoneFloor } from '../store.ts';
 
@@ -137,4 +140,47 @@ export function clockOf(at: number): string {
   return [date.getHours(), date.getMinutes(), date.getSeconds()]
     .map((n) => String(n).padStart(2, '0'))
     .join(':');
+}
+
+export type StartCandidateKind = 'start' | 'pinned' | 'recommended';
+
+export interface StartCandidate {
+  giftId: number;
+  /** How the plan came to it: a start gift, a pin of the player's, or the planner's recommendation. */
+  kind: StartCandidateKind;
+}
+
+/**
+ * The run start the plan expects, while it is open (`observationClosed` false): the start gifts
+ * first, then the observations in the plan's order. Null once the start is closed, without a plan,
+ * or when it expects nothing.
+ */
+export function startCandidates(
+  plan: Pick<RoutePlan, 'start'> | null,
+  run: Pick<RunState, 'currentFloor' | 'startDone'>,
+): StartCandidate[] | null {
+  if (!plan || observationClosed(run)) return null;
+  const out: StartCandidate[] = [];
+  const seen = new Set<number>();
+  const add = (giftId: number, kind: StartCandidateKind): void => {
+    if (seen.has(giftId)) return;
+    seen.add(giftId);
+    out.push({ giftId, kind });
+  };
+  for (const id of plan.start.startGifts) add(id, 'start');
+  for (const o of plan.start.observed) add(o.giftId, o.pinned ? 'pinned' : 'recommended');
+  return out.length > 0 ? out : null;
+}
+
+/** What 「확인하고 진행」 records for the candidates the player left on (`taken`). */
+export function startPicks(
+  candidates: readonly StartCandidate[],
+  taken: ReadonlySet<number>,
+): { got: number[]; observed: number[]; skipped: number[] } {
+  const isObservation = (c: StartCandidate): boolean => c.kind !== 'start';
+  return {
+    got: candidates.filter((c) => taken.has(c.giftId)).map((c) => c.giftId),
+    observed: candidates.filter((c) => isObservation(c) && taken.has(c.giftId)).map((c) => c.giftId),
+    skipped: candidates.filter((c) => c.kind === 'pinned' && !taken.has(c.giftId)).map((c) => c.giftId),
+  };
 }

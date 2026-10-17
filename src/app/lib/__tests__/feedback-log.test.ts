@@ -117,6 +117,13 @@ describe('describeChange', () => {
     const next = { ...prev, dark: false, run: { ...prev.run, visits: {}, currentFloor: 3 } };
     expect(describeChange(prev, next)).toEqual(['leave F3 pack 1020', 'frontier F4 → F3', 'theme light']);
   });
+
+  it('says the run start closing and opening again (M138)', () => {
+    const prev = { ...base(), run: emptyRun() };
+    const done = { ...prev, run: { ...prev.run, startDone: true } };
+    expect(describeChange(prev, done)).toEqual(['start done']);
+    expect(describeChange(done, prev)).toEqual(['start open']);
+  });
 });
 
 describe('installFeedbackLog', () => {
