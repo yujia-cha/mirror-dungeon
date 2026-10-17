@@ -1,6 +1,7 @@
 /**
- * The 「추천 기프트」 tab of the 「모두 보기」 browser (M121): its filter row and its two sections —
- * 「덱 조건 충족」 and 「조건 없이 발동 · 팩 전용」. Which gift goes where is `lib/recommend.ts`; the
+ * The 「추천 기프트」 tab of the 「모두 보기」 browser (M121): its filter row and its sections —
+ * 「지금 덱으로 발동」 (the deck-met and the unconditional pack-only gifts together since M137) and
+ * 「E.G.O 스킬 조건」. Which gift is recommended is `lib/recommend.ts`; the
  * browser holds the filter state and hands in how a list of entries becomes tiles (`grid`), so the
  * tiles here are the very tiles of the 「모든 기프트」 grid (icon toggles the goal, name opens the sheet).
  */
@@ -146,8 +147,7 @@ function Section({
 }
 
 export function RecommendedSections({
-  deck,
-  free,
+  active,
   ego,
   sort,
   deckEmpty,
@@ -157,12 +157,12 @@ export function RecommendedSections({
   lang,
   keywordOrder,
 }: {
-  deck: readonly GiftEntry[];
-  free: readonly GiftEntry[];
+  /** 「지금 덱으로 발동」: the deck-met and the unconditional pack-only gifts, one section (M137). */
+  active: readonly GiftEntry[];
   /** 「E.G.O 스킬 조건」 — last, drawn only when it has something, and in one grid (never by keyword). */
   ego: readonly GiftEntry[];
   sort: RecommendSort;
-  /** Why 「덱 조건 충족」 is empty: no deck, nothing met, or the filters. */
+  /** Why 「지금 덱으로 발동」 is empty: no deck, nothing met, or the filters. */
   deckEmpty: string;
   /** A line above the sections — nobody deployed, so most conditions count nobody. */
   notice?: string;
@@ -180,7 +180,7 @@ export function RecommendedSections({
       ) : null}
       <Section
         title={t('recDeckTitle', lang)}
-        entries={deck}
+        entries={active}
         sort={sort}
         empty={deckEmpty}
         grid={grid}
@@ -189,20 +189,6 @@ export function RecommendedSections({
         keywordOrder={keywordOrder}
         testId="recommend-deck"
       />
-      {/* Deck-independent, so it is drawn only when it has something: an empty one says nothing. */}
-      {free.length > 0 ? (
-        <Section
-          title={t('recFreeTitle', lang)}
-          entries={free}
-          sort={sort}
-          empty=""
-          grid={grid}
-          enums={enums}
-          lang={lang}
-          keywordOrder={keywordOrder}
-          testId="recommend-free"
-        />
-      ) : null}
       {ego.length > 0 ? (
         <Section
           title={t('recEgoTitle', lang)}

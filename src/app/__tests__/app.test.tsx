@@ -2195,10 +2195,9 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
       .queryAllByTestId('gift-tile')
       .map((el) => Number(el.getAttribute('data-gift')));
   const deckSection = () => screen.getByTestId('recommend-deck');
-  const freeSection = () => screen.queryByTestId('recommend-free');
   const shown = () => ids(screen.getByTestId('gift-browser-scroller'));
 
-  it('opens on 추천 기프트: the gifts the deck meets, and the unconditional pack-bound ones apart', () => {
+  it('opens on 추천 기프트: the gifts the deck meets and the unconditional pack-bound ones, in one section', () => {
     // Arrange
     useApp.getState().setDeck(BURN_DECK, 7);
     // Act
@@ -2210,14 +2209,14 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     // 진혼 (화상 7/5) is met, 연성진동 (진동 2/5) is not.
     expect(ids(deckSection())).toContain(9088);
     expect(ids(deckSection())).not.toContain(9092);
-    expect(deckSection()).toHaveTextContent('덱 조건 충족');
+    expect(deckSection()).toHaveTextContent('지금 덱으로 발동');
     // M129: 붉은색 넥타이 asks for a burn S3, which 10112 brings; 불타는 운명 only asks about a state
     // (「[화상]을 보유한」) and one boss drops it; 귀로 is plain too but drops anywhere.
     expect(ids(deckSection())).toContain(9215);
-    expect(freeSection()).toHaveTextContent('조건 없이 발동 · 팩 전용');
-    expect(ids(freeSection()!)).toContain(9251);
+    // M137: the unconditional pack-bound gift sits in the same section — no second one.
+    expect(screen.queryByTestId('recommend-free')).toBeNull();
+    expect(ids(deckSection())).toContain(9251);
     expect(shown()).not.toContain(9039);
-    expect(ids(freeSection()!).every((id) => isPackBound(indexes.giftById.get(id)!))).toBe(true);
     // Why, for debugging only: an attribute, never text.
     const tile = (id: number) =>
       within(deckSection())
@@ -2297,11 +2296,11 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     await user.selectOptions(screen.getByLabelText('획득'), 'pack');
     expect(shown().every((id) => isPackBound(indexes.giftById.get(id)!))).toBe(true);
     expect(shown()).not.toContain(9088);
-    // 범용 is the rest, and the unconditional section is all pack-bound, so it goes.
+    // 범용 is the rest — the unconditional gifts are all pack-bound, so none of them stays.
     await user.selectOptions(screen.getByLabelText('획득'), 'general');
     expect(shown().every((id) => !isPackBound(indexes.giftById.get(id)!))).toBe(true);
     expect(shown()).toContain(9088);
-    expect(freeSection()).toBeNull();
+    expect(shown()).not.toContain(9251);
     await user.selectOptions(screen.getByLabelText('획득'), 'all');
     // 조합 기프트 포함 off drops every fusion.
     await user.click(screen.getByRole('checkbox', { name: '조합 기프트 포함' }));
@@ -2353,14 +2352,14 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     expect(screen.getByRole('dialog', { name: '진혼' })).toBeInTheDocument();
   });
 
-  it('says why 덱 조건 충족 is empty, and warns when nobody is deployed', () => {
+  it('says why 지금 덱으로 발동 is empty, and warns when nobody is deployed', () => {
     // Arrange + Act: an empty deck.
     const { unmount } = renderBrowser();
     // Assert
-    expect(within(deckSection()).getByTestId('recommend-empty')).toHaveTextContent('덱이 비어 있습니다');
-    expect(screen.queryByTestId('recommend-notice')).toBeNull();
-    // The deck-independent section is still there.
-    expect(freeSection()).not.toBeNull();
+    // M137: the section still holds the unconditional pack-only gifts, so the empty deck is said
+    // above it.
+    expect(screen.getByTestId('recommend-notice')).toHaveTextContent('덱이 비어 있습니다');
+    expect(ids(deckSection()).length).toBeGreaterThan(0);
     unmount();
     // Arrange + Act: the default deck, which starts with nobody deployed.
     useApp.getState().setDeck(LCB_DECK, 0, []);

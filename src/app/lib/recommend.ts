@@ -7,8 +7,8 @@
  * the gift's gates name — a skill that inflicts the keyword, the slot, a faction, an identity-only
  * buff, a sin and attack type, coins, a defense kind. States and battle situations ask nothing.
  *
- * - `deck` (「덱 조건 충족」): some usable effect asks something of the deck, or a met gate opens it;
- * - `free` (「조건 없이 발동 · 팩 전용」): only unconditional effects are usable, and only one pack (or
+ * - `deck` (drawn in 「지금 덱으로 발동」): some usable effect asks something of the deck, or a met gate opens it;
+ * - `free` (drawn in the same section since M137): only unconditional effects are usable, and only one pack (or
  *   boss) hands the gift out (`isPackBound`) — that is what decides a route; a general one is left out;
  * - `ego` (「E.G.O 스킬 조건」, last): only an E.G.O skill condition holds it — our data has no
  *   identity's E.G.O, so the owner counts it as met but keeps such gifts apart;
@@ -58,9 +58,9 @@ export function isFusionGift(gift: Gift): boolean {
 }
 
 export interface Recommendation {
-  /** 「덱 조건 충족」: the deck can use an effect that asks something of it. */
+  /** The deck can use an effect that asks something of it (「지금 덱으로 발동」). */
   deck: GiftEntry[];
-  /** 「조건 없이 발동 · 팩 전용」: only plain effects are usable, and only one pack (or boss) hands it out. */
+  /** Only plain effects are usable, and only one pack (or boss) hands it out (same section, M137). */
   free: GiftEntry[];
   /** 「E.G.O 스킬 조건」: held only by an E.G.O skill condition, any source — the last group. */
   ego: GiftEntry[];

@@ -109,8 +109,10 @@ export function GiftBrowser({
     const shown = (list: readonly GiftEntry[]): GiftEntry[] =>
       orderRecommended(list.filter(keep), recFilters.sort, scoreOf);
     return {
-      deck: shown(recommendation.deck),
-      free: shown(recommendation.free),
+      // 「지금 덱으로 발동」 is one section (owner's call, M137): the deck-met and the
+      // unconditional pack-only gifts together, in the same rank order. The split stays in
+      // `recommendation` (and in `data-recommend`) for debugging.
+      active: shown([...recommendation.deck, ...recommendation.free]),
       ego: shown(recommendation.ego),
       reasons: recommendation.reasons,
       scores: recommendation.scores,
@@ -122,12 +124,19 @@ export function GiftBrowser({
     filterState.setQuery('');
   }, [filterState]);
   let deckEmpty: string;
-  if (recommendation.deck.length > 0) deckEmpty = t('giftsNoMatch', lang);
+  if (recommendation.deck.length + recommendation.free.length > 0) deckEmpty = t('giftsNoMatch', lang);
   else if (deckSize === 0) deckEmpty = t('giftsDeckEmpty', lang);
   else deckEmpty = t('recDeckNone', lang);
   // A deck starts with nobody deployed, and most conditions count the deployed: say so, or the
   // nearly empty list reads as a verdict on the deck.
-  const recNotice = deckSize > 0 && stats.deployed.length === 0 ? t('recNoDeployed', lang) : undefined;
+  // With no deck the section still holds the unconditional pack-only gifts (M137), so the empty
+  // deck is said above it rather than as the section's empty line.
+  const recNotice =
+    deckSize === 0
+      ? t('giftsDeckEmpty', lang)
+      : stats.deployed.length === 0
+        ? t('recNoDeployed', lang)
+        : undefined;
 
   usePageHistory(true, onClose, page);
   const close = useLatest(onClose);
@@ -175,17 +184,13 @@ export function GiftBrowser({
   let list: React.ReactNode;
   if (tab === 'recommended') {
     list =
-      recNarrowed &&
-      recommended.deck.length === 0 &&
-      recommended.free.length === 0 &&
-      recommended.ego.length === 0 ? (
+      recNarrowed && recommended.active.length === 0 && recommended.ego.length === 0 ? (
         <div className="p-2">
           <GiftNoMatch query={filters.query} onReset={resetRecommended} lang={lang} />
         </div>
       ) : (
         <RecommendedSections
-          deck={recommended.deck}
-          free={recommended.free}
+          active={recommended.active}
           ego={recommended.ego}
           sort={recFilters.sort}
           deckEmpty={deckEmpty}

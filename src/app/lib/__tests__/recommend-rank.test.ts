@@ -150,7 +150,7 @@ describe('compareRecommended', () => {
 });
 
 describe('the ranking on real data', () => {
-  it('orders a burn deck’s 「덱 조건 충족」 by score, highest first', () => {
+  it('orders a burn deck’s deck-met gifts by score, highest first', () => {
     // Arrange: seven burn identities deployed.
     const deployed = [10112, 10216, 10311, 10415, 10512, 10604, 10715];
     const stats = analyseDeck(deployed, indexes, data.rules.deployment, deployed);
