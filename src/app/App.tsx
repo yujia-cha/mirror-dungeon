@@ -87,8 +87,6 @@ export function App() {
   const toggleDark = useApp((s) => s.toggleDark);
   const applyShared = useApp((s) => s.applyShared);
   const setDeck = useApp((s) => s.setDeck);
-  const season = useApp((s) => s.season);
-  const setSeason = useApp((s) => s.setSeason);
   const adoptSeason = useApp((s) => s.adoptSeason);
 
   const [index, setIndex] = useState<SeasonIndex | null>(null);
@@ -99,8 +97,8 @@ export function App() {
    * Both effects below used to open with `setError(null)` / `setData(null)` — clearing last time's
    * answer before asking again. That is a state write from an effect: a second render pass, and an
    * error once the React Compiler lint set is on. Storing the season and the attempt alongside the
-   * value lets the render decide instead: a result for a season we are no longer opening, or for an
-   * attempt we have since retried, simply reads as "still loading".
+   * value lets the render decide instead: a result for an attempt we have since retried simply
+   * reads as "still loading".
    */
   const [loaded, setLoaded] = useState<{
     season: number;
@@ -116,23 +114,26 @@ export function App() {
    * `hashchange`. Reading it in an effect meant deciding there too — `setLinkBroken`,
    * `setPendingShared` — which is a state write from an effect. Read during the first render
    * instead, the answer can simply *be* the initial state of both, and the effect is left with the
-   * side effects: applying the link and rewriting the URL.
+   * side effects: applying the link and rewriting the URL. A `hashchange` is an event, so its
+   * handler decides and applies on the spot.
    */
-  const [incoming, setIncoming] = useState(readIncoming);
+  const [incoming] = useState(readIncoming);
   const [linkBroken, setLinkBroken] = useState(incoming.kind === 'broken');
   const [copyFailed, setCopyFailed] = useState(false);
   const [dropped, setDropped] = useState<{ gifts: number } | null>(null);
-  // Held decisions: a share link and a season change each throw the run away, so when one is
-  // live the choice waits here for the confirmation below.
+  /** Say how many goals a link or a load dropped (M145: an MD7 link opens in MD8), or nothing. */
+  const reportDropped = (counts: { gifts: number }): void => setDropped(counts.gifts > 0 ? counts : null);
+  // A held decision: a share link throws the run away, so when one is live the link waits here
+  // for the confirmation below.
   const [pendingShared, setPendingShared] = useState<SharedState | null>(
     incoming.kind === 'ask' ? incoming.shared : null,
   );
-  const [pendingSeason, setPendingSeason] = useState<number | null>(null);
 
   // The hash is consumed once and dropped from the URL, or a later reload would undo the user's
   // edits. A hash that says nothing to us is left in place: dropping it silently took away the only
   // copy of a link the reader might still want to re-open or pass on. A run in progress keeps the
-  // hash until the question above is answered.
+  // hash until the question above is answered. This runs before the first data load, which adopts
+  // the link into the season it opens and reports what it dropped.
   useEffect(() => {
     if (incoming.kind !== 'apply') return;
     applyShared(incoming.shared);
@@ -142,15 +143,20 @@ export function App() {
   // A link pasted into the address bar of a tab that already shows the app is a same-document
   // navigation: the page does not reload, so the first-render read above never runs again and the
   // link did nothing. `hashchange` is the only signal, and it goes through the same decision (a run
-  // in progress is asked about first). `replaceState` below does not fire it, so consuming a link
-  // never loops back here.
+  // in progress is asked about first). `replaceState` does not fire it, so consuming a link never
+  // loops back here. The data is loaded by now, so applying adopts the link at once and the
+  // notice says what it dropped.
   useEffect(() => {
     const onHashChange = (): void => {
       const next = readIncoming();
       if (next.kind === 'none') return;
-      setIncoming(next);
       setLinkBroken(next.kind === 'broken');
       setPendingShared(next.kind === 'ask' ? next.shared : null);
+      if (next.kind === 'apply') {
+        const counts = useApp.getState().applyShared(next.shared);
+        setDropped(counts.gifts > 0 ? counts : null);
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+      }
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -167,7 +173,7 @@ export function App() {
   const clearHash = (): void =>
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   const takeShared = (): void => {
-    if (pendingShared) applyShared(pendingShared);
+    if (pendingShared) reportDropped(applyShared(pendingShared));
     setPendingShared(null);
     clearHash();
   };
@@ -192,7 +198,9 @@ export function App() {
     document.title = t('appTitle', lang);
   }, [lang]);
 
-  // Which seasons are published is data, not a build-time constant, so the index comes first.
+  // Which seasons are published is data, not a build-time constant, so the index comes first. The
+  // app opens its default and nothing else (M145): a saved season or a link's `s` no longer
+  // switches it — `adoptSeason` takes their goals into the default and counts what it dropped.
   useEffect(() => {
     let cancelled = false;
     loadSeasonIndex(import.meta.env.BASE_URL)
@@ -207,14 +215,7 @@ export function App() {
     };
   }, [attempt]);
 
-  // A season the saved state or a share link names, while it is still published; otherwise the one
-  // the index opens. A season that has been withdrawn must not leave the app with nothing to read.
-  const openSeason = useMemo(() => {
-    if (!index) return null;
-    return season !== undefined && index.seasons.some((entry) => entry.id === season)
-      ? season
-      : index.default;
-  }, [index, season]);
+  const openSeason = index ? index.default : null;
 
   const data = loaded && loaded.season === openSeason && loaded.attempt === attempt ? loaded.data : null;
 
@@ -359,8 +360,6 @@ export function App() {
         stats={stats}
         lang={lang}
         dark={dark}
-        seasons={index?.seasons ?? []}
-        onSeason={(id) => (runInProgress(useApp.getState().run) ? setPendingSeason(id) : setSeason(id))}
         onShare={share}
         onToggleLang={() => setLang(lang === 'ko' ? 'en' : 'ko')}
         onToggleDark={toggleDark}
@@ -379,18 +378,6 @@ export function App() {
             setPendingShared(null);
             clearHash();
           }}
-        />
-      ) : pendingSeason !== null ? (
-        <ConfirmDialog
-          lang={lang}
-          title={t('confirmSeasonTitle', lang)}
-          message={t('confirmSeasonMessage', lang)}
-          confirmLabel={t('confirmSeasonConfirm', lang)}
-          onConfirm={() => {
-            setSeason(pendingSeason);
-            setPendingSeason(null);
-          }}
-          onCancel={() => setPendingSeason(null)}
         />
       ) : null}
       {sharedCopied ? (

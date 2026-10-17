@@ -5,7 +5,7 @@ import type { PlanOptions } from '../core/types.ts';
 import type { UpgradeLevel } from '../core/schema.ts';
 import { defaultOptions } from '../core/index.ts';
 import type { Lang } from './i18n.ts';
-import { observationClosed, type FusionGoalMap, type RunState } from './lib/plan-input.ts';
+import { APP_START, observationClosed, type FusionGoalMap, type RunState } from './lib/plan-input.ts';
 import { DEFAULT_READ_INTERVAL, READ_INTERVALS, type ReadIntervalPreset } from './capture/loop.ts';
 
 export type LeftTab = 'deck' | 'gifts';
@@ -52,9 +52,10 @@ export const PANEL_WIDTH = { min: 260, max: 560, default: 336 } as const;
 
 export interface SharedState {
   /**
-   * The Mirror Dungeon the goals belong to. A season replaces the gift pool, so a link opened in
-   * another season would resolve nothing; absent means a link made before seasons existed, which
-   * can only have meant 7.
+   * The Mirror Dungeon the goals were picked in, written into a link as `s`. The app always opens
+   * the default season (M145) and adopts whatever a link carries into it, so nothing reads this
+   * back; it is still written so a link says which season it was made in, should a later app
+   * offer a choice again.
    */
   season?: number;
   /** Identity ids in formation order: at most 12, one per sinner (enforced by `uniqueDeck` on every way in). */
@@ -199,15 +200,15 @@ interface AppState extends SharedState {
   setUi: (patch: Partial<UiState>) => void;
   setLang: (lang: Lang) => void;
   toggleDark: () => void;
-  /** Choose the season to plan. The run belongs to the old season's floors, so it is dropped. */
-  setSeason: (season: number) => void;
   /**
    * Take on the season that just loaded and drop what it has never heard of.
    *
    * A gift or pack id this season does not ship cannot be drawn, named or planned, so keeping it
    * would leave a blank in the list. One this season ships but cannot award is a different thing
    * and stays: the planner already explains it as 미해결. Returns what was dropped so the app can
-   * say so rather than letting choices disappear quietly.
+   * say so rather than letting choices disappear quietly. A run saved under another season (the
+   * app used to let the reader pick one, M145 fixed it to the default) belongs to that season's
+   * floors and packs, so it is dropped.
    */
   adoptSeason: (info: {
     season: number;
@@ -221,13 +222,17 @@ interface AppState extends SharedState {
   }) => {
     gifts: number;
   };
-  applyShared: (shared: SharedState) => void;
+  /**
+   * Take a share link's plan. Whatever season the link names, it is planned in the one loaded
+   * (M145): once a season has been adopted, the link's goals go through the same `adoptSeason`
+   * pass, and what it dropped is returned for the app to say. Before the first load nothing is
+   * known yet and the count is 0 — that load adopts the link.
+   */
+  applyShared: (shared: SharedState) => { gifts: number };
 }
 
 const SINNER_COUNT = 12;
 const LEGACY_DEPLOYED = 6;
-/** Every share link made before links carried a season was a Mirror Dungeon 7 plan. */
-const LEGACY_SEASON = 7;
 
 /** Identity ids are 1SSNN, so the sinner a slot belongs to is derivable from the id. */
 export function sinnerOf(identityId: number): number {
@@ -251,9 +256,9 @@ function prefersDark(): boolean {
  */
 export const MAX_FLOOR_EVER = 15;
 
-/** The planner's defaults with the app's fixed floor range applied. */
+/** The planner's defaults with the app's fixed floor range and start applied. */
 export function appDefaultOptions(): PlanOptions {
-  return { ...defaultOptions(), lastFloor: MAX_FLOOR_EVER, hardFromFloor: 1 };
+  return { ...defaultOptions(), lastFloor: MAX_FLOOR_EVER, hardFromFloor: 1, ...APP_START };
 }
 
 /**
@@ -273,12 +278,9 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   const slots = source.observationSlots;
   if (typeof slots === 'number' && Number.isInteger(slots) && slots >= 0) out.observationSlots = slots;
   else delete out.observationSlots;
-  // How many starting gifts the boons give (M134). Core clamps the top to the largest pool; a
-  // state or a link from before the option carries none and plans the rules' one.
-  const startGifts = source.startGiftCount;
-  if (typeof startGifts === 'number' && Number.isInteger(startGifts) && startGifts >= 0)
-    out.startGiftCount = startGifts;
-  else delete out.startGiftCount;
+  // No start keyword and no starting gift (M145): a saved state or a link from M134~M144 that
+  // still carries a count or a keyword is planned the app's way, without a word.
+  Object.assign(out, APP_START);
   // Whether the start is over is the run's (`run.startDone`), never a saved or shared option.
   delete out.startDecided;
   // Pack-level choices are the CLI's (`--ban`, `--prefer`); the app has no control for them, so a
@@ -344,9 +346,13 @@ export interface ObserveLimits {
  */
 let recipeTree: ReadonlyMap<number, readonly number[]> = new Map();
 
+/** What the last `adoptSeason` was told, so a share link applied after the load is adopted too. */
+let adoptedSeason: Parameters<AppState['adoptSeason']>[0] | null = null;
+
 /** For tests: forget the season's recipes, the way a fresh page load starts out. */
 export function forgetRecipes(): void {
   recipeTree = new Map();
+  adoptedSeason = null;
 }
 
 /**
@@ -1083,12 +1089,13 @@ export const useApp = create<AppState>()(
       setLang: (lang) => set({ lang }),
       toggleDark: () => set((state) => ({ dark: !state.dark })),
 
-      setSeason: (season) =>
-        set((state) => (state.season === season ? {} : { season, run: emptyRun(), runSnapshot: null })),
-
-      adoptSeason: ({ season, lastFloor, giftIds, packIds, recipes, upgradeLevels }) => {
+      adoptSeason: (info) => {
+        const { season, lastFloor, giftIds, packIds, recipes, upgradeLevels } = info;
         recipeTree = recipes;
+        adoptedSeason = info;
         const state = get();
+        // A run saved while another season was open walked that season's floors and packs.
+        const otherSeason = state.season !== undefined && state.season !== season;
         const wanted = state.wanted.filter((id) => giftIds.has(id));
         // A pin is a decision about what the route collects: one left on a gift that is neither a
         // goal nor a goal's ingredient would spend observation budget and then vanish without a
@@ -1119,9 +1126,9 @@ export const useApp = create<AppState>()(
                 startGifts: r.startGifts.filter((id) => giftIds.has(id)),
                 ...(r.collectRest ? { collectRest: r.collectRest.filter((id) => giftIds.has(id)) } : {}),
               };
-        const run = fit(state.run);
+        const run = otherSeason ? emptyRun() : fit(state.run);
         // The snapshot to go back to (M143) holds a run too, and the same ids.
-        const snapshot = state.runSnapshot;
+        const snapshot = otherSeason ? null : state.runSnapshot;
         const runSnapshot = snapshot
           ? {
               ...snapshot,
@@ -1157,8 +1164,8 @@ export const useApp = create<AppState>()(
       applyShared: (shared) => {
         const deck = uniqueDeck(shared.deck);
         const wanted = [...new Set(shared.wanted)];
+        // The link's season is not taken (M145): the app plans in the season it loaded.
         set({
-          ...(shared.season === undefined ? {} : { season: shared.season }),
           deck,
           deployed: [...new Set(shared.deployed)].filter((id) => deck.includes(id)),
           wanted,
@@ -1176,6 +1183,8 @@ export const useApp = create<AppState>()(
           run: emptyRun(),
           runSnapshot: null,
         });
+        // Goals the loaded season has never heard of (an MD7 link) go now, counted.
+        return adoptedSeason ? get().adoptSeason(adoptedSeason) : { gifts: 0 };
       },
     }),
     {
@@ -1259,16 +1268,9 @@ export function decodeShared(hash: string): SharedState | null {
     // leave the reader with a blank page instead of a mangled link.
     const json = lzString.decompressFromEncodedURIComponent(hash.slice(HASH_PREFIX.length));
     if (!json) return null;
-    const parsed = JSON.parse(json) as Partial<SharedState> & { v?: number; s?: unknown; up?: unknown };
+    // `s` (the season, v5) is not read: the app plans every link in the season it loaded (M145).
+    const parsed = JSON.parse(json) as Partial<SharedState> & { up?: unknown };
     if (!Array.isArray(parsed.deck) || !Array.isArray(parsed.wanted)) return null;
-    // v5 carries the season. Links before it could only have been Mirror Dungeon 7, and the `v`
-    // field — written since v1 and never read until now — is what says so.
-    const season =
-      typeof parsed.s === 'number' && Number.isInteger(parsed.s)
-        ? parsed.s
-        : (parsed.v ?? 0) < 5
-          ? LEGACY_SEASON
-          : undefined;
     const deck = uniqueDeck(parsed.deck.filter((n): n is number => typeof n === 'number'));
     // v1 links carried no deployed list: the first six fought.
     const deployed = Array.isArray(parsed.deployed)
@@ -1276,7 +1278,6 @@ export function decodeShared(hash: string): SharedState | null {
       : deck.slice(0, LEGACY_DEPLOYED);
     const wanted = [...new Set(parsed.wanted.filter((n): n is number => typeof n === 'number'))];
     return {
-      ...(season === undefined ? {} : { season }),
       deck,
       deployed,
       wanted,

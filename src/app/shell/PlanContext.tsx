@@ -12,12 +12,11 @@ import {
   skillGiftLookup,
   planRoute,
 } from '../../core/index.ts';
-import type { GameData, Gift, Keyword } from '../../core/schema.ts';
+import type { GameData, Gift } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
-import { keywordName } from '../format.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
 import { planInputFor } from '../lib/plan-input.ts';
@@ -186,7 +185,6 @@ export function PlanProvider({
   const value = useMemo<PlanState>(() => {
     const giftName = (id: number): string => pick(indexes.giftById.get(id)?.name, lang);
     const packName = (id: number): string => pick(indexes.packById.get(id)?.name, lang);
-    const keywordLabel = (id: Keyword): string => keywordName(id, data.enums, lang);
     const judgements = judgementsByGift(shown?.conditions ?? []);
     /*
      * Fusion goals the plan has given up on — a missed ingredient is the usual way, and core says
@@ -421,7 +419,6 @@ export function PlanProvider({
       giftTitle,
       giftName,
       packName,
-      keywordLabel,
       ctx,
       exclusivesOf,
       expectedIn,

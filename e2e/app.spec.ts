@@ -63,6 +63,16 @@ test('a share link survives the round trip', async ({ page }) => {
   await expect(page.getByTestId('gift-chip')).toHaveCount(2);
 });
 
+// M145: the app always opens the default season. A link made in MD7 still opens — in MD8, with its
+// goals — and the footer names the season without offering a choice.
+test('an MD7 share link opens in the default season', async ({ page }) => {
+  await page.goto(`./${shareHash([9250, 9251], 7)}`);
+  await page.getByRole('tab', { name: '기프트' }).click();
+  await expect(page.getByTestId('gift-chip')).toHaveCount(2);
+  await expect(page.getByTestId('season-name')).toHaveText('시지프의 거울');
+  await expect(page.getByRole('contentinfo').locator('select')).toHaveCount(0);
+});
+
 test('registers a service worker scoped to the sub-path', async ({ page }) => {
   await page.goto('./');
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);

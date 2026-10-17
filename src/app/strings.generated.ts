@@ -45,7 +45,6 @@ export const STRINGS = {
     en: 'Could not read the contents of {label}.',
   },
   dataVersion: { ko: '데이터', en: 'Data' },
-  season: { ko: '시즌', en: 'Season' },
   seasonProvisional: { ko: '데이터 일부 미확인', en: 'Some data not confirmed' },
   seasonProvisionalHint: {
     ko: '이 시즌은 아직 팩별 범용 드랍 풀을 확인하지 못했습니다. 전용 기프트와 조합은 계획할 수 있지만, 범용 드랍이 어느 팩에서 나오는지는 알 수 없습니다.',
@@ -164,8 +163,6 @@ export const STRINGS = {
   giftsSortPicked: { ko: '추가한 순서', en: 'As added' },
   giftsSortName: { ko: '이름', en: 'Name' },
   giftsPack: { ko: '팩', en: 'Pack' },
-  // 기프트 탭이 검색 중이 아닐 때 탭 아래에 서는 문. 「모두 보기」 브라우저를 「추천 기프트」 탭으로 연다.
-  giftsRecommendOpen: { ko: '추천 기프트 보기', en: 'See recommended gifts' },
   removeFromSelection: { ko: '{name} 목표에서 빼기', en: 'Remove {name} from goals' },
 
   // ── 모두 보기 (전체 기프트 격자)
@@ -361,29 +358,6 @@ export const STRINGS = {
     ko: '끄면 조합이 불가능해졌을 때 남은 재료만을 위한 입장을 취소합니다.',
     en: 'Off: when the fusion becomes impossible, pack entries for the remaining ingredients alone are dropped.',
   },
-
-  // ── 시작 키워드 (기프트 탭 맨 아래)
-  optionStartKeyword: { ko: '시작 키워드', en: 'Start keyword' },
-  optionAuto: { ko: '자동', en: 'Auto' },
-  optionAutoResolved: { ko: '자동 ({keyword})', en: 'Auto ({keyword})' },
-  // 기프트 이름에 조사가 붙어서 오므로(withJosa) 문장에는 조사가 없다.
-  startKeywordGives: { ko: '{keyword}: {gift} 시작 기프트로 받습니다', en: '{keyword}: starts with {gift}' },
-  startKeywordAutoWould: {
-    ko: '자동으로 두면 {gift} 시작 기프트로 받습니다',
-    en: 'On auto, the run would start with {gift}',
-  },
-  startKeywordFree: {
-    ko: '목표에 영향이 없으니 원하는 키워드를 골라도 됩니다',
-    en: 'No goal depends on it, so pick any keyword',
-  },
-  // 한 키워드의 시작 풀에서 받는 기프트 수(M134). 0은 「선택하지 않음」이고, 1~5층을 떠나거나 관측 화면을 지나면 사라진다.
-  optionStartGiftCount: { ko: '시작 기프트 수', en: 'Starting gifts' },
-  // 가호 이름은 게임의 한국어 이름 그대로 인용한다.
-  optionStartGiftCountHint: {
-    ko: '가호 「쏟아지는 유성우」·「완전한 가능성」마다 +1',
-    en: '+1 for each of the boons 「쏟아지는 유성우」 and 「완전한 가능성」',
-  },
-  optionStartGiftNone: { ko: '선택하지 않음', en: 'Take none' },
 
   // ── 전체 루트 패널
   routeRequiredPacks: { ko: '필요 팩', en: 'Packs' },
@@ -695,7 +669,7 @@ export const STRINGS = {
   // 오버레이 창의 제목 표시줄(`document.title`).
   overlayTitle: { ko: '거울 던전 오버레이', en: 'Mirror Dungeon overlay' },
   overlayCaptureOff: { ko: '화면 인식 꺼짐', en: 'Screen reader off' },
-  // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 시작 기프트와 관측(지정·추천), 1층에서 이미 얻은 것을 늘어놓는다. 화면 인식이 돌고 있으면 누를 것이 없다(M141): 인식이 기록한 것은 ✓, 아직 못 본 것은 점선으로 보여 줄 뿐이고, 1층 테마팩 선택 화면을 보면 인식이 스스로 확정한다(일찍 손으로 확정하면 인식이 관측 화면을 그만 찾아 관측 팝업을 놓쳤다). 화면 인식이 꺼져 있으면 전부 켜진 토글로 서고, 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하며, 얻지 못한 관측은 관측하지 않은 것으로 보아 지정을 풀고 루트가 다시 찾는다.
+  // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 관측(지정·추천)과 1층에서 이미 얻은 것을 늘어놓는다(앱은 시작 기프트를 계획하지 않으므로(M145) 시작 기프트는 1층에서 얻은 것으로만 선다). 화면 인식이 돌고 있으면 누를 것이 없다(M141): 인식이 기록한 것은 ✓, 아직 못 본 것은 점선으로 보여 줄 뿐이고, 1층 테마팩 선택 화면을 보면 인식이 스스로 확정한다(일찍 손으로 확정하면 인식이 관측 화면을 그만 찾아 관측 팝업을 놓쳤다). 화면 인식이 꺼져 있으면 전부 켜진 토글로 서고, 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하며, 얻지 못한 관측은 관측하지 않은 것으로 보아 지정을 풀고 루트가 다시 찾는다.
   overlayStartTitle: { ko: '시작 시 획득', en: 'Collected at start' },
   overlayStartHint: {
     ko: '게임에서 실제로 얻은 것만 켜 두고 확인하세요. 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다',
@@ -925,7 +899,7 @@ export const STRINGS = {
   trackerUnmark: { ko: '미획득으로', en: 'Not got' },
 
   // ── 확인창
-  // 런을 버리고 되돌릴 수 없는 두 동작(링크 열기·시즌 바꾸기)이라 먼저 묻는다 — 런이 진행 중일 때만.
+  // 런을 버리고 되돌릴 수 없는 동작(링크 열기)이라 먼저 묻는다 — 런이 진행 중일 때만.
   confirmSharedTitle: {
     ko: '진행 중인 런을 버리고 링크를 열까요?',
     en: 'Discard the run in progress and open the link?',
@@ -935,15 +909,6 @@ export const STRINGS = {
     en: "Replaces your deck, goals and settings with the sender's. The current run record cannot be recovered.",
   },
   confirmSharedConfirm: { ko: '링크 열기', en: 'Open the link' },
-  confirmSeasonTitle: {
-    ko: '진행 중인 런을 버리고 시즌을 바꿀까요?',
-    en: 'Discard the run in progress and change season?',
-  },
-  confirmSeasonMessage: {
-    ko: '시즌을 바꾸면 런을 버리고, 새 시즌이 모르는 기프트·팩 설정도 빠집니다.',
-    en: 'Changing season discards the run and drops any gift or pack setting the new season does not know.',
-  },
-  confirmSeasonConfirm: { ko: '시즌 바꾸기', en: 'Change season' },
 
   // ── 설명서 창
   guide: { ko: '설명서', en: 'Guide' },
@@ -973,7 +938,7 @@ export const GUIDE_CARDS = [
         en: 'Pick a deck and the E.G.O gifts you want, and it plans the route: which theme pack to enter on which floor.',
       },
       {
-        ko: '계산 순서: 조합 기프트를 재료로 펼치고 → 팩이 필요 없는 범용 드랍을 빼고 → 관측·시작 기프트를 정한 뒤 → 기프트마다 그것을 주는 팩을 골라 층에 앉힙니다.',
+        ko: '계산 순서: 조합 기프트를 재료로 펼치고 → 팩이 필요 없는 범용 드랍을 빼고 → 관측을 정한 뒤 → 기프트마다 그것을 주는 팩을 골라 층에 앉힙니다.',
         en: 'In order: fusions are unfolded into ingredients → general drops, which need no pack, are set aside → observation and the starting gift are chosen → each gift gets a pack that gives it, seated on a floor.',
       },
       {

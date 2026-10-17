@@ -7,7 +7,7 @@
  * words: fill, dash and weight are the whole vocabulary.
  */
 import { useRef, useState, type ReactNode } from 'react';
-import { Eye, Star } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import type { ObservedGift, RoutePlan } from '../../core/types.ts';
 import { pick, t } from '../i18n.ts';
 import { segmentsFor, stackBlocks, type Segment } from '../lib/metro.ts';
@@ -31,9 +31,6 @@ export interface MetroMapProps {
   lastFloor: number;
   /** `indexes.fixedModeByFloor`: which floors the season fixes to 평행중첩 or EXTREME. */
   fixedModeByFloor: Map<number, 'parallel' | 'extreme'>;
-  keywordLabel: (id: NonNullable<RoutePlan['start']['keyword']>) => string;
-  /** The start keyword is left on 「자동」: the start line says so (M120). */
-  autoKeyword?: boolean;
   run?: MetroRun;
   /** `auto` switches horizontal/vertical on the viewport; `vertical` always draws the narrow form (side panels). */
   variant?: 'auto' | 'vertical';
@@ -198,8 +195,6 @@ function ObservedTile({
 export function MetroMap({
   plan,
   ctx,
-  keywordLabel,
-  autoKeyword = false,
   lastFloor,
   fixedModeByFloor,
   run,
@@ -327,15 +322,9 @@ export function MetroMap({
     );
   };
 
-  // ---- start row: keyword and observations ----
-  // Every gift the start pool hands over (M134: one, plus one per boon).
-  const startGifts = plan.start.startGifts.flatMap((id) => {
-    const gift = ctx.indexes.giftById.get(id);
-    return gift ? [gift] : [];
-  });
-  const startKeyword = plan.start.keyword ? keywordLabel(plan.start.keyword) : null;
-  // The start and the observations are two different decisions — what the run is handed, and what
-  // the player spent starlight to pin — so they get a line each instead of sharing one row.
+  // ---- start row: observations ----
+  // The app plans no starting gift (M145, `APP_START`), so the row holds the observations only —
+  // the start keyword and starting-gift line it used to draw above them is gone.
   //
   // Past floor 1 the second line switches from recommendation to record: core stops proposing
   // observations there (the starlight is long spent), so the plan's list is empty and only
@@ -350,105 +339,66 @@ export function MetroMap({
       )
     : plan.start.observed.slice(0, slots);
   const startRow = (mode: DetailMode): ReactNode =>
-    startGifts.length > 0 || startKeyword || slots > 0 ? (
+    slots > 0 ? (
       <div className="flex flex-col gap-1 px-3 py-2 text-caption text-fg-muted" data-testid="start-cell">
-        {startGifts.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="start-line">
-            {startGifts.map((startGift) => (
-              <span
-                key={startGift.id}
-                className="inline-flex items-center gap-1.5"
-                title={t('routeStartGift', lang)}
-                data-testid="start-gift"
-              >
-                <GiftIcon
-                  gift={startGift}
-                  size={20}
-                  judgement={ctx.judgements.get(startGift.id) ?? null}
-                  lang={lang}
-                />
-                {pick(startGift.name, lang)}
-              </span>
-            ))}
-            {autoKeyword && startKeyword ? (
-              <span className="text-fg-subtle" data-testid="start-auto">
-                {t('optionAutoResolved', lang, { keyword: startKeyword })}
-              </span>
-            ) : null}
-          </div>
-        ) : startKeyword ? (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="start-line">
-            <span className="inline-flex items-center gap-1" title={t('optionStartKeyword', lang)}>
-              <Star size={11} aria-hidden className="text-fg-subtle" />
-              {t('routeStart', lang)} {startKeyword}
+        {/*
+         * Two different jobs, told apart by whether the run has left floor 1.
+         *
+         * Before: a decision still open. Every slot the season funds is drawn, filled or not —
+         * how many are unspent is part of the plan. The empty ones are not pressable (pinning
+         * belongs to the item tab's slots), and if none is filled the row says why rather than
+         * showing three unexplained dashed eyes.
+         *
+         * After: the decision is past, so core clears `start.observed` and empty slots would be
+         * meaningless. The row becomes the record of what the run started with. `run.startGifts`
+         * holds the observations and the free starting gift together, so a tile's title says
+         * 「시작 시 획득」 rather than claiming they were all observed.
+         *
+         * The row has no label of its own: it is the start cell's one line, and each tile's
+         * `title` and the observed sheet say what it is.
+         */}
+        <div
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
+          data-testid="observed-line"
+          data-history={closed || undefined}
+        >
+          {observedEntries.map((entry) => (
+            <span key={entry.giftId} className="relative inline-flex">
+              <ObservedTile
+                entry={entry}
+                ctx={ctx}
+                history={closed}
+                onPress={
+                  mode === 'sheet'
+                    ? () => setOpen({ kind: 'observed', giftId: entry.giftId, mode })
+                    : ctx.onToggleObserved && !closed
+                      ? () => ctx.onToggleObserved?.(entry.giftId)
+                      : undefined
+                }
+              />
+              {detailFor(`observed-${entry.giftId}`, mode)}
             </span>
-            {autoKeyword ? (
-              <span className="text-fg-subtle" data-testid="start-auto">
-                {t('optionAuto', lang)}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        {slots > 0 ? (
-          /*
-           * Two different jobs, told apart by whether the run has left floor 1.
-           *
-           * Before: a decision still open. Every slot the season funds is drawn, filled or not —
-           * how many are unspent is part of the plan. The empty ones are not pressable (pinning
-           * belongs to the item tab's slots), and if none is filled the row says why rather than
-           * showing three unexplained dashed eyes.
-           *
-           * After: the decision is past, so core clears `start.observed` and empty slots would be
-           * meaningless. The row becomes the record of what the run started with. `run.startGifts`
-           * holds the observations and the free starting gift together, so a tile's title says
-           * 「시작 시 획득」 rather than claiming they were all observed.
-           *
-           * The row has no label of its own: it sits under the start line in the start cell, and
-           * each tile's `title` and the observed sheet say what it is.
-           */
-          <div
-            className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
-            data-testid="observed-line"
-            data-history={closed || undefined}
-          >
-            {observedEntries.map((entry) => (
-              <span key={entry.giftId} className="relative inline-flex">
-                <ObservedTile
-                  entry={entry}
-                  ctx={ctx}
-                  history={closed}
-                  onPress={
-                    mode === 'sheet'
-                      ? () => setOpen({ kind: 'observed', giftId: entry.giftId, mode })
-                      : ctx.onToggleObserved && !closed
-                        ? () => ctx.onToggleObserved?.(entry.giftId)
-                        : undefined
-                  }
-                />
-                {detailFor(`observed-${entry.giftId}`, mode)}
-              </span>
-            ))}
-            {closed
-              ? null
-              : Array.from({ length: Math.max(0, slots - observedEntries.length) }, (_, i) => (
-                  <span
-                    key={`empty-${i}`}
-                    role="img"
-                    className="inline-flex size-8 items-center justify-center rounded-sm border border-dashed border-border-control text-fg-subtle"
-                    title={t('routeObservedEmpty', lang)}
-                    aria-label={t('routeObservedEmpty', lang)}
-                    data-testid="observed-empty"
-                  >
-                    <Eye size={12} aria-hidden />
-                  </span>
-                ))}
-            {observedEntries.length === 0 ? (
-              <span className="text-fg-subtle" data-testid="observed-none">
-                {t(closed ? 'routeStartHeldNone' : 'routeObservedNone', lang)}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
+          ))}
+          {closed
+            ? null
+            : Array.from({ length: Math.max(0, slots - observedEntries.length) }, (_, i) => (
+                <span
+                  key={`empty-${i}`}
+                  role="img"
+                  className="inline-flex size-8 items-center justify-center rounded-sm border border-dashed border-border-control text-fg-subtle"
+                  title={t('routeObservedEmpty', lang)}
+                  aria-label={t('routeObservedEmpty', lang)}
+                  data-testid="observed-empty"
+                >
+                  <Eye size={12} aria-hidden />
+                </span>
+              ))}
+          {observedEntries.length === 0 ? (
+            <span className="text-fg-subtle" data-testid="observed-none">
+              {t(closed ? 'routeStartHeldNone' : 'routeObservedNone', lang)}
+            </span>
+          ) : null}
+        </div>
       </div>
     ) : null;
 

@@ -1,17 +1,17 @@
 /**
- * Switching seasons.
+ * Seasons.
  *
- * The second season here is the live one (MD8) reshaped to a hypothetical MD9 that has opened only
- * five floors. What these cases hold is the part that must be right before that data arrives: the app
- * offers a choice only when there is one, a shorter season really draws fewer floors, and goals
- * the new season has never heard of are dropped out loud rather than vanishing.
+ * The app plans the default season only (M145): the footer names it and offers no choice, and a
+ * saved state or a link from another season is adopted into it. The second season here is the
+ * live one (MD8) reshaped to a hypothetical MD9 that has opened only five floors. What these cases
+ * hold is the part that must be right before that data arrives: a shorter season really draws
+ * fewer floors, and goals the season has never heard of are dropped out loud rather than vanishing.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { loadGameDataFromDisk } from '../../core/data/node.ts';
 import { analyseDeck, buildIndexes } from '../../core/index.ts';
-import type { GameData, SeasonEntry } from '../../core/schema.ts';
+import type { GameData } from '../../core/schema.ts';
 import { appDefaultOptions, defaultUi, emptyRun, useApp } from '../store.ts';
 import { lastFloorOf } from '../lib/stage.ts';
 import { ingredientTree } from '../lib/entangle.ts';
@@ -30,7 +30,7 @@ function Metro({
   lastFloor: number;
   fixedModeByFloor: Map<number, 'parallel' | 'extreme'>;
 }) {
-  const { ctx, keywordLabel, plan } = usePlan();
+  const { ctx, plan } = usePlan();
   const empty = {
     start: { keyword: null, startGifts: [], observed: [] },
     floors: [],
@@ -52,7 +52,6 @@ function Metro({
     <MetroMap
       plan={plan ?? (empty as unknown as Parameters<typeof MetroMap>[0]['plan'])}
       ctx={ctx}
-      keywordLabel={keywordLabel}
       lastFloor={lastFloor}
       fixedModeByFloor={fixedModeByFloor}
       variant="vertical"
@@ -86,14 +85,6 @@ const short: GameData = {
 };
 const shortIndexes = buildIndexes(short);
 
-const entry = (data: GameData): SeasonEntry => ({
-  id: data.meta.dungeon.id,
-  name: data.meta.dungeon.name,
-  dataVersion: data.meta.dataVersion,
-  lastFloor: lastFloorOf(data),
-  provisional: data.meta.provisional,
-});
-
 const adopt = (data: GameData) =>
   useApp.getState().adoptSeason({
     season: data.meta.dungeon.id,
@@ -104,7 +95,7 @@ const adopt = (data: GameData) =>
     upgradeLevels: upgradeLevelsOf(data.gifts),
   });
 
-const renderShell = (data: GameData, seasons: SeasonEntry[], onSeason = vi.fn()) => {
+const renderShell = (data: GameData) => {
   const { deck, deployed } = useApp.getState();
   render(
     <AppShell
@@ -113,14 +104,11 @@ const renderShell = (data: GameData, seasons: SeasonEntry[], onSeason = vi.fn())
       stats={analyseDeck(deck, liveIndexes, data.rules.deployment, deployed)}
       lang="ko"
       dark
-      seasons={seasons}
-      onSeason={onSeason}
       onShare={() => undefined}
       onToggleLang={() => undefined}
       onToggleDark={() => undefined}
     />,
   );
-  return onSeason;
 };
 
 beforeEach(() => {
@@ -149,28 +137,26 @@ beforeEach(() => {
   });
 });
 
-describe('the season selector', () => {
-  it('is plain text while only one season is published', () => {
-    renderShell(live, [entry(live)]);
+describe('the footer', () => {
+  // MD7 is still published beside MD8 (`index.json` lists both), but the reader no longer picks
+  // one (M145): the footer names the season the app opened, as plain text.
+  it('names the season and offers no choice', () => {
+    renderShell(live);
     expect(screen.queryByTestId('season-select')).toBeNull();
-    expect(screen.getByText(live.meta.dungeon.name.ko)).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo').querySelector('select')).toBeNull();
+    expect(screen.getByTestId('season-name')).toHaveTextContent(live.meta.dungeon.name.ko);
   });
 
-  it('offers the choice once a second season exists, and says which one is half-known', async () => {
-    const user = userEvent.setup();
-    const onSeason = renderShell(short, [entry(live), entry(short)]);
-    const select = screen.getByTestId('season-select');
-    expect(select).toHaveValue('9');
+  it('says which season is half-known', () => {
+    renderShell(short);
     expect(screen.getByTestId('season-provisional')).toBeInTheDocument();
-    await user.selectOptions(select, String(live.meta.dungeon.id));
-    expect(onSeason).toHaveBeenCalledWith(live.meta.dungeon.id);
   });
 
   it('says nothing about half-known data for a season that is fully known', () => {
     // Forced whole so the case holds whichever season is live (md7 was provisional while the
     // Canto X packs waited on the static data).
     const whole: GameData = { ...live, meta: { ...live.meta, provisional: false } };
-    renderShell(whole, [entry(whole), entry(short)]);
+    renderShell(whole);
     expect(screen.queryByTestId('season-provisional')).toBeNull();
   });
 });
@@ -212,6 +198,25 @@ describe('adopting a season', () => {
     expect(useApp.getState().wanted).toEqual([shipped]);
   });
 
+  it('drops a run saved while another season was open (M145: a stored MD7 adopts into MD8)', () => {
+    const run = { ...emptyRun(), currentFloor: 3, stageFloor: 3, visits: { 1: live.packs[0]!.id } };
+    act(() => {
+      useApp.setState({ season: 7, run, runSnapshot: { run, observedGifts: [] } });
+    });
+    act(() => {
+      adopt(live);
+    });
+    expect(useApp.getState().season).toBe(live.meta.dungeon.id);
+    expect(useApp.getState().run).toEqual(emptyRun());
+    expect(useApp.getState().runSnapshot).toBeNull();
+    // The same season loading again keeps the run.
+    act(() => useApp.setState({ run }));
+    act(() => {
+      adopt(live);
+    });
+    expect(useApp.getState().run).toEqual(run);
+  });
+
   it('drops a run recorded on floors the new season does not open', () => {
     act(() => {
       useApp.setState({
@@ -241,7 +246,8 @@ describe('adopting a season', () => {
     expect(useApp.getState().run).toEqual(done);
     // The same on a five-floor season: floor 6 is its done floor.
     const shortDone = { ...emptyRun(), currentFloor: 6, stageFloor: 6, visits: { 5: 1402 } };
-    act(() => useApp.setState({ lastFloor: 5, run: shortDone }));
+    // (Saved under that season: a run from another season is dropped whatever its floors.)
+    act(() => useApp.setState({ lastFloor: 5, run: shortDone, season: short.meta.dungeon.id }));
     act(() => {
       adopt(short);
     });

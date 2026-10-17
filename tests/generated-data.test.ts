@@ -830,3 +830,22 @@ describe('rules', () => {
     expect(packs.find((p) => p.id === 1501)!.sprite).toBe('CorpN_Extreme');
   });
 });
+
+describe('the start never changes the pack route (M145)', () => {
+  // The app plans no starting gift (`APP_START` in `src/app/lib/plan-input.ts`): every gift a
+  // starting pool hands over is a general drop the planner never routes through a pack, so taking
+  // it at the start would not move a single pack. A season where some start-pool gift needs a pack
+  // makes the start matter for routing again — this fails, and the app's start setting has to come
+  // back rather than the route quietly ignoring it.
+  it('every start-pool gift of the default season is freely available', async () => {
+    const { loadGameDataFromDisk } = await import('../src/core/data/node.ts');
+    const { buildIndexes } = await import('../src/core/index.ts');
+    const data = loadGameDataFromDisk(undefined, season);
+    const indexes = buildIndexes(data);
+    const pools = Object.values(data.rules.startGift.poolsByKeyword).flat();
+    const tagged = data.gifts.filter((g) => g.acquisition.startKeyword).map((g) => g.id);
+    const startPool = [...new Set([...pools, ...tagged])].sort((a, b) => a - b);
+    expect(startPool.length).toBeGreaterThan(0);
+    expect(startPool.filter((id) => !indexes.freelyAvailableGifts.has(id))).toEqual([]);
+  });
+});

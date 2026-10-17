@@ -5,6 +5,15 @@
  */
 import type { PlanInput, PlanOptions, WantedGift } from '../../core/types.ts';
 
+/**
+ * The start the app plans (M145, owner's call): no starting gift, so no starting keyword either.
+ * Every start-pool gift is a general drop the planner never routes through a pack
+ * (`tests/generated-data.test.ts` holds that for the default season), so the start never changed
+ * the pack route — and the run's real start gifts are recorded from the capture popups or by hand.
+ * Core and the CLI keep `startKeyword` / `startGiftCount` as they were.
+ */
+export const APP_START = { startGiftCount: 0, startKeyword: 'auto' } as const satisfies Partial<PlanOptions>;
+
 /** Fusion results the user wants only as a whole: their ingredients are not goals of their own. */
 export type FusionGoalMap = Record<number, 'resultOnly'>;
 
@@ -118,6 +127,8 @@ export function planInputFor(
       ...state.options,
       ...progress,
       ...(season.lastFloor === undefined ? {} : { lastFloor: season.lastFloor }),
+      // The app plans no starting gift (M145), whatever the options were handed.
+      ...APP_START,
       deployed: state.deployed,
     },
   };

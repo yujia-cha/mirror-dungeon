@@ -105,20 +105,6 @@ describe('observation slots (M120)', () => {
   });
 });
 
-describe('route start line (M120)', () => {
-  it('says 「자동」 while the start keyword is left on auto, and nothing once one is chosen', () => {
-    useApp.getState().setDeck(BURN_DECK, 7);
-    useApp.getState().toggleWanted(9267);
-    const { unmount } = renderPlanned(<RoutePlanPanel onOpenGifts={() => undefined} />);
-    expect(screen.getByTestId('start-line')).toContainElement(screen.getByTestId('start-auto'));
-    expect(screen.getByTestId('start-auto')).toHaveTextContent('자동');
-    unmount();
-    useApp.getState().setOptions({ startKeyword: 'Combustion' });
-    renderPlanned(<RoutePlanPanel onOpenGifts={() => undefined} />);
-    expect(screen.queryByTestId('start-auto')).toBeNull();
-  });
-});
-
 describe('one detail sheet for gifts and packs (M120)', () => {
   it('moves from a pack to its gift and on to the pack named there, and walks back', async () => {
     const user = userEvent.setup();

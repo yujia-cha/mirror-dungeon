@@ -41,7 +41,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     drops,
     giftName,
     packName,
-    keywordLabel,
     ctx,
     openGift,
   } = usePlan();
@@ -163,8 +162,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         <MetroMap
           plan={shown}
           ctx={ctx}
-          keywordLabel={keywordLabel}
-          autoKeyword={input.options.startKeyword === 'auto'}
           lastFloor={lastFloor}
           fixedModeByFloor={indexes.fixedModeByFloor}
           run={{ currentFloor: run.currentFloor, startDone: run.startDone === true }}

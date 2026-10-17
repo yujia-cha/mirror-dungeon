@@ -104,7 +104,7 @@ test('the gift browser page opens on 추천 기프트 and its tabs and filters f
   await page.goto('./');
   await page.getByRole('button', { name: '덱' }).click();
   await page.getByRole('tab', { name: '기프트' }).click();
-  await page.getByTestId('gift-recommend-open').click();
+  await page.getByTestId('gift-browse-all').click();
   const browser = page.getByTestId('gift-browser');
   await expect(browser).toBeVisible();
   const recommended = browser.getByRole('tab', { name: '추천 기프트' });

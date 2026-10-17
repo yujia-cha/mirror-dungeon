@@ -49,8 +49,6 @@ const renderShell = () =>
       stats={analyseDeck(DECK, indexes, data.rules.deployment, [])}
       lang="ko"
       dark
-      seasons={[{ id: 7, name: data.meta.dungeon.name, dataVersion: '1', lastFloor: 15, provisional: false }]}
-      onSeason={() => undefined}
       onShare={() => undefined}
       onToggleLang={() => undefined}
       onToggleDark={() => undefined}

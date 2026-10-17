@@ -152,7 +152,19 @@ describe('run snapshot store (M143)', () => {
     for (const discard of [
       () => useApp.getState().resetRun(),
       () => useApp.getState().resetAll(DECK, 0),
-      () => useApp.getState().setSeason(99),
+      // A run saved under another season (M145: the app no longer switches; the load adopts).
+      () => {
+        useApp.setState({ season: 7 });
+        useApp.getState().adoptSeason({
+          season: 8,
+          lastFloor: 15,
+          giftIds: new Set(useApp.getState().wanted),
+          packIds: new Set(),
+          recipes: new Map(),
+          upgradeLevels: new Map(),
+        });
+        forgetRecipes();
+      },
       () =>
         useApp.getState().applyShared({ deck: DECK, deployed: [], wanted: [], options: appDefaultOptions() }),
     ]) {

@@ -9,9 +9,10 @@
  * The tab lists no gifts until asked (M121 took 「현재 활성」 out: the 「추천 기프트」 tab of the browser
  * answers the same question with filters). A gift is reached by the search box — **a search
  * answers from every gift**, in one list, right under the box — or by the >> at the end of the
- * search row (and the 「추천 기프트 보기」 door below the tray), which opens the 「모두 보기」 browser
- * (`onBrowse`) with the typed query. While the browser is open beside this tab (a desktop), the
- * same button turns to << and closes it.
+ * search row, which opens the 「모두 보기」 browser (`onBrowse`) with the typed query, on its
+ * 「추천 기프트」 tab. While the browser is open beside this tab (a desktop), the same button turns
+ * to << and closes it. (M145 took out the 「추천 기프트 보기」 door below the tray: it was the same
+ * button with an empty query.)
  */
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -237,14 +238,6 @@ export function GiftsStep({
         </div>
       </Card>
     );
-  } else if (onBrowse && !browseOpen) {
-    // With no list of its own, the tab points at the one that answers 「what can this deck use?」.
-    body = (
-      <Button onClick={() => onBrowse('')} className="w-full" testId="gift-recommend-open">
-        {t('giftsRecommendOpen', lang)}
-        <ChevronsRight size={14} aria-hidden />
-      </Button>
-    );
   } else {
     body = null;
   }
@@ -298,7 +291,7 @@ export function GiftsStep({
       {/*
         While a query is being typed, its results belong under the box that asked for them — the
         observation slots and the selection tray would otherwise push them a screen down. With no
-        query the 활성 section goes back to the foot of the tab.
+        query the foot of the tab holds only the empty-deck card, when the deck is empty.
       */}
       {searching ? body : null}
 

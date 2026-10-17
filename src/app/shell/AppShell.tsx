@@ -1,6 +1,6 @@
 /**
  * The run-first shell: a header, the stage in the middle, and two collapsible panels — setup on
- * the left (deck, items with the route options), the route, the goals and the T4 tracker on the
+ * the left (deck, items), the route, the goals and the T4 tracker on the
  * right. On a desktop the panels sit beside the stage; on a phone they are drawers. The header's
  * reset puts the deck, the items, the route options and the run back to their first state.
  */
@@ -19,7 +19,7 @@ import {
   Share2,
   Sun,
 } from 'lucide-react';
-import type { GameData, SeasonEntry } from '../../core/schema.ts';
+import type { GameData } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { GIFT_ICON_SCALES, TEXT_SCALES, useApp, type LeftTab, type RightTab } from '../store.ts';
@@ -27,14 +27,13 @@ import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { DetailSurface } from '../components/BlockDetail.tsx';
-import { IconButton, Select } from '../components/ui.tsx';
+import { IconButton } from '../components/ui.tsx';
 import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
 import { PlanProvider } from './PlanContext.tsx';
 import { RoutePlanPanel } from './RoutePlanPanel.tsx';
-import { RouteOptions } from './RouteOptions.tsx';
 import { PanelResizer } from './PanelResizer.tsx';
 import { EnumsContext } from '../lib/useEnums.ts';
 
@@ -147,8 +146,6 @@ export function AppShell({
   stats,
   lang,
   dark,
-  seasons,
-  onSeason,
   onShare,
   onToggleLang,
   onToggleDark,
@@ -158,9 +155,6 @@ export function AppShell({
   stats: DeckStats;
   lang: Lang;
   dark: boolean;
-  /** Every published season. One of them means there is nothing to choose between. */
-  seasons: SeasonEntry[];
-  onSeason: (season: number) => void;
   onShare: () => void;
   onToggleLang: () => void;
   onToggleDark: () => void;
@@ -393,20 +387,19 @@ export function AppShell({
                 {ui.leftTab === 'deck' ? (
                   <DeckStep data={data} indexes={indexes} stats={stats} lang={lang} />
                 ) : null}
+                {/* The start keyword / start-gift-count card that sat under the tab is gone (M145): the
+                    app plans no starting gift (`APP_START`). */}
                 {ui.leftTab === 'gifts' ? (
-                  <div className="flex flex-col gap-3">
-                    <GiftsStep
-                      data={data}
-                      indexes={indexes}
-                      stats={stats}
-                      lang={lang}
-                      onGoDeck={() => setUi({ leftTab: 'deck' })}
-                      onBrowse={openBrowser}
-                      browseOpen={desktop && browserOpen}
-                      onCloseBrowse={closeBrowser}
-                    />
-                    <RouteOptions />
-                  </div>
+                  <GiftsStep
+                    data={data}
+                    indexes={indexes}
+                    stats={stats}
+                    lang={lang}
+                    onGoDeck={() => setUi({ leftTab: 'deck' })}
+                    onBrowse={openBrowser}
+                    browseOpen={desktop && browserOpen}
+                    onCloseBrowse={closeBrowser}
+                  />
                 ) : null}
               </SidePanel>
 
@@ -446,24 +439,10 @@ export function AppShell({
                       </span>
                       <span aria-hidden>·</span>
                       {/*
-                  The season is named here already, so this is where it is chosen. Until a second
-                  season is published there is nothing to choose and the line reads as it always
-                  has — no control appears for a list of one.
+                  The season is named, not chosen: the app always plans the default season
+                  (M145), so the line reads the same however many seasons are published.
                 */}
-                      {seasons.length > 1 ? (
-                        <Select
-                          label={t('season', lang)}
-                          testId="season-select"
-                          value={String(data.meta.dungeon.id)}
-                          options={seasons.map((entry) => ({
-                            value: String(entry.id),
-                            label: pick(entry.name, lang) || `MD${entry.id}`,
-                          }))}
-                          onChange={(value) => onSeason(Number(value))}
-                        />
-                      ) : (
-                        <span>{pick(data.meta.dungeon.name, lang)}</span>
-                      )}
+                      <span data-testid="season-name">{pick(data.meta.dungeon.name, lang)}</span>
                       {data.meta.provisional ? (
                         <strong
                           className="text-fg-muted"

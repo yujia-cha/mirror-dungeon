@@ -33,7 +33,7 @@ import {
   useApp,
   withoutLegacyGot,
 } from '../store.ts';
-import { observationClosed, planInputFor, plannedGifts } from '../lib/plan-input.ts';
+import { observationClosed, planInputFor } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, isPackBound, prioritiseGifts } from '../lib/gift-priority.ts';
 import { hasDeckCondition } from '../lib/gift-filters.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
@@ -49,13 +49,12 @@ import { GiftBrowser } from '../shell/GiftBrowser.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { usePlan } from '../shell/plan-context.ts';
 import { RoutePlanPanel } from '../shell/RoutePlanPanel.tsx';
-import { RouteOptions } from '../shell/RouteOptions.tsx';
 import { CaptureProvider } from '../capture/CaptureProvider.tsx';
 import { CaptureMenu } from '../shell/CapturePanel.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
 import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
-import type { PlanOptions, RoutePlan } from '../../core/types.ts';
+import type { RoutePlan } from '../../core/types.ts';
 import { ingredientTree } from '../lib/entangle.ts';
 import { upgradeLevelsOf } from '../lib/upgrade.ts';
 import { LONG_PRESS } from '../lib/useChipDrag.ts';
@@ -189,7 +188,7 @@ describe('share links', () => {
     });
   });
 
-  it('carries the season, and reads a link made before seasons as Mirror Dungeon 7', () => {
+  it('writes the season it was made in, and reads a link the same whatever season it names (M145)', () => {
     const hash = encodeShared({
       season: 8,
       deck: [10101],
@@ -202,9 +201,10 @@ describe('share links', () => {
       string,
       unknown
     >;
+    // Still written, so a link says where it came from; nothing reads it back.
     expect(raw.s).toBe(8);
-    expect(decodeShared(hash)!.season).toBe(8);
-    // A v4 link could only have been MD7; the version field, written since v1, is what says so.
+    expect('season' in decodeShared(hash)!).toBe(false);
+    // A v4 link (made in MD7) reads as well; the season it was made in does not ride along.
     const old = lzString.compressToEncodedURIComponent(
       JSON.stringify({
         v: 4,
@@ -214,7 +214,9 @@ describe('share links', () => {
         options: appDefaultOptions(),
       }),
     );
-    expect(decodeShared(`#s=${old}`)!.season).toBe(7);
+    const decoded = decodeShared(`#s=${old}`)!;
+    expect(decoded.wanted).toEqual([9283]);
+    expect('season' in decoded).toBe(false);
   });
 
   it('plans every link for floors 1-15 on Hard and ignores the priority map an old link carries', () => {
@@ -323,6 +325,43 @@ describe('share links', () => {
       .applyShared({ deck: [10101], deployed: [10101], wanted: [9283], options: defaultOptions() });
     expect(useApp.getState().run).toEqual(emptyRun());
     expect(useApp.getState().wanted).toEqual([9283]);
+  });
+
+  // M145: the app plans the default season only. A link from MD7 — a v4 one, or a v5 one that
+  // says `s: 7` — opens in it, and goals it has never heard of go, counted, through `adoptSeason`.
+  it('opens an MD7 link in the default season and says how many goals it dropped', async () => {
+    const unknown = 123456;
+    for (const payload of [
+      { v: 4, deck: [10101], deployed: [10101], wanted: [9283, unknown], options: defaultOptions() },
+      { v: 5, s: 7, deck: [10101], deployed: [10101], wanted: [9283, unknown], options: appDefaultOptions() },
+    ]) {
+      useApp.setState({ season: 7, wanted: [] });
+      window.location.hash = `#s=${lzString.compressToEncodedURIComponent(JSON.stringify(payload))}`;
+      render(<App />);
+      await waitFor(() => expect(useApp.getState().wanted).toEqual([9283]));
+      expect(useApp.getState().season).toBe(data.meta.dungeon.id);
+      expect(await screen.findByText('이번 시즌에 없는 기프트 1개를 뺐습니다')).toBeInTheDocument();
+      expect(screen.getByTestId('season-name')).toHaveTextContent(data.meta.dungeon.name.ko);
+      expect(window.location.hash).toBe('');
+      cleanup();
+      forgetRecipes();
+    }
+    // Arriving on the open tab (a hash change after the load) goes through the same adoption.
+    render(<App />);
+    await screen.findByTestId('season-name');
+    window.location.hash = `#s=${lzString.compressToEncodedURIComponent(
+      JSON.stringify({
+        v: 5,
+        s: 7,
+        deck: [10101],
+        deployed: [10101],
+        wanted: [9088, unknown],
+        options: appDefaultOptions(),
+      }),
+    )}`;
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    await waitFor(() => expect(useApp.getState().wanted).toEqual([9088]));
+    expect(await screen.findByText('이번 시즌에 없는 기프트 1개를 뺐습니다')).toBeInTheDocument();
   });
 
   it('consumes the hash once so a reload keeps later edits', async () => {
@@ -1305,8 +1344,6 @@ describe('text the screen gets wrong', () => {
         stats={statsFor(LCB_DECK)}
         lang="en"
         dark
-        seasons={[]}
-        onSeason={() => undefined}
         onShare={() => undefined}
         onToggleLang={() => undefined}
         onToggleDark={() => undefined}
@@ -2140,7 +2177,7 @@ describe('GiftsStep', () => {
     expect(within(tile(9092)).getByTestId('gift-icon')).toHaveAttribute('data-judgement', 'unmet');
   });
 
-  it('has no 「현재 활성」 section any more: without a query it lists no gifts and points at 추천 기프트 (M121)', async () => {
+  it('has no 「현재 활성」 section any more: without a query it lists no gifts, and >> opens 추천 기프트 (M121, M145)', async () => {
     // Arrange
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -2156,37 +2193,19 @@ describe('GiftsStep', () => {
       />,
     );
     // Act
-    const door = screen.getByTestId('gift-recommend-open');
-    await user.click(door);
+    const browse = screen.getByTestId('gift-browse-all');
+    await user.click(browse);
     // Assert
     expect(screen.queryByRole('button', { name: /현재 활성/ })).toBeNull();
     expect(screen.queryByRole('checkbox', { name: '목표가 아닌 것만 보기' })).toBeNull();
     expect(screen.queryByTestId('gift-tile')).toBeNull();
-    expect(door).toHaveTextContent('추천 기프트 보기');
-    expect(onBrowse).toHaveBeenCalledWith('');
-  });
-
-  it('draws no door to 추천 기프트 without somewhere to go, or while the browser is open', () => {
-    // Arrange
-    useApp.getState().setDeck(BURN_DECK, 7);
-    const { deck, deployed } = useApp.getState();
-    // Act
-    const { unmount } = renderGifts();
-    const withoutBrowse = screen.queryByTestId('gift-recommend-open');
-    unmount();
-    renderPlanned(
-      <GiftsStep
-        data={data}
-        indexes={indexes}
-        stats={statsFor(deck, deployed)}
-        lang="ko"
-        onBrowse={() => undefined}
-        browseOpen
-      />,
-    );
-    // Assert
-    expect(withoutBrowse).toBeNull();
+    // The 「추천 기프트 보기」 door below the tray is gone (M145): the >> was the same button.
     expect(screen.queryByTestId('gift-recommend-open')).toBeNull();
+    expect(screen.queryByRole('button', { name: /추천 기프트 보기/ })).toBeNull();
+    // The >> is the one door, and it says so in words: 「모두 보기」 is its name and its tooltip.
+    expect(browse).toHaveAccessibleName('모두 보기');
+    expect(browse).toHaveAttribute('title', '모두 보기');
+    expect(onBrowse).toHaveBeenCalledWith('');
   });
 });
 
@@ -2467,178 +2486,48 @@ describe('GiftDetailSheet', () => {
   });
 });
 
-describe('RouteOptions', () => {
-  it('shows the start keyword only, with no difficulty text, observation list, pack list or resets', () => {
-    useApp.getState().setDeck(BURN_DECK, 7);
-    for (const id of [9267, 9423]) useApp.getState().toggleWanted(id);
-    renderPlanned(<RouteOptions />);
-    const startKeyword = screen.getByRole('combobox', { name: '시작 키워드' });
-    // Only keywords the season has a starting pool for. 범용 (`None`) is a gift keyword with no
-    // pool, so offering it handed the player no starting gift at all, silently.
-    const starts = within(startKeyword)
-      .getAllByRole('option')
-      .map((o) => o.textContent);
-    expect(starts).toContain('화상');
-    expect(starts).not.toContain('키워드 없음');
-    expect(screen.getByTestId('route-options').textContent).not.toMatch(/Hard|1~15/);
-    expect(screen.queryByTestId('settings-observed')).toBeNull();
-    expect(screen.queryByRole('button', { name: /옵션 초기화|새 런/ })).toBeNull();
-    // No pack list: the app makes no pack-level choice.
-    expect(screen.queryByTestId('settings-packs')).toBeNull();
-    expect(screen.getByTestId('route-options').textContent).not.toContain('화왕지절');
-  });
-
-  // The LCB deck is dominantly 파열; 지옥나비의 꿈 (9001) sits in the 화상 starting pool.
-  const note = () => screen.getByTestId('start-keyword-note');
-  const autoOption = () =>
-    within(screen.getByRole('combobox', { name: '시작 키워드' })).getAllByRole('option')[0]!;
-
-  it('on auto, takes the keyword whose pool holds a goal and names the gift it gives', () => {
-    useApp.getState().setDeck(LCB_DECK, 7);
-    useApp.getState().toggleWanted(9001);
-    renderPlanned(<RouteOptions />);
-    expect(autoOption()).toHaveTextContent('자동 (화상)');
-    expect(note()).toHaveTextContent('화상: 지옥나비의 꿈을 시작 기프트로 받습니다');
-  });
-
-  it('names the gift a hand-picked keyword gives, and what auto would have given when it gives none', async () => {
-    const user = userEvent.setup();
-    useApp.getState().setDeck(LCB_DECK, 7);
-    useApp.getState().toggleWanted(9001);
-    useApp.getState().setOptions({ startKeyword: 'Combustion' });
-    renderPlanned(<RouteOptions />);
-    expect(note()).toHaveTextContent('화상: 지옥나비의 꿈을 시작 기프트로 받습니다');
-    await user.selectOptions(screen.getByRole('combobox', { name: '시작 키워드' }), 'Sinking');
-    expect(useApp.getState().options.startKeyword).toBe('Sinking');
-    expect(note()).toHaveTextContent('자동으로 두면 지옥나비의 꿈을 시작 기프트로 받습니다');
-    expect(autoOption()).toHaveTextContent('자동 (화상)');
-  });
-
-  it('says the keyword is a free choice when no starting pool holds a goal', () => {
-    useApp.getState().setDeck(LCB_DECK, 7);
-    useApp.getState().toggleWanted(9267); // exclusive to 화왕지절, in no starting pool
-    renderPlanned(<RouteOptions />);
-    expect(autoOption()).toHaveTextContent('자동 (파열)');
-    expect(note()).toHaveTextContent('목표에 영향이 없으니 원하는 키워드를 골라도 됩니다');
-    cleanup();
-    // No goals at all: nothing to help either, and no plan to name the auto keyword.
-    useApp.getState().toggleWanted(9267);
-    renderPlanned(<RouteOptions />);
-    expect(autoOption()).toHaveTextContent(/^자동$/);
-    expect(note()).toHaveTextContent('목표에 영향이 없으니 원하는 키워드를 골라도 됩니다');
-  });
-
-  it('drops the note once the run has left floor 1, when the start is spent', () => {
-    useApp.getState().setDeck(LCB_DECK, 7);
-    useApp.getState().toggleWanted(9001);
-    useApp.getState().visitPack(1016, 1);
-    expect(useApp.getState().run.currentFloor).toBe(2);
-    renderPlanned(<RouteOptions />);
-    expect(screen.queryByTestId('start-keyword-note')).toBeNull();
-  });
-
-  describe('start gift count (M134)', () => {
-    const steps = () => within(screen.getByTestId('start-gift-count')).getAllByRole('button');
-
-    it('offers 0 to the largest pool, on the rules count by default', () => {
-      useApp.getState().setDeck(LCB_DECK, 7);
-      renderPlanned(<RouteOptions />);
-
-      expect(screen.getByRole('group', { name: '시작 기프트 수' })).toBeInTheDocument();
-      expect(steps().map((b) => b.textContent)).toEqual(['0', '1', '2', '3']);
-      expect(steps().map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'false']);
-      expect(screen.getByTestId('start-gift-count')).toHaveTextContent(
-        '가호 「쏟아지는 유성우」·「완전한 가능성」마다 +1',
-      );
-      expect(screen.getByTestId('start-gift-count-0')).toHaveAttribute('title', '선택하지 않음');
-    });
-
-    it('saves the count, and names every gift the pool then gives', async () => {
-      const user = userEvent.setup();
-      useApp.getState().setDeck(LCB_DECK, 7);
-      for (const id of [9044, 9086]) useApp.getState().toggleWanted(id); // both in the 진동 pool
-      renderPlanned(<RouteOptions />);
-      expect(note()).toHaveTextContent('진동: 진동형 팔찌를 시작 기프트로 받습니다');
-
-      await user.click(screen.getByTestId('start-gift-count-2'));
-
-      expect(useApp.getState().options.startGiftCount).toBe(2);
-      expect(screen.getByTestId('start-gift-count-2')).toHaveAttribute('aria-pressed', 'true');
-      expect(note()).toHaveTextContent('진동: 진동형 팔찌 · 잔향을 시작 기프트로 받습니다');
-    });
-
-    it('goes back to unset on the rules count, and with 0 leaves the keyword a free choice', async () => {
-      const user = userEvent.setup();
-      useApp.getState().setDeck(LCB_DECK, 7);
-      useApp.getState().toggleWanted(9044);
-      useApp.getState().setOptions({ startGiftCount: 2 });
-      renderPlanned(<RouteOptions />);
-
-      await user.click(screen.getByTestId('start-gift-count-1'));
-      expect('startGiftCount' in useApp.getState().options).toBe(true);
-      expect(useApp.getState().options.startGiftCount).toBeUndefined();
-
-      await user.click(screen.getByTestId('start-gift-count-0'));
-      expect(useApp.getState().options.startGiftCount).toBe(0);
-      expect(autoOption()).toHaveTextContent(/^자동$/);
-      expect(note()).toHaveTextContent('목표에 영향이 없으니 원하는 키워드를 골라도 됩니다');
-    });
-
-    it('hides the count and the note once the start is decided, on floor 1 too', () => {
-      useApp.getState().setDeck(LCB_DECK, 7);
-      useApp.getState().toggleWanted(9044);
-      useApp.getState().markStartDone();
-      expect(useApp.getState().run.currentFloor).toBe(1);
-
-      renderPlanned(<RouteOptions />);
-
-      expect(screen.queryByTestId('start-gift-count')).toBeNull();
-      expect(screen.queryByTestId('start-keyword-note')).toBeNull();
-    });
-  });
-});
-
 describe('start stage (M134)', () => {
-  it('keeps a sound start gift count in saved and shared options, and drops anything else', () => {
-    expect(sanitizeOptions({ ...appDefaultOptions(), startGiftCount: 0 }).startGiftCount).toBe(0);
-    expect(sanitizeOptions({ ...appDefaultOptions(), startGiftCount: 3 }).startGiftCount).toBe(3);
-    for (const bad of [-1, 1.5, '2', null]) {
-      expect('startGiftCount' in sanitizeOptions({ ...appDefaultOptions(), startGiftCount: bad })).toBe(
-        false,
-      );
+  // M145: the app plans no starting gift and has no start keyword choice. A saved state or a link
+  // from M134~M144 that carried either is planned the app's way, without a word.
+  it('plans no starting gift and no start keyword, whatever a saved state or a link carries (M145)', () => {
+    for (const raw of [{ startGiftCount: 3, startKeyword: 'Combustion' }, { startGiftCount: -1 }, {}]) {
+      expect(sanitizeOptions({ ...appDefaultOptions(), ...raw })).toMatchObject({
+        startGiftCount: 0,
+        startKeyword: 'auto',
+      });
     }
     // Whether the start is over belongs to the run, never to options.
     expect('startDecided' in sanitizeOptions({ ...appDefaultOptions(), startDecided: true })).toBe(false);
-  });
-
-  it('carries the count in a share link; a link without it plans the rules count', () => {
-    const state = {
-      deck: [10101],
-      deployed: [10101],
-      wanted: [9044, 9086],
-      fusionGoal: {},
-      upgrades: {},
-      options: { ...appDefaultOptions(), startGiftCount: 2 },
-    };
-
-    const decoded = decodeShared(encodeShared(state))!;
-    const old = decodeShared(encodeShared({ ...state, options: appDefaultOptions() }))!;
-
-    expect(decoded.options.startGiftCount).toBe(2);
-    expect(old.options.startGiftCount).toBeUndefined();
-    const plan = (options: PlanOptions) =>
-      planRoute({ deck: LCB_DECK, wanted: plannedGifts(state.wanted), options }, data, indexes);
-    expect(plan(decoded.options).start.startGifts).toEqual([9044, 9086]);
-    expect(plan(old.options).start.startGifts).toEqual([9044]);
-  });
-
-  it('keeps the count across a rehydrate', () => {
+    const link = lzString.compressToEncodedURIComponent(
+      JSON.stringify({
+        v: 5,
+        s: 8,
+        deck: [10101],
+        deployed: [10101],
+        wanted: [9044, 9086],
+        fusionGoal: {},
+        options: { ...appDefaultOptions(), startGiftCount: 2, startKeyword: 'Vibration' },
+      }),
+    );
+    const decoded = decodeShared(`#s=${link}`)!;
+    expect(decoded.options).toMatchObject({ startGiftCount: 0, startKeyword: 'auto' });
     const saved = sanitizePersisted(
       { options: { ...appDefaultOptions(), startGiftCount: 3 }, run: { ...emptyRun(), startDone: true } },
       PERSIST_VERSION,
     );
-    expect(saved.options?.startGiftCount).toBe(3);
+    expect(saved.options?.startGiftCount).toBe(0);
     expect(saved.run?.startDone).toBe(true);
+    // And the plan: both goals sit in the 진동 starting pool, and neither is handed over by the start.
+    useApp.setState({
+      deck: LCB_DECK,
+      wanted: [9044, 9086],
+      options: { ...appDefaultOptions(), startGiftCount: 2 },
+    });
+    const input = planInputFor(useApp.getState());
+    expect(input.options).toMatchObject({ startGiftCount: 0, startKeyword: 'auto' });
+    const plan = planRoute(input, data, indexes);
+    expect(plan.start.startGifts).toEqual([]);
+    expect(plan.start.keyword).toBeNull();
   });
 
   it('closes the start on floor 1 once marked, and only a new run reopens it', () => {
@@ -3026,13 +2915,13 @@ describe('RoutePlanPanel', () => {
     expect(within(segment).queryByTestId('gift-icon')).toBeNull();
   });
 
-  it('gives the start and the observations a line each at the head of the map', () => {
+  it('heads the map with the observations only: no start keyword or starting-gift line (M145)', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9267);
     useApp.getState().toggleWanted(9423); // observable; the planner recommends observing it
     renderRoute();
     const cell = within(rows()).getByTestId('start-cell');
-    const start = within(cell).getByTestId('start-line');
+    expect(within(cell).queryByTestId('start-line')).toBeNull();
     const observed = within(cell).getByTestId('observed-line');
     // The row has no label of its own — no 「관측」 text and no eye on the tiles.
     expect(observed.textContent).not.toMatch(/관측/);
@@ -3040,20 +2929,16 @@ describe('RoutePlanPanel', () => {
     expect(within(observed).getAllByTestId('observed-tile').length).toBeGreaterThan(0);
     // Before the run it is a recommendation, not a record.
     expect(observed).not.toHaveAttribute('data-history');
-    // They are two decisions, so nothing from one line leaks into the other.
-    expect(within(start).queryByTestId('observed-tile')).toBeNull();
   });
 
-  it('lists every starting gift on the start line (M134)', () => {
+  it('draws no starting gift, even for goals the starting pool holds (M145)', () => {
     useApp.getState().setDeck(LCB_DECK, 7);
     for (const id of [9044, 9086, 9113]) useApp.getState().toggleWanted(id); // the whole 진동 pool
-    useApp.getState().setOptions({ startGiftCount: 3 });
+    // An option left over from M134~M144 changes nothing: the app plans no starting gift.
+    useApp.getState().setOptions({ startGiftCount: 3, startKeyword: 'Vibration' });
     renderRoute();
-    const start = within(within(rows()).getByTestId('start-cell')).getByTestId('start-line');
-    expect(within(start).getAllByTestId('start-gift')).toHaveLength(3);
-    expect(start).toHaveTextContent('진동형 팔찌');
-    expect(start).toHaveTextContent('잔향');
-    expect(start).toHaveTextContent('시큼한 주향');
+    expect(screen.queryByTestId('start-line')).toBeNull();
+    expect(screen.queryByTestId('start-gift')).toBeNull();
   });
 
   it('draws no open slot once the start is decided on floor 1, only observations already in hand', () => {
@@ -3685,17 +3570,7 @@ describe('RoutePlanPanel', () => {
 });
 
 describe('AppShell', () => {
-  const seasonEntry = (id: number, name: string) => ({
-    id,
-    name: { ko: name, en: name },
-    dataVersion: `${id}.0`,
-    lastFloor: 15,
-    provisional: false,
-  });
-  const renderShell = (
-    seasons = [seasonEntry(data.meta.dungeon.id, data.meta.dungeon.name.ko)],
-    onSeason = () => undefined,
-  ) => {
+  const renderShell = () => {
     const { deck, deployed } = useApp.getState();
     return render(
       <AppShell
@@ -3704,8 +3579,6 @@ describe('AppShell', () => {
         stats={statsFor(deck, deployed)}
         lang="ko"
         dark
-        seasons={seasons}
-        onSeason={onSeason}
         onShare={() => undefined}
         onToggleLang={() => undefined}
         onToggleDark={() => undefined}
@@ -3730,14 +3603,15 @@ describe('AppShell', () => {
     expect(screen.getByTestId('app-shell')).toHaveAttribute('inert');
     // The default tab is the items tab; the deck tab shows the twelve slots.
     expect(within(page).getByRole('tab', { name: '기프트' })).toHaveAttribute('aria-selected', 'true');
-    // Two tabs only: the route options (the start keyword) sit under the items tab.
+    // Two tabs only, and no route options card under the items tab any more (M145).
     expect(
       within(page)
         .getAllByRole('tab')
         .map((tab) => tab.textContent),
     ).toEqual(['덱', '기프트']);
-    expect(within(page).getByRole('combobox', { name: '시작 키워드' })).toBeInTheDocument();
-    expect(within(page).getByTestId('start-keyword-note')).toBeInTheDocument();
+    expect(within(page).queryByTestId('route-options')).toBeNull();
+    expect(within(page).queryByRole('combobox', { name: '시작 키워드' })).toBeNull();
+    expect(within(page).queryByTestId('start-gift-count')).toBeNull();
     expect(within(page).queryByTestId('settings-packs')).toBeNull();
     await user.click(within(page).getByRole('tab', { name: '덱' }));
     expect(useApp.getState().ui.leftTab).toBe('deck');
@@ -5225,16 +5099,6 @@ describe('M78 · guide, header doors, clear confirm, observation suggestions', (
         stats={statsFor(deck, deployed)}
         lang="ko"
         dark
-        seasons={[
-          {
-            id: data.meta.dungeon.id,
-            name: data.meta.dungeon.name,
-            dataVersion: '1',
-            lastFloor: 15,
-            provisional: false,
-          },
-        ]}
-        onSeason={() => undefined}
         onShare={() => undefined}
         onToggleLang={() => undefined}
         onToggleDark={() => undefined}

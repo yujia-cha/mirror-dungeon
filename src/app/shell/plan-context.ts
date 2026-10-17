@@ -7,7 +7,7 @@
  * had left.
  */
 import { createContext, useContext } from 'react';
-import type { Gift, GameData, Keyword } from '../../core/schema.ts';
+import type { Gift, GameData } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
 import type { DropAnalysis, ResolutionAnalysis, RouteVariant } from '../../core/index.ts';
 import type { Lang } from '../i18n.ts';
@@ -92,7 +92,6 @@ export interface PlanState {
   giftTitle: (id: number) => string | undefined;
   giftName: (id: number) => string;
   packName: (id: number) => string;
-  keywordLabel: (id: Keyword) => string;
   ctx: PackContext;
   exclusivesOf: (packId: number) => number[];
   /**
