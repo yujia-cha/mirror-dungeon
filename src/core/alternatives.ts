@@ -199,6 +199,11 @@ export interface DropAnalysis {
 export interface DropEffectOptions {
   /** Candidate drops tried, which bounds the number of extra `planRoute` calls. */
   maxRuns?: number;
+  /**
+   * Plan an input; default `planRoute`. The worker passes a memo shared with the resolutions
+   * (M144, `createResolutions`): a forced plan here is the first child of their enumeration.
+   */
+  planner?: (input: PlanInput) => RoutePlan;
 }
 
 /** Lost goals a forced plan is made for: each costs one `planRoute`. */
@@ -266,6 +271,8 @@ export interface DropEffectSteps {
   conflicts: number;
   /** True when every candidate within `maxRuns` has its bar. */
   done(): boolean;
+  /** True while the forced plans that name the causes (`tradeoffs`) are still to run (M144). */
+  forcing(): boolean;
   /** Run the next forced plan, or measure the next candidate. */
   step(): void;
   /** The bars so far, sorted, with a single drop that clears everything as `resolving`. */
@@ -284,7 +291,8 @@ export function createDropEffects(
   opts: DropEffectOptions = {},
 ): DropEffectSteps {
   let maxRuns = opts.maxRuns ?? 10;
-  const base = main ?? planRoute(input, data, indexes);
+  const planRouteOf = opts.planner ?? ((of: PlanInput) => planRoute(of, data, indexes));
+  const base = main ?? planRouteOf(input);
   const options =
     base.floors.length > 0
       ? { ...input.options, lastFloor: base.floors[base.floors.length - 1]!.floor }
@@ -296,6 +304,7 @@ export function createDropEffects(
     return {
       conflicts: 0,
       done: () => true,
+      forcing: () => false,
       step: () => undefined,
       snapshot: () => empty,
       finish: () => empty,
@@ -419,6 +428,7 @@ export function createDropEffects(
   return {
     conflicts: conflictRoots.length,
     done: () => forced >= forceQueue.length && effects.length >= queue().length,
+    forcing: () => forced < forceQueue.length,
     step() {
       if (forced < forceQueue.length) {
         const lost = forceQueue[forced++]!;
@@ -426,7 +436,7 @@ export function createDropEffects(
           ...w,
           required: w.giftId === lost || (tiered && w.required),
         }));
-        const plan = planRoute({ ...scoped, wanted }, data, indexes);
+        const plan = planRouteOf({ ...scoped, wanted });
         const lostNow = new Set(conflictRootsOf(plan, scoped, data, indexes));
         if (!lostNow.has(lost)) {
           const causes = [...lostNow]
@@ -438,11 +448,7 @@ export function createDropEffects(
       }
       const next = queue()[effects.length];
       if (next === undefined) return;
-      const plan = planRoute(
-        { ...scoped, wanted: input.wanted.filter((w) => w.giftId !== next.giftId) },
-        data,
-        indexes,
-      );
+      const plan = planRouteOf({ ...scoped, wanted: input.wanted.filter((w) => w.giftId !== next.giftId) });
       const lostNow = conflictRootsOf(plan, scoped, data, indexes);
       lostWithout.set(next.giftId, new Set(lostNow));
       const reduces = conflictRoots.length - lostNow.length;
@@ -474,11 +480,7 @@ export function createDropEffects(
         if (previous && previous.dropped.length === bundle.length) resolving = previous;
         else {
           const dropped = new Set(bundle);
-          const plan = planRoute(
-            { ...scoped, wanted: input.wanted.filter((w) => !dropped.has(w.giftId)) },
-            data,
-            indexes,
-          );
+          const plan = planRouteOf({ ...scoped, wanted: input.wanted.filter((w) => !dropped.has(w.giftId)) });
           if (left(plan) === 0) resolving = { dropped: bundle, plan };
         }
       }

@@ -49,6 +49,22 @@ export type {
   RouteVariant,
   Tradeoff,
 } from './alternatives.ts';
+export {
+  compareResolutions,
+  createResolutions,
+  MAX_GROUP_SIZE,
+  MAX_PACK_GROUPS,
+  planResolutions,
+  RESOLUTION_RUN_CAP,
+  RESOLUTION_RUNS,
+} from './resolutions.ts';
+export type {
+  Resolution,
+  ResolutionAnalysis,
+  ResolutionChoice,
+  ResolutionOptions,
+  ResolutionSteps,
+} from './resolutions.ts';
 export { conflictGroups, wantedRoots } from './conflicts.ts';
 export type { ConflictGroup, ConflictCandidate } from './conflicts.ts';
 export { buildIndexes } from './data/indexes.ts';

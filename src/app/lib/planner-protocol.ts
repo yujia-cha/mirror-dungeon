@@ -15,10 +15,12 @@ import type { GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
 import {
   buildIndexes,
   createDropEffects,
-  planDropEffects,
+  createResolutions,
   planRoute,
   type DropAnalysis,
   type DropEffectSteps,
+  type ResolutionAnalysis,
+  type ResolutionSteps,
 } from '../../core/index.ts';
 
 /** Hand the worker the season's data once; it builds its own indexes. */
@@ -35,13 +37,15 @@ export interface PlanRequest {
 }
 
 /**
- * The plan with some goals left out — the set the decision card has checked. Answered for the
+ * The plan with some goals left out — the set the decision card has checked — and, since M144,
+ * some of the player's observation pins released (a way 「이 방법 고르기」 picked). Answered for the
  * newest `plan` request's input, so it never mixes an old goal list with a new selection.
  */
 export interface DropRequest {
   type: 'drop';
   id: number;
   dropped: number[];
+  released?: number[];
 }
 
 /**
@@ -67,12 +71,15 @@ export interface PlanResponse {
 /**
  * The drop analysis for plan `id`, sent after it — several times since M81: once per bar as it is
  * measured (`done: false`, the bars so far), then the final answer (`done: true`). Never sent for
- * a plan a newer one replaced.
+ * a plan a newer one replaced. Since M144 it carries the ways to resolve the conflict too
+ * (`resolutions`), computed in the same budget: the forced plans first (they name the causes and
+ * are the enumeration's first children), then the ways, then the bars.
  */
 export interface AnalysisResponse {
   type: 'analysis';
   id: number;
   analysis: DropAnalysis;
+  resolutions: ResolutionAnalysis;
   done: boolean;
 }
 
@@ -84,7 +91,27 @@ export interface AnalysisResponse {
  */
 export const ANALYSIS_BUDGET_MS = 800;
 
-const dropKey = (ids: readonly number[]): string => [...ids].sort((a, b) => a - b).join(',');
+const sortedKey = (ids: readonly number[]): string => [...ids].sort((a, b) => a - b).join(',');
+/** A checked set and the pins released with it, as one cache key. */
+const dropKey = (ids: readonly number[], released: readonly number[] = []): string =>
+  released.length === 0 ? sortedKey(ids) : `${sortedKey(ids)}|${sortedKey(released)}`;
+
+/**
+ * One memo of `planRoute` for an analysis: the bars and the ways plan some inputs alike (a forced
+ * plan is the enumeration's first child), and the same input always plans the same.
+ */
+function memoPlanner(data: GameData, indexes: GameIndexes): (input: PlanInput) => RoutePlan {
+  const memo = new Map<string, RoutePlan>();
+  return (input) => {
+    const key = JSON.stringify(input);
+    let plan = memo.get(key);
+    if (!plan) {
+      plan = planRoute(input, data, indexes);
+      memo.set(key, plan);
+    }
+    return plan;
+  };
+}
 
 /** The answer to a `drop` request. */
 export interface DropResponse {
@@ -98,6 +125,8 @@ export type PlannerResponse = { type: 'ready' } | PlanResponse | AnalysisRespons
 export interface PlanResult {
   plan: RoutePlan | null;
   analysis: DropAnalysis | null;
+  /** The ways to resolve the conflict (M144), beside the bars. */
+  resolutions: ResolutionAnalysis | null;
 }
 
 /**
@@ -112,12 +141,14 @@ export function needsAlternatives(plan: RoutePlan | null): boolean {
 }
 
 /**
- * The whole job at once: the route, plus the drop analysis when the route could not fit
- * everything. This is the inline path (no worker), where there is nothing to gain from splitting it.
+ * The whole job at once: the route, plus the drop analysis and the ways to fit (M144) when the
+ * route could not fit everything. This is the inline path (no worker), where there is nothing to
+ * gain from splitting it; the steps run in the worker's order (`drive`) over one plan memo.
  *
- * `planDropEffects` is the expensive half — it calls `planRoute` once per candidate goal (up to
- * ten), and at 40+ goals one call is ~180ms (`docs/review/M49.md`). The worker path splits the two
- * for that reason (`createPlanner`).
+ * The analysis is the expensive half — the bars call `planRoute` once per candidate goal (up to
+ * ten) and the ways once per release subset and enumeration step (up to `RESOLUTION_RUNS`), and at
+ * 40+ goals one call is ~150ms (`docs/review/M49.md`). The worker path splits the two for that
+ * reason (`createPlanner`) and stops on a budget.
  */
 export function runPlan(
   input: PlanInput,
@@ -126,23 +157,53 @@ export function runPlan(
   /** Every candidate rather than the first ten (the card's 「더 계산」). */
   all = false,
 ): PlanResult {
-  if (input.wanted.length === 0) return { plan: null, analysis: null };
+  if (input.wanted.length === 0) return { plan: null, analysis: null, resolutions: null };
   const plan = planRoute(input, data, indexes);
-  const analysis = needsAlternatives(plan)
-    ? planDropEffects(input, data, indexes, plan, all ? { maxRuns: Infinity } : {})
-    : null;
-  return { plan, analysis };
+  if (!needsAlternatives(plan)) return { plan, analysis: null, resolutions: null };
+  const planner = memoPlanner(data, indexes);
+  const bars = createDropEffects(input, data, indexes, plan, {
+    planner,
+    ...(all ? { maxRuns: Infinity } : {}),
+  });
+  const ways = createResolutions(input, data, indexes, plan, { planner });
+  if (all) ways.extend();
+  drive(bars, ways, () => true);
+  return { plan, analysis: bars.finish(), resolutions: ways.finish() };
 }
 
-/** The plan for `input` with `dropped` left out of the goals; `null` when nothing is left. */
+/**
+ * Steps of the analysis, in the order that matters to the card: the forced plans (the causes, and
+ * the enumeration's first children), then the ways (M144, the card's top list), then the bars.
+ * `more` decides after each step whether to take another; it stops by itself when nothing is left.
+ */
+function drive(bars: DropEffectSteps, ways: ResolutionSteps, more: () => boolean): void {
+  for (;;) {
+    if (bars.forcing()) bars.step();
+    else if (!ways.done()) ways.step();
+    else if (!bars.done()) bars.step();
+    else return;
+    if (!more()) return;
+  }
+}
+
+/** The plan for `input` with `dropped` left out of the goals and `released` pins let go. */
 export function runDrop(
   input: PlanInput,
   dropped: readonly number[],
   data: GameData,
   indexes: GameIndexes,
+  released: readonly number[] = [],
 ): RoutePlan | null {
   const wanted = input.wanted.filter((w) => !dropped.includes(w.giftId));
-  return wanted.length === 0 ? null : planRoute({ ...input, wanted }, data, indexes);
+  if (wanted.length === 0) return null;
+  const options =
+    released.length === 0
+      ? input.options
+      : {
+          ...input.options,
+          observedGifts: input.options.observedGifts.filter((id) => !released.includes(id)),
+        };
+  return planRoute({ ...input, wanted, options }, data, indexes);
 }
 
 /**
@@ -178,6 +239,8 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
     input: PlanInput;
     plan: RoutePlan;
     steps?: DropEffectSteps;
+    /** The ways to resolve it (M144), sharing one plan memo with the bars. */
+    ways?: ResolutionSteps;
     startedAt?: number;
     finished?: boolean;
     /** Resumed by `analysis-more`: no budget, the player asked for every bar. */
@@ -203,8 +266,10 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
       if (request.type === 'analysis-more') return null;
       if (request.type === 'drop') {
         if (!current) return null;
-        const key = dropKey(request.dropped);
-        if (!dropCache.has(key)) dropCache.set(key, runDrop(current, request.dropped, data, indexes));
+        const released = request.released ?? [];
+        const key = dropKey(request.dropped, released);
+        if (!dropCache.has(key))
+          dropCache.set(key, runDrop(current, request.dropped, data, indexes, released));
         return { type: 'drop', id: request.id, plan: dropCache.get(key)! };
       }
       if (request.input !== current) dropCache.clear();
@@ -216,27 +281,38 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
     },
     analysisStep(id) {
       if (!latest || latest.id !== id || latest.finished || !data || !indexes) return null;
-      if (!latest.steps) {
-        latest.steps = createDropEffects(latest.input, data, indexes, latest.plan);
+      if (!latest.steps || !latest.ways) {
+        const planner = memoPlanner(data, indexes);
+        latest.steps = createDropEffects(latest.input, data, indexes, latest.plan, { planner });
+        latest.ways = createResolutions(latest.input, data, indexes, latest.plan, { planner });
         latest.startedAt = now();
       }
-      const { steps } = latest;
-      // Always one bar, then stop when the candidates or the budget run out.
-      steps.step();
-      if (!steps.done() && (latest.unbounded || now() - latest.startedAt! < budgetMs))
-        return { type: 'analysis', id, analysis: steps.snapshot(), done: false };
+      const { steps, ways } = latest;
+      // Always one plan, then stop when the steps or the budget run out.
+      drive(steps, ways, () => false);
+      const more = !steps.done() || !ways.done();
+      if (more && (latest.unbounded || now() - latest.startedAt! < budgetMs))
+        return {
+          type: 'analysis',
+          id,
+          analysis: steps.snapshot(),
+          resolutions: ways.snapshot(),
+          done: false,
+        };
       const analysis = steps.finish();
+      const resolutions = ways.finish();
       latest.finished = true;
       // The analysis already planned these sets; a checked bar is answered from here.
       for (const effect of analysis.effects) dropCache.set(dropKey([effect.giftId]), effect.plan);
       if (analysis.resolving) dropCache.set(dropKey(analysis.resolving.dropped), analysis.resolving.plan);
-      return { type: 'analysis', id, analysis, done: true };
+      return { type: 'analysis', id, analysis, resolutions, done: true };
     },
     /** Lift the cap and the budget on plan `id`'s finished analysis; true when there is more to do. */
     resume(id) {
-      if (!latest || latest.id !== id || !latest.steps || !latest.finished) return false;
+      if (!latest || latest.id !== id || !latest.steps || !latest.ways || !latest.finished) return false;
       latest.steps.extend();
-      if (latest.steps.done()) return false;
+      latest.ways.extend();
+      if (latest.steps.done() && latest.ways.done()) return false;
       latest.finished = false;
       latest.unbounded = true;
       return true;

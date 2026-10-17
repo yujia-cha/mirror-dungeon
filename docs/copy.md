@@ -1192,7 +1192,7 @@
 ### routeApprox
 - ko: 근사 결과
 - en: Near-best
-- 쓰는 곳: src/app/shell/RoutePlanPanel.tsx
+- 쓰는 곳: src/app/components/RouteDecision.tsx, src/app/shell/RoutePlanPanel.tsx
 
 ### routeStart
 - ko: 시작
@@ -1297,16 +1297,6 @@
 ### routeDecisionNotAdditive
 - ko: 더해지지 않음
 - en: not additive
-- 쓰는 곳: src/app/components/RouteDecision.tsx
-
-### routeDecisionResolves
-- ko: 빼면 해결: {names}
-- en: Fits without: {names}
-- 쓰는 곳: src/app/components/RouteDecision.tsx
-
-### routeDecisionPick
-- ko: 이 조합 고르기
-- en: Pick these
 - 쓰는 곳: src/app/components/RouteDecision.tsx
 
 ### routeDecisionNow
@@ -1431,6 +1421,98 @@
 - en: Candidates to remove
 - 쓰는 곳: 참조 없음
 
+### routeMethods
+메모: M144: 충돌을 푸는 방법 목록. 계획은 관측 지정을 그대로 둘 때 잃는 목표 수(k)를 이미 최소로 한다 — 그래서 k개보다 적게 빼서는 들어가지 않고, 계획이 잃은 k개를 빼면 늘 들어간다. 그 k개짜리 방법을 모두 찾고, 관측 지정 해제가 k를 줄이는지(목표를 하나도 빼지 않아도 되는지) 본다. 순위는 뺄 목표 수 → 해제할 관측 지정 수 → 획득 → 팩 수.
+- ko: 해결 방법
+- en: Ways to fit
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodRelease
+메모: 그 방법이 해제하는 플레이어 자신의 관측 지정. 이미 획득한 지정(쓴 관측)은 해제할 수 없어 나오지 않는다.
+- ko: 관측 지정 해제: {names}
+- en: Release pin: {names}
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodKeep
+- ko: 목표 유지
+- en: Every goal kept
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodRemove
+- ko: 목표에서 빼기: {names}
+- en: Remove from goals: {names}
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodMust
+메모: 찾은 최소 방법 전부가 빼는 목표. 그 방법들을 끝까지 다 찾았을 때만 말한다.
+- ko: 꼭 빼야 함: {names}
+- en: Must go: {names}
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodAny
+메모: 아래 목표 중 아무거나 {n}개를 빼면 들어간다 — 그 조합을 전부 계산해 확인했을 때만 이렇게 묶는다.
+- ko: 이 중 아무거나 {n}개
+- en: Any {n} of these
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodPick
+- ko: 이 방법 고르기
+- en: Pick this way
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodOther
+메모: 꼭 필요한 수보다 많이 빼지만, 한 팩이 주는 목표를 함께 빼서 들어가는 방법.
+- ko: 다른 방법
+- en: Other ways
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodSamePack
+- ko: 같은 팩
+- en: Same pack
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodShowAll
+- ko: 방법 {n}개 더 보기
+- en: Show {n} more
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodMore
+메모: 방법을 찾는 계산이 예산이나 상한에서 멈췄을 때. 「더 계산」이 막대와 함께 이어서 계산한다.
+- ko: 다른 방법이 더 있을 수 있습니다
+- en: There may be more ways
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionDetails
+메모: M144: 목표마다 혼자 뺐을 때의 막대(M80)는 이 접기 안에 있다.
+- ko: 자세히
+- en: Details
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionReleased
+- ko: 관측 지정 해제 {n}
+- en: {n} pins released
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionApplyBoth
+- ko: 목표 {n}개 빼기 · 관측 지정 {m}개 해제
+- en: Remove {n} goals · release {m} pins
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionReleaseOnly
+- ko: 관측 지정 {n}개 해제
+- en: Release {n} pins
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionApplyConfirm
+- ko: 목표 {n}개를 빼고 관측 지정 {m}개를 해제할까요?
+- en: Remove {n} goals and release {m} pins?
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeDecisionReleaseConfirm
+- ko: 관측 지정 {n}개를 해제할까요?
+- en: Release {n} pins?
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
 ### routeClose
 - ko: 닫기
 - en: Close
@@ -1511,7 +1593,7 @@
 ### routeApproxHint
 - ko: 목표가 많아 탐색을 끝까지 하지 못했습니다. 최선이 아닐 수 있고, 목표를 더 넣으면 이미 획득한 것이 빠질 수 있습니다.
 - en: Too many goals to search exhaustively. This may not be optimal, and adding goals can drop ones already got.
-- 쓰는 곳: src/app/shell/RoutePlanPanel.tsx
+- 쓰는 곳: src/app/components/RouteDecision.tsx, src/app/shell/RoutePlanPanel.tsx
 
 ### routeEmpty
 - ko: 목표를 정하면 루트가 나옵니다
@@ -2902,7 +2984,7 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: 덱(인격 12인)을 고르거나 게임의 **편성 코드**를 붙여넣어 불러오기
 - readme: 목표 기프트 정하기 — 키워드·조건·등급·죄악으로 필터, 조건부 기프트는 **내 덱이 조건을 충족하는지** 바로 표시
 - readme: 층별 루트 제시 — 각 층에 들어갈 테마팩과 그 팩에서 챌 기프트, 시작 기프트, 그리고 **어떤 기프트를 관측하면 루트가 유연해지는지**(관측 추천)
-- readme: 불가능한 요구는 이유와 함께 알려줌 (그 층 범위에 팩이 없음 / 전용 기프트끼리 층이 충돌 / 덱이 조건을 못 채움). 팩이 충돌하면 결정 카드가 목표마다 혼자 뺐을 때 줄어드는 충돌을 보여 주고, 고른 목표를 함께 빼면 실제로 어떻게 되는지 계산해 줌
+- readme: 불가능한 요구는 이유와 함께 알려줌 (그 층 범위에 팩이 없음 / 전용 기프트끼리 층이 충돌 / 덱이 조건을 못 채움). 팩이 충돌하면 결정 카드가 가장 적게 빼는 방법(관측 지정 해제 포함)을 순서대로 보여 주고, 고른 방법이 실제로 어떻게 되는지 계산해 줌
 - readme: 계산 결과를 URL로 공유
 - 그림: guide/desktop-light.webp | 왼쪽에 목표 기프트, 가운데에 6층에서 들어갈 수 있는 팩, 오른쪽에 층별 루트 노선도가 있는 화면 | Goal gifts on the left, the packs to enter on floor 6 in the middle, the floor-by-floor route map on the right
 - 설명서: 덱과 목표 E.G.O 기프트를 고르면, 몇 층에서 어느 테마팩에 들어가야 하는지 루트를 계산합니다.
@@ -2952,12 +3034,12 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 ## 루트 | Route
 
 - readme: 오른쪽 **전체 루트**가 층별 테마팩을 노선도로 그립니다. 요약의 「획득 M/T」는 목표 기프트 중 루트가 가져다주는 수입니다. 팩이 아니라 **어느 팩에서나 나올 수 있는** 범용 드랍도 획득으로 셉니다(반드시 나오지는 않습니다 — 상점·새로고침을 함께 쓰세요. 어느 기프트가 범용 드랍인지는 기프트 탭과 상세 시트가 말합니다).
-- readme: **전부 얻을 수 없으면** 요약 아래에 「…중 하나를 목표에서 빼야 합니다」 카드가 뜹니다. 충돌을 일으킨 쪽도 이름으로 부릅니다 — 놓친 목표마다 「A을(를) 얻으려면 B · C 중 하나를 빼면 됩니다」라고 쓰고, 막대에는 「원인」·「놓친 목표」·「시작 기프트」·「마지막에 추가」 표식이 붙습니다. 목표마다 **혼자 뺐을 때 줄어드는 충돌** 수가 막대로 나옵니다. 후보가 많아 다 계산하지 못했으면 「더 계산」으로 나머지를 계산합니다. 막대는 더해지지 않으니, 뺄 목표를 체크하면 그 조합으로 실제 루트를 다시 계산해 전부 들어가는지, 충돌이 몇 개 남는지 알려 줍니다. 「빼면 해결: …」 줄의 「이 조합 고르기」는 해결되는 조합을 한 번에 체크합니다. 「루트 미리 보기」는 그 루트를 노선도로 보여 주고(노선도로 스크롤합니다), 「선택한 n개 목표에서 빼기」는 확인을 거쳐 목표에서 뺍니다.
+- readme: **전부 얻을 수 없으면** 요약 아래에 「전부 얻을 수 없습니다」 카드가 뜹니다. 맨 위 「해결 방법」이 들어가게 하는 방법을 좋은 순서로 늘어놓습니다 — **뺄 목표가 가장 적은 것**부터, 같으면 해제할 관측 지정이 적은 것부터입니다. 루트는 관측 지정을 그대로 둘 때 잃는 목표 수를 이미 가장 적게 잡으므로, 그보다 적게 빼서는 들어가지 않고 그 수만큼 빼는 방법을 전부 찾아 줍니다. 직접 지정한 관측을 풀면 목표를 덜 빼도 되는지도 계산해 「관측 지정 해제: … · 목표 유지」처럼 적습니다. 아무거나 고르면 되는 목표는 「이 중 아무거나 n개」 한 줄로 묶고, 모든 방법이 빼는 목표는 「꼭 빼야 함」으로 표시합니다. 한 팩이 주는 목표를 함께 빼는 방법은 필요한 수보다 많이 빼더라도 「다른 방법」에 둡니다. 「이 방법 고르기」는 그 방법의 목표를 체크하고 관측 지정을 풀어 실제 루트를 다시 계산해, 전부 들어가는지 알려 줍니다. 놓친 목표마다 「A을(를) 얻으려면 B · C 중 하나를 빼면 됩니다」라고 무엇과 자리를 다투는지도 씁니다. 「자세히」를 열면 목표마다 **혼자 뺐을 때 줄어드는 충돌** 수가 막대로 나옵니다(「원인」·「놓친 목표」·「시작 기프트」·「마지막에 추가」 표식). 막대는 더해지지 않으니, 체크한 조합은 실제로 다시 계산합니다. 후보가 많아 다 계산하지 못했으면 「더 계산」으로 나머지를 계산합니다. 「루트 미리 보기」는 그 루트를 노선도로 보여 주고(노선도로 스크롤합니다), 「선택한 n개 목표에서 빼기」는 확인을 거쳐 목표에서 빼고 고른 관측 지정을 풉니다.
 - readme: 런 중에 조합 재료를 **미획득**해서 상위 기프트를 조합할 수 없게 되면, 전체 루트 맨 위에 어떤 재료 때문에 어느 조합이 막혔는지와 루트를 다시 계산했다는 알림이 뜹니다. 기본은 그 조합을 통째로 버리는 것이라 남은 재료만을 위한 입장도 취소됩니다. 알림의 남은 재료 묶음(아래 「모으지 않기」 막대)을 누르면 「모으기」로 바뀌고 남은 재료를 계속 모으러 갑니다.
 - 설명서: 오른쪽 위 「전체 루트」가 층별 테마팩을 노선도로 보여 줍니다.
 - en: 「Full route」 at the top right draws the packs floor by floor as a route map.
-- 설명서: 전부 얻을 수 없으면 놓친 목표마다 무엇과 자리를 다투는지 알려 주고, 기프트마다 뺐을 때 줄어드는 충돌을 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.
-- en: When not everything fits, it says what each missed goal competes with and shows how many conflicts leaving out each gift clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.
+- 설명서: 전부 얻을 수 없으면 「해결 방법」이 뺄 목표가 가장 적은 방법부터 보여 줍니다. 직접 지정한 관측을 풀어 해결되면 「관측 지정 해제」로 목표를 그대로 둡니다. 「이 방법 고르기」로 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 적용합니다. 목표마다 혼자 뺐을 때의 막대는 「자세히」에 있습니다.
+- en: When not everything fits, 「Ways to fit」 lists the ways that remove the fewest goals first. If releasing one of your pins does it, 「Release pin」 keeps every goal. 「Pick this way」 computes the real result; check it with 「Preview route」, then apply it. The bar for leaving out each goal alone is under 「Details」.
 
 ## 런 | Run
 

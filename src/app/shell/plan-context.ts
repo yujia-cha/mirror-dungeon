@@ -9,7 +9,7 @@
 import { createContext, useContext } from 'react';
 import type { Gift, GameData, Keyword } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
-import type { DropAnalysis, RouteVariant } from '../../core/index.ts';
+import type { DropAnalysis, ResolutionAnalysis, RouteVariant } from '../../core/index.ts';
 import type { Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
@@ -19,11 +19,21 @@ import type { PackContext } from '../components/PackSheet.tsx';
 export interface DropSelection {
   /** Checked goal ids, in the order they were checked. */
   selection: number[];
+  /**
+   * The player's observation pins a picked way releases (M144): previewed with the checks and
+   * released when they are confirmed. Only a way sets them; checking a bar leaves them.
+   */
+  released: number[];
   toggle: (giftId: number) => void;
   set: (ids: number[]) => void;
-  /** Uncheck everything and end the preview. */
+  /** Pick a way from the list: exactly its removals checked and its releases released. */
+  pick: (removals: number[], releases: number[]) => void;
+  /** Uncheck everything, release nothing and end the preview. */
   clear: () => void;
-  /** The route without the checked goals; null when nothing is checked or it is being computed. */
+  /**
+   * The route without the checked goals and with the released pins let go; null when nothing is
+   * chosen or it is being computed.
+   */
   plan: RoutePlan | null;
   pending: boolean;
   /** Conflicting goals left in `plan` (ingredients counted as their goal), or null. */
@@ -53,6 +63,8 @@ export interface PlanState {
   planPending: boolean;
   /** What leaving each candidate goal out does to the conflict (`planDropEffects`), or null. */
   analysis: DropAnalysis | null;
+  /** The ways to resolve the conflict — releases and fewest removals (M144), or null. */
+  resolutions: ResolutionAnalysis | null;
   /**
    * True while the route on show is still waiting for its drop analysis (it follows the route). The
    * decision card draws placeholder bars so they do not pop in.
@@ -63,7 +75,7 @@ export interface PlanState {
   /** The goals the decision card has checked to leave out, and the route without them. */
   drops: DropSelection;
   /** The checked set's route while it is previewed on the map; `shown` is its plan. */
-  variant: RouteVariant | undefined;
+  variant: (RouteVariant & { released: number[] }) | undefined;
   /** Goal gifts the planner works for (given-up ones excluded). */
   goals: ReadonlySet<number>;
   /** 조합 계승 children of each gift (`upgradeChildren`), computed once per data set. */

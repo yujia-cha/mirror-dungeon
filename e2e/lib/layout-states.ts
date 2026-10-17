@@ -78,8 +78,12 @@ async function openPlan(page: Page): Promise<void> {
 
 async function routeReady(page: Page): Promise<void> {
   await page.getByTestId('route-plan').waitFor();
-  await page.getByTestId('drop-effect').first().waitFor();
+  // The ways to fit lead the card (M144); the bars are under 「자세히」, opened so both are audited.
+  await page.getByTestId('resolution').first().waitFor();
   await page.getByTestId('route-decision-pending').waitFor({ state: 'detached' });
+  const details = page.getByTestId('drop-details');
+  if ((await details.getAttribute('open')) === null) await details.locator('summary').click();
+  await page.getByTestId('drop-effect').first().waitFor();
 }
 
 async function closeSheet(page: Page): Promise<void> {

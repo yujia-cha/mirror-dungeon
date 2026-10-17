@@ -35,7 +35,7 @@ import {
   type PlanResult,
   type PlannerResponse,
 } from './planner-protocol.ts';
-import type { DropAnalysis } from '../../core/index.ts';
+import type { DropAnalysis, ResolutionAnalysis } from '../../core/index.ts';
 import type { RoutePlan } from '../../core/types.ts';
 
 export interface PlannerState extends PlanResult {
@@ -46,7 +46,10 @@ export interface PlannerState extends PlanResult {
    * then `analysis` is null rather than the previous plan's — that answers a different question.
    */
   analysisPending: boolean;
-  /** The plan with the `dropped` goals left out, or null when nothing is dropped (or left). */
+  /**
+   * The plan with the `dropped` goals left out and the `released` pins let go (M144), or null when
+   * nothing is dropped or released (or nothing is left).
+   */
   dropPlan: RoutePlan | null;
   /** True while `dropPlan` is still being computed for the current `dropped`. */
   dropPending: boolean;
@@ -84,6 +87,7 @@ function makeWorker(): Worker | null {
 let cached: Worker | null | undefined;
 
 const NONE: readonly number[] = [];
+const idsOf = (key: string): number[] => (key === '' ? [] : key.split(',').map(Number));
 
 function plannerWorker(): Worker | null {
   if (cached === undefined) cached = makeWorker();
@@ -101,6 +105,7 @@ export function usePlanner(
   indexes: GameIndexes,
   input: PlanInput,
   dropped: readonly number[] = NONE,
+  released: readonly number[] = NONE,
 ): PlannerState {
   // Known on the first render, so the plan never appears and then vanishes.
   const worker = plannerWorker();
@@ -109,11 +114,15 @@ export function usePlanner(
   const [alternatives, setAlternatives] = useState<{
     id: number;
     analysis: DropAnalysis;
+    resolutions: ResolutionAnalysis;
     done: boolean;
   } | null>(null);
   const [dropAnswer, setDropAnswer] = useState<{ id: number; plan: RoutePlan | null } | null>(null);
   const [dropSent, setDropSent] = useState(0);
-  const dropKey = [...dropped].sort((a, b) => a - b).join(',');
+  const dropIds = [...dropped].sort((a, b) => a - b).join(',');
+  const releaseIds = [...released].sort((a, b) => a - b).join(',');
+  /** The checked set and the released pins: either one alone asks for a plan of its own. */
+  const dropKey = dropIds === '' && releaseIds === '' ? '' : `${dropIds}|${releaseIds}`;
   const nextId = useRef(0);
   const [sentId, setSentId] = useState(0);
   /** Set when the worker reports an error; from then on the plan is computed inline. */
@@ -133,7 +142,12 @@ export function usePlanner(
         setAlternatives((current) =>
           current && current.id > message.id
             ? current
-            : { id: message.id, analysis: message.analysis, done: message.done },
+            : {
+                id: message.id,
+                analysis: message.analysis,
+                resolutions: message.resolutions,
+                done: message.done,
+              },
         );
       }
       if (message.type === 'drop')
@@ -171,8 +185,13 @@ export function usePlanner(
     if (!active || dropKey === '') return;
     nextId.current += 1;
     setDropSent(nextId.current);
-    active.postMessage({ type: 'drop', id: nextId.current, dropped: dropKey.split(',').map(Number) });
-  }, [active, input, data, dropKey]);
+    active.postMessage({
+      type: 'drop',
+      id: nextId.current,
+      dropped: idsOf(dropIds),
+      released: idsOf(releaseIds),
+    });
+  }, [active, input, data, dropKey, dropIds, releaseIds]);
 
   // No worker, or a worker that failed: compute inline, once per input, as the provider used to.
   const inline = useMemo(
@@ -196,8 +215,9 @@ export function usePlanner(
   }, [active, input, answerId]);
 
   const inlineDrop = useMemo(
-    () => (active || dropKey === '' ? null : runDrop(input, dropKey.split(',').map(Number), data, indexes)),
-    [active, input, data, indexes, dropKey],
+    () =>
+      active || dropKey === '' ? null : runDrop(input, idsOf(dropIds), data, indexes, idsOf(releaseIds)),
+    [active, input, data, indexes, dropKey, dropIds, releaseIds],
   );
 
   if (!active)
@@ -216,6 +236,7 @@ export function usePlanner(
   return {
     plan: answer?.plan ?? null,
     analysis: matched ? alternatives.analysis : null,
+    resolutions: matched ? alternatives.resolutions : null,
     pending: answer === null || answer.id < sentId,
     // Bars arrive one by one (M81): what is in shows, and the placeholder stays until the last.
     analysisPending: answer !== null && answer.analysisPending && !(matched && alternatives.done),

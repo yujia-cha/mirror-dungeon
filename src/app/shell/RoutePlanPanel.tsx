@@ -35,6 +35,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     shown,
     planPending,
     analysis,
+    resolutions,
     analysisPending,
     analyzeMore,
     drops,
@@ -49,6 +50,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   const removeWanted = useApp((s) => s.removeWanted);
   const wanted = useApp((s) => s.wanted);
   const setCollectRest = useApp((s) => s.setCollectRest);
+  const toggleObserved = useApp((s) => s.toggleObserved);
   const mapRef = useRef<HTMLDivElement>(null);
 
   if (!plan || !shown) {
@@ -140,6 +142,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
         <RouteDecision
           plan={plan}
           analysis={analysis}
+          resolutions={resolutions}
           analysisPending={analysisPending}
           drops={drops}
           groups={groups}
@@ -148,6 +151,11 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           onMore={analyzeMore}
           ctx={ctx}
           removeWanted={removeWanted}
+          releasePin={(giftId) => {
+            // Only ever off: with no room and nothing observable, the toggle cannot pin it back.
+            if (useApp.getState().options.observedGifts.includes(giftId))
+              toggleObserved(giftId, { max: 0, observable: () => false });
+          }}
           onPreview={scrollToMap}
         />
       ) : null}

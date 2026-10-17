@@ -76,6 +76,9 @@ export function PlanProvider({
   // Kept by gift id, so a run mark (which recomputes the plan) keeps both; a checked gift that is
   // no longer a goal falls out below, and an empty check list ends the preview.
   const [dropSelection, setDropSelection] = useState<number[]>([]);
+  // The player's pins a picked way releases (M144): previewed with the checked goals, released on
+  // confirming. Kept by gift id like the checks; a pin the player took off already falls out below.
+  const [releaseSelection, setReleaseSelection] = useState<number[]>([]);
   const [previewWanted, setPreviewWanted] = useState(false);
   // The detail sheet's trail (gifts and, since M120, packs): the top is on show, and each entry
   // below it is one a name was followed from (「← 이전」). Opening from a tile or a card starts a
@@ -114,15 +117,20 @@ export function PlanProvider({
   // arrives first and the alternatives follow, because they are the expensive half — see
   // `use-planner.ts`.
   const selection = useMemo(() => dropSelection.filter((id) => wanted.includes(id)), [dropSelection, wanted]);
+  const released = useMemo(
+    () => releaseSelection.filter((id) => options.observedGifts.includes(id)),
+    [releaseSelection, options.observedGifts],
+  );
   const {
     plan,
     analysis,
+    resolutions,
     pending: planPending,
     analysisPending,
     dropPlan,
     dropPending,
     analyzeMore,
-  } = usePlanner(data, indexes, input, selection);
+  } = usePlanner(data, indexes, input, selection, released);
   const toggleDrop = useCallback(
     (giftId: number) =>
       setDropSelection((list) =>
@@ -131,16 +139,23 @@ export function PlanProvider({
     [],
   );
   const setDrops = useCallback((ids: number[]) => setDropSelection(ids), []);
+  /** A way from the list (M144): its removals checked, its releases with them, nothing else. */
+  const pickWay = useCallback((removals: number[], releases: number[]) => {
+    setDropSelection([...removals]);
+    setReleaseSelection([...releases]);
+  }, []);
   const clearDrops = useCallback(() => {
     setDropSelection([]);
+    setReleaseSelection([]);
     setPreviewWanted(false);
   }, []);
-  const previewing = previewWanted && selection.length > 0;
+  const chosen = selection.length > 0 || released.length > 0;
+  const previewing = previewWanted && chosen;
   const setPreviewing = useCallback((on: boolean) => setPreviewWanted(on), []);
   /** The checked set's route, while it is on the map. */
   const variant = useMemo(
-    () => (previewing && dropPlan ? { dropped: selection, plan: dropPlan } : undefined),
-    [previewing, dropPlan, selection],
+    () => (previewing && dropPlan ? { dropped: selection, released, plan: dropPlan } : undefined),
+    [previewing, dropPlan, selection, released],
   );
   const shown = variant?.plan ?? plan;
   /** Conflicting goals left in the checked set's route, or null while it is being computed. */
@@ -243,7 +258,7 @@ export function PlanProvider({
       if (!stale) return startGifts;
       // The route alone: the drop analysis that `runPlan` adds says nothing about the start.
       const fresh = previewing
-        ? runDrop(input, selection, data, indexes)
+        ? runDrop(input, selection, data, indexes, released)
         : input.wanted.length > 0
           ? planRoute(input, data, indexes)
           : null;
@@ -379,16 +394,19 @@ export function PlanProvider({
       shown,
       planPending,
       analysis,
+      resolutions,
       analysisPending,
       analyzeMore,
       drops: {
         selection,
+        released,
         toggle: toggleDrop,
         set: setDrops,
+        pick: pickWay,
         clear: clearDrops,
-        plan: selection.length > 0 ? dropPlan : null,
+        plan: chosen ? dropPlan : null,
         pending: dropPending,
-        conflicts: selection.length > 0 ? dropConflicts : null,
+        conflicts: chosen ? dropConflicts : null,
         previewing,
         setPreviewing,
       },
@@ -433,11 +451,15 @@ export function PlanProvider({
     shown,
     planPending,
     analysis,
+    resolutions,
     analysisPending,
     analyzeMore,
     selection,
+    released,
+    chosen,
     toggleDrop,
     setDrops,
+    pickWay,
     clearDrops,
     dropPlan,
     dropPending,

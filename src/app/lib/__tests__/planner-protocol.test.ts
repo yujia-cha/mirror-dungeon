@@ -65,7 +65,7 @@ function drain(planner: ReturnType<typeof createPlanner>, id: number): AnalysisR
 
 describe('runPlan', () => {
   it('answers with no plan at all when nothing is wanted', () => {
-    expect(runPlan(inputFor([]), data, indexes)).toEqual({ plan: null, analysis: null });
+    expect(runPlan(inputFor([]), data, indexes)).toEqual({ plan: null, analysis: null, resolutions: null });
   });
 
   it('plans a route for the gifts asked for', () => {
@@ -246,6 +246,59 @@ describe('the route and its drop analysis are two answers (M52)', () => {
     planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) });
     planner.handle({ type: 'init', data });
     expect(planner.analysisStep(1)).toBeNull();
+  });
+});
+
+describe('the ways to fit ride with the bars (M144)', () => {
+  /** Floors 1~5 Hard; the two pins take the slots that would fit the last goal. */
+  const pinnedSlots = {
+    deck: [10403, 10308, 10208, 10108, 11005, 10104],
+    wanted: [9732, 9275, 9709, 9735, 9702, 9407, 9794, 9739, 9427].map((giftId) => ({
+      giftId,
+      required: false,
+    })),
+    options: { ...defaultOptions(), hardFromFloor: 1, lastFloor: 5, observedGifts: [9732, 9735] },
+  };
+
+  it('answers the same ways off the thread as inline, the forced plans first', () => {
+    // Arrange
+    const planner = createPlanner({ budgetMs: Number.POSITIVE_INFINITY });
+    planner.handle({ type: 'init', data });
+    planner.handle({ type: 'plan', id: 1, input: inputFor(conflicting) });
+    // Act
+    const answers = drain(planner, 1);
+    const direct = runPlan(inputFor(conflicting), data, indexes);
+    // Assert: every answer carries the ways so far; the last one is the inline answer.
+    const final = answers[answers.length - 1]!;
+    expect(final.resolutions).toEqual(direct.resolutions);
+    expect(final.resolutions.methods.map((m) => m.removals)).toEqual(conflicting.map((id) => [id]));
+    // The causes come before the ways: the first answer is a forced plan, no way found yet beyond
+    // the main plan's own loss.
+    expect(answers[0]!.analysis.tradeoffs.length).toBeGreaterThan(0);
+    expect(answers[0]!.resolutions.methods).toHaveLength(1);
+    // Ways only grow, and the bars start once they are done.
+    const ways = answers.map((a) => a.resolutions.methods.length);
+    expect(ways).toEqual([...ways].sort((a, b) => a - b));
+    const firstBar = answers.findIndex((a) => a.analysis.effects.length > 0);
+    expect(answers[firstBar]!.resolutions.complete).toBe(true);
+  });
+
+  it('plans a picked way with its pins released, and keeps it apart from the same removals', () => {
+    // Arrange
+    const planner = createPlanner();
+    planner.handle({ type: 'init', data });
+    planner.handle({ type: 'plan', id: 1, input: pinnedSlots });
+    // Act
+    const released = planner.handle({ type: 'drop', id: 2, dropped: [], released: [9732] }) as DropResponse;
+    const kept = planner.handle({ type: 'drop', id: 3, dropped: [] }) as DropResponse;
+    // Assert: the released plan fits every goal and keeps the other pin; no release, no change.
+    expect(released.plan!.unresolved).toEqual([]);
+    expect(released.plan!.start.observed.filter((o) => o.pinned).map((o) => o.giftId)).toEqual([9735]);
+    expect(released.plan!.stats).toEqual({
+      ...runDrop(pinnedSlots, [], data, indexes, [9732])!.stats,
+      elapsedMs: expect.any(Number),
+    });
+    expect(kept.plan!.unresolved.length).toBeGreaterThan(0);
   });
 });
 

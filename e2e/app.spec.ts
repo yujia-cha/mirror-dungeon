@@ -47,7 +47,10 @@ test('plans off the render thread, and the drop analysis follows the route', asy
   const plan = page.getByTestId('route-plan');
   await expect(plan).toBeVisible();
   await expect(page.getByTestId('route-pending')).toHaveCount(0);
-  // The worker answered, not the inline fallback: the drop bars come from its second answer.
+  // The worker answered, not the inline fallback: the ways to fit and the drop bars come from its
+  // second answer (the bars under 「자세히」, M144).
+  await expect(page.getByTestId('resolution').first()).toBeVisible();
+  await page.getByTestId('drop-details').locator('summary').click();
   await expect(page.getByTestId('drop-effect').first()).toBeVisible();
   // M115: the card names both sides — a trade-off line and the bars' roles.
   await expect(page.getByTestId('drop-tradeoff').first()).toBeVisible();

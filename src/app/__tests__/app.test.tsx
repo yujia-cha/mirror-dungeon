@@ -3238,7 +3238,7 @@ describe('RoutePlanPanel', () => {
     expect(screen.getByTestId('route-summary').nextElementSibling).toBe(card);
     expect(card.nextElementSibling).toContainElement(rows());
     // M115: the header names both sides — the lost goal, and what the route keeping it leaves out.
-    expect(within(card).getByRole('heading')).toHaveTextContent(/^전부 얻을 수 없습니다$/);
+    expect(within(card).getByRole('heading', { level: 2 })).toHaveTextContent(/^전부 얻을 수 없습니다$/);
     const tradeoff = within(card).getByTestId('drop-tradeoff');
     expect(tradeoff).toHaveAttribute('data-lost', '9255');
     // Six goals for five floors: leaving any other one out keeps it, and the line says so.
@@ -3271,7 +3271,22 @@ describe('RoutePlanPanel', () => {
     expect(bars[0]).toHaveTextContent('−1');
     expect(within(bars[0]!).getByText('−1')).toHaveAttribute('aria-label', '충돌 1개 줄어듦');
     expect(screen.getByTestId('drop-status')).toHaveTextContent('충돌 1 · 획득 5/6');
-    expect(screen.getByTestId('drop-resolving')).toHaveTextContent('빼면 해결: 보급형 K사 앰플');
+    // M144: the ways to fit lead, the bars sit under 「자세히」. Any one of the six fits, so the
+    // ways are one row — 「이 중 아무거나 1개」 with the six to pick from.
+    const ways = within(card).getByTestId('resolutions');
+    expect(ways).toHaveTextContent('해결 방법');
+    const [row] = within(ways).getAllByTestId('resolution');
+    expect(within(ways).getAllByTestId('resolution')).toHaveLength(1);
+    expect(row).toHaveAttribute('data-kind', 'any');
+    expect(row).toHaveTextContent('목표에서 빼기: 이 중 아무거나 1개');
+    expect(
+      within(row!)
+        .getAllByTestId('resolution-option')
+        .map((el) => el.getAttribute('aria-label')),
+    ).toHaveLength(6);
+    expect(within(card).getByTestId('drop-details')).toContainElement(bars[0]!);
+    expect(within(card).getByTestId('drop-details')).not.toHaveAttribute('open');
+    expect(within(card).queryByTestId('resolution-more')).toBeNull();
     // Nothing checked: nothing to sum, preview or remove.
     expect(screen.queryByTestId('drop-sum')).toBeNull();
     expect(screen.getByRole('button', { name: '루트 미리 보기' })).toBeDisabled();
@@ -3354,7 +3369,9 @@ describe('RoutePlanPanel', () => {
     for (const id of [...CLEAR_REWARDS, 9827]) useApp.getState().toggleWanted(id);
     renderRoute();
     const card = screen.getByTestId('route-decision');
-    expect(within(card).getByRole('heading').textContent).toMatch(/· 2개를 목표에서 빼야 합니다$/);
+    expect(within(card).getByRole('heading', { level: 2 }).textContent).toMatch(
+      /· 2개를 목표에서 빼야 합니다$/,
+    );
     expect(
       within(card)
         .getAllByTestId('drop-tradeoff')
@@ -3366,20 +3383,68 @@ describe('RoutePlanPanel', () => {
     await user.click(screen.getByRole('checkbox', { name: '보급형 K사 앰플 뺄 목표로 고르기' }));
     expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 5/6');
     await user.click(screen.getByRole('button', { name: '선택 해제' }));
-    // 「이 조합 고르기」 checks the set that fits.
-    expect(screen.getByTestId('drop-resolving')).toHaveTextContent('빼면 해결: 박수 짝짝! + 가족의 원망');
-    await user.click(
-      within(screen.getByTestId('drop-resolving')).getByRole('button', { name: '이 조합 고르기' }),
+    // M144: any two of the seven fit — one row, and 「이 방법 고르기」 checks the best-ranked pair.
+    const row = within(card).getByTestId('resolution');
+    expect(row).toHaveTextContent('이 중 아무거나 2개');
+    await user.click(within(row).getByRole('button', { name: '이 방법 고르기' }));
+    expect(within(row).getByRole('button', { name: '이 방법 고르기' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
     );
     expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
     expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −2 · 함께 뺀 실제 −2');
+    // Another pick from the pool is checked one by one; the planner checks what it makes.
+    await user.click(within(row).getByRole('checkbox', { name: '보급형 K사 앰플 이 방법 고르기' }));
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 5/6');
+    await user.click(within(row).getByRole('checkbox', { name: '가족의 원망 이 방법 고르기' }));
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
     await user.click(screen.getByRole('button', { name: '선택한 2개 목표에서 빼기' }));
     await user.click(
       within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '선택한 2개 목표에서 빼기' }),
     );
-    expect(useApp.getState().wanted).not.toContain(9255);
     expect(useApp.getState().wanted).not.toContain(9827);
+    expect(useApp.getState().wanted).not.toContain(9251);
     expect(useApp.getState().wanted).toContain(9250);
+    expect(screen.queryByTestId('route-decision')).toBeNull();
+  });
+
+  it('offers releasing a pin before removing a goal, and previews and applies it (M144)', async () => {
+    // Arrange: five clear rewards for 11~15 and ten pack goals below. The player's pins on 9214 and
+    // 9734 take the slots the planner would spend elsewhere, so one goal is lost — releasing either
+    // pin alone fits everything.
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    const goals = [9250, 9251, 9252, 9253, 9254, 9291, 9214, 9771, 9734, 9438, 9237, 9791, 9809, 9703, 9220];
+    for (const id of goals) useApp.getState().toggleWanted(id);
+    for (const id of [9214, 9734]) useApp.getState().toggleObserved(id, { max: 3, observable: () => true });
+    expect(useApp.getState().options.observedGifts).toEqual([9214, 9734]);
+    renderRoute();
+    const card = screen.getByTestId('route-decision');
+    // Act / Assert: the release-only ways rank first, each naming its pin and keeping every goal.
+    const rows = within(within(card).getByTestId('resolution-list')).getAllByTestId('resolution');
+    expect(rows.slice(0, 2).map((row) => row.getAttribute('data-releases'))).toEqual(['9214', '9734']);
+    expect(rows[0]).toHaveAttribute('data-removals', '');
+    expect(within(rows[0]!).getByTestId('resolution-release')).toHaveTextContent(/^관측 지정 해제: /);
+    expect(rows[0]).toHaveTextContent('목표 유지');
+    // A name in a way opens its sheet.
+    expect(within(within(rows[0]!).getByTestId('resolution-release')).getByRole('button')).toHaveAttribute(
+      'data-link',
+    );
+    // Picking it releases the pin in the preview only; the plan below checks it for real.
+    await user.click(within(rows[0]!).getByRole('button', { name: '이 방법 고르기' }));
+    expect(screen.getByTestId('drop-status')).toHaveTextContent(
+      `관측 지정 해제 1 · ✓ 전부 들어갑니다 · 획득 ${goals.length}/${goals.length}`,
+    );
+    expect(useApp.getState().options.observedGifts).toEqual([9214, 9734]);
+    await user.click(screen.getByRole('button', { name: '루트 미리 보기' }));
+    expect(screen.getByTestId('route-summary')).toHaveTextContent(`${goals.length}/${goals.length}`);
+    // Applying it takes the pin off and keeps every goal.
+    await user.click(screen.getByRole('button', { name: '관측 지정 1개 해제' }));
+    const dialog = screen.getByTestId('confirm-dialog');
+    expect(dialog).toHaveTextContent('관측 지정 1개를 해제할까요?');
+    await user.click(within(dialog).getByRole('button', { name: '관측 지정 1개 해제' }));
+    expect(useApp.getState().options.observedGifts).toEqual([9734]);
+    expect(useApp.getState().wanted).toEqual(goals);
     expect(screen.queryByTestId('route-decision')).toBeNull();
   });
 

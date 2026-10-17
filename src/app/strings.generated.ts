@@ -420,8 +420,6 @@ export const STRINGS = {
   routeDecisionBarSum: { ko: '막대 합 −{sum}', en: 'Bars add to −{sum}' },
   routeDecisionReal: { ko: '함께 뺀 실제 −{real}', en: 'together −{real}' },
   routeDecisionNotAdditive: { ko: '더해지지 않음', en: 'not additive' },
-  routeDecisionResolves: { ko: '빼면 해결: {names}', en: 'Fits without: {names}' },
-  routeDecisionPick: { ko: '이 조합 고르기', en: 'Pick these' },
   routeDecisionNow: { ko: '충돌 {n} · 획득 {covered}', en: '{n} conflicting · got {covered}' },
   routeDecisionComputing: { ko: '계산 중…', en: 'Computing…' },
   routeDecisionFits: { ko: '✓ 전부 들어갑니다 · 획득 {covered}', en: '✓ Everything fits · got {covered}' },
@@ -470,6 +468,36 @@ export const STRINGS = {
   },
   routeDecisionMore: { ko: '더 계산', en: 'Measure the rest' },
   routeDecisionCandidates: { ko: '뺄 후보', en: 'Candidates to remove' },
+  // M144: 충돌을 푸는 방법 목록. 계획은 관측 지정을 그대로 둘 때 잃는 목표 수(k)를 이미 최소로 한다 — 그래서 k개보다 적게 빼서는 들어가지 않고, 계획이 잃은 k개를 빼면 늘 들어간다. 그 k개짜리 방법을 모두 찾고, 관측 지정 해제가 k를 줄이는지(목표를 하나도 빼지 않아도 되는지) 본다. 순위는 뺄 목표 수 → 해제할 관측 지정 수 → 획득 → 팩 수.
+  routeMethods: { ko: '해결 방법', en: 'Ways to fit' },
+  // 그 방법이 해제하는 플레이어 자신의 관측 지정. 이미 획득한 지정(쓴 관측)은 해제할 수 없어 나오지 않는다.
+  routeMethodRelease: { ko: '관측 지정 해제: {names}', en: 'Release pin: {names}' },
+  routeMethodKeep: { ko: '목표 유지', en: 'Every goal kept' },
+  routeMethodRemove: { ko: '목표에서 빼기: {names}', en: 'Remove from goals: {names}' },
+  // 찾은 최소 방법 전부가 빼는 목표. 그 방법들을 끝까지 다 찾았을 때만 말한다.
+  routeMethodMust: { ko: '꼭 빼야 함: {names}', en: 'Must go: {names}' },
+  // 아래 목표 중 아무거나 {n}개를 빼면 들어간다 — 그 조합을 전부 계산해 확인했을 때만 이렇게 묶는다.
+  routeMethodAny: { ko: '이 중 아무거나 {n}개', en: 'Any {n} of these' },
+  routeMethodPick: { ko: '이 방법 고르기', en: 'Pick this way' },
+  // 꼭 필요한 수보다 많이 빼지만, 한 팩이 주는 목표를 함께 빼서 들어가는 방법.
+  routeMethodOther: { ko: '다른 방법', en: 'Other ways' },
+  routeMethodSamePack: { ko: '같은 팩', en: 'Same pack' },
+  routeMethodShowAll: { ko: '방법 {n}개 더 보기', en: 'Show {n} more' },
+  // 방법을 찾는 계산이 예산이나 상한에서 멈췄을 때. 「더 계산」이 막대와 함께 이어서 계산한다.
+  routeMethodMore: { ko: '다른 방법이 더 있을 수 있습니다', en: 'There may be more ways' },
+  // M144: 목표마다 혼자 뺐을 때의 막대(M80)는 이 접기 안에 있다.
+  routeDecisionDetails: { ko: '자세히', en: 'Details' },
+  routeDecisionReleased: { ko: '관측 지정 해제 {n}', en: '{n} pins released' },
+  routeDecisionApplyBoth: {
+    ko: '목표 {n}개 빼기 · 관측 지정 {m}개 해제',
+    en: 'Remove {n} goals · release {m} pins',
+  },
+  routeDecisionReleaseOnly: { ko: '관측 지정 {n}개 해제', en: 'Release {n} pins' },
+  routeDecisionApplyConfirm: {
+    ko: '목표 {n}개를 빼고 관측 지정 {m}개를 해제할까요?',
+    en: 'Remove {n} goals and release {m} pins?',
+  },
+  routeDecisionReleaseConfirm: { ko: '관측 지정 {n}개를 해제할까요?', en: 'Release {n} pins?' },
   routeClose: { ko: '닫기', en: 'Close' },
   packGifts: { ko: '이 팩의 기프트', en: 'Gifts from this pack' },
   packFloorRange: { ko: '{floors}층', en: 'Floors {floors}' },
@@ -1008,8 +1036,8 @@ export const GUIDE_CARDS = [
         en: '「Full route」 at the top right draws the packs floor by floor as a route map.',
       },
       {
-        ko: '전부 얻을 수 없으면 놓친 목표마다 무엇과 자리를 다투는지 알려 주고, 기프트마다 뺐을 때 줄어드는 충돌을 보여 줍니다. 뺄 목표를 체크하면 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 「선택한 n개 목표에서 빼기」로 뺍니다.',
-        en: 'When not everything fits, it says what each missed goal competes with and shows how many conflicts leaving out each gift clears. Tick goals to see the real result, check it with 「Preview route」, then 「Remove n from goals」.',
+        ko: '전부 얻을 수 없으면 「해결 방법」이 뺄 목표가 가장 적은 방법부터 보여 줍니다. 직접 지정한 관측을 풀어 해결되면 「관측 지정 해제」로 목표를 그대로 둡니다. 「이 방법 고르기」로 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 적용합니다. 목표마다 혼자 뺐을 때의 막대는 「자세히」에 있습니다.',
+        en: 'When not everything fits, 「Ways to fit」 lists the ways that remove the fewest goals first. If releasing one of your pins does it, 「Release pin」 keeps every goal. 「Pick this way」 computes the real result; check it with 「Preview route」, then apply it. The bar for leaving out each goal alone is under 「Details」.',
       },
     ],
   },
