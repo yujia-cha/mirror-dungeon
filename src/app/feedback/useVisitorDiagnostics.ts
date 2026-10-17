@@ -62,6 +62,10 @@ export function mergeCaptureHooks(first: CaptureHooks, owner: CaptureHooks): Cap
       first.onGeometry?.(geometry);
       owner.onGeometry?.(geometry);
     },
+    onRunMark: (mark) => {
+      first.onRunMark?.(mark);
+      owner.onRunMark?.(mark);
+    },
   };
 }
 

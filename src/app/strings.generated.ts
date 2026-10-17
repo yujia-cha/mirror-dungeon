@@ -571,6 +571,46 @@ export const STRINGS = {
     ko: '화면은 이 브라우저 안에서만 읽고 어디로도 보내지 않습니다',
     en: 'The screen is read in this browser only and sent nowhere',
   },
+  // 화면 인식을 시작하는 것이 곧 런 시작이다(M143). 지난 런의 기록(입장·획득·시작 확정)이 남아 있으면 먼저 묻는다 — 남은 기록으로 새 런을 읽으면 시작 화면을 찾지 않는다.
+  captureRunAskTitle: { ko: '지난 런의 기록이 남아 있습니다', en: "The last run's record is still here" },
+  captureRunAskMessage: {
+    ko: '새 런으로 시작하면 입장·획득·시작 기록을 비우고 인식을 시작합니다. 새로고침한 뒤 같은 런을 계속하려면 「이어서」를 고르세요.',
+    en: '「Start a new run」 clears the entries, gifts and start record and starts reading. To keep reading the same run after a reload, choose 「Continue」.',
+  },
+  captureRunNew: { ko: '새 런으로 시작', en: 'Start a new run' },
+  captureRunContinue: { ko: '이어서', en: 'Continue' },
+  // 화면 인식으로 시작한 런의 시작 단계가 열려 있는 동안만 팝오버에 보인다(M143). 관측은 1층을 떠나거나 화면 인식이 시작 단계를 닫을 때 잠긴다 — 런 시작에 잠그지 않는다.
+  captureRunNoteTitle: { ko: '런 시작', en: 'Run start' },
+  captureRunNoteFree: {
+    ko: '바꿀 수 있는 것: 목표 기프트와 그에 따른 루트',
+    en: 'You can still change: the goal gifts and the route they make',
+  },
+  captureRunNoteFixed: {
+    ko: '정해지는 것: 시작 기프트·관측. 게임의 관측이 끝나면(1층 테마팩 선택) 화면 인식이 확정하고, 그 뒤에는 바꿀 수 없습니다',
+    en: "Being decided: the start gifts and observations. Once the game's observation is over (floor 1's theme pack select) the screen reader settles them, and they cannot be changed after that",
+  },
+  // 화면 인식이 런을 시작할 때 남긴 「시작 전」 상태가 있을 때만 보인다(M143).
+  captureRollback: { ko: '런 중단 · 시작 전으로 되돌리기', en: 'Stop the run · back to before it started' },
+  captureRollbackTitle: {
+    ko: '런을 중단하고 시작 전으로 되돌릴까요?',
+    en: 'Stop the run and go back to before it started?',
+  },
+  captureRollbackMessage: {
+    ko: '화면 인식을 멈추고 이 런에서 기록한 것을 되돌립니다.',
+    en: 'The screen reader stops, and what this run recorded is undone.',
+  },
+  captureRollbackGifts: { ko: '획득·미획득 기록 {n}개', en: '{n} gift records (got and not got)' },
+  captureRollbackVisits: { ko: '입장 기록 {n}개', en: '{n} pack entries' },
+  captureRollbackStart: {
+    ko: '시작 기록(시작 기프트·관측)',
+    en: 'The start record (start gifts and observations)',
+  },
+  captureRollbackPins: {
+    ko: '관측 지정은 시작 전 값으로 돌아갑니다',
+    en: 'Observation picks go back to what they were before the start',
+  },
+  captureRollbackKeep: { ko: '목표와 덱은 그대로입니다.', en: 'Goals and deck stay as they are.' },
+  captureRollbackConfirm: { ko: '시작 전으로 되돌리기', en: 'Go back to before the start' },
   captureErr_unsupported: {
     ko: '이 브라우저는 화면 공유를 지원하지 않습니다',
     en: 'This browser cannot share a screen',
@@ -991,6 +1031,10 @@ export const GUIDE_CARDS = [
       {
         ko: '데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있습니다.',
         en: 'On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone.',
+      },
+      {
+        ko: '화면 인식을 시작하면 런이 시작됩니다. 지난 런의 기록이 남아 있으면 「새 런으로 시작」과 「이어서」 중에서 고르고, 「런 중단 · 시작 전으로 되돌리기」로 시작 전으로 돌아갈 수 있습니다.',
+        en: "Starting the screen reader starts the run. If the last run's record is still there, choose 「Start a new run」 or 「Continue」; 「Stop the run · back to before it started」 takes you back.",
       },
       {
         ko: 'Chrome·Edge에서는 같은 팝오버의 「오버레이 창 열기」가 게임 위에 늘 떠 있는 작은 창을 엽니다. 테두리 없는 창 모드에서 보이고, 전체 화면에서는 가려집니다.',

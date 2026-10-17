@@ -188,6 +188,7 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
       onApplied: (logId, event, actions, fromRead) =>
         recorderRef.current?.onApplied(logId, event, actions, fromRead),
       onUndo: (logId) => recorderRef.current?.onUndo(logId),
+      onRunMark: (mark) => recorderRef.current?.onRunMark(mark),
       onAnswer: (ask, picked) => recorderRef.current?.onAnswer(ask, picked),
       onSession: (status, error) => {
         const ui = useApp.getState().ui;

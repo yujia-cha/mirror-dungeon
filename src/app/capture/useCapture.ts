@@ -11,8 +11,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { observable, observationBudget } from '../../core/index.ts';
 import { giftIconUrl } from '../lib/assets.ts';
 import { observationClosed } from '../lib/plan-input.ts';
+import { feedbackLog } from '../lib/feedback-log.ts';
+import type { RunState } from '../lib/plan-input.ts';
 import { usePlan } from '../shell/plan-context.ts';
-import { useApp } from '../store.ts';
+import { runHasProgress, useApp } from '../store.ts';
 import {
   actionsFor,
   enterAction,
@@ -72,6 +74,36 @@ export interface CaptureHooks {
   onSession?: (status: CaptureStatus, error: CaptureError | null) => void;
   /** The shared picture's size and title bar, on the first read and whenever they change (M134). */
   onGeometry?: (geometry: CaptureGeometry) => void;
+  /** The run was started with the reader (new or continued), or rolled back to before it (M143). */
+  onRunMark?: (mark: RunMark) => void;
+}
+
+/** A run-start marker (M143): what the player chose, and the run it was chosen on. */
+export interface RunMark {
+  mark: 'new' | 'continue' | 'rollback';
+  /** The run before the choice held progress (`runHasProgress`). */
+  hadProgress: boolean;
+  /** That run, in counts. */
+  run: RunSummary;
+}
+
+export interface RunSummary {
+  currentFloor: number;
+  visits: number;
+  got: number;
+  failed: number;
+  startDone: boolean;
+}
+
+export function runSummary(run: RunState): RunSummary {
+  const statuses = Object.values(run.giftStatus);
+  return {
+    currentFloor: run.currentFloor,
+    visits: Object.keys(run.visits).length,
+    got: statuses.filter((s) => s === 'got').length,
+    failed: statuses.filter((s) => s === 'failed').length,
+    startDone: run.startDone === true,
+  };
 }
 
 export function useCapture(hooks: CaptureHooks = {}) {
@@ -254,6 +286,43 @@ export function useCapture(hooks: CaptureHooks = {}) {
     session.current = null;
   }, []);
 
+  /** The log and questions belong to the run they were made on; its undo cannot apply to another. */
+  const forgetRun = useCallback(() => {
+    setLog([]);
+    setQuestions([]);
+  }, []);
+
+  /**
+   * Starting the reader is starting the run (M143): `'new'` snapshots the state and starts the run
+   * over (`beginRun`), `'continue'` reads on the run as it is (a reload mid-run). Called straight
+   * from the press — `start()` asks for the share at once, inside the gesture.
+   */
+  const begin = useCallback(
+    (mode: 'new' | 'continue') => {
+      const before = useApp.getState().run;
+      const hadProgress = runHasProgress(before);
+      useApp.getState().beginRun(mode);
+      if (mode === 'new' && hadProgress) forgetRun();
+      feedbackLog.action(`capture run ${mode}`);
+      latest.current.hooks.onRunMark?.({ mark: mode, hadProgress, run: runSummary(before) });
+      return start();
+    },
+    [forgetRun, start],
+  );
+
+  /** 「런 중단 · 시작 전으로 되돌리기」 (M143): stop reading and put the snapshot back. */
+  const rollback = useCallback(() => {
+    const before = useApp.getState().run;
+    stop();
+    if (!useApp.getState().rollbackRun()) return;
+    forgetRun();
+    latest.current.hooks.onRunMark?.({
+      mark: 'rollback',
+      hadProgress: runHasProgress(before),
+      run: runSummary(before),
+    });
+  }, [forgetRun, stop]);
+
   // A new interval takes effect at once; the session survives it.
   useEffect(() => {
     session.current?.setInterval(READ_INTERVALS[interval]);
@@ -313,11 +382,13 @@ export function useCapture(hooks: CaptureHooks = {}) {
       log,
       questions,
       start,
+      begin,
       stop,
+      rollback,
       undo,
       answer,
       applying,
     }),
-    [status, error, log, questions, start, stop, undo, answer],
+    [status, error, log, questions, start, begin, stop, rollback, undo, answer],
   );
 }

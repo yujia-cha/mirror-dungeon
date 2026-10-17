@@ -91,6 +91,12 @@ interface AppState extends SharedState {
   lastFloor: number;
   /** Progress of the run being played. Kept on this device only; never part of a share link. */
   run: RunState;
+  /**
+   * The state before the screen reader last started a run (M143): the run as it stood and the
+   * observation pins and slots. 「런 중단 · 시작 전으로 되돌리기」 puts it back. Device only, never
+   * shared; null when there is nothing to go back to.
+   */
+  runSnapshot: RunSnapshot | null;
   ui: UiState;
   lang: Lang;
   dark: boolean;
@@ -127,6 +133,19 @@ interface AppState extends SharedState {
    */
   setStageFloor: (floor: number, settle?: { got?: number[]; failed?: number[] }) => void;
   resetRun: () => void;
+  /**
+   * Starting the screen reader is starting the run (M143). `'new'` saves what is there now as the
+   * snapshot to go back to and starts the run over; a run with no progress is only snapshotted,
+   * and keeps the snapshot it already has (a share refused and tried again must not overwrite the
+   * run it saved). `'continue'` (a reload mid-run) leaves the run and the snapshot as they are.
+   */
+  beginRun: (mode: 'new' | 'continue') => void;
+  /**
+   * 「런 중단 · 시작 전으로 되돌리기」 (M143): the run and the observation pins and slots go back to
+   * the snapshot, which is then spent. Goals, deck and the other options stay. False (and nothing
+   * changes) without a snapshot.
+   */
+  rollbackRun: () => boolean;
   /**
    * The run start is over while floor 1 is still ahead (M134): the start gifts and 기프트 관측 are
    * spent, so the plan stops choosing or recommending them (`run.startDone`). For the screen reader,
@@ -351,6 +370,53 @@ export function collectedGifts(wanted: readonly number[], fusionGoal: FusionGoal
  */
 export function runInProgress(run: RunState): boolean {
   return run.currentFloor > 1 || Object.keys(run.visits).length > 0;
+}
+
+/**
+ * Whether the run holds anything the player could lose by starting over (M143): an entry, a gift
+ * marked, a start settled or recorded, a floor behind. Wider than `runInProgress`, which only asks
+ * about floors — a run that has seen its start gifts on floor 1 is already a run.
+ */
+export function runHasProgress(run: RunState): boolean {
+  return (
+    runInProgress(run) ||
+    Object.keys(run.giftStatus).length > 0 ||
+    run.startDone === true ||
+    run.startGifts.length > 0
+  );
+}
+
+/** What 「시작 전으로 되돌리기」 restores (M143): the run, and the pins and slots the start may change. */
+export interface RunSnapshot {
+  run: RunState;
+  observedGifts: number[];
+  /** `options.observationSlots`; absent = the rules' count. */
+  observationSlots?: number;
+}
+
+/** A snapshot of the state now. */
+function snapshotOf(run: RunState, options: PlanOptions): RunSnapshot {
+  return {
+    run,
+    observedGifts: [...options.observedGifts],
+    ...(options.observationSlots === undefined ? {} : { observationSlots: options.observationSlots }),
+  };
+}
+
+/** A stored snapshot, kept only when its shape is sound; null otherwise (and for every blob before M143). */
+export function sanitizeRunSnapshot(raw: unknown): RunSnapshot | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const source = raw as Record<string, unknown>;
+  if (!source.run || typeof source.run !== 'object') return null;
+  const observed = Array.isArray(source.observedGifts) ? source.observedGifts : [];
+  const slots = source.observationSlots;
+  return {
+    run: sanitizeRun(source.run),
+    observedGifts: [...new Set(observed.filter((n): n is number => Number.isInteger(n)))],
+    ...(typeof slots === 'number' && Number.isInteger(slots) && slots >= 0
+      ? { observationSlots: slots }
+      : {}),
+  };
 }
 
 export function emptyRun(): RunState {
@@ -582,6 +648,7 @@ export type PersistedState = Pick<
   | 'fusionGoal'
   | 'upgrades'
   | 'run'
+  | 'runSnapshot'
   | 'ui'
   | 'options'
   | 'lang'
@@ -632,6 +699,8 @@ export function sanitizePersisted(persisted: unknown, version: number): Persiste
     // Added in M130 without a version step: a blob from before simply has none.
     upgrades: sanitizeUpgrades(state.upgrades),
     run,
+    // Added in M143 without a version step: a blob from before has none.
+    runSnapshot: sanitizeRunSnapshot(state.runSnapshot),
     ui: sanitizeUi(state.ui),
     // At rehydrate the recipes are not known yet, so this prunes nothing; `adoptSeason` does it.
     options: withObservedIn(
@@ -680,6 +749,7 @@ export const useApp = create<AppState>()(
       fusionGoal: {},
       upgrades: {},
       run: emptyRun(),
+      runSnapshot: null,
       ui: defaultUi(),
       lang: 'ko',
       dark: prefersDark(),
@@ -857,7 +927,32 @@ export const useApp = create<AppState>()(
             },
           };
         }),
-      resetRun: () => set({ run: emptyRun() }),
+      // The run thrown away was the one the snapshot led up to: nothing is left to go back from.
+      resetRun: () => set({ run: emptyRun(), runSnapshot: null }),
+      beginRun: (mode) =>
+        set((state) => {
+          if (mode === 'continue') return {};
+          if (!runHasProgress(state.run)) {
+            return state.runSnapshot ? {} : { runSnapshot: snapshotOf(state.run, state.options) };
+          }
+          return { runSnapshot: snapshotOf(state.run, state.options), run: emptyRun() };
+        }),
+      rollbackRun: () => {
+        const { runSnapshot: snapshot } = get();
+        if (!snapshot) return false;
+        set((state) => {
+          const options: PlanOptions = { ...state.options, observedGifts: [...snapshot.observedGifts] };
+          if (snapshot.observationSlots === undefined) delete options.observationSlots;
+          else options.observationSlots = snapshot.observationSlots;
+          // The goals may have changed since: pins and misses follow the goals as they are now.
+          return {
+            run: withRunFor(snapshot.run, state.wanted, state.fusionGoal),
+            options: withObservedIn(options, state.wanted, state.fusionGoal),
+            runSnapshot: null,
+          };
+        });
+        return true;
+      },
       markStartDone: (done = true) =>
         set((state) => {
           if ((state.run.startDone === true) === done) return {};
@@ -981,13 +1076,15 @@ export const useApp = create<AppState>()(
           upgrades: {},
           options: appDefaultOptions(),
           run: emptyRun(),
+          runSnapshot: null,
         });
       },
       setUi: (patch) => set((state) => ({ ui: sanitizeUi({ ...state.ui, ...patch }) })),
       setLang: (lang) => set({ lang }),
       toggleDark: () => set((state) => ({ dark: !state.dark })),
 
-      setSeason: (season) => set((state) => (state.season === season ? {} : { season, run: emptyRun() })),
+      setSeason: (season) =>
+        set((state) => (state.season === season ? {} : { season, run: emptyRun(), runSnapshot: null })),
 
       adoptSeason: ({ season, lastFloor, giftIds, packIds, recipes, upgradeLevels }) => {
         recipeTree = recipes;
@@ -1008,22 +1105,30 @@ export const useApp = create<AppState>()(
         // run stands at `runDoneFloor` on both counts and is kept; only a run that walked further
         // than this season goes is gone. Testing the stage against `lastFloor` wiped every finished
         // run on the next load.
-        const run =
-          state.run.currentFloor > runDoneFloor(lastFloor) || state.run.stageFloor > runDoneFloor(lastFloor)
+        const fit = (r: RunState): RunState =>
+          r.currentFloor > runDoneFloor(lastFloor) || r.stageFloor > runDoneFloor(lastFloor)
             ? emptyRun()
             : {
-                ...state.run,
+                ...r,
                 visits: Object.fromEntries(
-                  Object.entries(state.run.visits).filter(([, packId]) => packIds.has(packId)),
+                  Object.entries(r.visits).filter(([, packId]) => packIds.has(packId)),
                 ),
                 giftStatus: Object.fromEntries(
-                  Object.entries(state.run.giftStatus).filter(([id]) => giftIds.has(Number(id))),
+                  Object.entries(r.giftStatus).filter(([id]) => giftIds.has(Number(id))),
                 ),
-                startGifts: state.run.startGifts.filter((id) => giftIds.has(id)),
-                ...(state.run.collectRest
-                  ? { collectRest: state.run.collectRest.filter((id) => giftIds.has(id)) }
-                  : {}),
+                startGifts: r.startGifts.filter((id) => giftIds.has(id)),
+                ...(r.collectRest ? { collectRest: r.collectRest.filter((id) => giftIds.has(id)) } : {}),
               };
+        const run = fit(state.run);
+        // The snapshot to go back to (M143) holds a run too, and the same ids.
+        const snapshot = state.runSnapshot;
+        const runSnapshot = snapshot
+          ? {
+              ...snapshot,
+              run: fit(snapshot.run),
+              observedGifts: snapshot.observedGifts.filter((id) => giftIds.has(id)),
+            }
+          : null;
         // A step the gift does not have in this season (or a gift it does not ship) cannot be drawn.
         const upgrades: GiftUpgradeMap = {};
         for (const [id, level] of Object.entries(state.upgrades)) {
@@ -1033,6 +1138,7 @@ export const useApp = create<AppState>()(
           season,
           lastFloor,
           run,
+          runSnapshot,
           wanted,
           upgrades,
           fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
@@ -1068,6 +1174,7 @@ export const useApp = create<AppState>()(
             sanitizeFusionGoal(shared.fusionGoal, wanted),
           ),
           run: emptyRun(),
+          runSnapshot: null,
         });
       },
     }),
@@ -1088,6 +1195,7 @@ export const useApp = create<AppState>()(
         fusionGoal: state.fusionGoal,
         upgrades: state.upgrades,
         run: state.run,
+        runSnapshot: state.runSnapshot,
         ui: state.ui,
         options: state.options,
         lang: state.lang,

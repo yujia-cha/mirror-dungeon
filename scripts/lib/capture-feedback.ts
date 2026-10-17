@@ -516,5 +516,14 @@ export function formatReport(
         }`,
       );
   }
+  const marks = bundle.records.flatMap((r) => (r.kind === 'runMark' ? [r] : []));
+  if (marks.length > 0) {
+    lines.push('', '### 런 시작·되돌리기', '');
+    const word = { new: '새 런으로 시작', continue: '이어서', rollback: '시작 전으로 되돌림' } as const;
+    for (const m of marks)
+      lines.push(
+        `- ${when(m.t)} ${word[m.mark]}: ${m.hadProgress ? '진행 있던 런' : '빈 런'} (${m.run.currentFloor}층 · 입장 ${m.run.visits} · 획득 ${m.run.got} · 미획득 ${m.run.failed}${m.run.startDone ? ' · 시작 확정' : ''})`,
+      );
+  }
   return `${lines.join('\n')}\n`;
 }

@@ -477,6 +477,11 @@ export class DiagRecorder {
     this.add({ kind: 'run', ...input });
   }
 
+  /** The run was started with the reader, new or continued, or rolled back to before it (M143). */
+  onRunMark(input: Without<Extract<DiagRecord, { kind: 'runMark' }>, 't' | 'kind'>): void {
+    this.add({ kind: 'runMark', ...input });
+  }
+
   /**
    * Everything stored, as one bundle plus its frames, read in the queue's turn. Nothing is marked
    * yet: the caller zips and downloads it and then calls `markExported` with `mark` — a zip that

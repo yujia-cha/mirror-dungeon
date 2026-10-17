@@ -51,7 +51,11 @@ async function fakeShare(page: Page, frame = { width: W, height: H, bar: 0 }): P
     };
     (window as unknown as { __paint: typeof paint }).__paint = paint;
     void paint([]);
-    navigator.mediaDevices.getDisplayMedia = async () => canvas.captureStream(8);
+    // The real call needs a user gesture (transient activation): say whether this one had it (M143).
+    navigator.mediaDevices.getDisplayMedia = async () => {
+      (window as unknown as { __shareActive: boolean }).__shareActive = navigator.userActivation.isActive;
+      return canvas.captureStream(8);
+    };
   }, frame);
 }
 
@@ -107,7 +111,9 @@ test('reads an entry and a gift off the shared window, and takes them back', asy
     { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
   ]);
   await panel.getByTestId('capture-stop').click();
+  // The run holds an entry now, so starting asks first (M143): reading on is 「이어서」.
   await panel.getByTestId('capture-start').click();
+  await page.getByTestId('capture-run-continue').click();
   await expect(status).toHaveAttribute('data-status', 'running', { timeout: 45_000 });
   await page.waitForTimeout(3000);
   await expect(log.locator('li', { hasText: '1층 입장' })).toHaveCount(1);
@@ -288,4 +294,64 @@ test('reads the run start: only the popup it saw records a gift — the other pi
   await log.locator('li', { hasText: '시작 단계 끝' }).getByRole('button', { name: '되돌리기' }).click();
   await expect.poll(async () => (await saved()).startDone).toBe(false);
   await panel.getByTestId('capture-stop').click();
+});
+
+test('starting the reader over an old run starts a new one, reads its start, and rolls back (M143)', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await fakeShare(page);
+  await page.goto(`./${shareHash([9191, 9809], 8)}`);
+  // An old run's record: floor 1 skipped on the stage, so its start is closed.
+  await page.getByRole('button', { name: '다음 층' }).first().click();
+  const saved = () =>
+    page.evaluate(() => {
+      const state = JSON.parse(localStorage.getItem('md-route-planner') ?? '{}').state ?? {};
+      return {
+        floor: state.run?.currentFloor ?? null,
+        got: state.run?.giftStatus?.['9191'] ?? null,
+        snapshotFloor: state.runSnapshot?.run?.currentFloor ?? null,
+      };
+    });
+  await expect.poll(async () => (await saved()).floor).toBe(2);
+  const old = await saved();
+
+  // Starting asks first; 「새 런으로 시작」 starts the share from the dialog's own press.
+  await page.getByTestId('capture-open').click();
+  const panel = page.getByTestId('capture-panel');
+  await panel.getByTestId('capture-start').click();
+  const dialog = page.getByRole('alertdialog');
+  await expect(dialog).toContainText('지난 런의 기록이 남아 있습니다');
+  await dialog.getByRole('button', { name: '새 런으로 시작' }).click();
+  await expect(panel.getByTestId('capture-status')).toHaveAttribute('data-status', 'running', {
+    timeout: 45_000,
+  });
+  await expect.poll(saved).toEqual({ floor: 1, got: null, snapshotFloor: 2 });
+  // Asked from inside the dialog's press, so a real browser would show its picker.
+  expect(await page.evaluate(() => (window as unknown as { __shareActive: boolean }).__shareActive)).toBe(
+    true,
+  );
+  await expect(panel.getByTestId('capture-run-note')).toContainText('정해지는 것: 시작 기프트·관측');
+
+  // The fresh run's start is open, so the reader looks for the observation screen.
+  const title = { text: 'E.G.O 기프트 관측', region: [0.1094, 0.0396, 0.1615, 0.0595] as Region, size: 40 };
+  await paint(page, [title]);
+  await page.waitForTimeout(2000);
+  await paint(page, [
+    title,
+    { text: 'E.G.O 기프트를 획득했습니다.', region: [0.333, 0.205, 0.34, 0.07], size: 40 },
+    { text: '프레스티지 카드', region: [0.2526, 0.56, 0.138, 0.1338], size: 30 },
+  ]);
+  await expect(panel.getByTestId('capture-log')).toContainText('관측으로 획득 · 프레스티지 카드', {
+    timeout: 20_000,
+  });
+  await expect.poll(async () => (await saved()).got).toBe('got');
+
+  // 「런 중단 · 시작 전으로 되돌리기」 stops reading and brings the old run back.
+  await panel.getByTestId('capture-rollback').click();
+  await expect(page.getByTestId('capture-rollback-list')).toContainText('획득·미획득 기록 1개');
+  await page.getByRole('alertdialog').getByRole('button', { name: '시작 전으로 되돌리기' }).click();
+  await expect(panel.getByTestId('capture-status')).toHaveAttribute('data-status', 'idle');
+  await expect.poll(saved).toEqual({ ...old, snapshotFloor: null });
+  await expect(panel.getByTestId('capture-rollback')).toHaveCount(0);
 });

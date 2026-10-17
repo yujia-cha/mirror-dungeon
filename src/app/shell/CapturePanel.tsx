@@ -6,17 +6,24 @@
  *
  * Drawn only where the browser can share a screen — phones cannot, so they never see it. The
  * session itself is `CaptureProvider`'s: closing the popover does not end the share.
+ *
+ * Starting the reader is starting the run (M143): on a run with progress it first asks 「새 런으로
+ * 시작」 or 「이어서」, and the answer's own press starts the share (the browser asks for the screen
+ * only inside a gesture). While that run's start is open a note says what can still change, and
+ * 「런 중단 · 시작 전으로 되돌리기」 puts the state from before the start back.
  */
 import { useState, type ReactNode } from 'react';
 import { CircleHelp, ScanEye, TriangleAlert } from 'lucide-react';
 import { t } from '../i18n.ts';
-import { useApp } from '../store.ts';
+import { runHasProgress, useApp } from '../store.ts';
+import { observationClosed } from '../lib/plan-input.ts';
 import { READ_INTERVALS, type ReadIntervalPreset } from '../capture/loop.ts';
 import type { CaptureQuestion } from '../capture/useCapture.ts';
 import { giftName, logText, statusTextOf } from '../capture/capture-text.ts';
 import { useCaptureSession } from '../capture/capture-context.ts';
 import { DetailSurface } from '../components/BlockDetail.tsx';
-import { Button, Checkbox, Select } from '../components/ui.tsx';
+import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
+import { Button, Checkbox, Notice, Select } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
 import { DiagnosticsSection } from './DiagnosticsSection.tsx';
 import { OverlayToggle } from '../overlay/OverlayToggle.tsx';
@@ -99,8 +106,22 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
   const interval = useApp((s) => s.ui.captureInterval);
   const gameLang = useApp((s) => s.ui.captureLang);
   const setUi = useApp((s) => s.setUi);
+  const run = useApp((s) => s.run);
+  const snapshot = useApp((s) => s.runSnapshot);
   const running = capture.status === 'running';
   const starting = capture.status === 'starting';
+  const [asking, setAsking] = useState<'start' | 'rollback' | null>(null);
+  /** The share is asked for inside this press, or inside the dialog's (M143). */
+  const startRun = () => {
+    if (runHasProgress(useApp.getState().run)) setAsking('start');
+    else void capture.begin('new');
+  };
+  const answerStart = (mode: 'new' | 'continue') => {
+    setAsking(null);
+    void capture.begin(mode);
+  };
+  const statuses = Object.keys(run.giftStatus).length;
+  const visits = Object.keys(run.visits).length;
 
   return (
     <div className="flex flex-col gap-3" data-testid="capture-panel">
@@ -121,11 +142,22 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
             {t('captureStop', lang)}
           </Button>
         ) : (
-          <Button variant="primary" onClick={() => void capture.start()} testId="capture-start">
+          <Button variant="primary" onClick={startRun} testId="capture-start">
             {t('captureStart', lang)}
           </Button>
         )}
       </div>
+
+      {/* The run's start, while the reader has it open (M143): the lock itself stays where it is. */}
+      {(running || starting) && !observationClosed(run) ? (
+        <div data-testid="capture-run-note">
+          <Notice>
+            <strong className="block text-fg">{t('captureRunNoteTitle', lang)}</strong>
+            <span className="block">{t('captureRunNoteFree', lang)}</span>
+            <span className="block">{t('captureRunNoteFixed', lang)}</span>
+          </Notice>
+        </div>
+      ) : null}
 
       {/* Questions first: they are the one thing here that waits on the player. */}
       {capture.questions.map((question) => (
@@ -165,6 +197,15 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
         </section>
       ) : null}
 
+      {/* The run this start began can be taken back to before it (M143). */}
+      {snapshot ? (
+        <div className="flex">
+          <Button size="sm" onClick={() => setAsking('rollback')} testId="capture-rollback">
+            {t('captureRollback', lang)}
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-caption text-fg-muted">
         <label className="flex items-center gap-2">
           {t('captureInterval', lang)}
@@ -201,6 +242,44 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
       {children}
 
       <p className="text-body text-fg-subtle">{t('capturePrivacy', lang)}</p>
+
+      {asking === 'start' ? (
+        <ConfirmDialog
+          lang={lang}
+          title={t('captureRunAskTitle', lang)}
+          message={t('captureRunAskMessage', lang)}
+          confirmLabel={t('captureRunNew', lang)}
+          // Recoverable: the run it clears is the snapshot 「시작 전으로 되돌리기」 brings back.
+          confirmVariant="primary"
+          onConfirm={() => answerStart('new')}
+          alternative={{
+            label: t('captureRunContinue', lang),
+            onClick: () => answerStart('continue'),
+            testId: 'capture-run-continue',
+          }}
+          onCancel={() => setAsking(null)}
+        />
+      ) : asking === 'rollback' ? (
+        <ConfirmDialog
+          lang={lang}
+          title={t('captureRollbackTitle', lang)}
+          message={t('captureRollbackMessage', lang)}
+          confirmLabel={t('captureRollbackConfirm', lang)}
+          onConfirm={() => {
+            setAsking(null);
+            capture.rollback();
+          }}
+          onCancel={() => setAsking(null)}
+        >
+          <ul className="list-disc pl-4 text-body text-fg-muted" data-testid="capture-rollback-list">
+            <li>{t('captureRollbackGifts', lang, { n: statuses })}</li>
+            <li>{t('captureRollbackVisits', lang, { n: visits })}</li>
+            <li>{t('captureRollbackStart', lang)}</li>
+            <li>{t('captureRollbackPins', lang)}</li>
+          </ul>
+          <span className="text-body text-fg-muted">{t('captureRollbackKeep', lang)}</span>
+        </ConfirmDialog>
+      ) : null}
     </div>
   );
 }

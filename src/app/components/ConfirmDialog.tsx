@@ -7,6 +7,7 @@
  * reset ran with nothing asked; and a browser that auto-dismisses answers `false`, so the action
  * silently never happened. This asks, and the answer is the app's to read.
  */
+import type { ReactNode } from 'react';
 import { t, type Lang } from '../i18n.ts';
 import { DetailSurface } from './BlockDetail.tsx';
 import { Button } from './ui.tsx';
@@ -18,6 +19,9 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   lang,
+  confirmVariant = 'danger',
+  alternative,
+  children,
 }: {
   title: string;
   message?: string;
@@ -25,6 +29,12 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
   lang: Lang;
+  /** `primary` when the confirmed action can be taken back (M143); `danger` when it cannot. */
+  confirmVariant?: 'danger' | 'primary';
+  /** A third answer between cancel and confirm (M143 — 「이어서」 beside 「새 런으로 시작」). */
+  alternative?: { label: string; onClick: () => void; testId?: string };
+  /** Below the message: what the action changes, as a list (M143). */
+  children?: ReactNode;
 }) {
   return (
     <DetailSurface
@@ -43,12 +53,18 @@ export function ConfirmDialog({
               {message}
             </span>
           ) : null}
+          {children}
         </div>
-        <div className="flex justify-end gap-1.5">
+        <div className="flex flex-wrap justify-end gap-1.5" data-uniform="height">
           <Button variant="ghost" onClick={onCancel}>
             {t('confirmCancel', lang)}
           </Button>
-          <Button variant="danger" onClick={onConfirm}>
+          {alternative ? (
+            <Button onClick={alternative.onClick} testId={alternative.testId}>
+              {alternative.label}
+            </Button>
+          ) : null}
+          <Button variant={confirmVariant} onClick={onConfirm} testId="confirm-dialog-confirm">
             {confirmLabel}
           </Button>
         </div>

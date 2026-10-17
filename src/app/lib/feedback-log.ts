@@ -160,6 +160,8 @@ export interface LoggedState {
   upgrades?: Readonly<Record<number, number>>;
   options: unknown;
   run: RunState;
+  /** The state to go back to before the reader started the run (M143). */
+  runSnapshot?: { run: RunState } | null;
   lang: string;
   dark: boolean;
   season: number | undefined;
@@ -221,6 +223,14 @@ export function describeChange(prev: LoggedState, next: LoggedState): string[] {
     out.push(`options ${keys.map((key) => `${key}=${JSON.stringify(after[key])}`).join(' ')}`);
   }
   if (prev.run !== next.run) out.push(...describeRun(prev.run, next.run));
+  const before = prev.runSnapshot ?? null;
+  const after = next.runSnapshot ?? null;
+  if (before !== after) {
+    // A rollback puts the snapshot's run back and spends it; any other way it goes is a run thrown away.
+    if (after) out.push('run snapshot saved');
+    else if (before && JSON.stringify(next.run) === JSON.stringify(before.run)) out.push('run rolled back');
+    else out.push('run snapshot cleared');
+  }
   if (prev.lang !== next.lang) out.push(`lang ${next.lang}`);
   if (prev.dark !== next.dark) out.push(`theme ${next.dark ? 'dark' : 'light'}`);
   if (prev.ui.leftTab !== next.ui.leftTab) out.push(`left tab ${next.ui.leftTab}`);

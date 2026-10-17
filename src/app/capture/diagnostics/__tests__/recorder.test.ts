@@ -57,6 +57,25 @@ async function recorder(opts: { images?: boolean } = {}) {
 }
 
 describe('DiagRecorder', () => {
+  it('records the run-start markers and the rollback, and the bundle parses (M143)', async () => {
+    // Arrange
+    const { r } = await recorder();
+    const run = { currentFloor: 2, visits: 1, got: 3, failed: 0, startDone: true };
+    // Act
+    r.onRunMark({ mark: 'new', hadProgress: true, run });
+    r.onRunMark({ mark: 'continue', hadProgress: false, run: { ...run, currentFloor: 1 } });
+    r.onRunMark({ mark: 'rollback', hadProgress: true, run });
+    await r.flush();
+    // Assert
+    const { bundle } = await r.exportBundle(META);
+    expect(diagnosticsBundleSchema.parse(bundle).records.map((x) => x.kind === 'runMark' && x.mark)).toEqual([
+      'new',
+      'continue',
+      'rollback',
+    ]);
+    expect(bundle.format).toBe(1);
+  });
+
   it('records nothing while off', async () => {
     // Arrange
     const { r } = await recorder();

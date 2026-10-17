@@ -98,6 +98,11 @@ async function measure(preset: ReadIntervalPreset | null): Promise<Row> {
       await page.getByTestId('capture-open').click();
       await page.getByTestId('capture-interval').selectOption(preset);
       await page.getByTestId('capture-start').click();
+      // A run left by an earlier preset asks first (M143): each measure reads a fresh run.
+      await page
+        .getByRole('button', { name: '새 런으로 시작' })
+        .click({ timeout: 1000 })
+        .catch(() => undefined);
       await page
         .locator('[data-testid="capture-status"][data-status="running"]')
         .waitFor({ timeout: 60_000 });

@@ -353,6 +353,39 @@ describe('filmstrips (M134)', () => {
     expect(recognitionReport(bundle()).queuedReads).toBeNull();
   });
 
+  it('lists the run starts and the rollback in the report, and parses them in a bundle (M143)', () => {
+    // Arrange: a new run on a run with progress, then a rollback.
+    const b = bundle();
+    const summary = { currentFloor: 3, visits: 2, got: 4, failed: 1, startDone: true };
+    b.records.push(
+      { kind: 'runMark', t: 70, mark: 'new', hadProgress: true, run: summary },
+      { kind: 'runMark', t: 80, mark: 'rollback', hadProgress: false, run: { ...summary, currentFloor: 1 } },
+    );
+    // Act
+    const zip = zipSync({ 'session.json': strToU8(JSON.stringify(b)) });
+    const parsed = parseBundle(unzipSync(zip)).bundle;
+    const text = formatReport(
+      parsed,
+      recognitionReport(parsed),
+      routeReport(parsed, () => 'general'),
+      { certain: 0, unconfirmed: 0 },
+      { gift: (id) => `G${id}`, pack: (id) => `P${id}` },
+    );
+    // Assert
+    expect(text).toContain('### 런 시작·되돌리기');
+    expect(text).toMatch(/새 런으로 시작: 진행 있던 런 \(3층 · 입장 2 · 획득 4 · 미획득 1 · 시작 확정\)/);
+    expect(text).toContain('시작 전으로 되돌림: 빈 런');
+    expect(
+      formatReport(
+        bundle(),
+        recognitionReport(bundle()),
+        routeReport(bundle(), () => 'general'),
+        { certain: 0, unconfirmed: 0 },
+        { gift: (id) => `G${id}`, pack: (id) => `P${id}` },
+      ),
+    ).not.toContain('### 런 시작');
+  });
+
   it('puts the strip files in the report and points the miss at its strip', () => {
     // Arrange
     const b = filmed();

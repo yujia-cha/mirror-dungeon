@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyRun, useApp } from '../../store.ts';
+import { feedbackLog } from '../../lib/feedback-log.ts';
 import type { SessionOptions } from '../session.ts';
 
 /** Every session the hook made, with the callbacks it was handed. */
@@ -37,7 +38,7 @@ const { useCapture } = await import('../useCapture.ts');
 describe('useCapture', () => {
   beforeEach(() => {
     sessions.length = 0;
-    useApp.setState({ run: emptyRun() });
+    useApp.setState({ run: emptyRun(), runSnapshot: null });
   });
 
   it('ignores what a replaced session still reports', async () => {
@@ -107,5 +108,74 @@ describe('useCapture', () => {
     act(() => sessions[0]!.options.onEvents([{ kind: 'enter', floor: 1, packId: 1001 }]));
     // Assert
     expect(result.current.log).toEqual([]);
+  });
+
+  it('starts a new run over the old one: snapshot, run reset, log cleared, marker heard (M143)', async () => {
+    // Arrange: a run on floor 3 and a log entry from a session on it.
+    useApp.getState().visitPack(1001, 1);
+    useApp.getState().visitPack(1003, 2);
+    const onRunMark = vi.fn();
+    const { result } = renderHook(() => useCapture({ onRunMark }));
+    await act(() => result.current.start());
+    act(() => sessions[0]!.options.onEvents([{ kind: 'got', giftId: 9006 }]));
+    expect(result.current.log).toHaveLength(1);
+    // Act
+    await act(() => result.current.begin('new'));
+    // Assert: the share was asked for, on a fresh run with the old one kept to go back to.
+    expect(sessions).toHaveLength(2);
+    expect(useApp.getState().run).toEqual(emptyRun());
+    expect(useApp.getState().runSnapshot?.run.visits).toEqual({ 1: 1001, 2: 1003 });
+    expect(result.current.log).toEqual([]);
+    expect(onRunMark).toHaveBeenCalledWith({
+      mark: 'new',
+      hadProgress: true,
+      run: { currentFloor: 3, visits: 2, got: 1, failed: 0, startDone: false },
+    });
+    expect(feedbackLog.entries().at(-1)).toMatchObject({ kind: 'action', text: 'capture run new' });
+  });
+
+  it('continues on the run as it is (M143)', async () => {
+    // Arrange
+    useApp.getState().visitPack(1001, 1);
+    const onRunMark = vi.fn();
+    const { result } = renderHook(() => useCapture({ onRunMark }));
+    // Act
+    await act(() => result.current.begin('continue'));
+    // Assert
+    expect(useApp.getState().run.visits).toEqual({ 1: 1001 });
+    expect(useApp.getState().runSnapshot).toBeNull();
+    expect(onRunMark.mock.calls[0]![0]).toMatchObject({ mark: 'continue', hadProgress: true });
+  });
+
+  it('stops reading and puts the run back on rollback (M143)', async () => {
+    // Arrange: a new run started over one entry, then the reader recorded on it.
+    useApp.getState().visitPack(1001, 1);
+    const onRunMark = vi.fn();
+    const { result } = renderHook(() => useCapture({ onRunMark }));
+    await act(() => result.current.begin('new'));
+    act(() => sessions[0]!.options.onStatus('running'));
+    act(() => sessions[0]!.options.onEvents([{ kind: 'got', giftId: 9006 }]));
+    // Act
+    act(() => result.current.rollback());
+    // Assert
+    expect(sessions[0]!.stopped).toBe(true);
+    expect(result.current.status).toBe('idle');
+    expect(useApp.getState().run.visits).toEqual({ 1: 1001 });
+    expect(useApp.getState().run.giftStatus).toEqual({});
+    expect(useApp.getState().runSnapshot).toBeNull();
+    expect(result.current.log).toEqual([]);
+    expect(onRunMark.mock.calls.at(-1)![0]).toMatchObject({ mark: 'rollback', run: { got: 1 } });
+  });
+
+  it('does nothing on rollback without a snapshot but stop (M143)', async () => {
+    // Arrange
+    useApp.getState().visitPack(1001, 1);
+    const onRunMark = vi.fn();
+    const { result } = renderHook(() => useCapture({ onRunMark }));
+    // Act
+    act(() => result.current.rollback());
+    // Assert
+    expect(useApp.getState().run.visits).toEqual({ 1: 1001 });
+    expect(onRunMark).not.toHaveBeenCalled();
   });
 });

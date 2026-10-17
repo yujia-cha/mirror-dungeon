@@ -899,6 +899,24 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
   }),
   z.object({ kind: z.literal('undo'), t: z.number(), logId: z.number() }),
   z.object({
+    /**
+     * Starting the reader started the run (M143): `new` (a snapshot taken, the run started over
+     * when it had progress) or `continue` (read on the run as it was); or `rollback`, the run put
+     * back to its snapshot. `run` is the run the choice was made on, in counts. Missing before M143.
+     */
+    kind: z.literal('runMark'),
+    t: z.number(),
+    mark: z.enum(['new', 'continue', 'rollback']),
+    hadProgress: z.boolean(),
+    run: z.object({
+      currentFloor: z.number(),
+      visits: z.number(),
+      got: z.number(),
+      failed: z.number(),
+      startDone: z.boolean(),
+    }),
+  }),
+  z.object({
     kind: z.literal('answer'),
     t: z.number(),
     ask: z.object({ kind: z.string() }).passthrough(),
