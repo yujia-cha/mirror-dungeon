@@ -1,20 +1,23 @@
 /**
- * The route options shown under the items tab: the starting keyword, and one line on what it does
- * for the current goals. 'auto' follows the goals, so the line says which starting gift that buys
- * — or, when no pool holds a goal, that the keyword is the player's free choice. With a keyword
- * picked by hand it says what 'auto' would have taken instead.
+ * The route options shown under the items tab: the starting keyword, one line on what it does for
+ * the current goals, and how many starting gifts the run takes (M134). 'auto' follows the goals,
+ * so the line says which starting gifts that buys — or, when no pool holds a goal, that the
+ * keyword is the player's free choice. With a keyword picked by hand it says what 'auto' would
+ * have taken instead.
  *
- * The line goes once the run leaves floor 1: the start is spent, and "pick any keyword" would no
- * longer be true. Given-up packs are not listed here — the route panel's unresolved card lists
- * them with their restore action. Observation lives in the slots above the selected gifts, and the
- * reset in the header.
+ * The line and the count go once the start is over (`observationClosed` — floor 1 left, or the
+ * observation screen passed): the start is spent, and "pick any keyword" would no longer be true.
+ * Given-up packs are not listed here — the route panel's unresolved card lists them with their
+ * restore action. Observation lives in the slots above the selected gifts, and the reset in the
+ * header.
  */
 import type { Keyword } from '../../core/schema.ts';
+import { largestStartPool, startGiftBudget } from '../../core/index.ts';
 import { withJosa } from '../format.ts';
 import { pick, t } from '../i18n.ts';
 import { observationClosed } from '../lib/plan-input.ts';
 import { useApp } from '../store.ts';
-import { Card, Select } from '../components/ui.tsx';
+import { Button, Card, Select } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
 
 export function RouteOptions() {
@@ -25,13 +28,19 @@ export function RouteOptions() {
   const started = useApp((s) => observationClosed(s.run));
   const start = plan?.start;
 
-  const gift = (id: number) => withJosa(giftName(id), '을/를', lang);
+  // One gift per pick, all from one pool: 0 (「선택하지 않음」) up to the largest pool.
+  const maxStartGifts = largestStartPool(data.rules);
+  const startGiftCount = startGiftBudget(options, data.rules);
+  const steps = Array.from({ length: maxStartGifts + 1 }, (_, i) => i);
+
+  const gifts = (ids: number[]) =>
+    withJosa(ids.map(giftName).join(lang === 'ko' ? ' · ' : ', '), '을/를', lang);
   const note = started
     ? null
-    : start?.startGift && start.keyword
-      ? t('startKeywordGives', lang, { keyword: keywordLabel(start.keyword), gift: gift(start.startGift) })
-      : start?.autoStartGift
-        ? t('startKeywordAutoWould', lang, { gift: gift(start.autoStartGift) })
+    : start && start.startGifts.length > 0 && start.keyword
+      ? t('startKeywordGives', lang, { keyword: keywordLabel(start.keyword), gift: gifts(start.startGifts) })
+      : start && start.autoStartGifts.length > 0
+        ? t('startKeywordAutoWould', lang, { gift: gifts(start.autoStartGifts) })
         : t('startKeywordFree', lang);
 
   return (
@@ -63,6 +72,43 @@ export function RouteOptions() {
           <p className="text-body text-fg-muted" data-testid="start-keyword-note">
             {note}
           </p>
+        )}
+        {started ? null : (
+          <div
+            role="group"
+            aria-labelledby="start-gift-count-label"
+            className="flex flex-col gap-1"
+            data-testid="start-gift-count"
+          >
+            <span id="start-gift-count-label" className="text-caption text-fg-subtle">
+              {t('optionStartGiftCount', lang)}
+            </span>
+            {/* Equal columns, like the size steps in the 「⋯」 menu. */}
+            <div
+              className="grid gap-1"
+              style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+              data-uniform="both"
+            >
+              {steps.map((n) => (
+                <Button
+                  key={n}
+                  variant={n === startGiftCount ? 'primary' : 'secondary'}
+                  pressed={n === startGiftCount}
+                  title={n === 0 ? t('optionStartGiftNone', lang) : undefined}
+                  // Back to "unset" on the rules' own count, so a state or a link stays as old ones were.
+                  onClick={() =>
+                    setOptions({
+                      startGiftCount: n === data.rules.startGift.pickCount ? undefined : n,
+                    })
+                  }
+                  testId={`start-gift-count-${n}`}
+                >
+                  {n}
+                </Button>
+              ))}
+            </div>
+            <p className="text-caption text-fg-muted">{t('optionStartGiftCountHint', lang)}</p>
+          </div>
         )}
       </Card>
     </div>

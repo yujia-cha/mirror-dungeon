@@ -1166,6 +1166,23 @@
 - en: No goal depends on it, so pick any keyword
 - 쓰는 곳: src/app/shell/RouteOptions.tsx
 
+### optionStartGiftCount
+메모: 한 키워드의 시작 풀에서 받는 기프트 수(M134). 0은 「선택하지 않음」이고, 1~5층을 떠나거나 관측 화면을 지나면 사라진다.
+- ko: 시작 기프트 수
+- en: Starting gifts
+- 쓰는 곳: src/app/shell/RouteOptions.tsx
+
+### optionStartGiftCountHint
+메모: 가호 이름은 게임의 한국어 이름 그대로 인용한다.
+- ko: 가호 「쏟아지는 유성우」·「완전한 가능성」마다 +1
+- en: +1 for each of the boons 「쏟아지는 유성우」 and 「완전한 가능성」
+- 쓰는 곳: src/app/shell/RouteOptions.tsx
+
+### optionStartGiftNone
+- ko: 선택하지 않음
+- en: Take none
+- 쓰는 곳: src/app/shell/RouteOptions.tsx
+
 ## 전체 루트 패널
 
 ### routeRequiredPacks
@@ -1865,6 +1882,21 @@
 - en: Got · {name}
 - 쓰는 곳: src/app/capture/capture-text.ts
 
+### captureLogGotStart
+- ko: 시작 기프트 획득 · {name}
+- en: Got as a start gift · {name}
+- 쓰는 곳: src/app/capture/capture-text.ts
+
+### captureLogGotObserved
+- ko: 관측으로 획득 · {name}
+- en: Got by observation · {name}
+- 쓰는 곳: src/app/capture/capture-text.ts
+
+### captureLogStartDone
+- ko: 시작 단계 끝
+- en: Run start over
+- 쓰는 곳: src/app/capture/capture-text.ts
+
 ### captureLogSold
 - ko: 판매 · {name}
 - en: Sold · {name}
@@ -2034,8 +2066,8 @@
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
 ### diagTrimmed
-- ko: 이미지 상한을 넘어 오래된 {n}장을 지웠습니다.
-- en: Over the image cap: the oldest {n} were dropped.
+- ko: 이미지 상한을 넘어 덜 중요한 {n}장을 오래된 것부터 지웠습니다.
+- en: Over the image cap: {n} of the least important were dropped, oldest first.
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
 ### diagSavedTitle
@@ -2796,7 +2828,7 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: 타일의 **바깥 링**이 조건 판정입니다(초록 충족 · 빨강 미충족 · 회색 조건 없음). 우하 배지는 키워드입니다.
 - readme: 조합으로만 나오는 기프트를 고르면 재료까지 루트가 모으러 갑니다. 상세 시트의 「재료도 목표」를 끄면 결과만 목표로 둡니다. 조합식의 재료를 누르면 그 기프트의 설명으로 넘어가고, 맨 위 「←」로 돌아옵니다.
 - readme: **강화**(`+`·`++`)가 있는 기프트는 단계를 고르면 그 단계의 이름과 설명(바뀐 수치는 굵게)이 보입니다. 목표 타일에서는 아이콘 좌하의 **「+」 배지**를 누를 때마다 강화 전 → `+` → `++` → 강화 전으로 바뀌고(점선 테두리가 강화 전, 채운 배지가 고른 단계), 상세 시트에서는 이름 옆 `+`·`++` 버튼으로 고르며 고른 단계를 다시 누르면 강화 전으로 돌아갑니다. 선택은 이 기기와 공유 링크에 남습니다.
-- readme: **시작 키워드**는 탭 맨 아래에 있습니다. 「자동」은 고른 기프트를 따라, 시작 기프트 풀에 목표가 든 키워드를 고릅니다(그런 풀이 없으면 덱의 주 키워드). 그 아래 한 줄이 어떤 시작 기프트를 받는지, 혹은 목표와 상관이 없어 아무 키워드나 골라도 되는지 알려 줍니다.
+- readme: **시작 키워드**는 탭 맨 아래에 있습니다. 「자동」은 고른 기프트를 따라, 시작 기프트 풀에 목표가 든 키워드를 고릅니다(그런 풀이 없으면 덱의 주 키워드). 그 아래 한 줄이 어떤 시작 기프트를 받는지, 혹은 목표와 상관이 없어 아무 키워드나 골라도 되는지 알려 줍니다. **시작 기프트 수**(0~3)는 기본 1개이고 가호 「쏟아지는 유성우」·「완전한 가능성」마다 하나씩 늘립니다(0은 「선택하지 않음」). 전부 한 키워드의 풀에서 받습니다.
 - readme: **관측**: 검색창 아래 슬롯(최대 3칸)에 기프트를 넣으면 「관측 지정」으로 「기프트 관측」에서 받습니다. 조합 결과는 관측할 수 없으므로 조합에 관측을 쓰려면 **재료**를 넣습니다. 관측은 1층을 떠나기 전까지만 바꿀 수 있습니다.
 - 설명서: 기프트 탭에서 아이콘을 눌러 목표에 추가합니다.
 - en: In the Gifts tab, press an icon to add it as a goal.

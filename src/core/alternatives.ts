@@ -335,8 +335,11 @@ export function createDropEffects(
   const occupants = base.floors
     .filter((floor) => floor.reason === 'required' && conflictFloors.has(floor.floor))
     .flatMap((floor) => floor.pickups.flatMap((p) => roots(p.giftId)));
-  const observed = base.start.observed.flatMap((o) => roots(o.giftId));
-  const start = base.start.startGift === null ? [] : roots(base.start.startGift);
+  // A pin on a gift already in hand is an observation spent (M134): leaving its goal out frees
+  // no slot, so it is no candidate for that reason.
+  const inHand = new Set(input.options.ownedGifts ?? []);
+  const observed = base.start.observed.filter((o) => !inHand.has(o.giftId)).flatMap((o) => roots(o.giftId));
+  const start = base.start.startGifts.flatMap((giftId) => roots(giftId));
   const recent = input.wanted.length > 0 ? [input.wanted[input.wanted.length - 1]!.giftId] : [];
   const routed = base.floors.flatMap((floor) => floor.pickups.flatMap((p) => roots(p.giftId)));
 

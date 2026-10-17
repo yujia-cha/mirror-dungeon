@@ -68,10 +68,11 @@ describe('watchedRegions', () => {
         mapHeader: [0, 0, 0.1, 0.1],
       },
       fusion: { count: [0.2, 0.2, 0.3, 0.07], five: [], three: [] },
+      popupIcon: [0.3, 0.3, 0.1, 0.1],
     } as unknown as CaptureLayout;
     // Act
     const watched = watchedRegions(layout);
-    // Assert
+    // Assert: the start pickers' panels are no longer read, so not watched either (M136).
     expect(watched).toHaveLength(5);
     expect(watched.filter((r) => r.join() === shared.join())).toHaveLength(1);
   });

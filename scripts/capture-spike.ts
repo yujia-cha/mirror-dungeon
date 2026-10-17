@@ -14,7 +14,9 @@
  *       { "file": "gift-01.jpg", "kind": "screen", "lang": "ko", "expect": "acquired" } ] }
  *
  * `expect` is the name as the game shows it, or the id. `region` (optional) is the crop as
- * fractions of the image — x, y, width, height — so one set of numbers serves every resolution.
+ * fractions of the game's client area — x, y, width, height — so one set of numbers serves every
+ * resolution. That is the whole image, unless the shot carries the window's title bar: then the
+ * bar is found as the app finds it (M134) and every region sits below it.
  * Candidates are the whole season's gifts or packs: the worst case, before the app narrows them by
  * floor and entered pack.
  *
@@ -54,7 +56,14 @@ import { classifyScreen, parseFloor, SCREEN_TITLES } from '../src/app/capture/sc
 import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
 import { INITIAL_TRACKER, trackFrame } from '../src/app/capture/tracker.ts';
 import { captureLayoutSchema } from '../src/core/schema.ts';
-import { decodeImage as decode, loadIconRefs, LocalOcr } from './lib/capture-local.ts';
+import {
+  clientRegion,
+  decodeImage,
+  loadIconRefs,
+  LocalOcr,
+  titleBarOf,
+  type Rgba,
+} from './lib/capture-local.ts';
 import { flagValue, hasFlag } from './lib/io.ts';
 
 const regionSchema = z.tuple([z.number(), z.number(), z.number(), z.number()]);
@@ -110,22 +119,28 @@ async function main(): Promise<void> {
 
   const ocr = new LocalOcr(model);
 
-  const images = new Map<string, ReturnType<typeof decode>>();
-  /** OCR the given regions of one shot (the whole shot when there are none), lines in order. */
+  const images = new Map<string, { image: Rgba; top: number }>();
+  /** A shot's pixels and its title bar (0 for a client-only shot), decoded once. */
+  const shotOf = async (file: string): Promise<{ image: Rgba; top: number }> => {
+    let shot = images.get(file);
+    if (!shot) {
+      const image = await decodeImage(readFileSync(resolve(dir, file)));
+      shot = { image, top: titleBarOf(image) };
+      images.set(file, shot);
+    }
+    return shot;
+  };
+  /** OCR the given client regions of one shot (the whole client when there are none), lines in order. */
   const read = async (
     label: Label,
     regions: readonly Region[],
     raw: boolean,
   ): Promise<{ lines: string[]; ms: number }> => {
-    let image = images.get(label.file);
-    if (!image) {
-      image = decode(readFileSync(resolve(dir, label.file)));
-      images.set(label.file, image);
-    }
+    const { image, top } = await shotOf(label.file);
     const lines: string[] = [];
     let ms = 0;
     for (const region of regions.length > 0 ? regions : [[0, 0, 1, 1] as const]) {
-      const r = await ocr.region(image, region, label.lang, raw);
+      const r = await ocr.region(image, clientRegion(image, top, region), label.lang, raw);
       ms += r.ms;
       lines.push(...r.lines);
     }
@@ -154,6 +169,8 @@ async function main(): Promise<void> {
     const held = new Set<number>();
     const allRefs = await iconRefs();
     const MATERIALS = new Set(data.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id));
+    // The app looks for the run start's pickers until the start closes (M135).
+    let startOpen = true;
     for (const file of shots) {
       const label: Label = { file, kind: 'screen', lang: 'ko', expect: null };
       const reader: RegionReader = {
@@ -163,12 +180,8 @@ async function main(): Promise<void> {
           return r.lines;
         },
         slot: async (region) => {
-          let image = images.get(file);
-          if (!image) {
-            image = decode(readFileSync(resolve(dir, file)));
-            images.set(file, image);
-          }
-          return prepareSlot(image.data, image.width, image.height, region);
+          const { image, top } = await shotOf(file);
+          return prepareSlot(image.data, image.width, image.height, clientRegion(image, top, region));
         },
       };
       const { frame, ocrCalls } = await readFrame(reader, layout, {
@@ -177,6 +190,8 @@ async function main(): Promise<void> {
         gifts,
         held: allRefs.filter((ref) => held.has(ref.id)),
         materials: allRefs.filter((ref) => MATERIALS.has(ref.id)),
+        startOpen,
+        iconRefs: async (ids) => allRefs.filter((ref) => ids.includes(ref.id)),
       });
       calls += ocrCalls;
       const out = trackFrame(state, frame);
@@ -185,19 +200,26 @@ async function main(): Promise<void> {
         if (e.kind === 'got') held.add(e.giftId);
         if (e.kind === 'sold') held.delete(e.giftId);
         if (e.kind === 'fused') for (const id of e.consumed) held.delete(id);
+        if (e.kind === 'startDone') startOpen = false;
       }
-      const said = out.events.map((e) =>
-        e.kind === 'enter'
-          ? `ENTER ${e.floor}층 ${packName(e.packId)}`
-          : e.kind === 'got'
-            ? `GOT ${giftName(e.giftId)}`
-            : e.kind === 'sold'
-              ? `SOLD ${giftName(e.giftId)}`
-              : e.kind === 'fused'
-                ? `FUSED ${giftName(e.resultId)} ← ${e.consumed.map(giftName).join(', ') || '—'}${e.unsure.length ? ` (? ${e.unsure.map(giftName).join(' / ')})` : ''}`
-                : `UNSURE ${e.about} ${e.ids.map(e.about === 'enter' ? packName : giftName).join(' / ')}`,
-      );
-      console.log(`${file}  ${(frame.screen ?? '—').padEnd(13)} ${said.join(' · ')}`);
+      const said = out.events.map((e) => {
+        switch (e.kind) {
+          case 'enter':
+            return `ENTER ${e.floor}층 ${packName(e.packId)}`;
+          case 'got':
+            return `GOT ${giftName(e.giftId)}${e.source ? ` (${e.source})` : ''}`;
+          case 'sold':
+            return `SOLD ${giftName(e.giftId)}`;
+          case 'fused':
+            return `FUSED ${giftName(e.resultId)} ← ${e.consumed.map(giftName).join(', ') || '—'}${e.unsure.length ? ` (? ${e.unsure.map(giftName).join(' / ')})` : ''}`;
+          case 'startDone':
+            return 'START DONE';
+          case 'unsure':
+            return `UNSURE ${e.about} ${e.ids.map(e.about === 'enter' ? packName : giftName).join(' / ')}`;
+        }
+      });
+      const behind = frame.overObservation ? ' [over observation]' : '';
+      console.log(`${file}  ${(frame.screen ?? '—').padEnd(17)}${behind} ${said.join(' · ')}`);
     }
     await ocr.terminate();
     console.log(
@@ -256,13 +278,14 @@ async function main(): Promise<void> {
     if (label.kind === 'icon') {
       if (!label.region) fail(`${label.file}: an icon item needs its slot region`);
       const all = await iconRefs();
-      let image = images.get(label.file);
-      if (!image) {
-        image = decode(readFileSync(resolve(dir, label.file)));
-        images.set(label.file, image);
-      }
+      const { image, top: bar } = await shotOf(label.file);
       const started = performance.now();
-      const views = prepareSlot(image.data, image.width, image.height, label.region);
+      const views = prepareSlot(
+        image.data,
+        image.width,
+        image.height,
+        clientRegion(image, bar, label.region),
+      );
       const ranked = rankIcons(views, all);
       const ms = performance.now() - started;
       totalMs += ms;

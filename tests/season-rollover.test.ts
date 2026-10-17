@@ -77,7 +77,10 @@ describe.skipIf(!hasRaw)('a season rollover, rehearsed end to end', () => {
 
     it('lists both seasons and makes the new one the default', () => {
       const result = results.full!;
-      expect(result.seasons).toEqual([result.from, result.to]);
+      // Every frozen season stays listed (md7 sits beside md8 since the MD8 rollover); the new one
+      // joins after the season it was made from.
+      expect(result.seasons.slice(-2)).toEqual([result.from, result.to]);
+      expect(result.seasons).toEqual([...new Set(result.seasons)].sort((a, b) => a - b));
       expect(result.defaultSeason).toBe(result.to);
       expect(result.provisional[result.to]).toBe(false);
     });

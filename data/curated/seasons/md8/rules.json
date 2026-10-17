@@ -1,0 +1,12 @@
+{
+  "_comment": "거울 던전 8 「시지프의 거울」의 시즌 상수. scripts/build-data.ts가 `--season 8`을 구울 때만 읽는다. 여기 없는 값은 원본에서 나온다. MD7의 backfillAssumptions는 옮기지 않았다 — 칸토 X 팩 1028~1031과 전용 기프트 9284~9291을 정적 원본(OpenLethe af2aa4df)이 싣고 오므로 파생 미러로 채우는 팩이 없다.",
+  "floors": {
+    "normal": [1, 2, 3, 4, 5],
+    "hard": [1, 2, 3, 4, 5],
+    "parallel": [6, 7, 8, 9, 10],
+    "extreme": [11, 12, 13, 14, 15]
+  },
+  "_sources": {
+    "floors": "mirrordungeon/mirrordungeon-08*.json 네 파일(일반·hard·infinite·extreme)의 basicEnemyLevelPerFloor가 각각 5·5·10·15층이다(MD7과 같은 모양, 적 레벨만 60→65). 소유자 화면(2026-10-17)도 「DUNGEON 08 시지프의 거울」에 평행중첩 모드를 보였다. 층 수는 게임 규칙이라 코드에 박지 않고 여기에 적는다(CLAUDE.md)."
+  }
+}

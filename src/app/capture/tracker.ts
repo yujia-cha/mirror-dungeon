@@ -18,13 +18,19 @@
  *   (M101): the result is `got` as usual, and the ingredients it ate are to be unmarked. What it ate
  *   is worked out before this file (`fusion.ts`); this only ties it to the result that came of it.
  * - `unsure` — a name that is close to more than one candidate. The UI asks instead of recording.
+ * - The run start (M135, `trackStart`): a popup says which picker its gift came from
+ *   (`got.source`) — the observation when its title shows behind the popup, the start gift picker
+ *   when that was the picker last seen — and `startDone` says the start is over: the observation
+ *   picker left, or a pack picker or map seen. **Only a popup records a gift** (M136, owner's
+ *   decision): what a picker shows picked is not read, so a gift whose popup went by unread stays
+ *   un-got and unobserved.
  *
  * Pure and deterministic: state in, state and events out. What an event does to the run is the
  * app's business, not this file's.
  */
 import type { Consumed } from './fusion.ts';
 import type { MatchResult } from './match-name.ts';
-import type { Screen } from './screens.ts';
+import { isStartScreen, type Screen, type StartScreen } from './screens.ts';
 
 /** What one captured frame shows, as read and matched. */
 export interface Frame {
@@ -37,13 +43,28 @@ export interface Frame {
   gift: MatchResult | null;
   /** On the fusion confirm: what the fusion would eat, read off its ingredient icons (`fusion.ts`). */
   ingredients?: Consumed | null;
+  /**
+   * On an acquired popup during the run start: whether the observation picker's title shows
+   * behind it (M135). Missing when it was not looked at.
+   */
+  overObservation?: boolean;
+  /**
+   * A read of the popup burst that found no popup (M136): only the popup's title was looked at, so
+   * `screen: null` says nothing about what else is on screen. The tracker passes over it.
+   */
+  partial?: boolean;
 }
+
+/** Which start picker a gift came from (M135). */
+export type StartSource = 'start' | 'observation';
 
 export type CaptureEvent =
   | { kind: 'enter'; floor: number; packId: number }
-  | { kind: 'got'; giftId: number }
+  | { kind: 'got'; giftId: number; source?: StartSource }
   | { kind: 'sold'; giftId: number }
   | { kind: 'fused'; resultId: number; consumed: number[]; unsure: number[] }
+  /** The run start is behind the player (M135). */
+  | { kind: 'startDone' }
   | { kind: 'unsure'; about: 'enter'; floor: number; ids: number[] }
   | { kind: 'unsure'; about: 'got'; ids: number[] };
 
@@ -56,9 +77,55 @@ export interface TrackerState {
   selling: number | null;
   /** What a confirmed fusion will eat, waiting for the popup that names its result. */
   fusing: Consumed | null;
+  /** The start picker last seen while the run start is open (M135). */
+  start?: StartScreen | null;
+  /** `startDone` was told, and is not told again until a start picker is seen (M135). */
+  startClosed?: boolean;
 }
 
 export const INITIAL_TRACKER: TrackerState = { entered: null, popupGifts: [], selling: null, fusing: null };
+
+/**
+ * Where a popup's gift came from (M135): the observation when its title shows behind the popup;
+ * the start gift picker when that is the picker last seen. A popup after the observation picker
+ * over anything else is neither — the boon 「완전한 가능성」 hands out gifts of its own right after
+ * the observation, and those are no observation. Since M136 the title behind is the only thing
+ * that tells them apart: the picker's panel is not read.
+ */
+function popupSource(state: TrackerState, frame: Frame): StartSource | undefined {
+  if (frame.overObservation) return 'observation';
+  return state.start === 'startGiftSelect' ? 'start' : undefined;
+}
+
+/**
+ * The run start (M135): boons → start gift picker → 기프트 관측 → popups → floor 1's pack picker.
+ * Either picker may be confirmed with nothing picked, and observation can be off altogether. The
+ * picker last seen is kept to tell where a popup's gift came from; the observation picker behind a
+ * popup counts as seen. Leaving the observation picker for a named screen, or reaching a pack
+ * picker or a map, ends the start. A frame of nothing ends nothing (M136): popups follow each other
+ * with blinks between them, and a start closed in the first blink left the next observation
+ * popups unpinned. Floor 1's pack picker always comes, and closes it.
+ */
+function trackStart(state: TrackerState, frame: Frame): { state: TrackerState; events: CaptureEvent[] } {
+  const events: CaptureEvent[] = [];
+  let start = state.start ?? null;
+  let closed = state.startClosed ?? false;
+  const screen = frame.screen;
+  if (screen === 'acquired') {
+    if (frame.overObservation && !closed) start = 'observationSelect';
+  } else if (isStartScreen(screen)) {
+    closed = false;
+    start = screen;
+  } else if (screen !== null) {
+    if (!closed && (start === 'observationSelect' || screen === 'packSelect' || screen === 'exploring')) {
+      events.push({ kind: 'startDone' });
+      closed = true;
+    }
+    start = null;
+  }
+  if (start === (state.start ?? null) && closed === (state.startClosed ?? false)) return { state, events };
+  return { state: { ...state, start, startClosed: closed }, events };
+}
 
 /** The gift a confirmed match names, or null. */
 function matchedId(result: MatchResult | null): number | null {
@@ -73,8 +140,13 @@ export function trackFrame(
   state: TrackerState,
   frame: Frame,
 ): { state: TrackerState; events: CaptureEvent[] } {
-  const events: CaptureEvent[] = [];
-  let next: TrackerState = state;
+  // A burst read that found no popup saw only the popup's title (M136): no screen ends, and the
+  // popups seen in the burst stay deduplicated across the blinks between them.
+  if (frame.partial && frame.screen === null) return { state, events: [] };
+
+  const started = trackStart(state, frame);
+  const events: CaptureEvent[] = started.events;
+  let next: TrackerState = started.state;
 
   // Popups follow each other; anything else ends the run of them.
   if (frame.screen !== 'acquired' && next.popupGifts.length > 0) next = { ...next, popupGifts: [] };
@@ -98,7 +170,8 @@ export function trackFrame(
     case 'acquired': {
       const gift = frame.gift;
       if (gift?.status === 'match' && !next.popupGifts.includes(gift.id)) {
-        events.push({ kind: 'got', giftId: gift.id });
+        const source = popupSource(next, frame);
+        events.push(source ? { kind: 'got', giftId: gift.id, source } : { kind: 'got', giftId: gift.id });
         next = { ...next, popupGifts: [...next.popupGifts, gift.id] };
         // The first popup after a confirmed fusion is its result; a second (조합식 합성 can show
         // two) is an ordinary gain.

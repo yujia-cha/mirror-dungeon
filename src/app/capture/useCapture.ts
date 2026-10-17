@@ -8,7 +8,9 @@
  * the render that started the session, so a long session never applies to a stale run.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { observable, observationBudget } from '../../core/index.ts';
 import { giftIconUrl } from '../lib/assets.ts';
+import { observationClosed } from '../lib/plan-input.ts';
 import { usePlan } from '../shell/plan-context.ts';
 import { useApp } from '../store.ts';
 import {
@@ -27,9 +29,11 @@ import {
   captureSupported,
   type CaptureContext,
   type CaptureError,
+  type CaptureGeometry,
   type CaptureStatus,
   type FrameSource,
   type ReadReport,
+  type TickReport,
 } from './session.ts';
 import type { CaptureEvent } from './tracker.ts';
 
@@ -57,11 +61,17 @@ const QUESTION_LIMIT = 10;
 export interface CaptureHooks {
   onRead?: (report: ReadReport, frame: FrameSource | null) => void;
   wantImage?: () => boolean;
+  /** Every tick of the session, with its preview when `wantImage()` (M134). */
+  onTick?: (tick: TickReport, preview: FrameSource | null) => void;
+  /** The latest read raised a question (M134). */
+  onAsk?: (ask: CaptureAsk) => void;
   /** An entry went into the log; `fromRead` is false for an answered question. */
   onApplied?: (logId: number, event: { kind: string }, actions: unknown[], fromRead: boolean) => void;
   onUndo?: (logId: number) => void;
   onAnswer?: (ask: CaptureAsk, picked: number[]) => void;
   onSession?: (status: CaptureStatus, error: CaptureError | null) => void;
+  /** The shared picture's size and title bar, on the first read and whenever they change (M134). */
+  onGeometry?: (geometry: CaptureGeometry) => void;
 }
 
 export function useCapture(hooks: CaptureHooks = {}) {
@@ -95,6 +105,25 @@ export function useCapture(hooks: CaptureHooks = {}) {
       visit: (floor, packId) => useApp.getState().visitPack(packId, floor),
       setStageFloor: (floor) => useApp.getState().setStageFloor(floor),
       setGiftStatus: (giftId, to) => useApp.getState().setGiftStatus(giftId, to),
+      observe: (giftId) => {
+        const { data: d, indexes: idx } = latest.current;
+        const store = useApp.getState();
+        store.recordObserved(giftId, {
+          max: observationBudget(store.options, d),
+          observable: (id) => {
+            const gift = idx.giftById.get(id);
+            return gift ? observable(gift, d.rules) : false;
+          },
+        });
+        return useApp.getState().options.observedGifts.includes(giftId);
+      },
+      unobserve: (giftId) => {
+        const store = useApp.getState();
+        // Taking a pin off needs no limits.
+        if (store.options.observedGifts.includes(giftId))
+          store.toggleObserved(giftId, { max: 0, observable: () => false });
+      },
+      setStartDone: (done) => useApp.getState().markStartDone(done),
     };
     applying.current = true;
     try {
@@ -118,27 +147,35 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const onEvents = useCallback(
     (events: CaptureEvent[]) => {
       for (const event of events) {
-        const { run: now } = useApp.getState();
+        const { run: now, options } = useApp.getState();
         const applied = actionsFor(event, {
           giftStatus: now.giftStatus,
           giftById: latest.current.indexes.giftById,
           visits: now.visits,
           stageFloor: now.stageFloor,
+          observed: options.observedGifts,
+          startDone: now.startDone === true,
+          currentFloor: now.currentFloor,
         });
         record(event, run(applied.actions));
         // A clean read of a floor settles the question its muddled read left (M116).
         if (event.kind === 'enter')
           setQuestions((all) => all.filter((q) => !(q.ask.kind === 'pack' && q.ask.floor === event.floor)));
-        if (applied.ask) ask(applied.ask);
+        if (applied.ask) {
+          ask(applied.ask);
+          latest.current.hooks.onAsk?.(applied.ask);
+        }
       }
     },
     [ask, record, run],
   );
 
   /** The season's names in the game's language, made once per season and language (M116). */
-  const candidates = useRef<{ key: unknown; lang: string; value: Omit<CaptureContext, 'held' | 'iconUrl'> }>(
-    null,
-  );
+  const candidates = useRef<{
+    key: unknown;
+    lang: string;
+    value: Omit<CaptureContext, 'held' | 'iconUrl' | 'startOpen'>;
+  }>(null);
   const context = useCallback((): CaptureContext => {
     const { data: d, indexes: idx, gameLang: lang } = latest.current;
     if (candidates.current?.key !== d || candidates.current.lang !== lang)
@@ -152,9 +189,11 @@ export function useCapture(hooks: CaptureHooks = {}) {
           materials: d.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id),
         },
       };
-    const giftStatus = useApp.getState().run.giftStatus;
+    const { run: now } = useApp.getState();
+    const giftStatus = now.giftStatus;
     return {
       ...candidates.current.value,
+      startOpen: !observationClosed(now),
       held: Object.entries(giftStatus)
         .filter(([, s]) => s === 'got')
         .map(([id]) => Number(id)),
@@ -191,6 +230,13 @@ export function useCapture(hooks: CaptureHooks = {}) {
         latest.current.hooks.onRead?.(report, frame),
       ),
       wantImage: () => latest.current.hooks.wantImage?.() ?? false,
+      onGeometry: own((geometry: CaptureGeometry) => latest.current.hooks.onGeometry?.(geometry)),
+      // Not `own`: a preview a stale session hands over must still be freed.
+      onTick: (tick: TickReport, preview: FrameSource | null) => {
+        const onTick = session.current === created ? latest.current.hooks.onTick : undefined;
+        if (onTick) onTick(tick, preview);
+        else preview?.close();
+      },
     });
     session.current = created;
     await created.start();

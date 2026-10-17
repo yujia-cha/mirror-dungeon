@@ -20,6 +20,8 @@ import { PackSheetBody, type PackContext } from './PackSheet.tsx';
 /** The run in progress as the map draws it: played stations filled, the frontier ringed. */
 export interface MetroRun {
   currentFloor: number;
+  /** The start stage is over while floor 1 is still ahead (`run.startDone`, M134). */
+  startDone?: boolean;
 }
 
 export interface MetroMapProps {
@@ -326,34 +328,48 @@ export function MetroMap({
   };
 
   // ---- start row: keyword and observations ----
-  const startGift = plan.start.startGift ? ctx.indexes.giftById.get(plan.start.startGift) : undefined;
+  // Every gift the start pool hands over (M134: one, plus one per boon).
+  const startGifts = plan.start.startGifts.flatMap((id) => {
+    const gift = ctx.indexes.giftById.get(id);
+    return gift ? [gift] : [];
+  });
   const startKeyword = plan.start.keyword ? keywordLabel(plan.start.keyword) : null;
   // The start and the observations are two different decisions — what the run is handed, and what
   // the player spent starlight to pin — so they get a line each instead of sharing one row.
   //
   // Past floor 1 the second line switches from recommendation to record: core stops proposing
   // observations there (the starlight is long spent), so the plan's list is empty and only
-  // `run.startGifts` still knows what the run began with.
+  // `run.startGifts` still knows what the run began with. Past the observation screen on floor 1
+  // (`startDone`) the decision is just as made, but nothing is recorded yet: the row shows the
+  // observations already in hand (core lists them) and no empty slots.
   const history = (run?.currentFloor ?? 1) > 1;
+  const closed = history || run?.startDone === true;
   const observedEntries: ObservedGift[] = history
     ? startHeld.flatMap((giftId) =>
         ctx.indexes.giftById.has(giftId) ? [{ giftId, pinned: false, freedPack: null }] : [],
       )
     : plan.start.observed.slice(0, slots);
   const startRow = (mode: DetailMode): ReactNode =>
-    startGift || startKeyword || slots > 0 ? (
+    startGifts.length > 0 || startKeyword || slots > 0 ? (
       <div className="flex flex-col gap-1 px-3 py-2 text-caption text-fg-muted" data-testid="start-cell">
-        {startGift ? (
+        {startGifts.length > 0 ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="start-line">
-            <span className="inline-flex items-center gap-1.5" title={t('routeStartGift', lang)}>
-              <GiftIcon
-                gift={startGift}
-                size={20}
-                judgement={ctx.judgements.get(startGift.id) ?? null}
-                lang={lang}
-              />
-              {pick(startGift.name, lang)}
-            </span>
+            {startGifts.map((startGift) => (
+              <span
+                key={startGift.id}
+                className="inline-flex items-center gap-1.5"
+                title={t('routeStartGift', lang)}
+                data-testid="start-gift"
+              >
+                <GiftIcon
+                  gift={startGift}
+                  size={20}
+                  judgement={ctx.judgements.get(startGift.id) ?? null}
+                  lang={lang}
+                />
+                {pick(startGift.name, lang)}
+              </span>
+            ))}
             {autoKeyword && startKeyword ? (
               <span className="text-fg-subtle" data-testid="start-auto">
                 {t('optionAutoResolved', lang, { keyword: startKeyword })}
@@ -393,18 +409,18 @@ export function MetroMap({
           <div
             className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
             data-testid="observed-line"
-            data-history={history || undefined}
+            data-history={closed || undefined}
           >
             {observedEntries.map((entry) => (
               <span key={entry.giftId} className="relative inline-flex">
                 <ObservedTile
                   entry={entry}
                   ctx={ctx}
-                  history={history}
+                  history={closed}
                   onPress={
                     mode === 'sheet'
                       ? () => setOpen({ kind: 'observed', giftId: entry.giftId, mode })
-                      : ctx.onToggleObserved && !history
+                      : ctx.onToggleObserved && !closed
                         ? () => ctx.onToggleObserved?.(entry.giftId)
                         : undefined
                   }
@@ -412,7 +428,7 @@ export function MetroMap({
                 {detailFor(`observed-${entry.giftId}`, mode)}
               </span>
             ))}
-            {history
+            {closed
               ? null
               : Array.from({ length: Math.max(0, slots - observedEntries.length) }, (_, i) => (
                   <span
@@ -428,7 +444,7 @@ export function MetroMap({
                 ))}
             {observedEntries.length === 0 ? (
               <span className="text-fg-subtle" data-testid="observed-none">
-                {t(history ? 'routeStartHeldNone' : 'routeObservedNone', lang)}
+                {t(closed ? 'routeStartHeldNone' : 'routeObservedNone', lang)}
               </span>
             ) : null}
           </div>

@@ -611,6 +611,14 @@ function upgradeTextsOf(id: number, stat: (typeof rawGifts)[number] | undefined)
 const missingText: number[] = [];
 let unparsedConditionCount = 0;
 
+/** Selectable-pack exclusives the season drop pool does not list (see `obtainable`). */
+const exclusivesOutsideDropPool: number[] = [];
+function exclusiveOutsideDropPool(id: number, exclusiveTo: readonly number[]): boolean {
+  if (exclusiveTo.length === 0 || dropPoolIds.size === 0 || dropPoolIds.has(id)) return false;
+  exclusivesOutsideDropPool.push(id);
+  return true;
+}
+
 const gifts: Gift[] = [...giftIds]
   .sort((a, b) => a - b)
   .map((id): Gift => {
@@ -685,6 +693,11 @@ const gifts: Gift[] = [...giftIds]
         // A backfilled pack's exclusive is reached by entering that pack; the static drop pool
         // that would otherwise list it has not shipped yet.
         backfilledGiftIds.has(id) ||
+        // So is a selectable pack's static exclusive the season drop pool leaves out: MD8 moved
+        // 9205 전혈 플라스크 out of every general pool into the `specificEgoGiftPool` of 1019~1021,
+        // 1507·1514·1518 and dropped it from `egoGifts`, while its own observation list still
+        // offers it. Counted in the build log so a second case is read, not absorbed.
+        exclusiveOutsideDropPool(id, exclusiveList) ||
         materialIds.has(id) ||
         recipes.length > 0 ||
         Boolean(mixed) ||
@@ -1468,6 +1481,12 @@ if (unnamedBuffIds.size > 0) {
 }
 if (missingText.length > 0) {
   console.log(`  ${missingText.length} gift(s) without Korean text: ${missingText.slice(0, 10).join(', ')}`);
+}
+if (exclusivesOutsideDropPool.length > 0) {
+  console.log(
+    `  ${exclusivesOutsideDropPool.length} pack exclusive(s) obtainable by their pack though the drop pool omits them: ` +
+      exclusivesOutsideDropPool.join(', '),
+  );
 }
 if (unnamedFactions.length > 0) {
   console.log(

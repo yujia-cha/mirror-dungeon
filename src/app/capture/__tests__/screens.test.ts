@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyScreen, parseFloor } from '../screens.ts';
+import { classifyScreen, isObservationTitle, parseFloor } from '../screens.ts';
 
 describe('classifyScreen', () => {
   it('reads a banner whose 「E.G.O」 came out as digits', () => {
@@ -59,6 +59,29 @@ describe('classifyScreen on the run screens', () => {
 
   it('puts an acquired popup ahead of the map behind it', () => {
     expect(classifyScreen(['2층 탐사 중', 'E.G.O 기프트를 획득했습니다.'], 'ko')).toBe('acquired');
+  });
+});
+
+describe('the run start pickers (M135)', () => {
+  it('knows the observation title and the start panel heading as OCR reads them', () => {
+    expect(classifyScreen(['6.6.0 기프트 관측'], 'ko')).toBe('observationSelect');
+    expect(classifyScreen(['선택한6.0 기프트 ㅣ'], 'ko')).toBe('startGiftSelect');
+  });
+
+  it('still reads the fusion confirm line, which contains the start panel heading, as the confirm', () => {
+    expect(classifyScreen(['선택한 E.G.O 기프트를 조합하시겠습니까?'], 'ko')).toBe('fusionConfirm');
+  });
+});
+
+describe('isObservationTitle', () => {
+  it('reads the dimmed title behind a popup, a syllable off', () => {
+    expect(isObservationTitle(['6.6.0 기프트 관즉'], 'ko')).toBe(true);
+  });
+
+  it('is not fooled by 「테마팩 관측」 on the pack picker, or by noise', () => {
+    expect(isObservationTitle(['900? 래마떡관측 |'], 'ko')).toBe(false);
+    expect(isObservationTitle(['ㅣ] 711'], 'ko')).toBe(false);
+    expect(isObservationTitle(['E.G.O Gift Observation'], 'en')).toBe(false);
   });
 });
 

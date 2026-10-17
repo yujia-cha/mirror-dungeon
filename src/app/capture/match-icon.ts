@@ -202,7 +202,14 @@ export function matchIcon(
   refs: readonly IconRef[],
   thresholds: IconThresholds = DEFAULT_ICON_THRESHOLDS,
 ): MatchResult {
-  const ranked = rankIcons(views, refs);
+  return decideIcon(rankIcons(views, refs), thresholds);
+}
+
+/** `matchIcon` on a ranking already made (`rankIcons`) — for a caller that also keeps the ranking. */
+export function decideIcon(
+  ranked: readonly (readonly [number, number])[],
+  thresholds: IconThresholds = DEFAULT_ICON_THRESHOLDS,
+): MatchResult {
   const [first, second] = ranked;
   if (!first || first[1] < thresholds.minScore) return { status: 'none' };
   const score = first[1];

@@ -12,7 +12,7 @@
  * stays free of pixels and engines and its rules can be tested with fakes.
  */
 import { changed } from '../../src/app/capture/change.ts';
-import { decide, finished, INITIAL_LOOP, type LoopState } from '../../src/app/capture/loop.ts';
+import { decide, finished, INITIAL_LOOP, type LoopState, type ReadMode } from '../../src/app/capture/loop.ts';
 import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame } from '../../src/app/capture/tracker.ts';
 
 /** A shot on screen from `start` (inclusive) to `end` (exclusive), in ms. */
@@ -58,8 +58,11 @@ export interface SimulateInput {
   timeline: readonly Span[];
   /** The change-detection signature of a shot as seen at time `t` (an animated screen differs per tick). */
   signature: (shot: number, t: number) => Uint8Array;
-  /** Read a shot; `held` is what the run holds now (for the fusion confirm). */
-  read: (shot: number, held: ReadonlySet<number>) => Promise<ShotRead>;
+  /**
+   * Read a shot; `held` is what the run holds now (for the fusion confirm), `mode` whether the loop
+   * asked for a full read or a popup read of the popup burst (M136).
+   */
+  read: (shot: number, held: ReadonlySet<number>, mode: ReadMode) => Promise<ShotRead>;
 }
 
 export interface TimedEvent {
@@ -114,7 +117,11 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       foldHeld(held, event);
       out.events.push({ event, at: until, shot });
     }
-    loop = finished(loop);
+    loop = finished(loop, {
+      at: until,
+      popup: result.frame.screen === 'acquired',
+      partial: result.frame.partial === true,
+    });
     pending = null;
   };
 
@@ -127,7 +134,7 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
     const step = decide(loop, sig, changed(loop.lastRead, sig), t);
     loop = step.state;
     if (step.decision === 'skip') continue;
-    const result = await read(shot, held);
+    const result = await read(shot, held, step.mode);
     out.reads += 1;
     out.ocrCalls += result.ocrCalls;
     out.ocrMs += result.ms;
@@ -149,6 +156,8 @@ export function eventKey(event: CaptureEvent): string {
       return `fused:${event.resultId}:${[...event.consumed].sort((a, b) => a - b).join(',')}`;
     case 'unsure':
       return `unsure:${event.about}:${[...event.ids].sort((a, b) => a - b).join(',')}`;
+    case 'startDone':
+      return 'startDone';
   }
 }
 

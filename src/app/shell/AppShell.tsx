@@ -27,7 +27,7 @@ import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { DetailSurface } from '../components/BlockDetail.tsx';
-import { IconButton } from '../components/ui.tsx';
+import { IconButton, Select } from '../components/ui.tsx';
 import { DeckStep } from '../steps/DeckStep.tsx';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
@@ -451,19 +451,16 @@ export function AppShell({
                   has — no control appears for a list of one.
                 */}
                       {seasons.length > 1 ? (
-                        <select
-                          className="rounded-sm border border-border-control bg-surface px-1.5 py-0.5 text-fg-muted"
-                          aria-label={t('season', lang)}
-                          data-testid="season-select"
-                          value={data.meta.dungeon.id}
-                          onChange={(event) => onSeason(Number(event.target.value))}
-                        >
-                          {seasons.map((entry) => (
-                            <option key={entry.id} value={entry.id}>
-                              {pick(entry.name, lang) || `MD${entry.id}`}
-                            </option>
-                          ))}
-                        </select>
+                        <Select
+                          label={t('season', lang)}
+                          testId="season-select"
+                          value={String(data.meta.dungeon.id)}
+                          options={seasons.map((entry) => ({
+                            value: String(entry.id),
+                            label: pick(entry.name, lang) || `MD${entry.id}`,
+                          }))}
+                          onChange={(value) => onSeason(Number(value))}
+                        />
                       ) : (
                         <span>{pick(data.meta.dungeon.name, lang)}</span>
                       )}

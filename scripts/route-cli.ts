@@ -8,6 +8,8 @@
  * Flags: --deck, --want, --floors, --difficulty normal|hard, --hard-from N,
  *        --must gift,gift (these are required; the rest are best-effort),
  *        --observe gift,gift (pin these for 기프트 관측), --no-observe (planner may not observe),
+ *        --start-gifts N (starting gifts taken from one keyword pool, 0-3; default the rules' count),
+ *        --start-decided (the run start is past: no start gift or observation is chosen),
  *        --assume-unvisited (price every observation as a first visit to that pack, ×1.5),
  *        --ban pack,…, --prefer pack,… (must be included somewhere),
  *        --floor N (run in progress: floors below N are played),
@@ -114,6 +116,10 @@ const input: PlanInput = share
               : null,
         startKeyword: (flagValue('--keyword') as Keyword | undefined) ?? 'auto',
         observedGifts: numbers(flagValue('--observe')),
+        ...(flagValue('--start-gifts') !== undefined
+          ? { startGiftCount: Number(flagValue('--start-gifts')) }
+          : {}),
+        ...(hasFlag('--start-decided') ? { startDecided: true } : {}),
         pinnedPacks: parseEntries(flagValue('--entered')),
         bannedPacks: numbers(flagValue('--ban')),
         preferredPacks: numbers(flagValue('--prefer')),
@@ -160,7 +166,9 @@ if ((input.options.currentFloor ?? 1) > 1) {
 
 console.log('\n시작');
 console.log(`  키워드: ${plan.start.keyword ?? '(없음)'}`);
-console.log(`  시작 기프트: ${plan.start.startGift ? giftName(plan.start.startGift) : '(없음)'}`);
+console.log(
+  `  시작 기프트: ${plan.start.startGifts.length > 0 ? plan.start.startGifts.map(giftName).join(', ') : '(없음)'}`,
+);
 const observedText = plan.start.observed.map((o) => {
   const why = o.pinned ? '지정' : o.freedPack !== null ? `추천, ${packName(o.freedPack)} 불필요` : '추천';
   return `${giftName(o.giftId)} (${why})`;

@@ -3,10 +3,13 @@
   "reference": { "width": 1920, "height": 1009 },
   "titles": [
     { "region": [0.333, 0.205, 0.34, 0.07], "screens": ["acquired"], "_note": "popup title 「E.G.O 기프트를 획득했습니다.」" },
+    { "region": [0.1094, 0.0396, 0.1615, 0.0595], "screens": ["observationSelect"], "raw": "only", "_note": "M135, MD8 start shots: top-left 「E.G.O 기프트 관측」 in blue, which only the raw pass reads (4/4 shots) — so since M136 the light pass is not tried. Read only while the run start is open, and also behind an acquired popup to tell an observed gift from a start gift." },
+    { "region": [0.6094, 0.1734, 0.1823, 0.0644], "screens": ["startGiftSelect"], "raw": "only", "_note": "M135: the start gift picker has no screen title; its side panel's 「선택한 E.G.O 기프트」 is gold, raw only (1/1, no light pass since M136). The observation picker shows the same words lower and further right, so its own title is read first. Read only while the run start is open." },
     { "region": [0.31, 0.69, 0.385, 0.055], "screens": ["fusionConfirm"], "_note": "fusion confirm line under the slots" },
     { "region": [0.28, 0.42, 0.44, 0.12], "screens": ["sellConfirm"], "_note": "centre confirm 「[이름]을(를) 코스트 300에 / 판매하시겠습니까?」" },
     { "region": [0.29, 0.19, 0.29, 0.06], "screens": ["purchase"], "_note": "purchase dialog title" },
-    { "region": [0.33, 0.075, 0.34, 0.09], "screens": ["fusionKeyword", "sell", "enhance", "fusion", "packSelect"], "raw": true, "_note": "full-screen title; the pack picker's 「N층 테마팩 선택」 is found only by the raw pass (M108 bench: 3 shots)" },
+    { "region": [0.33, 0.075, 0.34, 0.09], "screens": ["fusionKeyword", "sell", "enhance", "fusion"], "_note": "full-screen title. No raw pass since M135: in the M108 bench it only ever found the pack picker, which has its own region now" },
+    { "region": [0.33, 0.075, 0.34, 0.105], "screens": ["packSelect"], "raw": true, "_note": "the pack picker's 「N층 테마팩 선택」, found only by the raw pass (M108 bench: 3 shots). Taller than the full-screen title since M135: in MD8 the title spans y 0.114–0.168 and the shorter region cut it (owner session, floor 1: 「1증레마팩선택」 → read whole)" },
     { "region": [0.01, 0.13, 0.17, 0.09], "screens": ["exploring"], "raw": true, "_note": "map header 「N층 탐사 중」 over the pack name; brown on red, which the light pass erases (M95, M108 bench: 2 shots)" }
   ],
   "names": {
@@ -15,6 +18,8 @@
     "centerConfirm": [0.28, 0.42, 0.44, 0.12],
     "mapHeader": [0.01, 0.13, 0.17, 0.09]
   },
+  "popupIcon": [0.2656, 0.3011, 0.1105, 0.2043],
+  "_popupIcon": "M136: the acquired popup's gift icon, the framed square above the name button (owner session 1792201541946, 1928×1043 with a 30px title bar: x 512–725, y 335–542 → client fractions). Read only when the popup's name is no sure match, against the gifts whose names come closest; on the three session popups the right gift ranked first among all 454 icons (0.67–0.88, next best ≤ 0.50).",
   "fusion": {
     "count": [0.2, 0.205, 0.31, 0.075],
     "five": [

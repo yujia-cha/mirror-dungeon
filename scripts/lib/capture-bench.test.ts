@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PATCH_H, PATCH_W } from '../../src/app/capture/change.ts';
+import type { ReadMode } from '../../src/app/capture/loop.ts';
 import type { Frame } from '../../src/app/capture/tracker.ts';
 import {
   compareEvents,
@@ -124,6 +125,58 @@ describe('simulate', () => {
   it('does nothing on an empty timeline', async () => {
     const result = await simulate({ intervalMs: 250, timeline: [], signature, read: reader(frames, 1).read });
     expect(result).toMatchObject({ ticks: 0, reads: 0, events: [], durationMs: 0 });
+  });
+});
+
+describe('simulate — a click-through of popups (M136)', () => {
+  // Three popups clicked through in about half a second each, a blink between, then the map.
+  const frames = [popup(1), NOTHING, popup(2), NOTHING, popup(3), NOTHING];
+  const timeline: Span[] = [
+    { shot: 0, start: 0, end: 450 },
+    { shot: 1, start: 450, end: 570 },
+    { shot: 2, start: 570, end: 1020 },
+    { shot: 3, start: 1020, end: 1140 },
+    { shot: 4, start: 1140, end: 1590 },
+    { shot: 5, start: 1590, end: 8000 },
+  ];
+  /** What reads cost on the owner's machine: a full read of nothing reads every title (~600 ms). */
+  function costed(honoursMode: boolean) {
+    const reads: [number, ReadMode][] = [];
+    return {
+      reads,
+      read: async (shot: number, _held: ReadonlySet<number>, mode: ReadMode): Promise<ShotRead> => {
+        reads.push([shot, mode]);
+        const frame = frames[shot]!;
+        if (frame.screen === 'acquired') return { frame, ms: 150, ocrCalls: 2 };
+        return honoursMode && mode === 'popup'
+          ? { frame: { ...frame, partial: true }, ms: 60, ocrCalls: 1 }
+          : { frame, ms: 600, ocrCalls: 9 };
+      },
+    };
+  }
+
+  it('catches every popup when the reads after a popup look for popups only', async () => {
+    // Arrange
+    const burst = costed(true);
+    const always = costed(false);
+    // Act
+    const caught = await simulate({ intervalMs: 250, timeline, signature, read: burst.read });
+    const missed = await simulate({ intervalMs: 250, timeline, signature, read: always.read });
+    // Assert: the full read of the blink after the first popup runs past the second.
+    const gots = (r: typeof caught) => r.events.map((e) => e.event).filter((e) => e.kind === 'got');
+    expect(gots(caught).map((e) => (e.kind === 'got' ? e.giftId : 0))).toEqual([1, 2, 3]);
+    expect(gots(missed).length).toBeLessThan(3);
+  });
+
+  it('reads the screen the popups gave way to in full once the burst is over', async () => {
+    // Arrange
+    const burst = costed(true);
+    // Act
+    await simulate({ intervalMs: 250, timeline, signature, read: burst.read });
+    // Assert: the map was first read by a popup read, then once in full.
+    const map = burst.reads.filter(([shot]) => shot === 5).map(([, mode]) => mode);
+    expect(map[0]).toBe('popup');
+    expect(map).toContain('full');
   });
 });
 

@@ -159,7 +159,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
           autoKeyword={input.options.startKeyword === 'auto'}
           lastFloor={lastFloor}
           fixedModeByFloor={indexes.fixedModeByFloor}
-          run={{ currentFloor: run.currentFloor }}
+          run={{ currentFloor: run.currentFloor, startDone: run.startDone === true }}
           slots={data.rules.giftObservation.max}
           startHeld={run.startGifts}
           variant="vertical"

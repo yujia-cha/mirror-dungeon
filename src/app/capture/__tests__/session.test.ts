@@ -32,7 +32,15 @@ function fakeShare() {
 function session() {
   const onStatus = vi.fn();
   const created = new CaptureSession({
-    context: () => ({ lang: 'ko', packs: [], gifts: [], held: [], materials: [], iconUrl: () => null }),
+    context: () => ({
+      lang: 'ko',
+      packs: [],
+      gifts: [],
+      held: [],
+      materials: [],
+      iconUrl: () => null,
+      startOpen: false,
+    }),
     onEvents: vi.fn(),
     onStatus,
   });
@@ -180,6 +188,7 @@ describe('CaptureSession reads', () => {
         held: [],
         materials: [],
         iconUrl: () => null,
+        startOpen: false,
       }),
       onEvents,
       onStatus: vi.fn(),

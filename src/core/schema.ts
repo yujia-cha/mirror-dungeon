@@ -735,6 +735,9 @@ export const CAPTURE_SCREENS = [
   'fusion',
   'packSelect',
   'exploring',
+  // The run start (M135): 기프트 관측 has a title of its own; the start gift picker only its panel's.
+  'observationSelect',
+  'startGiftSelect',
 ] as const;
 export type CaptureScreen = (typeof CAPTURE_SCREENS)[number];
 
@@ -760,14 +763,15 @@ export const captureLayoutSchema = z.object({
    * Banner regions in reading order, each with the screens whose title can appear in it. `raw`:
    * when the light-text pass finds no title there, read the untouched crop too — only for titles
    * drawn in colours the pass erases (M108: the bench found two; the others never needed it, and
-   * the second read doubles what a frame showing nothing costs).
+   * the second read doubles what a frame showing nothing costs). `"only"`: the untouched crop
+   * alone, for titles the light pass never reads (M136: the run start's two).
    */
   titles: z
     .array(
       z.object({
         region: captureRegionSchema,
         screens: z.array(z.enum(CAPTURE_SCREENS)).min(1),
-        raw: z.boolean().optional(),
+        raw: z.union([z.boolean(), z.literal('only')]).optional(),
       }),
     )
     .min(1),
@@ -783,6 +787,11 @@ export const captureLayoutSchema = z.object({
     five: z.array(captureRegionSchema).length(5),
     three: z.array(captureRegionSchema).length(3),
   }),
+  /**
+   * The acquired popup's gift icon (M136): read when the popup's name is no sure match, to tell the
+   * gift by its picture among the gifts whose names the text came closest to.
+   */
+  popupIcon: captureRegionSchema,
 });
 export type CaptureLayout = z.infer<typeof captureLayoutSchema>;
 
@@ -805,8 +814,12 @@ const diagMatchSchema = z.union([
 ]);
 const diagEventSchema = z.object({ kind: z.string() }).passthrough();
 export const diagTraceStepSchema = z.object({
-  /** What was being read: a title region, a name, the floor, the fusion header, the slots. */
-  step: z.enum(['title', 'name', 'floor', 'fusionCount', 'slots']),
+  /**
+   * What was being read: a title region, a name, the floor, the fusion header, the slots, what a
+   * popup sits over (M135), or the popup's icon when its name was unsure (M136). `selectCount` was
+   * the start pickers' 「선택 n/m」, read only by M135's build — kept so a bundle of it still parses.
+   */
+  step: z.enum(['title', 'name', 'floor', 'fusionCount', 'slots', 'selectCount', 'context', 'icon']),
   region: z.tuple([z.number(), z.number(), z.number(), z.number()]).nullable(),
   /** The light-text pass (true) or the untouched crop (false); null for the icon slots. */
   light: z.boolean().nullable(),
@@ -819,6 +832,8 @@ export const diagTraceStepSchema = z.object({
   slots: z
     .object({ shape: z.enum(['five', 'three']), top: z.array(z.array(z.tuple([z.number(), z.number()]))) })
     .optional(),
+  /** The popup's icon (M136): every candidate tried, [gift, score], best first. */
+  icon: z.array(z.tuple([z.number(), z.number()])).optional(),
 });
 export type DiagTraceStep = z.infer<typeof diagTraceStepSchema>;
 
@@ -833,6 +848,8 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     interval: z.string(),
     lang: z.enum(['ko', 'en']),
     captureSize: z.object({ width: z.number(), height: z.number() }).nullable(),
+    /** The window title bar over the game, px (M134) — on the records told when the picture's size or bar changes. */
+    inset: z.object({ top: z.number() }).optional(),
   }),
   z.object({
     kind: z.literal('read'),
@@ -849,6 +866,18 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     events: z.array(diagEventSchema),
     /** The frame kept for this read, `frames/{frameId}.jpg`. */
     frameId: z.string().nullable(),
+    /**
+     * Ticks that came while this read was busy (and so were skipped), and how many of them saw the
+     * screen differ from the frame being read (M134) — a popup that came and went between reads.
+     * Missing in bundles before M134.
+     */
+    busyTicks: z.number().optional(),
+    busyChanges: z.number().optional(),
+    /**
+     * `popup`: a read of the popup burst (M136) — it looked at the popup's title only and stopped
+     * there when no popup showed. Missing = a full read, as every read was before M136.
+     */
+    mode: z.enum(['full', 'popup']).optional(),
   }),
   z.object({
     kind: z.literal('applied'),
@@ -896,6 +925,19 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     startGifts: z.array(z.number()),
   }),
   z.object({
+    /**
+     * A filmstrip (M134): the session's small previews of every tick, from a few seconds before
+     * the reads that made events (`reads`, their `t`) or the hand-made changes (`manual`, their
+     * `t`) to a few seconds after — what the screen showed between reads. Overlapping windows are
+     * one strip. Its frames are `class: 'preview'`, not full size.
+     */
+    kind: z.literal('strip'),
+    t: z.number(),
+    reads: z.array(z.number()),
+    manual: z.array(z.number()),
+    frameIds: z.array(z.string()),
+  }),
+  z.object({
     /** A run that ended (the last floor left) or was thrown away for a new one. */
     kind: z.literal('run'),
     t: z.number(),
@@ -911,6 +953,16 @@ export type DiagRecord = z.infer<typeof diagRecordSchema>;
 
 export const DIAG_FORMAT = 1;
 
+/**
+ * Why a frame was kept, which decides what goes first past the caps (M134): `routine` (an event
+ * the player let stand), then `sample` (the first few events of each screen kind — regression
+ * fixtures), then `unknown` (a screen with text the reader did not know), then `evidence` (around
+ * a hand-made change, an undone event, a read that asked). `preview` is a filmstrip's small
+ * picture, with a cap of its own. Bundles before M134 say nothing: `routine`.
+ */
+export const DIAG_FRAME_CLASSES = ['routine', 'sample', 'unknown', 'evidence', 'preview'] as const;
+export type DiagFrameClass = (typeof DIAG_FRAME_CLASSES)[number];
+
 export const diagnosticsBundleSchema = z.object({
   format: z.literal(DIAG_FORMAT),
   bundleId: z.string(),
@@ -920,7 +972,14 @@ export const diagnosticsBundleSchema = z.object({
   season: z.number(),
   layoutReference: z.object({ width: z.number(), height: z.number() }).nullable(),
   records: z.array(diagRecordSchema),
-  frames: z.array(z.object({ id: z.string(), t: z.number(), bytes: z.number() })),
+  frames: z.array(
+    z.object({
+      id: z.string(),
+      t: z.number(),
+      bytes: z.number(),
+      class: z.enum(DIAG_FRAME_CLASSES).optional(),
+    }),
+  ),
 });
 export type DiagnosticsBundle = z.infer<typeof diagnosticsBundleSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];

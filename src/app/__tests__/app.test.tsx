@@ -33,7 +33,7 @@ import {
   useApp,
   withoutLegacyGot,
 } from '../store.ts';
-import { planInputFor } from '../lib/plan-input.ts';
+import { observationClosed, planInputFor, plannedGifts } from '../lib/plan-input.ts';
 import { classifyGift, compareEntries, isPackBound, prioritiseGifts } from '../lib/gift-priority.ts';
 import { hasDeckCondition } from '../lib/gift-filters.ts';
 import { defaultDeck } from '../lib/default-deck.ts';
@@ -55,7 +55,7 @@ import { CaptureMenu } from '../shell/CapturePanel.tsx';
 import { RunStage } from '../stage/RunStage.tsx';
 import { Tracker } from '../tracker/Tracker.tsx';
 import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
-import type { RoutePlan } from '../../core/types.ts';
+import type { PlanOptions, RoutePlan } from '../../core/types.ts';
 import { ingredientTree } from '../lib/entangle.ts';
 import { upgradeLevelsOf } from '../lib/upgrade.ts';
 import { LONG_PRESS } from '../lib/useChipDrag.ts';
@@ -2535,6 +2535,152 @@ describe('RouteOptions', () => {
     renderPlanned(<RouteOptions />);
     expect(screen.queryByTestId('start-keyword-note')).toBeNull();
   });
+
+  describe('start gift count (M134)', () => {
+    const steps = () => within(screen.getByTestId('start-gift-count')).getAllByRole('button');
+
+    it('offers 0 to the largest pool, on the rules count by default', () => {
+      useApp.getState().setDeck(LCB_DECK, 7);
+      renderPlanned(<RouteOptions />);
+
+      expect(screen.getByRole('group', { name: '시작 기프트 수' })).toBeInTheDocument();
+      expect(steps().map((b) => b.textContent)).toEqual(['0', '1', '2', '3']);
+      expect(steps().map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'false']);
+      expect(screen.getByTestId('start-gift-count')).toHaveTextContent(
+        '가호 「쏟아지는 유성우」·「완전한 가능성」마다 +1',
+      );
+      expect(screen.getByTestId('start-gift-count-0')).toHaveAttribute('title', '선택하지 않음');
+    });
+
+    it('saves the count, and names every gift the pool then gives', async () => {
+      const user = userEvent.setup();
+      useApp.getState().setDeck(LCB_DECK, 7);
+      for (const id of [9044, 9086]) useApp.getState().toggleWanted(id); // both in the 진동 pool
+      renderPlanned(<RouteOptions />);
+      expect(note()).toHaveTextContent('진동: 진동형 팔찌를 시작 기프트로 받습니다');
+
+      await user.click(screen.getByTestId('start-gift-count-2'));
+
+      expect(useApp.getState().options.startGiftCount).toBe(2);
+      expect(screen.getByTestId('start-gift-count-2')).toHaveAttribute('aria-pressed', 'true');
+      expect(note()).toHaveTextContent('진동: 진동형 팔찌 · 잔향을 시작 기프트로 받습니다');
+    });
+
+    it('goes back to unset on the rules count, and with 0 leaves the keyword a free choice', async () => {
+      const user = userEvent.setup();
+      useApp.getState().setDeck(LCB_DECK, 7);
+      useApp.getState().toggleWanted(9044);
+      useApp.getState().setOptions({ startGiftCount: 2 });
+      renderPlanned(<RouteOptions />);
+
+      await user.click(screen.getByTestId('start-gift-count-1'));
+      expect('startGiftCount' in useApp.getState().options).toBe(true);
+      expect(useApp.getState().options.startGiftCount).toBeUndefined();
+
+      await user.click(screen.getByTestId('start-gift-count-0'));
+      expect(useApp.getState().options.startGiftCount).toBe(0);
+      expect(autoOption()).toHaveTextContent(/^자동$/);
+      expect(note()).toHaveTextContent('목표에 영향이 없으니 원하는 키워드를 골라도 됩니다');
+    });
+
+    it('hides the count and the note once the start is decided, on floor 1 too', () => {
+      useApp.getState().setDeck(LCB_DECK, 7);
+      useApp.getState().toggleWanted(9044);
+      useApp.getState().markStartDone();
+      expect(useApp.getState().run.currentFloor).toBe(1);
+
+      renderPlanned(<RouteOptions />);
+
+      expect(screen.queryByTestId('start-gift-count')).toBeNull();
+      expect(screen.queryByTestId('start-keyword-note')).toBeNull();
+    });
+  });
+});
+
+describe('start stage (M134)', () => {
+  it('keeps a sound start gift count in saved and shared options, and drops anything else', () => {
+    expect(sanitizeOptions({ ...appDefaultOptions(), startGiftCount: 0 }).startGiftCount).toBe(0);
+    expect(sanitizeOptions({ ...appDefaultOptions(), startGiftCount: 3 }).startGiftCount).toBe(3);
+    for (const bad of [-1, 1.5, '2', null]) {
+      expect('startGiftCount' in sanitizeOptions({ ...appDefaultOptions(), startGiftCount: bad })).toBe(
+        false,
+      );
+    }
+    // Whether the start is over belongs to the run, never to options.
+    expect('startDecided' in sanitizeOptions({ ...appDefaultOptions(), startDecided: true })).toBe(false);
+  });
+
+  it('carries the count in a share link; a link without it plans the rules count', () => {
+    const state = {
+      deck: [10101],
+      deployed: [10101],
+      wanted: [9044, 9086],
+      fusionGoal: {},
+      upgrades: {},
+      options: { ...appDefaultOptions(), startGiftCount: 2 },
+    };
+
+    const decoded = decodeShared(encodeShared(state))!;
+    const old = decodeShared(encodeShared({ ...state, options: appDefaultOptions() }))!;
+
+    expect(decoded.options.startGiftCount).toBe(2);
+    expect(old.options.startGiftCount).toBeUndefined();
+    const plan = (options: PlanOptions) =>
+      planRoute({ deck: LCB_DECK, wanted: plannedGifts(state.wanted), options }, data, indexes);
+    expect(plan(decoded.options).start.startGifts).toEqual([9044, 9086]);
+    expect(plan(old.options).start.startGifts).toEqual([9044]);
+  });
+
+  it('keeps the count across a rehydrate', () => {
+    const saved = sanitizePersisted(
+      { options: { ...appDefaultOptions(), startGiftCount: 3 }, run: { ...emptyRun(), startDone: true } },
+      PERSIST_VERSION,
+    );
+    expect(saved.options?.startGiftCount).toBe(3);
+    expect(saved.run?.startDone).toBe(true);
+  });
+
+  it('closes the start on floor 1 once marked, and only a new run reopens it', () => {
+    useApp.getState().setDeck(LCB_DECK, 7);
+    useApp.getState().toggleWanted(9044);
+    expect(observationClosed(useApp.getState().run)).toBe(false);
+    expect(planInputFor(useApp.getState()).options.startDecided).toBeUndefined();
+
+    useApp.getState().markStartDone();
+
+    const { run } = useApp.getState();
+    expect(run).toMatchObject({ currentFloor: 1, startDone: true });
+    expect(observationClosed(run)).toBe(true);
+    expect(planInputFor(useApp.getState()).options.startDecided).toBe(true);
+    const plan = planRoute(planInputFor(useApp.getState()), data, indexes);
+    expect(plan.start.startGifts).toEqual([]);
+    expect(plan.start.observed).toEqual([]);
+    // An entry on floor 1 taken back returns the frontier to floor 1; the start stays spent.
+    useApp.getState().visitPack(1016, 1);
+    useApp.getState().unvisitPack(1016);
+    expect(useApp.getState().run).toMatchObject({ currentFloor: 1, startDone: true });
+    useApp.getState().resetRun();
+    expect(useApp.getState().run.startDone).toBeUndefined();
+  });
+
+  it('refuses a new observation pin once the start is decided, but still takes one off', () => {
+    const limits = { max: 3, observable: () => true };
+    useApp.getState().toggleWanted(9044);
+    useApp.getState().toggleWanted(9086);
+    useApp.getState().toggleObserved(9044, limits);
+    useApp.getState().markStartDone();
+
+    useApp.getState().toggleObserved(9086, limits);
+    expect(useApp.getState().options.observedGifts).toEqual([9044]);
+    useApp.getState().toggleObserved(9044, limits);
+    expect(useApp.getState().options.observedGifts).toEqual([]);
+  });
+
+  it('keeps only a true flag in a saved run', () => {
+    expect(sanitizeRun({ ...emptyRun(), startDone: true }).startDone).toBe(true);
+    expect('startDone' in sanitizeRun({ ...emptyRun(), startDone: 'yes' })).toBe(false);
+    expect('startDone' in sanitizeRun(emptyRun())).toBe(false);
+  });
 });
 
 describe('RoutePlanPanel', () => {
@@ -2742,6 +2888,31 @@ describe('RoutePlanPanel', () => {
     expect(observed).not.toHaveAttribute('data-history');
     // They are two decisions, so nothing from one line leaks into the other.
     expect(within(start).queryByTestId('observed-tile')).toBeNull();
+  });
+
+  it('lists every starting gift on the start line (M134)', () => {
+    useApp.getState().setDeck(LCB_DECK, 7);
+    for (const id of [9044, 9086, 9113]) useApp.getState().toggleWanted(id); // the whole 진동 pool
+    useApp.getState().setOptions({ startGiftCount: 3 });
+    renderRoute();
+    const start = within(within(rows()).getByTestId('start-cell')).getByTestId('start-line');
+    expect(within(start).getAllByTestId('start-gift')).toHaveLength(3);
+    expect(start).toHaveTextContent('진동형 팔찌');
+    expect(start).toHaveTextContent('잔향');
+    expect(start).toHaveTextContent('시큼한 주향');
+  });
+
+  it('draws no open slot once the start is decided on floor 1, only observations already in hand', () => {
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.getState().toggleWanted(9267);
+    useApp.getState().toggleWanted(9423);
+    useApp.getState().markStartDone();
+    renderRoute();
+    const observed = within(within(rows()).getByTestId('start-cell')).getByTestId('observed-line');
+    expect(observed).toHaveAttribute('data-history');
+    expect(within(observed).queryByTestId('observed-empty')).toBeNull();
+    expect(within(observed).queryByTestId('observed-tile')).toBeNull();
+    expect(within(observed).getByTestId('observed-none')).toHaveTextContent('관측 없이 시작했습니다');
   });
 
   /*
@@ -3942,10 +4113,7 @@ describe('RunStage', () => {
       await screen.findByTestId('floor-header');
       const startOf = () => {
         const fresh = planRoute(planInputFor(useApp.getState()), data, indexes);
-        return [
-          ...fresh.start.observed.map((o) => o.giftId),
-          ...(fresh.start.startGift ? [fresh.start.startGift] : []),
-        ];
+        return [...fresh.start.observed.map((o) => o.giftId), ...fresh.start.startGifts];
       };
       const before = startOf();
       // 깨진 안경 (9423) becomes a goal; the worker never answers for it.

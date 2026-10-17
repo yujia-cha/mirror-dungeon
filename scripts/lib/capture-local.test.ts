@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import jpeg from 'jpeg-js';
+import { createRequire } from 'node:module';
+import encodeJpeg, { init as initJpegEncoder } from '@jsquash/jpeg/encode.js';
 import { PNG } from 'pngjs';
 import { describe, expect, it } from 'vitest';
 import { loadGameDataFromDisk } from '../../src/core/data/node.ts';
@@ -9,22 +10,25 @@ import { decodeImage, loadIconRefs } from './capture-local.ts';
 const PIXELS = new Uint8Array([255, 0, 0, 255, 0, 0, 255, 255]);
 
 describe('decodeImage', () => {
-  it('reads a PNG', () => {
+  it('reads a PNG', async () => {
     // Arrange
     const png = new PNG({ width: 2, height: 1 });
     png.data = Buffer.from(PIXELS);
     // Act
-    const image = decodeImage(PNG.sync.write(png));
+    const image = await decodeImage(PNG.sync.write(png));
     // Assert
     expect([image.width, image.height]).toEqual([2, 1]);
     expect([...image.data]).toEqual([...PIXELS]);
   });
 
-  it('reads a JPEG (Steam saves JPEG) by its magic bytes', () => {
+  it('reads a JPEG (Steam saves JPEG) by its magic bytes', async () => {
     // Arrange
-    const bytes = jpeg.encode({ data: Buffer.from(PIXELS), width: 2, height: 1 }, 100).data;
+    const wasm = createRequire(import.meta.url).resolve('@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm');
+    await initJpegEncoder(await WebAssembly.compile(readFileSync(wasm)));
+    const pixels = { data: new Uint8ClampedArray(PIXELS), width: 2, height: 1, colorSpace: 'srgb' };
+    const bytes = await encodeJpeg(pixels as ImageData, { quality: 100 });
     // Act
-    const image = decodeImage(Buffer.from(bytes));
+    const image = await decodeImage(Buffer.from(bytes));
     // Assert: lossy, so only the size and the rough colours.
     expect([image.width, image.height]).toEqual([2, 1]);
     expect(image.data[0]!).toBeGreaterThan(image.data[2]!);

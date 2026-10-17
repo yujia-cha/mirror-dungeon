@@ -41,6 +41,11 @@ export const SCREEN_TITLES = {
   // number is read on its own (`parseFloor`).
   packSelect: { ko: '테마팩 선택', en: '' },
   exploring: { ko: '층 탐사 중', en: '' },
+  // The run start (M135). The observation picker's own title, top left; the start gift picker has
+  // none, so its side panel's heading stands in — the observation picker shows the same heading,
+  // which is why its title is read first. After `fusionConfirm`, whose line contains this heading.
+  observationSelect: { ko: 'E.G.O 기프트 관측', en: '' },
+  startGiftSelect: { ko: '선택한 E.G.O 기프트', en: '' },
 } as const satisfies Record<CaptureScreen, Record<Lang, string>>;
 
 /** One of the screens in `CAPTURE_SCREENS`; this file holds their titles. */
@@ -104,4 +109,48 @@ export function parseFloor(lines: readonly string[]): number | null {
     if (Number.isInteger(floor) && floor >= 1) return floor;
   }
   return null;
+}
+
+/** The run start's two pickers (M135). */
+export const START_SCREENS = ['startGiftSelect', 'observationSelect'] as const satisfies readonly Screen[];
+export type StartScreen = (typeof START_SCREENS)[number];
+
+export function isStartScreen(screen: Screen | null): screen is StartScreen {
+  return screen === 'startGiftSelect' || screen === 'observationSelect';
+}
+
+/**
+ * Screens only a pack already entered can show: the shop, its sales and fusions (M136). While the
+ * run start is open, floor 1's pack has not been entered (`observationClosed`: the frontier is
+ * floor 1), so the reader does not look for them — on a frame that shows nothing during the start
+ * (the boons) that pays for the start's two titles. A run the app thinks is still at its start
+ * while the player shops on floor 1 recovers at the first map: the map header is still read, and
+ * entering floor 1 closes the start.
+ */
+const IN_PACK_SCREENS: ReadonlySet<Screen> = new Set([
+  'fusionConfirm',
+  'sellConfirm',
+  'purchase',
+  'fusionKeyword',
+  'sell',
+  'enhance',
+  'fusion',
+]);
+
+export function isInPackScreen(screen: Screen): boolean {
+  return IN_PACK_SCREENS.has(screen);
+}
+
+/**
+ * Behind a popup the observation title is dimmed and reads a syllable off (「기프트 관즉」), so the
+ * test for what a popup sits over is looser than a title's. The pack picker's 「테마팩 관측」 button,
+ * the nearest thing elsewhere, scores 0.4.
+ */
+export const BEHIND_MIN = 0.7;
+
+/** Whether the lines read the observation picker's title — behind a popup (M135). */
+export function isObservationTitle(lines: readonly string[], lang: Lang): boolean {
+  const title = comparable(SCREEN_TITLES.observationSelect[lang], lang);
+  if (title === '') return false;
+  return lines.some((line) => containedSimilarity(comparable(line, lang), title) >= BEHIND_MIN);
 }

@@ -228,12 +228,7 @@ export function PlanProvider({
     }
     // The plan on screen decides, not the base one: entering a pack while an alternative route is
     // selected must hand over that route's observations, never the ones it replaced.
-    const startGifts = shown
-      ? [
-          ...shown.start.observed.map((o) => o.giftId),
-          ...(shown.start.startGift ? [shown.start.startGift] : []),
-        ]
-      : [];
+    const startGifts = shown ? [...shown.start.observed.map((o) => o.giftId), ...shown.start.startGifts] : [];
     /**
      * Leaving floor 1 for the first time is when the start-of-run gifts land in hand. Read at that
      * moment, never from a plan one toggle behind (M118): while the worker is still answering, the
@@ -250,12 +245,7 @@ export function PlanProvider({
         : input.wanted.length > 0
           ? planRoute(input, data, indexes)
           : null;
-      return fresh
-        ? [
-            ...fresh.start.observed.map((o) => o.giftId),
-            ...(fresh.start.startGift ? [fresh.start.startGift] : []),
-          ]
-        : [];
+      return fresh ? [...fresh.start.observed.map((o) => o.giftId), ...fresh.start.startGifts] : [];
     };
     /**
      * What the route expects a pack entered on `floor` to hand over — the plan on show decides, so

@@ -207,6 +207,32 @@ export function matchName(
   candidates: readonly NameCandidate[],
   thresholds: MatchThresholds = DEFAULT_THRESHOLDS,
 ): MatchResult {
+  const ranked = rankNames(lines, candidates);
+  const [first, second] = ranked;
+  if (!first || first[1] < thresholds.minScore) return { status: 'none' };
+
+  const score = first[1];
+  const margin = score - (second?.[1] ?? 0);
+  // Some names differ by one character on purpose (「4호선 - 제 3 구간」/「제 4 구간」, 「타입 L」/
+  // 「타입 E」), so a perfect read sits a hair above its siblings. A unique exact read is taken; a
+  // misread that happens to spell a sibling exactly is the one error context has to catch.
+  const exact = score === 1 && margin > 0;
+  if (exact || margin >= thresholds.minMargin) return { status: 'match', id: first[0], score, margin };
+  const ids = ranked.filter(([, s]) => score - s < thresholds.minMargin).map(([id]) => id);
+  return { status: 'ambiguous', ids, score, margin };
+}
+
+/**
+ * Every candidate any piece of `lines` came close to, as [id, best score], best first (ties by id).
+ * A candidate no piece scored above 0 is left out. `matchName` decides on the top of it; the popup
+ * reader (M136) takes the closest few as the candidates its icon is compared with when the name
+ * alone is no sure match — a name OCR mangles (「변형 추출 : AEDD」 → 「변형추줄: ^ㅅ600」, 0.67)
+ * still ranks first, just below the bar.
+ */
+export function rankNames(
+  lines: readonly string[],
+  candidates: readonly NameCandidate[],
+): [number, number][] {
   const best = new Map<number, number>();
   const names = prepared(candidates);
   const seen = new Set<string>();
@@ -232,17 +258,5 @@ export function matchName(
       if (score > floor) best.set(c.id, score);
     }
   }
-  const ranked = [...best].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
-  const [first, second] = ranked;
-  if (!first || first[1] < thresholds.minScore) return { status: 'none' };
-
-  const score = first[1];
-  const margin = score - (second?.[1] ?? 0);
-  // Some names differ by one character on purpose (「4호선 - 제 3 구간」/「제 4 구간」, 「타입 L」/
-  // 「타입 E」), so a perfect read sits a hair above its siblings. A unique exact read is taken; a
-  // misread that happens to spell a sibling exactly is the one error context has to catch.
-  const exact = score === 1 && margin > 0;
-  if (exact || margin >= thresholds.minMargin) return { status: 'match', id: first[0], score, margin };
-  const ids = ranked.filter(([, s]) => score - s < thresholds.minMargin).map(([id]) => id);
-  return { status: 'ambiguous', ids, score, margin };
+  return [...best].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
 }

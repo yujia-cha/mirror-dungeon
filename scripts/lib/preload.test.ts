@@ -10,7 +10,9 @@ describe('data preload', () => {
     const paths = dataPreloadPaths(repoPath('public/data'));
     expect(paths[0]).toBe('data/index.json');
     expect(paths).toHaveLength(8);
-    expect(paths).toContain('data/md7/skill-gifts.json');
+    // The default season's files only — a frozen season is fetched when the footer picks it.
+    expect(paths).toContain('data/md8/skill-gifts.json');
+    expect(paths.some((path) => path.startsWith('data/md7/'))).toBe(false);
     for (const path of paths) expect(existsSync(repoPath('public', path))).toBe(true);
   });
 

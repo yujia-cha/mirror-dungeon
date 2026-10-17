@@ -10,18 +10,36 @@
  *   OCR call, not six.
  * - Each region is read with the light-text pass first and raw only when that finds nothing (M95:
  *   the map header is brown on red and the pass erases it) — for titles, only those the layout
- *   marks `raw` (M108).
+ *   marks `raw` (M108), and raw alone for those it marks `"only"` (M136: the light pass never read
+ *   them, and on a frame that shows nothing it was two wasted calls).
  * - Names are matched against the candidates the caller passes, already narrowed by the run.
+ * - The run start's pickers (M135) are looked for only while the run start is open (`startOpen`):
+ *   their titles are raw reads, and for the rest of the run they would cost every frame that
+ *   shows nothing. Then a popup also reads what it sits over — the observation picker's title.
+ *   What the pickers show picked is not read (M136): only a popup records a gift. Meanwhile the
+ *   titles of screens inside a pack (the shop, fusion) are not looked for (M136, `isInPackScreen`):
+ *   floor 1's pack has not been entered yet.
+ * - A popup whose name is no sure match is told by its icon among the gifts whose names the text
+ *   came closest to (M136, `popupIcon`): 「변형 추출 : AEDD」 reads 「변형추줄: ^ㅅ600」.
+ * - The popup burst (M136, `popupOnly`): right after a popup the loop asks for the popup's title
+ *   only and stops there when none shows, so a click-through of popups is read at the tick rate.
  *
  * No DOM, no timers: the caller owns the pixels and the clock.
  */
 import type { CaptureLayout, DiagTraceStep } from '../../core/schema.ts';
 import type { Lang } from '../i18n.ts';
 import { assignSlots, type Consumed, type SlotRanking, type SlotThresholds } from './fusion.ts';
-import { rankIcons, type IconRef } from './match-icon.ts';
-import { matchName, type MatchResult, type NameCandidate } from './match-name.ts';
+import { decideIcon, rankIcons, type IconRef, type IconThresholds } from './match-icon.ts';
+import { matchName, rankNames, type MatchResult, type NameCandidate } from './match-name.ts';
 import type { Region } from './preprocess.ts';
-import { classifyScreen, parseFloor, type Screen } from './screens.ts';
+import {
+  classifyScreen,
+  isInPackScreen,
+  isObservationTitle,
+  isStartScreen,
+  parseFloor,
+  type Screen,
+} from './screens.ts';
 import type { Frame } from './tracker.ts';
 
 export interface RegionReader {
@@ -44,6 +62,15 @@ export interface ReadContext {
    */
   materials: readonly IconRef[];
   slotThresholds?: SlotThresholds;
+  /** The run start is still open: look for its pickers (M135). Omitted = closed. */
+  startOpen?: boolean;
+  /**
+   * Icon references of these gifts, for the popup's icon (M136). Omitted = the popup is read by
+   * name alone. Asked only for a handful of ids, and only when the name is no sure match.
+   */
+  iconRefs?: (ids: readonly number[]) => Promise<IconRef[]>;
+  /** A read of the popup burst (M136): the popup's title only, nothing else when it is not there. */
+  popupOnly?: boolean;
 }
 
 /** What one frame read, and how many OCR calls it took (for the bench). */
@@ -57,6 +84,20 @@ export interface ReadResult {
    */
   trace: DiagTraceStep[];
 }
+
+/**
+ * The popup's icon (M136). The candidates are the gifts the name came closest to: at most
+ * `candidates`, each at least `minName` alike (「변형추줄: ^ㅅ600」 puts 「변형 추출 : AEDD」 first at 0.67,
+ * a worse read 「.벼현 츠출ㆍ ^ㅅ600」 at 0.47 with nothing else above 0.33), plus every gift an
+ * ambiguous name named. The bar is above the fusion slots' (0.5 / 0.08): on the owner's three
+ * popups the right icon scored 0.67–0.88 against all 454 gifts and the best wrong one 0.50, and a
+ * popup's icon is told among names that merely look alike, not among what the run holds.
+ */
+export const POPUP_ICON = {
+  candidates: 6,
+  minName: 0.4,
+  thresholds: { minScore: 0.6, minMargin: 0.15 } satisfies IconThresholds,
+} as const;
 
 export async function readFrame(
   reader: RegionReader,
@@ -74,37 +115,46 @@ export async function readFrame(
     if (step === 'title') entry.screen = typeof taken === 'string' ? taken : null;
     trace.push(entry);
   };
+  /** One pass, light or raw. */
+  const readOnce = async <T>(
+    region: Region,
+    step: Step,
+    light: boolean,
+    accept: (lines: string[]) => T | null,
+  ): Promise<T | null> => {
+    ocrCalls += 1;
+    const lines = await reader.ocr(region, light);
+    const taken = accept(lines);
+    note(step, region, light, lines, taken);
+    return taken;
+  };
   /** Light pass, then raw when `accept` finds nothing in it. */
   const readEither = async <T>(
     region: Region,
     step: Step,
     accept: (lines: string[]) => T | null,
-  ): Promise<T | null> => {
-    ocrCalls += 1;
-    const lightLines = await reader.ocr(region, true);
-    const first = accept(lightLines);
-    note(step, region, true, lightLines, first);
-    if (first !== null) return first;
-    ocrCalls += 1;
-    const rawLines = await reader.ocr(region, false);
-    const second = accept(rawLines);
-    note(step, region, false, rawLines, second);
-    return second;
-  };
-  const readLight = async <T>(
-    region: Region,
+  ): Promise<T | null> =>
+    (await readOnce(region, step, true, accept)) ?? (await readOnce(region, step, false, accept));
+  /** A title region as the layout says to read it: light, light then raw, or raw only. */
+  const readTitle = <T>(
+    title: CaptureLayout['titles'][number],
     step: Step,
     accept: (lines: string[]) => T | null,
-  ): Promise<T | null> => {
-    ocrCalls += 1;
-    const lines = await reader.ocr(region, true);
-    const taken = accept(lines);
-    note(step, region, true, lines, taken);
-    return taken;
-  };
-  const nameIn = async (region: Region, candidates: readonly NameCandidate[]): Promise<MatchResult> => {
+  ): Promise<T | null> =>
+    title.raw === 'only'
+      ? readOnce(title.region, step, false, accept)
+      : title.raw
+        ? readEither(title.region, step, accept)
+        : readOnce(title.region, step, true, accept);
+  /** A name in `region`; every line OCR gave goes into `seen` when it is passed. */
+  const nameIn = async (
+    region: Region,
+    candidates: readonly NameCandidate[],
+    seen?: string[],
+  ): Promise<MatchResult> => {
     let best: MatchResult = { status: 'none' };
     const found = await readEither(region, 'name', (lines) => {
+      seen?.push(...lines);
       const m = matchName(lines, candidates);
       // A pass that matched nothing still says how close it came: keep the closest for the trace.
       if (m.status !== 'none') return m;
@@ -113,9 +163,40 @@ export async function readFrame(
     });
     return found ?? best;
   };
+  /** The popup's gift: its name, and its icon when the name is no sure match (M136). */
+  const popupGift = async (): Promise<MatchResult> => {
+    const seen: string[] = [];
+    const byName = await nameIn(layout.names.popup, ctx.gifts, seen);
+    if (byName.status === 'match' || !ctx.iconRefs) return byName;
+    const close = rankNames(seen, ctx.gifts)
+      .filter(([, score]) => score >= POPUP_ICON.minName)
+      .slice(0, POPUP_ICON.candidates)
+      .map(([id]) => id);
+    const ids = [...new Set([...(byName.status === 'ambiguous' ? byName.ids : []), ...close])];
+    if (ids.length === 0) return byName;
+    const refs = await ctx.iconRefs(ids);
+    if (refs.length === 0) return byName;
+    const ranked = rankIcons(await reader.slot(layout.popupIcon), refs);
+    const byIcon = decideIcon(ranked, POPUP_ICON.thresholds);
+    trace.push({
+      step: 'icon',
+      region: [...layout.popupIcon],
+      light: null,
+      lines: [],
+      accepted: byIcon.status === 'match',
+      match: byIcon,
+      icon: ranked.map(([id, score]) => [id, score] as [number, number]),
+    });
+    // Still unsure: as an unsure popup always was — a muddled name is asked, none is nothing.
+    return byIcon.status === 'match' ? byIcon : byName;
+  };
 
+  const frame: Frame = { screen: null, floor: null, pack: null, gift: null };
   let screen: Screen | null = null;
   for (const title of layout.titles) {
+    if (ctx.popupOnly && !title.screens.includes('acquired')) continue;
+    if (!ctx.startOpen && title.screens.every(isStartScreen)) continue;
+    if (ctx.startOpen && title.screens.every(isInPackScreen)) continue;
     const accept = (lines: string[]): Screen | null => {
       const s = classifyScreen(lines, ctx.lang);
       // A region only speaks for the screens whose title lives there: a dimmed full-screen title
@@ -124,21 +205,29 @@ export async function readFrame(
     };
     // Only titles the light pass can erase get the second, raw read (M108): on a frame that shows
     // nothing, every title region is read, and the raw reads were half of it.
-    const found = title.raw
-      ? await readEither(title.region, 'title', accept)
-      : await readLight(title.region, 'title', accept);
+    const found = await readTitle(title, 'title', accept);
     if (found) {
       screen = found;
       break;
     }
   }
+  frame.screen = screen;
 
-  const frame: Frame = { screen, floor: null, pack: null, gift: null };
-  if (screen === 'exploring') {
+  if (ctx.popupOnly && screen === null) {
+    frame.partial = true;
+  } else if (screen === 'exploring') {
     frame.floor = await readEither(layout.names.mapHeader, 'floor', parseFloor);
     frame.pack = await nameIn(layout.names.mapHeader, ctx.packs);
   } else if (screen === 'acquired') {
-    frame.gift = await nameIn(layout.names.popup, ctx.gifts);
+    frame.gift = await popupGift();
+    const behind = ctx.startOpen
+      ? layout.titles.find((t) => t.screens.includes('observationSelect'))
+      : undefined;
+    if (behind)
+      frame.overObservation =
+        (await readTitle(behind, 'context', (lines) =>
+          isObservationTitle(lines, ctx.lang) ? true : null,
+        )) === true;
   } else if (screen === 'sellConfirm') {
     frame.gift = await nameIn(layout.names.centerConfirm, ctx.gifts);
   } else if (screen === 'sell') {

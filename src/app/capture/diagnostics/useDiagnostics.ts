@@ -180,6 +180,11 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
         else frame?.close();
       },
       wantImage: () => recorderRef.current?.images ?? false,
+      onTick: (tick, preview) => {
+        if (recorderRef.current) recorderRef.current.onTick(tick, preview);
+        else preview?.close();
+      },
+      onAsk: () => recorderRef.current?.onAsk(),
       onApplied: (logId, event, actions, fromRead) =>
         recorderRef.current?.onApplied(logId, event, actions, fromRead),
       onUndo: (logId) => recorderRef.current?.onUndo(logId),
@@ -192,6 +197,19 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
           interval: ui.captureInterval,
           lang: ui.captureLang,
           captureSize: null,
+        });
+      },
+      // The picture's size and title bar (M134): a session record of its own, so the bundle says
+      // what was captured.
+      onGeometry: ({ captureSize, inset }) => {
+        const ui = useApp.getState().ui;
+        recorderRef.current?.onSession({
+          status: 'running',
+          error: null,
+          interval: ui.captureInterval,
+          lang: ui.captureLang,
+          captureSize,
+          inset,
         });
       },
     }),

@@ -1,5 +1,5 @@
 {
-  "default": 7,
+  "default": 8,
   "seasons": [
     {
       "dataVersion": "7.32fbd6a0",
@@ -10,6 +10,16 @@
         "ko": "이름과 거미의 거울"
       },
       "provisional": true
+    },
+    {
+      "dataVersion": "8.97dbce4b",
+      "id": 8,
+      "lastFloor": 15,
+      "name": {
+        "en": "Mirror of Sisyphe - F",
+        "ko": "시지프의 거울"
+      },
+      "provisional": false
     }
   ]
 }

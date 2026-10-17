@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { captureLayoutSchema, type DiagnosticsBundle, type DiagRecord } from '../../src/core/schema.ts';
-import { formatReport, labelsFrom, parseBundle, recognitionReport, routeReport } from './capture-feedback.ts';
+import {
+  captureGeometries,
+  formatReport,
+  labelsFrom,
+  parseBundle,
+  recognitionReport,
+  routeReport,
+} from './capture-feedback.ts';
 
 const layout = captureLayoutSchema.parse(JSON.parse(readFileSync('public/data/capture-layout.json', 'utf8')));
 
@@ -194,6 +201,49 @@ describe('routeReport', () => {
   });
 });
 
+describe('captureGeometries', () => {
+  const session = (t: number, size: { width: number; height: number } | null, top?: number): DiagRecord => ({
+    kind: 'session',
+    t,
+    status: 'running',
+    error: null,
+    interval: 'balanced',
+    lang: 'ko',
+    captureSize: size,
+    ...(top === undefined ? {} : { inset: { top } }),
+  });
+
+  it('lists each size once, in order, with its title bar', () => {
+    // Arrange
+    const b: DiagnosticsBundle = {
+      ...bundle(),
+      records: [
+        session(1, null),
+        session(2, { width: 1928, height: 1043 }, 30),
+        session(3, { width: 1928, height: 1043 }, 30),
+        session(4, { width: 1920, height: 1080 }, 0),
+      ],
+    };
+
+    // Act
+    const sizes = captureGeometries(b);
+
+    // Assert
+    expect(sizes).toEqual(['1928×1043 (제목 표시줄 30px)', '1920×1080']);
+  });
+
+  it('gives none for a bundle that never recorded a size', () => {
+    // Arrange
+    const b: DiagnosticsBundle = { ...bundle(), records: [session(1, null)] };
+
+    // Act
+    const sizes = captureGeometries(b);
+
+    // Assert
+    expect(sizes).toEqual([]);
+  });
+});
+
 describe('formatReport', () => {
   it('names gifts and packs and says where the frames are', () => {
     const b = bundle();
@@ -213,5 +263,97 @@ describe('formatReport', () => {
     expect(text).toContain('2층: 추천 P1004 → P1101');
     expect(text).toContain('1층 P1002: G9404');
     expect(text).toContain('추천 팩을 따른 층 1/2 (50%)');
+  });
+});
+
+describe('filmstrips (M134)', () => {
+  /** The small bundle with a filmstrip around the read at 10 and the miss at 41, and classes. */
+  function filmed(): DiagnosticsBundle {
+    const b = bundle();
+    b.records = b.records.map((r) =>
+      r.kind === 'read' && r.t === 10 ? { ...r, busyTicks: 3, busyChanges: 2 } : r,
+    );
+    b.records.push({ kind: 'strip', t: 45, reads: [10], manual: [41], frameIds: ['p8-1', 'p10-2', 'p44-3'] });
+    b.frames = [
+      { id: 'p8-1', t: 8, bytes: 1, class: 'preview' },
+      { id: 'f10', t: 10, bytes: 2, class: 'sample' },
+      { id: 'p10-2', t: 10, bytes: 1, class: 'preview' },
+      { id: 'f30', t: 30, bytes: 2, class: 'evidence' },
+      { id: 'p44-3', t: 44, bytes: 1, class: 'preview' },
+    ];
+    return b;
+  }
+
+  it('lists each strip with the reads and changes it was kept around and its preview files', () => {
+    // Act
+    const r = recognitionReport(filmed());
+    // Assert
+    expect(r).toMatchObject({ framesKept: 2, previewsKept: 3, framesByClass: { sample: 1, evidence: 1 } });
+    expect(r.strips).toHaveLength(1);
+    expect(r.strips[0]!.reads.map((x) => x.t)).toEqual([10]);
+    expect(r.strips[0]!.manual.map((x) => x.t)).toEqual([41]);
+    expect(r.strips[0]!.frames).toEqual([
+      { file: 'frames/p8-1.jpg', dt: -2 },
+      { file: 'frames/p10-2.jpg', dt: 0 },
+      { file: 'frames/p44-3.jpg', dt: 34 },
+    ]);
+    expect(r.waiting).toEqual({ busyTicks: 3, busyChanges: 2, readsChangedUnder: 1 });
+  });
+
+  it('says nothing of waiting ticks for a bundle from before M134', () => {
+    expect(recognitionReport(bundle()).waiting).toBeNull();
+  });
+
+  it('counts the reads of the popup burst and says so in the report (M136)', () => {
+    // Arrange: two popup reads — one found its popup, one found none.
+    const b = bundle();
+    b.records.push(read(50, { mode: 'popup', ms: 150 }), read(51, { mode: 'popup', ms: 50, screen: null }));
+    // Act
+    const r = recognitionReport(b);
+    const text = formatReport(
+      b,
+      r,
+      routeReport(b, () => 'general'),
+      { certain: 0, unconfirmed: 0 },
+      {
+        gift: (id) => `G${id}`,
+        pack: (id) => `P${id}`,
+      },
+    );
+    // Assert
+    expect(r.popupReads).toEqual({ reads: 2, meanMs: 100, popups: 1 });
+    expect(text).toContain('팝업 연속 판독 2회 · 평균 100ms · 그중 팝업 1회');
+    expect(recognitionReport(bundle()).popupReads).toBeNull();
+  });
+
+  it('puts the strip files in the report and points the miss at its strip', () => {
+    // Arrange
+    const b = filmed();
+    // Act
+    const text = formatReport(
+      b,
+      recognitionReport(b),
+      routeReport(b, () => 'general'),
+      { certain: 0, unconfirmed: 0 },
+      {
+        gift: (id) => `G${id}`,
+        pack: (id) => `P${id}`,
+      },
+    );
+    // Assert
+    expect(text).toContain('이미지 2장 (sample 1, evidence 1) · 미리 보기 3장');
+    expect(text).toContain('### 필름');
+    expect(text).toContain('frames/p8-1.jpg (−0.00s), frames/p10-2.jpg (+0.00s), frames/p44-3.jpg (+0.03s)');
+    expect(text).toMatch(/획득 G9008 — 직전 이미지 1장 — 필름 3장/);
+  });
+
+  it('never labels a preview', () => {
+    // Arrange: a read that (wrongly) names a preview as its frame.
+    const b = filmed();
+    b.records = b.records.map((r) => (r.kind === 'read' && r.t === 10 ? { ...r, frameId: 'p10-2' } : r));
+    // Act
+    const { unconfirmed } = labelsFrom(b, layout);
+    // Assert
+    expect(unconfirmed.map((l) => l.file)).not.toContain('frames/p10-2.jpg');
   });
 });

@@ -85,6 +85,12 @@
       0.1586
     ]
   },
+  "popupIcon": [
+    0.2656,
+    0.3011,
+    0.1105,
+    0.2043
+  ],
   "reference": {
     "height": 1009,
     "width": 1920
@@ -99,6 +105,30 @@
       ],
       "screens": [
         "acquired"
+      ]
+    },
+    {
+      "raw": "only",
+      "region": [
+        0.1094,
+        0.0396,
+        0.1615,
+        0.0595
+      ],
+      "screens": [
+        "observationSelect"
+      ]
+    },
+    {
+      "raw": "only",
+      "region": [
+        0.6094,
+        0.1734,
+        0.1823,
+        0.0644
+      ],
+      "screens": [
+        "startGiftSelect"
       ]
     },
     {
@@ -135,7 +165,6 @@
       ]
     },
     {
-      "raw": true,
       "region": [
         0.33,
         0.075,
@@ -146,7 +175,18 @@
         "fusionKeyword",
         "sell",
         "enhance",
-        "fusion",
+        "fusion"
+      ]
+    },
+    {
+      "raw": true,
+      "region": [
+        0.33,
+        0.075,
+        0.34,
+        0.105
+      ],
+      "screens": [
         "packSelect"
       ]
     },

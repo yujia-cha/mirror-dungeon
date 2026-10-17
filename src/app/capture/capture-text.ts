@@ -23,8 +23,18 @@ export function logText(
   switch (e.kind) {
     case 'enter':
       return t('captureLogEnter', lang, { floor: e.floor, name: packName(e.packId) });
-    case 'got':
-      return t('captureLogGot', lang, { name: giftName(indexes, e.giftId, lang) });
+    case 'got': {
+      // A start picker's gifts say which one (M135).
+      const key =
+        e.source === 'observation'
+          ? 'captureLogGotObserved'
+          : e.source === 'start'
+            ? 'captureLogGotStart'
+            : 'captureLogGot';
+      return t(key, lang, { name: giftName(indexes, e.giftId, lang) });
+    }
+    case 'startDone':
+      return t('captureLogStartDone', lang);
     case 'sold':
       return t('captureLogSold', lang, { name: giftName(indexes, e.giftId, lang) });
     case 'fused':

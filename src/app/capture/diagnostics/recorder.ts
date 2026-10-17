@@ -3,14 +3,26 @@
  * and how the route compared with the run, kept on this device until exported.
  *
  * What it keeps:
- * - every read (its trace of OCR passes, what it matched, the events it made);
+ * - every read (its trace of OCR passes, what it matched, the events it made, and how many ticks
+ *   it kept waiting — M134);
  * - what the reader applied, what the player undid or answered, and run changes made by hand —
  *   while the reader runs, a hand-made change is most likely something it missed;
  * - one record per floor left (what the route offered, what was entered, how the gifts went) and
  *   one per run that ended;
  * - frames, only when asked and only where they say something: a read that made an event, the
  *   last few reads before a hand-made change while reading, and at most one a minute of a screen
- *   that showed text but no screen it knows (a screen it may be missing).
+ *   that showed text but no screen it knows (a screen it may be missing);
+ * - a filmstrip around each event and each hand-made change while reading (M134): the session's
+ *   small preview of every tick from `STRIP_BEFORE_MS` before to `STRIP_AFTER_MS` after, so a
+ *   popup that came and went while a slow read was busy is still on record — a read only ever
+ *   sees its own snapshot.
+ *
+ * Past the caps a frame goes by its class (M134, `DiagFrameClass`), not by age alone: the oldest
+ * `routine` frame first (an event the player let stand — the trace already says the read was
+ * right), then `sample` (the first `SAMPLES_PER_SCREEN` events of each screen kind, kept as
+ * regression fixtures), then `unknown`, then `evidence` (the ring of a hand-made change, an event
+ * later undone, a read that asked). So an hour's run keeps its first floors' misses. Previews are
+ * a pool of their own with their own caps, oldest first.
  *
  * Lifecycle: everything stored goes into the next export, one zip. After exporting, the player
  * clears what that zip holds (the browser cannot say whether the file was saved, so it is never
@@ -24,18 +36,54 @@
  * React-free: the provider feeds it, the popover reads `stats()`, tests drive it with
  * `memoryStore()`.
  */
-import { DIAG_FORMAT, type DiagRecord, type DiagnosticsBundle } from '../../../core/schema.ts';
-import type { FrameSource, ReadReport } from '../session.ts';
+import {
+  DIAG_FORMAT,
+  type DiagFrameClass,
+  type DiagRecord,
+  type DiagnosticsBundle,
+} from '../../../core/schema.ts';
+import type { FrameSource, ReadReport, TickReport } from '../session.ts';
 import { memoryStore, type DiagStore, type StoredFrame } from './store.ts';
 
 /** Reads kept in memory for a hand-made change to look back on. */
 export const RING_SIZE = 8;
-/** Caps: past them the oldest frames go, and recording stops at the record cap. */
+/** Caps: past them frames go by class, and recording stops at the record cap. */
 export const MAX_RECORDS = 20_000;
 export const MAX_FRAMES = 300;
 export const MAX_FRAME_BYTES = 150 * 1024 * 1024;
+/** The filmstrip's own caps (a preview is ~15–30 KB): past them the oldest previews go. */
+export const MAX_PREVIEWS = 600;
+export const MAX_PREVIEW_BYTES = 20 * 1024 * 1024;
 /** At most one frame a minute of a screen with text the reader did not recognise. */
 export const UNKNOWN_FRAME_GAP_MS = 60_000;
+/** Event frames of each screen kind kept as `sample` rather than `routine`. */
+export const SAMPLES_PER_SCREEN = 3;
+/** A filmstrip holds the ticks this long before its event and this long after. */
+export const STRIP_BEFORE_MS = 3000;
+export const STRIP_AFTER_MS = 4000;
+
+/** Which class goes first past the caps: lower first. Previews are a pool apart. */
+const EVICT_RANK: Record<DiagFrameClass, number> = {
+  routine: 0,
+  sample: 1,
+  unknown: 2,
+  evidence: 3,
+  preview: 0,
+};
+
+interface KeptFrame {
+  id: string;
+  t: number;
+  bytes: number;
+  class: DiagFrameClass;
+}
+
+/** A picture in memory, not encoded unless something keeps it; `id` once it is. */
+interface Pending {
+  t: number;
+  frame: FrameSource;
+  id: string | null;
+}
 
 export interface DiagStats {
   records: number;
@@ -44,7 +92,7 @@ export interface DiagStats {
   /** Records (and their frames) already in an export, still on the device. */
   exportedRecords: number;
   lastExportAt: number | null;
-  /** Frames dropped to stay under the caps. */
+  /** Full frames dropped to stay under the caps (previews are a moving window and not counted). */
   trimmedFrames: number;
   /** The record cap was reached: nothing more is recorded until the device is cleared. */
   full: boolean;
@@ -62,13 +110,26 @@ export type RecordInput = Without<DiagRecord, 't'>;
 export class DiagRecorder {
   private seq = 0;
   private records = 0;
-  private frameList: { id: string; t: number; bytes: number }[] = [];
+  private frameList: KeptFrame[] = [];
   private exported: ExportMark | null = null;
   private exportedRecords = 0;
   private trimmed = 0;
   private startedAt: number | null = null;
   /** The last reads' pictures, not encoded unless a hand-made change keeps them. */
-  private ring: { t: number; frame: FrameSource; id: string | null }[] = [];
+  private ring: Pending[] = [];
+  /** The last `STRIP_BEFORE_MS` of tick previews, for a filmstrip to start from. */
+  private ticks: Pending[] = [];
+  /** The filmstrip being kept: until when, around what, and its previews so far. */
+  private strip: { until: number; reads: number[]; manual: number[]; frameIds: string[] } | null = null;
+  private previewSeq = 0;
+  /** Ticks skipped while the read in flight was busy, and those that saw the screen change. */
+  private busyTicks = 0;
+  private busyChanges = 0;
+  /** Event frames kept as `sample` so far, by screen kind (this recorder's lifetime). */
+  private samples = new Map<string, number>();
+  /** The latest read's kept frame, and the frame of each applied entry's read — for undo and ask. */
+  private lastReadFrameId: string | null = null;
+  private frameOfLog = new Map<number, string>();
   private lastUnknownFrameAt = -Infinity;
   private lastReadT: number | null = null;
   private queue: Promise<void> = Promise.resolve();
@@ -97,7 +158,13 @@ export class DiagRecorder {
     this.records = records.length;
     this.seq = records.reduce((max, r) => Math.max(max, r.seq), 0);
     this.startedAt = records[0]?.rec.t ?? null;
-    this.frameList = frames.map(({ id, t, bytes }) => ({ id, t, bytes }));
+    // Frames stored before M134 have no class: an event the player let stand, as far as we know.
+    this.frameList = frames.map(({ id, t, bytes, class: cls }) => ({
+      id,
+      t,
+      bytes,
+      class: cls ?? 'routine',
+    }));
     this.exported = mark ?? null;
     this.exportedRecords = mark ? records.filter((r) => r.seq <= mark.seq).length : 0;
     this.trimmed = trimmed ?? 0;
@@ -105,6 +172,7 @@ export class DiagRecorder {
 
   /** Turn recording and frames on or off (frames only ever with recording). */
   setFlags(recording: boolean, images: boolean): void {
+    if (!(recording && images)) this.dropTicks();
     this.recording = recording;
     this.images = recording && images;
   }
@@ -175,10 +243,11 @@ export class DiagRecorder {
 
   /**
    * Keep a picture. The id is the record's to name now; the encode and the write run in the queue,
-   * and only then does the frame count — past a cap, the oldest frames go and the stats say so.
+   * and only then does the frame count — past a cap, frames go by class (`evict`) and the stats
+   * say so.
    */
-  private keepFrame(t: number, frame: FrameSource): string {
-    const id = `${t}-${this.seq + 1}`;
+  private keepFrame(t: number, frame: FrameSource, cls: DiagFrameClass): string {
+    const id = cls === 'preview' ? `p${t}-${++this.previewSeq}` : `${t}-${this.seq + 1}`;
     // Asked for right after this read's events are handed on (a microtask: the session hands
     // them on in the same task), and before any later read can push the picture out of the ring
     // and free it — so it is encoded even if the queue is still busy with earlier writes.
@@ -186,26 +255,116 @@ export class DiagRecorder {
     void this.enqueue(async () => {
       const blob = await jpeg;
       if (!blob) return;
-      this.frameList.push({ id, t, bytes: blob.size });
-      await this.store.addFrame({ id, t, bytes: blob.size, blob });
-      const drop: string[] = [];
-      let bytes = this.frameList.reduce((sum, f) => sum + f.bytes, 0);
-      while (this.frameList.length > MAX_FRAMES || bytes > MAX_FRAME_BYTES) {
-        const oldest = this.frameList.shift()!;
-        bytes -= oldest.bytes;
-        drop.push(oldest.id);
-      }
-      if (drop.length > 0) {
-        this.trimmed += drop.length;
-        // A ring entry must not go on naming a frame that is gone: it is kept anew if needed.
-        const gone = new Set(drop);
-        for (const entry of this.ring) if (entry.id && gone.has(entry.id)) entry.id = null;
-        await this.store.deleteFrames(drop);
-        await this.store.setMeta('trimmed', this.trimmed);
-      }
+      this.frameList.push({ id, t, bytes: blob.size, class: cls });
+      await this.store.addFrame({ id, t, bytes: blob.size, blob, class: cls });
+      await this.evict(cls === 'preview');
       this.changed();
     });
     return id;
+  }
+
+  /**
+   * Bring one pool under its caps: previews oldest first; full frames the oldest of the lowest
+   * class first (`EVICT_RANK`). Only full frames count as trimmed.
+   */
+  private async evict(previews: boolean): Promise<void> {
+    const [maxCount, maxBytes] = previews ? [MAX_PREVIEWS, MAX_PREVIEW_BYTES] : [MAX_FRAMES, MAX_FRAME_BYTES];
+    // In the order kept, so the first of a class is its oldest.
+    let pool = this.frameList.filter((f) => (f.class === 'preview') === previews);
+    let bytes = pool.reduce((sum, f) => sum + f.bytes, 0);
+    const drop = new Set<string>();
+    while (pool.length > maxCount || bytes > maxBytes) {
+      const lowest = Math.min(...pool.map((f) => EVICT_RANK[f.class]));
+      const victim = pool.find((f) => EVICT_RANK[f.class] === lowest)!;
+      pool = pool.filter((f) => f !== victim);
+      bytes -= victim.bytes;
+      drop.add(victim.id);
+    }
+    if (drop.size === 0) return;
+    this.frameList = this.frameList.filter((f) => !drop.has(f.id));
+    // A pending picture must not go on naming a frame that is gone: it is kept anew if needed.
+    for (const entry of [...this.ring, ...this.ticks]) if (entry.id && drop.has(entry.id)) entry.id = null;
+    await this.store.deleteFrames([...drop]);
+    if (previews) return;
+    this.trimmed += drop.size;
+    await this.store.setMeta('trimmed', this.trimmed);
+  }
+
+  /** A kept frame matters more than it was kept for: raise its class (never lower it). */
+  private raise(id: string, cls: DiagFrameClass): void {
+    void this.enqueue(async () => {
+      const frame = this.frameList.find((f) => f.id === id);
+      if (!frame || EVICT_RANK[frame.class] >= EVICT_RANK[cls]) return;
+      frame.class = cls;
+      await this.store.setFrameClass(id, cls);
+    });
+  }
+
+  /** Keep a pending picture as `cls`, or raise the frame it was already kept as. */
+  private keepPending(entry: Pending, cls: DiagFrameClass): string {
+    if (entry.id) this.raise(entry.id, cls);
+    else entry.id = this.keepFrame(entry.t, entry.frame, cls);
+    return entry.id;
+  }
+
+  /**
+   * Every tick of the session (M134). Counts the ticks a busy read made wait; holds the last few
+   * seconds of previews, and while a filmstrip is open keeps each one.
+   */
+  onTick(tick: TickReport, preview: FrameSource | null): void {
+    if (!this.recording) {
+      preview?.close();
+      return;
+    }
+    if (tick.busy) {
+      this.busyTicks += 1;
+      if (tick.changed) this.busyChanges += 1;
+    }
+    if (this.strip && tick.t > this.strip.until) this.closeStrip();
+    if (!preview || !this.images) {
+      preview?.close();
+      return;
+    }
+    const entry: Pending = { t: tick.t, frame: preview, id: null };
+    if (this.strip) this.strip.frameIds.push(this.keepPending(entry, 'preview'));
+    this.ticks.push(entry);
+    while (this.ticks.length > 0 && this.ticks[0]!.t < tick.t - STRIP_BEFORE_MS)
+      this.ticks.shift()!.frame.close();
+  }
+
+  /**
+   * Keep the previews around something that happens now: the ones held from before, and every
+   * tick's until `STRIP_AFTER_MS` from now. An open strip is stretched instead — popups clicked
+   * through one after another make one strip.
+   */
+  private openStrip(around: { read?: number; manual?: number }): void {
+    if (!this.images) return;
+    const until = this.now() + STRIP_AFTER_MS;
+    if (this.strip) this.strip.until = Math.max(this.strip.until, until);
+    else
+      this.strip = {
+        until,
+        reads: [],
+        manual: [],
+        frameIds: this.ticks.map((entry) => this.keepPending(entry, 'preview')),
+      };
+    if (around.read !== undefined) this.strip.reads.push(around.read);
+    if (around.manual !== undefined) this.strip.manual.push(around.manual);
+  }
+
+  /** The open filmstrip, as a record naming its previews — none when no tick came with one. */
+  private closeStrip(): void {
+    const strip = this.strip;
+    this.strip = null;
+    if (!strip || strip.frameIds.length === 0) return;
+    this.add({ kind: 'strip', reads: strip.reads, manual: strip.manual, frameIds: strip.frameIds });
+  }
+
+  /** End the filmstrip being kept (with what it has) and free the previews held for the next. */
+  private dropTicks(): void {
+    this.closeStrip();
+    for (const entry of this.ticks) entry.frame.close();
+    this.ticks = [];
   }
 
   onRead(report: ReadReport, frame: FrameSource | null): void {
@@ -217,20 +376,26 @@ export class DiagRecorder {
     let frameId: string | null = null;
     if (frame && this.images) {
       const sawText = report.trace.some((s) => s.lines.some((line) => line.trim() !== ''));
-      const unknown = report.frame.screen === null && sawText;
-      const keep =
-        report.events.length > 0 || (unknown && report.t - this.lastUnknownFrameAt >= UNKNOWN_FRAME_GAP_MS);
-      if (keep) {
-        frameId = this.keepFrame(report.t, frame);
-        if (unknown) this.lastUnknownFrameAt = report.t;
+      // A popup read of nothing (M136) looked at one title only: it says no screen is unknown.
+      const unknown = report.frame.screen === null && !report.frame.partial && sawText;
+      if (report.events.length > 0) frameId = this.keepFrame(report.t, frame, this.eventClass(report));
+      else if (unknown && report.t - this.lastUnknownFrameAt >= UNKNOWN_FRAME_GAP_MS) {
+        frameId = this.keepFrame(report.t, frame, 'unknown');
+        this.lastUnknownFrameAt = report.t;
       }
       this.ring.push({ t: report.t, frame, id: frameId });
       if (this.ring.length > RING_SIZE) this.ring.shift()!.frame.close();
     } else frame?.close();
+    this.lastReadFrameId = frameId;
+    if (report.events.length > 0) this.openStrip({ read: report.t });
+    const waited = { busyTicks: this.busyTicks, busyChanges: this.busyChanges };
+    this.busyTicks = 0;
+    this.busyChanges = 0;
     this.add(
       {
         kind: 'read',
         reason: report.reason,
+        ...(report.mode === 'popup' ? { mode: 'popup' as const } : {}),
         ms: Math.round(report.ms),
         ocrCalls: report.ocrCalls,
         screen: report.frame.screen,
@@ -241,40 +406,64 @@ export class DiagRecorder {
         trace: report.trace,
         events: report.events,
         frameId,
+        ...waited,
       },
       report.t,
     );
   }
 
+  /** The first few event frames of a screen kind are samples; the rest are routine. */
+  private eventClass(report: ReadReport): DiagFrameClass {
+    const screen = report.frame.screen ?? '';
+    const kept = this.samples.get(screen) ?? 0;
+    if (kept >= SAMPLES_PER_SCREEN) return 'routine';
+    this.samples.set(screen, kept + 1);
+    return 'sample';
+  }
+
   onSession(input: Without<Extract<DiagRecord, { kind: 'session' }>, 't' | 'kind'>): void {
+    // A session that stops ends its filmstrip; the next starts without the old one's ticks.
+    if (input.status !== 'running') this.dropTicks();
+    this.busyTicks = 0;
+    this.busyChanges = 0;
     this.add({ kind: 'session', ...input });
   }
 
   /** The reader applied `event` as log entry `logId` (`fromRead`: the latest read made it). */
   onApplied(logId: number, event: { kind: string }, actions: unknown[], fromRead: boolean): void {
     const readT = fromRead ? this.lastReadT : null;
+    if (fromRead && this.lastReadFrameId) this.frameOfLog.set(logId, this.lastReadFrameId);
     this.add({ kind: 'applied', logId, readT, event, actions });
   }
 
+  /** The player undid an entry: the read that made it was wrong, so its frame is evidence. */
   onUndo(logId: number): void {
+    const frameId = this.frameOfLog.get(logId);
+    if (frameId && this.recording) this.raise(frameId, 'evidence');
     this.add({ kind: 'undo', logId });
+  }
+
+  /** The latest read raised a question: its frame shows what the reader could not settle. */
+  onAsk(): void {
+    if (this.lastReadFrameId && this.recording) this.raise(this.lastReadFrameId, 'evidence');
   }
 
   onAnswer(ask: { kind: string }, picked: number[]): void {
     this.add({ kind: 'answer', ask, picked });
   }
 
-  /** A run change made by hand. While reading, the last few frames are kept: it is likely a miss. */
+  /**
+   * A run change made by hand. While reading, it is likely a miss: the last few reads' frames are
+   * kept as evidence, and a filmstrip around it.
+   */
   onManual(input: Without<Extract<DiagRecord, { kind: 'manual' }>, 't' | 'kind' | 'frameIds'>): void {
     if (!this.recording) return;
     const frameIds: string[] = [];
-    if (input.capturing && this.images) {
-      for (const entry of this.ring) {
-        entry.id ??= this.keepFrame(entry.t, entry.frame);
-        frameIds.push(entry.id);
-      }
-    }
-    this.add({ kind: 'manual', ...input, frameIds });
+    if (input.capturing && this.images)
+      for (const entry of this.ring) frameIds.push(this.keepPending(entry, 'evidence'));
+    const t = this.now();
+    this.add({ kind: 'manual', ...input, frameIds }, t);
+    if (input.capturing) this.openStrip({ manual: t });
   }
 
   onFloor(input: Without<Extract<DiagRecord, { kind: 'floor' }>, 't' | 'kind'>): void {
@@ -295,6 +484,8 @@ export class DiagRecorder {
     season: number;
     layoutReference: DiagnosticsBundle['layoutReference'];
   }): Promise<{ bundle: DiagnosticsBundle; frames: StoredFrame[]; name: string; mark: ExportMark }> {
+    // A filmstrip still open goes in with what it has; the ticks after it start a new one.
+    this.closeStrip();
     return this.inTurn(async () => {
       const [records, frames] = await Promise.all([this.store.records(), this.store.frames()]);
       const at = this.now();
@@ -306,7 +497,7 @@ export class DiagRecorder {
         exportedAt: at,
         ...meta,
         records: records.map((r) => r.rec),
-        frames: frames.map(({ id, t, bytes }) => ({ id, t, bytes })),
+        frames: frames.map(({ id, t, bytes, class: cls }) => ({ id, t, bytes, class: cls ?? 'routine' })),
       };
       const mark: ExportMark = {
         seq: records.reduce((max, r) => Math.max(max, r.seq), 0),
@@ -338,7 +529,8 @@ export class DiagRecorder {
     const removed = { records: this.exportedRecords, frames: mark.frameIds.length };
     const gone = new Set(mark.frameIds);
     this.frameList = this.frameList.filter((f) => !gone.has(f.id));
-    for (const entry of this.ring) if (entry.id && gone.has(entry.id)) entry.id = null;
+    for (const entry of [...this.ring, ...this.ticks]) if (entry.id && gone.has(entry.id)) entry.id = null;
+    if (this.strip) this.strip.frameIds = this.strip.frameIds.filter((id) => !gone.has(id));
     this.records -= this.exportedRecords;
     this.exported = null;
     this.exportedRecords = 0;
@@ -356,8 +548,13 @@ export class DiagRecorder {
     // Records count from the call (a record made after it is kept); frames are counted in the
     // queue's turn, so the frames still being encoded before the clear go with it.
     this.records = 0;
-    for (const entry of this.ring) entry.frame.close();
+    for (const entry of [...this.ring, ...this.ticks]) entry.frame.close();
     this.ring = [];
+    this.ticks = [];
+    this.strip = null;
+    this.samples.clear();
+    this.frameOfLog.clear();
+    this.lastReadFrameId = null;
     this.exported = null;
     this.exportedRecords = 0;
     this.startedAt = null;

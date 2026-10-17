@@ -28,7 +28,7 @@ import {
   type SearchGoals,
 } from './search.ts';
 import { requirementKey } from './requirements.ts';
-import { chooseStart, observable } from './starting.ts';
+import { chooseStart, observable, startGiftBudget } from './starting.ts';
 import { msg } from './messages.ts';
 
 export {
@@ -72,7 +72,7 @@ export type {
 } from './effects.ts';
 export { chooseRecipe, expandRequirements, goalRoots, scarcity } from './requirements.ts';
 export { alternativePacksOn, assignPacks, modeForFloor, observationCost } from './search.ts';
-export { chooseStart, observable } from './starting.ts';
+export { chooseStart, largestStartPool, observable, startGiftBudget } from './starting.ts';
 export * from './types.ts';
 export * from './schema.ts';
 
@@ -296,6 +296,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   const { rows, plannable: floors } = floorsFor(options, data);
   const currentFloor = options.currentFloor ?? 1;
   const midRun = currentFloor > 1;
+  // The start stage (start gifts, 기프트 관측) is over once floor 1 is left — or earlier, when the
+  // player is past the observation screen and only floor 1's pack is still to come (M134).
+  const startOver = midRun || options.startDecided === true;
   // Played floors: the pack taken there is settled and its gifts count as picked up there.
   const passed = new Map<number, number>();
   for (const floor of rows) {
@@ -392,7 +395,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   // 기프트 관측 hands over up to `budget` gifts at run start. The user's pins are the one explicit
   // decision in this stage, so they go first — before the free starting gift and before the
   // planner's own recommendations — and they apply to any planned gift not yet in hand: one the
-  // route would visit a pack for, or a general drop that observation turns into a certainty.
+  // route would visit a pack for, or a general drop that observation turns into a certainty. A pin
+  // on a gift already in hand before floor 1 is left is one of those slots already spent.
   const budget = observationBudget(options, data);
   const observed: ObservedGift[] = [];
   /**
@@ -415,21 +419,37 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     requirements.some((r) => r.giftId === giftId && (r.via === 'route' || r.via === 'generalDrop'));
   const known = (giftId: number): boolean => requirements.some((r) => r.giftId === giftId);
 
-  // A pin on a gift already in hand, or one the plan already gave up on, is skipped without a
-  // word: the run made it moot (the app keeps pins after floor 1, when they are owned) or the
-  // unresolved list already explains it. A pin on a gift that is no goal at all is reported as
-  // trimmed. And once floor 1 is left the observation is spent, so a pin on a gift still to be
-  // found cannot be applied any more: it is reported as `observation-after-start` instead of
-  // turning a gift the run has yet to find into a certainty.
+  // While floor 1 is still ahead (the observation window is open), a pin on a gift already in hand
+  // is an observation already made — screen capture records the observed gift as 획득 the moment
+  // the run starts, before floor 1 is left (M134). It keeps its slot: it is listed as observed,
+  // pinned, and the planner only recommends what the slots it left can hold. Treating it as free
+  // recommended a full set on top of it, more observations than the season has. Its requirement
+  // stays `owned`, and it counts even when it is no goal any more — the starlight is spent either
+  // way, so a plan without that goal (the drop analysis) must not get the slot back.
+  //
+  // A pin the plan already gave up on is skipped without a word: the unresolved list already
+  // explains it. A pin on a gift that is no goal at all (and not in hand) is reported as trimmed.
+  // Once floor 1 is left the observation is spent: a pin on a gift in hand is moot then (the app
+  // keeps pins after floor 1, when they are owned), and a pin on a gift still to be found cannot
+  // be applied any more — it is reported as `observation-after-start` instead of turning a gift
+  // the run has yet to find into a certainty. The same goes from the moment the player is past the
+  // observation screen on floor 1 (`startDecided`), except that pins on gifts in hand still hold
+  // their slots there: the floor-1 rule above sees them before this one.
   const notPlanned: number[] = [];
   const afterStart: number[] = [];
   for (const giftId of options.observedGifts) {
+    if (!midRun && run.owned.has(giftId)) {
+      if (observed.length >= budget) break;
+      if (!observed.some((o) => o.giftId === giftId))
+        observed.push({ giftId, pinned: true, freedPack: null });
+      continue;
+    }
     if (!known(giftId)) {
       notPlanned.push(giftId);
       continue;
     }
     if (!plannable(giftId)) continue;
-    if (midRun) {
+    if (startOver) {
       afterStart.push(giftId);
       continue;
     }
@@ -452,21 +472,25 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     });
   }
 
-  // ---- 5. The free starting-keyword gift ----------------------------------
-  // Mid-run the start was chosen long ago (whatever it gave is in hand), so only the keyword stands.
-  // A general drop in the pool is worth taking here too: free, and certain instead of likely.
+  // ---- 5. The free starting-keyword gifts ---------------------------------
+  // Once the start is over it was chosen already (whatever it gave is in hand), so only the
+  // keyword stands. A general drop in the pool is worth taking here too: free, and certain instead
+  // of likely.
   const start = chooseStart(
-    midRun ? [] : requirements.filter((r) => r.via === 'route' || r.via === 'generalDrop'),
+    startOver ? [] : requirements.filter((r) => r.via === 'route' || r.via === 'generalDrop'),
     indexes,
     data.rules,
     stats,
     options.startKeyword,
+    startGiftBudget(options, data.rules),
   );
-  // One gift, so one copy: a second requirement for it still has to be routed.
-  const startTarget = requirements.find(
-    (r) => r.giftId === start.startGift && (r.via === 'route' || r.via === 'generalDrop'),
-  );
-  if (startTarget) startTarget.via = 'startGift';
+  // Each pick is one gift, so one copy: a second requirement for it still has to be routed.
+  for (const giftId of start.startGifts) {
+    const target = requirements.find(
+      (r) => r.giftId === giftId && (r.via === 'route' || r.via === 'generalDrop'),
+    );
+    if (target) target.via = 'startGift';
+  }
 
   // ---- 6. Recommended observations and the pack search -------------------
   /*
@@ -532,9 +556,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
    */
   let search = runSearch();
 
-  // Observation happens at run start, so mid-run nothing is observed: pins were settled above.
+  // Observation happens at run start, so once it is over nothing is observed: pins were settled above.
   // b) rescue: what the search had to leave out
-  if (!midRun && search.unresolvedGiftIds.length > 0 && observed.length < budget) {
+  if (!startOver && search.unresolvedGiftIds.length > 0 && observed.length < budget) {
     const rescue = runSearch(budget - observed.length);
     if (rescue.lostGoals.length <= search.lostGoals.length) {
       // An observation that takes over a copy the plain plan had a pack for frees that pack's
@@ -551,7 +575,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   }
 
   // c) flexibility: free a forced pack whose only job is one observable gift
-  while (!midRun && observed.length < budget) {
+  while (!startOver && observed.length < budget) {
     const forced = [...search.assignment.entries()]
       .filter(
         ([floor, packId]) =>
@@ -968,9 +992,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   return {
     start: {
       keyword: start.keyword,
-      startGift: start.startGift,
+      startGifts: start.startGifts,
       autoKeyword: start.auto.keyword,
-      autoStartGift: start.auto.startGift,
+      autoStartGifts: start.auto.startGifts,
       observed: startObserved,
       starlight: startStarlight,
       starlightVerified: data.rules.giftObservation.verified,

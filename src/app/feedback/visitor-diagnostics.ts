@@ -75,7 +75,9 @@ export function eventText(event: CaptureEvent | { kind: string }): string {
     case 'enter':
       return `enter F${e.floor} ${e.packId}`;
     case 'got':
-      return `got ${e.giftId}`;
+      return `got ${e.giftId}${e.source ? ` ${e.source}` : ''}`;
+    case 'startDone':
+      return 'startDone';
     case 'sold':
       return `sold ${e.giftId}`;
     case 'fused':

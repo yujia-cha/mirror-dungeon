@@ -554,17 +554,17 @@ function checkInvariants(
 ): void {
   const selectable = packs.filter((p) => p.selectable);
 
-  // Expected scale for Mirror Dungeon 7. A real season change moves these; bump them deliberately
+  // Expected scale for Mirror Dungeon 7 and 8 (MD8 kept MD7's 120 packs and 454 gifts). A real season change moves these; bump them deliberately
   // and say why in the commit message (see the update-game-data skill).
   if (packs.length < 110) strict('invariant', `only ${packs.length} theme packs (expected 110+)`);
   if (selectable.length < 100)
     strict('invariant', `only ${selectable.length} selectable packs (expected 100+)`);
   if (gifts.length < 400) strict('invariant', `only ${gifts.length} gifts (expected 400+)`);
   if (identities.length < 175) strict('invariant', `only ${identities.length} identities (expected 175+)`);
-  // 조합 계승 pairs: 76 in MD7. A drift far outside that means the derivation or the recipes changed.
+  // 조합 계승 pairs: 76 in MD7, 78 in MD8 (9262·9268 gained their 출혈 keyword). A drift far outside that means the derivation or the recipes changed.
   const upgradePairs = gifts.filter((g) => g.upgradeOf !== null).length;
   if (upgradePairs < 60 || upgradePairs > 100)
-    strict('invariant', `${upgradePairs} upgradeOf pairs (expected roughly 76)`);
+    strict('invariant', `${upgradePairs} upgradeOf pairs (expected roughly 78)`);
   if (rules.deployment.max < rules.deployment.default || rules.deployment.max > 12)
     err('invariant', `deployment.max ${rules.deployment.max} must be within default..12`);
 

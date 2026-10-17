@@ -17934,25 +17934,16 @@
     ],
     "buffs": [
       "AttackUp",
-      "Binding",
       "BoneNailSinclair",
       "BuffetFriendShield",
       "BuffetSinclair",
       "BuffetThirst",
-      "CanDuelGuard",
       "Charge",
       "ChargeRougeAlly",
-      "DinnerField",
-      "Enhancement",
       "HungrySinclair",
       "Laceration",
-      "ParryingResultUp",
-      "PersonalityCharge",
       "ResultEnhancement",
       "RougeFamilySinclair",
-      "ScarletTakeDamageUp",
-      "SuperCoin",
-      "SupportAlly",
       "TransformSinclair"
     ],
     "defenseTypes": [
@@ -17965,11 +17956,11 @@
       "SISYPHE"
     ],
     "id": 11016,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 1,
-        "specialSkills": 2
+        "skills": 2,
+        "specialSkills": 3
       },
       "Laceration": {
         "skills": 2,
@@ -17991,20 +17982,31 @@
     "skills": [
       {
         "attackType": "Penetrate",
-        "coins": null,
+        "coins": {
+          "count": 1,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
-            "base": false,
+            "base": true,
             "special": true
           }
         },
+        "self": {},
         "sin": "GLUTTONY",
         "slot": 1,
-        "weight": null
+        "weight": 1
       },
       {
         "attackType": "Penetrate",
-        "coins": null,
+        "coins": {
+          "count": 2,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
             "base": true,
@@ -18015,29 +18017,42 @@
             "special": false
           }
         },
+        "self": {},
         "sin": "WRATH",
         "slot": 2,
-        "weight": null
+        "weight": 1
       },
       {
         "attackType": "Penetrate",
-        "coins": null,
+        "coins": {
+          "count": 3,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
+          "Charge": {
+            "base": false,
+            "special": true
+          },
           "Laceration": {
             "base": true,
             "special": false
           }
         },
+        "self": {},
         "sin": "LUST",
         "slot": 3,
-        "weight": null
+        "weight": 1
       }
     ],
     "title": {
       "en": "Haute Couture:: The Crimson God of Le Rouge",
       "ko": "오트쿠튀르:: 르루주 붉은 신"
     },
-    "traits": []
+    "traits": [
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [

@@ -114,6 +114,61 @@ describe('actionsFor', () => {
   });
 });
 
+describe('actionsFor at the run start (M135)', () => {
+  const at = (
+    giftStatus: Record<number, 'got' | 'failed'>,
+    more: { observed?: number[]; startDone?: boolean; currentFloor?: number } = {},
+  ) => ({ ...ctx(giftStatus), ...more });
+
+  it('marks an observed gift collected and pins it, unless it is pinned already', () => {
+    // Act
+    const fresh = actionsFor({ kind: 'got', giftId: 9191, source: 'observation' }, at({}));
+    const pinned = actionsFor(
+      { kind: 'got', giftId: 9191, source: 'observation' },
+      at({}, { observed: [9191] }),
+    );
+    const start = actionsFor({ kind: 'got', giftId: 9044, source: 'start' }, at({}));
+    // Assert
+    expect(fresh.actions).toEqual([
+      { kind: 'status', changes: [{ giftId: 9191, from: null, to: 'got' }] },
+      { kind: 'observe', giftId: 9191 },
+    ]);
+    expect(pinned.actions).toEqual([{ kind: 'status', changes: [{ giftId: 9191, from: null, to: 'got' }] }]);
+    expect(start.actions).toEqual([{ kind: 'status', changes: [{ giftId: 9044, from: null, to: 'got' }] }]);
+  });
+
+  it('pins an observed gift the player already marked, changing no status', () => {
+    // Act
+    const out = actionsFor({ kind: 'got', giftId: 5, source: 'observation' }, at({ 5: 'got' }));
+    // Assert
+    expect(out.actions).toEqual([{ kind: 'observe', giftId: 5 }]);
+  });
+
+  it('closes the start on floor 1 once, and leaves a run past floor 1 alone', () => {
+    expect(actionsFor({ kind: 'startDone' }, at({})).actions).toEqual([{ kind: 'startDone' }]);
+    expect(actionsFor({ kind: 'startDone' }, at({}, { startDone: true }))).toEqual({
+      actions: [],
+      ask: null,
+    });
+    expect(actionsFor({ kind: 'startDone' }, at({}, { currentFloor: 2 }))).toEqual({
+      actions: [],
+      ask: null,
+    });
+  });
+
+  it('asks about a muddled popup at the start as about any gift — no observation question (M136)', () => {
+    const out = actionsFor({ kind: 'unsure', about: 'got', ids: [5, 6] }, at({}));
+    expect(out).toEqual({ actions: [], ask: { kind: 'gift', ids: [5, 6] } });
+  });
+
+  it('takes a pin and the closed start back', () => {
+    expect(inverseOf([{ kind: 'observe', giftId: 5 }, { kind: 'startDone' }])).toEqual([
+      { kind: 'startOpen' },
+      { kind: 'unobserve', giftId: 5 },
+    ]);
+  });
+});
+
 describe('statusDiff', () => {
   it('lists every gift whose status changed, by id', () => {
     expect(statusDiff({ 1: 'got', 2: 'failed', 3: 'got' }, { 1: 'got', 3: 'failed', 4: 'got' })).toEqual([
@@ -172,7 +227,24 @@ describe('execute', () => {
     visit: (floor, packId) => useApp.getState().visitPack(packId, floor),
     setStageFloor: (floor) => useApp.getState().setStageFloor(floor),
     setGiftStatus: (giftId, status) => useApp.getState().setGiftStatus(giftId, status),
+    observe: (giftId) => {
+      useApp.getState().recordObserved(giftId, { max: 3, observable: (id) => id !== 404 });
+      return useApp.getState().options.observedGifts.includes(giftId);
+    },
+    unobserve: (giftId) => useApp.getState().toggleObserved(giftId, { max: 3, observable: () => true }),
+    setStartDone: (done) => useApp.getState().markStartDone(done),
   };
+  const apply = (event: Parameters<typeof actionsFor>[0]) => {
+    const { run, options } = useApp.getState();
+    const { actions } = actionsFor(event, {
+      ...run,
+      giftById,
+      observed: options.observedGifts,
+      startDone: run.startDone === true,
+    });
+    return execute(actions, ops);
+  };
+  const pins = () => useApp.getState().options.observedGifts;
   const enter = (floor: number, packId: number) => {
     const s = useApp.getState();
     const { actions } = actionsFor({ kind: 'enter', floor, packId }, { ...s.run, giftById });
@@ -184,7 +256,12 @@ describe('execute', () => {
   };
 
   beforeEach(() => {
-    useApp.setState({ run: emptyRun() });
+    useApp.setState((s) => ({
+      run: emptyRun(),
+      wanted: [9191, 9230, 404],
+      fusionGoal: {},
+      options: { ...s.options, observedGifts: [] },
+    }));
   });
 
   it('undoes an entry the reader made past the stage completely: entry, walk and stage', () => {
@@ -245,5 +322,47 @@ describe('execute', () => {
       startGifts: [77],
     });
     expect(snapshot().giftStatus[77]).toBe('got');
+  });
+
+  it('records an observed gift as collected and pinned, and undoes both (M135)', () => {
+    // Act
+    const applied = apply({ kind: 'got', giftId: 9191, source: 'observation' });
+    const during = { status: snapshot().giftStatus[9191], pins: [...pins()] };
+    execute(inverseOf(applied), ops);
+    // Assert
+    expect(during).toEqual({ status: 'got', pins: [9191] });
+    expect(snapshot().giftStatus[9191]).toBeUndefined();
+    expect(pins()).toEqual([]);
+  });
+
+  it('keeps no pin the store refused — a gift that is no goal, or none to observe — so undo leaves pins alone', () => {
+    // Arrange: the player pinned 9230 by hand.
+    useApp.getState().toggleObserved(9230, { max: 3, observable: () => true });
+    // Act
+    const notGoal = apply({ kind: 'got', giftId: 9999, source: 'observation' });
+    const notObservable = apply({ kind: 'got', giftId: 404, source: 'observation' });
+    execute(inverseOf([...notGoal, ...notObservable]), ops);
+    // Assert
+    expect(notGoal.map((a) => a.kind)).toEqual(['status']);
+    expect(notObservable.map((a) => a.kind)).toEqual(['status']);
+    expect(pins()).toEqual([9230]);
+  });
+
+  it('pins a gift in hand on floor 1 after the start closed — an observation already spent', () => {
+    // Arrange: the start closed when the player left the observation picker.
+    apply({ kind: 'startDone' });
+    // Act: the observation's popup is read after it.
+    apply({ kind: 'got', giftId: 9230, source: 'observation' });
+    // Assert
+    expect(useApp.getState().run.startDone).toBe(true);
+    expect(pins()).toEqual([9230]);
+  });
+
+  it('closes the start and reopens it on undo (markStartDone)', () => {
+    const applied = apply({ kind: 'startDone' });
+    const closed = useApp.getState().run.startDone;
+    execute(inverseOf(applied), ops);
+    expect(closed).toBe(true);
+    expect(useApp.getState().run.startDone).toBeUndefined();
   });
 });

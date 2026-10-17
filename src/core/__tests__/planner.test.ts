@@ -18,6 +18,7 @@ import {
   planAlternatives,
   planDropEffects,
   planRoute,
+  startGiftBudget,
   wantedRoots,
 } from '../index.ts';
 import { beforeCantoX } from './before-canto-x.ts';
@@ -36,15 +37,20 @@ const noObservation = {
 
 /**
  * The season as M82–M87 measured it. Their optima were checked offline with an integer program over
- * these packs; the Canto X packs that arrived on 10-15 (1028–1031) carry an assumed general pool
- * (`backfillAssumptions`), so they and their exclusives are left out and the boards stay the same.
+ * these packs, so this reads the frozen md7 output rather than whichever season is live (MD8 moved
+ * 9205 into pack pools, which reshuffles every seeded board); the Canto X packs that arrived on 10-15
+ * (1028–1031) carry an assumed general pool there (`backfillAssumptions`), so they and their
+ * exclusives are left out and the boards stay the same.
  */
 const measuredSeason = (() => {
-  const season = beforeCantoX(data);
+  const season = beforeCantoX(loadGameDataFromDisk(undefined, 7));
   return {
     data: season,
     indexes: buildIndexes(season),
-    noObservation: { ...season, rules: noObservation.rules },
+    noObservation: {
+      ...season,
+      rules: { ...season.rules, giftObservation: { ...season.rules.giftObservation, max: 0 } },
+    },
   };
 })();
 
@@ -450,7 +456,7 @@ describe('deck conditions', () => {
     const auto = plan({ wanted: want(9003), options: options({ startKeyword: 'auto' }) });
     expect(withNone.start.keyword).toBe(auto.start.keyword);
     expect(withNone.start.keyword).not.toBe('None');
-    expect(withNone.start.startGift).toEqual(auto.start.startGift);
+    expect(withNone.start.startGifts).toEqual(auto.start.startGifts);
   });
 
   it('never picks 탄환 as the automatic start keyword, however many ammo identities the deck has', () => {
@@ -478,9 +484,9 @@ describe('deck conditions', () => {
     const result = plan({ deck: BLADE_LINEAGE_DECK, wanted: want(9003, 9283) });
     expect(result.start).toMatchObject({
       keyword,
-      startGift: null,
+      startGifts: [],
       autoKeyword: keyword,
-      autoStartGift: null,
+      autoStartGifts: [],
     });
   });
 
@@ -492,9 +498,9 @@ describe('deck conditions', () => {
     const result = plan({ wanted: want(9001) });
     expect(result.start).toMatchObject({
       keyword: 'Combustion',
-      startGift: 9001,
+      startGifts: [9001],
       autoKeyword: 'Combustion',
-      autoStartGift: 9001,
+      autoStartGifts: [9001],
     });
     // Taken as the starting gift, so it is no longer a general drop the plan hopes for.
     expect(result.generalDrops).not.toContain(9001);
@@ -507,24 +513,24 @@ describe('deck conditions', () => {
     // MIXED_DECK is 파열: neither pool is its own, so the keyword id decides.
     expect(plan({ wanted: want(9005, 9001) }).start).toMatchObject({
       keyword: 'Combustion',
-      startGift: 9001,
+      startGifts: [9001],
     });
     // BLADE_LINEAGE_DECK is 출혈: its own pool helps, so it wins.
     const blade = plan({ deck: BLADE_LINEAGE_DECK, wanted: want(9001, 9005) });
-    expect(blade.start).toMatchObject({ keyword: 'Laceration', startGift: 9005 });
+    expect(blade.start).toMatchObject({ keyword: 'Laceration', startGifts: [9005] });
   });
 
   it('keeps a requested keyword as it was, but reports what auto would have taken', () => {
     const result = plan({ wanted: want(9001), options: options({ startKeyword: 'Sinking' }) });
     expect(result.start).toMatchObject({
       keyword: 'Sinking',
-      startGift: null,
+      startGifts: [],
       autoKeyword: 'Combustion',
-      autoStartGift: 9001,
+      autoStartGifts: [9001],
     });
     expect(result.generalDrops).toContain(9001);
     const asked = plan({ wanted: want(9001), options: options({ startKeyword: 'Combustion' }) });
-    expect(asked.start).toMatchObject({ keyword: 'Combustion', startGift: 9001, autoStartGift: 9001 });
+    expect(asked.start).toMatchObject({ keyword: 'Combustion', startGifts: [9001], autoStartGifts: [9001] });
   });
 
   it('chooses the same start whatever order the goals come in', () => {
@@ -540,8 +546,8 @@ describe('deck conditions', () => {
       wanted: want(9001),
       options: options({ lastFloor: 15, hardFromFloor: 1, currentFloor: 3 }),
     });
-    expect(result.start.startGift).toBeNull();
-    expect(result.start.autoStartGift).toBeNull();
+    expect(result.start.startGifts).toEqual([]);
+    expect(result.start.autoStartGifts).toEqual([]);
     expect(result.start.autoKeyword).toBe('Burst');
   });
 });
@@ -772,7 +778,7 @@ describe('guarantees', () => {
       ...pickedUp,
       ...result.generalDrops,
       ...result.start.observed.map((o) => o.giftId),
-      ...(result.start.startGift ? [result.start.startGift] : []),
+      ...result.start.startGifts,
       ...result.fusions.map((f) => f.result),
       ...result.unresolved.map((u) => u.giftId),
     ]);
@@ -897,7 +903,9 @@ describe('upgradeOf', () => {
     expect(indexes.giftById.get(9157)!.upgradeOf).toBe(9088);
     expect(indexes.giftById.get(9088)!.upgradeOf).toBeNull();
     const pairs = data.gifts.filter((g) => g.upgradeOf !== null);
-    expect(pairs.length).toBe(76);
+    // 76 → 78 (OpenLethe af2aa4df): 9262 모든 것의 뼈대 and 9268 모든 것의 본능 gained their
+    // 출혈 keyword in ego-gift-story-twth.json, so they now fold under 9263 / 9264.
+    expect(pairs.length).toBe(78);
     for (const g of pairs) {
       const parent = indexes.giftById.get(g.upgradeOf!)!;
       expect(parent.keyword, `${g.id}`).toBe(g.keyword);
@@ -1326,7 +1334,7 @@ describe('drop causes (M115)', () => {
       options: options({ hardFromFloor: 1, lastFloor: 5 }),
     };
     const main = planRoute(input, noObservation, indexes);
-    expect(main.start.startGift).toBe(9150);
+    expect(main.start.startGifts).toEqual([9150]);
     const analysis = planDropEffects(input, noObservation, indexes, main);
     expect(analysis.effects.find((e) => e.giftId === 9150)?.role).toBe('start');
   });
@@ -2068,7 +2076,7 @@ describe('run progress', () => {
       window: { from: 11, to: 15 },
     });
     expect(plan.start.observed).toEqual([]);
-    expect(plan.start.startGift).toBeNull();
+    expect(plan.start.startGifts).toEqual([]);
     expect(plan.stats).toMatchObject({ requiredPacks: 1, coveredWanted: 2 });
   });
 
@@ -2191,14 +2199,238 @@ describe('observation pins', () => {
     expect(result.stats.requiredPacks).toBe(0);
   });
 
-  it('skips a pin on a gift already in hand without a word or a slot', () => {
+  it('on floor 1, keeps the slot of a pin already in hand without a word, and observes the rest', () => {
     const result = plan({
       wanted: want(9419, 9423),
       options: options({ hardFromFloor: 1, ownedGifts: [9419], observedGifts: [9419] }),
     });
-    expect(result.start.observed).toEqual([{ giftId: 9423, pinned: false, freedPack: 1012 }]);
+    expect(result.start.observed).toEqual([
+      { giftId: 9419, pinned: true, freedPack: null },
+      { giftId: 9423, pinned: false, freedPack: 1012 },
+    ]);
     expect(codes(result)).not.toContain('observation-trimmed');
     expect(result.stats.coveredWanted).toBe(2);
+  });
+
+  describe('a pin already in hand on floor 1 is an observation spent (M134)', () => {
+    /**
+     * The owner's run: 프레스티지 카드 (9191, a general drop) pinned, and three pack-bound goals the
+     * planner fills the other slots with. Without any pin it would observe all three of those.
+     * Screen capture records the observed gift as 획득 while the run is still on floor 1.
+     */
+    const GOALS = [9191, 9245, 9745, 9809];
+    const run = (overrides: Partial<PlanOptions>, goals = GOALS) =>
+      plan({ deck: LCB_DECK, wanted: want(...goals), options: hard15(overrides) });
+
+    it('lists the owned pin as observed and recommends only what the slots it left can hold', () => {
+      const unpinned = run({});
+      const pinned = run({ observedGifts: [9191] });
+
+      const result = run({ observedGifts: [9191], ownedGifts: [9191] });
+
+      expect(unpinned.start.observed.filter((o) => !o.pinned)).toHaveLength(3);
+      const budget = data.rules.giftObservation.max;
+      expect(result.start.observed).toHaveLength(budget);
+      expect(result.start.observed[0]).toEqual({ giftId: 9191, pinned: true, freedPack: null });
+      expect(result.start.observed.filter((o) => !o.pinned).length).toBeLessThanOrEqual(budget - 1);
+      // The same plan as the pin before capture recorded it: the slot was spent either way.
+      expect(result.start).toEqual(pinned.start);
+      expect(result.floors).toEqual(pinned.floors);
+      expect(codes(result)).not.toContain('observation-trimmed');
+      expect(result.unresolved).toEqual([]);
+    });
+
+    it('keeps the owned gift owned: observing it does not reroute it', () => {
+      const result = run({ observedGifts: [9191], ownedGifts: [9191] });
+
+      expect(result.generalDrops).not.toContain(9191);
+      expect(result.floors.some((f) => f.pickups.some((p) => p.giftId === 9191))).toBe(false);
+      expect(result.stats.coveredWanted).toBe(GOALS.length);
+    });
+
+    it('after floor 1, keeps the old behaviour: nothing observed, the owned pin unreported', () => {
+      const result = run({ observedGifts: [9191], ownedGifts: [9191], currentFloor: 2 });
+
+      expect(result.start.observed).toEqual([]);
+      expect(result.start.starlight).toBe(0);
+      expect(codes(result)).not.toContain('observation-trimmed');
+      expect(codes(result)).not.toContain('observation-after-start');
+    });
+
+    it('with one slot, the owned pin takes it and nothing is recommended', () => {
+      const result = run({ observedGifts: [9191], ownedGifts: [9191], observationSlots: 1 });
+
+      expect(result.start.observed).toEqual([{ giftId: 9191, pinned: true, freedPack: null }]);
+    });
+
+    it('two owned pins with three slots leave room for one recommendation', () => {
+      const result = run({ observedGifts: [9191, 9745], ownedGifts: [9191, 9745] });
+
+      expect(result.start.observed.map((o) => [o.giftId, o.pinned])).toEqual([
+        [9191, true],
+        [9745, true],
+        [expect.any(Number), false],
+      ]);
+      expect(result.start.observed.filter((o) => !o.pinned)).toHaveLength(1);
+    });
+
+    it('still holds the slot in a plan without that goal, so the drop analysis gets no slot back', () => {
+      const result = run({ observedGifts: [9191], ownedGifts: [9191] }, [9245, 9745, 9809]);
+
+      expect(result.start.observed[0]).toEqual({ giftId: 9191, pinned: true, freedPack: null });
+      expect(result.start.observed.filter((o) => !o.pinned)).toHaveLength(2);
+    });
+  });
+
+  describe('start gift count (M134)', () => {
+    /** 진동 pool: 9044 진동형 팔찌, 9086 잔향, 9113 시큼한 주향. 9001 sits in the 화상 pool. */
+    const VIBRATION = data.rules.startGift.poolsByKeyword.Vibration!;
+    const run = (overrides: Partial<PlanOptions>, goals: number[], season = data) =>
+      planRoute({ deck: LCB_DECK, wanted: want(...goals), options: hard15(overrides) }, season, indexes);
+
+    it('clamps the count into 0..the largest pool, and defaults to the rules', () => {
+      // Arrange
+      const rules = data.rules;
+      // Act / Assert
+      expect(startGiftBudget({}, rules)).toBe(rules.startGift.pickCount);
+      expect(startGiftBudget({ startGiftCount: 0 }, rules)).toBe(0);
+      expect(startGiftBudget({ startGiftCount: -2 }, rules)).toBe(0);
+      expect(startGiftBudget({ startGiftCount: 2 }, rules)).toBe(2);
+      expect(startGiftBudget({ startGiftCount: 9 }, rules)).toBe(VIBRATION.length);
+      expect(startGiftBudget({ startGiftCount: Number.NaN }, rules)).toBe(rules.startGift.pickCount);
+    });
+
+    it('takes nothing with 0: every pool goal stays a general drop', () => {
+      const result = run({ startGiftCount: 0 }, [9044, 9086]);
+
+      expect(result.start.startGifts).toEqual([]);
+      expect(result.start.autoStartGifts).toEqual([]);
+      // Nothing is taken from any pool, so no keyword is chosen — requested or not.
+      expect(result.start.keyword).toBeNull();
+      expect(result.start.autoKeyword).toBeNull();
+      expect(run({ startGiftCount: 0, startKeyword: 'Vibration' }, [9044]).start.keyword).toBeNull();
+      expect(result.generalDrops).toEqual([9044, 9086]);
+    });
+
+    it('with 1, plans exactly as before the option existed', () => {
+      const goals = [9044, 9086, 9001, 9245];
+
+      const omitted = run({}, goals);
+      const one = run({ startGiftCount: 1 }, goals);
+
+      expect(omitted.start.startGifts).toHaveLength(1);
+      expect(JSON.stringify({ ...one, stats: null })).toBe(JSON.stringify({ ...omitted, stats: null }));
+    });
+
+    it('with 2, prefers the keyword whose pool holds two goals over a pool holding one', () => {
+      // 화상 sorts before 진동, so with one pick the tie between them goes to 화상.
+      const single = run({ startGiftCount: 1 }, [9001, 9044, 9086]);
+
+      const double = run({ startGiftCount: 2 }, [9001, 9044, 9086]);
+
+      expect(single.start).toMatchObject({ keyword: 'Combustion', startGifts: [9001] });
+      expect(double.start).toMatchObject({ keyword: 'Vibration', startGifts: [9044, 9086] });
+      expect(double.start.autoStartGifts).toEqual([9044, 9086]);
+      expect(double.generalDrops).toEqual([9001]);
+    });
+
+    it('with 3, takes the whole pool when all three are goals', () => {
+      const result = run({ startGiftCount: 3 }, [...VIBRATION]);
+
+      expect(result.start.keyword).toBe('Vibration');
+      expect([...result.start.startGifts].sort((a, b) => a - b)).toEqual(
+        [...VIBRATION].sort((a, b) => a - b),
+      );
+      expect(result.generalDrops).toEqual([]);
+      expect(result.stats.coveredWanted).toBe(3);
+    });
+
+    it('never takes more than the pool holds, nor a gift that is no goal', () => {
+      const result = run({ startGiftCount: 5 }, [9044, 9086]);
+
+      expect(result.start.startGifts).toEqual([9044, 9086]);
+    });
+
+    it('keeps a requested keyword, and says what auto would take with the same count', () => {
+      const result = run({ startGiftCount: 2, startKeyword: 'Combustion' }, [9001, 9044, 9086]);
+
+      expect(result.start).toMatchObject({
+        keyword: 'Combustion',
+        startGifts: [9001],
+        autoKeyword: 'Vibration',
+        autoStartGifts: [9044, 9086],
+      });
+      expect(result.generalDrops).toEqual([9044, 9086]);
+    });
+
+    it('fills the picks with the goal the route would visit a pack for first, then general drops', () => {
+      // A season whose 진동 pool also holds 상납된 시가 (9283), which only pack 1025 drops.
+      const pools = data.rules.startGift.poolsByKeyword;
+      const season = {
+        ...data,
+        rules: {
+          ...data.rules,
+          startGift: { ...data.rules.startGift, poolsByKeyword: { ...pools, Vibration: [9044, 9086, 9283] } },
+        },
+      };
+      // 화상 holds two general-drop goals, 진동 one routed goal and one general drop.
+      const goals = [9001, 9009, 9044, 9283];
+
+      const result = run({ startGiftCount: 2 }, goals, season);
+
+      expect(result.start).toMatchObject({ keyword: 'Vibration', startGifts: [9283, 9044] });
+      expect(result.floors.some((f) => f.pickups.some((p) => p.giftId === 9283))).toBe(false);
+      expect(result.generalDrops).toEqual([9001, 9009]);
+    });
+
+    it('takes no start gift once floor 1 is left, whatever the count', () => {
+      const result = run({ startGiftCount: 3, currentFloor: 2 }, [...VIBRATION]);
+
+      expect(result.start.startGifts).toEqual([]);
+      expect(result.start.autoStartGifts).toEqual([]);
+    });
+  });
+
+  describe('a start decided before floor 1 is left (M134)', () => {
+    const GOALS = [9191, 9245, 9745, 9809, 9044];
+    const run = (overrides: Partial<PlanOptions>) =>
+      plan({ deck: LCB_DECK, wanted: want(...GOALS), options: hard15(overrides) });
+
+    it('chooses no start gift and recommends no observation, but plans every floor', () => {
+      const open = run({});
+
+      const decided = run({ startDecided: true });
+
+      expect(open.start.startGifts).toEqual([9044]);
+      expect(open.start.observed.length).toBeGreaterThan(0);
+      expect(decided.start.startGifts).toEqual([]);
+      expect(decided.start.autoStartGifts).toEqual([]);
+      expect(decided.start.observed).toEqual([]);
+      expect(decided.start.starlight).toBe(0);
+      expect(decided.floors.filter((f) => f.passed)).toEqual([]);
+      expect(decided.floors[0]!.floor).toBe(1);
+      expect(decided.generalDrops).toContain(9044);
+    });
+
+    it('still lists a pin already in hand as a spent observation', () => {
+      const result = run({ startDecided: true, observedGifts: [9191], ownedGifts: [9191] });
+
+      expect(result.start.observed).toEqual([{ giftId: 9191, pinned: true, freedPack: null }]);
+      expect(codes(result)).not.toContain('observation-after-start');
+    });
+
+    it('warns about a pin on a gift still to be found instead of applying it', () => {
+      const result = run({ startDecided: true, observedGifts: [9191, 9245], ownedGifts: [9191] });
+
+      expect(result.start.observed).toEqual([{ giftId: 9191, pinned: true, freedPack: null }]);
+      expect(result.warnings.find((w) => w.code === 'observation-after-start')?.giftIds).toEqual([9245]);
+    });
+
+    it('changes nothing when false', () => {
+      expect(JSON.stringify({ ...run({ startDecided: false }), stats: null })).toBe(
+        JSON.stringify({ ...run({}), stats: null }),
+      );
+    });
   });
 
   it('carries the app mid-run state: pins owned after floor 1, the first pack visited, the second still to come', () => {
@@ -2274,7 +2506,7 @@ describe('observation pins', () => {
   it('takes the free starting gift for a wanted general drop, and a pinned one is not taken twice', () => {
     // 9047 and 9093 are both in the Burst starting pool and both general drops.
     const free = plan({ deck: LCB_DECK, wanted: want(9047, 9093), options: hard15() });
-    expect(free.start).toMatchObject({ keyword: 'Burst', startGift: 9047, observed: [] });
+    expect(free.start).toMatchObject({ keyword: 'Burst', startGifts: [9047], observed: [] });
     expect(free.generalDrops).toEqual([9093]);
 
     const pinned = plan({
@@ -2283,7 +2515,7 @@ describe('observation pins', () => {
       options: hard15({ observedGifts: [9047] }),
     });
     expect(pinned.start.observed).toEqual([{ giftId: 9047, pinned: true, freedPack: null }]);
-    expect(pinned.start.startGift).toBe(9093);
+    expect(pinned.start.startGifts).toEqual([9093]);
     expect(pinned.generalDrops).toEqual([]);
   });
 

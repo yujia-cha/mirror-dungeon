@@ -127,6 +127,20 @@ interface AppState extends SharedState {
    */
   setStageFloor: (floor: number, settle?: { got?: number[]; failed?: number[] }) => void;
   resetRun: () => void;
+  /**
+   * The run start is over while floor 1 is still ahead (M134): the start gifts and 기프트 관측 are
+   * spent, so the plan stops choosing or recommending them (`run.startDone`). For the screen reader,
+   * which sees the observation screen left or floor 1's pack select (M135); no button sets it.
+   * `false` reopens the start — the reader's undo, nothing else.
+   */
+  markStartDone: (done?: boolean) => void;
+  /**
+   * Pin a gift the screen reader saw observed (M135). The same rules as `toggleObserved` for a new
+   * pin — a free slot, an observable gift the route collects — and the start still open, except
+   * that a gift already in hand on floor 1 may be pinned after the start closed: that is an
+   * observation the run already spent (M134), which is what the reader records. Never unpins.
+   */
+  recordObserved: (giftId: number, limits: ObserveLimits) => void;
   setGiftStatus: (giftId: number, status: 'got' | 'failed' | null) => void;
   /**
    * 「남은 재료 모으기」 on a fusion the run lost: keep entering packs for its remaining
@@ -214,6 +228,14 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   const slots = source.observationSlots;
   if (typeof slots === 'number' && Number.isInteger(slots) && slots >= 0) out.observationSlots = slots;
   else delete out.observationSlots;
+  // How many starting gifts the boons give (M134). Core clamps the top to the largest pool; a
+  // state or a link from before the option carries none and plans the rules' one.
+  const startGifts = source.startGiftCount;
+  if (typeof startGifts === 'number' && Number.isInteger(startGifts) && startGifts >= 0)
+    out.startGiftCount = startGifts;
+  else delete out.startGiftCount;
+  // Whether the start is over is the run's (`run.startDone`), never a saved or shared option.
+  delete out.startDecided;
   // Pack-level choices are the CLI's (`--ban`, `--prefer`); the app has no control for them, so a
   // saved state or an old link that still carries some would steer the route with nothing on
   // screen to say so or to undo it. They are dropped without a word.
@@ -423,6 +445,7 @@ export function sanitizeRun(raw: unknown): RunState {
     const collectRest = [...new Set(source.collectRest.filter((id): id is number => Number.isInteger(id)))];
     if (collectRest.length > 0) out.collectRest = collectRest;
   }
+  if (source.startDone === true) out.startDone = true;
   return out;
 }
 
@@ -808,6 +831,28 @@ export const useApp = create<AppState>()(
           };
         }),
       resetRun: () => set({ run: emptyRun() }),
+      markStartDone: (done = true) =>
+        set((state) => {
+          if ((state.run.startDone === true) === done) return {};
+          const run = { ...state.run };
+          if (done) run.startDone = true;
+          else delete run.startDone;
+          return { run };
+        }),
+      recordObserved: (giftId, limits) =>
+        set((state) => {
+          const { run, options } = state;
+          const spent = run.currentFloor === 1 && run.giftStatus[giftId] === 'got';
+          if (
+            options.observedGifts.includes(giftId) ||
+            (observationClosed(run) && !spent) ||
+            options.observedGifts.length >= limits.max ||
+            !collectedGifts(state.wanted, state.fusionGoal).has(giftId) ||
+            !limits.observable(giftId)
+          )
+            return {};
+          return { options: { ...options, observedGifts: [...options.observedGifts, giftId] } };
+        }),
       setGiftStatus: (giftId, status) =>
         set((state) => {
           const giftStatus = { ...state.run.giftStatus };

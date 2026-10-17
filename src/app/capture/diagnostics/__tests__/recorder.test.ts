@@ -1,7 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { diagnosticsBundleSchema } from '../../../../core/schema.ts';
-import type { FrameSource, ReadReport } from '../../session.ts';
-import { DiagRecorder, MAX_FRAMES, MAX_FRAME_BYTES, RING_SIZE, UNKNOWN_FRAME_GAP_MS } from '../recorder.ts';
+import type { FrameSource, ReadReport, TickReport } from '../../session.ts';
+import {
+  DiagRecorder,
+  MAX_FRAMES,
+  MAX_FRAME_BYTES,
+  MAX_PREVIEW_BYTES,
+  MAX_PREVIEWS,
+  RING_SIZE,
+  SAMPLES_PER_SCREEN,
+  STRIP_AFTER_MS,
+  STRIP_BEFORE_MS,
+  UNKNOWN_FRAME_GAP_MS,
+} from '../recorder.ts';
 import { memoryStore, type DiagStore } from '../store.ts';
 
 const META = { dataVersion: '7.test', season: 7, layoutReference: { width: 1920, height: 1009 } };
@@ -10,6 +21,7 @@ function report(t: number, over: Partial<ReadReport> = {}): ReadReport {
   return {
     t,
     reason: 'change',
+    mode: 'full',
     ms: 120,
     ocrCalls: 1,
     frame: { screen: null, floor: null, pack: null, gift: null },
@@ -265,5 +277,336 @@ describe('DiagRecorder', () => {
     await r.clearAll();
     await r.flush();
     expect(r.stats()).toMatchObject({ records: 0, frames: 0, bytes: 0 });
+  });
+});
+
+describe('DiagRecorder frame classes (M134)', () => {
+  /** A picture of `bytes` bytes, without allocating them. */
+  const sized = (bytes: number) => jpeg(0, { size: bytes } as Blob);
+  const unknownAt = (t: number) =>
+    report(t, {
+      trace: [{ step: 'title', region: [0, 0, 1, 1], light: true, lines: ['무엇인가'], accepted: false }],
+    });
+  const classes = async (r: DiagRecorder) =>
+    Object.fromEntries((await r.exportBundle(META)).bundle.frames.map((f) => [f.t, f.class]));
+
+  it('keeps the first few event frames of each screen kind as samples, the rest as routine', async () => {
+    // Arrange
+    const { r } = await recorder({ images: true });
+    const mapHeader = (t: number) =>
+      report(t, {
+        frame: { screen: 'exploring', floor: 2, pack: null, gift: null },
+        events: [{ kind: 'enter', floor: 2, packId: 1002 }],
+      });
+    // Act
+    for (let t = 1; t <= SAMPLES_PER_SCREEN + 2; t += 1) r.onRead(popup(t, 9000 + t), jpeg());
+    r.onRead(mapHeader(100), jpeg());
+    await r.flush();
+    // Assert
+    expect(await classes(r)).toEqual({
+      1: 'sample',
+      2: 'sample',
+      3: 'sample',
+      4: 'routine',
+      5: 'routine',
+      100: 'sample',
+    });
+  });
+
+  it('drops the oldest routine frames first past the cap, sparing samples, unknown screens and evidence', async () => {
+    // Arrange: one unknown screen, the samples, an undone event, then routine events.
+    const { r } = await recorder({ images: true });
+    r.onRead(unknownAt(1), jpeg(1));
+    for (let t = 2; t < 2 + SAMPLES_PER_SCREEN; t += 1) r.onRead(popup(t, 9000 + t), jpeg(1));
+    r.onRead(popup(10, 9010), jpeg(1));
+    r.onApplied(1, { kind: 'got' }, [], true);
+    r.onUndo(1);
+    const kept = 2 + SAMPLES_PER_SCREEN;
+    // Act: three routine frames more than the cap holds.
+    for (let t = 100; t < 100 + MAX_FRAMES - kept + 3; t += 1) r.onRead(popup(t, 9000), jpeg(1));
+    await r.flush();
+    // Assert
+    const byT = await classes(r);
+    expect(r.stats()).toMatchObject({ frames: MAX_FRAMES, trimmedFrames: 3 });
+    expect([byT[1], byT[2], byT[10]]).toEqual(['unknown', 'sample', 'evidence']);
+    expect([byT[100], byT[101], byT[102], byT[103]]).toEqual([undefined, undefined, undefined, 'routine']);
+  });
+
+  it('drops samples before unknown screens, and unknown screens before evidence', async () => {
+    // Arrange: each picture is a little over a quarter of the byte cap, so three fit.
+    const { r } = await recorder({ images: true });
+    const big = () => sized(Math.ceil(MAX_FRAME_BYTES / 3.5));
+    r.onRead(popup(1, 9001), big());
+    r.onApplied(1, { kind: 'got' }, [], true);
+    r.onUndo(1); // evidence
+    r.onRead(unknownAt(2), big());
+    r.onRead(unknownAt(2 + UNKNOWN_FRAME_GAP_MS), big());
+    // Act: a newer sample goes before the older unknown screens; then the oldest unknown screen.
+    r.onRead(popup(3 + UNKNOWN_FRAME_GAP_MS, 9002), big());
+    r.onRead(unknownAt(2 + 2 * UNKNOWN_FRAME_GAP_MS), big());
+    await r.flush();
+    // Assert
+    expect(await classes(r)).toEqual({
+      1: 'evidence',
+      [2 + UNKNOWN_FRAME_GAP_MS]: 'unknown',
+      [2 + 2 * UNKNOWN_FRAME_GAP_MS]: 'unknown',
+    });
+    expect(r.stats().trimmedFrames).toBe(2);
+  });
+
+  it('raises the frame of an undone event to evidence, on the device too', async () => {
+    // Arrange
+    const { r, store } = await recorder({ images: true });
+    for (let t = 1; t <= SAMPLES_PER_SCREEN + 1; t += 1) r.onRead(popup(t, 9000 + t), jpeg());
+    r.onApplied(7, { kind: 'got' }, [], true);
+    // Act
+    r.onUndo(7);
+    await r.flush();
+    // Assert
+    const last = (await store.frames()).at(-1)!;
+    expect(last).toMatchObject({ t: SAMPLES_PER_SCREEN + 1, class: 'evidence' });
+  });
+
+  it('raises the frame of a read that asked a question to evidence', async () => {
+    // Arrange
+    const { r } = await recorder({ images: true });
+    const unsure = report(1, {
+      frame: { screen: 'acquired', floor: null, pack: null, gift: null },
+      events: [{ kind: 'unsure', about: 'got', ids: [9001, 9002] }],
+    });
+    r.onRead(unsure, jpeg());
+    // Act
+    r.onAsk();
+    await r.flush();
+    // Assert
+    expect(await classes(r)).toEqual({ 1: 'evidence' });
+  });
+
+  it('raises the ring around a hand-made change to evidence, frames kept before included', async () => {
+    // Arrange
+    const { r } = await recorder({ images: true });
+    r.onRead(popup(1, 9001), jpeg());
+    r.onRead(report(2), jpeg());
+    // Act
+    r.onManual({
+      capturing: true,
+      visits: [],
+      status: [{ giftId: 9006, from: null, to: 'got' }],
+      currentFloor: null,
+    });
+    await r.flush();
+    // Assert
+    expect(await classes(r)).toEqual({ 1: 'evidence', 2: 'evidence' });
+  });
+
+  it('reads frames stored before M134, which have no class, as routine', async () => {
+    // Arrange: a device with an old frame on it.
+    const store = memoryStore();
+    await store.addFrame({ id: '1-1', t: 1, bytes: 5, blob: new Blob([new Uint8Array(5)]) });
+    // Act
+    const r = await DiagRecorder.open(store);
+    // Assert
+    expect(r.stats()).toMatchObject({ frames: 1, bytes: 5 });
+    expect((await r.exportBundle(META)).bundle.frames).toEqual([
+      { id: '1-1', t: 1, bytes: 5, class: 'routine' },
+    ]);
+  });
+
+  it('accepts a format-1 bundle from before M134', () => {
+    // Arrange: no frame classes, no strips, reads without tick counts.
+    const old = {
+      format: 1,
+      bundleId: '1',
+      startedAt: 1,
+      exportedAt: 2,
+      ...META,
+      records: [
+        {
+          kind: 'read',
+          t: 1,
+          reason: 'change',
+          ms: 50,
+          ocrCalls: 1,
+          screen: 'acquired',
+          floor: null,
+          pack: null,
+          gift: null,
+          ingredients: null,
+          trace: [],
+          events: [{ kind: 'got', giftId: 9006 }],
+          frameId: '1-1',
+        },
+      ],
+      frames: [{ id: '1-1', t: 1, bytes: 5 }],
+    };
+    // Act
+    const parsed = diagnosticsBundleSchema.safeParse(old);
+    // Assert
+    expect(parsed.success).toBe(true);
+  });
+});
+
+describe('DiagRecorder filmstrip (M134)', () => {
+  const TICK = 250;
+  const tickAt = (t: number, over: Partial<TickReport> = {}): TickReport => ({
+    t,
+    read: false,
+    busy: false,
+    changed: false,
+    ...over,
+  });
+
+  /** A recorder keeping pictures, its clock, and ticks every 250 ms on that clock. */
+  async function filming() {
+    let now = 1_000_000;
+    const r = await DiagRecorder.open(memoryStore(), () => now);
+    r.setFlags(true, true);
+    const previews: ReturnType<typeof jpeg>[] = [];
+    /** Ticks from one interval after now until `ms` later; the clock follows. */
+    const run = (ms: number, size = 3) => {
+      const end = now + ms;
+      for (let t = now + TICK; t <= end; t += TICK) {
+        now = t;
+        const preview = jpeg(size);
+        previews.push(preview);
+        r.onTick(tickAt(t), preview);
+      }
+    };
+    return { r, now: () => now, run, previews };
+  }
+  const strips = async (r: DiagRecorder) =>
+    (await r.exportBundle(META)).bundle.records.filter((x) => x.kind === 'strip');
+
+  it('keeps the previews from a few seconds before an event to a few seconds after', async () => {
+    // Arrange: five seconds of ticks, then a popup is read.
+    const { r, now, run, previews } = await filming();
+    run(5000);
+    const readT = now();
+    // Act: the last tick is past the window, and ends the strip.
+    r.onRead(popup(readT, 9006), jpeg());
+    run(STRIP_AFTER_MS + TICK);
+    await r.flush();
+    // Assert
+    const { bundle } = await r.exportBundle(META);
+    const strip = bundle.records.find((x) => x.kind === 'strip');
+    const kept = bundle.frames.filter((f) => f.class === 'preview');
+    expect(strip).toMatchObject({ kind: 'strip', reads: [readT], manual: [] });
+    expect(strip?.kind === 'strip' && strip.frameIds).toEqual(kept.map((f) => f.id));
+    expect(kept.map((f) => f.t)).toEqual(
+      Array.from(
+        { length: (STRIP_BEFORE_MS + STRIP_AFTER_MS) / TICK + 1 },
+        (_, i) => readT - STRIP_BEFORE_MS + i * TICK,
+      ),
+    );
+    expect(previews[0]!.encode).not.toHaveBeenCalled();
+  });
+
+  it('stretches one strip over events that follow each other', async () => {
+    // Arrange
+    const { r, now, run } = await filming();
+    run(1000);
+    const first = now();
+    r.onRead(popup(first, 9001), jpeg());
+    run(2000);
+    const second = now();
+    // Act
+    r.onRead(popup(second, 9002), jpeg());
+    run(STRIP_AFTER_MS + TICK);
+    await r.flush();
+    // Assert
+    expect(await strips(r)).toMatchObject([{ reads: [first, second] }]);
+  });
+
+  it('films a hand-made change made while reading, and not one made while not', async () => {
+    // Arrange
+    const { r, now, run } = await filming();
+    run(1000);
+    // Act
+    r.onManual({ capturing: false, visits: [], status: [], currentFloor: { from: 1, to: 2 } });
+    const t = now();
+    r.onManual({
+      capturing: true,
+      visits: [],
+      status: [{ giftId: 9006, from: null, to: 'got' }],
+      currentFloor: null,
+    });
+    run(STRIP_AFTER_MS + TICK);
+    await r.flush();
+    // Assert
+    expect(await strips(r)).toMatchObject([{ reads: [], manual: [t] }]);
+  });
+
+  it('ends an open strip with what it has when the bundle is exported', async () => {
+    // Arrange
+    const { r, now, run } = await filming();
+    run(1000);
+    r.onRead(popup(now(), 9001), jpeg());
+    run(500);
+    // Act
+    const found = await strips(r);
+    // Assert
+    expect(found).toHaveLength(1);
+    expect(found[0]?.kind === 'strip' && found[0].frameIds).toHaveLength((1000 + 500) / TICK);
+  });
+
+  it('ends an open strip when the session stops', async () => {
+    const { r, now, run } = await filming();
+    run(1000);
+    r.onRead(popup(now(), 9001), jpeg());
+    r.onSession({ status: 'idle', error: null, interval: 'balanced', lang: 'ko', captureSize: null });
+    run(500);
+    const found = await strips(r);
+    expect(found[0]?.kind === 'strip' && found[0].frameIds).toHaveLength(1000 / TICK);
+  });
+
+  it('holds previews to their own cap, oldest first, without touching full frames', async () => {
+    // Arrange: an open strip whose previews are a little over a sixth of the preview byte cap.
+    const { r, now, run } = await filming();
+    r.onRead(popup(now(), 9001), jpeg());
+    // Act
+    run(7 * TICK, Math.ceil(MAX_PREVIEW_BYTES / 5.5));
+    await r.flush();
+    // Assert: five fit; the two oldest went, and no full frame was counted as trimmed.
+    const { frames } = (await r.exportBundle(META)).bundle;
+    expect(frames.filter((f) => f.class === 'preview').map((f) => f.t)).toEqual(
+      [4, 3, 2, 1, 0].map((back) => now() - back * TICK),
+    );
+    expect(frames.filter((f) => f.class !== 'preview')).toHaveLength(1);
+    expect(r.stats().trimmedFrames).toBe(0);
+    expect(MAX_PREVIEWS).toBeGreaterThan(5);
+  });
+
+  it('frees the previews that leave the window, and takes none while pictures are off', async () => {
+    // Arrange
+    const { r, run, previews } = await filming();
+    // Act
+    run(STRIP_BEFORE_MS + 2 * TICK);
+    // Assert
+    expect(previews[0]!.close).toHaveBeenCalled();
+    expect(previews.at(-1)!.close).not.toHaveBeenCalled();
+    r.setFlags(true, false);
+    expect(previews.at(-1)!.close).toHaveBeenCalled();
+    const off = jpeg();
+    r.onTick(tickAt(1), off);
+    expect(off.close).toHaveBeenCalled();
+    expect(off.encode).not.toHaveBeenCalled();
+  });
+
+  it('says how many ticks each read kept waiting, and how many saw the screen change', async () => {
+    // Arrange
+    const { r } = await recorder();
+    r.onTick(tickAt(1, { read: true }), null);
+    r.onTick(tickAt(2, { busy: true, changed: false }), null);
+    r.onTick(tickAt(3, { busy: true, changed: true }), null);
+    r.onTick(tickAt(4, { busy: true, changed: true }), null);
+    // Act
+    r.onRead(report(1), null);
+    r.onRead(report(5), null);
+    // Assert
+    const reads = (await r.exportBundle(META)).bundle.records.filter((x) => x.kind === 'read');
+    expect(reads).toMatchObject([
+      { busyTicks: 3, busyChanges: 2 },
+      { busyTicks: 0, busyChanges: 0 },
+    ]);
   });
 });

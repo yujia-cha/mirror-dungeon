@@ -10,12 +10,15 @@
  * - `report.md`: what the reader read, what it got wrong (undone) and missed (changed by hand
  *   while reading), with the OCR lines and the frames for each; and how the route compared with
  *   the run — floors where the player went elsewhere, gifts the route expected and the pack did
- *   not give.
+ *   not give. Also the filmstrips (M134): for each burst of events and each hand-made change
+ *   while reading, the small previews of every tick around it, by file and time — what came and
+ *   went between reads.
  * - `labels.json` (certain — frames a question's answer settled) and `labels-unconfirmed.json`
  *   (events the player let stand), in the spike's format, so `npm run capture:spike -- --dir
- *   <folder>` measures the current reading against a real run.
+ *   <folder>` measures the current reading against a real run. Full-size frames only.
  *
- * `--reread` reads every kept frame again with today's `readFrame` and lists where it now reads
+ * `--reread` reads every kept full-size frame (never a filmstrip preview) again with today's
+ * `readFrame` and lists where it now reads
  * differently from what was recorded — the regression check after changing the reader. The
  * fusion confirm's slots are matched against the materials only (the run's holdings at the time
  * are not in the bundle).
@@ -29,12 +32,14 @@ import { prepareSlot, type IconRef } from '../src/app/capture/match-icon.ts';
 import type { NameCandidate } from '../src/app/capture/match-name.ts';
 import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
 import { loadGameDataFromDisk } from '../src/core/data/node.ts';
+import { layoutInFrame } from '../src/app/capture/window-frame.ts';
 import { captureLayoutSchema } from '../src/core/schema.ts';
-import { decodeImage, loadIconRefs, LocalOcr } from './lib/capture-local.ts';
+import { decodeImage, loadIconRefs, LocalOcr, titleBarOf } from './lib/capture-local.ts';
 import {
   formatReport,
   labelsFrom,
   parseBundle,
+  previewIds,
   recognitionReport,
   routeReport,
 } from './lib/capture-feedback.ts';
@@ -117,25 +122,47 @@ async function main(): Promise<void> {
   const materials: IconRef[] = refs.filter((r) => materialIds.has(r.id));
   const ocr = new LocalOcr('best');
   let compared = 0;
+  let barred = 0;
   const changed: string[] = [];
+  // Filmstrip previews are 480 px wide: the layout's regions would read nothing on them.
+  const previews = previewIds(bundle);
+  // As the app looks for the start pickers only while the run start is open (M135): until a frame
+  // shows a pack picker or a map.
+  let startOpen = true;
   for (const read of bundle.records) {
-    if (read.kind !== 'read' || !read.frameId) continue;
+    if (read.kind !== 'read' || !read.frameId || previews.has(read.frameId)) continue;
     const bytes = frames.get(read.frameId);
     if (!bytes) continue;
-    const image = decodeImage(Buffer.from(bytes));
+    const image = await decodeImage(Buffer.from(bytes));
+    // The window's title bar, if the frame was shared with it (M134): the app reads below it.
+    const top = titleBarOf(image);
+    const inFrame = layoutInFrame(layout, top, image.height);
+    if (top > 0) barred += 1;
     const reader: RegionReader = {
       ocr: async (region, light) => (await ocr.region(image, region, lang, !light)).lines,
       slot: async (region) => prepareSlot(image.data, image.width, image.height, region),
     };
-    const { frame } = await readFrame(reader, layout, { lang, packs, gifts, held: [], materials });
+    const { frame } = await readFrame(reader, inFrame, {
+      lang,
+      packs,
+      gifts,
+      held: [],
+      materials,
+      startOpen,
+      iconRefs: async (ids) => refs.filter((ref) => ids.includes(ref.id)),
+    });
+    if (frame.screen === 'packSelect' || frame.screen === 'exploring') startOpen = false;
     compared += 1;
     const said = (m: typeof read.gift) => (m === null ? '—' : m.status === 'match' ? String(m.id) : m.status);
     const before = `${read.screen ?? '—'} ${read.floor ?? '—'} ${said(read.pack)} ${said(read.gift)}`;
     const after = `${frame.screen ?? '—'} ${frame.floor ?? '—'} ${said(frame.pack)} ${said(frame.gift)}`;
-    if (before !== after) changed.push(`frames/${read.frameId}.jpg  then [${before}]  now [${after}]`);
+    const bar = top > 0 ? `  (title bar ${top}px)` : '';
+    if (before !== after) changed.push(`frames/${read.frameId}.jpg  then [${before}]  now [${after}]${bar}`);
   }
   await ocr.terminate();
-  console.log(`\nreread ${compared} frames: ${changed.length} read differently now`);
+  console.log(
+    `\nreread ${compared} frames (${barred} with a window title bar): ${changed.length} read differently now`,
+  );
   for (const line of changed) console.log(`- ${line}`);
 }
 

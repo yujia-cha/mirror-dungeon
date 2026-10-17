@@ -2,47 +2,57 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
 import { diagnosticsBundleSchema } from '../src/core/schema.ts';
+import { shareHash } from './share.ts';
 
 /**
  * The screen reader end to end (M107): the shared window is a canvas the test paints — drawn text in
  * the layout's regions, never a game image — so the real OCR engine, the change detection and the
  * tracker all run on it in a real browser, and the run records what it read.
  *
- * Coordinates are the layout's fractions of the 1920×1009 reference (`capture-layout.json`).
+ * Coordinates are the layout's fractions of the 1920×1009 reference (`capture-layout.json`), of
+ * the game's client area: a share with a window title bar (`bar` px, M134) paints the client below it.
  */
 const W = 1920;
 const H = 1009;
 
-type Paint = { text: string; region: [number, number, number, number]; size: number }[];
+type Region = [number, number, number, number];
+type Paint = { text: string; region: Region; size: number }[];
 
 /** Replace the share with a canvas the page can repaint through `window.__paint`. */
-async function fakeShare(page: Page): Promise<void> {
-  await page.addInitScript(
-    ({ width, height }) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d')!;
-      const paint = async (items: Paint) => {
-        // Pretendard ships split by unicode-range: load the subsets these glyphs live in first.
-        await Promise.all(items.map((i) => document.fonts.load(`700 ${i.size}px Pretendard`, i.text)));
-        ctx.fillStyle = '#16120f';
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#f4efe6';
+async function fakeShare(page: Page, frame = { width: W, height: H, bar: 0 }): Promise<void> {
+  await page.addInitScript(({ width, height, bar }) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d')!;
+    const paint = async (items: Paint) => {
+      // Pretendard ships split by unicode-range: load the subsets these glyphs live in first.
+      await Promise.all(items.map((i) => document.fonts.load(`700 ${i.size}px Pretendard`, i.text)));
+      ctx.fillStyle = '#16120f';
+      ctx.fillRect(0, 0, width, height);
+      // A light window title bar with its caption, as Windows draws one over a shared window.
+      if (bar > 0) {
+        ctx.fillStyle = '#f3f3f3';
+        ctx.fillRect(0, 0, width, bar);
+        ctx.fillStyle = '#1b1b1b';
+        ctx.font = '12px sans-serif';
         ctx.textBaseline = 'middle';
-        for (const { text, region, size } of items) {
-          const [x, y, w, h] = region;
-          ctx.font = `700 ${size}px Pretendard`;
-          ctx.textAlign = 'center';
-          ctx.fillText(text, (x + w / 2) * width, (y + h / 2) * height);
-        }
-      };
-      (window as unknown as { __paint: typeof paint }).__paint = paint;
-      void paint([]);
-      navigator.mediaDevices.getDisplayMedia = async () => canvas.captureStream(8);
-    },
-    { width: W, height: H },
-  );
+        ctx.textAlign = 'left';
+        ctx.fillText('LimbusCompany', 12, bar / 2);
+      }
+      ctx.fillStyle = '#f4efe6';
+      ctx.textBaseline = 'middle';
+      for (const { text, region, size } of items) {
+        const [x, y, w, h] = region;
+        ctx.font = `700 ${size}px Pretendard`;
+        ctx.textAlign = 'center';
+        ctx.fillText(text, (x + w / 2) * width, bar + (y + h / 2) * (height - bar));
+      }
+    };
+    (window as unknown as { __paint: typeof paint }).__paint = paint;
+    void paint([]);
+    navigator.mediaDevices.getDisplayMedia = async () => canvas.captureStream(8);
+  }, frame);
 }
 
 const paint = (page: Page, items: Paint) =>
@@ -165,6 +175,16 @@ test('the owner records, exports one zip with frames, and clears the device (M11
   expect(frames.length).toBe(bundle.frames.length);
   expect(frames.length).toBeGreaterThan(0);
   expect(files[frames[0]!]!.slice(0, 2)).toEqual(new Uint8Array([0xff, 0xd8])); // JPEG
+  // M134: the undone event's frame is evidence, and a filmstrip of tick previews surrounds it
+  // (ended by Stop).
+  if (popupRead?.kind !== 'read') throw new Error('no popup read');
+  expect(bundle.frames.find((f) => f.id === popupRead.frameId)?.class).toBe('evidence');
+  expect(popupRead.busyTicks).toBeGreaterThanOrEqual(0);
+  const strip = bundle.records.find((r) => r.kind === 'strip');
+  expect(strip?.kind === 'strip' && strip.reads).toContain(popupRead.t);
+  const previews = bundle.frames.filter((f) => f.class === 'preview').map((f) => f.id);
+  expect(previews.length).toBeGreaterThan(0);
+  expect(strip?.kind === 'strip' && strip.frameIds).toEqual(previews);
 
   // The clean-up step clears exactly that, and says where the file goes.
   await expect(diag.getByTestId('diag-where')).toContainText('Claude Code');
@@ -174,4 +194,98 @@ test('the owner records, exports one zip with frames, and clears the device (M11
   await page.reload();
   await page.getByTestId('capture-open').click();
   await expect(page.getByTestId('diag-stats')).toHaveAttribute('data-records', '0');
+});
+
+test('reads a window shared with its title bar, and records the size and the bar (M134)', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  // The owner's session: a 1928×1013 client under a 30px light title bar.
+  await fakeShare(page, { width: 1928, height: 1043, bar: 30 });
+  await page.goto('./#diag');
+  await page.getByTestId('capture-open').click();
+  const diag = page.getByTestId('diag-section');
+  await diag.getByRole('checkbox', { name: '진단 기록' }).check();
+  const panel = page.getByTestId('capture-panel');
+  await panel.getByTestId('capture-start').click();
+  await expect(panel.getByTestId('capture-status')).toHaveAttribute('data-status', 'running', {
+    timeout: 45_000,
+  });
+
+  // Without moving the regions below the bar, the pack's name falls out of the map header.
+  await paint(page, [
+    { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045], size: 34 },
+    { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
+  ]);
+  await expect(panel.getByTestId('capture-log')).toContainText('1층 입장 · 헬스치킨', { timeout: 20_000 });
+  await panel.getByTestId('capture-stop').click();
+
+  const downloading = page.waitForEvent('download');
+  await diag.getByTestId('diag-export').click();
+  const files = unzipSync(new Uint8Array(readFileSync((await (await downloading).path())!)));
+  const bundle = diagnosticsBundleSchema.parse(JSON.parse(strFromU8(files['session.json']!)));
+  expect(bundle.records).toContainEqual(
+    expect.objectContaining({
+      kind: 'session',
+      captureSize: { width: 1928, height: 1043 },
+      inset: { top: 30 },
+    }),
+  );
+});
+
+test('reads the run start: only the popup it saw records a gift — the other pick stays un-got (M135, M136)', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await fakeShare(page);
+  // Two goals the observation picker will take: 프레스티지 카드 and 다한 쓸모, 맺힌 증오.
+  await page.goto(`./${shareHash([9191, 9809], 8)}`);
+  await page.getByTestId('capture-open').click();
+  const panel = page.getByTestId('capture-panel');
+  await panel.getByTestId('capture-start').click();
+  await expect(panel.getByTestId('capture-status')).toHaveAttribute('data-status', 'running', {
+    timeout: 45_000,
+  });
+
+  // The observation picker with both picked: its title, the side panel's names and 「선택 2/3」 —
+  // the panel is on screen, but only a popup records a gift (M136, owner's decision).
+  const title = { text: 'E.G.O 기프트 관측', region: [0.1094, 0.0396, 0.1615, 0.0595] as Region, size: 40 };
+  await paint(page, [
+    title,
+    { text: '프레스티지 카드', region: [0.724, 0.2825, 0.1979, 0.0347], size: 26 },
+    { text: '다한 쓸모, 맺힌 증오', region: [0.724, 0.446, 0.1979, 0.0347], size: 26 },
+    { text: '선택 2/3', region: [0.7969, 0.783, 0.125, 0.0743], size: 34 },
+  ]);
+  // Nothing to log; give the reader time to see the picker.
+  await page.waitForTimeout(6000);
+
+  // One popup over the picker; the other went by unseen.
+  await paint(page, [
+    title,
+    { text: 'E.G.O 기프트를 획득했습니다.', region: [0.333, 0.205, 0.34, 0.07], size: 40 },
+    { text: '프레스티지 카드', region: [0.2526, 0.56, 0.138, 0.1338], size: 30 },
+  ]);
+  const log = panel.getByTestId('capture-log');
+  await expect(log).toContainText('관측으로 획득 · 프레스티지 카드', { timeout: 20_000 });
+
+  // Floor 1's pack picker: the start is over. The pick whose popup went by unseen is not got.
+  await paint(page, [{ text: '1층 테마팩 선택', region: [0.33, 0.075, 0.34, 0.105], size: 48 }]);
+  await expect(log).toContainText('시작 단계 끝', { timeout: 20_000 });
+  await expect(log).not.toContainText('다한 쓸모');
+
+  const saved = () =>
+    page.evaluate(() => {
+      const state = JSON.parse(localStorage.getItem('md-route-planner') ?? '{}').state ?? {};
+      return {
+        got: [9191, 9809].map((id) => state.run?.giftStatus?.[id] ?? null),
+        observed: [...(state.options?.observedGifts ?? [])].sort((a: number, b: number) => a - b),
+        startDone: state.run?.startDone ?? false,
+      };
+    });
+  await expect.poll(saved).toEqual({ got: ['got', null], observed: [9191], startDone: true });
+
+  // Undoing the end of the start opens it again.
+  await log.locator('li', { hasText: '시작 단계 끝' }).getByRole('button', { name: '되돌리기' }).click();
+  await expect.poll(async () => (await saved()).startDone).toBe(false);
+  await panel.getByTestId('capture-stop').click();
 });

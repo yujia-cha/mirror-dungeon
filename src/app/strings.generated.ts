@@ -378,6 +378,14 @@ export const STRINGS = {
     ko: '목표에 영향이 없으니 원하는 키워드를 골라도 됩니다',
     en: 'No goal depends on it, so pick any keyword',
   },
+  // 한 키워드의 시작 풀에서 받는 기프트 수(M134). 0은 「선택하지 않음」이고, 1~5층을 떠나거나 관측 화면을 지나면 사라진다.
+  optionStartGiftCount: { ko: '시작 기프트 수', en: 'Starting gifts' },
+  // 가호 이름은 게임의 한국어 이름 그대로 인용한다.
+  optionStartGiftCountHint: {
+    ko: '가호 「쏟아지는 유성우」·「완전한 가능성」마다 +1',
+    en: '+1 for each of the boons 「쏟아지는 유성우」 and 「완전한 가능성」',
+  },
+  optionStartGiftNone: { ko: '선택하지 않음', en: 'Take none' },
 
   // ── 전체 루트 패널
   routeRequiredPacks: { ko: '필요 팩', en: 'Packs' },
@@ -591,6 +599,9 @@ export const STRINGS = {
   captureLogEmpty: { ko: '아직 기록한 것이 없습니다', en: 'Nothing recorded yet' },
   captureLogEnter: { ko: '{floor}층 입장 · {name}', en: 'Floor {floor} entered · {name}' },
   captureLogGot: { ko: '획득 · {name}', en: 'Got · {name}' },
+  captureLogGotStart: { ko: '시작 기프트 획득 · {name}', en: 'Got as a start gift · {name}' },
+  captureLogGotObserved: { ko: '관측으로 획득 · {name}', en: 'Got by observation · {name}' },
+  captureLogStartDone: { ko: '시작 단계 끝', en: 'Run start over' },
   captureLogSold: { ko: '판매 · {name}', en: 'Sold · {name}' },
   captureLogFused: { ko: '합성 · {name}', en: 'Fused · {name}' },
   captureLogAnswer: { ko: '직접 고름 · {name}', en: 'Picked · {name}' },
@@ -648,8 +659,8 @@ export const STRINGS = {
     en: 'The record is full (20,000). Export and clear it to record again.',
   },
   diagTrimmed: {
-    ko: '이미지 상한을 넘어 오래된 {n}장을 지웠습니다.',
-    en: 'Over the image cap: the oldest {n} were dropped.',
+    ko: '이미지 상한을 넘어 덜 중요한 {n}장을 오래된 것부터 지웠습니다.',
+    en: 'Over the image cap: {n} of the least important were dropped, oldest first.',
   },
   diagSavedTitle: { ko: '내보낸 뒤 정리', en: 'After exporting' },
   diagSavedPrompt: {

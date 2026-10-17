@@ -13,7 +13,7 @@ import { routeSourceOf, routeSourceText } from '../route-source.ts';
 const planOf = (
   parts: {
     observed?: number[];
-    startGift?: number | null;
+    startGifts?: number[];
     floors?: [floor: number, packId: number | null, pickups: number[]][];
     fusions?: [result: number, earliestFloor: number, unreachable: boolean][];
     generalDrops?: number[];
@@ -22,7 +22,7 @@ const planOf = (
   ({
     start: {
       observed: (parts.observed ?? []).map((giftId) => ({ giftId, pinned: true, freedPack: null })),
-      startGift: parts.startGift ?? null,
+      startGifts: parts.startGifts ?? [],
     },
     floors: (parts.floors ?? []).map(([floor, packId, pickups]) => ({
       floor,
@@ -61,13 +61,20 @@ describe('routeSourceOf', () => {
   it('lets the observation and the starting gift beat a pack visit, in that order', () => {
     const plan = planOf({
       observed: [9431],
-      startGift: 9431,
+      startGifts: [9431],
       floors: [[1, 1016, [9431]]],
     });
     expect(routeSourceOf(plan, 9431)).toEqual({ kind: 'observed' });
-    expect(routeSourceOf(planOf({ startGift: 9431, floors: [[1, 1016, [9431]]] }), 9431)).toEqual({
+    expect(routeSourceOf(planOf({ startGifts: [9431], floors: [[1, 1016, [9431]]] }), 9431)).toEqual({
       kind: 'start',
     });
+  });
+
+  it('names every starting gift as one, not only the first (M134)', () => {
+    const plan = planOf({ startGifts: [9044, 9086], generalDrops: [9001] });
+    expect(routeSourceOf(plan, 9044)).toEqual({ kind: 'start' });
+    expect(routeSourceOf(plan, 9086)).toEqual({ kind: 'start' });
+    expect(routeSourceOf(plan, 9001)).toEqual({ kind: 'general' });
   });
 
   it('reports a fusion result with its floor, and a general drop last of all', () => {

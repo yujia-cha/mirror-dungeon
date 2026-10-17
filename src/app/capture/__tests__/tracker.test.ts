@@ -25,6 +25,9 @@ function run(frames: Frame[], from: TrackerState = INITIAL_TRACKER) {
   return { state, events };
 }
 
+/** A session that has told the run start is over (M135): the map and the pack picker enter only. */
+const PAST_START: TrackerState = { ...INITIAL_TRACKER, startClosed: true };
+
 const popup = (gift: MatchResult | null) => frame({ screen: 'acquired', gift });
 const map = (floor: number | null, pack: MatchResult | null) => frame({ screen: 'exploring', floor, pack });
 
@@ -78,13 +81,16 @@ describe('trackFrame — acquired popups', () => {
 
 describe('trackFrame — entering a pack', () => {
   it('enters once per floor and pack, however long the map is shown', () => {
-    const { events, state } = run([map(1, match(1002)), map(1, match(1002)), map(1, match(1002))]);
+    const { events, state } = run(
+      [map(1, match(1002)), map(1, match(1002)), map(1, match(1002))],
+      PAST_START,
+    );
     expect(events).toEqual([{ kind: 'enter', floor: 1, packId: 1002 }]);
     expect(state.entered).toEqual({ floor: 1, packId: 1002 });
   });
 
   it('enters again on the next floor', () => {
-    const { events } = run([map(1, match(1002)), popup(match(9)), map(2, match(1101))]);
+    const { events } = run([map(1, match(1002)), popup(match(9)), map(2, match(1101))], PAST_START);
     expect(events.filter((e) => e.kind === 'enter')).toEqual([
       { kind: 'enter', floor: 1, packId: 1002 },
       { kind: 'enter', floor: 2, packId: 1101 },
@@ -92,7 +98,7 @@ describe('trackFrame — entering a pack', () => {
   });
 
   it('enters nothing until both the floor and the pack are read', () => {
-    const { events } = run([map(null, match(1002)), map(1, none), map(1, null)]);
+    const { events } = run([map(null, match(1002)), map(1, none), map(1, null)], PAST_START);
     expect(events).toEqual([]);
   });
 
@@ -100,7 +106,7 @@ describe('trackFrame — entering a pack', () => {
     // Arrange
     const frames = [map(3, unsure(1008, 1014)), map(3, unsure(1008, 1014)), map(3, match(1008))];
     // Act
-    const { events } = run(frames);
+    const { events } = run(frames, PAST_START);
     // Assert
     expect(events).toEqual([
       { kind: 'unsure', about: 'enter', floor: 3, ids: [1008, 1014] },
@@ -196,11 +202,104 @@ describe('trackFrame — fusion (M101)', () => {
 describe('trackFrame — other screens', () => {
   it('emits nothing for screens the tracker does not act on', () => {
     const frames = [frame({}), frame({ screen: 'packSelect', floor: 1 }), frame({ screen: 'fusion' })];
-    expect(run(frames).events).toEqual([]);
+    expect(run(frames, PAST_START).events).toEqual([]);
   });
 
   it('returns the same state object when nothing changed', () => {
     const { state } = trackFrame(INITIAL_TRACKER, frame({ screen: 'purchase' }));
     expect(state).toBe(INITIAL_TRACKER);
+  });
+});
+
+describe('trackFrame — the run start (M135, popups only since M136)', () => {
+  const starts = frame({ screen: 'startGiftSelect' });
+  const observes = frame({ screen: 'observationSelect' });
+  const over = (gift: MatchResult | null, overObservation = true) =>
+    frame({ screen: 'acquired', gift, overObservation });
+  const packs = frame({ screen: 'packSelect' });
+
+  it('records only what a popup names — a pick whose popup went by unread is not got', () => {
+    // Arrange: three start gifts picked, the popup of only the first read, then the observation.
+    const frames = [starts, popup(match(1)), frame({}), observes, packs];
+    // Act
+    const { events } = run(frames);
+    // Assert: no settling of the picker, no question.
+    expect(events).toEqual([{ kind: 'got', giftId: 1, source: 'start' }, { kind: 'startDone' }]);
+  });
+
+  it('says a popup over the observation title is the observation, and ends the start at the pack picker', () => {
+    const { events, state } = run([observes, over(match(9191)), packs, packs]);
+    expect(events).toEqual([{ kind: 'got', giftId: 9191, source: 'observation' }, { kind: 'startDone' }]);
+    expect(state.start).toBeNull();
+  });
+
+  it('keeps the start open through the blinks between observation popups (M136)', () => {
+    // Arrange: two observation popups with frames of nothing — and a burst read of nothing — between.
+    const frames = [
+      observes,
+      over(match(9191)),
+      frame({}),
+      frame({ partial: true }),
+      over(match(9230)),
+      frame({}),
+      packs,
+    ];
+    // Act
+    const { events } = run(frames);
+    // Assert: both are the observation's; the start ends only at the pack picker.
+    expect(events).toEqual([
+      { kind: 'got', giftId: 9191, source: 'observation' },
+      { kind: 'got', giftId: 9230, source: 'observation' },
+      { kind: 'startDone' },
+    ]);
+  });
+
+  it('knows an observed gift by the title behind its popup when the picker itself was never read', () => {
+    const { events, state } = run([starts, over(match(9))]);
+    expect(events).toEqual([{ kind: 'got', giftId: 9, source: 'observation' }]);
+    expect(state.start).toBe('observationSelect');
+  });
+
+  it('gives no source to a popup after the observation that does not sit over it — a boon gift', () => {
+    const { events } = run([observes, over(match(5)), over(match(77), false)]);
+    expect(events).toEqual([
+      { kind: 'got', giftId: 5, source: 'observation' },
+      { kind: 'got', giftId: 77 },
+    ]);
+  });
+
+  it('asks about a muddled popup at the start as about any other — no observation question', () => {
+    const { events } = run([observes, over(unsure(7, 8))]);
+    expect(events).toEqual([{ kind: 'unsure', about: 'got', ids: [7, 8] }]);
+  });
+
+  it('ends the start when the observation picker is left for a named screen', () => {
+    const { events } = run([observes, frame({ screen: 'purchase' })]);
+    expect(events).toEqual([{ kind: 'startDone' }]);
+  });
+
+  it('tells the start is over once — again only after a start picker is seen', () => {
+    // Arrange: a session that starts on floor 1's pack picker, then the map; later a new run.
+    const first = run([packs, map(1, match(1002)), packs]);
+    // Act
+    const next = run([starts, packs], first.state);
+    // Assert: the end of the start comes before the entry it makes possible.
+    expect(first.events).toEqual([{ kind: 'startDone' }, { kind: 'enter', floor: 1, packId: 1002 }]);
+    expect(next.events).toEqual([{ kind: 'startDone' }]);
+  });
+});
+
+describe('trackFrame — a popup read of nothing (M136)', () => {
+  it('passes over it: the popups around it stay one run, and nothing pending is dropped', () => {
+    // Arrange: a sale awaiting the sell list, and a popup seen twice around a burst read of nothing.
+    const selling: TrackerState = { ...INITIAL_TRACKER, selling: 9091 };
+    const blink = frame({ partial: true });
+    // Act
+    const sale = trackFrame(selling, blink);
+    const popups = run([popup(match(5)), blink, popup(match(5))]);
+    // Assert
+    expect(sale.state).toBe(selling);
+    expect(sale.events).toEqual([]);
+    expect(popups.events).toEqual([{ kind: 'got', giftId: 5 }]);
   });
 });

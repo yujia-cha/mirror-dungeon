@@ -33,6 +33,15 @@ export function mergeCaptureHooks(first: CaptureHooks, owner: CaptureHooks): Cap
       else frame?.close();
     },
     wantImage: () => owner.wantImage?.() ?? false,
+    // The previews are pictures too: the owner's alone.
+    onTick: (tick, preview) => {
+      if (owner.onTick) owner.onTick(tick, preview);
+      else preview?.close();
+    },
+    onAsk: (ask) => {
+      first.onAsk?.(ask);
+      owner.onAsk?.(ask);
+    },
     onApplied: (...args) => {
       first.onApplied?.(...args);
       owner.onApplied?.(...args);
@@ -48,6 +57,10 @@ export function mergeCaptureHooks(first: CaptureHooks, owner: CaptureHooks): Cap
     onSession: (status, error) => {
       first.onSession?.(status, error);
       owner.onSession?.(status, error);
+    },
+    onGeometry: (geometry) => {
+      first.onGeometry?.(geometry);
+      owner.onGeometry?.(geometry);
     },
   };
 }

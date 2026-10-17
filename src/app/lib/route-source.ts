@@ -20,7 +20,7 @@ export type RouteSource =
 export function routeSourceOf(plan: RoutePlan | null, giftId: number): RouteSource | null {
   if (!plan) return null;
   if (plan.start.observed.some((o) => o.giftId === giftId)) return { kind: 'observed' };
-  if (plan.start.startGift === giftId) return { kind: 'start' };
+  if (plan.start.startGifts.includes(giftId)) return { kind: 'start' };
   // The first floor that lists the gift: the floors come sorted, and a pickup on a floor with no
   // pack would be nothing the reader could act on.
   for (const floor of plan.floors) {

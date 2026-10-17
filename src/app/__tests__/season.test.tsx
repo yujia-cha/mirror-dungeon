@@ -1,8 +1,8 @@
 /**
  * Switching seasons.
  *
- * Mirror Dungeon 8 has no data yet, so the second season here is the live one reshaped to five
- * floors. What these cases hold is the part that must be right before that data arrives: the app
+ * The second season here is the live one (MD8) reshaped to a hypothetical MD9 that has opened only
+ * five floors. What these cases hold is the part that must be right before that data arrives: the app
  * offers a choice only when there is one, a shorter season really draws fewer floors, and goals
  * the new season has never heard of are dropped out loud rather than vanishing.
  */
@@ -32,7 +32,7 @@ function Metro({
 }) {
   const { ctx, keywordLabel, plan } = usePlan();
   const empty = {
-    start: { keyword: null, startGift: null, observed: [] },
+    start: { keyword: null, startGifts: [], observed: [] },
     floors: [],
     fusions: [],
     unresolved: [],
@@ -62,27 +62,27 @@ function Metro({
 }
 
 const ShortMetro = () => <Metro lastFloor={5} fixedModeByFloor={shortIndexes.fixedModeByFloor} />;
-const FullMetro = () => <Metro lastFloor={15} fixedModeByFloor={md7Indexes.fixedModeByFloor} />;
+const FullMetro = () => <Metro lastFloor={15} fixedModeByFloor={liveIndexes.fixedModeByFloor} />;
 
-const md7 = loadGameDataFromDisk();
-const md7Indexes = buildIndexes(md7);
+const live = loadGameDataFromDisk();
+const liveIndexes = buildIndexes(live);
 
 /** The live season reshaped to one that has opened only 1~5, with a smaller gift roster. */
 const KEPT_GIFTS = 40;
 const short: GameData = {
-  ...md7,
+  ...live,
   meta: {
-    ...md7.meta,
-    dataVersion: '8.short',
-    dungeon: { id: 8, name: { ko: '짧은 거울', en: 'Short Mirror' } },
+    ...live.meta,
+    dataVersion: '9.short',
+    dungeon: { id: 9, name: { ko: '짧은 거울', en: 'Short Mirror' } },
     provisional: true,
   },
   rules: {
-    ...md7.rules,
-    dungeonId: 8,
+    ...live.rules,
+    dungeonId: 9,
     floors: { normal: [1, 2, 3, 4, 5], hard: [1, 2, 3, 4, 5], parallel: [], extreme: [] },
   },
-  gifts: md7.gifts.slice(0, KEPT_GIFTS),
+  gifts: live.gifts.slice(0, KEPT_GIFTS),
 };
 const shortIndexes = buildIndexes(short);
 
@@ -109,8 +109,8 @@ const renderShell = (data: GameData, seasons: SeasonEntry[], onSeason = vi.fn())
   render(
     <AppShell
       data={data}
-      indexes={data === short ? shortIndexes : md7Indexes}
-      stats={analyseDeck(deck, md7Indexes, data.rules.deployment, deployed)}
+      indexes={data === short ? shortIndexes : liveIndexes}
+      stats={analyseDeck(deck, liveIndexes, data.rules.deployment, deployed)}
       lang="ko"
       dark
       seasons={seasons}
@@ -151,25 +151,25 @@ beforeEach(() => {
 
 describe('the season selector', () => {
   it('is plain text while only one season is published', () => {
-    renderShell(md7, [entry(md7)]);
+    renderShell(live, [entry(live)]);
     expect(screen.queryByTestId('season-select')).toBeNull();
-    expect(screen.getByText(md7.meta.dungeon.name.ko)).toBeInTheDocument();
+    expect(screen.getByText(live.meta.dungeon.name.ko)).toBeInTheDocument();
   });
 
   it('offers the choice once a second season exists, and says which one is half-known', async () => {
     const user = userEvent.setup();
-    const onSeason = renderShell(short, [entry(md7), entry(short)]);
+    const onSeason = renderShell(short, [entry(live), entry(short)]);
     const select = screen.getByTestId('season-select');
-    expect(select).toHaveValue('8');
+    expect(select).toHaveValue('9');
     expect(screen.getByTestId('season-provisional')).toBeInTheDocument();
-    await user.selectOptions(select, '7');
-    expect(onSeason).toHaveBeenCalledWith(7);
+    await user.selectOptions(select, String(live.meta.dungeon.id));
+    expect(onSeason).toHaveBeenCalledWith(live.meta.dungeon.id);
   });
 
   it('says nothing about half-known data for a season that is fully known', () => {
-    // The live md7 is provisional while the Canto X packs wait on an extraction; this is about a
-    // season whose data is whole.
-    const whole: GameData = { ...md7, meta: { ...md7.meta, provisional: false } };
+    // Forced whole so the case holds whichever season is live (md7 was provisional while the
+    // Canto X packs waited on the static data).
+    const whole: GameData = { ...live, meta: { ...live.meta, provisional: false } };
     renderShell(whole, [entry(whole), entry(short)]);
     expect(screen.queryByTestId('season-provisional')).toBeNull();
   });
@@ -178,7 +178,7 @@ describe('the season selector', () => {
 describe('adopting a season', () => {
   it('drops the goals it has never heard of and counts them; a pack pin goes without a word (M118)', () => {
     const kept = short.gifts[0]!.id;
-    const gone = md7.gifts[md7.gifts.length - 1]!.id;
+    const gone = live.gifts[live.gifts.length - 1]!.id;
     const unknownPack = -1;
     act(() => {
       useApp.setState({
@@ -197,7 +197,7 @@ describe('adopting a season', () => {
     expect(state.fusionGoal).toEqual({});
     expect(state.options.observedGifts).toEqual([]);
     expect(state.options.pinnedPacks).toEqual({});
-    expect(state.season).toBe(8);
+    expect(state.season).toBe(9);
     expect(state.lastFloor).toBe(5);
   });
 
@@ -236,7 +236,7 @@ describe('adopting a season', () => {
     };
     act(() => useApp.setState({ lastFloor: 15, run: done }));
     act(() => {
-      adopt(md7);
+      adopt(live);
     });
     expect(useApp.getState().run).toEqual(done);
     // The same on a five-floor season: floor 6 is its done floor.
@@ -273,13 +273,13 @@ describe('the metro map', () => {
 
   it('still draws all fifteen for a season that opens them', () => {
     act(() => {
-      adopt(md7);
+      adopt(live);
     });
     render(
       <PlanProvider
-        data={md7}
-        indexes={md7Indexes}
-        stats={analyseDeck([], md7Indexes, md7.rules.deployment, [])}
+        data={live}
+        indexes={liveIndexes}
+        stats={analyseDeck([], liveIndexes, live.rules.deployment, [])}
         lang="ko"
       >
         <FullMetro />

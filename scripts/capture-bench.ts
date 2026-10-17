@@ -27,12 +27,13 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { signatureOf, watchedRegions } from '../src/app/capture/change.ts';
-import { READ_INTERVALS, type ReadIntervalPreset } from '../src/app/capture/loop.ts';
+import { READ_INTERVALS, type ReadIntervalPreset, type ReadMode } from '../src/app/capture/loop.ts';
 import type { IconRef } from '../src/app/capture/match-icon.ts';
 import { prepareSlot } from '../src/app/capture/match-icon.ts';
 import type { NameCandidate } from '../src/app/capture/match-name.ts';
 import type { Region } from '../src/app/capture/preprocess.ts';
 import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
+import { layoutInFrame } from '../src/app/capture/window-frame.ts';
 import { classifyScreen } from '../src/app/capture/screens.ts';
 import type { CaptureEvent } from '../src/app/capture/tracker.ts';
 import { INITIAL_TRACKER, trackFrame } from '../src/app/capture/tracker.ts';
@@ -49,7 +50,15 @@ import {
   type ShotRead,
   type SimulateResult,
 } from './lib/capture-bench.ts';
-import { decodeImage, loadIconRefs, LocalOcr, type OcrModel, type Rgba } from './lib/capture-local.ts';
+import {
+  clientRegion,
+  decodeImage,
+  loadIconRefs,
+  LocalOcr,
+  titleBarOf,
+  type OcrModel,
+  type Rgba,
+} from './lib/capture-local.ts';
 import { flagValue } from './lib/io.ts';
 
 /** The preview width the browser session takes signatures on (`session.ts`). */
@@ -92,7 +101,6 @@ async function main(): Promise<void> {
   const layout = captureLayoutSchema.parse(
     JSON.parse(readFileSync(resolve('public/data/capture-layout.json'), 'utf8')),
   );
-  const regions = watchedRegions(layout);
   const data = loadGameDataFromDisk();
   const packs: NameCandidate[] = data.packs.map((p) => ({ id: p.id, name: p.name.ko }));
   const gifts: NameCandidate[] = data.gifts.map((g) => ({ id: g.id, name: g.name.ko }));
@@ -106,11 +114,15 @@ async function main(): Promise<void> {
 
   // Pixels are decoded one shot at a time (94 full-size frames would not fit); what a read needs
   // later is cached by key instead.
-  let decoded: { shot: number; image: Rgba } | null = null;
-  const imageOf = (shot: number): Rgba => {
-    if (decoded?.shot !== shot)
-      decoded = { shot, image: decodeImage(readFileSync(resolve(dir, files[shot]!))) };
-    return decoded.image;
+  // Each shot's title bar (M134) is kept with it: regions are the layout's, moved below the bar
+  // only where the pixels are read, so the caches below stay keyed by the layout's regions.
+  let decoded: { shot: number; image: Rgba; top: number } | null = null;
+  const shotOf = async (shot: number): Promise<{ image: Rgba; top: number }> => {
+    if (decoded?.shot !== shot) {
+      const image = await decodeImage(readFileSync(resolve(dir, files[shot]!)));
+      decoded = { shot, image, top: titleBarOf(image) };
+    }
+    return decoded;
   };
   const ocrCache = new Map<string, { lines: string[]; ms: number }>();
   const slotCache = new Map<string, Float32Array[]>();
@@ -119,7 +131,8 @@ async function main(): Promise<void> {
       const key = `${shot}|${region.join(',')}|${light}`;
       let hit = ocrCache.get(key);
       if (!hit) {
-        hit = await ocr.region(imageOf(shot), region, 'ko', !light);
+        const { image, top } = await shotOf(shot);
+        hit = await ocr.region(image, clientRegion(image, top, region), 'ko', !light);
         ocrCache.set(key, hit);
       }
       cost.ms += hit.ms;
@@ -129,13 +142,18 @@ async function main(): Promise<void> {
       const key = `${shot}|${region.join(',')}`;
       let hit = slotCache.get(key);
       if (!hit) {
-        hit = prepareSlot(imageOf(shot).data, imageOf(shot).width, imageOf(shot).height, region);
+        const { image, top } = await shotOf(shot);
+        hit = prepareSlot(image.data, image.width, image.height, clientRegion(image, top, region));
         slotCache.set(key, hit);
       }
       return hit;
     },
   });
-  const readShot = async (shot: number, held: ReadonlySet<number>): Promise<ShotRead> => {
+  const readShot = async (
+    shot: number,
+    held: ReadonlySet<number>,
+    mode: ReadMode = 'full',
+  ): Promise<ShotRead> => {
     const cost = { ms: 0 };
     const { frame, ocrCalls } = await readFrame(readerFor(shot, cost), layout, {
       lang: 'ko',
@@ -143,6 +161,8 @@ async function main(): Promise<void> {
       gifts,
       held: [...held].map((id) => refById.get(id)).filter((r): r is IconRef => r !== undefined),
       materials,
+      popupOnly: mode === 'popup',
+      iconRefs: async (ids) => ids.flatMap((id) => refById.get(id) ?? []),
     });
     return { frame, ms: cost.ms, ocrCalls };
   };
@@ -157,7 +177,8 @@ async function main(): Promise<void> {
   let tracker = INITIAL_TRACKER;
   const held = new Set<number>();
   for (let shot = 0; shot < files.length; shot++) {
-    const image = imageOf(shot);
+    const { image, top } = await shotOf(shot);
+    const regions = watchedRegions(layoutInFrame(layout, top, image.height));
     const preview = downscale(image.data, image.width, image.height, PREVIEW_WIDTH);
     const started = performance.now();
     const ROUNDS = 20;

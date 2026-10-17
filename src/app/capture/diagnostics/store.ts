@@ -6,7 +6,7 @@
  *
  * No dependency: the four operations the recorder needs are a few lines over the raw API.
  */
-import type { DiagRecord } from '../../../core/schema.ts';
+import type { DiagFrameClass, DiagRecord } from '../../../core/schema.ts';
 
 export interface StoredRecord {
   seq: number;
@@ -18,6 +18,8 @@ export interface StoredFrame {
   t: number;
   bytes: number;
   blob: Blob;
+  /** Why it was kept (M134). Frames stored before M134 have none: read them as `routine`. */
+  class?: DiagFrameClass;
 }
 
 export interface DiagStore {
@@ -26,6 +28,8 @@ export interface DiagStore {
   records(): Promise<StoredRecord[]>;
   frames(): Promise<StoredFrame[]>;
   deleteFrames(ids: readonly string[]): Promise<void>;
+  /** A kept frame turned out to matter more (an event undone): its class goes up. */
+  setFrameClass(id: string, cls: DiagFrameClass): Promise<void>;
   /** Drop records up to and including `seq`, and the frames named. */
   clearUpTo(seq: number, frameIds: readonly string[]): Promise<void>;
   clearAll(): Promise<void>;
@@ -43,6 +47,10 @@ export function memoryStore(): DiagStore {
     records: async () => [...records].sort(([a], [b]) => a - b).map(([seq, rec]) => ({ seq, rec })),
     frames: async () => [...frames.values()].sort((a, b) => a.t - b.t || a.id.localeCompare(b.id)),
     deleteFrames: async (ids) => ids.forEach((id) => frames.delete(id)),
+    setFrameClass: async (id, cls) => {
+      const frame = frames.get(id);
+      if (frame) frames.set(id, { ...frame, class: cls });
+    },
     clearUpTo: async (seq, ids) => {
       for (const key of [...records.keys()]) if (key <= seq) records.delete(key);
       ids.forEach((id) => frames.delete(id));
@@ -104,6 +112,13 @@ function idbStore(db: IDBDatabase): DiagStore {
     async deleteFrames(ids) {
       const t = tx(['frames'], 'readwrite');
       for (const id of ids) t.objectStore('frames').delete(id);
+      await done(t);
+    },
+    async setFrameClass(id, cls) {
+      const t = tx(['frames'], 'readwrite');
+      const store = t.objectStore('frames');
+      const frame = await request(store.get(id) as IDBRequest<StoredFrame | undefined>);
+      if (frame) store.put({ ...frame, class: cls }, id);
       await done(t);
     },
     async clearUpTo(seq, ids) {

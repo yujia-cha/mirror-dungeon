@@ -14,6 +14,10 @@
  *   recipe (달의 기억) whatever needs no reading is settled even when the screen read nothing.
  *   What stays unclear is asked, not guessed.
  * - `unsure` → nothing changes; the player is asked to pick.
+ * - At the run start (M135): a popup's gift from the observation (`got` with source `observation`)
+ *   is also pinned as observed — a spent observation on floor 1 (M134) — when the pin is legal
+ *   (`recordObserved`); `startDone` closes the start (`markStartDone`). Only a popup records a
+ *   gift (M136): nothing is marked from what a picker showed picked.
  *
  * Pure: event and run state in, actions and questions out. `execute` runs them through the run
  * actions it is handed, so the same steps play forward and back in tests against the real store.
@@ -45,7 +49,13 @@ export interface EnterAction {
   changes: StatusChange[];
 }
 
-export type CaptureAction = EnterAction | { kind: 'status'; changes: StatusChange[] };
+export type CaptureAction =
+  | EnterAction
+  | { kind: 'status'; changes: StatusChange[] }
+  /** A gift pinned as observed (M135). Kept only when the store took the pin. */
+  | { kind: 'observe'; giftId: number }
+  /** The run start closed (M135). */
+  | { kind: 'startDone' };
 
 /**
  * A step that takes an action back. `revisit` re-enters a pack without settling anything (it was
@@ -57,7 +67,9 @@ export type CaptureStep =
   | CaptureAction
   | { kind: 'leave'; packId: number }
   | { kind: 'revisit'; floor: number; packId: number }
-  | { kind: 'rewind'; from: number; to: number; changes: StatusChange[] };
+  | { kind: 'rewind'; from: number; to: number; changes: StatusChange[] }
+  | { kind: 'unobserve'; giftId: number }
+  | { kind: 'startOpen' };
 
 /** A question for the player: which of these did the screen mean? */
 export type CaptureAsk =
@@ -72,6 +84,10 @@ export interface ApplyContext {
   /** The run's entries, floor → pack. */
   visits: Readonly<Record<number, number>>;
   stageFloor: number;
+  /** The run's observation pins, the start's state and frontier (M135). Omitted = none, open, 1. */
+  observed?: readonly number[];
+  startDone?: boolean;
+  currentFloor?: number;
 }
 
 export interface Applied {
@@ -113,8 +129,18 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
       const action = enterAction(event.floor, event.packId, ctx);
       return action ? { actions: [action], ask: null } : NONE;
     }
-    case 'got':
-      return { actions: change([event.giftId], 'got'), ask: null };
+    case 'got': {
+      const observe: CaptureAction[] =
+        event.source === 'observation' && !(ctx.observed ?? []).includes(event.giftId)
+          ? [{ kind: 'observe', giftId: event.giftId }]
+          : [];
+      return { actions: [...change([event.giftId], 'got'), ...observe], ask: null };
+    }
+    case 'startDone':
+      // Past floor 1 the start is long over; nothing to record.
+      return ctx.startDone || (ctx.currentFloor ?? 1) > 1
+        ? NONE
+        : { actions: [{ kind: 'startDone' }], ask: null };
     case 'sold':
       return status(event.giftId) === 'got' ? { actions: change([event.giftId], null), ask: null } : NONE;
     case 'fused': {
@@ -180,6 +206,8 @@ const swap = (changes: readonly StatusChange[]): StatusChange[] =>
 export function inverseOf(actions: readonly CaptureAction[]): CaptureStep[] {
   return [...actions].reverse().flatMap((action): CaptureStep[] => {
     if (action.kind === 'status') return [{ kind: 'status', changes: swap(action.changes) }];
+    if (action.kind === 'observe') return [{ kind: 'unobserve', giftId: action.giftId }];
+    if (action.kind === 'startDone') return [{ kind: 'startOpen' }];
     const steps: CaptureStep[] = [{ kind: 'leave', packId: action.packId }];
     if (action.movedFrom !== null)
       steps.push({ kind: 'revisit', floor: action.movedFrom, packId: action.packId });
@@ -202,6 +230,11 @@ export interface RunOps {
   /** Show a floor without settling anything. */
   setStageFloor(floor: number): void;
   setGiftStatus(giftId: number, status: GiftStatus | null): void;
+  /** Pin a gift as observed under the store's rules (`recordObserved`); whether it was pinned. */
+  observe(giftId: number): boolean;
+  unobserve(giftId: number): void;
+  /** Close or reopen the run start (`markStartDone`). */
+  setStartDone(done: boolean): void;
 }
 
 /**
@@ -221,6 +254,19 @@ export function execute(steps: readonly CaptureStep[], ops: RunOps): CaptureActi
       case 'status':
         for (const change of step.changes) ops.setGiftStatus(change.giftId, change.to);
         applied.push(step);
+        break;
+      case 'observe':
+        if (ops.observe(step.giftId)) applied.push(step);
+        break;
+      case 'unobserve':
+        ops.unobserve(step.giftId);
+        break;
+      case 'startDone':
+        ops.setStartDone(true);
+        applied.push(step);
+        break;
+      case 'startOpen':
+        ops.setStartDone(false);
         break;
       case 'leave':
         ops.leave(step.packId);

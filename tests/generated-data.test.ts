@@ -63,12 +63,14 @@ describe('meta', () => {
    * become the default and fails here. That is the right shape: a provisional md8 is something the
    * owner published on purpose, while a season turnover is a fact a person has to read and sign
    * off. Bumping this to 8 is part of the commit that makes md8 the default, not something to do
-   * ahead of it.
+   * ahead of it. (2026-10-17: OpenLethe af2aa4df shipped md8 whole — common data, drop pool,
+   * observation list, the four dungeon files — so md8 is complete and the default; md7 is frozen.)
    */
-  it('describes Mirror Dungeon 7', () => {
-    expect(meta.dungeon.id).toBe(7);
-    expect(meta.dungeon.name.ko).toBe('이름과 거미의 거울');
-    expect(rules.dungeonId).toBe(7);
+  it('describes Mirror Dungeon 8', () => {
+    expect(meta.dungeon.id).toBe(8);
+    expect(meta.dungeon.name.ko).toBe('시지프의 거울');
+    expect(rules.dungeonId).toBe(8);
+    expect(meta.provisional).toBe(false);
   });
 
   it('records which upstream commits the data came from, per language where they differ', () => {
@@ -81,25 +83,29 @@ describe('meta', () => {
 });
 
 describe('theme packs', () => {
-  it('has the full Mirror Dungeon 7 pack list', () => {
-    // 116 → 120: 10-15 패치의 칸토 X 팩 1028~1031, 정적 데이터 전이라 파생 미러가 채운다.
+  it('has the full Mirror Dungeon 8 pack list', () => {
+    // MD8 adds no pack: the same 120 as MD7 after the 10-15 patch (칸토 X 1028~1031 included).
     expect(packs).toHaveLength(120);
     expect(packs.filter((p) => p.selectable)).toHaveLength(119);
   });
 
-  it('stands the owner-assumed pool in for the Canto X packs until the static data ships them', () => {
-    // backfillAssumptions in data/curated/seasons/md7/rules.json: every general gift, no more —
-    // another pack's exclusive must not leak in — and their own exclusives observable and obtainable.
-    const general = gifts.filter((g) => g.acquisition.kind === 'general').map((g) => g.id);
-    for (const id of [1028, 1029, 1030, 1031]) {
-      const pack = packById.get(id)!;
-      expect(pack.exclusiveGifts, String(id)).toHaveLength(2);
-      expect(pack.giftPool, String(id)).toEqual([...general, ...pack.exclusiveGifts].sort((a, b) => a - b));
+  it('takes the Canto X packs from the static data, their own general pool and sprite included', () => {
+    // In md7 these were backfilled with an assumed pool of every general gift; the md8 static data
+    // ships them, so the pool is the game's own (73 of the 186 general gifts) and no pack outside
+    // their own leaks an exclusive in.
+    const general = new Set(gifts.filter((g) => g.acquisition.kind === 'general').map((g) => g.id));
+    const sprites = { 1028: 'Canto_X', 1029: 'Canto_X_mid', 1030: 'Canto_X_mid2', 1031: 'Canto_X_hard' };
+    for (const [id, sprite] of Object.entries(sprites)) {
+      const pack = packById.get(Number(id))!;
+      expect(pack.sprite, id).toBe(sprite);
+      expect(pack.exclusiveGifts, id).toHaveLength(2);
+      const others = pack.giftPool.filter((g) => !pack.exclusiveGifts.includes(g));
+      expect(others.length, id).toBe(73);
+      for (const giftId of others) expect(general.has(giftId), `${id} ${giftId}`).toBe(true);
       for (const giftId of pack.exclusiveGifts) {
         expect(giftById.get(giftId), String(giftId)).toMatchObject({ observable: true, obtainable: true });
       }
     }
-    expect(meta.provisional).toBe(true);
   });
 
   it('marks 선의의 순례 unselectable because it is story-dungeon only', () => {
@@ -204,8 +210,8 @@ describe('gifts', () => {
 
   it('ships the game text of every enhancement step, emphasis as ** and nothing else (M130)', () => {
     const enhanceable = gifts.filter((g) => g.upgradeLevels > 0);
-    // 111 enhanceable gifts, every one with its text — 9291 꽃가위 (backfilled) included: the derived
-    // source gives its three texts and the localize files carry 19291/29291.
+    // 111 enhanceable gifts, every one with its text — 9291 꽃가위 included (backfilled in md7, static
+    // in md8): the localize files carry 19291/29291.
     expect(enhanceable).toHaveLength(111);
     for (const gift of gifts) {
       const where = `${gift.id} ${gift.name.ko}`;
@@ -252,8 +258,15 @@ describe('gifts', () => {
   it('splits acquisition the way the game does', () => {
     const byKind = new Map<string, number>();
     for (const gift of gifts) byKind.set(gift.acquisition.kind, (byKind.get(gift.acquisition.kind) ?? 0) + 1);
-    expect(byKind.get('general')).toBe(187);
-    expect(byKind.get('packLimited')).toBe(179);
+    // MD8: 187 → 186 general, 179 → 180 pack-limited — 9205 전혈 플라스크 left every general pool
+    // for the specific pools of 1019~1021 and 1507·1514·1518.
+    expect(byKind.get('general')).toBe(186);
+    expect(byKind.get('packLimited')).toBe(180);
+    // The MD8 drop pool leaves 9205 out of `egoGifts` while those packs and the observation list
+    // still offer it — and it is 미니어처 대관람차 (9213)'s ingredient, so unobtainable would kill it.
+    // The owner confirmed in game (2026-10-17) that it drops from exactly these six packs.
+    expect(giftById.get(9205)).toMatchObject({ obtainable: true, observable: true });
+    expect(giftById.get(9205)!.acquisition.exclusiveTo).toEqual([1019, 1020, 1021, 1507, 1514, 1518]);
     expect(byKind.get('fusionOnly')).toBe(59);
   });
 
@@ -490,9 +503,10 @@ describe('gift effects (M129)', () => {
 });
 
 describe('identities', () => {
-  it('covers the 188 the static data ships plus the ones backfilled from the other sources', () => {
+  it('covers the 190 the static data ships, none left to backfill from the other sources', () => {
+    // 2026-10-17: OpenLethe af2aa4df ships 11016, the last mirror-only identity.
     expect(identities).toHaveLength(190);
-    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(1);
+    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(0);
   });
 
   it.each([
@@ -504,14 +518,7 @@ describe('identities', () => {
     [10816, '오트쿠튀르:: 르루주 부티크', 8, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
     [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], ['SISYPHE']],
     [10315, '오트쿠튀르:: 르누아르 브랜드 매니저', 3, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
-    [
-      11016,
-      '오트쿠튀르:: 르루주 붉은 신',
-      10,
-      ['Charge', 'Laceration'],
-      ['LE_ROUGE', 'SISYPHE'],
-      'backfilled',
-    ],
+    [11016, '오트쿠튀르:: 르루주 붉은 신', 10, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
   ])(
     'knows %i 「%s」 once the static data ships it',
     (id, title, sinnerId, keywords, factions, source = 'derived') => {
@@ -712,11 +719,11 @@ describe('identity skills (M129)', () => {
       false,
       true,
     ]);
-    // Every static identity knows its skills' scripts; the mirror-only one does not, so it says nothing.
+    // Every static identity knows its skills' scripts (a mirror-only one would say nothing: `self`
+    // stays undefined — scripts/lib/identity-skills.test.ts covers that path now that none is left).
     for (const identity of identities)
       if (identity.keywordSource === 'derived')
         expect(identity.skills!.every((s) => s.self !== undefined)).toBe(true);
-    expect(identityById.get(11016)!.skills!.map((s) => s.self)).toEqual([undefined, undefined, undefined]);
   });
 
   it('keeps the kinds of every defense skill, a counter included', () => {
@@ -724,13 +731,15 @@ describe('identity skills (M129)', () => {
     expect(identityById.get(10212)!.defenseTypes).toEqual(['counter', 'guard']);
   });
 
-  it('fills a mirror-only identity from the derived source, leaving weight and coins unknown', () => {
+  it('reads 11016 from the static data once it ships, weight and coins included', () => {
+    // Mirror-only until 2026-10-17 (weight and coins were null); the derived source agreed on the
+    // sins, attack types, defenses and buffs, which the static data now states itself.
     const couture = identityById.get(11016)!;
-    expect(couture.keywordSource).toBe('backfilled');
-    expect(couture.skills!.map((s) => [s.slot, s.sin, s.attackType, s.weight, s.coins])).toEqual([
-      [1, 'GLUTTONY', 'Penetrate', null, null],
-      [2, 'WRATH', 'Penetrate', null, null],
-      [3, 'LUST', 'Penetrate', null, null],
+    expect(couture.keywordSource).toBe('derived');
+    expect(couture.skills!.map((s) => [s.slot, s.sin, s.attackType, s.weight, s.coins?.count])).toEqual([
+      [1, 'GLUTTONY', 'Penetrate', 1, 1],
+      [2, 'WRATH', 'Penetrate', 1, 2],
+      [3, 'LUST', 'Penetrate', 1, 3],
     ]);
     expect(couture.defenseTypes).toEqual(['counter', 'evade', 'guard']);
     expect(couture.buffs).toContain('ChargeRougeAlly');
@@ -796,7 +805,8 @@ describe('rules', () => {
 
   it('reads the gift observation cost table and pool from the season data', () => {
     expect(rules.giftObservation).toMatchObject({ max: 3, costTable: [70, 160, 270], verified: true });
-    // 312 → 320: 칸토 X 팩의 전용 기프트 8개는 `backfillAssumptions.exclusivesObservable`로 관측 가능이다.
+    // 312 → 320: 칸토 X 팩의 전용 기프트 8개. md7은 `backfillAssumptions.exclusivesObservable`로 가정했고,
+    // md8은 정적 관측 목록이 그대로 싣는다.
     expect(gifts.filter((g) => g.observable).length).toBe(320);
   });
 

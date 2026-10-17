@@ -48,6 +48,21 @@ export interface PlanOptions {
    * on a slot). Omitted = every slot the rules allow; clamped into 0..`rules.giftObservation.max`.
    */
   observationSlots?: number;
+  /**
+   * How many gifts the run takes from the starting keyword pool (M134): 1, plus one per boon
+   * 「쏟아지는 유성우」 and 「완전한 가능성」 — or 0 when the player takes none. Omitted =
+   * `rules.startGift.pickCount`; clamped into 0..the largest pool. All of them come from one
+   * keyword's pool.
+   */
+  startGiftCount?: number;
+  /**
+   * The run start is behind the player even though floor 1 is still ahead (M134): the start gifts
+   * and 기프트 관측 are chosen once the observation screen is passed, before floor 1's pack. The
+   * plan then treats the start as it does mid-run — no start gift chosen, no observation
+   * recommended, a pin on a gift still to be found reported as `observation-after-start` — while a
+   * pin on a gift in hand still holds its slot. Floors are untouched. Implied past floor 1.
+   */
+  startDecided?: boolean;
   /** Assume every forced pack needs an observation on a pack never visited before (×1.5 cost). */
   assumeUnvisitedPacks: boolean;
   /**
@@ -249,9 +264,9 @@ export type WarningCode =
   /** Pinned observations that were dropped: unknown, not observable, or over the limit. */
   | 'observation-trimmed'
   /**
-   * Pinned observations on gifts still to be found, made after floor 1 was left. Observation is
-   * spent at run start, so mid-run they are reported instead of applied; pins on gifts already in
-   * hand stay silent.
+   * Pinned observations on gifts still to be found, once the start is over (floor 1 left, or
+   * `startDecided`). Observation is spent at run start, so they are reported instead of applied;
+   * pins on gifts already in hand stay silent.
    */
   | 'observation-after-start'
   /** A pinned, banned or preferred pack that could not be honoured: unknown, not offered there, contradictory, or no floor left. */
@@ -276,9 +291,14 @@ export interface ObservedGift {
 
 export interface RoutePlan {
   start: {
+    /** The starting keyword; null when the run takes no starting gift (`startGiftCount` 0). */
     keyword: Keyword | null;
-    /** The one gift taken from the starting keyword pool. */
-    startGift: number | null;
+    /**
+     * The goals taken from the starting keyword pool, scarcest first: at most the start gift count
+     * (M134), all from `keyword`'s pool. Empty when no pool gift is wanted, with a count of 0, and
+     * once the start is over.
+     */
+    startGifts: number[];
     /**
      * What the automatic start keyword resolves to for these goals: the keyword whose pool holds the
      * hardest-to-route wanted gift, or the deck's dominant keyword when no pool holds one. Equal to
@@ -286,10 +306,10 @@ export interface RoutePlan {
      */
     autoKeyword: Keyword | null;
     /**
-     * The starting gift 'auto' would take. Null when no pool holds a goal — the keyword is then a
-     * free choice — and always null mid-run, when the start is long past.
+     * The starting gifts 'auto' would take. Empty when no pool holds a goal — the keyword is then a
+     * free choice — and always empty once the start is over (`startDecided`, or mid-run).
      */
-    autoStartGift: number | null;
+    autoStartGifts: number[];
     /** Gifts taken through the starlight-funded 기프트 관측, pinned ones first. */
     observed: ObservedGift[];
     starlight: number;

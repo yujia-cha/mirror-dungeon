@@ -37,15 +37,25 @@ export interface RunState {
    * fusion goal stops being chased once it is lost — see `plannedGifts`.
    */
   collectRest?: number[];
+  /**
+   * The run start is behind the player while floor 1 is still ahead (M134): the start gifts and
+   * 기프트 관측 are chosen once the observation screen is passed, before floor 1's pack. Set by
+   * `markStartDone` (the screen reader, when it sees that screen confirmed or floor 1's pack
+   * select) and kept until the run is thrown away — returning the frontier to floor 1 (an entry
+   * undone) does not reopen the start: in the game the boons, start gifts and observations stay
+   * spent. Device only, never shared.
+   */
+  startDone?: boolean;
 }
 
 /**
- * Whether 기프트 관측 can still be changed: the window closes the moment floor 1 is left, since
- * the starlight is spent there. `runInProgress` is not the test — it turns true as soon as a pack is
- * entered on floor 1, which is before the decision is spent.
+ * Whether the start stage (start gifts, 기프트 관측) can still be changed: the window closes the
+ * moment floor 1 is left, since the starlight is spent there — or earlier, once the run records
+ * that the observation screen is passed (`startDone`, M134). `runInProgress` is not the test — it
+ * turns true as soon as a pack is entered on floor 1, which says nothing about the start.
  */
-export function observationClosed(run: Pick<RunState, 'currentFloor'>): boolean {
-  return run.currentFloor > 1;
+export function observationClosed(run: Pick<RunState, 'currentFloor' | 'startDone'>): boolean {
+  return run.currentFloor > 1 || run.startDone === true;
 }
 
 /**
@@ -95,6 +105,7 @@ export function planInputFor(
         unobtainableGifts: Object.entries(run.giftStatus)
           .filter(([, s]) => s === 'failed')
           .map(([id]) => Number(id)),
+        ...(run.startDone ? { startDecided: true } : {}),
       }
     : { currentFloor: 1, ownedGifts: [], unobtainableGifts: [] };
   return {
