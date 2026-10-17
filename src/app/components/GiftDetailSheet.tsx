@@ -119,7 +119,7 @@ function Recipe({
   return (
     <div className="flex flex-col gap-2 px-3 pb-3 pt-2">
       {mixed && !ingredients ? (
-        <p className="text-caption text-fg-muted">
+        <p className="text-body text-fg-muted">
           {t('giftMixedRecipe', lang, {
             a: mixed.aCount,
             aOf: mixed.aPool.length,
@@ -265,13 +265,13 @@ export function GiftDetailSheet({
               </h2>
               <UpgradeSteps gift={gift} lang={lang} />
             </div>
-            <span className="text-caption text-fg-subtle" data-testid="gift-acquisition">
+            <span className="text-body text-fg-subtle" data-testid="gift-acquisition">
               <LinkedText text={acquisition.text} links={acquisition.packs.flatMap(packLink)} />
             </span>
             {/* Where this route gets the gift — the plan's own answer, not the acquisition class.
                 Absent for a gift the route says nothing about (not needed, in hand, unresolved). */}
             {routeSource ? (
-              <span className="text-caption text-fg-muted" data-testid="gift-route-source">
+              <span className="text-body text-fg-muted" data-testid="gift-route-source">
                 <LinkedText
                   text={t('giftRouteSource', lang, {
                     source: routeSourceText(routeSource, {
@@ -303,7 +303,7 @@ export function GiftDetailSheet({
             {t(selected ? 'giftRemoveGoal' : 'giftAddGoal', lang)}
           </Button>
           {blockedBy && blocked ? (
-            <span className="text-caption text-fg-muted">
+            <span className="text-body text-fg-muted">
               <LinkedText text={blockedBy} links={giftLink(blocked.by)} />
             </span>
           ) : null}
@@ -318,7 +318,7 @@ export function GiftDetailSheet({
               const met = report.satisfied;
               const extra = reachedTierText(report, lang);
               return (
-                <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-caption">
+                <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-body">
                   {/* Met / not met is a mark and ink, like the tile's ring is a ring: no coloured text. */}
                   <span
                     className={`inline-flex items-center gap-0.5 font-num text-caption-strong ${report.gate ? 'text-fg' : 'text-fg-muted'}`}
@@ -345,7 +345,7 @@ export function GiftDetailSheet({
             paragraph as written. `whitespace-pre-line`: the game writes a gift as several clauses
             separated by blank lines, with 「- 」 sub-lines under some of them. */}
         {effects && effectBlocksFor(descText, effects) && nobodyDeployed ? (
-          <p className="text-caption text-fg-subtle" data-testid="effect-nobody">
+          <p className="text-body text-fg-subtle" data-testid="effect-nobody">
             {t('recNoDeployed', lang)}
           </p>
         ) : null}
@@ -358,7 +358,7 @@ export function GiftDetailSheet({
             lang={lang}
           />
         ) : (
-          <p className="whitespace-pre-line text-caption text-fg-muted" data-testid="gift-desc">
+          <p className="whitespace-pre-line text-body text-fg-muted" data-testid="gift-desc">
             {/* An enhancement step's text bolds what it changed (`**…**` from the build). */}
             {splitHighlight(descText).map((part, i) =>
               part.strong ? (
@@ -374,7 +374,7 @@ export function GiftDetailSheet({
 
         {entangled.length > 0 ? (
           <div
-            className="flex items-start gap-2 rounded-sm border border-border-strong px-3 py-2 text-caption text-fg-muted"
+            className="flex items-start gap-2 rounded-sm border border-border-strong px-3 py-2 text-body text-fg-muted"
             data-testid="gift-entangled"
           >
             <Link2 size={13} aria-hidden className="mt-0.5 flex-none" />

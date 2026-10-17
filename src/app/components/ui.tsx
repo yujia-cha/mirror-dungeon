@@ -89,20 +89,30 @@ export function Badge({
 export function Chip({
   children,
   on = false,
+  dashed = false,
   title,
+  ariaLabel,
   className = '',
 }: {
   children: ReactNode;
   on?: boolean;
+  /** An empty place — a dashed border on no fill (e.g. 「없음」 where nobody meets a requirement). */
+  dashed?: boolean;
   title?: string;
+  /** Accessible name when the visible text is a short form (e.g. the sinner for the whole identity). */
+  ariaLabel?: string;
   className?: string;
 }) {
+  const tone = on
+    ? 'border-primary bg-primary text-primary-fg'
+    : dashed
+      ? 'border-dashed border-border-strong text-fg-muted'
+      : 'border-border bg-surface-muted text-fg-muted';
   return (
     <span
       title={title}
-      className={`inline-flex h-[22px] flex-none items-center gap-1 whitespace-nowrap rounded-full border px-2 text-caption ${
-        on ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface-muted text-fg-muted'
-      } ${className}`}
+      aria-label={ariaLabel}
+      className={`inline-flex h-[22px] flex-none items-center gap-1 whitespace-nowrap rounded-full border px-2 text-caption ${tone} ${className}`}
     >
       {children}
     </span>
@@ -385,7 +395,7 @@ export function TextField({
         ) : null}
       </label>
       {invalid ? (
-        <p id={errorId} className="flex items-center gap-1 text-caption text-fg" role="alert">
+        <p id={errorId} className="flex items-center gap-1 text-body text-fg" role="alert">
           <CircleAlert size={12} className="flex-none text-danger" aria-hidden />
           {error}
         </p>
@@ -459,7 +469,7 @@ export function TextArea({
         />
       </div>
       {invalid ? (
-        <p id={errorId} className="flex items-center gap-1 text-caption text-fg" role="alert">
+        <p id={errorId} className="flex items-center gap-1 text-body text-fg" role="alert">
           <CircleAlert size={12} className="flex-none text-danger" aria-hidden />
           {error}
         </p>
@@ -557,7 +567,7 @@ export function Notice({
   return (
     <div
       role="status"
-      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-caption ${
+      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-body ${
         strong ? 'border-border-strong bg-surface-muted text-fg' : 'border-border bg-surface text-fg-muted'
       }`}
     >

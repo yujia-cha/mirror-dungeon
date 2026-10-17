@@ -2251,6 +2251,34 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     expect(ids(deckSection())).toContain(9088);
   });
 
+  it('ranks each keyword group by how many identities the effect applies to (M131)', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    renderBrowser();
+    const scores = (scope: HTMLElement): number[] =>
+      within(scope)
+        .getAllByTestId('gift-tile')
+        .map((el) => Number(el.getAttribute('data-score')));
+    const descending = (list: number[]): boolean => list.every((s, i) => i === 0 || list[i - 1]! >= s);
+    const isPack = (el: HTMLElement): boolean =>
+      isPackBound(indexes.giftById.get(Number(el.getAttribute('data-gift')))!);
+    // Act
+    const byGroup = within(deckSection()).getAllByTestId('recommend-keyword').map(scores);
+    await user.selectOptions(screen.getByLabelText('정렬'), 'pack');
+    const tiles = within(deckSection()).getAllByTestId('gift-tile');
+    // Assert: a number on every tile, never shown as text, highest first inside each group.
+    expect(byGroup.flat().every((s) => Number.isInteger(s) && s >= 0)).toBe(true);
+    expect(byGroup.every(descending)).toBe(true);
+    // 「팩 전용 먼저」: pack-bound first, each part by score.
+    const packed = tiles.filter(isPack);
+    expect(tiles.slice(0, packed.length)).toEqual(packed);
+    expect(descending(packed.map((el) => Number(el.getAttribute('data-score'))))).toBe(true);
+    expect(
+      descending(tiles.filter((el) => !isPack(el)).map((el) => Number(el.getAttribute('data-score')))),
+    ).toBe(true);
+  });
+
   it('narrows by 획득, by 조합 and by keyword, and one reset brings everything back', async () => {
     // Arrange
     const user = userEvent.setup();

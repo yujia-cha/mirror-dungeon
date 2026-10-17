@@ -436,7 +436,13 @@
 ### deckAttackTypes
 - ko: 공격 유형
 - en: Attack types
-- 쓰는 곳: src/app/steps/DeckStep.tsx
+- 쓰는 곳: src/app/components/IdentityKeywordIcons.tsx
+
+### deckAttackTypeHint
+메모: 덱 칸과 인격 검색 행의 공격 유형 아이콘에 마우스를 올리면 뜨는 설명(M131). 아이콘의 대체 글자는 공격 유형 이름 자체다.
+- ko: 공격 유형: {type}
+- en: Attack type: {type}
+- 쓰는 곳: src/app/components/IdentityKeywordIcons.tsx
 
 ### deckSins
 - ko: 죄악 속성
@@ -584,12 +590,13 @@
 - 쓰는 곳: src/app/components/RecommendedGifts.tsx
 
 ### recSortKeyword
+메모: 기본 정렬. 「덱 조건 충족」·「조건 없이 발동 · 팩 전용」 절 안을 enums 순서의 키워드 묶음으로 나누고, 묶음 안은 효과가 적용되는 인격 수가 많은 순(M131, `lib/recommend-rank.ts` — 같으면 팩 전용 먼저·조건 진행률·id). 「E.G.O 스킬 조건」 절은 묶지 않고 같은 순서로 한 격자에 늘어놓는다(소유자 결정).
 - ko: 키워드별
 - en: By keyword
 - 쓰는 곳: src/app/components/RecommendedGifts.tsx
 
 ### recSortPack
-메모: 팩 전용 먼저, 그다음 조건 진행률, id(compareEntries).
+메모: 팩 전용 먼저, 그 안에서 효과가 적용되는 인격 수가 많은 순(M131, `lib/recommend-rank.ts`), 같으면 조건 진행률·id(compareEntries).
 - ko: 팩 전용 먼저
 - en: Pack-only first
 - 쓰는 곳: src/app/components/RecommendedGifts.tsx
@@ -837,31 +844,25 @@
 - 쓰는 곳: src/app/components/EffectLines.tsx
 
 ### effNoCondition
-메모: 덱에 아무것도 요구하지 않는 효과의 팝오버 한 줄.
+메모: 효과 줄 아래 칩 줄(M131): 덱에 아무것도 요구하지 않는 효과, 또는 E.G.O 스킬 요구 뒤(늘 충족).
 - ko: 조건 없음
 - en: No condition
-- 쓰는 곳: src/app/components/EffectLines.tsx, src/app/lib/effect-text.ts
+- 쓰는 곳: src/app/components/EffectLines.tsx
 
 ### effNone
-메모: 요구를 채우는 출격 인격이 없다.
+메모: 효과 줄 아래 칩(M131): 요구를 채우는 출격 인격이 없다. 점선 테두리 칩.
 - ko: 없음
 - en: None
-- 쓰는 곳: src/app/lib/effect-text.ts
-
-### effWho
-메모: 팝오버의 한 줄: 요구 이름 — 그것을 채우는 인격(슬롯). 예: 「파열 스킬 — LCB 수감자 이상 S1·S3」.
-- ko: {req} — {who}
-- en: {req} — {who}
 - 쓰는 곳: src/app/components/EffectLines.tsx
 
 ### effCount
-메모: 「N인 이상」 요구의 개수(채운 수/필요 수).
+메모: 효과 줄 아래 칩 묶음 끝(M131): 「N인 이상」 요구의 개수(채운 수/필요 수).
 - ko: {have}/{need}명
 - en: {have}/{need}
-- 쓰는 곳: src/app/lib/effect-text.ts
+- 쓰는 곳: src/app/components/EffectLines.tsx
 
 ### effSlot
-메모: 인격 이름 뒤의 스킬 슬롯 목록. 예: 「S1·S3」.
+메모: 효과 줄 아래 인격 칩에서 수감자 이름 뒤의 스킬 슬롯 목록(M131). 예: 「S1·S3」.
 - ko: S{slots}
 - en: S{slots}
 - 쓰는 곳: src/app/lib/effect-text.ts
@@ -1062,7 +1063,7 @@
 - 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/components/PackSheet.tsx
 
 ### giftUpgradeGroup
-메모: 강화(M130) — 목표 타일과 기프트 시트의 `+`·`++` 버튼 묶음의 이름. 버튼 글자는 `+`·`++` 그대로다.
+메모: 강화(M130) — 기프트 시트의 `+`·`++` 버튼 묶음의 이름. 버튼 글자는 `+`·`++` 그대로다. 목표 타일은 아이콘 좌하의 배지 하나다(M131, giftUpgradeBadgeOn·giftUpgradeBadgeOff).
 - ko: {name} 강화 단계
 - en: {name} enhancement
 - 쓰는 곳: src/app/components/UpgradeSteps.tsx
@@ -1071,6 +1072,24 @@
 메모: {step}은 `+` 또는 `++`. 누른 단계를 다시 누르면 강화 전으로 돌아간다.
 - ko: {name} 강화 {step}
 - en: {name} enhanced {step}
+- 쓰는 곳: src/app/components/UpgradeSteps.tsx
+
+### giftUpgradeBadgeOff
+메모: 목표 타일 아이콘 좌하의 강화 배지(M131)가 강화 전일 때의 접근 이름. 누를 때마다 강화 전 → + → ++ → 강화 전으로 돈다(원문이 있는 단계만). {next}는 `+` 또는 giftUpgradeNone.
+- ko: {name} 강화 전 · 누르면 {next}
+- en: {name} not enhanced · press for {next}
+- 쓰는 곳: src/app/components/UpgradeSteps.tsx
+
+### giftUpgradeBadgeOn
+메모: 같은 배지가 단계를 고른 때의 접근 이름. {step}은 지금 단계(`+`·`++`), {next}는 누르면 갈 단계 또는 giftUpgradeNone.
+- ko: {name} 강화: {step} · 누르면 {next}
+- en: {name} enhanced {step} · press for {next}
+- 쓰는 곳: src/app/components/UpgradeSteps.tsx
+
+### giftUpgradeNone
+메모: 강화 배지의 접근 이름 속 「누르면 …」의 값 — 강화하지 않은 기프트.
+- ko: 강화 전
+- en: not enhanced
 - 쓰는 곳: src/app/components/UpgradeSteps.tsx
 
 ### giftExclusive
@@ -1576,7 +1595,7 @@
 ### stageOf
 - ko: / {last}
 - en: / {last}
-- 쓰는 곳: src/app/stage/FloorHeader.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/stage/FloorHeader.tsx
 
 ### stageEnterable
 - ko: 이 층에서 들어갈 수 있는 팩
@@ -1586,12 +1605,12 @@
 ### stageNoRoutePack
 - ko: 계획된 팩 없음
 - en: No planned pack
-- 쓰는 곳: src/app/stage/RunStage.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/stage/RunStage.tsx
 
 ### stageNoGoals
 - ko: 아직 목표 기프트가 없습니다.
 - en: No goal gifts yet.
-- 쓰는 곳: src/app/stage/RunStage.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/stage/RunStage.tsx
 
 ### stageOtherPacks
 - ko: 다른 팩
@@ -1601,7 +1620,7 @@
 ### stagePackAlternatives
 - ko: 외 {n}
 - en: {n} more
-- 쓰는 곳: src/app/stage/EnterablePacks.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/stage/EnterablePacks.tsx
 
 ### stageSameGifts
 - ko: 같은 기프트
@@ -1701,7 +1720,7 @@
 ### stageDone
 - ko: {last}층까지 마쳤습니다
 - en: Floor {last} is done
-- 쓰는 곳: src/app/stage/FloorHeader.tsx, src/app/stage/RunStage.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/stage/FloorHeader.tsx, src/app/stage/RunStage.tsx
 
 ### stageNewRun
 메모: 헤더의 초기화는 덱과 목표까지 지운다. 거울 던전은 반복 컨텐츠라 흔한 다음 행동은 둘 다 남기는 것이다.
@@ -1734,27 +1753,27 @@
 ### captureIdle
 - ko: 게임 창을 공유하면 팩 입장과 기프트 획득을 자동으로 기록합니다
 - en: Share the game window to record pack entries and gifts automatically
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts
 
 ### captureStarting
 - ko: 게임 창 연결 중
 - en: Connecting to the game window
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts, src/app/overlay/OverlayView.tsx, src/app/shell/CapturePanel.tsx
 
 ### captureRunning
 - ko: 인식 중
 - en: Reading
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts, src/app/overlay/OverlayView.tsx, src/app/shell/CapturePanel.tsx
 
 ### captureErrShort
 - ko: 오류
 - en: Error
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/shell/CapturePanel.tsx
 
 ### captureAsking
 - ko: 확인할 것 {n}개
 - en: {n} to confirm
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/shell/CapturePanel.tsx
 
 ### capturePrivacy
 - ko: 화면은 이 브라우저 안에서만 읽고 어디로도 보내지 않습니다
@@ -1764,27 +1783,27 @@
 ### captureErr_unsupported
 - ko: 이 브라우저는 화면 공유를 지원하지 않습니다
 - en: This browser cannot share a screen
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
 
 ### captureErr_denied
 - ko: 화면 공유를 허용하지 않았습니다. 다시 시작하면 다시 묻습니다
 - en: Screen sharing was not allowed. Starting again asks again
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
 
 ### captureErr_ended
 - ko: 화면 공유가 끝났습니다
 - en: Screen sharing ended
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
 
 ### captureErr_engine
 - ko: 글자 인식 엔진을 불러오지 못했습니다
 - en: Could not load the text recognition engine
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
 
 ### captureErr_layout
 - ko: 화면 배치 정보를 불러오지 못했습니다
 - en: Could not load the screen layout
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
 
 ### captureInterval
 - ko: 판독 간격
@@ -1794,22 +1813,22 @@
 ### captureInterval_economy
 - ko: 최고 성능 · 1초
 - en: Lightest · 1 s
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_performance
 - ko: 성능 · 0.5초
 - en: Light · 0.5 s
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_balanced
 - ko: 밸런스 · 0.25초
 - en: Balanced · 0.25 s
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_quality
 - ko: 품질 · 0.125초
 - en: Quality · 0.125 s
-- 쓰는 곳: src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureLang
 - ko: 게임 언어
@@ -1839,27 +1858,27 @@
 ### captureLogEnter
 - ko: {floor}층 입장 · {name}
 - en: Floor {floor} entered · {name}
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts
 
 ### captureLogGot
 - ko: 획득 · {name}
 - en: Got · {name}
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts
 
 ### captureLogSold
 - ko: 판매 · {name}
 - en: Sold · {name}
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts
 
 ### captureLogFused
 - ko: 합성 · {name}
 - en: Fused · {name}
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts
 
 ### captureLogAnswer
 - ko: 직접 고름 · {name}
 - en: Picked · {name}
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/capture/capture-text.ts
 
 ### captureUndo
 - ko: 되돌리기
@@ -1869,7 +1888,7 @@
 ### captureUndone
 - ko: 되돌림
 - en: Undone
-- 쓰는 곳: src/app/shell/CapturePanel.tsx
+- 쓰는 곳: src/app/overlay/OverlayView.tsx, src/app/shell/CapturePanel.tsx
 
 ### captureAskGift
 - ko: 어느 기프트를 얻었나요?
@@ -1895,6 +1914,75 @@
 - ko: 무시
 - en: Ignore
 - 쓰는 곳: src/app/shell/CapturePanel.tsx
+
+## 오버레이 창 (화면 인식 팝오버에서 여는 게임 위의 작은 창)
+
+### overlayOpen
+- ko: 오버레이 창 열기
+- en: Open overlay window
+- 쓰는 곳: src/app/overlay/OverlayToggle.tsx
+
+### overlayClose
+- ko: 오버레이 창 닫기
+- en: Close overlay window
+- 쓰는 곳: src/app/overlay/OverlayToggle.tsx
+
+### overlayHint
+- ko: 게임 위에 늘 떠 있는 작은 창입니다(Chrome·Edge). 테두리 없는 창 모드에서는 보이고, 전체 화면에서는 가려집니다
+- en: A small window that stays above the game (Chrome, Edge). It shows over a borderless window, not over fullscreen
+- 쓰는 곳: src/app/overlay/OverlayToggle.tsx
+
+### overlayTitle
+메모: 오버레이 창의 제목 표시줄(`document.title`).
+- ko: 거울 던전 오버레이
+- en: Mirror Dungeon overlay
+- 쓰는 곳: src/app/overlay/OverlayProvider.tsx
+
+### overlayCaptureOff
+- ko: 화면 인식 꺼짐
+- en: Screen reader off
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayNext
+- ko: {floor}층에 들어갈 팩
+- en: Pack for floor {floor}
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayRemaining
+- ko: 이 팩에서 남은 기프트
+- en: Gifts left in this pack
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayEntered
+- ko: {floor}층 · {name}
+- en: Floor {floor} · {name}
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayRemainingNone
+- ko: 남은 기프트 없음
+- en: Nothing left here
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayNotEntered
+- ko: 아직 입장한 팩이 없습니다
+- en: No pack entered yet
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayRecent
+메모: 디버그용. 스토어 변화는 피드백 기록의 영문 짧은 줄(`describeChange`) 그대로 나온다.
+- ko: 방금 한 행동
+- en: Recent actions
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayRecentEmpty
+- ko: 아직 없습니다
+- en: Nothing yet
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayLogError
+- ko: 오류 · {text}
+- en: Error · {text}
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ## 진단 기록 (소유자 전용 — 주소에 #diag를 붙여 열 때만)
 
@@ -2027,22 +2115,22 @@
 ### feedbackKind_bug
 - ko: 버그
 - en: Bug
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackKind_idea
 - ko: 제안
 - en: Suggestion
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackKind_data
 - ko: 데이터 오류
 - en: Data error
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackKind_other
 - ko: 기타
 - en: Other
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackTitleLabel
 - ko: 제목 (선택)
@@ -2689,7 +2777,7 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: **덱 탭**에서 수감자 칸을 눌러 인격을 고르거나, 게임의 **편성 코드**를 「코드 가져오기」에 붙여 넣습니다. 코드에 출격 순서가 있으면 그대로 따릅니다.
 - readme: 조건부 기프트(「출격 인원 중 화상 부여 스킬 3개 이상」 같은 것)는 대부분 **출격한 인격**만 셉니다. 칸의 「대기」를 눌러 「출격」으로 바꿔 출격 인원을 정해 두어야 조건 판정이 맞습니다.
 - readme: 덱 아래 칩(「화상 2/5」)은 출격 인원 / 편성 전체의 스킬 수입니다.
-- readme: 인격 검색은 이름·수감자·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣으면 「하나라도」는 하나라도 맞는 인격, 「모두」는 전부 맞는 인격입니다(`화상 파우스트` + 「모두」 = 화상을 쓰는 파우스트 인격). 결과에는 키워드와 공격 유형이 함께 보이고, 지금 덱에 든 인격에는 「편성 중」이 붙습니다.
+- readme: 인격 검색은 이름·수감자·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣으면 「하나라도」는 하나라도 맞는 인격, 「모두」는 전부 맞는 인격입니다(`화상 파우스트` + 「모두」 = 화상을 쓰는 파우스트 인격). 결과와 덱 칸에는 키워드 · 공격 유형 · 탄환/혈찬이 게임 아이콘으로 보이고(마우스를 올리면 이름), 지금 덱에 든 인격에는 「편성 중」이 붙습니다.
 - 설명서: 왼쪽 위 「덱」 버튼이 덱과 기프트 패널을 엽니다.
 - en: The 「Deck」 button at the top left opens the deck and gift panel.
 - 설명서: 수감자 칸을 눌러 인격을 고르거나, 게임의 편성 코드를 「코드 가져오기」에 붙여 넣습니다.
@@ -2703,11 +2791,11 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 
 - readme: **기프트 탭**에서 기프트를 찾아 목표로 삼습니다(타일의 아이콘을 누르면 목표에 추가, 이름을 누르면 상세). 검색은 전체 기프트에서, 부분 문자열로 찾고, 초성만 치면 초성 검색입니다. 검색 결과는 검색창 바로 아래에 나옵니다.
 - readme: 검색창 오른쪽 끝의 **`>>`(모두 보기)**나 탭 아래의 「추천 기프트 보기」는 기프트를 넓은 격자로 엽니다(데스크톱은 가운데 스테이지 자리, 휴대폰은 새 페이지). 열려 있는 동안 같은 버튼이 **`<<`**로 바뀌어 누르면 다시 스테이지로 돌아옵니다. 탭에 친 검색어를 그대로 가져가며, 탭은 둘입니다.
-- readme: **「추천 기프트」**는 열 때마다 먼저 열리는 탭으로, 지금 덱으로 발동할 수 있는 기프트만 모았습니다. 기프트를 효과 하나하나로 읽어, 출격한 인격으로 쓸 수 있는 효과가 있는지 봅니다. 「덱 조건 충족」은 그 효과가 덱에 무언가를 요구하는 기프트입니다 — 그 키워드를 부여하거나 소모하는 스킬(스킬 3처럼 슬롯을 말하면 그 슬롯), 소속, 특정 인격만 거는 버프(예: 진동 - 작열), 죄악·공격 유형, 코인·공격 가중치, 반격·회피 같은 방어 스킬. 적이나 자신의 상태(화상을 보유한 적 등), 체력·흐트러짐 같은 전투 상황은 어느 덱에서나 만들 수 있으므로 요구로 보지 않습니다. 「조건 없이 발동 · 팩 전용」은 그런 요구가 없는 효과만 쓸 수 있는 팩 전용 기프트이고, 맨 아래 「E.G.O 스킬 조건」은 E.G.O 스킬을 쓸 때만 발동하는 기프트입니다(인격의 E.G.O는 판정하지 않습니다). 「획득」(팩 전용 · 범용)·「조합 기프트 포함」·「키워드」로 거르고, 「정렬」로 「키워드별」과 「팩 전용 먼저」를 고릅니다. 이미 목표인 기프트도 테두리와 ✓를 달고 그대로 나옵니다.
+- readme: **「추천 기프트」**는 열 때마다 먼저 열리는 탭으로, 지금 덱으로 발동할 수 있는 기프트만 모았습니다. 기프트를 효과 하나하나로 읽어, 출격한 인격으로 쓸 수 있는 효과가 있는지 봅니다. 「덱 조건 충족」은 그 효과가 덱에 무언가를 요구하는 기프트입니다 — 그 키워드를 부여하거나 소모하는 스킬(스킬 3처럼 슬롯을 말하면 그 슬롯), 소속, 특정 인격만 거는 버프(예: 진동 - 작열), 죄악·공격 유형, 코인·공격 가중치, 반격·회피 같은 방어 스킬. 적이나 자신의 상태(화상을 보유한 적 등), 체력·흐트러짐 같은 전투 상황은 어느 덱에서나 만들 수 있으므로 요구로 보지 않습니다. 「조건 없이 발동 · 팩 전용」은 그런 요구가 없는 효과만 쓸 수 있는 팩 전용 기프트이고, 맨 아래 「E.G.O 스킬 조건」은 E.G.O 스킬을 쓸 때만 발동하는 기프트입니다(인격의 E.G.O는 판정하지 않습니다). 「획득」(팩 전용 · 범용)·「조합 기프트 포함」·「키워드」로 거르고, 「정렬」로 「키워드별」과 「팩 전용 먼저」를 고르며, 어느 쪽이든 효과가 적용되는 인격이 많은 기프트가 앞에 섭니다(「E.G.O 스킬 조건」은 키워드로 나누지 않고 한 격자에 늘어놓습니다). 이미 목표인 기프트도 테두리와 ✓를 달고 그대로 나옵니다.
 - readme: **「모든 기프트」**는 전체 기프트와 필터(키워드·조건·등급·죄악)입니다. 「조건」 필터의 **「조건 없음」**은 덱이 판정할 조건이 없는 기프트만 남깁니다(편성 수에 따라 강화되는 것과 완전 공명 조건은 덱 조건이 아닙니다).
 - readme: 타일의 **바깥 링**이 조건 판정입니다(초록 충족 · 빨강 미충족 · 회색 조건 없음). 우하 배지는 키워드입니다.
 - readme: 조합으로만 나오는 기프트를 고르면 재료까지 루트가 모으러 갑니다. 상세 시트의 「재료도 목표」를 끄면 결과만 목표로 둡니다. 조합식의 재료를 누르면 그 기프트의 설명으로 넘어가고, 맨 위 「←」로 돌아옵니다.
-- readme: **강화**(`+`·`++`)가 있는 기프트는 목표 타일과 상세 시트에서 단계를 고르면 그 단계의 이름과 설명(바뀐 수치는 굵게)이 보입니다. 고른 단계를 다시 누르면 강화 전으로 돌아가고, 선택은 이 기기와 공유 링크에 남습니다.
+- readme: **강화**(`+`·`++`)가 있는 기프트는 단계를 고르면 그 단계의 이름과 설명(바뀐 수치는 굵게)이 보입니다. 목표 타일에서는 아이콘 좌하의 **「+」 배지**를 누를 때마다 강화 전 → `+` → `++` → 강화 전으로 바뀌고(점선 테두리가 강화 전, 채운 배지가 고른 단계), 상세 시트에서는 이름 옆 `+`·`++` 버튼으로 고르며 고른 단계를 다시 누르면 강화 전으로 돌아갑니다. 선택은 이 기기와 공유 링크에 남습니다.
 - readme: **시작 키워드**는 탭 맨 아래에 있습니다. 「자동」은 고른 기프트를 따라, 시작 기프트 풀에 목표가 든 키워드를 고릅니다(그런 풀이 없으면 덱의 주 키워드). 그 아래 한 줄이 어떤 시작 기프트를 받는지, 혹은 목표와 상관이 없어 아무 키워드나 골라도 되는지 알려 줍니다.
 - readme: **관측**: 검색창 아래 슬롯(최대 3칸)에 기프트를 넣으면 「관측 지정」으로 「기프트 관측」에서 받습니다. 조합 결과는 관측할 수 없으므로 조합에 관측을 쓰려면 **재료**를 넣습니다. 관측은 1층을 떠나기 전까지만 바꿀 수 있습니다.
 - 설명서: 기프트 탭에서 아이콘을 눌러 목표에 추가합니다.
@@ -2735,6 +2823,7 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: 「다음 층」(또는 아래로 당기기)으로 넘어가고, 「입장 취소」(위로 당기기)는 입장을 취소하며 그 팩에서 표시한 것을 지웁니다. 층 스트립을 눌러 지난 층을 다시 볼 수 있습니다.
 - readme: 루트는 현재 층부터 다시 계산됩니다. 계획에 없는 팩에 들어가도 됩니다.
 - readme: **화면 인식**(데스크톱 Chrome·Edge·Firefox): 헤더의 「화면 인식」 버튼을 눌러 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다(버튼에 개수가 뜹니다). 창을 닫아도 인식은 계속됩니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.
+- readme: **오버레이 창**(데스크톱 Chrome·Edge 116 이상): 「화면 인식」 팝오버의 「오버레이 창 열기」는 게임 위에 늘 떠 있는 작은 창을 엽니다. 인식 상태, 지금 층, 다음 층에 들어갈 팩, 들어간 팩에서 남은 기프트, 방금 한 행동을 보여 주기만 합니다(누를 것은 없습니다). 화면 공유 없이도 열리고, 팝오버를 닫아도 남습니다. 테두리 없는 창 모드의 게임 위에는 보이지만 전체 화면(독점) 모드에서는 가려집니다.
 - readme: **⋯ 메뉴**의 「링크 복사」가 덱·목표·설정을 담은 공유 링크를 만듭니다(런 진행은 담지 않습니다). 「초기화」는 덱을 기본 LCB 수감자로, 목표·설정·런을 처음으로 되돌립니다. 「테마 변경」·「기프트 아이콘 크기」·「글자 크기」도 여기 있고, 이 기기에만 저장됩니다.
 - 설명서: 가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.
 - en: On the stage in the middle, press 「Enter」 on a pack card or pull the card down.
@@ -2744,6 +2833,8 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - en: 「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.
 - 설명서: 데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있습니다.
 - en: On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone.
+- 설명서: Chrome·Edge에서는 같은 팝오버의 「오버레이 창 열기」가 게임 위에 늘 떠 있는 작은 창을 엽니다. 테두리 없는 창 모드에서 보이고, 전체 화면에서는 가려집니다.
+- en: In Chrome and Edge, 「Open overlay window」 in the same popover opens a small window that stays above the game. It shows over a borderless window, not over fullscreen.
 - 설명서: 재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.
 - en: When a missed ingredient makes a fusion impossible, the top of 「Full route」 says so and the route is re-planned. By default the fusion is given up (「Don't collect」); press the remaining ingredients to switch to 「Collect」.
 

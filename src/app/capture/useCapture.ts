@@ -39,6 +39,8 @@ export interface CaptureLogEntry {
   event: CaptureEvent | { kind: 'answer'; ask: CaptureAsk; picked: number[] };
   actions: CaptureAction[];
   undone: boolean;
+  /** When it was recorded (ms since the epoch) — the overlay window interleaves it with the store's changes (M132). */
+  at: number;
 }
 
 export interface CaptureQuestion {
@@ -104,7 +106,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
 
   const record = useCallback((event: CaptureLogEntry['event'], actions: CaptureAction[]) => {
     if (actions.length === 0) return;
-    const entry: CaptureLogEntry = { id: nextId.current++, event, actions, undone: false };
+    const entry: CaptureLogEntry = { id: nextId.current++, event, actions, undone: false, at: Date.now() };
     setLog((all) => [entry, ...all].slice(0, LOG_LIMIT));
     latest.current.hooks.onApplied?.(entry.id, event, actions, event.kind !== 'answer');
   }, []);

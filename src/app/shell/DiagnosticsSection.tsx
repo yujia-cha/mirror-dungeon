@@ -101,7 +101,7 @@ export function DiagnosticsSection() {
           {t('diagImages', lang)}
         </Checkbox>
       </div>
-      <p className="text-caption text-fg-muted">{t('diagImagesWarn', lang)}</p>
+      <p className="text-body text-fg-muted">{t('diagImagesWarn', lang)}</p>
 
       <p className="text-caption text-fg" role="status" data-testid="diag-stats" data-records={stats.records}>
         {stats.records === 0 && stats.frames === 0
@@ -115,9 +115,9 @@ export function DiagnosticsSection() {
           ? ` · ${t('diagLastExport', lang, { time: time(stats.lastExportAt) })}`
           : ''}
       </p>
-      {stats.full ? <p className="text-caption text-fg">⚠ {t('diagFull', lang)}</p> : null}
+      {stats.full ? <p className="text-body text-fg">⚠ {t('diagFull', lang)}</p> : null}
       {stats.trimmedFrames > 0 ? (
-        <p className="text-caption text-fg-muted">{t('diagTrimmed', lang, { n: stats.trimmedFrames })}</p>
+        <p className="text-body text-fg-muted">{t('diagTrimmed', lang, { n: stats.trimmedFrames })}</p>
       ) : null}
 
       {justExported ? (
@@ -128,7 +128,7 @@ export function DiagnosticsSection() {
           aria-label={t('diagSavedTitle', lang)}
           data-testid="diag-cleanup"
         >
-          <p className="text-caption text-fg">{t('diagSavedPrompt', lang, { name: justExported })}</p>
+          <p className="text-body text-fg">{t('diagSavedPrompt', lang, { name: justExported })}</p>
           <div className="flex gap-1.5">
             <Button
               size="sm"
@@ -148,7 +148,7 @@ export function DiagnosticsSection() {
         </div>
       ) : stats.exportedRecords > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-caption text-fg">{t('diagExportedLeft', lang, { n: stats.exportedRecords })}</p>
+          <p className="text-body text-fg">{t('diagExportedLeft', lang, { n: stats.exportedRecords })}</p>
           <Button
             size="sm"
             loading={busy === 'clear'}
@@ -161,12 +161,12 @@ export function DiagnosticsSection() {
         </div>
       ) : null}
       {failed ? (
-        <p className="text-caption text-danger" role="alert" data-testid="diag-export-failed">
+        <p className="text-body text-danger" role="alert" data-testid="diag-export-failed">
           ⚠ {t('diagExportFailed', lang)}
         </p>
       ) : null}
       {cleared ? (
-        <p className="text-caption text-fg-muted" role="status">
+        <p className="text-body text-fg-muted" role="status">
           {t('diagCleared', lang, { records: cleared.records, frames: cleared.frames })}
         </p>
       ) : null}
@@ -193,7 +193,7 @@ export function DiagnosticsSection() {
           {t('diagClearAll', lang)}
         </Button>
       </div>
-      <p className="text-caption text-fg-subtle" data-testid="diag-where">
+      <p className="text-body text-fg-subtle" data-testid="diag-where">
         {t('diagWhere', lang)}
       </p>
       {confirmAll ? (

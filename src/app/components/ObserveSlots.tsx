@@ -226,7 +226,7 @@ export function ObserveSlots({
                     <span className="min-w-0 flex-1">{t('observeSlotSkip', lang)}</span>
                   </button>
                   {candidates.length === 0 ? (
-                    <p className="text-caption text-fg-subtle">{t('observeSlotNone', lang)}</p>
+                    <p className="text-body text-fg-subtle">{t('observeSlotNone', lang)}</p>
                   ) : (
                     <ul className="flex flex-col gap-1" data-testid="observe-candidates">
                       {candidates.map((id) => {
@@ -263,7 +263,7 @@ export function ObserveSlots({
           );
         })}
       </div>
-      {closed ? <p className="text-caption text-fg-muted">{t('giftsObserveClosed', lang)}</p> : null}
+      {closed ? <p className="text-body text-fg-muted">{t('giftsObserveClosed', lang)}</p> : null}
     </div>
   );
 }

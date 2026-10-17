@@ -1,6 +1,6 @@
 /**
  * M129: the gift sheet draws a description effect by effect — which effects the deployed party sets
- * off, and who sets each off (hover / focus / tap).
+ * off. M131: who sets each off is a line of chips under the effect, always shown.
  */
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
@@ -30,35 +30,47 @@ function renderFor(deployed: number[]) {
   return screen.getAllByTestId('effect-who').map((tip) => tip.closest('[data-effect]') as HTMLElement);
 }
 
-describe('effect lines (M129)', () => {
+describe('effect lines (M129, chips M131)', () => {
   it('marks the Pride Pierce effect not active for a deck without one, and names nobody', () => {
     // Arrange + Act: 10101 (LCB 이상) has no Pride Pierce skill.
     const effects = renderFor([10101]);
     // Assert: the two plain effects are active, the third is not, and says so in words.
     expect(effects.map((e) => e.getAttribute('data-active'))).toEqual(['true', 'true', 'false']);
     expect(effects[2]).toHaveTextContent('발동하지 않음');
-    expect(within(effects[2]!).getByTestId('effect-who')).toHaveTextContent('오만 관통 스킬 — 없음');
+    const who = within(effects[2]!).getByTestId('effect-who');
+    expect(who).toHaveTextContent('오만 관통 스킬');
+    expect(within(who).getByText('없음')).toHaveClass('border-dashed');
     expect(within(effects[0]!).getByTestId('effect-who')).toHaveTextContent('조건 없음');
   });
 
-  it('names the identity and the skill slot that set the effect off', () => {
-    // Arrange: 10104 has a Pride Pierce base skill.
-    const slots = indexes.identityById
-      .get(10104)!
+  it('puts a chip per identity: the sinner and the slots, the whole identity as its name', () => {
+    // Arrange: 10104 (개화 E.G.O:: 동백 이상) has a Pride Pierce base skill.
+    const identity = indexes.identityById.get(10104)!;
+    const slots = identity
       .skills!.filter((s) => s.sin === 'PRIDE' && s.attackType === 'Penetrate')
       .map((s) => s.slot);
+    const slotText = `S${slots.join('·S')}`;
+    const full = `${identity.title.ko} ${identity.sinner.ko} ${slotText}`;
     // Act
     const effects = renderFor([10104]);
     // Assert
     expect(effects[2]).toHaveAttribute('data-active', 'true');
-    expect(within(effects[2]!).getByTestId('effect-who')).toHaveTextContent(`S${slots.join('·S')}`);
+    const who = within(effects[2]!).getByTestId('effect-who');
+    const chip = within(who).getByText(`${identity.sinner.ko} ${slotText}`);
+    expect(chip).toHaveAttribute('aria-label', full);
+    expect(chip).toHaveAttribute('title', full);
   });
 
-  it('is focusable, and describes itself with the who-line', () => {
+  it('always shows who sets an effect off — no popover, nothing to hover or focus', () => {
     const effects = renderFor([10101]);
-    const tip = within(effects[2]!).getByTestId('effect-who');
-    expect(effects[2]).toHaveAttribute('tabindex', '0');
-    expect(effects[2]).toHaveAttribute('aria-describedby', tip.id);
+    for (const effect of effects) {
+      const who = within(effect).getByTestId('effect-who');
+      expect(who).not.toHaveClass('hidden');
+      expect(who).not.toHaveAttribute('role', 'tooltip');
+      expect(effect).not.toHaveAttribute('tabindex');
+      expect(effect).not.toHaveAttribute('aria-describedby');
+    }
+    expect(screen.queryByRole('tooltip')).toBeNull();
   });
 
   it('leaves the text plain when it does not split into the judged effects', () => {

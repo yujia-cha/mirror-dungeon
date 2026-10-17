@@ -39,7 +39,7 @@ export function ConfirmDialog({
         <div className="flex flex-col gap-1">
           <h2 className="text-subheading">{title}</h2>
           {message ? (
-            <span id="confirm-dialog-message" className="text-caption text-fg-muted">
+            <span id="confirm-dialog-message" className="text-body text-fg-muted">
               {message}
             </span>
           ) : null}

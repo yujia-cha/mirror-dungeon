@@ -145,6 +145,8 @@ export const STRINGS = {
   deckCurrent: { ko: '현재 편성: {identity}', en: 'In deck: {identity}' },
   deckPickerTitle: { ko: '{sinner} 인격 선택', en: 'Choose a {sinner} identity' },
   deckAttackTypes: { ko: '공격 유형', en: 'Attack types' },
+  // 덱 칸과 인격 검색 행의 공격 유형 아이콘에 마우스를 올리면 뜨는 설명(M131). 아이콘의 대체 글자는 공격 유형 이름 자체다.
+  deckAttackTypeHint: { ko: '공격 유형: {type}', en: 'Attack type: {type}' },
   deckSins: { ko: '죄악 속성', en: 'Sin affinities' },
 
   // ── 기프트 탭
@@ -189,8 +191,9 @@ export const STRINGS = {
   // 팩 전용이 아닌 것 전부 — 범용 드랍, 조합, 시작 기프트 등.
   recAcqGeneral: { ko: '범용', en: 'General' },
   recFusion: { ko: '조합 기프트 포함', en: 'Include fusions' },
+  // 기본 정렬. 「덱 조건 충족」·「조건 없이 발동 · 팩 전용」 절 안을 enums 순서의 키워드 묶음으로 나누고, 묶음 안은 효과가 적용되는 인격 수가 많은 순(M131, `lib/recommend-rank.ts` — 같으면 팩 전용 먼저·조건 진행률·id). 「E.G.O 스킬 조건」 절은 묶지 않고 같은 순서로 한 격자에 늘어놓는다(소유자 결정).
   recSortKeyword: { ko: '키워드별', en: 'By keyword' },
-  // 팩 전용 먼저, 그다음 조건 진행률, id(compareEntries).
+  // 팩 전용 먼저, 그 안에서 효과가 적용되는 인격 수가 많은 순(M131, `lib/recommend-rank.ts`), 같으면 조건 진행률·id(compareEntries).
   recSortPack: { ko: '팩 전용 먼저', en: 'Pack-only first' },
   recDeckNone: {
     ko: '지금 덱으로 조건을 채우는 기프트가 없습니다',
@@ -262,15 +265,13 @@ export const STRINGS = {
   effActive: { ko: '발동', en: 'Active' },
   // 효과가 지금 출격 인격으로는 발동하지 않는다(M129). 점선 막대·흐린 글자와 함께 읽힌다.
   effInactive: { ko: '발동하지 않음', en: 'Not active' },
-  // 덱에 아무것도 요구하지 않는 효과의 팝오버 한 줄.
+  // 효과 줄 아래 칩 줄(M131): 덱에 아무것도 요구하지 않는 효과, 또는 E.G.O 스킬 요구 뒤(늘 충족).
   effNoCondition: { ko: '조건 없음', en: 'No condition' },
-  // 요구를 채우는 출격 인격이 없다.
+  // 효과 줄 아래 칩(M131): 요구를 채우는 출격 인격이 없다. 점선 테두리 칩.
   effNone: { ko: '없음', en: 'None' },
-  // 팝오버의 한 줄: 요구 이름 — 그것을 채우는 인격(슬롯). 예: 「파열 스킬 — LCB 수감자 이상 S1·S3」.
-  effWho: { ko: '{req} — {who}', en: '{req} — {who}' },
-  // 「N인 이상」 요구의 개수(채운 수/필요 수).
+  // 효과 줄 아래 칩 묶음 끝(M131): 「N인 이상」 요구의 개수(채운 수/필요 수).
   effCount: { ko: '{have}/{need}명', en: '{have}/{need}' },
-  // 인격 이름 뒤의 스킬 슬롯 목록. 예: 「S1·S3」.
+  // 효과 줄 아래 인격 칩에서 수감자 이름 뒤의 스킬 슬롯 목록(M131). 예: 「S1·S3」.
   effSlot: { ko: 'S{slots}', en: 'S{slots}' },
   // 그 키워드를 부여·획득·소모하는 기본 스킬.
   effReqKeyword: { ko: '{keywords} 스킬', en: '{keywords} skill' },
@@ -334,10 +335,19 @@ export const STRINGS = {
   giftEntangledWith: { ko: '{name} 재료가 겹칩니다: {list}', en: 'shares ingredients with {name}: {list}' },
   giftDetail: { ko: '{name} 자세히', en: '{name} details' },
   giftDetailBack: { ko: '{name} 설명으로 돌아가기', en: 'Back to {name}' },
-  // 강화(M130) — 목표 타일과 기프트 시트의 `+`·`++` 버튼 묶음의 이름. 버튼 글자는 `+`·`++` 그대로다.
+  // 강화(M130) — 기프트 시트의 `+`·`++` 버튼 묶음의 이름. 버튼 글자는 `+`·`++` 그대로다. 목표 타일은 아이콘 좌하의 배지 하나다(M131, giftUpgradeBadgeOn·giftUpgradeBadgeOff).
   giftUpgradeGroup: { ko: '{name} 강화 단계', en: '{name} enhancement' },
   // {step}은 `+` 또는 `++`. 누른 단계를 다시 누르면 강화 전으로 돌아간다.
   giftUpgradeStep: { ko: '{name} 강화 {step}', en: '{name} enhanced {step}' },
+  // 목표 타일 아이콘 좌하의 강화 배지(M131)가 강화 전일 때의 접근 이름. 누를 때마다 강화 전 → + → ++ → 강화 전으로 돈다(원문이 있는 단계만). {next}는 `+` 또는 giftUpgradeNone.
+  giftUpgradeBadgeOff: { ko: '{name} 강화 전 · 누르면 {next}', en: '{name} not enhanced · press for {next}' },
+  // 같은 배지가 단계를 고른 때의 접근 이름. {step}은 지금 단계(`+`·`++`), {next}는 누르면 갈 단계 또는 giftUpgradeNone.
+  giftUpgradeBadgeOn: {
+    ko: '{name} 강화: {step} · 누르면 {next}',
+    en: '{name} enhanced {step} · press for {next}',
+  },
+  // 강화 배지의 접근 이름 속 「누르면 …」의 값 — 강화하지 않은 기프트.
+  giftUpgradeNone: { ko: '강화 전', en: 'not enhanced' },
   giftExclusive: { ko: '전용', en: 'Exclusive' },
   giftWanted: { ko: '목표', en: 'Goal' },
   giftUnjudgeable: { ko: '판정 불가', en: 'Cannot judge' },
@@ -597,6 +607,26 @@ export const STRINGS = {
   },
   captureAskApply: { ko: '적용', en: 'Apply' },
   captureAskDismiss: { ko: '무시', en: 'Ignore' },
+
+  // ── 오버레이 창 (화면 인식 팝오버에서 여는 게임 위의 작은 창)
+  overlayOpen: { ko: '오버레이 창 열기', en: 'Open overlay window' },
+  overlayClose: { ko: '오버레이 창 닫기', en: 'Close overlay window' },
+  overlayHint: {
+    ko: '게임 위에 늘 떠 있는 작은 창입니다(Chrome·Edge). 테두리 없는 창 모드에서는 보이고, 전체 화면에서는 가려집니다',
+    en: 'A small window that stays above the game (Chrome, Edge). It shows over a borderless window, not over fullscreen',
+  },
+  // 오버레이 창의 제목 표시줄(`document.title`).
+  overlayTitle: { ko: '거울 던전 오버레이', en: 'Mirror Dungeon overlay' },
+  overlayCaptureOff: { ko: '화면 인식 꺼짐', en: 'Screen reader off' },
+  overlayNext: { ko: '{floor}층에 들어갈 팩', en: 'Pack for floor {floor}' },
+  overlayRemaining: { ko: '이 팩에서 남은 기프트', en: 'Gifts left in this pack' },
+  overlayEntered: { ko: '{floor}층 · {name}', en: 'Floor {floor} · {name}' },
+  overlayRemainingNone: { ko: '남은 기프트 없음', en: 'Nothing left here' },
+  overlayNotEntered: { ko: '아직 입장한 팩이 없습니다', en: 'No pack entered yet' },
+  // 디버그용. 스토어 변화는 피드백 기록의 영문 짧은 줄(`describeChange`) 그대로 나온다.
+  overlayRecent: { ko: '방금 한 행동', en: 'Recent actions' },
+  overlayRecentEmpty: { ko: '아직 없습니다', en: 'Nothing yet' },
+  overlayLogError: { ko: '오류 · {text}', en: 'Error · {text}' },
 
   // ── 진단 기록 (소유자 전용 — 주소에 #diag를 붙여 열 때만)
   diagTitle: { ko: '진단 기록 (소유자용)', en: 'Diagnostics (owner only)' },
@@ -937,6 +967,10 @@ export const GUIDE_CARDS = [
       {
         ko: '데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있습니다.',
         en: 'On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone.',
+      },
+      {
+        ko: 'Chrome·Edge에서는 같은 팝오버의 「오버레이 창 열기」가 게임 위에 늘 떠 있는 작은 창을 엽니다. 테두리 없는 창 모드에서 보이고, 전체 화면에서는 가려집니다.',
+        en: 'In Chrome and Edge, 「Open overlay window」 in the same popover opens a small window that stays above the game. It shows over a borderless window, not over fullscreen.',
       },
       {
         ko: '재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.',

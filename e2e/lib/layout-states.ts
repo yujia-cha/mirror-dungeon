@@ -149,7 +149,11 @@ export async function walkLayoutStates(
   await visit({ id: 'goals', title: 'gifts tab with eight goals, two enhanceable' });
   // The gift sheet of an enhanceable goal, at its `++` step (M130): the steps in the name row.
   const enhanced = left.locator(`[data-testid="gift-chip"][data-gift="${ENHANCEABLE[0]}"]`);
-  await enhanced.getByRole('button', { name: /강화 \+\+$/ }).click();
+  // The corner badge cycles 강화 전 → + → ++ (M131).
+  const badge = enhanced.getByTestId('gift-upgrade-badge');
+  await badge.click();
+  await badge.click();
+  await enhanced.locator('[data-testid="gift-upgrade-badge"][data-level="2"]').waitFor();
   await enhanced.getByRole('button', { name: /자세히$/ }).click();
   await page.getByTestId('block-sheet').waitFor();
   await visit({ id: 'goal-sheet', title: 'gift sheet of an enhanced goal' });

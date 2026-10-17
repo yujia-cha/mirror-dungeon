@@ -8,12 +8,15 @@
  * `useCaptureSession` (`capture-context.ts`). The diagnostics need the session's state and the
  * session needs the diagnostics' hooks; each reads the other through a getter, not a render value.
  * The visitor's feedback diagnostics (M127, `feedback/`) are a separate record merged in beside them.
+ * The overlay window (M132, `overlay/`) shows the session too and outlives the popover for the same
+ * reason, so its provider sits right inside this one.
  */
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { CaptureContext } from './capture-context.ts';
 import { useDiagnostics } from './diagnostics/useDiagnostics.ts';
 import { useCapture } from './useCapture.ts';
 import { mergeCaptureHooks, useVisitorDiagnostics } from '../feedback/useVisitorDiagnostics.ts';
+import { OverlayProvider } from '../overlay/OverlayProvider.tsx';
 
 export function CaptureProvider({ children }: { children: ReactNode }) {
   const session = useRef<ReturnType<typeof useCapture> | null>(null);
@@ -34,5 +37,9 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
     session.current = capture;
   });
   const value = useMemo(() => ({ ...capture, diagnostics }), [capture, diagnostics]);
-  return <CaptureContext.Provider value={value}>{children}</CaptureContext.Provider>;
+  return (
+    <CaptureContext.Provider value={value}>
+      <OverlayProvider>{children}</OverlayProvider>
+    </CaptureContext.Provider>
+  );
 }

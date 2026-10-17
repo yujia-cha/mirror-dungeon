@@ -91,6 +91,7 @@ type Listener = (entry: FeedbackLogEntry) => void;
 export class FeedbackLog {
   private ring: Ring<FeedbackLogEntry>;
   private listeners = new Set<Listener>();
+  private changes = 0;
   constructor(
     capacity = LOG_CAPACITY,
     private now: () => number = Date.now,
@@ -101,6 +102,7 @@ export class FeedbackLog {
 
   private add(entry: FeedbackLogEntry): void {
     this.ring.push(entry);
+    this.changes += 1;
     for (const listener of this.listeners) listener(entry);
   }
 
@@ -124,6 +126,15 @@ export class FeedbackLog {
 
   clear(): void {
     this.ring.clear();
+    this.changes += 1;
+  }
+
+  /**
+   * Goes up with every entry (and a clear): a snapshot for `useSyncExternalStore`, which the
+   * overlay window (M132) reads the log through — `entries()` is a fresh copy on each call.
+   */
+  get revision(): number {
+    return this.changes;
   }
 
   subscribe(listener: Listener): () => void {

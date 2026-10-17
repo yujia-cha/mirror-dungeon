@@ -3,7 +3,8 @@
  *
  * - gift icons → public/icons/gifts/{icon}.webp (M92; the screen tracker matches fusion
  *   ingredients by them, and the gift tiles draw them since M94)
- * - keyword icons → public/icons/keywords/{Keyword}.webp (M99; the gift tile's keyword badge)
+ * - keyword icons → public/icons/keywords/{Keyword}.webp (M99; the gift tile's keyword badge, and
+ *   since M131 the deck's identity keywords — 탄환·혈찬 come from the upstream status icons)
  * - theme pack art → public/icons/packs/{sprite}.webp (M100; the pack cards), shrunk to 256px
  *   wide and re-encoded here, since the upstream files are three times the widest card
  *
@@ -23,7 +24,12 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFile
 import { join } from 'node:path';
 import decodeWebp, { init as initDecoder } from '@jsquash/webp/decode.js';
 import encodeWebp, { init as initEncoder } from '@jsquash/webp/encode.js';
-import type { GiftIconManifest, KeywordIconManifest, PackImageManifest } from '../src/core/schema.ts';
+import type {
+  GiftIconManifest,
+  IconKeyword,
+  KeywordIconManifest,
+  PackImageManifest,
+} from '../src/core/schema.ts';
 import {
   GIFT_ICON_DIR,
   MAX_ICON_BYTES,
@@ -32,12 +38,7 @@ import {
   planGiftIcons,
   type DerivedGiftEntry,
 } from './lib/gift-icons.ts';
-import {
-  KEYWORD_ICON_DIR,
-  MAX_KEYWORD_ICON_BYTES,
-  planKeywordIcons,
-  type BadgeKeyword,
-} from './lib/keyword-icons.ts';
+import { KEYWORD_ICON_DIR, MAX_KEYWORD_ICON_BYTES, planKeywordIcons } from './lib/keyword-icons.ts';
 import {
   MAX_PACK_IMAGE_BYTES,
   MAX_UPSTREAM_PACK_BYTES,
@@ -210,7 +211,7 @@ async function main(): Promise<void> {
       dir: KEYWORD_ICON_DIR,
       downloads: planKeywordIcons(),
       maxBytes: MAX_KEYWORD_ICON_BYTES,
-      manifest: (present) => ({ source, keywords: present as BadgeKeyword[] }) satisfies KeywordIconManifest,
+      manifest: (present) => ({ source, keywords: present as IconKeyword[] }) satisfies KeywordIconManifest,
     },
   ];
   const derivedPacks = readJson<Record<string, DerivedPackEntry>>(

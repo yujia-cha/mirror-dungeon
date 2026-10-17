@@ -41,6 +41,7 @@ function judge(gifts: Gift[], stats = burnStats) {
     gifts,
     conditionReportsByGift(data, stats, indexes),
     effectReportsByGift(gifts, stats, indexes),
+    { deployed: stats.deployed },
   );
 }
 

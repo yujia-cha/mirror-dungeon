@@ -23,7 +23,7 @@ import {
   useApp,
 } from '../store.ts';
 import { ingredientTree } from '../lib/entangle.ts';
-import { upgradeLevelsOf, upgradedName } from '../lib/upgrade.ts';
+import { nextUpgrade, upgradeLevelsOf, upgradedName } from '../lib/upgrade.ts';
 import { GiftsStep } from '../steps/GiftsStep.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { usePlan } from '../shell/plan-context.ts';
@@ -157,6 +157,14 @@ describe('enhancement store (M130)', () => {
 });
 
 describe('enhancement on screen (M130)', () => {
+  it('cycles the badge through the steps the gift has text for, then back to plain', () => {
+    expect([0, 1, 2].map((level) => nextUpgrade([1, 2], level as 0 | 1 | 2))).toEqual([1, 2, 0]);
+    expect([0, 1].map((level) => nextUpgrade([1], level as 0 | 1))).toEqual([1, 0]);
+    // A step without text is skipped; a stale choice starts the cycle again.
+    expect([0, 2].map((level) => nextUpgrade([2], level as 0 | 2))).toEqual([2, 0]);
+    expect(nextUpgrade([1], 2)).toBe(1);
+  });
+
   const renderGifts = () => {
     const { deck, deployed } = useApp.getState();
     return renderPlanned(
@@ -171,38 +179,58 @@ describe('enhancement on screen (M130)', () => {
   const chip = (id: number) =>
     screen.getAllByTestId('gift-chip').find((el) => el.getAttribute('data-gift') === String(id))!;
 
-  it('gives a goal tile + / ++ only when the gift has them, and the tile follows the choice', async () => {
+  it('gives a goal tile a corner badge only when the gift has steps, cycling through them', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of [HARMONICS, BANDAGE, CIGAR]) useApp.getState().toggleWanted(id);
     renderGifts();
 
-    const harmonics = within(chip(HARMONICS)).getByTestId('gift-upgrade');
-    expect(
-      within(harmonics)
-        .getAllByRole('button')
-        .map((b) => b.textContent),
-    ).toEqual(['+', '++']);
-    expect(within(within(chip(BANDAGE)).getByTestId('gift-upgrade')).getAllByRole('button')).toHaveLength(1);
-    expect(within(chip(CIGAR)).queryByTestId('gift-upgrade')).toBeNull();
-    // Not enhanced by default.
-    for (const button of within(harmonics).getAllByRole('button'))
-      expect(button).toHaveAttribute('aria-pressed', 'false');
+    const badge = (id: number) => within(chip(id)).getByTestId('gift-upgrade-badge');
+    // No buttons under the name any more (M131): one badge, and none for a gift without steps.
+    for (const id of [HARMONICS, BANDAGE, CIGAR])
+      expect(within(chip(id)).queryByTestId('gift-upgrade')).toBeNull();
+    expect(within(chip(CIGAR)).queryByTestId('gift-upgrade-badge')).toBeNull();
+    // It sits with the icon, not under the name.
+    expect(badge(HARMONICS).parentElement).toContainElement(within(chip(HARMONICS)).getByTestId('gift-icon'));
 
-    await user.click(within(harmonics).getByRole('button', { name: '하모닉스 강화 ++' }));
-    expect(useApp.getState().upgrades).toEqual({ [HARMONICS]: 2 });
-    expect(within(harmonics).getByRole('button', { name: '하모닉스 강화 ++' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
+    // Not enhanced by default: a dashed 「+」 that says where a press goes.
+    expect(badge(HARMONICS)).toHaveAttribute('data-level', '0');
+    expect(badge(HARMONICS)).toHaveTextContent(/^\+$/);
+    expect(badge(HARMONICS)).toHaveClass('border-dashed');
+    expect(badge(HARMONICS)).toHaveAccessibleName('하모닉스 강화 전 · 누르면 +');
+
+    // 강화 전 → + → ++ → 강화 전.
+    await user.click(badge(HARMONICS));
+    expect(useApp.getState().upgrades).toEqual({ [HARMONICS]: 1 });
+    expect(badge(HARMONICS)).toHaveAttribute('data-level', '1');
+    expect(badge(HARMONICS)).toHaveTextContent(/^\+$/);
+    expect(badge(HARMONICS)).not.toHaveClass('border-dashed');
+    expect(badge(HARMONICS)).toHaveAccessibleName('하모닉스 강화: + · 누르면 ++');
+    expect(within(chip(HARMONICS)).getByRole('button', { name: '하모닉스+ 자세히' })).toHaveTextContent(
+      '하모닉스+',
     );
+
+    await user.click(badge(HARMONICS));
+    expect(useApp.getState().upgrades).toEqual({ [HARMONICS]: 2 });
+    expect(badge(HARMONICS)).toHaveAttribute('data-level', '2');
+    expect(badge(HARMONICS)).toHaveTextContent(/^\+\+$/);
+    expect(badge(HARMONICS)).toHaveAccessibleName('하모닉스 강화: ++ · 누르면 강화 전');
     expect(within(chip(HARMONICS)).getByRole('button', { name: '하모닉스++ 자세히' })).toHaveTextContent(
       '하모닉스++',
     );
 
-    // Pressing the chosen step again goes back to the plain gift.
-    await user.click(within(harmonics).getByRole('button', { name: '하모닉스 강화 ++' }));
+    await user.click(badge(HARMONICS));
     expect(useApp.getState().upgrades).toEqual({});
+    expect(badge(HARMONICS)).toHaveAttribute('data-level', '0');
     expect(within(chip(HARMONICS)).getByRole('button', { name: '하모닉스 자세히' })).toBeInTheDocument();
+
+    // One step only: 강화 전 ↔ +.
+    expect(badge(BANDAGE)).toHaveAccessibleName('덧붙인 반창고 강화 전 · 누르면 +');
+    await user.click(badge(BANDAGE));
+    expect(useApp.getState().upgrades).toEqual({ [BANDAGE]: 1 });
+    expect(badge(BANDAGE)).toHaveAccessibleName('덧붙인 반창고 강화: + · 누르면 강화 전');
+    await user.click(badge(BANDAGE));
+    expect(useApp.getState().upgrades).toEqual({});
 
     // The search still answers to the plain name.
     act(() => useApp.getState().setUpgrade(HARMONICS, 1));
@@ -210,6 +238,29 @@ describe('enhancement on screen (M130)', () => {
     expect(
       screen.getAllByTestId('gift-tile').some((el) => el.getAttribute('data-gift') === String(HARMONICS)),
     ).toBe(true);
+  });
+
+  it('shares one choice between the tile’s badge and the sheet’s steps', async () => {
+    const user = userEvent.setup();
+    useApp.getState().toggleWanted(HARMONICS);
+    renderGifts();
+    const badge = () => within(chip(HARMONICS)).getByTestId('gift-upgrade-badge');
+
+    await user.click(badge());
+    await user.click(within(chip(HARMONICS)).getByRole('button', { name: '하모닉스+ 자세히' }));
+    const sheet = screen.getByTestId('gift-detail');
+    const plus = within(sheet).getByRole('button', { name: '하모닉스 강화 +' });
+    const plusPlus = within(sheet).getByRole('button', { name: '하모닉스 강화 ++' });
+    expect(plus).toHaveAttribute('aria-pressed', 'true');
+    expect(plusPlus).toHaveAttribute('aria-pressed', 'false');
+
+    // The sheet's ++ moves the badge on with it, and pressing it again goes back to plain.
+    await user.click(plusPlus);
+    expect(badge()).toHaveAttribute('data-level', '2');
+    expect(badge()).toHaveTextContent(/^\+\+$/);
+    await user.click(plusPlus);
+    expect(badge()).toHaveAttribute('data-level', '0');
+    expect(useApp.getState().upgrades).toEqual({});
   });
 
   it('switches the sheet’s title and text to the chosen step, the changed numbers in bold', async () => {

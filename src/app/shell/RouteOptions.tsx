@@ -60,7 +60,7 @@ export function RouteOptions() {
           />
         </label>
         {note && (
-          <p className="text-caption text-fg-muted" data-testid="start-keyword-note">
+          <p className="text-body text-fg-muted" data-testid="start-keyword-note">
             {note}
           </p>
         )}

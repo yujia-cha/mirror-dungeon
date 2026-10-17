@@ -251,7 +251,7 @@ export function OtherPacks({
           inputProps={{ type: 'search' }}
         />
         {packs.length === 0 ? (
-          <p className="text-caption text-fg-subtle">{t('stageOtherNone', lang)}</p>
+          <p className="text-body text-fg-subtle">{t('stageOtherNone', lang)}</p>
         ) : (
           <ul className="grid gap-1.5 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
             {packs.map((pack) => {

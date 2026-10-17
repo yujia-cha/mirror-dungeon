@@ -229,7 +229,7 @@ export function RouteDecision({
                   </span>
                 </label>
                 {effect.sharesPackWith ? (
-                  <p className="pl-6 text-caption text-fg-muted" data-testid="drop-shares-pack">
+                  <p className="pl-6 text-body text-fg-muted" data-testid="drop-shares-pack">
                     {t('routeDecisionSharesPack', lang, {
                       names: effect.sharesPackWith.map(giftName).join(' · '),
                     })}
@@ -262,7 +262,7 @@ export function RouteDecision({
         ) : null}
         {selection.length > 0 ? (
           <div
-            className="mt-1 rounded-sm bg-surface-muted px-2 py-1 text-caption text-fg-muted"
+            className="mt-1 rounded-sm bg-surface-muted px-2 py-1 text-body text-fg-muted"
             data-testid="drop-sum"
             aria-live="polite"
           >

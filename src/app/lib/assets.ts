@@ -23,6 +23,7 @@
 import type {
   ArtManifest,
   GiftIconManifest,
+  IconKeyword,
   Keyword,
   KeywordIconManifest,
   PackImageManifest,
@@ -37,7 +38,7 @@ let localArt: { gifts: ReadonlySet<number>; packs: ReadonlySet<string> } = {
 
 let gameIcons: ReadonlySet<number> = new Set();
 
-let keywordIcons: ReadonlySet<Keyword> = new Set();
+let keywordIcons: ReadonlySet<string> = new Set();
 let gamePacks: ReadonlySet<string> = new Set();
 
 /** Hand the app the pack image manifest it loaded (M100). Absent means no game pack art. */
@@ -86,11 +87,12 @@ export function giftIconUrl(icon: number): Picture | null {
 }
 
 /**
- * The game's icon for a keyword, drawn as the gift tile's badge (M99), or `null` — then the badge is
- * the coloured dot it was before. Not routed through `VITE_ASSET_BASE` or `public/art/`: the owner
+ * The game's icon for a keyword, drawn as the gift tile's badge (M99) and the deck's identity
+ * keywords (M131, which add 탄환·혈찬), or `null` — then the badge is the coloured dot it was before
+ * and the deck draws the text chip. Not routed through `VITE_ASSET_BASE` or `public/art/`: the owner
  * draws gifts and packs, not keyword marks.
  */
-export function keywordIconUrl(keyword: Keyword): string | null {
+export function keywordIconUrl(keyword: Keyword | IconKeyword): string | null {
   return keywordIcons.has(keyword) ? `${localBase()}icons/keywords/${keyword}.webp` : null;
 }
 

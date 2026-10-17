@@ -187,7 +187,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
       <div className="flex flex-col gap-4" data-testid="feedback-sheet">
         <div className="flex flex-col gap-1">
           <h2 className="text-title text-fg">{t('feedback', lang)}</h2>
-          <p className="text-caption text-fg-muted">{t('feedbackIntro', lang)}</p>
+          <p className="text-body text-fg-muted">{t('feedbackIntro', lang)}</p>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -287,7 +287,7 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
               {t('feedbackDiagRecord', lang)}
             </Checkbox>
           </div>
-          <p className="text-caption text-fg-muted">{t('feedbackDiagHint', lang)}</p>
+          <p className="text-body text-fg-muted">{t('feedbackDiagHint', lang)}</p>
           <div className="flex items-center justify-between gap-2">
             <span className="text-caption text-fg-muted" data-testid="feedback-diag-count">
               {diag.count > 0
@@ -317,11 +317,11 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
             <Camera size={14} aria-hidden />
             {t('feedbackShot', lang)}
           </Button>
-          <p className="text-caption text-fg-muted">{t('feedbackShotHint', lang)}</p>
+          <p className="text-body text-fg-muted">{t('feedbackShotHint', lang)}</p>
         </div>
 
         <p
-          className="flex items-start gap-2 rounded-md border border-border-strong bg-surface px-3 py-2 text-caption text-fg"
+          className="flex items-start gap-2 rounded-md border border-border-strong bg-surface px-3 py-2 text-body text-fg"
           data-testid="feedback-privacy"
         >
           <Globe size={14} className="mt-0.5 flex-none" aria-hidden />
@@ -329,11 +329,11 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
         </p>
 
         {!issue.fits ? (
-          <p className="text-caption text-fg" data-testid="feedback-too-long">
+          <p className="text-body text-fg" data-testid="feedback-too-long">
             {t('feedbackTooLong', lang)}
           </p>
         ) : issue.trimmed ? (
-          <p className="text-caption text-fg-muted" data-testid="feedback-trimmed">
+          <p className="text-body text-fg-muted" data-testid="feedback-trimmed">
             {t('feedbackTrimmed', lang)}
           </p>
         ) : null}
@@ -348,11 +348,11 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
             {t('feedbackCopy', lang)}
           </Button>
         </div>
-        <p className="text-caption text-fg-muted">{t('feedbackCopyHint', lang)}</p>
+        <p className="text-body text-fg-muted">{t('feedbackCopyHint', lang)}</p>
         <p
           role="status"
           aria-live="polite"
-          className="min-h-4 text-caption text-fg"
+          className="min-h-4 text-body text-fg"
           data-testid="feedback-status"
         >
           {statusText}

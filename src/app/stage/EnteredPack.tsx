@@ -99,7 +99,7 @@ export function PackArea({ packId, closing = false }: { packId: number; closing?
                 ) : null}
               </div>
               {gifts.length === 0 ? (
-                <p className="text-caption text-fg-subtle">{t('stageExclusivesNone', lang)}</p>
+                <p className="text-body text-fg-subtle">{t('stageExclusivesNone', lang)}</p>
               ) : (
                 <div className="flex flex-wrap gap-2" data-testid="exclusive-gifts">
                   {gifts.map((id) => {

@@ -29,6 +29,7 @@ export function GiftTileGrid({
   onToggle,
   onOpen,
   reasons,
+  scores,
 }: {
   tiles: GiftTileData[];
   wanted: readonly number[];
@@ -42,6 +43,8 @@ export function GiftTileGrid({
   onOpen: (giftId: number) => void;
   /** 「추천 기프트」: why each tile is there (`relevanceReason`), as `data-recommend` — for debugging, never shown. */
   reasons?: ReadonlyMap<number, string>;
+  /** 「추천 기프트」: each tile's rank score (`recommendationScore`), as `data-score` — for debugging, never shown. */
+  scores?: ReadonlyMap<number, number>;
 }) {
   const size = useTileIconSize(32);
   return (
@@ -79,6 +82,7 @@ export function GiftTileGrid({
             data-block={block?.reason}
             data-entangled={entangled.has(gift.id) || undefined}
             data-recommend={reasons?.get(gift.id)}
+            data-score={scores?.get(gift.id)}
             title={blockedBy ?? lockedBy}
           >
             {marked ? (

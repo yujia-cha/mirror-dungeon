@@ -9,51 +9,19 @@
  */
 import { useState, type ReactNode } from 'react';
 import { CircleHelp, ScanEye, TriangleAlert } from 'lucide-react';
-import { pick, t, type Lang } from '../i18n.ts';
-import type { GameIndexes } from '../../core/types.ts';
+import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { READ_INTERVALS, type ReadIntervalPreset } from '../capture/loop.ts';
-import type { CaptureLogEntry, CaptureQuestion } from '../capture/useCapture.ts';
+import type { CaptureQuestion } from '../capture/useCapture.ts';
+import { giftName, logText, statusTextOf } from '../capture/capture-text.ts';
 import { useCaptureSession } from '../capture/capture-context.ts';
 import { DetailSurface } from '../components/BlockDetail.tsx';
 import { Button, Checkbox, Select } from '../components/ui.tsx';
 import { usePlan } from './plan-context.ts';
 import { DiagnosticsSection } from './DiagnosticsSection.tsx';
+import { OverlayToggle } from '../overlay/OverlayToggle.tsx';
 
 const PRESETS = Object.keys(READ_INTERVALS) as ReadIntervalPreset[];
-
-function giftName(indexes: GameIndexes, id: number, lang: Lang): string {
-  return pick(indexes.giftById.get(id)?.name, lang) || String(id);
-}
-
-function logText(
-  entry: CaptureLogEntry,
-  indexes: GameIndexes,
-  lang: Lang,
-  packName: (id: number) => string,
-): string {
-  const e = entry.event;
-  switch (e.kind) {
-    case 'enter':
-      return t('captureLogEnter', lang, { floor: e.floor, name: packName(e.packId) });
-    case 'got':
-      return t('captureLogGot', lang, { name: giftName(indexes, e.giftId, lang) });
-    case 'sold':
-      return t('captureLogSold', lang, { name: giftName(indexes, e.giftId, lang) });
-    case 'fused':
-      return t('captureLogFused', lang, {
-        name: `${giftName(indexes, e.resultId, lang)} ← ${e.consumed.map((id) => giftName(indexes, id, lang)).join(', ')}`,
-      });
-    case 'answer':
-      return t('captureLogAnswer', lang, {
-        name: e.picked
-          .map((id) => (e.ask.kind === 'pack' ? packName(id) : giftName(indexes, id, lang)))
-          .join(', '),
-      });
-    default:
-      return '';
-  }
-}
 
 function Question({
   question,
@@ -124,14 +92,6 @@ function Question({
   );
 }
 
-/** What the session is doing, in words — the same sentence in the popover and on the button. */
-function statusTextOf(capture: ReturnType<typeof useCaptureSession>, lang: Lang): string {
-  if (capture.error) return t(`captureErr_${capture.error}`, lang);
-  if (capture.status === 'running') return t('captureRunning', lang);
-  if (capture.status === 'starting') return t('captureStarting', lang);
-  return t('captureIdle', lang);
-}
-
 /** The popover's body. `children` is the owner's diagnostics section (M112), when it is on. */
 export function CapturePanel({ children }: { children?: ReactNode }) {
   const { indexes, lang, packName } = usePlan();
@@ -178,7 +138,7 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
             {t('captureLog', lang)}
           </h3>
           {capture.log.length === 0 ? (
-            <p className="text-caption text-fg-subtle">{t('captureLogEmpty', lang)}</p>
+            <p className="text-body text-fg-subtle">{t('captureLogEmpty', lang)}</p>
           ) : (
             <ul className="flex max-h-60 flex-col overflow-y-auto" data-testid="capture-log">
               {capture.log.map((entry) => (
@@ -235,9 +195,12 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
         </label>
       </div>
 
+      {/* The overlay window (M132): opens without a share, and outlives this popover. */}
+      <OverlayToggle />
+
       {children}
 
-      <p className="text-caption text-fg-subtle">{t('capturePrivacy', lang)}</p>
+      <p className="text-body text-fg-subtle">{t('capturePrivacy', lang)}</p>
     </div>
   );
 }

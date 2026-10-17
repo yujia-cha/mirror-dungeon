@@ -312,7 +312,7 @@ export function App() {
         >
           <TriangleAlert size={28} aria-hidden />
           <div className="text-subheading ">{t('loadFailed', lang)}</div>
-          <div className="text-caption text-fg-subtle">
+          <div className="text-body text-fg-subtle">
             {error.code ? t(error.code, lang, error.params) : error.text}
           </div>
           <Button variant="primary" onClick={() => setAttempt((n) => n + 1)}>
@@ -343,7 +343,7 @@ export function App() {
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-2 text-caption text-fg-subtle">
+        <div className="flex items-center gap-2 text-body text-fg-subtle">
           <Hourglass size={13} aria-hidden />
           {t('loading', lang)}
         </div>

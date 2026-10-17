@@ -52,12 +52,6 @@ export const LAYOUT_ALLOW: AllowEntry[] = [
   },
   {
     check: 'target',
-    selector: '[data-testid="gift-chip"] [data-upgrade-step]',
-    reason:
-      "A goal tile's `+` / `++` (M130) split a 64–80px tile between them: 44px high on touch, about 34px wide each. Stacking them would double the tile; a miss is one press to undo, and the gift sheet holds full-size steps.",
-  },
-  {
-    check: 'target',
     selector: '[data-testid="gift-tile"] > button[aria-pressed]',
     reason:
       "A gift tile's icon is as big as the visitor's own 「기프트 아이콘 크기」 (32px at 보통, 44px+ from 크게); a 44px floor would make the smaller steps meaningless.",

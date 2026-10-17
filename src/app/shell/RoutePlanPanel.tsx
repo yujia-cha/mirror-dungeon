@@ -169,7 +169,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
       {otherWarnings.length > 0 ? (
         <Card className="p-4">
           <SectionTitle>{t('routeWarnings', lang)}</SectionTitle>
-          <ul className="mt-2 flex flex-col gap-1 text-caption text-fg-muted">
+          <ul className="mt-2 flex flex-col gap-1 text-body text-fg-muted">
             {/* One code can come twice (`pack-option-dropped` for unknown pins and for unplaced preferences). */}
             {otherWarnings.map((w, i) => (
               <li key={`${w.code}:${i}`}>{warningText(w, giftName, packName, lang)}</li>

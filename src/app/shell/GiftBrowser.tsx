@@ -29,6 +29,7 @@ import {
   recommendedGifts,
   type RecommendFilters,
 } from '../lib/recommend.ts';
+import { orderRecommended } from '../lib/recommend-rank.ts';
 import { useGiftFilters } from '../lib/useGiftFilters.ts';
 import { useLatest } from '../lib/useLatest.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
@@ -86,17 +87,23 @@ export function GiftBrowser({
         data.gifts.filter((gift) => gift.obtainable || wanted.includes(gift.id)),
         conditionByGift,
         effectsByGift,
+        { deployed: stats.deployed },
       ),
-    [data, wanted, conditionByGift, effectsByGift],
+    [data, wanted, conditionByGift, effectsByGift, stats],
   );
   const recommended = useMemo(() => {
     const keep = (entry: GiftEntry): boolean =>
       matchesGiftName(entry.gift, filters) && matchesRecommendFilters(entry.gift, recFilters);
+    // The order is `lib/recommend-rank.ts`'s, whichever 정렬 is chosen.
+    const scoreOf = (id: number): number => recommendation.scores.get(id) ?? 0;
+    const shown = (list: readonly GiftEntry[]): GiftEntry[] =>
+      orderRecommended(list.filter(keep), recFilters.sort, scoreOf);
     return {
-      deck: recommendation.deck.filter(keep),
-      free: recommendation.free.filter(keep),
-      ego: recommendation.ego.filter(keep),
+      deck: shown(recommendation.deck),
+      free: shown(recommendation.free),
+      ego: shown(recommendation.ego),
       reasons: recommendation.reasons,
+      scores: recommendation.scores,
     };
   }, [recommendation, filters, recFilters]);
   const recNarrowed = recommendFiltersActive(recFilters) || filters.query.trim() !== '';
@@ -128,7 +135,11 @@ export function GiftBrowser({
     first.current?.focus();
   }, []);
 
-  const grid = (list: GiftTileData[], reasons?: ReadonlyMap<number, string>) => (
+  const grid = (
+    list: GiftTileData[],
+    reasons?: ReadonlyMap<number, string>,
+    scores?: ReadonlyMap<number, number>,
+  ) => (
     <GiftTileGrid
       tiles={list}
       wanted={wanted}
@@ -140,6 +151,7 @@ export function GiftBrowser({
       onToggle={toggleGoal}
       onOpen={openGift}
       reasons={reasons}
+      scores={scores}
     />
   );
 
@@ -172,6 +184,7 @@ export function GiftBrowser({
             grid(
               entries.map((entry) => ({ entry })),
               recommended.reasons,
+              recommended.scores,
             )
           }
           enums={data.enums}

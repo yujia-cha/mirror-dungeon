@@ -86,23 +86,25 @@ export function requirementText(
   }
 }
 
-/** 「LCB 수감자 이상 S1·S3, 홍루 S2」 — or 「없음」; with a count when a threshold above one is asked. */
-export function whoText(
+/**
+ * One chip per deployed identity that meets the requirement (M131): `label` is the sinner and the
+ * slots (「이상 S1·S3」 — a deck holds one identity per sinner, so the sinner tells them apart),
+ * `full` the whole identity name with the slots, for the chip's title and accessible name. Empty
+ * when nobody meets it (the line draws 「없음」), and for an E.G.O skill requirement, which is always
+ * met and reads 「조건 없음」 instead.
+ */
+export function whoChips(
   report: RequirementReport,
   identityById: ReadonlyMap<number, Identity>,
   lang: Lang,
-): string {
-  if (report.requirement.type === 'egoSkill') return t('effNoCondition', lang);
-  const who =
-    report.matches.length === 0
-      ? t('effNone', lang)
-      : report.matches
-          .map(({ id, slots }) => {
-            const name = identityLabel(identityById.get(id), id, lang);
-            return slots.length > 0 ? `${name} ${t('effSlot', lang, { slots: slots.join('·S') })}` : name;
-          })
-          .join(', ');
-  return report.need > 1 ? `${who} (${t('effCount', lang, { have: report.have, need: report.need })})` : who;
+): { id: number; label: string; full: string }[] {
+  if (report.requirement.type === 'egoSkill') return [];
+  return report.matches.map(({ id, slots }) => {
+    const identity = identityById.get(id);
+    const slotText = slots.length > 0 ? ` ${t('effSlot', lang, { slots: slots.join('·S') })}` : '';
+    const sinner = identity ? pick(identity.sinner, lang) : String(id);
+    return { id, label: `${sinner}${slotText}`, full: `${identityLabel(identity, id, lang)}${slotText}` };
+  });
 }
 
 /** The blocks of `text` if they line up with the report's effects, else null (draw it plain). */

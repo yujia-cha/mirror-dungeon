@@ -82,7 +82,10 @@ export function RecommendFilterBar({
   );
 }
 
-/** One section: a header with its count, then the tiles — grouped under keyword heads when sorted so. */
+/**
+ * One section: a header with its count, then the tiles in the order given (`lib/recommend-rank.ts`) —
+ * grouped under keyword heads when sorted so, each group keeping that order, unless it is `flat`.
+ */
 function Section({
   title,
   entries,
@@ -92,6 +95,7 @@ function Section({
   enums,
   lang,
   testId,
+  flat = false,
 }: {
   title: string;
   entries: readonly GiftEntry[];
@@ -102,6 +106,8 @@ function Section({
   enums: Enums;
   lang: Lang;
   testId: string;
+  /** Never split into keyword groups, whatever the sort (the E.G.O section — owner's call). */
+  flat?: boolean;
 }) {
   const keywordName = (keyword: Keyword): string =>
     pick(enums.keywords.find((k) => k.id === keyword)?.name, lang) || keyword;
@@ -112,7 +118,7 @@ function Section({
         {empty}
       </div>
     );
-  } else if (sort === 'keyword') {
+  } else if (sort === 'keyword' && !flat) {
     content = groupByKeyword(
       entries,
       enums.keywords.map((k) => k.id as Keyword),
@@ -152,7 +158,7 @@ export function RecommendedSections({
 }: {
   deck: readonly GiftEntry[];
   free: readonly GiftEntry[];
-  /** 「E.G.O 스킬 조건」 — last, drawn only when it has something. */
+  /** 「E.G.O 스킬 조건」 — last, drawn only when it has something, and in one grid (never by keyword). */
   ego: readonly GiftEntry[];
   sort: RecommendSort;
   /** Why 「덱 조건 충족」 is empty: no deck, nothing met, or the filters. */
@@ -203,6 +209,7 @@ export function RecommendedSections({
           enums={enums}
           lang={lang}
           testId="recommend-ego"
+          flat
         />
       ) : null}
     </div>

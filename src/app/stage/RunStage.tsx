@@ -74,7 +74,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
           <span className="text-subheading ">{t('stageEnterable', lang)}</span>
         </div>
         {shown && routePacks.length === 0 && stageMode === 'undecided' ? (
-          <p className="text-caption text-fg-subtle">{t('stageNoRoutePack', lang)}</p>
+          <p className="text-body text-fg-subtle">{t('stageNoRoutePack', lang)}</p>
         ) : null}
         <div className="flex flex-wrap items-start gap-3 pb-3" data-testid="stage-packs">
           {routePacks.map(({ packId, alternatives }) => {

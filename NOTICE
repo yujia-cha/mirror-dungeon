@@ -28,18 +28,19 @@ Limbus Company의 게임 데이터·텍스트·에셋에 대한 권리는 **Proj
 `data/sources.lock.json`)이고, 그 저장소도 권리를 Project Moon에 둡니다. 권리자가 요청하면
 이 폴더를 지우고 아이콘 없이 동작하는 방식으로 돌아갑니다(아래 「삭제 요청」).
 
-`public/icons/keywords/`의 키워드 아이콘 10개(화상·출혈·진동·파열·침잠·호흡·충전·참격·관통·타격)도
-Project Moon의 게임 에셋입니다. 기프트 타일 모서리에서 그 기프트의 키워드를 알려 주는 표시로 쓰고,
-출처는 같은 저장소의 `assets/icons/`입니다. 요청이 오면 이 폴더만 지우고 색 점 표시로 돌아갑니다.
+`public/icons/keywords/`의 키워드 아이콘 12개(화상·출혈·진동·파열·침잠·호흡·충전·참격·관통·타격·탄환·혈찬)도
+Project Moon의 게임 에셋입니다. 기프트 타일 모서리에서 그 기프트의 키워드를 알려 주는 표시와 덱의
+인격 키워드 표시로 쓰고, 출처는 같은 저장소의 `assets/icons/`(탄환·혈찬은 `assets/statuses/`)입니다.
+요청이 오면 이 폴더만 지우고 색 점·글자 표시로 돌아갑니다.
 
 `public/icons/packs/`의 테마팩 그림도 Project Moon의 게임 에셋입니다. 팩 카드의 그림으로 쓰고, 같은
 저장소의 `assets/theme_packs/`를 화면에 필요한 크기(폭 256px)로 줄여 담습니다. 요청이 오면 이
 폴더만 지우고 그림 없는 카드로 돌아갑니다.
 
 The E.G.O gift icons under `public/icons/gifts/` are Project Moon's game assets, included
-because the screen-capture tracker needs them to recognise fusion ingredients; the gift tiles show them too. The ten
+because the screen-capture tracker needs them to recognise fusion ingredients; the gift tiles show them too. The twelve
 keyword icons under `public/icons/keywords/` are Project Moon's game assets too, drawn as each gift tile's keyword
-badge, and so is the theme pack art under `public/icons/packs/`, shrunk to 256px wide for the pack cards. All three
+badge and as the deck's identity keywords, and so is the theme pack art under `public/icons/packs/`, shrunk to 256px wide for the pack cards. All three
 sets are copied from eldritchtools/limbus-assets and will be removed on the rights holder's request.
 
 ## 자작 아트

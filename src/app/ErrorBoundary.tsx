@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
         >
           <TriangleAlert size={28} aria-hidden />
           <div className="text-subheading ">{text.title}</div>
-          <div className="text-caption text-fg-subtle">
+          <div className="text-body text-fg-subtle">
             {error.message}
             <br />
             {text.hint}

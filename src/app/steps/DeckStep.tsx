@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, ClipboardPaste, Eraser, Plus, RotateCcw, Search, Swords } from 'lucide-react';
+import { Check, ClipboardPaste, Eraser, Plus, RotateCcw, Search } from 'lucide-react';
 import type { GameData, Identity } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { sinnerOf, useApp } from '../store.ts';
-import { identityKeywordLabel } from '../format.ts';
 import { identitiesFromFormationCode } from '../lib/formation-code.ts';
 import { DEPLOYED_AT_START, defaultDeck } from '../lib/default-deck.ts';
 import { deckSummaryChips } from '../lib/deck-summary.ts';
@@ -13,7 +12,8 @@ import { stepIndex, useDismiss } from '../lib/useDismiss.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
-import { attackTypeLabels, searchIdentities, sinLabels, type SearchMode } from '../lib/identity-search.ts';
+import { IdentityKeywordIcons } from '../components/IdentityKeywordIcons.tsx';
+import { searchIdentities, sinLabels, type SearchMode } from '../lib/identity-search.ts';
 import { DetailSurface } from '../components/BlockDetail.tsx';
 import { Badge, Button, Checkbox, Chip, TextField } from '../components/ui.tsx';
 
@@ -24,46 +24,16 @@ interface Props {
   lang: Lang;
 }
 
-function KeywordChips({ identity, data, lang }: { identity: Identity; data: GameData; lang: Lang }) {
-  const entries = Object.entries(identity.keywords);
-  // Nothing at all when an identity carries no keyword. The five that derive none genuinely inflict
-  // none — their skills only apply 마비·속박·방어 레벨 류 buffs, and the derived mirror agrees — so a
-  // 「?」 and a 「판정이 낮게 나올 수 있습니다」 said something untrue. Whether the derivation itself
-  // ever goes wrong is a build-time question, and `data:validate` asks it against the mirror.
-  if (entries.length === 0) return null;
-  // Name only — 「침잠」, not 「침잠 5」. Whether a keyword is the 특수 variant is part of the name.
-  return (
-    <>
-      {entries.map(([keyword, info]) => {
-        const { label, title } = identityKeywordLabel(keyword as never, info, data.enums, lang);
-        return (
-          <Chip key={keyword} title={title}>
-            {label}
-          </Chip>
-        );
-      })}
-    </>
-  );
-}
-
 /**
- * What else a search row says about an identity, after its keywords: its attack types on one chip
- * (a ⚔ tells it from the keyword chips without a colour) and its sins as plain text. Both are
+ * What a search row says about an identity under its name: its keywords, attack types and 탄환·혈찬
+ * as icons (the same component as the deck slot), then its sins as plain text. All of it is
  * searchable, so a row never matches on something it does not show.
  */
 function IdentityMeta({ identity, data, lang }: { identity: Identity; data: GameData; lang: Lang }) {
-  const attacks = attackTypeLabels(identity, data.enums, lang);
   const sins = sinLabels(identity, lang);
   return (
-    <span className="flex flex-wrap items-center gap-1" data-testid="identity-meta">
-      <KeywordChips identity={identity} data={data} lang={lang} />
-      {attacks.length > 0 ? (
-        <Chip title={t('deckAttackTypes', lang)}>
-          <Swords size={10} aria-hidden />
-          <span className="sr-only">{t('deckAttackTypes', lang)} </span>
-          {attacks.join(' · ')}
-        </Chip>
-      ) : null}
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid="identity-meta">
+      <IdentityKeywordIcons identity={identity} enums={data.enums} lang={lang} />
       {sins.length > 0 ? (
         <span className="text-caption text-fg-subtle" title={t('deckSins', lang)}>
           <span className="sr-only">{t('deckSins', lang)} </span>
@@ -369,7 +339,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
       </div>
       {/* Why the reserve boxes are greyed out, said where a touch reader can see it (not a title). */}
       {full ? (
-        <p className="text-caption text-fg-muted" data-testid="deck-deployed-full">
+        <p className="text-body text-fg-muted" data-testid="deck-deployed-full">
           {t('deckDeployedFull', lang, { max })}
         </p>
       ) : null}
@@ -392,7 +362,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
           <Button type="submit" variant="primary">
             {t('deckImportApply', lang)}
           </Button>
-          {importMessage ? <span className="w-full text-caption text-fg-muted">{importMessage}</span> : null}
+          {importMessage ? <span className="w-full text-body text-fg-muted">{importMessage}</span> : null}
         </form>
       ) : null}
 
@@ -448,9 +418,7 @@ export function DeckStep({ data, indexes, stats, lang }: Props) {
                         {t('deckRank', lang, { n: identity.rank })}
                       </span>
                     </span>
-                    <span className="flex flex-wrap gap-1">
-                      <KeywordChips identity={identity} data={data} lang={lang} />
-                    </span>
+                    <IdentityKeywordIcons identity={identity} enums={data.enums} lang={lang} />
                   </>
                 ) : (
                   <span className="flex items-center gap-1.5 text-body text-fg-subtle">
@@ -612,7 +580,7 @@ function SinnerPicker({
           aria-label={title}
         >
           {identities.length === 0 ? (
-            <li className="px-4 py-3 text-caption text-fg-subtle">{t('deckSearchNone', lang)}</li>
+            <li className="px-4 py-3 text-body text-fg-subtle">{t('deckSearchNone', lang)}</li>
           ) : null}
           {identities.map((identity, i) => {
             const held = identity.id === selected?.id;

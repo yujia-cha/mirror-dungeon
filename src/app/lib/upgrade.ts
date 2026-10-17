@@ -31,3 +31,15 @@ export function upgradedName(gift: Gift, level: UpgradeLevel | 0 | undefined, la
 export function stepLabel(level: UpgradeLevel): string {
   return '+'.repeat(level);
 }
+
+/** The steps the gift has text for, lowest first. */
+export function levelsOf(gift: Gift): UpgradeLevel[] {
+  return (gift.upgrades ?? []).map((upgrade) => upgrade.level).sort((a, b) => a - b);
+}
+
+/** The step after `chosen` in the goal tile badge's cycle (M131): plain → each step in turn → plain. */
+export function nextUpgrade(levels: readonly UpgradeLevel[], chosen: UpgradeLevel | 0): UpgradeLevel | 0 {
+  if (chosen === 0) return levels[0] ?? 0;
+  const index = levels.indexOf(chosen);
+  return index < 0 ? (levels[0] ?? 0) : (levels[index + 1] ?? 0);
+}

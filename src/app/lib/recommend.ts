@@ -25,7 +25,8 @@ import {
 } from '../../core/index.ts';
 import type { Gift, Keyword } from '../../core/schema.ts';
 import type { ConditionReport, DeckStats, GameIndexes } from '../../core/types.ts';
-import { classifyGift, compareEntries, isPackBound, type GiftEntry } from './gift-priority.ts';
+import { classifyGift, isPackBound, type GiftEntry } from './gift-priority.ts';
+import { compareRecommended, recommendationScore, type RankContext } from './recommend-rank.ts';
 
 /**
  * Why a gift is recommended: the deck can use an effect that asks for it (`deck`), it is plain and
@@ -65,35 +66,38 @@ export interface Recommendation {
   ego: GiftEntry[];
   /** `relevanceReason` per recommended gift — for debugging only. */
   reasons: Map<number, string>;
+  /** `recommendationScore` per recommended gift — the order; shown only as `data-score`. */
+  scores: Map<number, number>;
 }
 
 /**
- * Split `gifts` into the two recommended groups, each in the tab's usual order (pack-bound first,
- * closer first, id — `compareEntries`). Gifts that are neither are left out. `conditionByGift` only
- * draws the tiles' rings and condition line.
+ * Split `gifts` into the recommended groups, each ranked by `lib/recommend-rank.ts` (today: the
+ * identities the effect applies to, most first; ties in the tab's usual order). Gifts that are none
+ * are left out. `conditionByGift` only draws the tiles' rings and condition line.
  */
 export function recommendedGifts(
   gifts: readonly Gift[],
   conditionByGift: ReadonlyMap<number, ConditionReport[]>,
   effectsByGift: ReadonlyMap<number, GiftEffectsReport>,
+  rank: RankContext,
 ): Recommendation {
-  const out: Recommendation = { deck: [], free: [], ego: [], reasons: new Map() };
+  const out: Recommendation = { deck: [], free: [], ego: [], reasons: new Map(), scores: new Map() };
   for (const gift of gifts) {
     const report = effectsByGift.get(gift.id);
     const activation = activationOf(gift, report);
     if (activation === null) continue;
     out[activation].push(classifyGift(gift, conditionByGift.get(gift.id) ?? []));
     out.reasons.set(gift.id, relevanceReason(report!));
+    out.scores.set(gift.id, recommendationScore(report!, rank));
   }
-  out.deck.sort(compareEntries);
-  out.free.sort(compareEntries);
-  out.ego.sort(compareEntries);
+  const scoreOf = (id: number): number => out.scores.get(id) ?? 0;
+  for (const list of [out.deck, out.free, out.ego]) list.sort((a, b) => compareRecommended(a, b, scoreOf));
   return out;
 }
 
 /** 획득: 팩 전용 = `isPackBound`; 범용 = everything else (범용 드랍, 조합, 시작 …). */
 export type RecommendAcquisition = 'pack' | 'general';
-/** 정렬: by keyword (the default), or the tab's usual order with pack-bound first. */
+/** 정렬: by keyword (the default), or pack-bound first — each by score inside (`recommend-rank.ts`). */
 export type RecommendSort = 'keyword' | 'pack';
 
 export interface RecommendFilters {

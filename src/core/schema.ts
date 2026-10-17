@@ -690,12 +690,21 @@ export type GiftIconManifest = z.infer<typeof giftIconManifestSchema>;
 
 /**
  * `public/icons/keywords/manifest.json` — the game's keyword icons (M99), each `{Keyword}.webp`,
- * drawn as the gift tile's keyword badge. A manifest of its own so that a takedown of one image set
+ * drawn as the gift tile's keyword badge and, with 탄환·혈찬, as the deck's identity keyword icons
+ * (M131). A manifest of its own so that a takedown of one image set
  * stops one thing: without it the badge falls back to a coloured dot.
  */
+export const iconKeywordSchema = z.enum([
+  ...keywordSchema.exclude(['None']).options,
+  'Bullet',
+  'BloodDinner',
+] as const);
+/** A keyword with a game icon: every `Keyword` but `None`, plus the identity-only 탄환·혈찬 (M131). */
+export type IconKeyword = z.infer<typeof iconKeywordSchema>;
+
 export const keywordIconManifestSchema = z.object({
   source: z.object({ repo: z.string(), sha: z.string() }),
-  keywords: z.array(keywordSchema.exclude(['None'])),
+  keywords: z.array(iconKeywordSchema),
 });
 export type KeywordIconManifest = z.infer<typeof keywordIconManifestSchema>;
 
