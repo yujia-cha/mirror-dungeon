@@ -8,14 +8,27 @@
  * Nothing waits for real time, so a ten-minute run of screens measures in seconds once the OCR
  * results are cached.
  *
+ * It follows the session's M141 rules too: a busy tick whose popup part changed queues its shot
+ * (`backlog.ts`), and once a read lands the queue is read oldest first as popup reads, the loop
+ * busy all the while; in a popup burst the ticks come on every new frame — the next shot boundary
+ * — with the `BURST_TICK_MS` timer as the backstop on a screen that holds still.
+ *
  * The caller supplies the two costly parts — a shot's signature and reading a shot — so this file
  * stays free of pixels and engines and its rules can be tested with fakes.
  */
+import {
+  emptyBacklog,
+  popupPart,
+  push,
+  shouldQueue,
+  take,
+  type Backlog,
+} from '../../src/app/capture/backlog.ts';
 import { changed } from '../../src/app/capture/change.ts';
 import {
-  BURST_TICK_MS,
   decide,
   finished,
+  inBurst,
   INITIAL_LOOP,
   tickDelay,
   type LoopState,
@@ -71,6 +84,11 @@ export interface SimulateInput {
    * asked for a full read or a popup read of the popup burst (M136).
    */
   read: (shot: number, held: ReadonlySet<number>, mode: ReadMode) => Promise<ShotRead>;
+  /**
+   * Where the popup's regions sit in a signature (`popupRegionIndices`, M141): the backlog compares
+   * only those. Omitted = the whole signature.
+   */
+  popupRegions?: readonly number[];
 }
 
 export interface TimedEvent {
@@ -89,6 +107,15 @@ export interface SimulateResult {
   events: TimedEvent[];
   /** Length of the timeline. */
   durationMs: number;
+  /** Reads of shots queued under a busy read (M141), and queued shots pushed out unread. */
+  queued: number;
+  queueDropped: number;
+}
+
+/** When the next shot comes on screen after `t` — the share's next frame — or Infinity. */
+function nextBoundary(timeline: readonly Span[], t: number): number {
+  for (const span of timeline) if (span.start > t) return span.start;
+  return Infinity;
 }
 
 /** Which span is on screen at `t`, or null past the end. */
@@ -107,18 +134,54 @@ export function foldHeld(held: Set<number>, event: CaptureEvent): void {
 
 export async function simulate(input: SimulateInput): Promise<SimulateResult> {
   const { intervalMs, timeline, signature, read } = input;
-  const firstTick = input.firstTickMs ?? intervalMs;
+  const part = (sig: Uint8Array) => (input.popupRegions ? popupPart(sig, input.popupRegions) : sig);
   const durationMs = timeline.length > 0 ? timeline[timeline.length - 1]!.end : 0;
   let loop: LoopState = INITIAL_LOOP;
   let tracker = INITIAL_TRACKER;
+  let backlog: Backlog<number> = emptyBacklog();
   const held = new Set<number>();
-  const out: SimulateResult = { ticks: 0, reads: 0, ocrCalls: 0, ocrMs: 0, events: [], durationMs };
+  const out: SimulateResult = {
+    ticks: 0,
+    reads: 0,
+    ocrCalls: 0,
+    ocrMs: 0,
+    events: [],
+    durationMs,
+    queued: 0,
+    queueDropped: 0,
+  };
   /** The read in flight: it ends at `until` with these results. */
-  let pending: { until: number; shot: number; result: ShotRead } | null = null;
+  // Set in the helpers below: cast, so the loop does not read it as always null.
+  let pending = null as { until: number; shot: number; result: ShotRead } | null;
+  /** The next tick booked. */
+  let t = input.firstTickMs ?? intervalMs;
 
-  const land = () => {
+  /**
+   * A burst's next tick from `from` (M141): the share's next frame, the timer as the backstop —
+   * at least 1 ms on, as a callback comes no sooner than the next turn.
+   */
+  const burstTick = (from: number): number =>
+    Math.max(from + 1, Math.min(from + tickDelay(loop, from, intervalMs), nextBoundary(timeline, from)));
+  /** The tick after `from`: the preset's interval, or the burst's (M139, M141). */
+  const book = (from: number): number => (inBurst(loop, from) ? burstTick(from) : from + intervalMs);
+
+  const startRead = async (shot: number, at: number, mode: ReadMode): Promise<void> => {
+    const result = await read(shot, held, mode);
+    out.reads += 1;
+    out.ocrCalls += result.ocrCalls;
+    out.ocrMs += result.ms;
+    pending = { until: at + result.ms, shot, result };
+  };
+
+  /**
+   * The read in flight is done: its events land, the loop folds what it found — a burst begun
+   * brings the booked tick in, as the session's `followBurst` does — and the next queued shot is
+   * read at once, the loop busy all the while (M141).
+   */
+  const land = async (): Promise<void> => {
     if (!pending) return;
     const { until, shot, result } = pending;
+    pending = null;
     const folded = trackFrame(tracker, result.frame);
     tracker = folded.state;
     for (const event of folded.events) {
@@ -130,32 +193,40 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       popup: result.frame.screen === 'acquired',
       partial: result.frame.partial === true,
     });
-    pending = null;
+    if (inBurst(loop, until)) t = Math.min(t, burstTick(until));
+    const next = take(backlog);
+    if (!next.entry) return;
+    backlog = next.backlog;
+    loop = { ...loop, busy: true };
+    out.queued += 1;
+    await startRead(next.entry.payload, until, 'popup');
   };
 
-  // The session books one tick at a time (M139): the preset's interval, `BURST_TICK_MS` in a popup
-  // burst, and a read that finds a popup brings the next tick in to `BURST_TICK_MS` after it lands.
-  const next = (t: number): number => {
-    const booked = t + tickDelay(loop, t, intervalMs);
-    const popupLands = pending?.result.frame.screen === 'acquired' ? pending.until + BURST_TICK_MS : Infinity;
-    return Math.min(booked, Math.max(popupLands, t + 1));
-  };
-  for (let t = firstTick; t < durationMs; t = next(t)) {
-    if (pending && pending.until <= t) land();
+  for (;;) {
+    if (pending && pending.until <= t) {
+      await land();
+      continue;
+    }
+    if (t >= durationMs) break;
     const shot = shotAt(timeline, t);
     if (shot === null) break;
     out.ticks += 1;
     const sig = signature(shot, t);
     const step = decide(loop, sig, changed(loop.lastRead, sig), t);
     loop = step.state;
-    if (step.decision === 'skip') continue;
-    const result = await read(shot, held, step.mode);
-    out.reads += 1;
-    out.ocrCalls += result.ocrCalls;
-    out.ocrMs += result.ms;
-    pending = { until: t + result.ms, shot, result };
+    if (step.decision === 'skip') {
+      // A busy tick whose popup changed queues its shot (M141).
+      const reading = loop.lastRead ? part(loop.lastRead) : null;
+      if (shouldQueue(backlog, loop.busy, reading, part(sig))) {
+        const pushed = push(backlog, part(sig), shot);
+        backlog = pushed.backlog;
+        if (pushed.evicted !== null) out.queueDropped += 1;
+      }
+    } else await startRead(shot, t, step.mode);
+    t = book(t);
   }
-  land();
+  // What is still in flight or queued is read, as the session would.
+  while (pending) await land();
   return out;
 }
 

@@ -4,7 +4,8 @@
  *
  * What it keeps:
  * - every read (its trace of OCR passes, what it matched, the events it made, and how many ticks
- *   it kept waiting — M134);
+ *   it kept waiting — M134; a popup queued under a busy read is a read of its own, `queued` with its
+ *   lag, and keeps no frame — it is a crop — M141);
  * - what the reader applied, what the player undid or answered, and run changes made by hand —
  *   while the reader runs, a hand-made change is most likely something it missed;
  * - one record per floor left (what the route offered, what was entered, how the gifts went) and
@@ -396,6 +397,8 @@ export class DiagRecorder {
         kind: 'read',
         reason: report.reason,
         ...(report.mode === 'popup' ? { mode: 'popup' as const } : {}),
+        ...(report.queued ? { queued: true as const, lagMs: Math.round(report.queued.lagMs) } : {}),
+        ...(report.queueDropped ? { queueDropped: report.queueDropped } : {}),
         ms: Math.round(report.ms),
         ocrCalls: report.ocrCalls,
         screen: report.frame.screen,

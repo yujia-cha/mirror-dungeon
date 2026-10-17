@@ -7,10 +7,13 @@
  * A glance, not a second app (the owner's call). Every listener the app's floating layers use
  * (`useDismiss`, `DetailSurface`, the sheets) is on the page's `document`, which a press in this
  * window never reaches — so nothing here opens a sheet or a popover, and names are plain words, not
- * links. The one thing it does change is the run start (M138): plain buttons, whose React handlers
+ * links. The one thing it can change is the run start (M138): plain buttons, whose React handlers
  * do reach this window (React listens on the portal's container), say which start gifts and
  * observations the game actually gave, because that is decided in the game while this window is
- * the one in view.
+ * the one in view. Only while the screen reader is off (M141): while it runs, the start is its
+ * record — a confirm pressed early closed the start, and the reader stopped looking for the
+ * observation screen — so the section just shows what it has seen and settles on floor 1's pack
+ * select by itself (tracker `startDone` → `settleStart`).
  */
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
@@ -64,10 +67,10 @@ const START_TAG = {
 } as const;
 
 /**
- * The run start the plan expects (M138) and what floor 1 already collected (M140). The toggles
- * start from `initial` (`startInitiallyOn`: the reader's evidence, or everything when nobody
- * watched) and the player fixes what differs. Keyed by both, so a recalculated start or a popup
- * the reader just saw starts it over.
+ * The run start the plan expects (M138) and what floor 1 already collected (M140), while the screen
+ * reader is off (M141 — `StartLive` stands in while it runs). The toggles start from `initial`
+ * (`startInitiallyOn`: everything, the plan's guess) and the player fixes what differs. Keyed by
+ * both, so a recalculated start starts it over.
  */
 function StartChoice({ candidates, initial }: { candidates: StartCandidate[]; initial: Set<number> }) {
   const { indexes, lang, confirmStart } = usePlan();
@@ -120,6 +123,42 @@ function StartChoice({ candidates, initial }: { candidates: StartCandidate[]; in
   );
 }
 
+/**
+ * The run start while the screen reader runs (M141): the same rows, nothing to press. A gift the
+ * reader recorded on floor 1 (`got`) has the collected border and ✓, the rest the dotted border of
+ * one not seen yet. The reader settles the start itself when it sees floor 1's theme pack select.
+ */
+function StartLive({ candidates, got }: { candidates: StartCandidate[]; got: Set<number> }) {
+  const { indexes, lang } = usePlan();
+  return (
+    <section className="flex flex-col gap-2" data-testid="overlay-start" data-live="">
+      <SectionTitle>{t('overlayStartTitle', lang)}</SectionTitle>
+      <p className="text-caption text-fg-muted">{t('overlayStartLiveHint', lang)}</p>
+      <ul className="flex flex-col gap-1" data-uniform="width">
+        {candidates.map((c) => {
+          const gift = indexes.giftById.get(c.giftId);
+          if (!gift) return null;
+          const on = got.has(c.giftId);
+          return (
+            <li
+              key={c.giftId}
+              className="flex min-h-11 min-w-0 items-center gap-2 px-1 py-1"
+              data-testid="overlay-start-gift"
+              data-gift={c.giftId}
+              data-kind={c.kind}
+              data-got={on ? '' : undefined}
+            >
+              <GiftIcon gift={gift} size={32} lang={lang} status={on ? 'got' : null} pending={!on} />
+              <span className="min-w-0 flex-1 break-keep text-caption text-fg">{pick(gift.name, lang)}</span>
+              <span className="flex-none text-caption text-fg-subtle">{t(START_TAG[c.kind], lang)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 /** The window's contents. `log` is the page's feedback log unless a test hands in its own. */
 export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
   const { indexes, lang, shown, packName, expectedIn, reopenStart } = usePlan();
@@ -134,6 +173,7 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
   const left = remainingIn(run, expectedIn);
   const start = startCandidates(shown, run);
   const evidence = startEvidence(run);
+  // While the reader runs its record is the answer (M141); without it, the plan's guess, all on.
   const startOn = start ? startInitiallyOn(start, evidence, running) : null;
   const recent = recentLines(feedback, capture.log, (entry) => logText(entry, indexes, lang, packName));
 
@@ -182,7 +222,9 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
         ) : null}
       </section>
 
-      {start ? (
+      {start && running ? (
+        <StartLive candidates={start} got={startOn!} />
+      ) : start ? (
         <StartChoice
           key={`${start.map((c) => `${c.kind}:${c.giftId}`).join(',')}|${[...startOn!].join(',')}`}
           candidates={start}

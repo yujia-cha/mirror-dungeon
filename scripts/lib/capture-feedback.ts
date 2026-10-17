@@ -114,6 +114,12 @@ export interface RecognitionReport {
    * for a bundle with none (before M136, or no popup read in it).
    */
   popupReads: { reads: number; meanMs: number; popups: number } | null;
+  /**
+   * The reads of popups queued under a busy read (M141): how many, how many found a popup, their
+   * mean wait from snapshot to read, and how many were pushed out unread. Null for a bundle with
+   * neither (before M141, or nothing queued).
+   */
+  queuedReads: { reads: number; popups: number; meanLagMs: number; dropped: number } | null;
 }
 
 const count = (into: Record<string, number>, key: string): void => {
@@ -143,6 +149,8 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
   for (const f of bundle.frames) if (!previews.has(f.id)) count(framesByClass, f.class ?? 'routine');
   const timed = reads.filter((r) => r.busyTicks !== undefined);
   const burst = reads.filter((r) => r.mode === 'popup');
+  const queued = reads.filter((r) => r.queued === true);
+  const dropped = reads.reduce((sum, r) => sum + (r.queueDropped ?? 0), 0);
   return {
     reads: reads.length,
     readsByScreen,
@@ -180,6 +188,17 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
           popups: burst.filter((r) => r.screen === 'acquired').length,
         }
       : null,
+    queuedReads:
+      queued.length > 0 || dropped > 0
+        ? {
+            reads: queued.length,
+            popups: queued.filter((r) => r.screen === 'acquired').length,
+            meanLagMs: queued.length
+              ? Math.round(queued.reduce((sum, r) => sum + (r.lagMs ?? 0), 0) / queued.length)
+              : 0,
+            dropped,
+          }
+        : null,
   };
 }
 
@@ -393,6 +412,10 @@ export function formatReport(
   if (rec.popupReads)
     lines.push(
       `- 팝업 연속 판독 ${rec.popupReads.reads}회 · 평균 ${rec.popupReads.meanMs}ms · 그중 팝업 ${rec.popupReads.popups}회`,
+    );
+  if (rec.queuedReads)
+    lines.push(
+      `- 대기열 판독 ${rec.queuedReads.reads}회 · 그중 팝업 ${rec.queuedReads.popups}회 · 평균 지연 ${rec.queuedReads.meanLagMs}ms · 넘침 ${rec.queuedReads.dropped}`,
     );
   if (rec.waiting)
     lines.push(

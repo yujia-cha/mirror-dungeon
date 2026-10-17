@@ -878,6 +878,15 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
      * there when no popup showed. Missing = a full read, as every read was before M136.
      */
     mode: z.enum(['full', 'popup']).optional(),
+    /**
+     * A read of a popup that came while another read was busy (M141): its crop was queued and read
+     * once that read was done, as a popup read. `t` is when it was snapshotted, `lagMs` how long it
+     * waited. Missing = read when its tick came, as every read was before M141.
+     */
+    queued: z.literal(true).optional(),
+    lagMs: z.number().optional(),
+    /** Queued popups pushed out unread (the queue was full) since the read before (M141). */
+    queueDropped: z.number().optional(),
   }),
   z.object({
     kind: z.literal('applied'),

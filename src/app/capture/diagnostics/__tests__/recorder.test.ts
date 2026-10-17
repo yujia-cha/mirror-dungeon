@@ -173,6 +173,22 @@ describe('DiagRecorder', () => {
     expect(r.stats()).toMatchObject({ records: 1, frames: 1, exportedRecords: 0, lastExportAt: null });
   });
 
+  it('marks a queued popup read with its wait, and a later read with the popups dropped (M141)', async () => {
+    // Arrange
+    const { r } = await recorder();
+    // Act: a queued read 312.6 ms after its snapshot, then a read telling of two dropped.
+    r.onRead({ ...popup(5, 9006), mode: 'popup', queued: { lagMs: 312.6 } }, null);
+    r.onRead(report(6, { queueDropped: 2 }), null);
+    const { bundle } = await r.exportBundle(META);
+    // Assert: the schema takes both; a plain read says nothing of the queue.
+    expect(diagnosticsBundleSchema.safeParse(bundle).success).toBe(true);
+    const reads = bundle.records.filter((rec) => rec.kind === 'read');
+    expect(reads[0]).toMatchObject({ t: 5, mode: 'popup', queued: true, lagMs: 313 });
+    expect(reads[0]).not.toHaveProperty('queueDropped');
+    expect(reads[1]).toMatchObject({ t: 6, queueDropped: 2 });
+    expect(reads[1]).not.toHaveProperty('queued');
+  });
+
   it('says how much exported data is still on the device until it is cleared', async () => {
     const { r } = await recorder();
     r.onUndo(1);

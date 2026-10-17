@@ -25,6 +25,11 @@
  *   re-read every half second. Each popup found extends the burst.
  * - **Burst ticks** (M139) → the burst also ticks every `BURST_TICK_MS` and the session raises the
  *   share to `FRAME_RATE.burst`: a popup clicked away between two 250 ms ticks was never seen at all.
+ *   Since M141 the session ticks on every frame the share delivers in the burst
+ *   (`requestVideoFrameCallback`), `BURST_TICK_MS` being the backstop for a screen that holds still.
+ * - **While busy** (M141) → a skipped tick no longer only marks the loop dirty: a popup seen under a
+ *   busy read is queued (`backlog.ts`) and read after it, before the loop is free. The dirty read
+ *   of the newest frame still follows.
  * - **After the burst** → a popup read that found no popup saw only the title, so the first tick
  *   after the burst reads in full even when nothing changed (`owed`): what the popups gave way to
  *   (a map, the pack picker) is read late, never lost.
@@ -67,7 +72,11 @@ export function inBurst(state: LoopState, now: number): boolean {
   return now < state.burstUntil;
 }
 
-/** How long until the next tick: `BURST_TICK_MS` in a popup burst, the preset's interval otherwise (M139). */
+/**
+ * How long until the next tick: `BURST_TICK_MS` in a popup burst, the preset's interval otherwise
+ * (M139). In the burst it is the backstop of the per-frame tick (M141), and the whole of it where
+ * the browser has no `requestVideoFrameCallback`.
+ */
 export function tickDelay(state: LoopState, now: number, intervalMs: number): number {
   return inBurst(state, now) ? Math.min(intervalMs, BURST_TICK_MS) : intervalMs;
 }

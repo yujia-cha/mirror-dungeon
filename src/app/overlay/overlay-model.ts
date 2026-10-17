@@ -15,8 +15,9 @@
  *   (`run.currentFloor`), the floor the player decides next.
  * - **The start candidates** (M138) are what the plan expects the run start to hand over while it
  *   is still open — the start gifts and the observations, pinned or recommended — and what floor 1
- *   already collected (M140). The player says which ones the game actually gave (`confirmStart`);
- *   the rest is routed again.
+ *   already collected (M140). With the screen reader off the player says which ones the game
+ *   actually gave (`confirmStart`); while it runs, its record is the answer and it settles the start
+ *   itself (M141). Either way the rest is routed again.
  */
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
 import type { FeedbackLogEntry } from '../lib/feedback-log.ts';
@@ -186,9 +187,10 @@ export function startCandidates(
 }
 
 /**
- * Which candidates start on (M140). With the screen reader running, what it recorded is the
- * answer — a popup it did not see was not collected — so only the evidence is on and the player
- * turns on what it missed. Without it, the plan's guess: everything on.
+ * Which candidates are on (M140). With the screen reader running, what it recorded is the answer —
+ * a popup it did not see was not collected — so only the evidence is on; the overlay shows that
+ * without toggles and the reader settles it (M141). Without it, the plan's guess: everything on,
+ * for the player to correct.
  */
 export function startInitiallyOn(
   candidates: readonly StartCandidate[],

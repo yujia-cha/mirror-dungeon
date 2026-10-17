@@ -204,3 +204,93 @@ describe('CaptureSession reads', () => {
     created.stop();
   });
 });
+
+describe('CaptureSession backlog (M141)', () => {
+  /** What the share shows: every pixel this grey, so a change of level is a change of screen. */
+  let level = 0;
+  beforeEach(() => {
+    level = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ json: async () => LAYOUT })),
+    );
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoWidth', 'get').mockReturnValue(1920);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoHeight', 'get').mockReturnValue(1009);
+    const ctx = {
+      drawImage: () => undefined,
+      getImageData: (_x: number, _y: number, w: number, h: number) => ({
+        data: new Uint8ClampedArray(w * h * 4).fill(level),
+        width: w,
+        height: h,
+      }),
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('reads a popup that came and went under a busy read, once that read is done', async () => {
+    // Arrange: the first OCR call of the first (full) read waits until a busy tick has queued the
+    // popup; the full read then finds nothing (9 title passes), and the queued read finds the popup.
+    const { release } = fakeShare();
+    release();
+    let calls = 0;
+    let unblock!: () => void;
+    const blocked = new Promise<void>((resolve) => (unblock = resolve));
+    engine.recognize.mockReset();
+    engine.recognize.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 1) await blocked;
+      if (calls === 10) return ['E.G.O 기프트를 획득했습니다.'] as never;
+      if (calls === 11) return ['테스트 기프트'] as never;
+      return [] as never;
+    });
+    const crops: number[][] = [];
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async (_source: unknown, ...rect: number[]) => {
+        crops.push(rect);
+        return { width: rect[2], height: rect[3], close: () => undefined };
+      }),
+    );
+    const onEvents = vi.fn();
+    const onRead = vi.fn();
+    const created = new CaptureSession({
+      intervalMs: 5,
+      context: () => ({
+        lang: 'ko',
+        packs: [],
+        gifts: [{ id: 9006, name: '테스트 기프트' }],
+        held: [],
+        materials: [],
+        iconUrl: () => null,
+        startOpen: false,
+      }),
+      onEvents,
+      onStatus: vi.fn(),
+      onRead,
+    });
+    await created.start();
+    await vi.waitFor(() => expect(calls).toBe(1));
+    // Act: the popup shows while the read is busy, then is clicked away before it is done.
+    level = 120;
+    await vi.waitFor(() => expect(crops).toHaveLength(1));
+    level = 0;
+    unblock();
+    await vi.waitFor(() => expect(onEvents).toHaveBeenCalled());
+    created.stop();
+    // Assert: the gift, from a queued popup read of a crop — not of the whole picture.
+    expect(onEvents).toHaveBeenCalledWith([{ kind: 'got', giftId: 9006 }]);
+    const reports = onRead.mock.calls.map(([r]) => r as { queued?: { lagMs: number } });
+    const report = reports.find((r) => r.queued);
+    expect(report).toMatchObject({ mode: 'popup', frame: { screen: 'acquired' } });
+    expect(report!.queued!.lagMs).toBeGreaterThanOrEqual(0);
+    const [, , width, height] = crops[0]!;
+    expect(width! * height!).toBeLessThan(1920 * 1009 * 0.25);
+    expect(created.stats.queued).toBe(1);
+  });
+});

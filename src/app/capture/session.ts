@@ -11,6 +11,11 @@
  *     → `readFrame` (OCR and icon slots on the regions it asks for,
  *       each read off the snapshot canvas on its own — M116)
  *     → `trackFrame` → events to the caller
+ *   a tick skipped for a busy read whose popup changed → a crop of the popup's box, queued
+ *     (`backlog.ts`, M141) and read as a popup read once the busy read is done, oldest first
+ *
+ * In a popup burst the ticks follow the share's frames (`requestVideoFrameCallback`, M141), with
+ * the `BURST_TICK_MS` timer as a backstop: a window that does not repaint sends no frames.
  *
  * The caller (M104's UI) applies the events to the run and supplies what the reading needs
  * through `context()`, read fresh on every frame so candidates follow the run.
@@ -18,6 +23,16 @@
 import type { CaptureLayout, DiagTraceStep } from '../../core/schema.ts';
 import { captureLayoutSchema } from '../../core/schema.ts';
 import type { Lang } from '../i18n.ts';
+import {
+  emptyBacklog,
+  popupBox,
+  popupPart,
+  popupRegionIndices,
+  push,
+  shouldQueue,
+  take,
+  type Backlog,
+} from './backlog.ts';
 import { changed, signatureOf, watchedRegions } from './change.ts';
 import {
   BURST_TICK_MS,
@@ -34,7 +49,7 @@ import {
 import { prepareReference, prepareSlot, type IconRef } from './match-icon.ts';
 import type { NameCandidate } from './match-name.ts';
 import { createOcrEngine, type OcrEngine } from './ocr-engine.ts';
-import { pixelRect, toPnm, type Region } from './preprocess.ts';
+import { pixelRect, toPnm, type PixelRect, type Region } from './preprocess.ts';
 import { readFrame, type RegionReader } from './read-frame.ts';
 import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame, type TrackerState } from './tracker.ts';
 import { layoutInFrame, titleBarHeight, titleBarRows } from './window-frame.ts';
@@ -63,6 +78,9 @@ export interface CaptureStats {
   ocrCalls: number;
   /** Total time spent in reads, ms. */
   readMs: number;
+  /** Reads of popups queued while a read was busy (M141), and queued popups pushed out unread. */
+  queued: number;
+  queueDropped: number;
 }
 
 /** One read, as the owner's diagnostics keep it (M112). */
@@ -70,8 +88,15 @@ export interface ReadReport {
   /** Wall-clock time of the read's start, ms. */
   t: number;
   reason: 'change' | 'dirty' | 'refresh';
-  /** A full read, or a popup read of the popup burst (M136). */
+  /** A full read, or a popup read of the popup burst (M136) — every queued read is one. */
   mode: ReadMode;
+  /**
+   * A read of a popup queued while a read was busy (M141): `t` is when it was snapshotted, `lagMs`
+   * how long it waited for the read to start.
+   */
+  queued?: { lagMs: number };
+  /** Queued popups pushed out unread since the read before this one (M141); omitted when none. */
+  queueDropped?: number;
   ms: number;
   ocrCalls: number;
   frame: Frame;
@@ -130,6 +155,37 @@ export interface FrameSource {
   close(): void;
 }
 
+/** A popup waiting in the backlog (M141): the crop of its box, and how to read it back. */
+interface QueuedShot {
+  /** The crop, copied off the video when the tick saw it; null when the copy failed. */
+  bitmap: Promise<ImageBitmap | null>;
+  /** Where the crop sits in the picture, px. */
+  box: PixelRect;
+  /** The layout and picture size at the time: the regions are read where they were then. */
+  layout: CaptureLayout;
+  width: number;
+  height: number;
+  /** When it was taken: wall clock (the record's `t`) and `performance.now()` (its lag). */
+  t: number;
+  at: number;
+}
+
+/** One read for `readAndReport`: where the pixels come from and what the record says of it. */
+interface ReadJob {
+  t: number;
+  started: number;
+  reason: ReadReport['reason'];
+  mode: ReadMode;
+  queued?: ReadReport['queued'];
+  layout: CaptureLayout;
+  width: number;
+  height: number;
+  /** A region's pixel rectangle in the picture, and its RGBA. */
+  pixelsOf: (region: Region) => { rect: PixelRect; data: Uint8ClampedArray };
+  /** The read's picture for the diagnostics, when they keep pictures; null when there is none. */
+  picture: () => SnapshotFrame | null;
+}
+
 /** The small copy the signature is taken on: wide enough to see a popup appear, cheap to read back. */
 const PREVIEW_WIDTH = 480;
 /** JPEG quality of a kept read (re-read with OCR) and of a filmstrip preview (only looked at). */
@@ -147,6 +203,12 @@ export class CaptureSession {
   private timer: ReturnType<typeof setTimeout> | null = null;
   /** When that tick is due, `performance.now()` time. */
   private timerDue = 0;
+  /** In a popup burst, the same tick on the share's next frame (M141) — whichever comes first. */
+  private frameRequest: number | null = null;
+  /** Popups seen while a read was busy, waiting for their read (M141). */
+  private backlog: Backlog<QueuedShot> = emptyBacklog();
+  /** `stats.queueDropped` as last told in a read report. */
+  private droppedTold = 0;
   /** The share runs at `FRAME_RATE.burst` (M139). */
   private fastFrames = false;
   private engine: OcrEngine | null = null;
@@ -164,8 +226,10 @@ export class CaptureSession {
   // Reused every tick: a fresh canvas per frame would also throw away the read-back hint.
   private previewCanvas = document.createElement('canvas');
   private snapshotCanvas = document.createElement('canvas');
+  /** Where a queued popup's crop is drawn to be read (M141). */
+  private queueCanvas = document.createElement('canvas');
   private stopped = false;
-  readonly stats: CaptureStats = { ticks: 0, reads: 0, ocrCalls: 0, readMs: 0 };
+  readonly stats: CaptureStats = { ticks: 0, reads: 0, ocrCalls: 0, readMs: 0, queued: 0, queueDropped: 0 };
 
   constructor(private readonly options: SessionOptions) {
     this.intervalMs = options.intervalMs ?? READ_INTERVALS.balanced;
@@ -243,22 +307,51 @@ export class CaptureSession {
   /**
    * The next tick, `delay` from now (M139). Each tick books the one after it before it runs, at the
    * preset's interval or, in a popup burst, `BURST_TICK_MS` — a fixed `setInterval` could not speed
-   * up for the burst. A read still running only marks the loop dirty, as before.
+   * up for the burst. A tick that comes while a read is still running marks the loop dirty and may
+   * queue the popup it sees (`queueShot`, M141).
+   *
+   * In a burst the tick is also booked on the share's next frame (M141, `bookFrame`), so a popup
+   * shown for a frame or two is ticked on; the timer stays as the backstop — a window that does not
+   * repaint sends no frames, and the burst's re-read and its end must still come. Whichever fires
+   * first cancels the other (`fire`).
    */
   private schedule(delay: number): void {
     if (this.stopped) return;
-    if (this.timer !== null) clearTimeout(this.timer);
+    this.cancelTick();
     this.timerDue = performance.now() + delay;
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      this.schedule(tickDelay(this.loop, performance.now(), this.intervalMs));
-      void this.tick();
-    }, delay);
+    this.timer = setTimeout(() => this.fire(), delay);
+    if (inBurst(this.loop, performance.now())) this.bookFrame();
+  }
+
+  /** The booked tick on the share's next frame, where the browser has the API (M141). */
+  private bookFrame(): void {
+    const video = this.video;
+    if (this.frameRequest !== null || !video || typeof video.requestVideoFrameCallback !== 'function') return;
+    this.frameRequest = video.requestVideoFrameCallback(() => {
+      this.frameRequest = null;
+      this.fire();
+    });
+  }
+
+  /** The booked tick is due: book the next, then tick. */
+  private fire(): void {
+    this.cancelTick();
+    this.schedule(tickDelay(this.loop, performance.now(), this.intervalMs));
+    void this.tick();
+  }
+
+  /** Cancel the booked tick, both its timer and its frame. */
+  private cancelTick(): void {
+    if (this.timer !== null) clearTimeout(this.timer);
+    this.timer = null;
+    if (this.frameRequest !== null) this.video?.cancelVideoFrameCallback?.(this.frameRequest);
+    this.frameRequest = null;
   }
 
   /**
    * Follow the popup burst (M139): a burst just begun brings the next tick in to `BURST_TICK_MS`
-   * and raises the share's frame rate; once it is over the rate goes back down.
+   * — and to the share's next frame (M141) — and raises the share's frame rate; once it is over the
+   * rate goes back down.
    */
   private followBurst(): void {
     const now = performance.now();
@@ -271,14 +364,17 @@ export class CaptureSession {
         ?.applyConstraints?.({ frameRate: { ideal: burst ? FRAME_RATE.burst : FRAME_RATE.idle } })
         .catch(() => undefined);
     }
-    if (burst && this.timer !== null && this.timerDue - now > BURST_TICK_MS) this.schedule(BURST_TICK_MS);
+    if (!burst || this.timer === null) return;
+    if (this.timerDue - now > BURST_TICK_MS) this.schedule(BURST_TICK_MS);
+    else this.bookFrame();
   }
 
   /** Stop sharing and release everything. Safe to call twice. */
   stop(): void {
     this.stopped = true;
-    if (this.timer !== null) clearTimeout(this.timer);
-    this.timer = null;
+    this.cancelTick();
+    for (const entry of this.backlog.entries) release(entry.payload);
+    this.backlog = emptyBacklog();
     for (const track of this.stream?.getTracks() ?? []) track.stop();
     this.stream = null;
     this.video = null;
@@ -312,53 +408,170 @@ export class CaptureSession {
     const reason: ReadReport['reason'] = isChanged ? 'change' : this.loop.dirty ? 'dirty' : 'refresh';
     const step = decide(this.loop, signature, isChanged, performance.now());
     this.loop = step.state;
-    this.reportTick(step.decision === 'read', step.decision === 'skip' && step.state.busy, isChanged);
+    const busy = step.decision === 'skip' && step.state.busy;
+    this.reportTick(step.decision === 'read', busy, isChanged);
+    if (busy) this.queueShot(video, signature, width, height);
     if (step.decision === 'skip') return;
     const started = performance.now();
     let frame: Frame | null = null;
     try {
-      frame = await this.read(video, width, height, reason, step.mode);
+      frame = await this.read(video, width, height, reason, step.mode, started);
     } finally {
-      this.stats.reads += 1;
-      this.stats.readMs += performance.now() - started;
-      // What the read found starts or extends the popup burst (M136).
-      this.loop = finished(
-        this.loop,
-        frame
-          ? { at: performance.now(), popup: frame.screen === 'acquired', partial: frame.partial === true }
-          : undefined,
-      );
-      this.followBurst();
+      this.settle(frame, started);
+      // The popups that came meanwhile, before the loop is free again (M141).
+      await this.drain();
     }
   }
 
-  private async read(
+  /**
+   * A read is done (`started` its start): count it and fold what it found into the loop — a popup
+   * starts or extends the burst (M136), and the ticks follow (M139).
+   */
+  private settle(frame: Frame | null, started: number): void {
+    this.stats.reads += 1;
+    this.stats.readMs += performance.now() - started;
+    this.loop = finished(
+      this.loop,
+      frame
+        ? { at: performance.now(), popup: frame.screen === 'acquired', partial: frame.partial === true }
+        : undefined,
+    );
+    this.followBurst();
+  }
+
+  /**
+   * A tick skipped for a busy read (M141): when the popup's regions differ from the last queued
+   * and from what the busy read reads, copy the popup's box off the video — that crop alone, not the
+   * frame — and queue it for a popup read. Without `createImageBitmap` nothing is queued.
+   */
+  private queueShot(video: HTMLVideoElement, signature: Uint8Array, width: number, height: number): void {
+    const layout = this.frameLayout;
+    if (!layout || typeof createImageBitmap !== 'function') return;
+    const indices = popupRegionIndices(this.regions, layout);
+    const shot = popupPart(signature, indices);
+    const reading = this.loop.lastRead ? popupPart(this.loop.lastRead, indices) : null;
+    if (!shouldQueue(this.backlog, this.loop.busy, reading, shot)) return;
+    const box = pixelRect(width, height, popupBox(layout, this.options.context().startOpen));
+    if (box.width === 0 || box.height === 0) return;
+    const bitmap = createImageBitmap(video, box.left, box.top, box.width, box.height).catch(() => null);
+    const pushed = push(this.backlog, shot, {
+      bitmap,
+      box,
+      layout,
+      width,
+      height,
+      t: Date.now(),
+      at: performance.now(),
+    });
+    this.backlog = pushed.backlog;
+    if (pushed.evicted) {
+      this.stats.queueDropped += 1;
+      release(pushed.evicted);
+    }
+  }
+
+  /**
+   * Read the queued popups, oldest first (M141), each as a popup read of its crop, through the same
+   * path as any read. The loop stays busy meanwhile, so the ticks go on queueing; it is free once
+   * the queue is empty. A popup found extends the burst like any other.
+   */
+  private async drain(): Promise<void> {
+    while (!this.stopped) {
+      const next = take(this.backlog);
+      if (!next.entry) return;
+      this.backlog = next.backlog;
+      const shot = next.entry.payload;
+      // Busy again (`finished` only folds a busy loop): no tick starts a read under this one.
+      this.loop = { ...this.loop, busy: true };
+      const started = performance.now();
+      let frame: Frame | null = null;
+      try {
+        frame = await this.readQueued(shot, started);
+      } finally {
+        this.stats.queued += 1;
+        this.settle(frame, started);
+      }
+    }
+  }
+
+  /** One queued popup: its crop drawn once, its regions read where they sat in the picture. */
+  private async readQueued(shot: QueuedShot, started: number): Promise<Frame | null> {
+    const bitmap = await shot.bitmap;
+    if (!bitmap || this.stopped) {
+      bitmap?.close();
+      return null;
+    }
+    const { box } = shot;
+    const canvas = this.queueCanvas;
+    if (canvas.width !== box.width) canvas.width = box.width;
+    if (canvas.height !== box.height) canvas.height = box.height;
+    const crop = canvas.getContext('2d', { willReadFrequently: true })!;
+    crop.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return this.readAndReport({
+      t: shot.t,
+      started,
+      reason: 'change',
+      mode: 'popup',
+      queued: { lagMs: started - shot.at },
+      layout: shot.layout,
+      width: shot.width,
+      height: shot.height,
+      // In the picture's coordinates, as the layout says; a region outside the box reads blank.
+      pixelsOf: (region) => {
+        const rect = pixelRect(shot.width, shot.height, region);
+        const data =
+          rect.width > 0 && rect.height > 0
+            ? crop.getImageData(rect.left - box.left, rect.top - box.top, rect.width, rect.height).data
+            : new Uint8ClampedArray(0);
+        return { rect, data };
+      },
+      // A crop is no picture the diagnostics can re-read with the layout; the filmstrip has the ticks.
+      picture: () => null,
+    });
+  }
+
+  private read(
     video: HTMLVideoElement,
     width: number,
     height: number,
     reason: ReadReport['reason'],
     mode: ReadMode,
+    started: number,
   ): Promise<Frame | null> {
-    const t = Date.now();
-    const started = performance.now();
-    const engine = this.engine!;
     // One snapshot per read: the reading takes several OCR calls, and the screen must not change
     // under them. Only the regions the reading asks for come back off the canvas (M116) — a read
     // that stops at the popup's title touches one strip, not the 1920×1009 frame.
+    const t = Date.now();
     const canvas = this.snapshotCanvas;
     if (canvas.width !== width) canvas.width = width;
     if (canvas.height !== height) canvas.height = height;
     const snapshot = canvas.getContext('2d', { willReadFrequently: true })!;
     snapshot.drawImage(video, 0, 0, width, height);
-    const layout = this.placeLayout(snapshot, width, height);
-    const pixelsOf = (region: Region) => {
-      const rect = pixelRect(width, height, region);
-      const data =
-        rect.width > 0 && rect.height > 0
-          ? snapshot.getImageData(rect.left, rect.top, rect.width, rect.height).data
-          : new Uint8ClampedArray(0);
-      return { rect, data };
-    };
+    return this.readAndReport({
+      t,
+      started,
+      reason,
+      mode,
+      layout: this.placeLayout(snapshot, width, height),
+      width,
+      height,
+      pixelsOf: (region) => {
+        const rect = pixelRect(width, height, region);
+        const data =
+          rect.width > 0 && rect.height > 0
+            ? snapshot.getImageData(rect.left, rect.top, rect.width, rect.height).data
+            : new Uint8ClampedArray(0);
+        return { rect, data };
+      },
+      picture: () => new SnapshotFrame(canvas),
+    });
+  }
+
+  /** Read a job's pixels, fold the frame into the tracker, and hand on the report and the events. */
+  private async readAndReport(job: ReadJob): Promise<Frame | null> {
+    const engine = this.engine!;
+    const { width, height, pixelsOf } = job;
     const ctx = this.options.context();
     const reader: RegionReader = {
       ocr: async (region, light) => {
@@ -373,14 +586,14 @@ export class CaptureSession {
     const refsOf = async (ids: readonly number[]) =>
       (await Promise.all(ids.map((id) => this.ref(id, ctx.iconUrl)))).filter((r): r is IconRef => r !== null);
     const [held, materials] = await Promise.all([refsOf(ctx.held), refsOf(ctx.materials)]);
-    const { frame, ocrCalls, trace } = await readFrame(reader, layout, {
+    const { frame, ocrCalls, trace } = await readFrame(reader, job.layout, {
       lang: ctx.lang,
       packs: ctx.packs,
       gifts: ctx.gifts,
       held,
       materials,
       startOpen: ctx.startOpen,
-      popupOnly: mode === 'popup',
+      popupOnly: job.mode === 'popup',
       // A popup's icon, when its name is no sure match (M136): a handful of gifts, loaded once each.
       iconRefs: refsOf,
     });
@@ -390,13 +603,17 @@ export class CaptureSession {
     this.tracker = out.state;
     // Nothing waits from here on (M116): a Stop pressed now cannot land between the check above
     // and the events, and the events never wait for a picture.
-    const picture = this.options.onRead && this.options.wantImage?.() ? new SnapshotFrame(canvas) : null;
+    const picture = this.options.onRead && this.options.wantImage?.() ? job.picture() : null;
+    const dropped = this.stats.queueDropped - this.droppedTold;
+    this.droppedTold = this.stats.queueDropped;
     this.options.onRead?.(
       {
-        t,
-        reason,
-        mode,
-        ms: performance.now() - started,
+        t: job.t,
+        reason: job.reason,
+        mode: job.mode,
+        ...(job.queued ? { queued: job.queued } : {}),
+        ...(dropped > 0 ? { queueDropped: dropped } : {}),
+        ms: performance.now() - job.started,
         ocrCalls,
         frame,
         trace,
@@ -540,6 +757,11 @@ class SnapshotFrame implements FrameSource {
         if (bitmap && !(bitmap instanceof Blob)) bitmap.close();
       });
   }
+}
+
+/** Free a queued popup's crop, once it is copied. */
+function release(shot: QueuedShot): void {
+  void shot.bitmap.then((bitmap) => bitmap?.close());
 }
 
 async function loadRef(id: number, url: string | null): Promise<IconRef | null> {

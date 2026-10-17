@@ -227,7 +227,7 @@ describe('OverlayView run start (M138)', () => {
     });
   });
 
-  it('with the reader running, starts on only what floor 1 collected, listing an unplanned gift too (M140)', () => {
+  it('with the reader running, shows what floor 1 collected with nothing to press (M140, M141)', () => {
     // Arrange: the reader saw the pinned GIFT_B and an unplanned gift; the start gift's popup went by.
     const extra = data.gifts[3]!.id;
     plan.shown = startPlan();
@@ -237,17 +237,76 @@ describe('OverlayView run start (M138)', () => {
     render(<OverlayView target={target} log={new FeedbackLog()} />, {
       wrapper: withCapture(captureOf({ status: 'running' })),
     });
-    // Assert
-    const rows = within(target).getAllByTestId('overlay-start-gift');
+    // Assert: the same rows in the same order, the recorded ones collected, the rest dotted.
+    const section = within(target).getByTestId('overlay-start');
+    expect(section).toHaveAttribute('data-live');
+    expect(section).toHaveTextContent('1층 테마팩 선택에서 자동으로 확정됩니다');
+    const rows = within(section).getAllByTestId('overlay-start-gift');
     expect(
-      rows.map((row) => [Number(row.getAttribute('data-gift')), row.getAttribute('aria-pressed')]),
+      rows.map((row) => [
+        Number(row.getAttribute('data-gift')),
+        row.getAttribute('data-kind'),
+        row.hasAttribute('data-got'),
+      ]),
     ).toEqual([
-      [GIFT_A, 'false'],
-      [GIFT_B, 'true'],
-      [GIFT_C, 'false'],
-      [extra, 'true'],
+      [GIFT_A, 'start', false],
+      [GIFT_B, 'pinned', true],
+      [GIFT_C, 'recommended', false],
+      [extra, 'got', true],
     ]);
     expect(rows[3]).toHaveTextContent('획득');
+    // No toggle and no confirm: the reader settles the start on floor 1's pack select.
+    expect(section.querySelectorAll('[aria-pressed]')).toHaveLength(0);
+    expect(section.querySelectorAll('button, a, input, [role="button"]')).toHaveLength(0);
+    expect(within(target).queryByTestId('overlay-start-confirm')).toBeNull();
+  });
+
+  it('with the reader running and nothing seen yet, lists every expected gift as not yet seen (M141)', () => {
+    plan.shown = startPlan();
+    const target = document.createElement('div');
+    render(<OverlayView target={target} log={new FeedbackLog()} />, {
+      wrapper: withCapture(captureOf({ status: 'running' })),
+    });
+    const rows = within(target).getAllByTestId('overlay-start-gift');
+    expect(rows.map((row) => Number(row.getAttribute('data-gift')))).toEqual([GIFT_A, GIFT_B, GIFT_C]);
+    expect(rows.some((row) => row.hasAttribute('data-got'))).toBe(false);
+  });
+
+  it('with the reader running, turns into the confirmed line once the store settles the start (M141)', () => {
+    // Arrange: one observation popup seen, the start still open.
+    plan.shown = startPlan();
+    useApp.setState({ run: { ...emptyRun(), giftStatus: { [GIFT_B]: 'got' } } });
+    const target = document.createElement('div');
+    render(<OverlayView target={target} log={new FeedbackLog()} />, {
+      wrapper: withCapture(captureOf({ status: 'running' })),
+    });
+    expect(within(target).getByTestId('overlay-start')).toHaveAttribute('data-live');
+    // Act: the reader saw floor 1's theme pack select (tracker startDone → settleStart).
+    act(() => {
+      useApp.getState().settleStart();
+    });
+    // Assert
+    expect(within(target).queryByTestId('overlay-start')).toBeNull();
+    expect(within(target).getByTestId('overlay-start-done')).toHaveTextContent('시작 확인 · 획득 1');
+    expect(plan.confirmStart).not.toHaveBeenCalled();
+  });
+
+  it('with the reader stopped, offers the toggles and the confirm again', () => {
+    // Arrange: the reader recorded GIFT_B, then stopped before the start was settled.
+    plan.shown = startPlan();
+    useApp.setState({ run: { ...emptyRun(), giftStatus: { [GIFT_B]: 'got' } } });
+    const target = document.createElement('div');
+    document.body.append(target);
+    // Act
+    render(<OverlayView target={target} log={new FeedbackLog()} />, {
+      wrapper: withCapture(captureOf({ status: 'idle' })),
+    });
+    // Assert: the plan's guess, all on, to correct by hand.
+    const section = within(target).getByTestId('overlay-start');
+    expect(section).not.toHaveAttribute('data-live');
+    const rows = within(section).getAllByTestId('overlay-start-gift');
+    expect(rows.every((row) => row.getAttribute('aria-pressed') === 'true')).toBe(true);
+    expect(within(section).getByTestId('overlay-start-confirm')).toBeInTheDocument();
   });
 
   it('says the start is confirmed on floor 1 and offers to choose again', async () => {

@@ -26,6 +26,7 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { popupRegionIndices } from '../src/app/capture/backlog.ts';
 import { signatureOf, watchedRegions } from '../src/app/capture/change.ts';
 import { READ_INTERVALS, type ReadIntervalPreset, type ReadMode } from '../src/app/capture/loop.ts';
 import type { IconRef } from '../src/app/capture/match-icon.ts';
@@ -246,6 +247,8 @@ async function main(): Promise<void> {
   );
   console.log('|---|---|---|---|---|---|---|---|---|---|');
   const missedBy = new Map<string, string[]>();
+  // The backlog compares the popup's regions only (M141); the title bar moves them all alike.
+  const popupRegions = popupRegionIndices(watchedRegions(layout), layout);
   for (const dwell of dwells) {
     const timeline =
       dwell === 'steam' || dwell === 'animated'
@@ -270,6 +273,7 @@ async function main(): Promise<void> {
           timeline,
           signature: signatureAt,
           read: readShot,
+          popupRegions,
         });
         const { missed, extra } = compareEvents(
           reference,

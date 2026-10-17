@@ -326,6 +326,33 @@ describe('filmstrips (M134)', () => {
     expect(recognitionReport(bundle()).popupReads).toBeNull();
   });
 
+  it('counts the reads of popups queued under a busy read and says so in the report (M141)', () => {
+    // Arrange: two queued reads — one found its popup after 300 ms, one found none after 100 ms —
+    // and a later read telling of one queued popup pushed out unread.
+    const b = bundle();
+    b.records.push(
+      read(60, { mode: 'popup', queued: true, lagMs: 300 }),
+      read(61, { mode: 'popup', queued: true, lagMs: 100, screen: null }),
+      read(62, { queueDropped: 1 }),
+    );
+    // Act
+    const r = recognitionReport(b);
+    const text = formatReport(
+      b,
+      r,
+      routeReport(b, () => 'general'),
+      { certain: 0, unconfirmed: 0 },
+      {
+        gift: (id) => `G${id}`,
+        pack: (id) => `P${id}`,
+      },
+    );
+    // Assert
+    expect(r.queuedReads).toEqual({ reads: 2, popups: 1, meanLagMs: 200, dropped: 1 });
+    expect(text).toContain('대기열 판독 2회 · 그중 팝업 1회 · 평균 지연 200ms · 넘침 1');
+    expect(recognitionReport(bundle()).queuedReads).toBeNull();
+  });
+
   it('puts the strip files in the report and points the miss at its strip', () => {
     // Arrange
     const b = filmed();

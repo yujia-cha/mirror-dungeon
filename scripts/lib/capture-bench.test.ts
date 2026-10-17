@@ -103,15 +103,20 @@ describe('simulate', () => {
     ]);
   });
 
-  it('stays busy for as long as a read takes, then reads the newest screen', async () => {
+  it('stays busy for as long as a read takes, then reads what came meanwhile, oldest first', async () => {
     // Arrange: a 900ms read starts on the first change; two screens pass under it.
     const timeline = timelineOf([0, 1, 2, 3], { dwellMs: 400, maxDwellMs: 0 });
     const r = reader(frames, 900);
     // Act
     const result = await simulate({ intervalMs: 100, timeline, signature, read: r.read });
-    // Assert: shot 0 at 100ms, then the dirty read at the first free tick (1000ms) sees shot 2.
-    expect(r.reads.slice(0, 2)).toEqual([0, 2]);
-    expect(result.events.map((e) => e.event)).toEqual([]);
+    // Assert: shot 0 at 100ms; the shots seen under it were queued (M141) and read after it in
+    // the order they came — before M141 the dirty read at 1000ms saw shot 2 and both popups were lost.
+    expect(r.reads.slice(0, 4)).toEqual([0, 1, 2, 3]);
+    expect(result.queued).toBeGreaterThanOrEqual(3);
+    expect(result.events.map((e) => e.event)).toEqual([
+      { kind: 'got', giftId: 9006 },
+      { kind: 'got', giftId: 9007 },
+    ]);
   });
 
   it('times events from when their screen appeared', async () => {
@@ -156,17 +161,23 @@ describe('simulate — a click-through of popups (M136)', () => {
     };
   }
 
-  it('catches every popup when the reads after a popup look for popups only', async () => {
+  it('catches every popup sooner when the reads after a popup look for popups only', async () => {
     // Arrange
     const burst = costed(true);
     const always = costed(false);
     // Act
-    const caught = await simulate({ intervalMs: 250, timeline, signature, read: burst.read });
-    const missed = await simulate({ intervalMs: 250, timeline, signature, read: always.read });
-    // Assert: the full read of the blink after the first popup runs past the second.
-    const gots = (r: typeof caught) => r.events.map((e) => e.event).filter((e) => e.kind === 'got');
-    expect(gots(caught).map((e) => (e.kind === 'got' ? e.giftId : 0))).toEqual([1, 2, 3]);
-    expect(gots(missed).length).toBeLessThan(3);
+    const quick = await simulate({ intervalMs: 250, timeline, signature, read: burst.read });
+    const slow = await simulate({ intervalMs: 250, timeline, signature, read: always.read });
+    // Assert: the full read of the blink after the first popup runs past the second. Before M141
+    // that popup was lost; now the backlog still reads it, but only once that full read is done.
+    const gots = (r: typeof quick) => r.events.filter((e) => e.event.kind === 'got');
+    const ids = (r: typeof quick) => gots(r).map((e) => (e.event.kind === 'got' ? e.event.giftId : 0));
+    expect(ids(quick)).toEqual([1, 2, 3]);
+    expect(ids(slow)).toEqual([1, 2, 3]);
+    expect(slow.queued).toBeGreaterThan(0);
+    const at = (r: typeof quick, id: number) =>
+      gots(r).find((e) => e.event.kind === 'got' && e.event.giftId === id)!.at;
+    expect(at(quick, 2)).toBeLessThan(at(slow, 2));
   });
 
   it('reads the screen the popups gave way to in full once the burst is over', async () => {
@@ -216,6 +227,80 @@ describe('simulate — popups shorter than a tick (M139)', () => {
     // Assert: 7 s at 250 ms is 28 ticks; the 3 s burst adds about 26 more, not a run of 80 ms ticks.
     expect(result.ticks).toBeGreaterThan(28);
     expect(result.ticks).toBeLessThan(70);
+  });
+});
+
+describe('simulate — a popup under a busy read (M141)', () => {
+  // The owner's third session: the observation 「프레스티지 카드」 stood 42.57–42.84 s, entirely under
+  // a full read of a confirm dialog that ran 42.31–43.17 s (860 ms, 9 OCR calls). Here the read
+  // starts at 0 on the dialog, the popup stands 260–530, a blink, then the next popup.
+  const frames = [NOTHING, popup(1), NOTHING, popup(2), NOTHING];
+  const timeline: Span[] = [
+    { shot: 0, start: 0, end: 260 },
+    { shot: 1, start: 260, end: 530 },
+    { shot: 2, start: 530, end: 650 },
+    { shot: 3, start: 650, end: 1100 },
+    { shot: 4, start: 1100, end: 8000 },
+  ];
+  const read = async (shot: number, _held: ReadonlySet<number>, mode: ReadMode): Promise<ShotRead> => {
+    const frame = frames[shot]!;
+    if (frame.screen === 'acquired') return { frame, ms: 150, ocrCalls: 2 };
+    return mode === 'popup'
+      ? { frame: { ...frame, partial: true }, ms: 34, ocrCalls: 1 }
+      : { frame, ms: 860, ocrCalls: 9 };
+  };
+
+  it('reads the popup that came and went under the read, once the read is done', async () => {
+    // Act: every timer phase against the screens.
+    const runs = await Promise.all(
+      [0, 60, 125, 190].map((phase) =>
+        simulate({ intervalMs: 250, timeline, signature, read, firstTickMs: phase }),
+      ),
+    );
+    // Assert: both popups, in the order they were on screen.
+    for (const run of runs) {
+      const gots = run.events.map((e) => e.event).filter((e) => e.kind === 'got');
+      expect(gots.map((e) => (e.kind === 'got' ? e.giftId : 0))).toEqual([1, 2]);
+    }
+  });
+
+  it('queues a popup once however many busy ticks see it, and nothing that looks like the read', async () => {
+    // Act: ticks every 50 ms — five see the first popup, four the second, two the blink.
+    const run = await simulate({ intervalMs: 50, timeline, signature, read, firstTickMs: 0 });
+    // Assert: popup 1, the blink, popup 2 — each once, never the dialog under the read — and the
+    // screen after them, seen while the queue was being read (the loop stays busy until it is empty).
+    expect(run.queued).toBe(4);
+    expect(run.queueDropped).toBe(0);
+  });
+});
+
+describe('simulate — a popup shown for one frame (M141)', () => {
+  // A double click: in a click-through the second popup is on the share for one 33 ms frame, and
+  // falls between the 80 ms burst ticks (410, 490, 570). Reads are cheap here, so no read is busy
+  // when it shows: only a tick on that frame sees it.
+  const frames = [popup(1), NOTHING, popup(2), NOTHING, popup(3), NOTHING];
+  const timeline: Span[] = [
+    { shot: 0, start: 0, end: 450 },
+    { shot: 1, start: 450, end: 500 },
+    { shot: 2, start: 500, end: 533 },
+    { shot: 3, start: 533, end: 700 },
+    { shot: 4, start: 700, end: 1100 },
+    { shot: 5, start: 1100, end: 8000 },
+  ];
+  const read = async (shot: number, _held: ReadonlySet<number>, mode: ReadMode): Promise<ShotRead> => {
+    const frame = frames[shot]!;
+    if (frame.screen === 'acquired') return { frame, ms: 150, ocrCalls: 2 };
+    return mode === 'popup'
+      ? { frame: { ...frame, partial: true }, ms: 20, ocrCalls: 1 }
+      : { frame, ms: 600, ocrCalls: 9 };
+  };
+
+  it('sees it by ticking on every frame in the burst', async () => {
+    // Act
+    const result = await simulate({ intervalMs: 250, timeline, signature, read, firstTickMs: 100 });
+    // Assert
+    const gots = result.events.map((e) => e.event).filter((e) => e.kind === 'got');
+    expect(gots.map((e) => (e.kind === 'got' ? e.giftId : 0))).toEqual([1, 2, 3]);
   });
 });
 

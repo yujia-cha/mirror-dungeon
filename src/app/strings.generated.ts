@@ -627,11 +627,16 @@ export const STRINGS = {
   // 오버레이 창의 제목 표시줄(`document.title`).
   overlayTitle: { ko: '거울 던전 오버레이', en: 'Mirror Dungeon overlay' },
   overlayCaptureOff: { ko: '화면 인식 꺼짐', en: 'Screen reader off' },
-  // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 시작 기프트와 관측(지정·추천), 1층에서 이미 얻은 것을 늘어놓는다. 화면 인식이 돌고 있으면 그것이 본 것만 켜져 있고(M140), 아니면 전부 켜져 있다. 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하고, 얻지 못한 관측은 관측하지 않은 것으로 보아 지정을 풀고 루트가 다시 찾는다.
+  // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 시작 기프트와 관측(지정·추천), 1층에서 이미 얻은 것을 늘어놓는다. 화면 인식이 돌고 있으면 누를 것이 없다(M141): 인식이 기록한 것은 ✓, 아직 못 본 것은 점선으로 보여 줄 뿐이고, 1층 테마팩 선택 화면을 보면 인식이 스스로 확정한다(일찍 손으로 확정하면 인식이 관측 화면을 그만 찾아 관측 팝업을 놓쳤다). 화면 인식이 꺼져 있으면 전부 켜진 토글로 서고, 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하며, 얻지 못한 관측은 관측하지 않은 것으로 보아 지정을 풀고 루트가 다시 찾는다.
   overlayStartTitle: { ko: '시작 시 획득', en: 'Collected at start' },
   overlayStartHint: {
     ko: '게임에서 실제로 얻은 것만 켜 두고 확인하세요. 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다',
     en: 'Keep on only what the game actually gave, then confirm. An observation not received counts as not made, and the route looks for it again',
+  },
+  // 화면 인식이 돌고 있을 때 런 시작 절의 안내(M141). 토글·확인 버튼 대신 이 한 줄이 선다.
+  overlayStartLiveHint: {
+    ko: '화면 인식이 기록합니다 · 1층 테마팩 선택에서 자동으로 확정됩니다',
+    en: "The screen reader records this · it is confirmed by itself on floor 1's theme pack select",
   },
   overlayStartConfirm: { ko: '확인하고 진행', en: 'Confirm and continue' },
   // 시작을 확인한 뒤 1층을 떠나기 전까지 남는 한 줄. {n}은 기록한 기프트 수.
