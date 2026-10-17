@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, Search, X } from 'lucide-react';
+import { skillGiftLookup } from '../../core/index.ts';
 import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { classifyGift, compareEntries, type GiftEntry } from '../lib/gift-priority.ts';
@@ -22,7 +23,7 @@ import { browsableParents, conditionReportsByGift, tilesFor, type GiftTileData }
 import { matchesGiftName } from '../lib/gift-filters.ts';
 import {
   DEFAULT_RECOMMEND_FILTERS,
-  deployedConditionReports,
+  effectReportsByGift,
   matchesRecommendFilters,
   recommendFiltersActive,
   recommendedGifts,
@@ -73,23 +74,30 @@ export function GiftBrowser({
 
   // 「추천 기프트」: every gift on offer judged on its own (an upgrade child too, as its own tile —
   // its parent's lock still reaches it through `blocked`), then the tab's filters and the query.
-  const deployedByGift = useMemo(
-    () => deployedConditionReports(data, stats, indexes),
-    [data, stats, indexes],
+  // Who meets what is read from the built index (M129) when the season has one.
+  const skillLookup = useMemo(() => (data.skillGifts ? skillGiftLookup(data.skillGifts) : undefined), [data]);
+  const effectsByGift = useMemo(
+    () => effectReportsByGift(data.gifts, stats, indexes, skillLookup),
+    [data, stats, indexes, skillLookup],
   );
   const recommendation = useMemo(
     () =>
       recommendedGifts(
         data.gifts.filter((gift) => gift.obtainable || wanted.includes(gift.id)),
         conditionByGift,
-        deployedByGift,
+        effectsByGift,
       ),
-    [data, wanted, conditionByGift, deployedByGift],
+    [data, wanted, conditionByGift, effectsByGift],
   );
   const recommended = useMemo(() => {
     const keep = (entry: GiftEntry): boolean =>
       matchesGiftName(entry.gift, filters) && matchesRecommendFilters(entry.gift, recFilters);
-    return { deck: recommendation.deck.filter(keep), free: recommendation.free.filter(keep) };
+    return {
+      deck: recommendation.deck.filter(keep),
+      free: recommendation.free.filter(keep),
+      ego: recommendation.ego.filter(keep),
+      reasons: recommendation.reasons,
+    };
   }, [recommendation, filters, recFilters]);
   const recNarrowed = recommendFiltersActive(recFilters) || filters.query.trim() !== '';
   const resetRecommended = useCallback((): void => {
@@ -120,7 +128,7 @@ export function GiftBrowser({
     first.current?.focus();
   }, []);
 
-  const grid = (list: GiftTileData[]) => (
+  const grid = (list: GiftTileData[], reasons?: ReadonlyMap<number, string>) => (
     <GiftTileGrid
       tiles={list}
       wanted={wanted}
@@ -131,6 +139,7 @@ export function GiftBrowser({
       lang={lang}
       onToggle={toggleGoal}
       onOpen={openGift}
+      reasons={reasons}
     />
   );
 
@@ -144,7 +153,10 @@ export function GiftBrowser({
   let list: React.ReactNode;
   if (tab === 'recommended') {
     list =
-      recNarrowed && recommended.deck.length === 0 && recommended.free.length === 0 ? (
+      recNarrowed &&
+      recommended.deck.length === 0 &&
+      recommended.free.length === 0 &&
+      recommended.ego.length === 0 ? (
         <div className="p-2">
           <GiftNoMatch query={filters.query} onReset={resetRecommended} lang={lang} />
         </div>
@@ -152,10 +164,16 @@ export function GiftBrowser({
         <RecommendedSections
           deck={recommended.deck}
           free={recommended.free}
+          ego={recommended.ego}
           sort={recFilters.sort}
           deckEmpty={deckEmpty}
           notice={recNotice}
-          grid={(entries) => grid(entries.map((entry) => ({ entry })))}
+          grid={(entries) =>
+            grid(
+              entries.map((entry) => ({ entry })),
+              recommended.reasons,
+            )
+          }
           enums={data.enums}
           lang={lang}
         />

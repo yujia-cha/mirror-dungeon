@@ -53,6 +53,23 @@ export { conflictGroups, wantedRoots } from './conflicts.ts';
 export type { ConflictGroup, ConflictCandidate } from './conflicts.ts';
 export { buildIndexes } from './data/indexes.ts';
 export { analyseDeck, dominantKeyword, evaluateConditions } from './deck.ts';
+export {
+  giftEffectsReport,
+  identityMeets,
+  relevanceReason,
+  reportRequirement,
+  requirementLabel,
+  skillGiftLookup,
+  slotsMeeting,
+} from './effects.ts';
+export type {
+  EffectReport,
+  GiftEffectsReport,
+  GiftRelevance,
+  RequirementReport,
+  SkillGiftIndexFile,
+  SkillGiftLookup,
+} from './effects.ts';
 export { chooseRecipe, expandRequirements, goalRoots, scarcity } from './requirements.ts';
 export { alternativePacksOn, assignPacks, modeForFloor, observationCost } from './search.ts';
 export { chooseStart, observable } from './starting.ts';

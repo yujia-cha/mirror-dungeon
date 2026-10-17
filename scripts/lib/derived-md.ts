@@ -220,13 +220,16 @@ export function derivedGiftAsRaw(id: number, gift: DerivedGift): RawGift {
     ...(keyword ? { keyword } : {}),
     ...(sin ? { attributeType: COLOR_BY_SIN.get(sin) } : {}),
     tag: tier === null ? [] : [tier === 'EX' ? 'TIER_EX' : `TIER_${tier}`],
-    // `upgradeLevels` counts entries minus one, so two entries mean a single `+` step. The source
-    // only says whether a gift is enhanceable at all, so the finer 1-vs-2 split is lost.
+    // `upgradeLevels` counts entries minus one. The source writes one text per level (`descs`:
+    // base, `+`, `++`), so its length is the step count; a gift marked enhanceable without them is
+    // taken as a single `+` step. Each step's localize id is the one every static gift uses
+    // (`id + 10000 × level`, 110 of 110 in MD7); the build reads the game's Korean text from it
+    // when the localize files carry it (9291 꽃가위 does) and offers no choice when they do not.
     upgradeDataList: gift.enhanceable
-      ? [
-          { upgradeLevel: 0, localizeID: id },
-          { upgradeLevel: 1, localizeID: id },
-        ]
+      ? Array.from({ length: Math.min(3, Math.max(2, gift.descs?.length ?? 0)) }, (_, level) => ({
+          upgradeLevel: level,
+          localizeID: id + 10000 * level,
+        }))
       : null,
   };
 }

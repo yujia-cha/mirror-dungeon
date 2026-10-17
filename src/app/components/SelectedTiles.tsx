@@ -5,6 +5,11 @@
  * selection; the whole tile is the drag handle that carries it onto an observation slot. An
  * observation pin darkens the border, and a fusion goal that shares an ingredient with another
  * wears the link mark in its top-left corner, as the grid tile does.
+ *
+ * A gift the game lets you enhance carries its `+` / `++` choice under the name (M130), and the
+ * tile then shows the chosen step's name (「하모닉스+」). The grid stretches each row to its tallest
+ * tile, so a row lines up whether or not its tiles have the choice; reserving the row on every tile
+ * would only make all of them taller.
  */
 import { Link2 } from 'lucide-react';
 import { CloseButton, LinkButton } from './ui.tsx';
@@ -14,6 +19,9 @@ import { t, type Lang } from '../i18n.ts';
 import { tileColumns, useTileIconSize } from '../lib/icon-size.ts';
 import type { Judgement } from '../lib/judgement.ts';
 import { GiftIcon } from './GiftIcon.tsx';
+import { UpgradeSteps } from './UpgradeSteps.tsx';
+import { useApp } from '../store.ts';
+import { upgradedName } from '../lib/upgrade.ts';
 
 export function SelectedTiles({
   ids,
@@ -46,6 +54,7 @@ export function SelectedTiles({
   onRemove: (giftId: number) => void;
 }) {
   const size = useTileIconSize(32);
+  const upgrades = useApp((state) => state.upgrades);
   return (
     <div
       className="grid gap-1.5"
@@ -55,7 +64,7 @@ export function SelectedTiles({
     >
       {ids.map((id) => {
         const gift = indexes.giftById.get(id);
-        const name = giftName(id);
+        const name = gift ? upgradedName(gift, upgrades[id], lang) : giftName(id);
         const isPinned = pinned.includes(id);
         return (
           <div
@@ -99,6 +108,7 @@ export function SelectedTiles({
             >
               {name}
             </LinkButton>
+            {gift?.upgrades?.length ? <UpgradeSteps gift={gift} lang={lang} compact /> : null}
           </div>
         );
       })}

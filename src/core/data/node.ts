@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   enumsSchema,
@@ -8,6 +8,7 @@ import {
   packsFileSchema,
   rulesSchema,
   seasonIndexSchema,
+  skillGiftIndexSchema,
   type GameData,
   type SeasonIndex,
 } from '../schema.ts';
@@ -31,6 +32,8 @@ export function loadGameDataFromDisk(root = DEFAULT_DATA_ROOT, season?: number):
   const read = (dir: string, name: string): unknown =>
     JSON.parse(readFileSync(resolve(dir, `${name}.json`), 'utf8'));
   const seasonDir = resolve(root, `md${id}`);
+  // A season frozen before M129 has no `skill-gifts.json`.
+  const hasSkillGifts = existsSync(resolve(seasonDir, 'skill-gifts.json'));
   return {
     meta: metaSchema.parse(read(seasonDir, 'meta')),
     enums: enumsSchema.parse(read(root, 'enums')),
@@ -38,5 +41,6 @@ export function loadGameDataFromDisk(root = DEFAULT_DATA_ROOT, season?: number):
     gifts: giftsFileSchema.parse(read(seasonDir, 'gifts')),
     packs: packsFileSchema.parse(read(seasonDir, 'packs')),
     identities: identitiesFileSchema.parse(read(root, 'identities')),
+    ...(hasSkillGifts ? { skillGifts: skillGiftIndexSchema.parse(read(seasonDir, 'skill-gifts')) } : {}),
   };
 }

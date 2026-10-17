@@ -15,8 +15,18 @@ import {
   packsFileSchema,
   rulesSchema,
   seasonIndexSchema,
+  skillGiftIndexSchema,
+  type EffectRequirement,
 } from '../src/core/schema.ts';
-import { PADDED_BRACKET, RICH_TEXT_TAG, RUNTIME_PLACEHOLDER } from '../src/core/text.ts';
+import { buildSkillGiftIndex } from '../scripts/lib/skill-gifts.ts';
+import {
+  HIGHLIGHT_MARK,
+  markUpgradeHighlight,
+  PADDED_BRACKET,
+  RICH_TEXT_TAG,
+  RUNTIME_PLACEHOLDER,
+  splitHighlight,
+} from '../src/core/text.ts';
 
 const DATA = resolve(process.cwd(), 'public/data');
 const index = seasonIndexSchema.parse(JSON.parse(readFileSync(resolve(DATA, 'index.json'), 'utf8')));
@@ -192,6 +202,53 @@ describe('gifts', () => {
     expect(giftById.get(9440)!.desc.ko).toContain('아군에 <혈귀>가 있다면');
   });
 
+  it('ships the game text of every enhancement step, emphasis as ** and nothing else (M130)', () => {
+    const enhanceable = gifts.filter((g) => g.upgradeLevels > 0);
+    // 111 enhanceable gifts, every one with its text — 9291 꽃가위 (backfilled) included: the derived
+    // source gives its three texts and the localize files carry 19291/29291.
+    expect(enhanceable).toHaveLength(111);
+    for (const gift of gifts) {
+      const where = `${gift.id} ${gift.name.ko}`;
+      if (gift.upgradeLevels === 0) {
+        expect(gift.upgrades, where).toBeUndefined();
+        continue;
+      }
+      expect(
+        gift.upgrades?.map((u) => u.level),
+        where,
+      ).toEqual(gift.upgradeLevels === 2 ? [1, 2] : [1]);
+      for (const upgrade of gift.upgrades ?? []) {
+        // The game names a step after its gift: 「하모닉스」 → 「하모닉스+」 / 「하모닉스++」.
+        expect(upgrade.name.ko, where).toBe(gift.name.ko + '+'.repeat(upgrade.level));
+        for (const text of [upgrade.name.ko, upgrade.name.en, upgrade.desc.ko, upgrade.desc.en]) {
+          expect(text, where).not.toMatch(new RegExp(RICH_TEXT_TAG.source));
+          expect(text, where).not.toMatch(RUNTIME_PLACEHOLDER);
+          expect(text, where).not.toMatch(PADDED_BRACKET);
+          // Paired marks only: every `**` opens or closes an emphasis.
+          expect(text.split(HIGHLIGHT_MARK).length % 2, where).toBe(1);
+        }
+        expect(upgrade.desc.ko.match(/\[([A-Za-z][A-Za-z0-9_]*)\]/g), where).toBeNull();
+      }
+    }
+    const harmonics = giftById.get(9236)!.upgrades!;
+    expect(harmonics[0]!.desc.ko).toContain('[취약] **2** 얻음');
+    expect(harmonics[1]!.desc.ko).toContain('(턴당 **3**회)');
+    expect(giftById.get(9291)!.upgrades![1]!.desc.ko).toContain('**15%**');
+  });
+
+  it('splits the emphasis mark back into runs', () => {
+    expect(markUpgradeHighlight('[Vulnerable] <style="upgradeHighlight">2</style> 얻음')).toBe(
+      '[Vulnerable] **2** 얻음',
+    );
+    expect(splitHighlight('턴당 **2**회')).toEqual([
+      { text: '턴당 ', strong: false },
+      { text: '2', strong: true },
+      { text: '회', strong: false },
+    ]);
+    // An unpaired mark stays text instead of swallowing the rest.
+    expect(splitHighlight('a ** b')).toEqual([{ text: 'a ** b', strong: false }]);
+  });
+
   it('splits acquisition the way the game does', () => {
     const byKind = new Map<string, number>();
     for (const gift of gifts) byKind.set(gift.acquisition.kind, (byKind.get(gift.acquisition.kind) ?? 0) + 1);
@@ -283,6 +340,150 @@ describe('gifts', () => {
       for (const c of gift.conditions) {
         if (c.type !== 'factionCount') continue;
         for (const faction of c.factions) expect(known.has(faction), `${gift.id} ${faction}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe('gift effects (M129)', () => {
+  it('gives every gift its effects', () => {
+    expect(gifts.filter((g) => !g.effects).map((g) => g.id)).toEqual([]);
+    expect(gifts.filter((g) => g.desc.ko && g.effects!.length === 0).map((g) => g.id)).toEqual([]);
+  });
+
+  /**
+   * A threshold the ring judges (`gift.conditions`) must reach the effects too, or the 추천 기프트
+   * judgement would recommend a gift the deck cannot switch on: some effect asks for the same
+   * keywords or factions, and a gating threshold keeps its `min`.
+   */
+  it('reflects every parsed threshold in some effect requirement', () => {
+    for (const gift of gifts) {
+      const reqs = (gift.effects ?? []).flatMap((e) => e.requires);
+      for (const c of gift.conditions) {
+        if (c.type === 'keywordSkillCount') {
+          const match = reqs.find(
+            (r) => r.type === 'skillKeyword' && c.keywords.every((k) => r.keywords.includes(k)),
+          );
+          expect(match, `${gift.id} ${c.keywords.join('+')}`).toBeDefined();
+        }
+        if (c.type === 'factionCount') {
+          const match = reqs.find(
+            (r) => r.type === 'faction' && c.factions.every((f) => r.factions.includes(f)),
+          );
+          expect(match, `${gift.id} ${c.factions.join('|')}`).toBeDefined();
+          if (match?.type === 'faction' && match.min !== undefined) expect(match.min).toBe(c.min);
+        }
+      }
+    }
+  });
+
+  it('reads the gates the owner checked', () => {
+    const gate = (id: number) => giftById.get(id)!.effects!.find((e) => e.kind === 'gate');
+    expect(gate(9088)?.requires).toEqual([
+      { type: 'skillKeyword', keywords: ['Combustion'], includesSpecial: true, min: 5, scope: 'deployed' },
+    ]);
+    expect(giftById.get(9215)!.effects).toEqual([
+      {
+        kind: 'effect',
+        requires: [{ type: 'skillKeyword', keywords: ['Combustion'], includesSpecial: true, slot: 3 }],
+      },
+    ]);
+    expect(giftById.get(9214)!.effects).toEqual([
+      { kind: 'effect', requires: [{ type: 'identityBuff', buffs: ['VibrationIgnition'] }] },
+    ]);
+    expect(giftById.get(9271)!.effects!.map((e) => e.requires)).toEqual([
+      [{ type: 'faction', factions: ['BLACK_BEAST_RABBIT'] }],
+      [{ type: 'identityBuff', buffs: ['LegStrength'] }],
+    ]);
+  });
+
+  /** `gift.effect` keys (`9105.0`) whose requirements — or an `anyOf` option — have this type. */
+  const effectsWith = (type: EffectRequirement['type']): string[] =>
+    gifts.flatMap((g) =>
+      (g.effects ?? []).flatMap((e, i) =>
+        e.requires.some(
+          (r) => r.type === type || (r.type === 'anyOf' && r.options.some((o) => o.type === type)),
+        )
+          ? [`${g.id}.${i}`]
+          : [],
+      ),
+    );
+
+  it('leaves no line unclassified: E.G.O, 버림 and cross-kind 「또는」 all have requirements now', () => {
+    expect(gifts.flatMap((g) => (g.effects ?? []).filter((e) => e.unclassified).map(() => g.id))).toEqual([]);
+  });
+
+  it('reads every E.G.O skill condition as egoSkill, the keyword inside it asking nothing more', () => {
+    // Gates of the seven 조각 gifts, their 「… 속성 E.G.O 스킬의 경우」 lines, 9058 and 9733.
+    const pieces = [9105, 9110, 9116, 9121, 9126, 9131, 9136].flatMap((id) => [`${id}.0`, `${id}.2`]);
+    expect(effectsWith('egoSkill')).toEqual(['9058.1', ...pieces, '9733.1'].sort());
+    for (const id of [9105, 9110, 9116, 9121, 9126, 9131, 9136])
+      expect(giftById.get(id)!.effects![0]).toEqual({ kind: 'gate', requires: [{ type: 'egoSkill' }] });
+  });
+
+  it('carries an anyOf on each of the 17 cross-kind 「A 또는 B」 lines, and 9167’s self alternative', () => {
+    const lines = [
+      '9009.0',
+      '9011.0',
+      '9012.0',
+      '9014.1',
+      '9015.1',
+      '9019.0',
+      '9025.1',
+      '9026.0',
+      '9027.0',
+      '9030.0',
+      '9032.0',
+      '9034.0',
+      '9043.0',
+      '9221.0',
+      '9223.1',
+      '9258.2',
+      '9291.1',
+    ];
+    expect(effectsWith('anyOf')).toEqual([...lines, '9167.1'].sort());
+    expect(giftById.get(9223)!.effects![1]!.requires).toEqual([
+      { type: 'faction', factions: ['RING_FINGER'] },
+      {
+        type: 'anyOf',
+        options: [
+          { type: 'skill', attackTypes: ['Slash'] },
+          { type: 'skill', sins: ['LUST'] },
+        ],
+      },
+    ]);
+  });
+
+  it('asks for a discarding identity on the three 버림 lines (9201, 9202 with 디에치 협회, 9203)', () => {
+    const discard = gifts.flatMap((g) =>
+      (g.effects ?? []).flatMap((e, i) =>
+        e.requires.some((r) => r.type === 'identityBuff' && r.buffs.includes('Discard'))
+          ? [`${g.id}.${i}`]
+          : [],
+      ),
+    );
+    expect(discard).toEqual(['9201.2', '9202.1', '9203.1']);
+    expect(giftById.get(9202)!.effects![1]!.requires).toContainEqual({
+      type: 'faction',
+      factions: ['DIECI'],
+    });
+  });
+
+  it('reads 「자신의 [진동] 횟수를 소모하는」 and 「자신에게 [화상]을 부여하는」 as selfKeyword', () => {
+    expect(effectsWith('selfKeyword')).toEqual(['9164.1', '9166.1', '9166.3', '9167.1', '9167.3', '9819.0']);
+    expect(giftById.get(9819)!.effects![0]!.requires).toEqual([
+      { type: 'selfKeyword', keywords: ['Combustion'], verb: 'gain' },
+    ]);
+  });
+
+  it('names only factions and identities that exist', () => {
+    const known = new Set(enums.factions.map((f) => f.id));
+    for (const gift of gifts) {
+      for (const r of (gift.effects ?? []).flatMap((e) => e.requires)) {
+        if (r.type === 'faction')
+          for (const f of r.factions) expect(known.has(f), `${gift.id} ${f}`).toBe(true);
+        if (r.type === 'identity')
+          for (const id of r.ids) expect(identityById.has(id), `${gift.id} ${id}`).toBe(true);
       }
     }
   });
@@ -416,6 +617,147 @@ describe('identities', () => {
     const identity = identityById.get(10101)!;
     expect(identity.sins.sort()).toEqual(['ENVY', 'GLOOM', 'SLOTH'].sort());
     expect(identity.attackTypes.sort()).toEqual(['Penetrate', 'Slash']);
+  });
+});
+
+describe('identity skills (M129)', () => {
+  it('gives every identity a source derives its base skills, one per slot S1~S3', () => {
+    const derived = identities.filter((i) => i.keywordSource !== 'none');
+    for (const identity of derived) {
+      const slots = (identity.skills ?? []).map((s) => s.slot);
+      expect([identity.id, slots]).toEqual([identity.id, [1, 2, 3]]);
+    }
+  });
+
+  it('reads LCB 수감자 이상 skill by skill: sin, attack type, weight and coins', () => {
+    const skills = identityById.get(10101)!.skills!;
+    expect(skills.map((s) => [s.slot, s.sin, s.attackType, s.weight, s.coins?.count])).toEqual([
+      [1, 'GLOOM', 'Slash', 1, 1],
+      [2, 'ENVY', 'Penetrate', 1, 2],
+      [3, 'SLOTH', 'Slash', 1, 3],
+    ]);
+    expect(skills.every((s) => s.coins?.plus && !s.coins.minus && !s.coins.unbreakable)).toBe(true);
+  });
+
+  it('marks unbreakable and minus coins where the game draws them', () => {
+    const lantern = identityById.get(10111)!.skills!;
+    expect(lantern.map((s) => [s.coins?.unbreakable, s.coins?.minus])).toEqual([
+      [true, false],
+      [true, false],
+      [false, true],
+    ]);
+  });
+
+  it('reads the attack weight of an area S3', () => {
+    expect(identityById.get(10714)!.skills!.find((s) => s.slot === 3)!.weight).toBe(3);
+  });
+
+  it("puts 거미집 중지 아비's text-only 화상 on its S2 and S3, not its S1", () => {
+    const skills = identityById.get(11115)!.skills!;
+    expect(skills.map((s) => s.keywords.Combustion?.base ?? false)).toEqual([false, true, true]);
+  });
+
+  it('adds the per-skill keyword flags up to the keyword counts the planner uses', () => {
+    for (const identity of identities) {
+      if (!identity.skills || identity.keywordSource === 'curated') continue;
+      for (const [keyword, counts] of Object.entries(identity.keywords)) {
+        const base = identity.skills.filter(
+          (s) => s.keywords[keyword as keyof typeof s.keywords]?.base,
+        ).length;
+        const special = identity.skills.filter(
+          (s) => s.keywords[keyword as keyof typeof s.keywords]?.special,
+        ).length;
+        expect([identity.id, keyword, base, special]).toEqual([
+          identity.id,
+          keyword,
+          counts.skills,
+          counts.specialSkills,
+        ]);
+      }
+    }
+  });
+
+  it('lists 각력【묘】 for the three 흑수 - 묘 identities and nobody else', () => {
+    const holders = identities.filter((i) => i.buffs?.includes('LegStrength')).map((i) => i.id);
+    expect(holders).toEqual([10212, 10411, 11112]);
+    for (const id of holders) expect(identityById.get(id)!.title.ko).toMatch(/흑수 - 묘/);
+  });
+
+  it('lists 진동 - 작열 for 새벽 사무소 해결사 파우스트, whose skills switch 진동 into it', () => {
+    expect(identityById.get(10216)!.buffs).toContain('VibrationIgnition');
+  });
+
+  it('reads a passive-only buff from the passive text', () => {
+    // 흑수 - 묘 필두's battle passive 「천구성」: 「[BurstZilu]의 수치가 0이 되어 소멸시,
+    // [BurstVulnerableZilu]이 부여됨」 — none of its base or defense skills names that buff.
+    expect(identityById.get(10212)!.buffs).toContain('BurstVulnerableZilu');
+  });
+
+  it('lists 버림 (Discard) for the seven identities whose base skills discard', () => {
+    // 디에치 협회 ×4 (10108·10510·10608·10907), 정사무소 이스마엘 (10813), 어금니 사무소 이상·오티스 (10105·11105).
+    const discarders = identities.filter((i) => i.buffs?.includes('Discard')).map((i) => i.id);
+    expect(discarders).toEqual([10105, 10108, 10510, 10608, 10813, 10907, 11105]);
+  });
+
+  it('reads which skills spend their own 진동 and which put 화상 on their own user (skills[].self)', () => {
+    const holders = (keyword: 'Vibration' | 'Combustion', verb: 'gain' | 'consume'): number[] =>
+      identities.filter((i) => i.skills?.some((s) => s.self?.[keyword]?.[verb])).map((i) => i.id);
+    expect(holders('Vibration', 'consume')).toEqual([
+      10105, 10207, 10309, 10409, 10609, 10807, 10810, 10909, 11007, 11010, 11105, 11113,
+    ]);
+    expect(holders('Combustion', 'gain')).toEqual([10211, 10714, 11014]);
+    // 1030903 「자신의 [Vibration] 횟수를 10 소모하여 코인 위력 +2」 is S3 only.
+    expect(identityById.get(10309)!.skills!.map((s) => s.self?.Vibration?.consume ?? false)).toEqual([
+      false,
+      false,
+      true,
+    ]);
+    // Every static identity knows its skills' scripts; the mirror-only one does not, so it says nothing.
+    for (const identity of identities)
+      if (identity.keywordSource === 'derived')
+        expect(identity.skills!.every((s) => s.self !== undefined)).toBe(true);
+    expect(identityById.get(11016)!.skills!.map((s) => s.self)).toEqual([undefined, undefined, undefined]);
+  });
+
+  it('keeps the kinds of every defense skill, a counter included', () => {
+    expect(identityById.get(10101)!.defenseTypes).toEqual(['guard']);
+    expect(identityById.get(10212)!.defenseTypes).toEqual(['counter', 'guard']);
+  });
+
+  it('fills a mirror-only identity from the derived source, leaving weight and coins unknown', () => {
+    const couture = identityById.get(11016)!;
+    expect(couture.keywordSource).toBe('backfilled');
+    expect(couture.skills!.map((s) => [s.slot, s.sin, s.attackType, s.weight, s.coins])).toEqual([
+      [1, 'GLUTTONY', 'Penetrate', null, null],
+      [2, 'WRATH', 'Penetrate', null, null],
+      [3, 'LUST', 'Penetrate', null, null],
+    ]);
+    expect(couture.defenseTypes).toEqual(['counter', 'evade', 'guard']);
+    expect(couture.buffs).toContain('ChargeRougeAlly');
+  });
+});
+
+describe('skill-gifts index (M129)', () => {
+  const file = skillGiftIndexSchema.parse(
+    JSON.parse(readFileSync(resolve(DATA, `md${season}`, 'skill-gifts.json'), 'utf8')),
+  );
+
+  it('is exactly what core computes from the data today (a rule change needs a rebuild)', () => {
+    expect(file).toEqual(buildSkillGiftIndex(identities, gifts));
+  });
+
+  it('lists 9215 (화상 스킬 3) under the S3 of an identity whose S3 inflicts 화상, and E.G.O nowhere', () => {
+    // 10714 흑수 - 유 필두: its S3 inflicts 화상.
+    expect(file['10714']?.['3']).toContainEqual([9215, 0, 0]);
+    const egoRefs = Object.values(file)
+      .flatMap((slots) => Object.values(slots).flat())
+      .filter(([g, e, r]) => giftById.get(g)!.effects![e]!.requires[r]!.type === 'egoSkill');
+    expect(egoRefs).toEqual([]);
+  });
+
+  it('puts a whole-identity requirement (faction, buff) under slot 0', () => {
+    // 9271 흑수환 - 묘: effect 1 asks for 각력【묘】, which 10212 brings.
+    expect(file['10212']?.['0']).toContainEqual([9271, 1, 0]);
   });
 });
 

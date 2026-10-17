@@ -30,6 +30,7 @@ function filesUnder(base: string): Record<string, unknown> {
     [`${base}data/md${season}/rules.json`]: data.rules,
     [`${base}data/md${season}/gifts.json`]: data.gifts,
     [`${base}data/md${season}/packs.json`]: data.packs,
+    [`${base}data/md${season}/skill-gifts.json`]: data.skillGifts,
     [`${base}data/enums.json`]: data.enums,
     [`${base}data/identities.json`]: data.identities,
     [`${base}art/manifest.json`]: { gifts: [], packs: [] },
@@ -85,7 +86,7 @@ describe('base path', () => {
 });
 
 describe('season split', () => {
-  it('reads meta, rules, gifts and packs per season, and enums and identities once', async () => {
+  it('reads meta, rules, gifts, packs and skill-gifts per season, and enums and identities once', async () => {
     const asked = serve(filesUnder('/'));
     await loadGameData('/', { season });
     const seasonScoped = asked.filter((url) => url.includes(`/md${season}/`)).sort();
@@ -94,6 +95,7 @@ describe('season split', () => {
       `/data/md${season}/meta.json`,
       `/data/md${season}/packs.json`,
       `/data/md${season}/rules.json`,
+      `/data/md${season}/skill-gifts.json`,
     ]);
     expect(asked).toContain('/data/enums.json');
     expect(asked).toContain('/data/identities.json');
@@ -114,6 +116,30 @@ describe('season split', () => {
     expect(loaded.gifts.length).toBe(data.gifts.length);
     expect(loaded.identities.length).toBe(data.identities.length);
     expect(loaded.rules.dungeonId).toBe(season);
+    expect(loaded.skillGifts).toEqual(data.skillGifts);
+  });
+
+  it('opens a season frozen before skill-gifts.json existed, without it', async () => {
+    // Arrange
+    const files = filesUnder('/');
+    delete files[`/data/md${season}/skill-gifts.json`];
+    serve(files);
+    // Act
+    const loaded = await loadGameData('/', { season, validate: true });
+    // Assert
+    expect(loaded.skillGifts).toBeUndefined();
+    expect(loaded.gifts.length).toBe(data.gifts.length);
+  });
+
+  it('still fails on a skill-gifts.json that answers with an error other than 404', async () => {
+    // Arrange
+    serve(filesUnder('/'), {
+      [`/data/md${season}/skill-gifts.json`]: async () => new Response('boom', { status: 500 }),
+    });
+    // Act
+    const error = await loadGameData('/', { season }).catch((cause: unknown) => cause);
+    // Assert
+    expect(error).toMatchObject({ cause: 'http', label: `md${season}/skill-gifts.json`, status: 500 });
   });
 });
 

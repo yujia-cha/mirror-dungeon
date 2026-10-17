@@ -147,6 +147,135 @@ export const conditionSchema = z.discriminatedUnion('type', [
 
 export type Condition = z.infer<typeof conditionSchema>;
 
+export const DEFENSE_TYPES = ['guard', 'evade', 'counter'] as const;
+export const defenseTypeSchema = z.enum(DEFENSE_TYPES);
+export type DefenseType = z.infer<typeof defenseTypeSchema>;
+
+export const SKILL_SHAPES = [
+  /** 「단일 코인 스킬」 — exactly one coin. */
+  'singleCoin',
+  /** 「코인 수가 N 이하인 스킬」. */
+  'coinsAtMost',
+  /** 「코인 수가 N 이상인 스킬」. */
+  'coinsAtLeast',
+  /** 「더하기 코인」 — any coin with operator ADD. */
+  'plusCoin',
+  /** 「빼기 코인」·「마이너스 코인」 — any coin with operator SUB. */
+  'minusCoin',
+  /** 「파괴 불가 코인」. */
+  'unbreakableCoin',
+  /** 「공격 가중치가 N 이상인 스킬」 (`targetNum`). */
+  'weightAtLeast',
+  /** 「공격 가중치가 N인 스킬」. */
+  'weightExactly',
+] as const;
+export const skillShapeSchema = z.enum(SKILL_SHAPES);
+
+/**
+ * What one effect of a gift asks of the deployed party before it does anything (M129). Only
+ * requirements the deck can fail are written: a state on an enemy or on oneself (「[화상]을 보유한
+ * 적」, 「자신에게 [호흡]이 있으면」), a battle situation (체력·흐트러짐·속도·사망·E.G.O 자원·상점) and a
+ * formation slot (「[편성 1번 인격 전용 효과]」) always hold, so they leave no requirement behind.
+ * Without `min` a requirement holds with one deployed identity.
+ */
+const singleRequirementSchemas = [
+  /** A base skill (S1~S3) that inflicts, gains or spends the keyword — 「[파열] 부여 시」, 「…을 부여하는 스킬 3」. */
+  z.object({
+    type: z.literal('skillKeyword'),
+    /** An identity whose skill uses ANY of them counts, and counts once. */
+    keywords: z.array(identityKeywordIdSchema).min(1),
+    /** Counts a skill that uses only the 특수 variant — set when the text says 「또는 특수 X」. */
+    includesSpecial: z.boolean(),
+    /** 「스킬 3」 — only that slot counts. */
+    slot: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    min: z.number().int().positive().optional(),
+    scope: conditionScopeSchema.optional(),
+  }),
+  /**
+   * A buff no gift hands out, so only an identity brings it — [각력【묘】], [진동 - 작열]. Ids are the
+   * game's buff ids (`LegStrength`, `VibrationIgnition`); an identity's `buffs` lists the ones it uses.
+   */
+  z.object({ type: z.literal('identityBuff'), buffs: z.array(z.string()).min(1) }),
+  /** 「X (또는 Y) 소속 인격」. */
+  z.object({
+    type: z.literal('faction'),
+    factions: z.array(z.string()).min(1),
+    min: z.number().int().positive().optional(),
+    scope: conditionScopeSchema.optional(),
+  }),
+  /** 「거미집의 검 료슈가 덱에 편성되어 있으면」 — any of these identities in the formation. */
+  z.object({ type: z.literal('identity'), ids: z.array(z.number().int()).min(1) }),
+  /** 「오만 관통 스킬」, 「참격 스킬」, 「우울 속성 공격 스킬」 — one base skill must match every list given. */
+  z.object({
+    type: z.literal('skill'),
+    sins: z.array(sinSchema).min(1).optional(),
+    attackTypes: z.array(attackTypeSchema).min(1).optional(),
+  }),
+  /** 「질투 완전 공명」·「색욕 공명」 — a deployed base skill of the sin. 「완전 공명 N」 without a sin is no requirement. */
+  z.object({ type: z.literal('resonance'), sins: z.array(sinSchema).min(1) }),
+  /** A base skill of that build — coins or attack weight. `n` for the counted kinds. */
+  z.object({ type: z.literal('shape'), kind: skillShapeSchema, n: z.number().int().positive().optional() }),
+  /** 「반격 스킬」, 「회피 스킬」, 「수비 스킬」. */
+  z.object({ type: z.literal('defense'), kinds: z.array(defenseTypeSchema).min(1) }),
+  /**
+   * A base skill that puts the keyword on ITS OWN user, or spends the user's own stack — 「자신의
+   * [진동] 횟수를 소모하는 스킬」, 「자신에게 [화상]을 부여하는 기본 공격 스킬」 (M129). `skillKeyword`
+   * counts only what lands on an enemy, so these are read from the skill's `self` facts.
+   */
+  z.object({
+    type: z.literal('selfKeyword'),
+    keywords: z.array(statusKeywordSchema).min(1),
+    /** `gain`: the skill gives the user the keyword; `consume`: it spends the user's own. */
+    verb: z.enum(['gain', 'consume']),
+  }),
+  /**
+   * An E.G.O skill condition (「…을 부여하는 E.G.O 스킬 사용 시 발동」, 「분노 속성 E.G.O 스킬의 경우」).
+   * Our data has no identity's E.G.O, so it always holds (owner's call) — it is written down so the
+   * 추천 tab can put such gifts in a group of their own, last.
+   */
+  z.object({ type: z.literal('egoSkill') }),
+] as const;
+
+/**
+ * 「A 또는 B」 across requirement kinds — 「화상 스킬 또는 색욕 스킬」, 「시지프 소속 또는 [PersonalityCharge]」
+ * (M129, owner's call): one deployed identity meeting ANY option is enough. Options never nest.
+ */
+export const anyOfRequirementSchema = z.object({
+  type: z.literal('anyOf'),
+  options: z.array(z.discriminatedUnion('type', singleRequirementSchemas)).min(2),
+});
+
+export const effectRequirementSchema = z.discriminatedUnion('type', [
+  ...singleRequirementSchemas,
+  anyOfRequirementSchema,
+]);
+
+export type EffectRequirement = z.infer<typeof effectRequirementSchema>;
+export type SingleRequirement = Exclude<EffectRequirement, { type: 'anyOf' }>;
+
+/**
+ * One effect of a gift (M129): a line of its description together with the 「- 」 bullets under it.
+ * A `gate` is a heading that switches the whole gift on (「…이면, 이번 전투 동안 발동」, 「…일 때 발동」)
+ * — its requirements bind every effect. A `note` (「※ …」, 「[중첩 발동 불가] …」) does nothing.
+ * `unclassified` marks a line that reads like a condition the parser has no rule for; it is treated as
+ * unconditional and listed in the review table.
+ */
+export const giftEffectSchema = z.object({
+  kind: z.enum(['effect', 'gate', 'note']),
+  requires: z.array(effectRequirementSchema),
+  unclassified: z.literal(true).optional(),
+});
+
+export type GiftEffect = z.infer<typeof giftEffectSchema>;
+
+/**
+ * One entry of `data/curated/gift-effects.json` (M129): the effects of a gift written by hand,
+ * replacing what the parser reads from its text wholesale. `_source` says why.
+ */
+export const curatedGiftEffectSchema = z
+  .object({ _source: z.string().min(1), effects: z.array(giftEffectSchema) })
+  .strict();
+
 // ---------------------------------------------------------------------------
 // Gifts
 // ---------------------------------------------------------------------------
@@ -177,6 +306,18 @@ export const mixedRecipeSchema = z.object({
   bCount: z.number().int().positive(),
 });
 
+/** One enhancement step of a gift (M130): `+` is level 1, `++` level 2. */
+export const giftUpgradeSchema = z.object({
+  level: z.union([z.literal(1), z.literal(2)]),
+  /** The game's name for the step, 「하모닉스+」. */
+  name: localizedSchema,
+  /** The step's text; what changed is wrapped in `**` (`HIGHLIGHT_MARK`). */
+  desc: localizedSchema,
+});
+export type GiftUpgrade = z.infer<typeof giftUpgradeSchema>;
+/** The enhancement levels a player can pick; 0 (not enhanced) is the absence of a choice. */
+export type UpgradeLevel = GiftUpgrade['level'];
+
 export const giftSchema = z.object({
   id: z.number().int(),
   name: localizedSchema,
@@ -189,6 +330,13 @@ export const giftSchema = z.object({
   price: z.number().int().nullable(),
   /** 0 = no enhancement, 1 = `+`, 2 = `++`. */
   upgradeLevels: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+  /**
+   * The game's own text for each enhancement step (M130), `+` then `++`. Absent when the gift
+   * cannot be enhanced or the game ships no text for its steps — the app then offers no choice.
+   * `desc` is cleaned like the base `desc`, except that what the step changed keeps the game's
+   * emphasis as `**…**` (`HIGHLIGHT_MARK` in `text.ts`; the app draws it with `splitHighlight`).
+   */
+  upgrades: z.array(giftUpgradeSchema).optional(),
   tags: z.array(z.string()),
   /** Listed in `nonAcquireableInEasyIds` — cannot be obtained on Normal difficulty. */
   hardOnly: z.boolean(),
@@ -216,6 +364,8 @@ export const giftSchema = z.object({
     })
     .nullable(),
   conditions: z.array(conditionSchema),
+  /** What each effect asks of the deck — the 추천 기프트 judgement (M129). Gates first, in text order. */
+  effects: z.array(giftEffectSchema).optional(),
   /**
    * The one fusion result this gift is a lower-tier, same-keyword ingredient of (조합 계승).
    * `요리 비법 전서 → 진혼`. Null when the gift feeds several results or none.
@@ -278,6 +428,45 @@ export const identityKeywordSchema = z
   })
   .refine((k) => k.skills + k.specialSkills > 0, { message: 'a keyword entry needs at least one skill' });
 
+/**
+ * One base attack skill (M129). Fields a source does not know are null, and a null never satisfies a
+ * requirement — the judgement says 「모름」 rather than guess.
+ */
+export const identitySkillSchema = z.object({
+  slot: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  sin: sinSchema.nullable(),
+  attackType: attackTypeSchema.nullable(),
+  /** 공격 가중치 (`targetNum`, at full uptie). Null for an identity only the derived mirror knows. */
+  weight: z.number().int().positive().nullable(),
+  /** At full uptie. Null for an identity only the derived mirror knows (it states no coins). */
+  coins: z
+    .object({
+      count: z.number().int().nonnegative(),
+      /** Any coin with operator ADD. */
+      plus: z.boolean(),
+      /** Any coin with operator SUB. */
+      minus: z.boolean(),
+      /** Any 파괴 불가 코인 — the raw coin's `color: "GREY"`, the coins the KR text marks `[SuperCoin]`. */
+      unbreakable: z.boolean(),
+    })
+    .nullable(),
+  /**
+   * The keywords this skill uses by the same rule `keywords` counts with (`buffCounts`): `base` for
+   * the keyword itself, `special` for a 특수 variant of it.
+   */
+  keywords: z.partialRecord(identityKeywordIdSchema, z.object({ base: z.boolean(), special: z.boolean() })),
+  /**
+   * Status keywords this skill puts on its own user (`gain`) or spends from the user's own stack
+   * (`consume`) — 자기 진동 소모, 자기 화상 부여 (M129). Not counted in `keywords`, which is what
+   * lands on an enemy. Absent when no source tells.
+   */
+  self: z
+    .partialRecord(statusKeywordSchema, z.object({ gain: z.boolean(), consume: z.boolean() }))
+    .optional(),
+});
+
+export type IdentitySkill = z.infer<typeof identitySkillSchema>;
+
 export const identitySchema = z.object({
   id: z.number().int(),
   /** 1-12, derived from the id (1SSNN). */
@@ -296,6 +485,18 @@ export const identitySchema = z.object({
   keywordSource: z.enum(['derived', 'backfilled', 'curated', 'none']),
   sins: z.array(sinSchema),
   attackTypes: z.array(attackTypeSchema),
+  /** The base attack skills S1~S3, one entry per skill (M129). Absent when no source knows them. */
+  skills: z.array(identitySkillSchema).optional(),
+  /** Its defense skills' kinds (M129). */
+  defenseTypes: z.array(defenseTypeSchema).optional(),
+  /**
+   * Buff ids its skills and passives gain or inflict, special variants included (M129) — what an
+   * `identityBuff` requirement looks for. Sorted. Read off the base attack and defense skills'
+   * scripts and KR text, the battle passives' KR text (not the 서포트 패시브, which acts only while
+   * the identity is not deployed) and the buffs it enters battle with; for a mirror-only identity
+   * the mirror's `statuses` join in, which also carry tags like `SuperCoin`.
+   */
+  buffs: z.array(z.string()).optional(),
 });
 
 export type Identity = z.infer<typeof identitySchema>;
@@ -837,6 +1038,30 @@ export const giftsFileSchema = z.array(giftSchema);
 export const packsFileSchema = z.array(themePackSchema);
 export const identitiesFileSchema = z.array(identitySchema);
 
+/**
+ * `md{n}/skill-gifts.json` (M129): which gift effects each identity's skills set off — by identity
+ * id, then by slot (`"1"`–`"3"` a base skill, `"0"` the identity as a whole: a faction, a buff, a
+ * defense kind, a named identity, or a keyword read off totals without per-skill facts), a list of
+ * `[giftId, effectIndex, requirementIndex]` into `gift.effects[effectIndex].requires`. Built by
+ * `data:build` from core's `identityMeets`/`slotsMeeting`, so it is what the judgement says, laid
+ * out the other way round. `egoSkill` is left out (no identity's E.G.O is in the data); an `anyOf`
+ * is listed at its own index under the slots of the options the identity meets. Sorted.
+ */
+export const skillGiftSlotSchema = z.enum(['0', '1', '2', '3']);
+export const skillGiftRefSchema = z.tuple([
+  z.number().int(),
+  z.number().int().nonnegative(),
+  z.number().int().nonnegative(),
+]);
+export const skillGiftIndexSchema = z.record(
+  z.string().regex(/^\d+$/),
+  z.partialRecord(skillGiftSlotSchema, z.array(skillGiftRefSchema).min(1)),
+);
+
+export type SkillGiftSlot = z.infer<typeof skillGiftSlotSchema>;
+export type SkillGiftRef = z.infer<typeof skillGiftRefSchema>;
+export type SkillGiftIndex = z.infer<typeof skillGiftIndexSchema>;
+
 export interface GameData {
   meta: Meta;
   enums: Enums;
@@ -844,4 +1069,6 @@ export interface GameData {
   gifts: Gift[];
   packs: ThemePack[];
   identities: Identity[];
+  /** `md{n}/skill-gifts.json`; absent for a frozen season built before it existed (M129). */
+  skillGifts?: SkillGiftIndex;
 }

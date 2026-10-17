@@ -11,10 +11,12 @@
  * fetched twice and Chrome warns that it was unused. Relative URLs, like every other link in
  * `index.html`, so they resolve under the Pages sub-path.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+// `skill-gifts` (M129) is optional for a frozen season, so it is preloaded only when it is there.
 const SEASON_FILES = ['meta', 'rules', 'gifts', 'packs'];
+const OPTIONAL_SEASON_FILES = ['skill-gifts'];
 const SHARED_FILES = ['enums', 'identities'];
 
 export function dataPreloadPaths(dataDir: string): string[] {
@@ -22,6 +24,9 @@ export function dataPreloadPaths(dataDir: string): string[] {
   return [
     'data/index.json',
     ...SEASON_FILES.map((name) => `data/md${index.default}/${name}.json`),
+    ...OPTIONAL_SEASON_FILES.map((name) => `data/md${index.default}/${name}.json`).filter((path) =>
+      existsSync(join(dataDir, '..', path)),
+    ),
     ...SHARED_FILES.map((name) => `data/${name}.json`),
   ];
 }

@@ -45,6 +45,11 @@ export default defineConfig({
         'scripts/layout-shots.ts',
         // A measurement for the review (M115); what it measures is core, tested in planner.test.ts.
         'scripts/measure-drop-causes.ts',
+        // M129: prints why 추천 기프트 recommends what it does; the judgement is core/effects.ts, tested.
+        'scripts/recommend-cli.ts',
+        // M129: writes the owner's review table from public/data; what it reads is
+        // scripts/lib/parse-effects.ts, which is measured.
+        'scripts/gift-effects-report.ts',
       ],
       // Measured at M58: 66.32 / 59.76 / 72.38 / 67.75.
       thresholds: { statements: 65.5, branches: 59, functions: 71.5, lines: 67 },

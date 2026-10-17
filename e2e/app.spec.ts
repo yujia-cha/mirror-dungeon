@@ -82,7 +82,8 @@ test('the data preloads are the fetches the app makes, not a second copy (M58)',
   await page.waitForTimeout(3500);
   expect(warnings).toEqual([]);
   expect([...dataRequests.values()].every((count) => count === 1)).toBe(true);
-  expect(dataRequests.size).toBe(7);
+  // index · enums · identities · md7 meta · rules · gifts · packs · skill-gifts (M129).
+  expect(dataRequests.size).toBe(8);
 });
 
 test('a formation code imports in the browser (M62)', async ({ page }) => {

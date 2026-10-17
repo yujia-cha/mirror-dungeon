@@ -4,6 +4,8 @@
  * An ingredient in the recipe opens its own details in the same sheet; 「← 이전 기프트」 at the top
  * walks back (the host keeps the trail). Since M120 every gift and pack name here is a link to its
  * own details, and observation is pinned only from the item tab's slots — the sheet has no button.
+ * A gift the game lets you enhance has `+` / `++` at the right end of its name row (M130): the
+ * title and the text then follow the chosen step, with what the step changed in bold.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Check, Link2, X } from 'lucide-react';
@@ -23,6 +25,12 @@ import { DetailSurface } from './BlockDetail.tsx';
 import { LinkedText, type NameLink } from './LinkedText.tsx';
 import { GiftIcon } from './GiftIcon.tsx';
 import { Button, Checkbox } from './ui.tsx';
+import { UpgradeSteps } from './UpgradeSteps.tsx';
+import { EffectLines } from './EffectLines.tsx';
+import { effectBlocksFor } from '../lib/effect-text.ts';
+import type { GiftEffectsReport } from '../../core/effects.ts';
+import { upgradeStep } from '../lib/upgrade.ts';
+import { splitHighlight } from '../../core/text.ts';
 
 /**
  * 「조합으로만 · 화왕지절 전용」 — the badges of the old list row, said as a sentence. A gift with
@@ -163,6 +171,8 @@ export function GiftDetailSheet({
   onOpenPack,
   back,
   onClose,
+  effects,
+  nobodyDeployed = false,
 }: {
   gift: Gift;
   reports: ConditionReport[];
@@ -186,10 +196,17 @@ export function GiftDetailSheet({
   /** Set when this gift was reached from another's recipe: the way back to it. */
   back?: { name: string; onBack: () => void };
   onClose: () => void;
+  /** Each effect judged on the deployed party (M129) — the description is then drawn effect by effect. */
+  effects?: GiftEffectsReport;
+  /** Nobody is deployed, so every effect that asks something of the deck reads 「발동하지 않음」 — say why. */
+  nobodyDeployed?: boolean;
 }) {
   const wanted = useApp((s) => s.wanted);
   const fusionGoal = useApp((s) => s.fusionGoal);
   const setFusionGoal = useApp((s) => s.setFusionGoal);
+  // The chosen enhancement step, the same in every place that opens this sheet.
+  const chosenLevel = useApp((s) => s.upgrades[gift.id]);
+  const step = upgradeStep(gift, chosenLevel);
 
   // Moving to another gift keeps the sheet mounted, so it has to start over by hand: back to the
   // top, and focus on something that still exists — the pill that was pressed is gone, and a modal
@@ -206,7 +223,8 @@ export function GiftDetailSheet({
     (backRef.current ?? titleRef.current)?.focus();
   }, [gift.id]);
 
-  const name = pick(gift.name, lang);
+  const name = pick((step ?? gift).name, lang);
+  const descText = renderEffect((step ?? gift).desc, data.enums, lang);
   const selected = wanted.includes(gift.id);
   const goalSet = useMemo(() => new Set(wanted), [wanted]);
   const hasRecipe = Boolean(gift.fusion && (gift.fusion.recipes.length > 0 || gift.fusion.mixed));
@@ -241,9 +259,12 @@ export function GiftDetailSheet({
         <div className="flex items-start gap-3">
           <GiftIcon gift={gift} size={44} judgement={judgementOf(reports)} lang={lang} />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <h2 ref={titleRef} tabIndex={-1} className="text-heading outline-none">
-              {name}
-            </h2>
+            <div className="flex items-start gap-2">
+              <h2 ref={titleRef} tabIndex={-1} className="min-w-0 flex-1 text-heading outline-none">
+                {name}
+              </h2>
+              <UpgradeSteps gift={gift} lang={lang} />
+            </div>
             <span className="text-caption text-fg-subtle" data-testid="gift-acquisition">
               <LinkedText text={acquisition.text} links={acquisition.packs.flatMap(packLink)} />
             </span>
@@ -320,12 +341,36 @@ export function GiftDetailSheet({
           </div>
         ) : null}
 
-        {/* `whitespace-pre-line`: the game writes a gift as several clauses separated by blank lines,
-            with 「- 」 sub-lines under some of them. Without it CSS folds all of that into one run-on
-            paragraph. */}
-        <p className="whitespace-pre-line text-caption text-fg-muted">
-          {renderEffect(gift.desc, data.enums, lang)}
-        </p>
+        {/* Effect by effect when the text lines up with the judged effects (M129); otherwise the
+            paragraph as written. `whitespace-pre-line`: the game writes a gift as several clauses
+            separated by blank lines, with 「- 」 sub-lines under some of them. */}
+        {effects && effectBlocksFor(descText, effects) && nobodyDeployed ? (
+          <p className="text-caption text-fg-subtle" data-testid="effect-nobody">
+            {t('recNoDeployed', lang)}
+          </p>
+        ) : null}
+        {effects && effectBlocksFor(descText, effects) ? (
+          <EffectLines
+            text={descText}
+            report={effects}
+            enums={data.enums}
+            identityById={indexes.identityById}
+            lang={lang}
+          />
+        ) : (
+          <p className="whitespace-pre-line text-caption text-fg-muted" data-testid="gift-desc">
+            {/* An enhancement step's text bolds what it changed (`**…**` from the build). */}
+            {splitHighlight(descText).map((part, i) =>
+              part.strong ? (
+                <strong key={i} className="text-fg">
+                  {part.text}
+                </strong>
+              ) : (
+                part.text
+              ),
+            )}
+          </p>
+        )}
 
         {entangled.length > 0 ? (
           <div

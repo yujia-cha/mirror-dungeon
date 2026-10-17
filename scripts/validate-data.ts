@@ -26,7 +26,9 @@ import {
   staticDataPresent,
 } from './lib/raw.ts';
 import { familyOf, seasonOf } from './lib/season-files.ts';
+import { identitySkillProblems } from './lib/identity-skills.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
+import { readCuratedGiftEffects, splitEffectBlocks } from './lib/parse-effects.ts';
 import { GIFT_ICON_DIR, MAX_ICON_BYTES, giftsAcrossSeasons, isWebp } from './lib/gift-icons.ts';
 import { KEYWORD_ICON_DIR, MAX_KEYWORD_ICON_BYTES, UPSTREAM_KEYWORD_FILES } from './lib/keyword-icons.ts';
 import { MAX_PACK_IMAGE_BYTES, PACK_IMAGE_DIR, packsAcrossSeasons } from './lib/pack-images.ts';
@@ -68,6 +70,8 @@ import {
   packsFileSchema,
   rulesSchema,
   seasonIndexSchema,
+  skillGiftIndexSchema,
+  type SkillGiftIndex,
   type Enums,
   type Gift,
   type Identity,
@@ -171,12 +175,24 @@ const rules: Rules | null = parseFile('rules.json', rulesSchema);
 const gifts: Gift[] | null = parseFile('gifts.json', giftsFileSchema);
 const packs: ThemePack[] | null = parseFile('packs.json', packsFileSchema);
 const identities: Identity[] | null = parseFile('identities.json', identitiesFileSchema);
+/**
+ * M129 `skill-gifts.json`: the season the raw snapshot describes is rebuilt every time and must have
+ * it; a frozen season asked for with `--season` may predate it.
+ */
+const skillGiftsPath = join(OUT, `md${season}`, 'skill-gifts.json');
+const skillGifts: SkillGiftIndex | null =
+  existsSync(skillGiftsPath) || season === readCommonData()?.data.currentDungeonId
+    ? parseAt(skillGiftsPath, `public/data/md${season}/skill-gifts.json`, skillGiftIndexSchema)
+    : null;
 
 if (meta && enums && rules && gifts && packs && identities) {
   checkReferences(gifts, packs, identities, enums);
   checkInvariants(meta, rules, gifts, packs, identities, enums);
   checkCuratedOverrides(gifts, packs, identities);
+  checkGiftEffects(gifts, identities, enums);
+  if (skillGifts) checkSkillGifts(skillGifts, gifts, identities);
   checkCuratedIdentities(identities);
+  checkIdentitySkills(identities);
   checkCuratedSeason();
   checkDerivedMirrorDungeon(gifts, packs, rules);
   checkSeasonSnapshot();
@@ -730,7 +746,13 @@ function checkInvariants(
   // rich-text tags, or the runtime `{0}` counter. Each has a fix in the build; a hit here means a
   // new shape arrived that the build does not clean.
   const messyText = gifts.filter((g) =>
-    [g.desc.ko, g.desc.en, ...g.conditions.flatMap((c) => (c.text ? [c.text.ko, c.text.en] : []))].some(
+    [
+      g.desc.ko,
+      g.desc.en,
+      ...g.conditions.flatMap((c) => (c.text ? [c.text.ko, c.text.en] : [])),
+      // An enhancement step's text (M130): its `**` emphasis is the one mark allowed through.
+      ...(g.upgrades ?? []).flatMap((u) => [u.name.ko, u.name.en, u.desc.ko, u.desc.en]),
+    ].some(
       (text) =>
         PADDED_BRACKET.test(text) ||
         new RegExp(RICH_TEXT_TAG.source).test(text) ||
@@ -1283,6 +1305,59 @@ function checkCuratedIdentities(identities: Identity[]): void {
   }
 }
 
+/**
+ * The per-skill identity data (M129) the 추천 기프트 judgement reads. Every identity a source
+ * derives must have its base skills, and they must add up to what the planner already counts
+ * (`identitySkillProblems`). The canaries below catch a marker that silently stopped matching —
+ * the pipeline's usual failure — rather than any one identity: no unbreakable coin anywhere means
+ * the `GREY` coin colour moved, no counter anywhere means `defType` changed, and no buffs means the
+ * script or passive-text reading broke.
+ */
+function checkIdentitySkills(identities: Identity[]): void {
+  for (const identity of identities) {
+    if (!identity.skills?.length) {
+      if (identity.keywordSource === 'curated') continue;
+      const message = `identity ${identity.id} has no per-skill data (skills); check deriveSkillKeywords / derivedSkillFacts`;
+      if (identity.keywordSource === 'backfilled') warn('invariant', message);
+      else err('invariant', message);
+      continue;
+    }
+    for (const problem of identitySkillProblems(identity)) {
+      err('invariant', `identity ${identity.id} skills: ${problem}`);
+    }
+  }
+  const allSkills = identities.flatMap((i) => i.skills ?? []);
+  if (allSkills.length === 0) return;
+  if (!allSkills.some((s) => s.coins?.unbreakable))
+    strict(
+      'invariant',
+      'no base skill has an unbreakable coin; check the GREY coin colour in staticSkillFacts',
+    );
+  if (!allSkills.some((s) => s.coins?.minus))
+    strict('invariant', 'no base skill has a minus coin; check operatorType SUB in staticSkillFacts');
+  if (!identities.some((i) => i.defenseTypes?.includes('counter')))
+    strict('invariant', 'no identity has a counter defense; check defType in defenseTypesOf');
+  // 자기 키워드 (M129 `skills[].self`): gifts ask for 「자신의 [진동] 횟수를 소모하는 스킬」 and 「자신에게
+  // [화상]을 부여하는 스킬」, and the 유로지비·흑수 - 유 identities do both today. None anywhere means
+  // `selfUseInSkill` / `selfKeywordsInSkillText` stopped reading them, not that the game dropped them.
+  if (!allSkills.some((s) => s.self?.Vibration?.consume))
+    warn(
+      'invariant',
+      'no base skill consumes its own 진동 (skills[].self); check selfUseInSkill / selfKeywordsInSkillText',
+    );
+  if (!allSkills.some((s) => s.self?.Combustion?.gain))
+    warn(
+      'invariant',
+      'no base skill puts 화상 on its own user (skills[].self); check selfUseInSkill / selfKeywordsInSkillText',
+    );
+  const withoutBuffs = identities.filter((i) => !i.buffs?.length);
+  if (withoutBuffs.length > identities.length / 2)
+    strict(
+      'invariant',
+      `${withoutBuffs.length} of ${identities.length} identities list no buffs; check buffIdsInSkill and Passives.json`,
+    );
+}
+
 function checkCuratedOverrides(gifts: Gift[], packs: ThemePack[], identities: Identity[]): void {
   const giftIds = new Set(gifts.map((g) => g.id));
   const packIds = new Set(packs.map((p) => p.id));
@@ -1324,6 +1399,24 @@ function checkCuratedOverrides(gifts: Gift[], packs: ThemePack[], identities: Id
     }
   }
 
+  // M129: hand-written effects replace the parsed ones wholesale, so they must parse and name a gift.
+  const giftEffects = readCuratedGiftEffects(repoPath('data/curated/gift-effects.json'));
+  for (const message of giftEffects.errors)
+    err('invariant', `curated override gift-effects.json: ${message}`);
+  check('gift-effects.json', [...giftEffects.byId.keys()].map(String), giftIds, 'gift');
+  for (const [id, effects] of giftEffects.byId) {
+    const gift = gifts.find((g) => g.id === id);
+    if (!gift) continue;
+    const blocks = splitEffectBlocks(gift.desc.ko).length;
+    if (blocks !== effects.length) {
+      warn(
+        'invariant',
+        `curated gift-effects.json ${id} lists ${effects.length} effect(s) but the text now has ${blocks} — ` +
+          'the gift text changed; re-read it and update the override',
+      );
+    }
+  }
+
   const notes = readJsonIfExists<{ gifts?: Record<string, unknown>; packs?: Record<string, unknown> }>(
     repoPath('data/curated/notes.json'),
   );
@@ -1331,6 +1424,82 @@ function checkCuratedOverrides(gifts: Gift[], packs: ThemePack[], identities: Id
     check('notes.json gifts', Object.keys(notes.gifts ?? {}), giftIds, 'gift');
     check('notes.json packs', Object.keys(notes.packs ?? {}), packIds, 'pack');
   }
+}
+
+/**
+ * The effects each gift asks of the deck (M129): every gift has them, and every faction and
+ * identity they name exists — a requirement no deck can meet would hide the gift for good.
+ */
+function checkGiftEffects(gifts: Gift[], identities: Identity[], enums: Enums): void {
+  const factionIds = new Set(enums.factions.map((f) => f.id));
+  const identityIds = new Set(identities.map((i) => i.id));
+  const missing = gifts.filter((g) => !g.effects);
+  if (missing.length > 0) {
+    err(
+      'invariant',
+      `${missing.length} gift(s) have no effects: ${missing
+        .slice(0, 6)
+        .map((g) => g.id)
+        .join(', ')}`,
+    );
+  }
+  for (const gift of gifts) {
+    for (const effect of gift.effects ?? []) {
+      for (const req of effect.requires) {
+        if (req.type === 'faction') {
+          for (const f of req.factions) {
+            if (!factionIds.has(f)) err('reference', `gift ${gift.id} effect names unknown faction "${f}"`);
+          }
+        }
+        if (req.type === 'identity') {
+          for (const id of req.ids) {
+            if (!identityIds.has(id)) err('reference', `gift ${gift.id} effect names unknown identity ${id}`);
+          }
+        }
+      }
+    }
+  }
+  const unclassified = gifts.flatMap((g) => (g.effects ?? []).filter((e) => e.unclassified).map(() => g.id));
+  if (unclassified.length > 0) {
+    warn(
+      'invariant',
+      `${unclassified.length} gift effect line(s) read like a condition no rule covers (gifts ${[
+        ...new Set(unclassified),
+      ]
+        .slice(0, 8)
+        .join(
+          ', ',
+        )}…) — see npm run gift-effects:report; extend scripts/lib/parse-effects.ts or add data/curated/gift-effects.json`,
+    );
+  }
+}
+
+/**
+ * `skill-gifts.json` (M129) points into `gifts[].effects[].requires`: every identity, gift, effect
+ * and requirement it names must exist, and none may be an `egoSkill` (left out by design). That it
+ * is what core computes today is `tests/generated-data.test.ts`'s job — it recomputes the file.
+ */
+function checkSkillGifts(index: SkillGiftIndex, gifts: Gift[], identities: Identity[]): void {
+  const giftById = new Map(gifts.map((g) => [g.id, g]));
+  const identityIds = new Set(identities.map((i) => String(i.id)));
+  let bad = 0;
+  for (const [id, slots] of Object.entries(index)) {
+    if (!identityIds.has(id)) err('reference', `skill-gifts.json names unknown identity ${id}`);
+    for (const [slot, refs] of Object.entries(slots)) {
+      for (const [giftId, effectIndex, requirementIndex] of refs ?? []) {
+        const requirement = giftById.get(giftId)?.effects?.[effectIndex]?.requires[requirementIndex];
+        if (!requirement || requirement.type === 'egoSkill') {
+          bad += 1;
+          if (bad <= 5)
+            err(
+              'reference',
+              `skill-gifts.json ${id} slot ${slot} → [${giftId}, ${effectIndex}, ${requirementIndex}] is ${requirement ? 'an egoSkill' : 'no requirement'}`,
+            );
+        }
+      }
+    }
+  }
+  if (bad > 5) err('reference', `skill-gifts.json: ${bad - 5} more dangling entr(y/ies)`);
 }
 
 /**

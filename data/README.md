@@ -26,8 +26,8 @@ data/curated ┘                     └─ public/data/{enums,identities,index}
 
 | 출처 | 가져오는 것 | 들어가는 곳 | 업스트림 라이선스 |
 |---|---|---|---|
-| [LEAGUE-OF-NINE/OpenLethe](https://github.com/LEAGUE-OF-NINE/OpenLethe) | 게임 클라이언트 StaticData (인격·기프트·거울 던전 팩·층) | `data/raw/static/` | 라이선스 파일 없음. 내용의 권리는 Project Moon |
-| [x1bViolet/Limbus-Localization-Files](https://github.com/x1bViolet/Limbus-Localization-Files) | 공식 한국어·영어 현지화 JSON (이름·효과 원문) | `data/raw/localize/{KR,EN}/` | 라이선스 파일 없음. 원문의 권리는 Project Moon |
+| [LEAGUE-OF-NINE/OpenLethe](https://github.com/LEAGUE-OF-NINE/OpenLethe) | 게임 클라이언트 StaticData (인격·스킬·전투 패시브 목록·기프트·거울 던전 팩·층) | `data/raw/static/` | 라이선스 파일 없음. 내용의 권리는 Project Moon |
+| [x1bViolet/Limbus-Localization-Files](https://github.com/x1bViolet/Limbus-Localization-Files) | 공식 한국어·영어 현지화 JSON (이름·효과 원문, 인격 스킬·패시브 원문은 한국어만) | `data/raw/localize/{KR,EN}/` | 라이선스 파일 없음. 원문의 권리는 Project Moon |
 | [eldritchtools/limbus-assets](https://github.com/eldritchtools/limbus-assets) | limbus.tools가 쓰는 가공 데이터. 정적 데이터에 없는 인격을 채우고, 얼어 있는 거울 던전 데이터를 교차검증한다. 기프트 아이콘(`assets/gifts/`)·키워드 아이콘(`assets/icons/`)·팩 그림(`assets/theme_packs/`, 256px로 줄임)도 여기서 받는다(`npm run data:icons`, 같은 sha) | `data/raw/derived/eldritchtools/`, 그림은 `public/icons/{gifts,keywords,packs}/` | 라이선스 파일 없음. **제3자가 직접 가공한 편집물**이다 |
 
 세 곳 모두 업스트림에 라이선스 파일이 없다. 그래서 이 저장소의 MIT 라이선스는 **코드에만** 적용되고, `data/`와 `public/data/`의 내용에는 적용되지 않는다 — 자세한 것은 저장소 루트의 [`NOTICE`](../NOTICE).

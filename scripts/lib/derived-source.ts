@@ -52,7 +52,7 @@ export const KEYWORD_BY_EN: Record<string, IdentityKeywordId> = {
   Charge: 'Charge',
 };
 
-const SIN_BY_AFFINITY: Record<string, Sin> = {
+export const SIN_BY_AFFINITY: Record<string, Sin> = {
   wrath: 'WRATH',
   lust: 'LUST',
   sloth: 'SLOTH',
@@ -62,7 +62,7 @@ const SIN_BY_AFFINITY: Record<string, Sin> = {
   envy: 'ENVY',
 };
 
-const ATTACK_BY_TYPE: Record<string, AttackType> = {
+export const ATTACK_BY_TYPE: Record<string, AttackType> = {
   slash: 'Slash',
   pierce: 'Penetrate',
   blunt: 'Hit',

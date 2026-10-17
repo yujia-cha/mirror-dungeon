@@ -10,6 +10,7 @@ import {
   packsFileSchema,
   rulesSchema,
   seasonIndexSchema,
+  skillGiftIndexSchema,
   type ArtManifest,
   type GameData,
   type GiftIconManifest,
@@ -20,6 +21,11 @@ import {
 
 /** Files a Mirror Dungeon season owns, under `data/md{n}/`. */
 const SEASON_FILES = ['meta', 'rules', 'gifts', 'packs'] as const;
+/**
+ * A season file a season frozen before it existed does not have (M129 `skill-gifts.json`): a 404
+ * leaves it out of `GameData`; any other failure is an error like the rest.
+ */
+const OPTIONAL_SEASON_FILE = 'skill-gifts';
 /** Files no season owns, at `data/`. Neither looks at the dungeon. */
 const SHARED_FILES = ['enums', 'identities'] as const;
 /** Written by `npm run art`; says which hand-drawn files exist so the app requests only those. */
@@ -55,7 +61,7 @@ export class DataLoadError extends Error {
   }
 }
 
-async function fetchJson(url: string, label: string): Promise<unknown> {
+async function fetchJson(url: string, label: string, optional = false): Promise<unknown> {
   // `AbortSignal.timeout` is Safari 16 / iOS 16, the app's floor, so no polyfill is needed.
   let response: Response;
   try {
@@ -65,6 +71,7 @@ async function fetchJson(url: string, label: string): Promise<unknown> {
       cause instanceof DOMException && (cause.name === 'TimeoutError' || cause.name === 'AbortError');
     throw new DataLoadError(timedOut ? 'timeout' : 'network', label);
   }
+  if (optional && response.status === 404) return undefined;
   if (!response.ok) throw new DataLoadError('http', label, response.status);
   try {
     return (await response.json()) as unknown;
@@ -175,13 +182,15 @@ export async function loadGameData(
   const base = normaliseBase(baseUrl);
   const season = options.season ?? (await loadSeasonIndex(baseUrl)).default;
 
-  const [[meta, rules, gifts, packs], [enums, identities]] = await Promise.all([
+  const skillGiftsLabel = `md${season}/${OPTIONAL_SEASON_FILE}.json`;
+  const [[meta, rules, gifts, packs], [enums, identities], skillGifts] = await Promise.all([
     Promise.all(
       SEASON_FILES.map((name) =>
         fetchJson(`${base}data/md${season}/${name}.json`, `md${season}/${name}.json`),
       ),
     ),
     Promise.all(SHARED_FILES.map((name) => fetchJson(`${base}data/${name}.json`, `${name}.json`))),
+    fetchJson(`${base}data/${skillGiftsLabel}`, skillGiftsLabel, true),
   ]);
 
   assertShape(`md${season}/meta.json`, meta, 'object');
@@ -190,6 +199,7 @@ export async function loadGameData(
   assertShape(`md${season}/packs.json`, packs, 'array');
   assertShape('enums.json', enums, 'object');
   assertShape('identities.json', identities, 'array');
+  if (skillGifts !== undefined) assertShape(skillGiftsLabel, skillGifts, 'object');
 
   if (options.validate) {
     return {
@@ -199,6 +209,7 @@ export async function loadGameData(
       gifts: giftsFileSchema.parse(gifts),
       packs: packsFileSchema.parse(packs),
       identities: identitiesFileSchema.parse(identities),
+      ...(skillGifts !== undefined ? { skillGifts: skillGiftIndexSchema.parse(skillGifts) } : {}),
     };
   }
 
@@ -209,5 +220,6 @@ export async function loadGameData(
     gifts,
     packs,
     identities,
+    ...(skillGifts !== undefined ? { skillGifts } : {}),
   } as GameData;
 }

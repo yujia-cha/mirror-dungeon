@@ -55,23 +55,42 @@ export interface RawPersonality {
   unitKeywordList?: string[];
   uniqueAttribute?: string;
   attributeList?: { skillId: number; number: number }[];
+  /** The defense skills (suffix 04, and a second guard or counter on some identities). */
+  defenseSkillIDList?: number[];
+  /** Buffs the identity enters battle with, per uptie level (10108's `KnowledgeExplored`). */
+  initBuffList?: { level?: number; list?: { buff?: string; stack?: number }[] }[];
 }
 
 export interface RawSkill {
   id: number;
   skillType?: string;
+  /**
+   * One entry per uptie level (`gaksungLevel`), each holding only what changed: the first entry
+   * has every field, a later one repeats `coinList` or `defaultValue` when they move.
+   */
   skillData?: RawSkillData[];
 }
 
 export interface RawSkillData {
   gaksungLevel?: number;
   attributeType?: string;
+  /** SLASH · PENETRATE · HIT, and NONE on a guard or evade. */
   atkType?: string;
+  /** ATTACK on an attack skill; GUARD · EVADE · COUNTER on a defense skill. */
   defType?: string;
+  /** 공격 가중치 — how many targets the skill hits. */
+  targetNum?: number;
   coinList?: RawCoin[];
 }
 
 interface RawCoin {
+  /** ADD (더하기 코인) or SUB (빼기 코인). */
+  operatorType?: string;
+  /**
+   * `GREY` (with `grade: 2`) marks a 파괴 불가 코인: it is exactly the coins whose KR coin text
+   * carries `[SuperCoin]` (「파괴 불가 코인」), checked over every skill that has both (M129).
+   */
+  color?: string;
   abilityScriptList?: {
     scriptName?: string;
     buffData?: { buffKeyword?: string; target?: string; buffOwner?: string };
@@ -178,6 +197,54 @@ export function readPersonalitySkills(): Map<number, RawSkill> {
   const files = listFiles(join(STATIC_DIR, 'skill'), /^personality-skill-[\w-]+\.json$/);
   const out = new Map<number, RawSkill>();
   for (const f of files) for (const s of staticList<RawSkill>(readJson(f))) out.set(s.id, s);
+  return out;
+}
+
+interface RawPersonalityPassive {
+  personalityID: number;
+  battlePassiveList?: { level?: number; passiveIDList?: number[] }[];
+  supporterPassiveList?: { level?: number; passiveIDList?: number[] }[];
+}
+
+/**
+ * The passives each identity has **in battle**, every uptie level together (`personality-passive`).
+ * The 서포트 패시브 is left out: it acts only while the identity is not deployed, and `buffs` is what
+ * a deployed identity brings (M129). The passive records themselves (`passive/`) carry only their
+ * resonance condition, so what a passive does is read from its KR text (`readPassiveTexts`).
+ */
+export function readBattlePassiveIds(): Map<number, number[]> {
+  const files = listFiles(join(STATIC_DIR, 'personality-passive'), /^personality-passive-[\w-]+\.json$/);
+  const out = new Map<number, number[]>();
+  for (const f of files) {
+    for (const entry of staticList<RawPersonalityPassive>(readJson(f))) {
+      const ids = new Set(out.get(entry.personalityID) ?? []);
+      for (const level of entry.battlePassiveList ?? [])
+        for (const id of level.passiveIDList ?? []) ids.add(id);
+      out.set(
+        entry.personalityID,
+        [...ids].sort((a, b) => a - b),
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * Whether a passive id is a battle passive by the id alone: `<identity id><suffix>`, suffix under 20
+ * for battle and 2x for 서포트. Holds for every passive `personality-passive` lists (checked at M129);
+ * it is how an identity the static data does not ship gets its passives.
+ */
+export function isBattlePassiveOf(passiveId: number, identityId: number): boolean {
+  return Math.floor(passiveId / 100) === identityId && passiveId % 100 < 20;
+}
+
+/** Passive text (`Passives.json`, KR only — read to find the buffs a passive gives), keyed by id. */
+export function readPassiveTexts(): Map<number, string> {
+  const out = new Map<number, string>();
+  for (const e of localizeFile('KR', 'Passives.json')) {
+    const id = Number(e.id);
+    if (Number.isFinite(id) && e.desc && !out.has(id)) out.set(id, e.desc);
+  }
   return out;
 }
 

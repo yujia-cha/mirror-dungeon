@@ -32,7 +32,7 @@ for (const device of ['desktop', 'phone'] as const) {
           seen.spans += counts.spans;
         });
         // The conventions were met on the way: groups compared, menu sections and card feet spanned.
-        expect(seen.states).toBe(14);
+        expect(seen.states).toBe(15);
         expect(seen.groups).toBeGreaterThan(seen.states);
         expect(seen.spans).toBeGreaterThan(0);
       });

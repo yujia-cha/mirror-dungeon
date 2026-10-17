@@ -1,0 +1,22 @@
+{
+  "_note": "기프트 효과 요구(M129)의 수기 보정. 기프트 id마다 { _source, effects }를 적으면 scripts/lib/parse-effects.ts가 읽은 효과를 통째로 대신한다. effects는 설명의 효과 블록(줄 + 그 아래 '- ' 줄) 순서와 수를 그대로 따른다 — 수가 어긋나면 data:validate가 경고한다. 형식은 src/core/schema.ts의 giftEffectSchema·curatedGiftEffectSchema.",
+  "9213": {
+    "_source": "「혈귀인 모든 아군」·「아군에 <혈귀>가 있다면」은 인격 특성 혈귀(BLOODFIEND)를 묻는데 요구 종류에 특성이 없다. 혈귀 특성 인격은 라만차랜드 5인(10310·10513·10911·11111·11210)이고 그 5인이 정확히 혈찬을 소모하는 인격이다(public/data/identities.json, 2026-10-16 확인) — 그래서 혈찬 스킬 요구로 적는다.",
+    "effects": [
+      { "kind": "effect", "requires": [{ "type": "skillKeyword", "keywords": ["BloodDinner"], "includesSpecial": false }] },
+      { "kind": "effect", "requires": [] },
+      { "kind": "effect", "requires": [] },
+      { "kind": "effect", "requires": [] },
+      { "kind": "effect", "requires": [] },
+      { "kind": "effect", "requires": [{ "type": "skillKeyword", "keywords": ["BloodDinner"], "includesSpecial": false }] }
+    ]
+  },
+  "9440": {
+    "_source": "9213과 같은 이유 — 혈귀 특성 인격 = 혈찬을 소모하는 라만차랜드 5인(public/data/identities.json, 2026-10-16 확인).",
+    "effects": [
+      { "kind": "effect", "requires": [{ "type": "skillKeyword", "keywords": ["BloodDinner"], "includesSpecial": false }] },
+      { "kind": "effect", "requires": [] },
+      { "kind": "effect", "requires": [{ "type": "skillKeyword", "keywords": ["BloodDinner"], "includesSpecial": false }] }
+    ]
+  }
+}

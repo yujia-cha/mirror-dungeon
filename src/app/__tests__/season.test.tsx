@@ -15,6 +15,7 @@ import type { GameData, SeasonEntry } from '../../core/schema.ts';
 import { appDefaultOptions, defaultUi, emptyRun, useApp } from '../store.ts';
 import { lastFloorOf } from '../lib/stage.ts';
 import { ingredientTree } from '../lib/entangle.ts';
+import { upgradeLevelsOf } from '../lib/upgrade.ts';
 import { AppShell } from '../shell/AppShell.tsx';
 import { PlanProvider } from '../shell/PlanContext.tsx';
 import { FloorHeader } from '../stage/FloorHeader.tsx';
@@ -100,6 +101,7 @@ const adopt = (data: GameData) =>
     giftIds: new Set(data.gifts.map((gift) => gift.id)),
     packIds: new Set(data.packs.map((pack) => pack.id)),
     recipes: ingredientTree(buildIndexes(data), data.rules.fusion.maxShopSlots),
+    upgradeLevels: upgradeLevelsOf(data.gifts),
   });
 
 const renderShell = (data: GameData, seasons: SeasonEntry[], onSeason = vi.fn()) => {

@@ -9,7 +9,8 @@ describe('data preload', () => {
     // twice (once preloaded, unused) and Chrome would warn about it.
     const paths = dataPreloadPaths(repoPath('public/data'));
     expect(paths[0]).toBe('data/index.json');
-    expect(paths).toHaveLength(7);
+    expect(paths).toHaveLength(8);
+    expect(paths).toContain('data/md7/skill-gifts.json');
     for (const path of paths) expect(existsSync(repoPath('public', path))).toBe(true);
   });
 

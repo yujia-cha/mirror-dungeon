@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import lzString from 'lz-string';
 import type { PlanOptions } from '../core/types.ts';
+import type { UpgradeLevel } from '../core/schema.ts';
 import { defaultOptions } from '../core/index.ts';
 import type { Lang } from './i18n.ts';
 import { observationClosed, type FusionGoalMap, type RunState } from './lib/plan-input.ts';
@@ -64,10 +65,22 @@ export interface SharedState {
   options: PlanOptions;
   /** Fusion results whose ingredients are not goals of their own. Absent = ingredients count too. */
   fusionGoal?: FusionGoalMap;
+  /**
+   * The enhancement step chosen for a goal (M130). A link carries the goals' choices only; absent
+   * (every link before M130) means none.
+   */
+  upgrades?: GiftUpgradeMap;
 }
+
+/**
+ * The enhancement step chosen per gift (M130): `+` = 1, `++` = 2, absent = not enhanced. It is a
+ * preference about the gift, not about the goal, so taking the gift out of the goals keeps it.
+ */
+export type GiftUpgradeMap = Record<number, UpgradeLevel>;
 
 interface AppState extends SharedState {
   fusionGoal: FusionGoalMap;
+  upgrades: GiftUpgradeMap;
   /** The season being planned. Undefined until the data says which one the app opened. */
   season: number | undefined;
   /**
@@ -95,6 +108,8 @@ interface AppState extends SharedState {
   /** Pin or unpin a wanted gift for 기프트 관측; a pin needs a free slot and an observable gift. */
   toggleObserved: (giftId: number, limits: ObserveLimits) => void;
   setFusionGoal: (giftId: number, goal: 'resultOnly' | 'withIngredients') => void;
+  /** Choose a gift's enhancement step (M130); 0 goes back to the plain gift. */
+  setUpgrade: (giftId: number, level: UpgradeLevel | 0) => void;
   /**
    * Record that `packId` was entered on `floor`; a pack is visited once, so an earlier floor for it
    * is replaced. `settle.got` marks gifts collected in the same update (the start-of-run gifts).
@@ -142,6 +157,8 @@ interface AppState extends SharedState {
     packIds: Set<number>;
     /** This season's fusion recipes (`ingredientTree`). The store keeps it to judge pins. */
     recipes: ReadonlyMap<number, readonly number[]>;
+    /** The highest enhancement step each gift has text for (`gift.upgrades`); others have none. */
+    upgradeLevels: ReadonlyMap<number, UpgradeLevel>;
   }) => {
     gifts: number;
   };
@@ -221,6 +238,22 @@ export function sanitizeFusionGoal(raw: unknown, wanted: number[]): FusionGoalMa
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
     const id = Number(key);
     if (wanted.includes(id) && value === 'resultOnly') out[id] = value;
+  }
+  return out;
+}
+
+/**
+ * Enhancement choices with a sound shape: a finite integer gift id and step 1 or 2. Which steps a
+ * gift really has is a fact of the season's data, judged by `adoptSeason`. With `only`, the
+ * choices for those gifts alone (what a share link carries).
+ */
+export function sanitizeUpgrades(raw: unknown, only?: readonly number[]): GiftUpgradeMap {
+  const out: GiftUpgradeMap = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const id = Number(key);
+    if (!Number.isInteger(id) || (only && !only.includes(id))) continue;
+    if (value === 1 || value === 2) out[id] = value;
   }
   return out;
 }
@@ -493,7 +526,17 @@ export const PERSIST_VERSION = 7;
 /** Exactly the keys `partialize` writes — what a migration has to hand back, all of them present. */
 export type PersistedState = Pick<
   AppState,
-  'deck' | 'deployed' | 'wanted' | 'fusionGoal' | 'run' | 'ui' | 'options' | 'lang' | 'dark' | 'season'
+  | 'deck'
+  | 'deployed'
+  | 'wanted'
+  | 'fusionGoal'
+  | 'upgrades'
+  | 'run'
+  | 'ui'
+  | 'options'
+  | 'lang'
+  | 'dark'
+  | 'season'
 >;
 
 /**
@@ -536,6 +579,8 @@ export function sanitizePersisted(persisted: unknown, version: number): Persiste
     deployed: ids(state.deployed).filter((id) => deck.includes(id)),
     wanted,
     fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
+    // Added in M130 without a version step: a blob from before simply has none.
+    upgrades: sanitizeUpgrades(state.upgrades),
     run,
     ui: sanitizeUi(state.ui),
     // At rehydrate the recipes are not known yet, so this prunes nothing; `adoptSeason` does it.
@@ -583,6 +628,7 @@ export const useApp = create<AppState>()(
       wanted: [],
       options: appDefaultOptions(),
       fusionGoal: {},
+      upgrades: {},
       run: emptyRun(),
       ui: defaultUi(),
       lang: 'ko',
@@ -674,6 +720,15 @@ export const useApp = create<AppState>()(
           // 「재료는 목표가 아님」 takes the ingredients out of the plan, so a pin on one has nothing
           // left to buy — the same prune a dropped goal gets.
           return { fusionGoal: next, options: withObservedIn(state.options, state.wanted, next) };
+        }),
+
+      setUpgrade: (giftId, level) =>
+        set((state) => {
+          if (!Number.isInteger(giftId) || (state.upgrades[giftId] ?? 0) === level) return {};
+          const upgrades = { ...state.upgrades };
+          if (level === 0) delete upgrades[giftId];
+          else upgrades[giftId] = level;
+          return { upgrades };
         }),
 
       visitPack: (packId, floor, settle) =>
@@ -801,6 +856,7 @@ export const useApp = create<AppState>()(
           deployed: next.slice(0, deployedDefault),
           wanted: [],
           fusionGoal: {},
+          upgrades: {},
           options: appDefaultOptions(),
           run: emptyRun(),
         });
@@ -811,7 +867,7 @@ export const useApp = create<AppState>()(
 
       setSeason: (season) => set((state) => (state.season === season ? {} : { season, run: emptyRun() })),
 
-      adoptSeason: ({ season, lastFloor, giftIds, packIds, recipes }) => {
+      adoptSeason: ({ season, lastFloor, giftIds, packIds, recipes, upgradeLevels }) => {
         recipeTree = recipes;
         const state = get();
         const wanted = state.wanted.filter((id) => giftIds.has(id));
@@ -846,11 +902,17 @@ export const useApp = create<AppState>()(
                   ? { collectRest: state.run.collectRest.filter((id) => giftIds.has(id)) }
                   : {}),
               };
+        // A step the gift does not have in this season (or a gift it does not ship) cannot be drawn.
+        const upgrades: GiftUpgradeMap = {};
+        for (const [id, level] of Object.entries(state.upgrades)) {
+          if (level <= (upgradeLevels.get(Number(id)) ?? 0)) upgrades[Number(id)] = level;
+        }
         set({
           season,
           lastFloor,
           run,
           wanted,
+          upgrades,
           fusionGoal: sanitizeFusionGoal(state.fusionGoal, wanted),
           options: {
             ...state.options,
@@ -873,6 +935,8 @@ export const useApp = create<AppState>()(
           deployed: [...new Set(shared.deployed)].filter((id) => deck.includes(id)),
           wanted,
           fusionGoal: sanitizeFusionGoal(shared.fusionGoal, wanted),
+          // The link decides the steps of its goals; this device's choices on other gifts stay.
+          upgrades: withSharedUpgrades(get().upgrades, wanted, shared.upgrades ?? {}),
           // Pins follow the same rule priorities and fusion goals do: only a goal can be observed.
           // A link that carried a pin for something else used to spend observation budget on it and
           // then drop it without a word the next time any gift was toggled.
@@ -900,6 +964,7 @@ export const useApp = create<AppState>()(
         deployed: state.deployed,
         wanted: state.wanted,
         fusionGoal: state.fusionGoal,
+        upgrades: state.upgrades,
         run: state.run,
         ui: state.ui,
         options: state.options,
@@ -917,6 +982,30 @@ export const useApp = create<AppState>()(
 
 const HASH_PREFIX = '#s=';
 
+/** A link's `up` key: the goals' enhancement steps, left out when no goal has one. */
+function upgradesForLink(
+  upgrades: GiftUpgradeMap | undefined,
+  wanted: readonly number[],
+): { up?: GiftUpgradeMap } {
+  const up = sanitizeUpgrades(upgrades ?? {}, wanted);
+  return Object.keys(up).length > 0 ? { up } : {};
+}
+
+/** This device's choices with the link's goals set to the link's steps (none = not enhanced). */
+function withSharedUpgrades(
+  mine: GiftUpgradeMap,
+  wanted: readonly number[],
+  linked: GiftUpgradeMap,
+): GiftUpgradeMap {
+  const out = { ...mine };
+  for (const id of wanted) {
+    const level = linked[id];
+    if (level === 1 || level === 2) out[id] = level;
+    else delete out[id];
+  }
+  return out;
+}
+
 export function encodeShared(state: SharedState): string {
   const payload = JSON.stringify({
     v: 5,
@@ -925,6 +1014,8 @@ export function encodeShared(state: SharedState): string {
     deployed: state.deployed,
     wanted: state.wanted,
     fusionGoal: state.fusionGoal ?? {},
+    // The goals' steps only, and only when there are any — older readers ignore the key.
+    ...upgradesForLink(state.upgrades, state.wanted),
     options: state.options,
   });
   return HASH_PREFIX + lzString.compressToEncodedURIComponent(payload);
@@ -938,7 +1029,7 @@ export function decodeShared(hash: string): SharedState | null {
     // leave the reader with a blank page instead of a mangled link.
     const json = lzString.decompressFromEncodedURIComponent(hash.slice(HASH_PREFIX.length));
     if (!json) return null;
-    const parsed = JSON.parse(json) as Partial<SharedState> & { v?: number; s?: unknown };
+    const parsed = JSON.parse(json) as Partial<SharedState> & { v?: number; s?: unknown; up?: unknown };
     if (!Array.isArray(parsed.deck) || !Array.isArray(parsed.wanted)) return null;
     // v5 carries the season. Links before it could only have been Mirror Dungeon 7, and the `v`
     // field — written since v1 and never read until now — is what says so.
@@ -960,6 +1051,7 @@ export function decodeShared(hash: string): SharedState | null {
       deployed,
       wanted,
       fusionGoal: sanitizeFusionGoal(parsed.fusionGoal, wanted),
+      upgrades: sanitizeUpgrades(parsed.up, wanted),
       options: sanitizeOptions(parsed.options),
     };
   } catch {

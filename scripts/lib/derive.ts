@@ -272,6 +272,131 @@ function keywordsInSkill(
 }
 
 /**
+ * Every buff id a skill's scripts put somewhere or spend (M129, `identities[].buffs`): any
+ * `buffKeyword` outside a `conditionBuffData` — the side and the give/read split that
+ * `buffCounts` draws do not matter here, since a requirement like 「[각력【묘】]」 only asks whether
+ * the identity brings the buff at all — plus the two places `keywordsInSkill` also reads: a 특수
+ * variant named only in a script (`MarkGiveChargeBodyArtTurn`, under the same `Give…` rule for a
+ * 디버프 variant) and the ammo a skill requires (`[necessary:BulletGodok:1]`).
+ */
+export function buffIdsInSkill(
+  skill: RawSkill,
+  specialVariants: Map<string, IdentityKeywordId>,
+): Set<string> {
+  const out = new Set<string>();
+  const visit = (node: unknown, key: string): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item, key);
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+    const obj = node as Record<string, unknown>;
+    const kw = obj['buffKeyword'];
+    if (typeof kw === 'string' && kw !== '' && key !== 'conditionBuffData') out.add(kw);
+    const script = obj['scriptName'];
+    if (typeof script === 'string') {
+      for (const [id, variant] of specialVariants) {
+        if (script.includes(id) && (!DEBUFF_KEYWORDS.has(variant) || script.includes(`Give${id}`)))
+          out.add(id);
+      }
+      for (const [, required] of script.matchAll(SKILL_REQUIREMENT)) {
+        if (required && AMMO_BUFF_ID.test(required)) out.add(required);
+      }
+    }
+    for (const [childKey, value] of Object.entries(obj)) visit(value, childKey);
+  };
+  visit(skill.skillData ?? [], '');
+  return out;
+}
+
+/**
+ * What one skill does with a 디버프 on its OWN user (M129, `skills[].self`): `gain` when a script
+ * gives it to the user (`target: "Self"` or `"Both"`, the same give/read split as `buffCounts`),
+ * `consume` when a script spends the user's own stack (`buffOwner: "Self"` with a spending script,
+ * `…ViaBuffCheckAndUse`, `…UsingBuffTurn1`, or the spent keyword named as a suffix,
+ * `GiveBuffOnSuccessAttackUsingBuffTurn_Vibration5` — then that suffix, not the `buffData`, is what
+ * is spent). Only the base keyword counts — a gift's
+ * 「자신에게 [화상]을 부여하는」 names the keyword itself. 호흡·충전 are left out: `keywords` already
+ * counts gaining and spending them. Many spends sit in scripts named after the skill (`1010503`,
+ * `YurodivyRyoshuSecondSkillCoinAbility`) that say nothing; the Korean sentence fills those
+ * (`selfKeywordsInSkillText`).
+ */
+export function selfUseInSkill(skill: RawSkill): SelfUse {
+  const out: SelfUse = new Map();
+  const mark = (keyword: StatusKeyword, verb: 'gain' | 'consume'): void => {
+    const entry = out.get(keyword) ?? { gain: false, consume: false };
+    entry[verb] = true;
+    out.set(keyword, entry);
+  };
+  const visit = (node: unknown, key: string, scriptName: string): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item, key, scriptName);
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+    const obj = node as Record<string, unknown>;
+    const script = typeof obj['scriptName'] === 'string' ? obj['scriptName'] : scriptName;
+    const kw = obj['buffKeyword'];
+    if (
+      typeof kw === 'string' &&
+      key !== 'conditionBuffData' &&
+      DEBUFF_KEYWORDS.has(kw as IdentityKeywordId)
+    ) {
+      const keyword = kw as StatusKeyword;
+      const target = typeof obj['target'] === 'string' ? obj['target'] : '';
+      const gives = target !== '' && (GIVES.test(script) || !READS_ONLY.test(script));
+      if (gives && SELF_TARGET.test(target)) mark(keyword, 'gain');
+      // A script that names what it spends (`…UsingBuffStack_FirePunchFuel15`) spends that, and its
+      // `buffData` is what it gives — 11211 pays 연료 for the 화상 it puts on the target.
+      if (obj['buffOwner'] === 'Self' && SPENDS.test(script) && !SPENT_IN_SUFFIX.test(script))
+        mark(keyword, 'consume');
+    }
+    if (typeof obj['scriptName'] === 'string') {
+      const spent = SPENT_IN_SUFFIX.exec(script)?.[1];
+      if (spent && DEBUFF_KEYWORDS.has(spent as IdentityKeywordId)) mark(spent as StatusKeyword, 'consume');
+    }
+    for (const [childKey, value] of Object.entries(obj)) visit(value, childKey, script);
+  };
+  visit(skill.skillData ?? [], '', '');
+  return out;
+}
+
+/** Per 디버프, whether a skill puts it on its own user and whether it spends the user's own. */
+export type SelfUse = Map<StatusKeyword, { gain: boolean; consume: boolean }>;
+
+/** A buff given to the skill user: itself, or itself and the target. */
+const SELF_TARGET = /^(Self|Both)$/;
+
+/** The buff a spending script names as a suffix: `…UsingBuffTurn_Vibration5`, `…UsingBuffStack_FirePunchFuel15`. */
+const SPENT_IN_SUFFIX = /Using(?:Buff)?(?:Turn|Stack)?_([A-Za-z]+?)\d*(?:_|$)/;
+
+/**
+ * Whether a base skill discards the user's own skills (M129, 버림 → `buffs` gets `Discard`): a
+ * script whose name starts with `Discard` — `DiscardLowestSkillOnUse1`, `Discard10813`,
+ * `DiscardAllSkillsDescendingOnUse`. Reacting to being discarded (`GiveBuffOnDiscarded`,
+ * `AddShieldOnDiscarded…`) is not discarding.
+ */
+export function skillDiscards(skill: RawSkill): boolean {
+  let found = false;
+  const visit = (node: unknown): void => {
+    if (found) return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+    const obj = node as Record<string, unknown>;
+    if (typeof obj['scriptName'] === 'string' && /^Discard/.test(obj['scriptName'])) {
+      found = true;
+      return;
+    }
+    for (const value of Object.values(obj)) visit(value);
+  };
+  visit(skill.skillData ?? []);
+  return found;
+}
+
+/**
  * The identity's base attack skills — S1, S2 and S3.
  *
  * `attributeList[].number` is how many copies of the skill go into the deck: 3/2/1 for S1/S2/S3,
@@ -301,31 +426,47 @@ export function deriveIdentityKeywords(
   personality: RawPersonality,
   skills: Map<number, RawSkill>,
   specialVariants: Map<string, IdentityKeywordId> = new Map(),
-  {
-    includeExtra = false,
-    anyMention = false,
-    alsoFrom,
-  }: {
-    /**
-     * Count the enhanced skills too, and (`anyMention`) any keyword a skill so much as names. Only
-     * the validator's cross-check wants these — the derived source's list was built that way, so
-     * it needs the same reading to tell a keyword we dropped on purpose from one we lost.
-     */
-    includeExtra?: boolean;
-    anyMention?: boolean;
-    /**
-     * Keywords the same skill gives by another reading — the build passes the Korean skill text
-     * (`keywordsInSkillText`). Some grants have no machine-readable `buffData` at all: 11115's
-     * 화상 comes from `GiveBuffOnSuccedAttackIfHasSwordBuff11115`, which only the sentence explains.
-     * The two are joined per skill, so a skill is counted once whichever reading saw it.
-     */
-    alsoFrom?: (
-      skillId: number,
-    ) => { base: Set<IdentityKeywordId>; special: Set<IdentityKeywordId> } | undefined;
-  } = {},
+  options: SkillKeywordOptions = {},
 ): IdentityKeywordCounts {
-  const baseCounts = new Map<IdentityKeywordId, number>();
-  const specialCounts = new Map<IdentityKeywordId, number>();
+  return countSkillKeywords(deriveSkillKeywords(personality, skills, specialVariants, options).values());
+}
+
+/** One skill's keywords: the base keyword and the 특수 variant apart (see `keywordsInSkill`). */
+export interface SkillKeywords {
+  base: Set<IdentityKeywordId>;
+  special: Set<IdentityKeywordId>;
+}
+
+export interface SkillKeywordOptions {
+  /**
+   * Count the enhanced skills too, and (`anyMention`) any keyword a skill so much as names. Only
+   * the validator's cross-check wants these — the derived source's list was built that way, so
+   * it needs the same reading to tell a keyword we dropped on purpose from one we lost.
+   */
+  includeExtra?: boolean;
+  anyMention?: boolean;
+  /**
+   * Keywords the same skill gives by another reading — the build passes the Korean skill text
+   * (`keywordsInSkillText`). Some grants have no machine-readable `buffData` at all: 11115's
+   * 화상 comes from `GiveBuffOnSuccedAttackIfHasSwordBuff11115`, which only the sentence explains.
+   * The two are joined per skill, so a skill is counted once whichever reading saw it.
+   */
+  alsoFrom?: (skillId: number) => SkillKeywords | undefined;
+}
+
+/**
+ * The keywords of each skill `deriveIdentityKeywords` counts, keyed by skill id in `attributeList`
+ * order. A skill the static data lacks (or that is not a `SKILL`) is left out, exactly as the count
+ * leaves it out — `identities[].skills[].keywords` (M129) is read off this map, so the per-skill
+ * flags and the totals cannot disagree.
+ */
+export function deriveSkillKeywords(
+  personality: RawPersonality,
+  skills: Map<number, RawSkill>,
+  specialVariants: Map<string, IdentityKeywordId> = new Map(),
+  { includeExtra = false, anyMention = false, alsoFrom }: SkillKeywordOptions = {},
+): Map<number, SkillKeywords> {
+  const out = new Map<number, SkillKeywords>();
   const ids = includeExtra
     ? (personality.attributeList ?? []).map((entry) => entry.skillId)
     : baseAttackSkillIds(personality);
@@ -337,6 +478,16 @@ export function deriveIdentityKeywords(
     const more = alsoFrom?.(id);
     for (const kw of more?.base ?? []) found.base.add(kw);
     for (const kw of more?.special ?? []) found.special.add(kw);
+    out.set(id, found);
+  }
+  return out;
+}
+
+/** Per-skill keyword sets summed into the counts conditional gifts measure. */
+export function countSkillKeywords(perSkill: Iterable<SkillKeywords>): IdentityKeywordCounts {
+  const baseCounts = new Map<IdentityKeywordId, number>();
+  const specialCounts = new Map<IdentityKeywordId, number>();
+  for (const found of perSkill) {
     for (const kw of found.base) baseCounts.set(kw, (baseCounts.get(kw) ?? 0) + 1);
     for (const kw of found.special) specialCounts.set(kw, (specialCounts.get(kw) ?? 0) + 1);
   }

@@ -4,7 +4,14 @@
  * context every pack surface takes and the run actions that settle gifts as floors are left.
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { conflictRootsOf, evaluateConditions, observationBudget, planRoute } from '../../core/index.ts';
+import {
+  conflictRootsOf,
+  evaluateConditions,
+  giftEffectsReport,
+  observationBudget,
+  skillGiftLookup,
+  planRoute,
+} from '../../core/index.ts';
 import type { GameData, Gift, Keyword } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
 import type { DeckStats, GameIndexes } from '../../core/types.ts';
@@ -94,6 +101,8 @@ export function PlanProvider({
   // How far the run goes is the season's, not the app's: `options.lastFloor` only bounds what a
   // saved or shared plan may claim.
   const lastFloor = useMemo(() => lastFloorOf(data), [data]);
+  // Who meets what, read from the built index (M129) — the same answers the computation gives.
+  const skillLookup = useMemo(() => (data.skillGifts ? skillGiftLookup(data.skillGifts) : undefined), [data]);
   const input = useMemo(
     () => planInputFor({ deck, deployed, wanted, options, fusionGoal, run }, { lastFloor }),
     [deck, deployed, wanted, options, fusionGoal, run, lastFloor],
@@ -481,6 +490,8 @@ export function PlanProvider({
           onOpenPack={followPack}
           back={back}
           onClose={closeSheet}
+          effects={giftEffectsReport(sheetGift, stats, indexes.identityById, skillLookup)}
+          nobodyDeployed={stats.deployed.length === 0}
         />
       ) : sheetPack ? (
         <PackDetailSheet pack={sheetPack} ctx={value.ctx} back={back} onClose={closeSheet} />

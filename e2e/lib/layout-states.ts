@@ -12,6 +12,13 @@ import { shareHash } from '../share.ts';
 /** Six clear-reward gifts that cannot all fit one run: the route offers a decision card. */
 export const CONFLICTING = [9250, 9251, 9252, 9253, 9254, 9255];
 
+/**
+ * Two general drops the game lets you enhance (M130) — 지옥나비의 꿈 (`+`/`++`) and 덧붙인 반창고
+ * (`+`) — so the tray shows its enhancement row beside tiles without one. General drops need no
+ * pack, so they leave the conflict (and the decision card) as it is.
+ */
+export const ENHANCEABLE = [9001, 9192];
+
 export type Device = 'desktop' | 'phone';
 
 /** The viewports the walk is meant for: a laptop, and a phone held upright (a touch screen). */
@@ -65,7 +72,7 @@ async function walkToRoutePack(page: Page): Promise<void> {
 /** A fresh document on the share link: a hash alone would be a same-document navigation. */
 async function openPlan(page: Page): Promise<void> {
   await page.goto('about:blank');
-  await page.goto(`./${shareHash(CONFLICTING)}`);
+  await page.goto(`./${shareHash([...CONFLICTING, ...ENHANCEABLE])}`);
   await page.getByTestId('stage-floor').waitFor();
 }
 
@@ -129,7 +136,8 @@ export async function walkLayoutStates(
   await browser.getByTestId('gift-filters').waitFor();
   await visit({ id: 'browser-all', title: '「모두 보기」 · 모든 기프트' });
 
-  // A planned run whose goals do not all fit: the tray holds six goals, the route a decision card.
+  // A planned run whose goals do not all fit: the tray holds eight goals (two with 강화), the route a
+  // decision card.
   await openPlan(page);
   if (device === 'phone') {
     await page.getByRole('button', { name: '덱' }).click();
@@ -138,7 +146,14 @@ export async function walkLayoutStates(
   }
   await left.getByRole('tab', { name: '기프트' }).click();
   await left.getByTestId('gift-chips').waitFor();
-  await visit({ id: 'goals', title: 'gifts tab with six goals' });
+  await visit({ id: 'goals', title: 'gifts tab with eight goals, two enhanceable' });
+  // The gift sheet of an enhanceable goal, at its `++` step (M130): the steps in the name row.
+  const enhanced = left.locator(`[data-testid="gift-chip"][data-gift="${ENHANCEABLE[0]}"]`);
+  await enhanced.getByRole('button', { name: /강화 \+\+$/ }).click();
+  await enhanced.getByRole('button', { name: /자세히$/ }).click();
+  await page.getByTestId('block-sheet').waitFor();
+  await visit({ id: 'goal-sheet', title: 'gift sheet of an enhanced goal' });
+  await closeSheet(page);
   if (device === 'phone') {
     await page.goBack();
     await left.waitFor({ state: 'detached' });

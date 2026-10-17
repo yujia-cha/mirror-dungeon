@@ -24,6 +24,7 @@ import {
 } from './lib/assets.ts';
 import { lastFloorOf } from './lib/stage.ts';
 import { ingredientTree } from './lib/entangle.ts';
+import { upgradeLevelsOf } from './lib/upgrade.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
 import { ConfirmDialog } from './components/ConfirmDialog.tsx';
 import { AppShell } from './shell/AppShell.tsx';
@@ -248,6 +249,7 @@ export function App() {
           giftIds: new Set(next.gifts.map((gift) => gift.id)),
           packIds: new Set(next.packs.map((pack) => pack.id)),
           recipes: ingredientTree(nextIndexes, next.rules.fusion.maxShopSlots),
+          upgradeLevels: upgradeLevelsOf(next.gifts),
         });
         setLoaded({ season: openSeason, attempt, data: next, indexes: nextIndexes });
         setDropped(counts.gifts > 0 ? counts : null);
@@ -286,7 +288,7 @@ export function App() {
   );
 
   const share = async (): Promise<void> => {
-    const url = `${window.location.origin}${window.location.pathname}${encodeShared({ season: useApp.getState().season, deck, deployed, wanted, fusionGoal, options: useApp.getState().options })}`;
+    const url = `${window.location.origin}${window.location.pathname}${encodeShared({ season: useApp.getState().season, deck, deployed, wanted, fusionGoal, upgrades: useApp.getState().upgrades, options: useApp.getState().options })}`;
     // Plain http and an unfocused document both leave `navigator.clipboard` unusable. Saying so
     // beats an unhandled rejection nobody sees.
     try {

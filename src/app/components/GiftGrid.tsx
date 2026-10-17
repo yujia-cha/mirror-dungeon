@@ -28,6 +28,7 @@ export function GiftTileGrid({
   lang,
   onToggle,
   onOpen,
+  reasons,
 }: {
   tiles: GiftTileData[];
   wanted: readonly number[];
@@ -39,6 +40,8 @@ export function GiftTileGrid({
   lang: Lang;
   onToggle: (gift: Gift) => void;
   onOpen: (giftId: number) => void;
+  /** 「추천 기프트」: why each tile is there (`relevanceReason`), as `data-recommend` — for debugging, never shown. */
+  reasons?: ReadonlyMap<number, string>;
 }) {
   const size = useTileIconSize(32);
   return (
@@ -75,6 +78,7 @@ export function GiftTileGrid({
             data-locked={held || undefined}
             data-block={block?.reason}
             data-entangled={entangled.has(gift.id) || undefined}
+            data-recommend={reasons?.get(gift.id)}
             title={blockedBy ?? lockedBy}
           >
             {marked ? (

@@ -18,7 +18,7 @@
  * so regenerating without an input change produces no diff. CI enforces that.
  */
 import { createHash } from 'node:crypto';
-import { readdirSync, existsSync, statSync } from 'node:fs';
+import { readdirSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   flagValue,
@@ -30,7 +30,7 @@ import {
   writeJsonStable,
 } from './lib/io.ts';
 import { localizeBuffTokens } from './lib/battle-keywords.ts';
-import { stripRichText } from '../src/core/text.ts';
+import { markUpgradeHighlight, stripRichText } from '../src/core/text.ts';
 import {
   SIN_BY_COLOR,
   listSeasons,
@@ -44,6 +44,9 @@ import {
   readObservationData,
   readPersonalities,
   readPersonalitySkills,
+  readBattlePassiveIds,
+  readPassiveTexts,
+  isBattlePassiveOf,
   readBattleKeywordNames,
   readPersonalityTexts,
   readLocalizedPersonalitySkills,
@@ -54,28 +57,52 @@ import {
   staticDataPresent,
   LOCALIZE_DIR,
   STATIC_DIR,
+  type LocalizedSkill,
 } from './lib/raw.ts';
 import {
   affinitiesFromDevName,
   availabilityFor,
   cleanFactionName,
   baseAttackSkillIds,
-  deriveIdentityKeywords,
+  buffIdsInSkill,
+  countSkillKeywords,
+  deriveSkillKeywords,
   groupForPackId,
+  selfUseInSkill,
+  skillDiscards,
   sinnerIdFromIdentityId,
   tierFromTags,
   deriveUpgradeOf,
 } from './lib/derive.ts';
 import { OUT, seasonDir } from './lib/out.ts';
+import { buildSkillGiftIndex, formatSkillGiftIndex } from './lib/skill-gifts.ts';
 import { parseConditions } from './lib/parse-conditions.ts';
 import {
-  deriveConsumedKeywordsFromText,
-  deriveIdentityKeywordsFromText,
+  giftGrantedBuffs,
+  parseEffects,
+  readCuratedGiftEffects,
+  type EffectContext,
+} from './lib/parse-effects.ts';
+import {
+  buffIdsInSkillText,
+  buffIdsInText,
+  consumedKeywordsInSkillText,
+  deriveSkillKeywordsFromText,
   keywordsInSkillText,
+  selfKeywordsInSkillText,
   skillsOfIdentity,
+  skillTextDiscards,
   specialAmmoFamiliesOf,
 } from './lib/derive-text.ts';
 import { DERIVED_DIR } from './lib/derived-source.ts';
+import {
+  ATTACK_TYPE_BY_RAW,
+  defenseTypesOf,
+  defTypesOfSkill,
+  derivedSkillFacts,
+  selfFlags,
+  staticSkillFacts,
+} from './lib/identity-skills.ts';
 import {
   derivedGiftAsRaw,
   derivedMdPresent,
@@ -89,6 +116,7 @@ import {
   derivedFactions,
   derivedAttackSkillIds,
   derivedSins,
+  derivedStatuses,
   readDerivedIdentities,
 } from './lib/derived-source.ts';
 import {
@@ -105,6 +133,7 @@ import {
   type Meta,
   metaSchema,
   rulesSchema,
+  skillGiftIndexSchema,
   captureLayoutSchema,
   curatedSeasonSchema,
   type CuratedSeason,
@@ -548,6 +577,37 @@ for (const fusion of mixedByResult.values()) {
 
 const generalShare = curated.rules.generalGiftPackShare ?? 0.6;
 
+/** Enhanceable gifts the game ships no text for at some step (M130) — reported, never guessed. */
+const upgradeWithoutText: number[] = [];
+
+/**
+ * The game's text for each enhancement step (M130). `upgradeDataList` names a localize id per
+ * level; an entry that points back at the base text (a synthesized rehearsal season does that)
+ * carries nothing of its own. The text is cleaned with the base desc further down.
+ */
+function upgradeTextsOf(id: number, stat: (typeof rawGifts)[number] | undefined): Gift['upgrades'] {
+  const list = stat?.upgradeDataList ?? [];
+  const baseLocalizeId = list.find((entry) => entry.upgradeLevel === 0)?.localizeID ?? id;
+  const out: NonNullable<Gift['upgrades']> = [];
+  let missing = false;
+  for (const entry of [...list].sort((a, b) => a.upgradeLevel - b.upgradeLevel)) {
+    if (entry.upgradeLevel !== 1 && entry.upgradeLevel !== 2) continue;
+    const ko = entry.localizeID === baseLocalizeId ? undefined : giftTextKo.get(entry.localizeID);
+    const en = entry.localizeID === baseLocalizeId ? undefined : giftTextEn.get(entry.localizeID);
+    if (!ko?.name || !ko.desc) {
+      missing = true;
+      continue;
+    }
+    out.push({
+      level: entry.upgradeLevel,
+      name: loc(ko.name, en?.name ?? ko.name),
+      desc: loc(ko.desc, en?.desc ?? ko.desc),
+    });
+  }
+  if (missing) upgradeWithoutText.push(id);
+  return out.length > 0 ? out : undefined;
+}
+
 const missingText: number[] = [];
 let unparsedConditionCount = 0;
 
@@ -599,6 +659,7 @@ const gifts: Gift[] = [...giftIds]
 
     const startKeyword = startKeywordByGift.get(id);
     const notes = curated.notes.gifts?.[String(id)];
+    const upgrades = upgradeTextsOf(id, stat);
     const rawKeyword = stat?.keyword;
     const keyword = (KEYWORDS as readonly string[]).includes(rawKeyword ?? '')
       ? (rawKeyword as Gift['keyword'])
@@ -616,6 +677,7 @@ const gifts: Gift[] = [...giftIds]
       sin: stat?.attributeType ? (SIN_BY_COLOR[stat.attributeType] ?? null) : null,
       price: typeof stat?.price === 'number' ? stat.price : null,
       upgradeLevels: Math.min(2, Math.max(0, (stat?.upgradeDataList?.length ?? 1) - 1)) as 0 | 1 | 2,
+      ...(upgrades ? { upgrades } : {}),
       tags,
       hardOnly: hardOnlyIds.has(id),
       obtainable:
@@ -682,6 +744,55 @@ const localizedSkills = readLocalizedPersonalitySkills('KR');
 /** 특수 variant buff ids (생체 재료 → 특수 충전 …), read off the game's own buff descriptions. */
 const specialVariants = readSpecialVariants();
 
+/** Buff names, here for `buffs` (M129: a text id counts only when the game names it) and the enums below. */
+const battleKeywordKo = readBattleKeywordNames('KR');
+const knownBuffIds = new Set(battleKeywordKo.keys());
+const passiveTexts = readPassiveTexts();
+const battlePassiveIds = readBattlePassiveIds();
+/** `defType` values on a defense skill that name no defense kind — reported, never guessed. */
+const unknownDefTypes = new Map<string, number[]>();
+
+/**
+ * The buffs an identity brings (M129): what its base attack and defense skills' scripts give or
+ * spend (`buffIdsInSkill`), what the same skills' and its battle passives' KR text grants
+ * (`buffIdsInText` — a passive has no scripts at all), and what it enters battle with.
+ */
+function identityBuffs(
+  skillIds: number[],
+  passiveIds: number[],
+  initBuffs: string[],
+  texts: Map<number, LocalizedSkill>,
+  more: Iterable<string> = [],
+): string[] {
+  const out = new Set<string>([...initBuffs, ...more]);
+  for (const id of skillIds) {
+    const skill = skills.get(id);
+    if (skill) for (const buff of buffIdsInSkill(skill, specialVariants)) out.add(buff);
+    const text = texts.get(id);
+    if (text) for (const buff of buffIdsInSkillText(text, knownBuffIds)) out.add(buff);
+  }
+  for (const id of passiveIds) {
+    const text = passiveTexts.get(id);
+    if (text) for (const buff of buffIdsInText(text, knownBuffIds)) out.add(buff);
+  }
+  return [...out].sort();
+}
+
+/**
+ * `['Discard']` when one of the base attack skills discards the user's own skills (M129 — 버림 is a
+ * skill mechanic no `buffKeyword` carries, so it joins `buffs` under the id the gift text uses,
+ * `[Discard]`): the scripts (`skillDiscards`) or the sentence (`skillTextDiscards`).
+ */
+function discardsOf(attackIds: number[], texts: Map<number, LocalizedSkill>): string[] {
+  return attackIds.some((id) => {
+    const skill = skills.get(id);
+    const text = texts.get(id);
+    return (skill && skillDiscards(skill)) || (text && skillTextDiscards(text));
+  })
+    ? ['Discard']
+    : [];
+}
+
 const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
   const sinnerId = sinnerIdFromIdentityId(raw.id);
   const curatedKeywords = curated.identityKeywords[String(raw.id)]?.keywords;
@@ -695,15 +806,24 @@ const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
   const texts = skillsOfIdentity(raw.id, localizedSkills);
   const textById = new Map(texts.map((skill) => [skill.id, skill]));
   const ammoFamilies = specialAmmoFamiliesOf(texts, specialVariants);
-  const derived = {
-    ...deriveIdentityKeywords(raw, skills, specialVariants, {
-      alsoFrom: (skillId) => {
-        const text = textById.get(skillId);
-        return text ? keywordsInSkillText(text, specialVariants, ammoFamilies) : undefined;
-      },
-    }),
-    ...deriveConsumedKeywordsFromText(texts, baseAttackSkillIds(raw)),
-  };
+  const attackIds = baseAttackSkillIds(raw);
+  // One keyword set per base skill (M129 `skills[].keywords`); the identity's counts are their sum,
+  // so the two cannot drift apart.
+  const perSkill = deriveSkillKeywords(raw, skills, specialVariants, {
+    alsoFrom: (skillId) => {
+      const text = textById.get(skillId);
+      return text ? keywordsInSkillText(text, specialVariants, ammoFamilies) : undefined;
+    },
+  });
+  for (const id of attackIds) {
+    const text = textById.get(id);
+    const consumed = text ? consumedKeywordsInSkillText(text) : new Set<never>();
+    if (consumed.size === 0) continue;
+    const entry = perSkill.get(id) ?? { base: new Set(), special: new Set() };
+    for (const kw of consumed) entry.base.add(kw);
+    perSkill.set(id, entry);
+  }
+  const derived = countSkillKeywords(perSkill.values());
   const keywords = (curatedKeywords ?? derived) as Identity['keywords'];
   const keywordSource: Identity['keywordSource'] = curatedKeywords
     ? 'curated'
@@ -714,24 +834,40 @@ const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
   const sins = new Set<Identity['sins'][number]>();
   const attackTypes = new Set<Identity['attackTypes'][number]>();
   // Same three skills as the keywords: an enhanced skill's sin or attack type is not the identity's.
-  for (const skillId of baseAttackSkillIds(raw)) {
+  for (const skillId of attackIds) {
     const data = skills.get(skillId)?.skillData?.[0];
     const sin = data?.attributeType ? SIN_BY_COLOR[data.attributeType] : undefined;
     if (sin) sins.add(sin);
-    switch (data?.atkType) {
-      case 'SLASH':
-        attackTypes.add('Slash');
-        break;
-      case 'PENETRATE':
-        attackTypes.add('Penetrate');
-        break;
-      case 'HIT':
-        attackTypes.add('Hit');
-        break;
-      default:
-        break;
-    }
+    const attackType = data?.atkType ? ATTACK_TYPE_BY_RAW[data.atkType] : undefined;
+    if (attackType) attackTypes.add(attackType);
   }
+
+  // What each base skill does with a 디버프 on its own user (M129 `skills[].self`): the scripts and
+  // the sentence joined per skill, as the keywords are.
+  const skillFacts = attackIds
+    .map((id) => {
+      const skill = skills.get(id);
+      const text = textById.get(id);
+      const self = selfFlags(
+        skill ? selfUseInSkill(skill) : undefined,
+        text ? selfKeywordsInSkillText(text) : undefined,
+      );
+      return staticSkillFacts(id, skill, perSkill.get(id), self);
+    })
+    .sort((a, b) => a.slot - b.slot);
+  if (new Set(skillFacts.map((s) => s.slot)).size !== skillFacts.length)
+    fail(`identity ${raw.id} has two base attack skills in one slot: ${attackIds.join(', ')}`);
+  const defenseIds = raw.defenseSkillIDList ?? [];
+  const defense = defenseTypesOf(defenseIds.flatMap((id) => defTypesOfSkill(skills.get(id))));
+  for (const value of defense.unknown)
+    unknownDefTypes.set(value, [...(unknownDefTypes.get(value) ?? []), raw.id]);
+  const buffs = identityBuffs(
+    [...attackIds, ...defenseIds],
+    battlePassiveIds.get(raw.id) ?? [],
+    (raw.initBuffList ?? []).flatMap((level) => (level.list ?? []).map((b) => b.buff ?? '')).filter(Boolean),
+    textById,
+    discardsOf(attackIds, textById),
+  );
 
   const title = loc(
     personalityKo.get(raw.id)?.title?.replace(/\s*\n\s*/g, ' '),
@@ -751,6 +887,9 @@ const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
     keywordSource,
     sins: [...sins].sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
     attackTypes: [...attackTypes].sort(),
+    skills: skillFacts,
+    defenseTypes: defense.types,
+    buffs,
   };
 });
 
@@ -807,12 +946,33 @@ const backfilledIdentities: Identity[] = [...derivedSource.entries()]
   .map(([id, entry]): Identity => {
     const sinnerId = entry.sinnerId ?? sinnerIdFromIdentityId(id);
     const attackIds = derivedAttackSkillIds(entry);
-    const skills = skillsOfIdentity(id, localizedSkills);
-    const keywords = deriveIdentityKeywordsFromText(
-      skills,
+    const texts = skillsOfIdentity(id, localizedSkills);
+    const perSkill = deriveSkillKeywordsFromText(
+      texts,
       specialVariants,
       attackIds.length > 0 ? attackIds : undefined,
-    ) as Identity['keywords'];
+    );
+    const keywords = countSkillKeywords(perSkill.values()) as Identity['keywords'];
+    const textById = new Map(texts.map((t) => [t.id, t]));
+    const skillFacts = derivedSkillFacts(
+      entry,
+      perSkill,
+      new Map(
+        attackIds.flatMap((sid) =>
+          textById.has(sid) ? [[sid, selfKeywordsInSkillText(textById.get(sid)!)]] : [],
+        ),
+      ),
+    );
+    const defenseIds = (entry.defenseSkillTypes ?? []).map((s) => Number(s.id)).filter(Number.isFinite);
+    const defense = defenseTypesOf((entry.defenseSkillTypes ?? []).map((s) => s.type?.type?.toUpperCase()));
+    for (const value of defense.unknown)
+      unknownDefTypes.set(value, [...(unknownDefTypes.get(value) ?? []), id]);
+    // No static passive list either: a passive id is `<identity><suffix>`, battle under 20.
+    const passives = [...passiveTexts.keys()].filter((p) => isBattlePassiveOf(p, id)).sort((a, b) => a - b);
+    const buffs = identityBuffs([...attackIds, ...defenseIds], passives, [], textById, [
+      ...derivedStatuses(entry),
+      ...discardsOf(attackIds, textById),
+    ]);
     return {
       id,
       sinnerId,
@@ -827,6 +987,11 @@ const backfilledIdentities: Identity[] = [...derivedSource.entries()]
       keywordSource: 'backfilled',
       sins: derivedSins(entry).sort((a, b) => SINS.indexOf(a) - SINS.indexOf(b)),
       attackTypes: derivedAttackTypes(entry).sort(),
+      // A mirror entry naming no base skill leaves `skills` out: the text heuristic chose the
+      // skills then, and a list of none would contradict the counts above.
+      ...(skillFacts.length > 0 ? { skills: skillFacts } : {}),
+      defenseTypes: defense.types,
+      buffs,
     };
   })
   .sort((a, b) => a.id - b.id);
@@ -884,8 +1049,8 @@ const identities: Identity[] = [...derivedIdentities, ...backfilledIdentities, .
 
 const statusSet = new Set<string>(STATUS_KEYWORDS);
 const giftKeywordSet = new Set<string>(KEYWORDS);
-// 탄환 has no gift category row, so its name comes from the battle keywords instead.
-const battleKeywordKo = readBattleKeywordNames('KR');
+// 탄환 has no gift category row, so its name comes from the battle keywords instead
+// (`battleKeywordKo` is read with the identities, whose `buffs` check ids against it).
 const battleKeywordEn = readBattleKeywordNames('EN');
 
 const enums: Enums = {
@@ -1017,7 +1182,7 @@ const CAPTURE_LAYOUT_CURATED = repoPath('data/curated/capture-layout.json');
  * A content hash of every input, so `dataVersion` changes exactly when the data does.
  * A wall-clock timestamp here would make every rebuild dirty the git diff.
  */
-function inputsFingerprint(): string {
+function inputsFingerprint(derivedOutput: string): string {
   const hash = createHash('sha256');
   const walk = (dir: string): void => {
     if (!existsSync(dir)) return;
@@ -1038,6 +1203,7 @@ function inputsFingerprint(): string {
   // leaving it out would let the data change while `dataVersion` swore it had not.
   walk(DERIVED_DIR);
   walk(repoPath('data/curated'));
+  hash.update(derivedOutput);
   return hash.digest('hex').slice(0, 8);
 }
 
@@ -1060,7 +1226,8 @@ if (curatedSeason.backfillAssumptions?.generalPool === 'allGeneral' && backfille
 }
 
 const meta: Meta = {
-  dataVersion: `${dungeonId}.${inputsFingerprint()}`,
+  // Set once `skill-gifts.json` exists (below): it joins the fingerprint.
+  dataVersion: '',
   // 2: a keyword condition names a list (`keywords`), says 부여 or 소모 (`verb`), and may
   //    carry `min: null` for a gate that only scales. A season frozen at 1 cannot be reread.
   schemaVersion: 2,
@@ -1109,6 +1276,31 @@ function findDungeonName(lang: 'KR' | 'EN'): string {
 }
 
 // ---------------------------------------------------------------------------
+// What each effect asks of the deck (M129)
+// ---------------------------------------------------------------------------
+
+// Read from the raw text, before the buff ids are written out as names: an `identityBuff` stores ids.
+const curatedEffects = readCuratedGiftEffects(repoPath('data/curated/gift-effects.json'));
+if (curatedEffects.errors.length > 0)
+  fail(`data/curated/gift-effects.json: ${curatedEffects.errors.join(' | ')}`);
+const effectContext: EffectContext = {
+  factionIdByName,
+  grantedBuffs: giftGrantedBuffs(gifts.map((g) => g.desc.ko)),
+  identities: identities.map((i) => ({ id: i.id, title: i.title.ko, sinner: i.sinner.ko })),
+};
+for (const gift of gifts) {
+  const parsed = parseEffects(gift.desc.ko, effectContext);
+  gift.effects = curatedEffects.byId.get(gift.id) ?? parsed.effects;
+}
+
+// Which gift effects each identity skill sets off (M129): core's judgement, laid out by identity.
+// Core's rules are an input of this file as much as the data is, so its bytes join `dataVersion` —
+// a rule change that moves an entry announces a new version even when no source file changed.
+const skillGifts = skillGiftIndexSchema.parse(buildSkillGiftIndex(identities, gifts));
+const skillGiftsText = formatSkillGiftIndex(skillGifts);
+meta.dataVersion = `${dungeonId}.${inputsFingerprint(skillGiftsText)}`;
+
+// ---------------------------------------------------------------------------
 // Buff ids in the text
 // ---------------------------------------------------------------------------
 
@@ -1142,6 +1334,14 @@ for (const gift of gifts) {
   });
   gift.desc = text(gift.desc);
   for (const condition of gift.conditions) if (condition.text) condition.text = text(condition.text);
+  // An enhancement step keeps the game's emphasis on what it changed, as `**…**` (M130).
+  for (const upgrade of gift.upgrades ?? []) {
+    upgrade.name = { ko: stripRichText(upgrade.name.ko), en: stripRichText(upgrade.name.en) };
+    upgrade.desc = text({
+      ko: markUpgradeHighlight(upgrade.desc.ko),
+      en: markUpgradeHighlight(upgrade.desc.en),
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1155,6 +1355,7 @@ writeJsonStable(join(SEASON_OUT, 'meta.json'), meta);
 writeJsonStable(join(SEASON_OUT, 'rules.json'), rules);
 writeJsonStable(join(SEASON_OUT, 'gifts.json'), gifts);
 writeJsonStable(join(SEASON_OUT, 'packs.json'), packs);
+writeFileSync(join(SEASON_OUT, 'skill-gifts.json'), skillGiftsText, 'utf8');
 // What every season shares. Neither looks at the dungeon, so a frozen season keeps getting new
 // identities instead of going stale with the build that made it.
 writeJsonStable(join(OUT, 'enums.json'), enums);
@@ -1224,6 +1425,16 @@ console.log(
 );
 console.log(`  acquisition: ${summarize(gifts.map((g) => g.acquisition.kind))}`);
 console.log(`  conditions: ${summarize(gifts.flatMap((g) => g.conditions.map((c) => c.type)))}`);
+{
+  const effects = gifts.flatMap((g) => g.effects ?? []);
+  const unclassified = effects.filter((e) => e.unclassified).length;
+  console.log(
+    `  effects: ${effects.length} (${summarize(effects.map((e) => e.kind))}), requirements: ` +
+      `${summarize(effects.flatMap((e) => e.requires.map((r) => r.type)))}; ` +
+      `${unclassified} unclassified line(s), ` +
+      `${curatedEffects.byId.size} curated gift(s)`,
+  );
+}
 console.log(`  identity keywords: ${summarize(identities.map((i) => i.keywordSource))}`);
 console.log(
   `  특수 variants: ${specialVariants.size} buff(s), ${identities.filter((i) => Object.values(i.keywords).some((k) => k.specialSkills > 0)).length} identities`,
@@ -1233,6 +1444,22 @@ console.log(
     .map((k) => `${k.name.ko} ${identities.filter((i) => i.keywords[k.id]).length}`)
     .join(' · ')}`,
 );
+{
+  // M129: how much of the per-skill data is actually known. A null is 「모름」 to the judgement.
+  const withSkills = identities.filter((i) => i.skills && i.skills.length > 0);
+  const nullCount = (pick: (s: NonNullable<Identity['skills']>[number]) => unknown): number =>
+    withSkills.filter((i) => i.skills!.some((s) => pick(s) === null)).length;
+  console.log(
+    `  identity skills: ${withSkills.length} with skills, ${identities.length - withSkills.length} without` +
+      ` · null sin ${nullCount((s) => s.sin)}, attack type ${nullCount((s) => s.attackType)},` +
+      ` weight ${nullCount((s) => s.weight)}, coins ${nullCount((s) => s.coins)}` +
+      ` · no defense ${identities.filter((i) => !i.defenseTypes?.length).length}` +
+      ` · no buffs ${identities.filter((i) => !i.buffs?.length).length}`,
+  );
+  for (const [value, ids] of [...unknownDefTypes].sort(([a], [b]) => a.localeCompare(b))) {
+    console.log(`  defense skill defType ${value} names no defense kind: ${ids.join(', ')}`);
+  }
+}
 if (unnamedBuffIds.size > 0) {
   // Not an error: these are identity- or gift-specific buffs the game names nowhere we can read.
   console.log(
@@ -1246,6 +1473,11 @@ if (unnamedFactions.length > 0) {
   console.log(
     `  ${unnamedFactions.length} faction(s) without a display name: ${unnamedFactions.join(', ')}` +
       ' — add them to data/curated/factions.json',
+  );
+}
+if (upgradeWithoutText.length > 0) {
+  console.log(
+    `  ${upgradeWithoutText.length} enhanceable gift(s) without text for every step (no 강화 choice): ${upgradeWithoutText.slice(0, 10).join(', ')}`,
   );
 }
 if (unparsedConditionCount > 0) {

@@ -544,15 +544,21 @@
 ## 추천 기프트 (모두 보기의 첫 탭)
 
 ### recDeckTitle
-메모: 임계값 있는 조건을 모두 채우거나, 임계값 없는 조건(편성된 수에 따라 강화)에 출격한 인격이 한 명이라도 세어지는 기프트(대기 인원은 세지 않는다).
+메모: 효과 중 하나라도 출격 인격으로 쓸 수 있고, 그 효과가 덱에 무언가(그 키워드를 부여·소모하는 스킬, 스킬 슬롯, 소속, 인격 전용 버프, 죄악·공격 유형, 코인·가중치, 방어 스킬)를 요구하는 기프트(M129). 「N인 이상」 머리 조건은 그 수치를 채워야 한다. 대기 인원은 세지 않는다.
 - ko: 덱 조건 충족
 - en: Deck conditions met
 - 쓰는 곳: src/app/components/RecommendedGifts.tsx
 
 ### recFreeTitle
-메모: 조건이 없어 어느 덱에서나 발동하는 기프트 중 팩 전용(테마팩 한정·클리어 보상)인 것. 범용은 덱과 상관없어 추천하지 않는다.
+메모: 덱에 요구가 없는 효과만 쓸 수 있는 기프트 중 팩 전용(테마팩 한정·클리어 보상)인 것. 적·자신의 상태나 전투 상황을 묻는 효과는 요구가 없는 것으로 본다. 범용은 덱과 상관없어 추천하지 않는다.
 - ko: 조건 없이 발동 · 팩 전용
 - en: No condition · pack-only
+- 쓰는 곳: src/app/components/RecommendedGifts.tsx
+
+### recEgoTitle
+메모: 효과를 막는 조건이 E.G.O 스킬 조건뿐인 기프트(M129, 소유자 결정). 인격의 E.G.O 데이터가 없어 늘 충족으로 보되 추천 맨 아래에 따로 둔다. 획득 종류와 상관없이 넣는다.
+- ko: E.G.O 스킬 조건
+- en: E.G.O skill condition
 - 쓰는 곳: src/app/components/RecommendedGifts.tsx
 
 ### recAcquisition
@@ -597,7 +603,7 @@
 메모: 덱 조건 충족이 비었고 출격한 인격이 0명일 때. 조건 대부분이 출격 인원을 센다.
 - ko: 출격한 인격이 없습니다. 조건 대부분은 출격 인원으로 셉니다.
 - en: No identity is deployed. Most conditions count deployed identities.
-- 쓰는 곳: src/app/shell/GiftBrowser.tsx
+- 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/shell/GiftBrowser.tsx
 
 ## 기프트 필터·획득 분류·죄악
 
@@ -818,6 +824,180 @@
 
 ## 기프트 상세 시트
 
+### effActive
+메모: 효과(줄) 하나가 지금 출격 인격으로 발동한다(M129). 시트의 효과 줄 막대와 함께 화면 낭독기에 읽힌다.
+- ko: 발동
+- en: Active
+- 쓰는 곳: src/app/components/EffectLines.tsx
+
+### effInactive
+메모: 효과가 지금 출격 인격으로는 발동하지 않는다(M129). 점선 막대·흐린 글자와 함께 읽힌다.
+- ko: 발동하지 않음
+- en: Not active
+- 쓰는 곳: src/app/components/EffectLines.tsx
+
+### effNoCondition
+메모: 덱에 아무것도 요구하지 않는 효과의 팝오버 한 줄.
+- ko: 조건 없음
+- en: No condition
+- 쓰는 곳: src/app/components/EffectLines.tsx, src/app/lib/effect-text.ts
+
+### effNone
+메모: 요구를 채우는 출격 인격이 없다.
+- ko: 없음
+- en: None
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effWho
+메모: 팝오버의 한 줄: 요구 이름 — 그것을 채우는 인격(슬롯). 예: 「파열 스킬 — LCB 수감자 이상 S1·S3」.
+- ko: {req} — {who}
+- en: {req} — {who}
+- 쓰는 곳: src/app/components/EffectLines.tsx
+
+### effCount
+메모: 「N인 이상」 요구의 개수(채운 수/필요 수).
+- ko: {have}/{need}명
+- en: {have}/{need}
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effSlot
+메모: 인격 이름 뒤의 스킬 슬롯 목록. 예: 「S1·S3」.
+- ko: S{slots}
+- en: S{slots}
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqKeyword
+메모: 그 키워드를 부여·획득·소모하는 기본 스킬.
+- ko: {keywords} 스킬
+- en: {keywords} skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqKeywordSlot
+메모: 「스킬 N」을 지정한 키워드 스킬.
+- ko: {keywords} 스킬 {slot}
+- en: {keywords} Skill {slot}
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqSelfGain
+메모: 자신에게 그 키워드를 부여하는 스킬.
+- ko: 자신에게 {keywords} 부여 스킬
+- en: Skill giving self {keywords}
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqSelfConsume
+메모: 자신의 그 키워드를 소모하는 스킬.
+- ko: 자신의 {keywords} 소모 스킬
+- en: Skill spending own {keywords}
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqIdentityBuff
+메모: 기프트가 주지 않아 인격만 가져오는 버프(진동 - 작열·각력【묘】·버림 등).
+- ko: 인격 전용 효과
+- en: Identity-only effect
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqFaction
+메모: 소속 요구.
+- ko: {factions} 소속
+- en: {factions}
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqIdentity
+메모: 특정 인격 편성 요구.
+- ko: {names} 편성
+- en: {names} in the team
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqSkill
+메모: 죄악·공격 유형 스킬 요구. 예: 「오만 관통 스킬」.
+- ko: {what} 스킬
+- en: {what} skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqResonance
+메모: 죄악 공명 요구.
+- ko: {sins} 공명
+- en: {sins} resonance
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqSingleCoin
+메모: 스킬 구조: 코인 하나.
+- ko: 단일 코인 스킬
+- en: Single-coin skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqCoinsAtMost
+메모: 스킬 구조: 코인 수 N 이하.
+- ko: 코인 {n}개 이하 스킬
+- en: Skill with {n} or fewer coins
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqCoinsAtLeast
+메모: 스킬 구조: 코인 수 N 이상.
+- ko: 코인 {n}개 이상 스킬
+- en: Skill with {n}+ coins
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqPlusCoin
+메모: 스킬 구조: 더하기 코인.
+- ko: 더하기 코인 스킬
+- en: Plus-coin skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqMinusCoin
+메모: 스킬 구조: 빼기 코인.
+- ko: 빼기 코인 스킬
+- en: Minus-coin skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqUnbreakable
+메모: 스킬 구조: 파괴 불가 코인.
+- ko: 파괴 불가 코인 스킬
+- en: Unbreakable-coin skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqWeightAtLeast
+메모: 스킬 구조: 공격 가중치 N 이상.
+- ko: 공격 가중치 {n} 이상 스킬
+- en: Attack weight {n}+ skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqWeightExactly
+메모: 스킬 구조: 공격 가중치 N.
+- ko: 공격 가중치 {n} 스킬
+- en: Attack weight {n} skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqDefense
+메모: 방어 스킬 유형 요구.
+- ko: {kinds} 스킬
+- en: {kinds} skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqEgo
+메모: E.G.O 스킬 조건 — 판정하지 않고 늘 충족으로 본다.
+- ko: E.G.O 스킬 (판정하지 않음)
+- en: E.G.O skill (not judged)
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effDefGuard
+메모: 방어 스킬 유형: 수비.
+- ko: 수비
+- en: Guard
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effDefEvade
+메모: 방어 스킬 유형: 회피.
+- ko: 회피
+- en: Evade
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effDefCounter
+메모: 방어 스킬 유형: 반격.
+- ko: 반격
+- en: Counter
+- 쓰는 곳: src/app/lib/effect-text.ts
+
 ### giftSubOf
 - ko: {parent} 재료
 - en: Ingredient of {parent}
@@ -880,6 +1060,18 @@
 - ko: {name} 설명으로 돌아가기
 - en: Back to {name}
 - 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/components/PackSheet.tsx
+
+### giftUpgradeGroup
+메모: 강화(M130) — 목표 타일과 기프트 시트의 `+`·`++` 버튼 묶음의 이름. 버튼 글자는 `+`·`++` 그대로다.
+- ko: {name} 강화 단계
+- en: {name} enhancement
+- 쓰는 곳: src/app/components/UpgradeSteps.tsx
+
+### giftUpgradeStep
+메모: {step}은 `+` 또는 `++`. 누른 단계를 다시 누르면 강화 전으로 돌아간다.
+- ko: {name} 강화 {step}
+- en: {name} enhanced {step}
+- 쓰는 곳: src/app/components/UpgradeSteps.tsx
 
 ### giftExclusive
 - ko: 전용
@@ -2511,10 +2703,11 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 
 - readme: **기프트 탭**에서 기프트를 찾아 목표로 삼습니다(타일의 아이콘을 누르면 목표에 추가, 이름을 누르면 상세). 검색은 전체 기프트에서, 부분 문자열로 찾고, 초성만 치면 초성 검색입니다. 검색 결과는 검색창 바로 아래에 나옵니다.
 - readme: 검색창 오른쪽 끝의 **`>>`(모두 보기)**나 탭 아래의 「추천 기프트 보기」는 기프트를 넓은 격자로 엽니다(데스크톱은 가운데 스테이지 자리, 휴대폰은 새 페이지). 열려 있는 동안 같은 버튼이 **`<<`**로 바뀌어 누르면 다시 스테이지로 돌아옵니다. 탭에 친 검색어를 그대로 가져가며, 탭은 둘입니다.
-- readme: **「추천 기프트」**는 열 때마다 먼저 열리는 탭으로, 지금 덱으로 발동할 수 있는 기프트만 모았습니다. 「덱 조건 충족」은 덱의 스킬·소속이 조건을 모두 채우는 기프트이고(편성된 수에 따라 강화되는 기프트는 출격한 인격이 한 명이라도 세어지면 들어갑니다), 「조건 없이 발동 · 팩 전용」은 조건이 없어 어느 덱에서나 발동하는 팩 전용 기프트입니다. 「획득」(팩 전용 · 범용)·「조합 기프트 포함」·「키워드」로 거르고, 「정렬」로 「키워드별」과 「팩 전용 먼저」를 고릅니다. 이미 목표인 기프트도 테두리와 ✓를 달고 그대로 나옵니다.
+- readme: **「추천 기프트」**는 열 때마다 먼저 열리는 탭으로, 지금 덱으로 발동할 수 있는 기프트만 모았습니다. 기프트를 효과 하나하나로 읽어, 출격한 인격으로 쓸 수 있는 효과가 있는지 봅니다. 「덱 조건 충족」은 그 효과가 덱에 무언가를 요구하는 기프트입니다 — 그 키워드를 부여하거나 소모하는 스킬(스킬 3처럼 슬롯을 말하면 그 슬롯), 소속, 특정 인격만 거는 버프(예: 진동 - 작열), 죄악·공격 유형, 코인·공격 가중치, 반격·회피 같은 방어 스킬. 적이나 자신의 상태(화상을 보유한 적 등), 체력·흐트러짐 같은 전투 상황은 어느 덱에서나 만들 수 있으므로 요구로 보지 않습니다. 「조건 없이 발동 · 팩 전용」은 그런 요구가 없는 효과만 쓸 수 있는 팩 전용 기프트이고, 맨 아래 「E.G.O 스킬 조건」은 E.G.O 스킬을 쓸 때만 발동하는 기프트입니다(인격의 E.G.O는 판정하지 않습니다). 「획득」(팩 전용 · 범용)·「조합 기프트 포함」·「키워드」로 거르고, 「정렬」로 「키워드별」과 「팩 전용 먼저」를 고릅니다. 이미 목표인 기프트도 테두리와 ✓를 달고 그대로 나옵니다.
 - readme: **「모든 기프트」**는 전체 기프트와 필터(키워드·조건·등급·죄악)입니다. 「조건」 필터의 **「조건 없음」**은 덱이 판정할 조건이 없는 기프트만 남깁니다(편성 수에 따라 강화되는 것과 완전 공명 조건은 덱 조건이 아닙니다).
 - readme: 타일의 **바깥 링**이 조건 판정입니다(초록 충족 · 빨강 미충족 · 회색 조건 없음). 우하 배지는 키워드입니다.
 - readme: 조합으로만 나오는 기프트를 고르면 재료까지 루트가 모으러 갑니다. 상세 시트의 「재료도 목표」를 끄면 결과만 목표로 둡니다. 조합식의 재료를 누르면 그 기프트의 설명으로 넘어가고, 맨 위 「←」로 돌아옵니다.
+- readme: **강화**(`+`·`++`)가 있는 기프트는 목표 타일과 상세 시트에서 단계를 고르면 그 단계의 이름과 설명(바뀐 수치는 굵게)이 보입니다. 고른 단계를 다시 누르면 강화 전으로 돌아가고, 선택은 이 기기와 공유 링크에 남습니다.
 - readme: **시작 키워드**는 탭 맨 아래에 있습니다. 「자동」은 고른 기프트를 따라, 시작 기프트 풀에 목표가 든 키워드를 고릅니다(그런 풀이 없으면 덱의 주 키워드). 그 아래 한 줄이 어떤 시작 기프트를 받는지, 혹은 목표와 상관이 없어 아무 키워드나 골라도 되는지 알려 줍니다.
 - readme: **관측**: 검색창 아래 슬롯(최대 3칸)에 기프트를 넣으면 「관측 지정」으로 「기프트 관측」에서 받습니다. 조합 결과는 관측할 수 없으므로 조합에 관측을 쓰려면 **재료**를 넣습니다. 관측은 1층을 떠나기 전까지만 바꿀 수 있습니다.
 - 설명서: 기프트 탭에서 아이콘을 눌러 목표에 추가합니다.

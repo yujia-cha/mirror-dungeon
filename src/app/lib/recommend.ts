@@ -1,60 +1,54 @@
 /**
- * 추천 기프트 (M121): the gifts the current deck can actually set off, for the 「추천 기프트」 tab of
- * the 「모두 보기」 browser.
+ * 추천 기프트 (M121, 기준은 M129): the gifts the current deck can actually use, for the 「추천 기프트」
+ * tab of the 「모두 보기」 browser.
  *
- * It decides nothing new about conditions — it reads the same `ConditionReport`s the tiles' rings
- * read (`evaluateConditions` via `conditionReportsByGift`) and the same `judgementOf`:
+ * The judgement is core's `giftEffectsReport`: a gift is read as effects (`gift.effects`, built from
+ * its description), and an effect is usable when the deployed party meets every requirement it and
+ * the gift's gates name — a skill that inflicts the keyword, the slot, a faction, an identity-only
+ * buff, a sin and attack type, coins, a defense kind. States and battle situations ask nothing.
  *
- * - a gift with threshold conditions (`gate`) is recommended when every one is met (`met`); one
- *   that cannot be judged from a deck (완전 공명, an unparsed sentence) is not;
- * - a gift whose only conditions have no threshold (「편성된 수에 따라 강화」, `gate === false`) is
- *   recommended once at least one **deployed** identity counts toward it (owner's answer). Those
- *   sentences count the whole formation, reserves included, so the deployed count comes from a
- *   second evaluation over the deployed party alone (`deployedConditionReports`) — the same core
- *   counting, not a second copy of it;
- * - a gift with no condition at all works with any deck, so a deck cannot recommend it — except a
- *   pack-bound one (테마팩 한정 · 클리어 보상, `isPackBound`), which is what decides a route. Those
- *   go in a group of their own (`free`).
+ * - `deck` (「덱 조건 충족」): some usable effect asks something of the deck, or a met gate opens it;
+ * - `free` (「조건 없이 발동 · 팩 전용」): only unconditional effects are usable, and only one pack (or
+ *   boss) hands the gift out (`isPackBound`) — that is what decides a route; a general one is left out;
+ * - `ego` (「E.G.O 스킬 조건」, last): only an E.G.O skill condition holds it — our data has no
+ *   identity's E.G.O, so the owner counts it as met but keeps such gifts apart;
+ * - anything else is not recommended.
  *
+ * Why is never shown; `relevanceReason` says it for debugging (`data-recommend`, `npm run recommend`).
  * Pure: the browser holds the filter state and draws the tiles.
  */
-import { analyseDeck } from '../../core/index.ts';
-import type { GameData, Gift, Keyword } from '../../core/schema.ts';
+import {
+  giftEffectsReport,
+  relevanceReason,
+  type GiftEffectsReport,
+  type SkillGiftLookup,
+} from '../../core/index.ts';
+import type { Gift, Keyword } from '../../core/schema.ts';
 import type { ConditionReport, DeckStats, GameIndexes } from '../../core/types.ts';
-import { conditionReportsByGift } from './gift-tile.ts';
 import { classifyGift, compareEntries, isPackBound, type GiftEntry } from './gift-priority.ts';
-import { judgementOf } from './judgement.ts';
-
-/** Why a gift is recommended: the deck meets its condition, or it has none and is pack-bound. */
-export type Activation = 'deck' | 'free';
 
 /**
- * `reports` are the gift's conditions judged on the deck as the rings judge them; `deployedReports`
- * are the same conditions counted over the deployed party alone (defaults to `reports`, which is
- * right when the counts are already deployed-only).
+ * Why a gift is recommended: the deck can use an effect that asks for it (`deck`), it is plain and
+ * pack-bound (`free`), or only an E.G.O skill condition — always met, owner's call — holds it (`ego`).
  */
-export function activationOf(
-  gift: Gift,
-  reports: readonly ConditionReport[],
-  deployedReports: readonly ConditionReport[] = reports,
-): Activation | null {
-  if (gift.conditions.length === 0) return isPackBound(gift) ? 'free' : null;
-  if (reports.some((report) => report.gate)) return judgementOf([...reports]) === 'met' ? 'deck' : null;
-  // Only counts without a threshold: one deployed identity that counts is enough to strengthen it.
-  return deployedReports.some((report) => (report.have ?? 0) >= 1) ? 'deck' : null;
+export type Activation = 'deck' | 'free' | 'ego';
+
+export function activationOf(gift: Gift, report: GiftEffectsReport | undefined): Activation | null {
+  if (!report || report.relevance === null) return null;
+  if (report.relevance === 'free') return isPackBound(gift) ? 'free' : null;
+  return report.relevance;
 }
 
-/**
- * Every conditional gift's reports with the deck cut down to its deployed party: whoever is in
- * reserve is gone, so a 「편성된」 count is then a count of the deployed.
- */
-export function deployedConditionReports(
-  data: GameData,
+/** Every gift's effects judged on the deployed party. */
+export function effectReportsByGift(
+  gifts: readonly Gift[],
   stats: DeckStats,
   indexes: GameIndexes,
-): Map<number, ConditionReport[]> {
-  const party = analyseDeck(stats.deployed, indexes, data.rules.deployment, stats.deployed);
-  return conditionReportsByGift(data, party, indexes);
+  lookup?: SkillGiftLookup,
+): Map<number, GiftEffectsReport> {
+  return new Map(
+    gifts.map((gift) => [gift.id, giftEffectsReport(gift, stats, indexes.identityById, lookup)]),
+  );
 }
 
 /** A fusion result (조합 기프트): it has a recipe of its own. */
@@ -63,29 +57,37 @@ export function isFusionGift(gift: Gift): boolean {
 }
 
 export interface Recommendation {
-  /** 「덱 조건 충족」: the deck meets every condition (or counts toward a threshold-less one). */
+  /** 「덱 조건 충족」: the deck can use an effect that asks something of it. */
   deck: GiftEntry[];
-  /** 「조건 없이 발동 · 팩 전용」: no condition, and only one pack (or boss) hands it out. */
+  /** 「조건 없이 발동 · 팩 전용」: only plain effects are usable, and only one pack (or boss) hands it out. */
   free: GiftEntry[];
+  /** 「E.G.O 스킬 조건」: held only by an E.G.O skill condition, any source — the last group. */
+  ego: GiftEntry[];
+  /** `relevanceReason` per recommended gift — for debugging only. */
+  reasons: Map<number, string>;
 }
 
 /**
  * Split `gifts` into the two recommended groups, each in the tab's usual order (pack-bound first,
- * closer first, id — `compareEntries`). Gifts that are neither are left out.
+ * closer first, id — `compareEntries`). Gifts that are neither are left out. `conditionByGift` only
+ * draws the tiles' rings and condition line.
  */
 export function recommendedGifts(
   gifts: readonly Gift[],
   conditionByGift: ReadonlyMap<number, ConditionReport[]>,
-  deployedByGift: ReadonlyMap<number, ConditionReport[]> = conditionByGift,
+  effectsByGift: ReadonlyMap<number, GiftEffectsReport>,
 ): Recommendation {
-  const out: Recommendation = { deck: [], free: [] };
+  const out: Recommendation = { deck: [], free: [], ego: [], reasons: new Map() };
   for (const gift of gifts) {
-    const reports = conditionByGift.get(gift.id) ?? [];
-    const activation = activationOf(gift, reports, deployedByGift.get(gift.id) ?? []);
-    if (activation !== null) out[activation].push(classifyGift(gift, reports));
+    const report = effectsByGift.get(gift.id);
+    const activation = activationOf(gift, report);
+    if (activation === null) continue;
+    out[activation].push(classifyGift(gift, conditionByGift.get(gift.id) ?? []));
+    out.reasons.set(gift.id, relevanceReason(report!));
   }
   out.deck.sort(compareEntries);
   out.free.sort(compareEntries);
+  out.ego.sort(compareEntries);
   return out;
 }
 

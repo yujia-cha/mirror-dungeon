@@ -55,6 +55,7 @@ import { Tracker } from '../tracker/Tracker.tsx';
 import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
 import type { RoutePlan } from '../../core/types.ts';
 import { ingredientTree } from '../lib/entangle.ts';
+import { upgradeLevelsOf } from '../lib/upgrade.ts';
 import { LONG_PRESS } from '../lib/useChipDrag.ts';
 import { createPlanner, type PlannerRequest } from '../lib/planner-protocol.ts';
 import { resetPlannerWorker } from '../lib/use-planner.ts';
@@ -98,6 +99,7 @@ beforeEach(() => {
     deployed: [],
     wanted: [],
     fusionGoal: {},
+    upgrades: {},
     run: emptyRun(),
     ui: defaultUi(),
     options: appDefaultOptions(),
@@ -152,6 +154,7 @@ describe('share links', () => {
       deployed: [10403],
       wanted: [9283, 9088],
       fusionGoal: { 9088: 'resultOnly' as const },
+      upgrades: {},
       options: { ...appDefaultOptions(), startKeyword: 'auto' as const },
     };
     const decoded = decodeShared(encodeShared(state));
@@ -488,6 +491,7 @@ describe('a saved state that cannot be trusted', () => {
       'run',
       'season',
       'ui',
+      'upgrades',
       'wanted',
     ]);
     window.localStorage.setItem(
@@ -561,6 +565,7 @@ describe('state that outlived the game data', () => {
       giftIds: new Set(data.gifts.map((gift) => gift.id)),
       packIds: new Set(data.packs.map((pack) => pack.id)),
       recipes: ingredientTree(indexes, data.rules.fusion.maxShopSlots),
+      upgradeLevels: upgradeLevelsOf(data.gifts),
     });
 
   it('drops ids this season cannot resolve, from the goals, the options and the run alike', () => {
@@ -857,6 +862,7 @@ describe('run store · statuses that outlive their goal', () => {
       giftIds: new Set(data.gifts.map((gift) => gift.id)),
       packIds: new Set(data.packs.map((pack) => pack.id)),
       recipes: ingredientTree(indexes, data.rules.fusion.maxShopSlots),
+      upgradeLevels: upgradeLevelsOf(data.gifts),
     });
     useApp.getState().toggleWanted(9249); // ← 9431 + 9706 + 9707
     useApp.getState().toggleWanted(9267);
@@ -1334,6 +1340,7 @@ describe('GiftsStep', () => {
       giftIds: new Set(data.gifts.map((gift) => gift.id)),
       packIds: new Set(data.packs.map((pack) => pack.id)),
       recipes: ingredientTree(indexes, data.rules.fusion.maxShopSlots),
+      upgradeLevels: upgradeLevelsOf(data.gifts),
     });
   };
 
@@ -1684,11 +1691,14 @@ describe('GiftsStep', () => {
     renderGifts();
     await search(user, '진혼');
     await user.click(within(tile(9088)).getByRole('button', { name: '진혼 자세히' }));
-    // The game writes a gift as several clauses split by blank lines; without `whitespace-pre-line`
-    // CSS folds them into one run-on paragraph.
-    const effect = within(screen.getByTestId('gift-detail')).getByText(/턴 시작 시/);
-    expect(effect.textContent).toContain('\n\n');
-    expect(effect.className).toContain('whitespace-pre-line');
+    // The game writes a gift as several clauses split by blank lines. M129 draws each clause as its
+    // own effect: the paragraph break is a gap between them, and each keeps its own line breaks.
+    const desc = within(screen.getByTestId('gift-detail')).getByTestId('gift-desc');
+    const effects = desc.querySelectorAll('[data-effect]');
+    expect(effects.length).toBeGreaterThan(1);
+    expect([...effects].slice(1).some((e) => e.className.includes('mt-2'))).toBe(true);
+    const first = within(desc).getAllByText(/턴 시작 시/)[0]!;
+    expect(first.className).toContain('whitespace-pre-line');
   });
 
   it('opens a gift sheet with its effect, conditions and a recipe that starts folded', async () => {
@@ -2199,16 +2209,20 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     expect(ids(deckSection())).toContain(9088);
     expect(ids(deckSection())).not.toContain(9092);
     expect(deckSection()).toHaveTextContent('덱 조건 충족');
-    // 붉은색 넥타이 has no condition and one pack; 지옥나비의 꿈 has no condition and drops anywhere.
+    // M129: 붉은색 넥타이 asks for a burn S3, which 10112 brings; 불타는 운명 only asks about a state
+    // (「[화상]을 보유한」) and one boss drops it; 귀로 is plain too but drops anywhere.
+    expect(ids(deckSection())).toContain(9215);
     expect(freeSection()).toHaveTextContent('조건 없이 발동 · 팩 전용');
-    expect(ids(freeSection()!)).toContain(9215);
-    expect(shown()).not.toContain(9001);
-    expect(
-      ids(freeSection()!).every((id) => {
-        const gift = indexes.giftById.get(id)!;
-        return gift.conditions.length === 0 && isPackBound(gift);
-      }),
-    ).toBe(true);
+    expect(ids(freeSection()!)).toContain(9251);
+    expect(shown()).not.toContain(9039);
+    expect(ids(freeSection()!).every((id) => isPackBound(indexes.giftById.get(id)!))).toBe(true);
+    // Why, for debugging only: an attribute, never text.
+    const tile = (id: number) =>
+      within(deckSection())
+        .getAllByTestId('gift-tile')
+        .find((el) => el.getAttribute('data-gift') === String(id))!;
+    expect(tile(9215)).toHaveAttribute('data-recommend', 'deck:skillKeyword/Combustion@S3');
+    expect(deckSection()).not.toHaveTextContent('skillKeyword');
     // The section heads count what they show.
     expect(within(deckSection()).getByRole('heading', { level: 3 })).toHaveTextContent(
       String(ids(deckSection()).length),
@@ -4811,6 +4825,7 @@ describe('M78 · guide, header doors, clear confirm, observation suggestions', (
       giftIds: new Set(data.gifts.map((gift) => gift.id)),
       packIds: new Set(data.packs.map((pack) => pack.id)),
       recipes: ingredientTree(indexes, data.rules.fusion.maxShopSlots),
+      upgradeLevels: upgradeLevelsOf(data.gifts),
     });
   };
 

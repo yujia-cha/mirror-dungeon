@@ -177,10 +177,12 @@ export const STRINGS = {
   giftsBrowseHide: { ko: '모두 보기 닫기', en: 'Close browse all' },
 
   // ── 추천 기프트 (모두 보기의 첫 탭)
-  // 임계값 있는 조건을 모두 채우거나, 임계값 없는 조건(편성된 수에 따라 강화)에 출격한 인격이 한 명이라도 세어지는 기프트(대기 인원은 세지 않는다).
+  // 효과 중 하나라도 출격 인격으로 쓸 수 있고, 그 효과가 덱에 무언가(그 키워드를 부여·소모하는 스킬, 스킬 슬롯, 소속, 인격 전용 버프, 죄악·공격 유형, 코인·가중치, 방어 스킬)를 요구하는 기프트(M129). 「N인 이상」 머리 조건은 그 수치를 채워야 한다. 대기 인원은 세지 않는다.
   recDeckTitle: { ko: '덱 조건 충족', en: 'Deck conditions met' },
-  // 조건이 없어 어느 덱에서나 발동하는 기프트 중 팩 전용(테마팩 한정·클리어 보상)인 것. 범용은 덱과 상관없어 추천하지 않는다.
+  // 덱에 요구가 없는 효과만 쓸 수 있는 기프트 중 팩 전용(테마팩 한정·클리어 보상)인 것. 적·자신의 상태나 전투 상황을 묻는 효과는 요구가 없는 것으로 본다. 범용은 덱과 상관없어 추천하지 않는다.
   recFreeTitle: { ko: '조건 없이 발동 · 팩 전용', en: 'No condition · pack-only' },
+  // 효과를 막는 조건이 E.G.O 스킬 조건뿐인 기프트(M129, 소유자 결정). 인격의 E.G.O 데이터가 없어 늘 충족으로 보되 추천 맨 아래에 따로 둔다. 획득 종류와 상관없이 넣는다.
+  recEgoTitle: { ko: 'E.G.O 스킬 조건', en: 'E.G.O skill condition' },
   recAcquisition: { ko: '획득', en: 'Source' },
   // 테마팩 한정·클리어 보상(isPackBound).
   recAcqPack: { ko: '팩 전용', en: 'Pack-only' },
@@ -256,6 +258,64 @@ export const STRINGS = {
   settingsObserved: { ko: '관측 지정', en: 'Observe' },
 
   // ── 기프트 상세 시트
+  // 효과(줄) 하나가 지금 출격 인격으로 발동한다(M129). 시트의 효과 줄 막대와 함께 화면 낭독기에 읽힌다.
+  effActive: { ko: '발동', en: 'Active' },
+  // 효과가 지금 출격 인격으로는 발동하지 않는다(M129). 점선 막대·흐린 글자와 함께 읽힌다.
+  effInactive: { ko: '발동하지 않음', en: 'Not active' },
+  // 덱에 아무것도 요구하지 않는 효과의 팝오버 한 줄.
+  effNoCondition: { ko: '조건 없음', en: 'No condition' },
+  // 요구를 채우는 출격 인격이 없다.
+  effNone: { ko: '없음', en: 'None' },
+  // 팝오버의 한 줄: 요구 이름 — 그것을 채우는 인격(슬롯). 예: 「파열 스킬 — LCB 수감자 이상 S1·S3」.
+  effWho: { ko: '{req} — {who}', en: '{req} — {who}' },
+  // 「N인 이상」 요구의 개수(채운 수/필요 수).
+  effCount: { ko: '{have}/{need}명', en: '{have}/{need}' },
+  // 인격 이름 뒤의 스킬 슬롯 목록. 예: 「S1·S3」.
+  effSlot: { ko: 'S{slots}', en: 'S{slots}' },
+  // 그 키워드를 부여·획득·소모하는 기본 스킬.
+  effReqKeyword: { ko: '{keywords} 스킬', en: '{keywords} skill' },
+  // 「스킬 N」을 지정한 키워드 스킬.
+  effReqKeywordSlot: { ko: '{keywords} 스킬 {slot}', en: '{keywords} Skill {slot}' },
+  // 자신에게 그 키워드를 부여하는 스킬.
+  effReqSelfGain: { ko: '자신에게 {keywords} 부여 스킬', en: 'Skill giving self {keywords}' },
+  // 자신의 그 키워드를 소모하는 스킬.
+  effReqSelfConsume: { ko: '자신의 {keywords} 소모 스킬', en: 'Skill spending own {keywords}' },
+  // 기프트가 주지 않아 인격만 가져오는 버프(진동 - 작열·각력【묘】·버림 등).
+  effReqIdentityBuff: { ko: '인격 전용 효과', en: 'Identity-only effect' },
+  // 소속 요구.
+  effReqFaction: { ko: '{factions} 소속', en: '{factions}' },
+  // 특정 인격 편성 요구.
+  effReqIdentity: { ko: '{names} 편성', en: '{names} in the team' },
+  // 죄악·공격 유형 스킬 요구. 예: 「오만 관통 스킬」.
+  effReqSkill: { ko: '{what} 스킬', en: '{what} skill' },
+  // 죄악 공명 요구.
+  effReqResonance: { ko: '{sins} 공명', en: '{sins} resonance' },
+  // 스킬 구조: 코인 하나.
+  effReqSingleCoin: { ko: '단일 코인 스킬', en: 'Single-coin skill' },
+  // 스킬 구조: 코인 수 N 이하.
+  effReqCoinsAtMost: { ko: '코인 {n}개 이하 스킬', en: 'Skill with {n} or fewer coins' },
+  // 스킬 구조: 코인 수 N 이상.
+  effReqCoinsAtLeast: { ko: '코인 {n}개 이상 스킬', en: 'Skill with {n}+ coins' },
+  // 스킬 구조: 더하기 코인.
+  effReqPlusCoin: { ko: '더하기 코인 스킬', en: 'Plus-coin skill' },
+  // 스킬 구조: 빼기 코인.
+  effReqMinusCoin: { ko: '빼기 코인 스킬', en: 'Minus-coin skill' },
+  // 스킬 구조: 파괴 불가 코인.
+  effReqUnbreakable: { ko: '파괴 불가 코인 스킬', en: 'Unbreakable-coin skill' },
+  // 스킬 구조: 공격 가중치 N 이상.
+  effReqWeightAtLeast: { ko: '공격 가중치 {n} 이상 스킬', en: 'Attack weight {n}+ skill' },
+  // 스킬 구조: 공격 가중치 N.
+  effReqWeightExactly: { ko: '공격 가중치 {n} 스킬', en: 'Attack weight {n} skill' },
+  // 방어 스킬 유형 요구.
+  effReqDefense: { ko: '{kinds} 스킬', en: '{kinds} skill' },
+  // E.G.O 스킬 조건 — 판정하지 않고 늘 충족으로 본다.
+  effReqEgo: { ko: 'E.G.O 스킬 (판정하지 않음)', en: 'E.G.O skill (not judged)' },
+  // 방어 스킬 유형: 수비.
+  effDefGuard: { ko: '수비', en: 'Guard' },
+  // 방어 스킬 유형: 회피.
+  effDefEvade: { ko: '회피', en: 'Evade' },
+  // 방어 스킬 유형: 반격.
+  effDefCounter: { ko: '반격', en: 'Counter' },
   giftSubOf: { ko: '{parent} 재료', en: 'Ingredient of {parent}' },
   giftMaterials: { ko: '조합식', en: 'Recipe' },
   giftSubRecipe: { ko: '{name}도 조합이다 — 그 재료', en: '{name} is a fusion too — its ingredients' },
@@ -274,6 +334,10 @@ export const STRINGS = {
   giftEntangledWith: { ko: '{name} 재료가 겹칩니다: {list}', en: 'shares ingredients with {name}: {list}' },
   giftDetail: { ko: '{name} 자세히', en: '{name} details' },
   giftDetailBack: { ko: '{name} 설명으로 돌아가기', en: 'Back to {name}' },
+  // 강화(M130) — 목표 타일과 기프트 시트의 `+`·`++` 버튼 묶음의 이름. 버튼 글자는 `+`·`++` 그대로다.
+  giftUpgradeGroup: { ko: '{name} 강화 단계', en: '{name} enhancement' },
+  // {step}은 `+` 또는 `++`. 누른 단계를 다시 누르면 강화 전으로 돌아간다.
+  giftUpgradeStep: { ko: '{name} 강화 {step}', en: '{name} enhanced {step}' },
   giftExclusive: { ko: '전용', en: 'Exclusive' },
   giftWanted: { ko: '목표', en: 'Goal' },
   giftUnjudgeable: { ko: '판정 불가', en: 'Cannot judge' },

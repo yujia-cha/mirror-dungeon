@@ -142,6 +142,7 @@ function Section({
 export function RecommendedSections({
   deck,
   free,
+  ego,
   sort,
   deckEmpty,
   notice,
@@ -151,6 +152,8 @@ export function RecommendedSections({
 }: {
   deck: readonly GiftEntry[];
   free: readonly GiftEntry[];
+  /** 「E.G.O 스킬 조건」 — last, drawn only when it has something. */
+  ego: readonly GiftEntry[];
   sort: RecommendSort;
   /** Why 「덱 조건 충족」 is empty: no deck, nothing met, or the filters. */
   deckEmpty: string;
@@ -188,6 +191,18 @@ export function RecommendedSections({
           enums={enums}
           lang={lang}
           testId="recommend-free"
+        />
+      ) : null}
+      {ego.length > 0 ? (
+        <Section
+          title={t('recEgoTitle', lang)}
+          entries={ego}
+          sort={sort}
+          empty=""
+          grid={grid}
+          enums={enums}
+          lang={lang}
+          testId="recommend-ego"
         />
       ) : null}
     </div>

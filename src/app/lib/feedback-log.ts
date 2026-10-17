@@ -145,6 +145,8 @@ export interface LoggedState {
   deployed: readonly number[];
   wanted: readonly number[];
   fusionGoal: Readonly<Record<number, unknown>>;
+  /** Enhancement steps per gift (M130). */
+  upgrades?: Readonly<Record<number, number>>;
   options: unknown;
   run: RunState;
   lang: string;
@@ -189,6 +191,16 @@ export function describeChange(prev: LoggedState, next: LoggedState): string[] {
     JSON.stringify(prev.fusionGoal) !== JSON.stringify(next.fusionGoal)
   )
     out.push(`fusion goal ${JSON.stringify(next.fusionGoal)}`);
+  if (prev.upgrades !== next.upgrades) {
+    const before = prev.upgrades ?? {};
+    const after = next.upgrades ?? {};
+    const ids = [...new Set([...Object.keys(before), ...Object.keys(after)].map(Number))].sort(
+      (a, b) => a - b,
+    );
+    for (const id of ids) {
+      if (before[id] !== after[id]) out.push(`upgrade ${id} ${before[id] ?? 0} → ${after[id] ?? 0}`);
+    }
+  }
   if (prev.options !== next.options && JSON.stringify(prev.options) !== JSON.stringify(next.options)) {
     const before = (prev.options ?? {}) as Record<string, unknown>;
     const after = (next.options ?? {}) as Record<string, unknown>;

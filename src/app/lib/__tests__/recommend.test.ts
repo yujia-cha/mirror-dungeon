@@ -1,10 +1,10 @@
 /**
- * 추천 기프트 (M121): which gifts the deck sets off, in which group, and the tab's filters.
- * Real gifts; the condition reports are either the real evaluation against a deck or written out
- * when the case needs a count the shipped decks do not happen to have.
+ * 추천 기프트 (M121, 기준 M129): which gifts land in which group, and the tab's filters. The effect
+ * judgement itself is core's (`effects.test.ts`); here real gifts carry written-out effects so each
+ * grouping rule is seen alone.
  */
 import { describe, expect, it } from 'vitest';
-import type { ConditionReport } from '../../../core/types.ts';
+import type { EffectRequirement, Gift, GiftEffect } from '../../../core/schema.ts';
 import { analyseDeck, buildIndexes } from '../../../core/index.ts';
 import { loadGameDataFromDisk } from '../../../core/data/node.ts';
 import { conditionReportsByGift } from '../gift-tile.ts';
@@ -12,7 +12,7 @@ import { classifyGift } from '../gift-priority.ts';
 import {
   DEFAULT_RECOMMEND_FILTERS,
   activationOf,
-  deployedConditionReports,
+  effectReportsByGift,
   groupByKeyword,
   isFusionGift,
   matchesRecommendFilters,
@@ -24,149 +24,92 @@ const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
 const gift = (id: number) => indexes.giftById.get(id)!;
 const BURN_DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916, 11009, 11115, 11216];
-const burnReports = conditionReportsByGift(
-  data,
-  analyseDeck(BURN_DECK, indexes, data.rules.deployment, BURN_DECK.slice(0, 7)),
-  indexes,
-);
+const burnStats = analyseDeck(BURN_DECK, indexes, data.rules.deployment, BURN_DECK.slice(0, 7));
 
-/** One condition report, as `evaluateConditions` writes it. */
-const report = (giftId: number, fields: Partial<ConditionReport>): ConditionReport => ({
-  giftId,
-  satisfied: false,
-  reachedTiers: [],
-  have: 0,
-  need: null,
-  subject: { kind: 'keyword', ids: ['Laceration'], scope: 'deployed' },
-  gate: true,
-  detail: { ko: '', en: '' },
-  ...fields,
-});
+/** A real gift with its effects written out. */
+const withEffects = (id: number, effects: GiftEffect[]): Gift => ({ ...gift(id), effects });
+const effect = (...requires: EffectRequirement[]): GiftEffect => ({ kind: 'effect', requires });
+const burnSkill: EffectRequirement = {
+  type: 'skillKeyword',
+  keywords: ['Combustion'],
+  includesSpecial: true,
+};
+const nobodyHas: EffectRequirement = { type: 'identityBuff', buffs: ['NoSuchBuff'] };
+
+function judge(gifts: Gift[], stats = burnStats) {
+  return recommendedGifts(
+    gifts,
+    conditionReportsByGift(data, stats, indexes),
+    effectReportsByGift(gifts, stats, indexes),
+  );
+}
 
 describe('activationOf', () => {
-  it('recommends a gift whose threshold the deck meets (진혼, 화상 7/5)', () => {
-    // Arrange
-    const reports = burnReports.get(9088)!;
+  it('puts a gift the deck can use through a requirement in the deck group', () => {
+    // Arrange: a burn deck, a burn-skill effect.
+    const g = withEffects(9215, [effect(burnSkill)]);
     // Act
-    const activation = activationOf(gift(9088), reports);
+    const activation = activationOf(g, effectReportsByGift([g], burnStats, indexes).get(g.id));
     // Assert
-    expect(reports.every((r) => r.gate && r.satisfied)).toBe(true);
     expect(activation).toBe('deck');
   });
 
-  it('leaves out a gift whose threshold the deck misses (연성진동, 진동 2/5)', () => {
-    // Arrange
-    const reports = burnReports.get(9092)!;
-    // Act
-    const activation = activationOf(gift(9092), reports);
-    // Assert
-    expect(reports.some((r) => r.gate && !r.satisfied)).toBe(true);
-    expect(activation).toBeNull();
+  it('leaves out a gift whose every conditional effect the deck cannot use', () => {
+    const g = withEffects(9215, [effect(nobodyHas)]);
+    expect(activationOf(g, effectReportsByGift([g], burnStats, indexes).get(g.id))).toBeNull();
   });
 
-  it('leaves out a condition a deck cannot judge (인연 얽힘, 완전 공명)', () => {
+  it('keeps a plain usable gift only when it is pack-bound (붉은색 넥타이 is, 지옥나비의 꿈 is not)', () => {
     // Arrange
-    const reports = burnReports.get(9208)!;
-    // Act
-    const activation = activationOf(gift(9208), reports);
-    // Assert
-    expect(activation).toBeNull();
+    const packBound = withEffects(9215, [effect()]);
+    const general = withEffects(9001, [effect()]);
+    const reports = effectReportsByGift([packBound, general], burnStats, indexes);
+    // Act + Assert
+    expect(packBound.acquisition.kind).toBe('packLimited');
+    expect(general.acquisition.kind).toBe('general');
+    expect(activationOf(packBound, reports.get(packBound.id))).toBe('free');
+    expect(activationOf(general, reports.get(general.id))).toBeNull();
   });
 
-  it('recommends a threshold-less count once one identity counts, and not at zero (피로 된 살점, 살점으로 된 피)', () => {
-    // Arrange
-    const none = [report(9842, { gate: false, have: 0 })];
-    const one = [report(9842, { gate: false, have: 1 })];
-    // Act
-    const atZero = activationOf(gift(9842), none);
-    const atOne = activationOf(gift(9842), one);
-    // Assert
-    expect(gift(9842).conditions).toMatchObject([{ type: 'keywordSkillCount', min: null }]);
-    expect(atZero).toBeNull();
-    expect(atOne).toBe('deck');
+  it('recommends nothing that needs the deck when nobody is deployed', () => {
+    const nobody = analyseDeck(BURN_DECK, indexes, data.rules.deployment, []);
+    const g = withEffects(9215, [effect(burnSkill)]);
+    expect(activationOf(g, effectReportsByGift([g], nobody, indexes).get(g.id))).toBeNull();
   });
+});
 
-  it('counts a threshold-less 「편성된」 condition only over the deployed party (피로 된 살점, 혈찬)', () => {
-    // Arrange: 10310 consumes 혈찬; the rest of the burn deck does not.
-    const deck = BURN_DECK.map((id) => (id === 10311 ? 10310 : id));
-    const inReserve = analyseDeck(deck, indexes, data.rules.deployment, [10112, 10216, 10415, 10512, 10604]);
-    const deployed = analyseDeck(deck, indexes, data.rules.deployment, [10112, 10216, 10310]);
+describe('the E.G.O group (M129)', () => {
+  it('puts a gift held only by an E.G.O skill condition last, whatever its source', () => {
+    // Arrange: an 조각-like general gift — gate 「…E.G.O 스킬 사용 시 발동」, then a plain effect.
+    const shard = withEffects(9001, [{ kind: 'gate', requires: [{ type: 'egoSkill' }] }, effect()]);
     // Act
-    const reserveReports = conditionReportsByGift(data, inReserve, indexes).get(9842)!;
-    const reserveActivation = activationOf(
-      gift(9842),
-      reserveReports,
-      deployedConditionReports(data, inReserve, indexes).get(9842)!,
-    );
-    const deployedActivation = activationOf(
-      gift(9842),
-      conditionReportsByGift(data, deployed, indexes).get(9842)!,
-      deployedConditionReports(data, deployed, indexes).get(9842)!,
-    );
-    // Assert: the ring's count sees the reserve member, the recommendation does not.
-    expect(reserveReports).toMatchObject([{ gate: false, have: 1 }]);
-    expect(reserveActivation).toBeNull();
-    expect(deployedActivation).toBe('deck');
-  });
-
-  it('recommends nothing threshold-less with nobody deployed', () => {
-    // Arrange
-    const deck = BURN_DECK.map((id) => (id === 10311 ? 10310 : id));
-    const nobody = analyseDeck(deck, indexes, data.rules.deployment, []);
-    // Act
-    const { deck: met } = recommendedGifts(
-      [gift(9842), gift(9843)],
-      conditionReportsByGift(data, nobody, indexes),
-      deployedConditionReports(data, nobody, indexes),
-    );
+    const { deck, free, ego, reasons } = judge([shard]);
     // Assert
-    expect(met).toEqual([]);
-  });
-
-  it('puts an unconditional pack-bound gift in the second group (붉은색 넥타이, 테마팩 한정)', () => {
-    // Arrange
-    const tie = gift(9215);
-    // Act
-    const activation = activationOf(tie, []);
-    // Assert
-    expect(tie.conditions).toEqual([]);
-    expect(tie.acquisition.kind).toBe('packLimited');
-    expect(activation).toBe('free');
-  });
-
-  it('leaves out an unconditional general gift — any deck has it (지옥나비의 꿈)', () => {
-    // Arrange
-    const dream = gift(9001);
-    // Act
-    const activation = activationOf(dream, []);
-    // Assert
-    expect(dream.acquisition.kind).toBe('general');
-    expect(activation).toBeNull();
+    expect(shard.acquisition.kind).toBe('general');
+    expect(deck).toEqual([]);
+    expect(free).toEqual([]);
+    expect(ego.map((e) => e.gift.id)).toEqual([9001]);
+    expect(reasons.get(9001)).toBe('ego');
   });
 });
 
 describe('recommendedGifts', () => {
-  it('splits the season into the deck group and the unconditional pack-bound group', () => {
+  it('splits gifts into the deck group and the plain pack-bound group, with a reason for each', () => {
     // Arrange
-    const gifts = [gift(9088), gift(9092), gift(9215), gift(9001), gift(9157)];
+    const gifts = [
+      withEffects(9088, [effect(burnSkill)]),
+      withEffects(9092, [effect(nobodyHas)]),
+      withEffects(9215, [effect()]),
+      withEffects(9001, [effect()]),
+    ];
     // Act
-    const { deck, free } = recommendedGifts(gifts, burnReports);
+    const { deck, free, reasons } = judge(gifts);
     // Assert
-    expect(deck.map((e) => e.gift.id)).toEqual([9088, 9157]);
+    expect(deck.map((e) => e.gift.id)).toEqual([9088]);
     expect(free.map((e) => e.gift.id)).toEqual([9215]);
-  });
-
-  it('keeps every free gift unconditional and pack-bound, and every deck gift conditional', () => {
-    // Arrange
-    const gifts = data.gifts.filter((g) => g.obtainable);
-    // Act
-    const { deck, free } = recommendedGifts(gifts, burnReports);
-    // Assert
-    expect(deck.length).toBeGreaterThan(0);
-    expect(free.length).toBeGreaterThan(0);
-    expect(free.every((e) => e.gift.conditions.length === 0)).toBe(true);
-    expect(free.every((e) => ['packLimited', 'clearReward'].includes(e.gift.acquisition.kind))).toBe(true);
-    expect(deck.every((e) => e.gift.conditions.length > 0)).toBe(true);
+    expect(reasons.get(9088)).toBe('deck:skillKeyword/Combustion');
+    expect(reasons.get(9215)).toBe('free');
+    expect(reasons.has(9092)).toBe(false);
   });
 });
 

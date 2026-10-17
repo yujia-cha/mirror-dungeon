@@ -36,6 +36,32 @@ export function stripRichText(text: string): string {
 }
 
 /**
+ * The emphasis an enhanced gift's text carries over from the game (M130). The game wraps what an
+ * enhancement changed in `<style="upgradeHighlight">…</style>` — 「[Vulnerable] **2** 얻음」. The
+ * build turns that one tag into this marker before the rest of the markup is stripped, so the
+ * shipped text carries no markup and the app can still draw the changed numbers in bold
+ * (`splitHighlight`). Two asterisks: no gift text the game ships contains them.
+ */
+export const HIGHLIGHT_MARK = '**';
+
+const UPGRADE_HIGHLIGHT = /<style="upgradeHighlight">([\s\S]*?)<\/style>/g;
+
+/** Build side: the game's highlight tag → `**…**`. Every other tag is left for `stripRichText`. */
+export function markUpgradeHighlight(text: string): string {
+  return text.replace(UPGRADE_HIGHLIGHT, `${HIGHLIGHT_MARK}$1${HIGHLIGHT_MARK}`);
+}
+
+/**
+ * App side: cut a text at its `**` marks into plain and emphasized runs, in order. An unpaired
+ * mark is kept as text rather than swallowing the rest of the sentence.
+ */
+export function splitHighlight(text: string): { text: string; strong: boolean }[] {
+  const parts = text.split(HIGHLIGHT_MARK);
+  if (parts.length % 2 === 0) return [{ text, strong: false }];
+  return parts.map((part, i) => ({ text: part, strong: i % 2 === 1 })).filter((part) => part.text.length > 0);
+}
+
+/**
  * Pick the Korean particle by the final consonant of the word: 화상을, 연기를. In each pair the
  * first form is the one a final consonant takes. A word that
  * does not end in Hangul (a number, or an English fallback name) gets the bracketed form, which

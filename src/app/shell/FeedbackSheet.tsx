@@ -63,6 +63,7 @@ function issueFor(p: {
     deployed: state.deployed,
     wanted: state.wanted,
     fusionGoal: state.fusionGoal,
+    upgrades: state.upgrades,
     options: state.options,
   };
   return buildFeedback(

@@ -11,7 +11,14 @@
  * property it holds to is one-sided: the text may miss a keyword, it must never invent one.
  */
 import { CONSUMED_KEYWORDS, IDENTITY_KEYWORDS, type IdentityKeywordId } from '../../src/core/schema.ts';
-import { IDENTITY_KEYWORD_BY_KO, type IdentityKeywordCounts } from './derive.ts';
+import type { StatusKeyword } from '../../src/core/schema.ts';
+import {
+  countSkillKeywords,
+  IDENTITY_KEYWORD_BY_KO,
+  type IdentityKeywordCounts,
+  type SelfUse,
+  type SkillKeywords,
+} from './derive.ts';
 import type { LocalizedSkill } from './raw.ts';
 
 /** `[Charge]`, `[ChargeBodyArt]`, `[DriftingDimensionYisang]` … and the plain Korean names. */
@@ -215,23 +222,27 @@ export function deriveIdentityKeywordsFromText(
    */
   attackSkillIds?: Iterable<number>,
 ): IdentityKeywordCounts {
+  return countSkillKeywords(deriveSkillKeywordsFromText(skills, specialVariants, attackSkillIds).values());
+}
+
+/**
+ * The per-skill sets `deriveIdentityKeywordsFromText` counts, keyed by skill id (ascending, as
+ * `skillsOfIdentity` sorts them). `identities[].skills[].keywords` of a backfilled identity is read
+ * off this map (M129).
+ */
+export function deriveSkillKeywordsFromText(
+  skills: LocalizedSkill[],
+  specialVariants: Map<string, IdentityKeywordId>,
+  attackSkillIds?: Iterable<number>,
+): Map<number, SkillKeywords> {
   const attacks = attackSkillIds ? new Set(attackSkillIds) : null;
   const isAttack = (skill: LocalizedSkill): boolean =>
     attacks ? attacks.has(skill.id) : looksLikeAttackSkill(skill);
-  const baseCounts = new Map<IdentityKeywordId, number>();
-  const specialCounts = new Map<IdentityKeywordId, number>();
   const specialAmmoFamilies = specialAmmoFamiliesOf(skills, specialVariants);
+  const out = new Map<number, SkillKeywords>();
   for (const skill of skills) {
     if (!isAttack(skill)) continue;
-    const found = keywordsInSkillText(skill, specialVariants, specialAmmoFamilies);
-    for (const kw of found.base) baseCounts.set(kw, (baseCounts.get(kw) ?? 0) + 1);
-    for (const kw of found.special) specialCounts.set(kw, (specialCounts.get(kw) ?? 0) + 1);
-  }
-  const out: IdentityKeywordCounts = {};
-  for (const kw of IDENTITY_KEYWORDS) {
-    const n = baseCounts.get(kw) ?? 0;
-    const s = specialCounts.get(kw) ?? 0;
-    if (n + s > 0) out[kw] = { skills: n, specialSkills: s };
+    out.set(skill.id, keywordsInSkillText(skill, specialVariants, specialAmmoFamilies));
   }
   return out;
 }
@@ -288,12 +299,7 @@ export function deriveConsumedKeywordsFromText(
   const counts = new Map<IdentityKeywordId, number>();
   for (const skill of skills) {
     if (attacks ? !attacks.has(skill.id) : !looksLikeAttackSkill(skill)) continue;
-    const found = new Set<IdentityKeywordId>();
-    for (const line of linesOf(skill)) {
-      const match = CONSUMES.exec(line);
-      if (match?.[1]) found.add(match[1] as IdentityKeywordId);
-    }
-    for (const kw of found) counts.set(kw, (counts.get(kw) ?? 0) + 1);
+    for (const kw of consumedKeywordsInSkillText(skill)) counts.set(kw, (counts.get(kw) ?? 0) + 1);
   }
   const out: IdentityKeywordCounts = {};
   // No 특수 form exists for a consumed keyword: `BattleKeywords*` declares no 「특수 혈찬」.
@@ -302,4 +308,111 @@ export function deriveConsumedKeywordsFromText(
     if (n > 0) out[kw] = { skills: n, specialSkills: 0 };
   }
   return out;
+}
+
+/** The consumed keywords (혈찬) one skill's sentence spends — the unit `deriveConsumedKeywordsFromText` counts. */
+export function consumedKeywordsInSkillText(skill: LocalizedSkill): Set<IdentityKeywordId> {
+  const found = new Set<IdentityKeywordId>();
+  for (const line of linesOf(skill)) {
+    const match = CONSUMES.exec(line);
+    if (match?.[1]) found.add(match[1] as IdentityKeywordId);
+  }
+  return found;
+}
+
+/**
+ * 「[LegStrength] 3 얻음」, 「[Burst] 횟수 2 증가」, 「[BurstVulnerableZilu]이 부여됨」,
+ * 「[BloodDinner]을 최대 30 소모」 — a bracketed buff id whose own clause gives, gains or spends it.
+ * The words between the bracket and the verb are only a count, a particle, 「횟수」, 「최대」 or
+ * 「추가로」, so 「[VibrationIgnition]이 10 이상 있으면」 (a check) and 「[WhenUse] [X] 3 얻음」 (a
+ * timing tag in front of the real buff) do not match.
+ */
+const BUFF_GRANT =
+  /\[([A-Za-z0-9_]+)\]\s*(?:횟수\s*)?(?:[을를이가]\s*)?(?:추가로\s*)?(?:최대\s*)?(?:\d+\s*)?(?:만큼\s*)?(?:부여|얻|증가|획득|소모)/g;
+
+/**
+ * The buff ids a sentence gives, gains or spends (M129, `identities[].buffs`), kept to ids the game
+ * names in a `BattleKeywords*` table (`known`) so a tag that is not a buff cannot slip in. This is
+ * the only reading a passive has — its static record carries no scripts — and a second reading of
+ * a skill, for grants its scripts do not name.
+ */
+export function buffIdsInText(text: string, known: ReadonlySet<string>): Set<string> {
+  const out = new Set<string>();
+  for (const line of text.replace(/<[^>]*>/g, '').split('\n')) {
+    for (const [, id] of line.matchAll(BUFF_GRANT)) if (id && known.has(id)) out.add(id);
+  }
+  return out;
+}
+
+/** `buffIdsInText` over every level and coin of one skill. */
+export function buffIdsInSkillText(skill: LocalizedSkill, known: ReadonlySet<string>): Set<string> {
+  return buffIdsInText(ownLinesOf(skill).join('\n'), known);
+}
+
+/** The 디버프 a skill may put on its own user or spend from its own stack (`selfKeywordsInSkillText`). */
+const SELF_DEBUFFS = new Set<IdentityKeywordId>([
+  'Combustion',
+  'Laceration',
+  'Vibration',
+  'Burst',
+  'Sinking',
+]);
+
+/**
+ * What one skill's sentence does with a 디버프 on its own user (M129, `skills[].self`) — the second
+ * reading `selfUseInSkill` is joined with, per skill. 「자신에게 [Combustion] 2 부여」, 「자신의 진동
+ * 횟수 3 증가」 gain; 「자신의 [Vibration] 횟수를 10 소모하여」 consumes, and so does a later 「진동 횟수를
+ * 전부 소모」 on a line that has already named the user's own (「자신의 진동 횟수가 10 이상이면, 진동
+ * 횟수를 전부 소모하여 …」, 11007). The first verb after the mention decides, so 「자신의 [Vibration]
+ * 횟수를 최대 8 소모하여, 소모한 값만큼 대상의 [Vibration] 횟수 증가」 consumes and gains nothing. A
+ * check (「자신의 [Vibration] 횟수가 8 이상이면」) and the target's stack (「대상의 [Vibration]을 최대 3
+ * 소모」) are neither.
+ */
+export function selfKeywordsInSkillText(skill: LocalizedSkill): SelfUse {
+  const out: SelfUse = new Map();
+  for (const line of ownLinesOf(skill)) {
+    for (const match of line.matchAll(MENTION)) {
+      const keyword = match[2]
+        ? IDENTITY_KEYWORD_BY_KO[match[2]]
+        : (match[1] as IdentityKeywordId | undefined);
+      if (!keyword || !SELF_DEBUFFS.has(keyword)) continue;
+      const end = match.index + match[0].length;
+      const tail = line.slice(end, end + TAIL);
+      if (ENUMERATION.test(tail)) continue;
+      const verb = /(부여|증가|얻음|소모)(하지\s*않)?/.exec(tail);
+      if (!verb || verb[2]) continue;
+      const head = line.slice(Math.max(0, match.index - HEAD), match.index);
+      const spends = verb[1] === '소모';
+      const own =
+        /자신/.test(head) ||
+        (spends &&
+          !/대상|적/.test(head) &&
+          new RegExp(`자신의\\s*(?:\\[${keyword}\\]|${KO_OF[keyword]})`).test(line.slice(0, match.index)));
+      if (!own) continue;
+      const entry = out.get(keyword as StatusKeyword) ?? { gain: false, consume: false };
+      if (spends) entry.consume = true;
+      else entry.gain = true;
+      out.set(keyword as StatusKeyword, entry);
+    }
+  }
+  return out;
+}
+
+const KO_OF: Partial<Record<IdentityKeywordId, string>> = {
+  Combustion: '화상',
+  Laceration: '출혈',
+  Vibration: '진동',
+  Burst: '파열',
+  Sinking: '침잠',
+};
+
+/**
+ * 「자신의 모든 스킬 슬롯에서 등급이 가장 낮은 스킬 1개를 버림」, 「… 스킬과 다르면 [Discard]」 — the
+ * sentence of a skill that discards (M129, the second reading of `skillDiscards`). Not 「소수점 버림」,
+ * and not 「([Discard]을 사용하는 아군 …)」, which is about another identity's skill.
+ */
+export function skillTextDiscards(skill: LocalizedSkill): boolean {
+  return ownLinesOf(skill).some((line) =>
+    /스킬[^.()]*?(?<!소수점\s*)(?:버림|\[Discard\])(?![을를이가])/.test(line),
+  );
 }

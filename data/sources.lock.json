@@ -7,7 +7,7 @@
       "ref": "main",
       "sha": "6c1a3cdd5ae87c9345283612f143d1d4b005622d",
       "fetchedAt": "2026-10-15",
-      "note": "Game client StaticData. No license file upstream; data is Project Moon's. Vendored because the repo may disappear.",
+      "note": "Game client StaticData. No license file upstream; data is Project Moon's. Vendored because the repo may disappear. `personality-passive` only says which passive ids an identity has in battle (the passives themselves carry no scripts); their effect is read from the KR `Passives.json` text for `identities[].buffs` (M129).",
       "remotePrefix": "src/OpenLethe.Resources/StaticData/static-data",
       "localPrefix": "data/raw/static",
       "files": [
@@ -77,6 +77,22 @@
         "personality/personality-a1c8p2.json",
         "personality/personality-a1c9p1.json",
         "personality/personality-a1c9p2.json",
+        "personality-passive/personality-passive-01.json",
+        "personality-passive/personality-passive-02.json",
+        "personality-passive/personality-passive-03.json",
+        "personality-passive/personality-passive-04.json",
+        "personality-passive/personality-passive-05.json",
+        "personality-passive/personality-passive-06.json",
+        "personality-passive/personality-passive-07.json",
+        "personality-passive/personality-passive-08.json",
+        "personality-passive/personality-passive-09.json",
+        "personality-passive/personality-passive-10.json",
+        "personality-passive/personality-passive-11.json",
+        "personality-passive/personality-passive-12.json",
+        "personality-passive/personality-passive-a1c8p1.json",
+        "personality-passive/personality-passive-a1c8p2.json",
+        "personality-passive/personality-passive-a1c9p1.json",
+        "personality-passive/personality-passive-a1c9p2.json",
         "skill/personality-skill-01.json",
         "skill/personality-skill-02.json",
         "skill/personality-skill-03.json",
@@ -108,7 +124,7 @@
         }
       },
       "fetchedAt": "2026-10-15",
-      "note": "Game Localize folder, mirrored verbatim (source text is Project Moon's). Languages are branches here, not folders. Chosen over LocalizeLimbusCompany because that mirror's auto-update stopped on 2026-07-23 and newer identities never arrived; this one tracks the weekly patch. The KR-only Skills_personality-* files are the evidence for identities the static data does not ship. Every BattleKeywords* file is taken, not just the base one: the per-chapter and per-season tables are where the buff names live that gift text refers to by id (혈찬, 진동 - 작열 …).",
+      "note": "Game Localize folder, mirrored verbatim (source text is Project Moon's). Languages are branches here, not folders. Chosen over LocalizeLimbusCompany because that mirror's auto-update stopped on 2026-07-23 and newer identities never arrived; this one tracks the weekly patch. The KR-only Skills_personality-* files are the evidence for identities the static data does not ship. Every BattleKeywords* file is taken, not just the base one: the per-chapter and per-season tables are where the buff names live that gift text refers to by id (혈찬, 진동 - 작열 …). The KR-only Passives.json is the only statement of what an identity's passives gain or inflict (M129, `buffs`).",
       "remotePrefix": "",
       "localPrefix": "data/raw/localize",
       "files": [
@@ -136,6 +152,12 @@
         "EGOgift_walpu8.json",
         "MirrorDungeonTheme-1.json",
         "Personalities.json",
+        {
+          "path": "Passives.json",
+          "languages": [
+            "KR"
+          ]
+        },
         {
           "path": "Skills_personality-01.json",
           "languages": [
