@@ -19,7 +19,18 @@ import type { CaptureLayout, DiagTraceStep } from '../../core/schema.ts';
 import { captureLayoutSchema } from '../../core/schema.ts';
 import type { Lang } from '../i18n.ts';
 import { changed, signatureOf, watchedRegions } from './change.ts';
-import { decide, finished, INITIAL_LOOP, READ_INTERVALS, type LoopState, type ReadMode } from './loop.ts';
+import {
+  BURST_TICK_MS,
+  decide,
+  finished,
+  FRAME_RATE,
+  inBurst,
+  INITIAL_LOOP,
+  READ_INTERVALS,
+  tickDelay,
+  type LoopState,
+  type ReadMode,
+} from './loop.ts';
 import { prepareReference, prepareSlot, type IconRef } from './match-icon.ts';
 import type { NameCandidate } from './match-name.ts';
 import { createOcrEngine, type OcrEngine } from './ocr-engine.ts';
@@ -132,7 +143,12 @@ export function captureSupported(): boolean {
 export class CaptureSession {
   private stream: MediaStream | null = null;
   private video: HTMLVideoElement | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
+  /** The next tick (M139: one at a time, so a popup burst can bring it in). */
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  /** When that tick is due, `performance.now()` time. */
+  private timerDue = 0;
+  /** The share runs at `FRAME_RATE.burst` (M139). */
+  private fastFrames = false;
   private engine: OcrEngine | null = null;
   /** The layout as measured: regions in fractions of the game's client area. */
   private layout: CaptureLayout | null = null;
@@ -168,7 +184,7 @@ export class CaptureSession {
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: { ideal: 8 } },
+        video: { frameRate: { ideal: FRAME_RATE.idle } },
         audio: false,
       });
     } catch {
@@ -213,7 +229,7 @@ export class CaptureSession {
     // `videoWidth === 0` and waits.
     void video.play().catch(() => undefined);
     this.video = video;
-    this.timer = setInterval(() => void this.tick(), this.intervalMs);
+    this.schedule(this.intervalMs);
     this.options.onStatus('running');
   }
 
@@ -221,14 +237,47 @@ export class CaptureSession {
   setInterval(ms: number): void {
     this.intervalMs = ms;
     if (this.timer === null) return;
-    clearInterval(this.timer);
-    this.timer = setInterval(() => void this.tick(), ms);
+    this.schedule(tickDelay(this.loop, performance.now(), ms));
+  }
+
+  /**
+   * The next tick, `delay` from now (M139). Each tick books the one after it before it runs, at the
+   * preset's interval or, in a popup burst, `BURST_TICK_MS` — a fixed `setInterval` could not speed
+   * up for the burst. A read still running only marks the loop dirty, as before.
+   */
+  private schedule(delay: number): void {
+    if (this.stopped) return;
+    if (this.timer !== null) clearTimeout(this.timer);
+    this.timerDue = performance.now() + delay;
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      this.schedule(tickDelay(this.loop, performance.now(), this.intervalMs));
+      void this.tick();
+    }, delay);
+  }
+
+  /**
+   * Follow the popup burst (M139): a burst just begun brings the next tick in to `BURST_TICK_MS`
+   * and raises the share's frame rate; once it is over the rate goes back down.
+   */
+  private followBurst(): void {
+    const now = performance.now();
+    const burst = inBurst(this.loop, now);
+    if (burst !== this.fastFrames) {
+      this.fastFrames = burst;
+      const track = this.stream?.getVideoTracks()[0];
+      // Not every track takes a new rate (a canvas stream in the e2e); reading goes on either way.
+      void track
+        ?.applyConstraints?.({ frameRate: { ideal: burst ? FRAME_RATE.burst : FRAME_RATE.idle } })
+        .catch(() => undefined);
+    }
+    if (burst && this.timer !== null && this.timerDue - now > BURST_TICK_MS) this.schedule(BURST_TICK_MS);
   }
 
   /** Stop sharing and release everything. Safe to call twice. */
   stop(): void {
     this.stopped = true;
-    if (this.timer !== null) clearInterval(this.timer);
+    if (this.timer !== null) clearTimeout(this.timer);
     this.timer = null;
     for (const track of this.stream?.getTracks() ?? []) track.stop();
     this.stream = null;
@@ -248,6 +297,7 @@ export class CaptureSession {
   private async tick(): Promise<void> {
     const video = this.video;
     if (!video || !this.layout || !this.engine || video.videoWidth === 0) return;
+    this.followBurst();
     this.stats.ticks += 1;
     const width = video.videoWidth;
     const height = video.videoHeight;
@@ -278,6 +328,7 @@ export class CaptureSession {
           ? { at: performance.now(), popup: frame.screen === 'acquired', partial: frame.partial === true }
           : undefined,
       );
+      this.followBurst();
     }
   }
 

@@ -78,8 +78,9 @@ describe('simulate', () => {
       { kind: 'got', giftId: 9006 },
       { kind: 'got', giftId: 9007 },
     ]);
-    // Reads on each change, plus the 2s refresh on a still screen — never once per tick.
-    expect(result.ticks).toBe(31);
+    // Reads on each change, plus the 2s refresh on a still screen — never once per tick. The two
+    // popups each start a 3 s burst of 80 ms ticks (M139), so most of the 8 s ticks fast.
+    expect(result.ticks).toBe(76);
     expect(result.reads).toBeLessThan(10);
   });
 
@@ -177,6 +178,44 @@ describe('simulate — a click-through of popups (M136)', () => {
     const map = burst.reads.filter(([shot]) => shot === 5).map(([, mode]) => mode);
     expect(map[0]).toBe('popup');
     expect(map).toContain('full');
+  });
+});
+
+describe('simulate — popups shorter than a tick (M139)', () => {
+  // The owner's second session: a popup clicked away in about 0.1 s stood between two 250 ms ticks
+  // and was never seen. Here the second popup (1260–1360) falls between the ticks at 1250 and 1500.
+  const frames = [NOTHING, popup(1), NOTHING, popup(2), NOTHING, popup(3), NOTHING];
+  const timeline: Span[] = [
+    { shot: 0, start: 0, end: 1000 },
+    { shot: 1, start: 1000, end: 1150 },
+    { shot: 2, start: 1150, end: 1260 },
+    { shot: 3, start: 1260, end: 1360 },
+    { shot: 4, start: 1360, end: 1470 },
+    { shot: 5, start: 1470, end: 1570 },
+    { shot: 6, start: 1570, end: 8000 },
+  ];
+  const read = async (shot: number, _held: ReadonlySet<number>, mode: ReadMode): Promise<ShotRead> => {
+    const frame = frames[shot]!;
+    if (frame.screen === 'acquired') return { frame, ms: 150, ocrCalls: 2 };
+    return mode === 'popup'
+      ? { frame: { ...frame, partial: true }, ms: 60, ocrCalls: 1 }
+      : { frame, ms: 600, ocrCalls: 9 };
+  };
+
+  it('sees a popup that stands between two preset ticks, by ticking faster in the burst', async () => {
+    // Act
+    const result = await simulate({ intervalMs: 250, timeline, signature, read, firstTickMs: 1000 });
+    // Assert
+    const gots = result.events.map((e) => e.event).filter((e) => e.kind === 'got');
+    expect(gots.map((e) => (e.kind === 'got' ? e.giftId : 0))).toEqual([1, 2, 3]);
+  });
+
+  it('goes back to the preset interval once the burst is over', async () => {
+    // Act
+    const result = await simulate({ intervalMs: 250, timeline, signature, read, firstTickMs: 1000 });
+    // Assert: 7 s at 250 ms is 28 ticks; the 3 s burst adds about 26 more, not a run of 80 ms ticks.
+    expect(result.ticks).toBeGreaterThan(28);
+    expect(result.ticks).toBeLessThan(70);
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BURST_REFRESH_MS,
+  BURST_TICK_MS,
   decide,
   finished,
   INITIAL_LOOP,
@@ -8,6 +9,7 @@ import {
   READ_INTERVALS,
   REFRESH_MAX_MS,
   REFRESH_MS,
+  tickDelay,
   type LoopState,
 } from '../loop.ts';
 
@@ -150,5 +152,33 @@ describe('the popup burst (M136)', () => {
   it('starts no burst without an outcome, as before M136', () => {
     const state = finished(decide(INITIAL_LOOP, sig, true, 0).state);
     expect(state).toMatchObject({ busy: false, burstUntil: -Infinity, owed: false });
+  });
+});
+
+describe('tickDelay (M139)', () => {
+  // A full read at t=0 found a popup and finished at t=200: the burst runs to 200 + POPUP_BURST_MS.
+  const burst = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 200, popup: true, partial: false });
+
+  it('ticks at the preset interval outside a burst', () => {
+    // Act
+    const delay = tickDelay(INITIAL_LOOP, 1000, READ_INTERVALS.balanced);
+    // Assert
+    expect(delay).toBe(READ_INTERVALS.balanced);
+  });
+
+  it('ticks every BURST_TICK_MS while the burst lasts, and not a moment longer', () => {
+    // Act
+    const inside = tickDelay(burst, 200 + POPUP_BURST_MS - 1, READ_INTERVALS.balanced);
+    const atEnd = tickDelay(burst, 200 + POPUP_BURST_MS, READ_INTERVALS.balanced);
+    // Assert
+    expect(inside).toBe(BURST_TICK_MS);
+    expect(atEnd).toBe(READ_INTERVALS.balanced);
+  });
+
+  it('never ticks slower in a burst than the preset asks', () => {
+    // Act
+    const fast = tickDelay(burst, 500, BURST_TICK_MS / 2);
+    // Assert
+    expect(fast).toBe(BURST_TICK_MS / 2);
   });
 });

@@ -23,6 +23,8 @@
  *   comes after `BURST_REFRESH_MS` instead of `refreshMs` (a popup caught mid-fade; the next one is
  *   clicked away well within 2 s); later ones double as usual, so a popup left on screen is not
  *   re-read every half second. Each popup found extends the burst.
+ * - **Burst ticks** (M139) → the burst also ticks every `BURST_TICK_MS` and the session raises the
+ *   share to `FRAME_RATE.burst`: a popup clicked away between two 250 ms ticks was never seen at all.
  * - **After the burst** → a popup read that found no popup saw only the title, so the first tick
  *   after the burst reads in full even when nothing changed (`owed`): what the popups gave way to
  *   (a map, the pack picker) is read late, never lost.
@@ -48,6 +50,27 @@ export const REFRESH_MAX_MS = 16_000;
 export const POPUP_BURST_MS = 3000;
 /** During the burst, the first re-read of an unchanged screen comes this soon (M136). */
 export const BURST_REFRESH_MS = 500;
+/**
+ * During the burst the loop ticks this often, whatever the preset (M139). The owner's second
+ * session showed every popup that stood through a 250 ms tick was read, and one clicked away
+ * between two ticks was never seen; a popup read is one OCR call (~34 ms), so 80 ms keeps up.
+ */
+export const BURST_TICK_MS = 80;
+/**
+ * The share's frame rate (M139): low while nothing hurries — a new frame every 125 ms is plenty
+ * for the preset ticks — and high in a burst, or the 80 ms ticks would mostly see the same frame.
+ */
+export const FRAME_RATE = { idle: 8, burst: 30 } as const;
+
+/** Reads are popup reads until `burstUntil` (M136). */
+export function inBurst(state: LoopState, now: number): boolean {
+  return now < state.burstUntil;
+}
+
+/** How long until the next tick: `BURST_TICK_MS` in a popup burst, the preset's interval otherwise (M139). */
+export function tickDelay(state: LoopState, now: number, intervalMs: number): number {
+  return inBurst(state, now) ? Math.min(intervalMs, BURST_TICK_MS) : intervalMs;
+}
 
 export interface LoopState {
   /** Signature of the frame last handed to a read. */
@@ -91,7 +114,7 @@ export function decide(
   now: number,
   refreshMs = REFRESH_MS,
 ): { state: LoopState; decision: Decision; mode: ReadMode } {
-  const burst = now < state.burstUntil;
+  const burst = inBurst(state, now);
   const mode: ReadMode = burst ? 'popup' : 'full';
   if (state.busy) {
     return {

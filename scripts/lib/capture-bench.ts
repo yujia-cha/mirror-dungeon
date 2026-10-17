@@ -12,7 +12,15 @@
  * stays free of pixels and engines and its rules can be tested with fakes.
  */
 import { changed } from '../../src/app/capture/change.ts';
-import { decide, finished, INITIAL_LOOP, type LoopState, type ReadMode } from '../../src/app/capture/loop.ts';
+import {
+  BURST_TICK_MS,
+  decide,
+  finished,
+  INITIAL_LOOP,
+  tickDelay,
+  type LoopState,
+  type ReadMode,
+} from '../../src/app/capture/loop.ts';
 import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame } from '../../src/app/capture/tracker.ts';
 
 /** A shot on screen from `start` (inclusive) to `end` (exclusive), in ms. */
@@ -125,7 +133,14 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
     pending = null;
   };
 
-  for (let t = firstTick; t < durationMs; t += intervalMs) {
+  // The session books one tick at a time (M139): the preset's interval, `BURST_TICK_MS` in a popup
+  // burst, and a read that finds a popup brings the next tick in to `BURST_TICK_MS` after it lands.
+  const next = (t: number): number => {
+    const booked = t + tickDelay(loop, t, intervalMs);
+    const popupLands = pending?.result.frame.screen === 'acquired' ? pending.until + BURST_TICK_MS : Infinity;
+    return Math.min(booked, Math.max(popupLands, t + 1));
+  };
+  for (let t = firstTick; t < durationMs; t = next(t)) {
     if (pending && pending.until <= t) land();
     const shot = shotAt(timeline, t);
     if (shot === null) break;
