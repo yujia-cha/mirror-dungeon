@@ -56,7 +56,7 @@ import {
 } from '../../../core/schema.ts';
 import type { EnvReport, FrameSource, ReadReport, TickReport } from '../session.ts';
 import { planParts } from './export-parts.ts';
-import { memoryStore, type DiagStore, type StoredFrame } from './store.ts';
+import { COUNTS, memoryStore, type DiagCounts, type DiagStore, type StoredFrame } from './store.ts';
 
 /** Reads kept in memory for a hand-made change to look back on. */
 export const RING_SIZE = 8;
@@ -131,6 +131,11 @@ export interface ExportMark {
   seq: number;
   frameIds: string[];
   at: number;
+  /**
+   * Routine reads among the exported records (M154), so clearing them needs no read-back. Marks
+   * stored before M154 have none: the clear counts what is left.
+   */
+  readRecords?: number;
 }
 
 type Without<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
@@ -150,6 +155,8 @@ export class DiagRecorder {
   /** Reads summed, not yet written, by cause and mode (M153). */
   private summaries = new Map<string, ReadSummary>();
   private frameList: KeptFrame[] = [];
+  /** The kept frames' bytes and export parts, worked out once per change of `frameList` (M154). */
+  private frameSums: { bytes: number; parts: number } | null = null;
   private exported: ExportMark | null = null;
   private exportedRecords = 0;
   private trimmed = 0;
@@ -187,27 +194,62 @@ export class DiagRecorder {
     return recorder;
   }
 
+  /**
+   * What the device holds. The counters come from the meta store (M154) when they agree with the
+   * number of records stored; a device written before M154 (or by a store that keeps no counters)
+   * has its records read back once to count them, and the counters are stored from then on.
+   */
   private async load(): Promise<void> {
-    const [records, frames, mark, trimmed] = await Promise.all([
-      this.store.records(),
+    const [counts, total, frames, mark, trimmed] = await Promise.all([
+      this.store.getMeta<DiagCounts>(COUNTS),
+      this.store.countRecords(),
       this.store.frames(),
       this.store.getMeta<ExportMark>('exported'),
       this.store.getMeta<number>('trimmed'),
     ]);
-    this.records = records.length;
-    this.readRecords = records.filter((r) => isRoutineRead(r.rec)).length;
-    this.seq = records.reduce((max, r) => Math.max(max, r.seq), 0);
-    this.startedAt = records[0]?.rec.t ?? null;
+    if (counts && counts.records === total) {
+      this.records = counts.records;
+      this.readRecords = counts.readRecords;
+      this.seq = counts.seq;
+      this.startedAt = counts.startedAt;
+      // The records held are the last `records` seqs: only a clear up to a seq, or of all, drops any.
+      this.exportedRecords = mark ? Math.min(this.records, this.countUpTo(mark.seq)) : 0;
+    } else {
+      const records = await this.store.records();
+      this.records = records.length;
+      this.readRecords = records.filter((r) => isRoutineRead(r.rec)).length;
+      this.seq = records.reduce((max, r) => Math.max(max, r.seq), 0);
+      this.startedAt = records[0]?.rec.t ?? null;
+      this.exportedRecords = mark ? records.filter((r) => r.seq <= mark.seq).length : 0;
+      if (records.length > 0) await this.store.setMeta(COUNTS, this.counts());
+    }
     // Frames stored before M134 have no class: an event the player let stand, as far as we know.
-    this.frameList = frames.map(({ id, t, bytes, class: cls }) => ({
-      id,
-      t,
-      bytes,
-      class: cls ?? 'routine',
-    }));
+    this.setFrames(
+      frames.map(({ id, t, bytes, class: cls }) => ({
+        id,
+        t,
+        bytes,
+        class: cls ?? 'routine',
+      })),
+    );
     this.exported = mark ?? null;
-    this.exportedRecords = mark ? records.filter((r) => r.seq <= mark.seq).length : 0;
     this.trimmed = trimmed ?? 0;
+  }
+
+  /** The counters as stored with each record (M154). */
+  private counts(): DiagCounts {
+    return { records: this.records, readRecords: this.readRecords, seq: this.seq, startedAt: this.startedAt };
+  }
+
+  /** The record cap was reached (`MAX_RECORDS`): nothing more is kept, frames neither (M154). */
+  private get stopped(): boolean {
+    return this.records >= MAX_RECORDS;
+  }
+
+  /** Replace the kept frames' list; its sums are worked out again on the next `stats()`. */
+  private setFrames(frames: KeptFrame[]): void {
+    this.frameList = frames;
+    this.frameSums = null;
   }
 
   /** Turn recording and frames on or off (frames only ever with recording). */
@@ -238,16 +280,22 @@ export class DiagRecorder {
   }
 
   private computeStats(): DiagStats {
+    // Most changes are a record added: the frames' sums (a sort of every frame, for the parts)
+    // are worked out again only when the frames changed (M154).
+    this.frameSums ??= {
+      bytes: this.frameList.reduce((sum, f) => sum + f.bytes, 0),
+      parts: planParts(0, this.frameList).parts.length,
+    };
     return {
       records: this.records,
       frames: this.frameList.length,
-      bytes: this.frameList.reduce((sum, f) => sum + f.bytes, 0),
+      bytes: this.frameSums.bytes,
       exportedRecords: this.exportedRecords,
       lastExportAt: this.exported?.at ?? null,
       trimmedFrames: this.trimmed,
       full: this.readRecords >= MAX_READ_RECORDS,
-      stopped: this.records >= MAX_RECORDS,
-      parts: planParts(0, this.frameList).parts.length,
+      stopped: this.stopped,
+      parts: this.frameSums.parts,
     };
   }
 
@@ -276,12 +324,13 @@ export class DiagRecorder {
   }
 
   private add(input: RecordInput, t = this.now()): void {
-    if (!this.recording || this.records >= MAX_RECORDS) return;
+    if (!this.recording || this.stopped) return;
     const rec = { ...input, t } as DiagRecord;
     const seq = ++this.seq;
     this.records += 1;
     this.startedAt ??= t;
-    void this.enqueue(() => this.store.addRecord(seq, rec));
+    const counts = this.counts();
+    void this.enqueue(() => this.store.addRecord(seq, rec, counts));
     this.changed();
   }
 
@@ -295,11 +344,13 @@ export class DiagRecorder {
     // Asked for right after this read's events are handed on (a microtask: the session hands
     // them on in the same task), and before any later read can push the picture out of the ring
     // and free it — so it is encoded even if the queue is still busy with earlier writes.
+    // Past the record cap no record names it (M154): nothing to encode or store.
+    if (this.stopped) return id;
     const jpeg = Promise.resolve().then(() => frame.encode());
     void this.enqueue(async () => {
       const blob = await jpeg;
       if (!blob) return;
-      this.frameList.push({ id, t, bytes: blob.size, class: cls });
+      this.setFrames([...this.frameList, { id, t, bytes: blob.size, class: cls }]);
       await this.store.addFrame({ id, t, bytes: blob.size, blob, class: cls });
       await this.evict(cls === 'preview');
       this.changed();
@@ -325,7 +376,7 @@ export class DiagRecorder {
       drop.add(victim.id);
     }
     if (drop.size === 0) return;
-    this.frameList = this.frameList.filter((f) => !drop.has(f.id));
+    this.setFrames(this.frameList.filter((f) => !drop.has(f.id)));
     // A pending picture must not go on naming a frame that is gone: it is kept anew if needed.
     for (const entry of [...this.ring, ...this.ticks]) if (entry.id && drop.has(entry.id)) entry.id = null;
     await this.store.deleteFrames([...drop]);
@@ -340,6 +391,8 @@ export class DiagRecorder {
       const frame = this.frameList.find((f) => f.id === id);
       if (!frame || EVICT_RANK[frame.class] >= EVICT_RANK[cls]) return;
       frame.class = cls;
+      // The class orders the export's parts.
+      this.frameSums = null;
       await this.store.setFrameClass(id, cls);
     });
   }
@@ -356,7 +409,7 @@ export class DiagRecorder {
    * seconds of previews, and while a filmstrip is open keeps each one.
    */
   onTick(tick: TickReport, preview: FrameSource | null): void {
-    if (!this.recording) {
+    if (!this.recording || this.stopped) {
       preview?.close();
       return;
     }
@@ -412,7 +465,7 @@ export class DiagRecorder {
   }
 
   onRead(report: ReadReport, frame: FrameSource | null): void {
-    if (!this.recording) {
+    if (!this.recording || this.stopped) {
       frame?.close();
       return;
     }
@@ -606,7 +659,7 @@ export class DiagRecorder {
    * kept as evidence, and a filmstrip around it.
    */
   onManual(input: Without<Extract<DiagRecord, { kind: 'manual' }>, 't' | 'kind' | 'frameIds'>): void {
-    if (!this.recording) return;
+    if (!this.recording || this.stopped) return;
     const frameIds: string[] = [];
     if (input.capturing && this.images)
       for (const entry of this.ring) frameIds.push(this.keepPending(entry, 'evidence'));
@@ -659,6 +712,7 @@ export class DiagRecorder {
         seq: records.reduce((max, r) => Math.max(max, r.seq), 0),
         frameIds: frames.map((f) => f.id),
         at,
+        readRecords: records.filter((r) => isRoutineRead(r.rec)).length,
       };
       return { bundle, frames, name: `md-diagnostics-${stamp(at)}.zip`, mark };
     });
@@ -684,19 +738,26 @@ export class DiagRecorder {
     if (!mark) return Promise.resolve({ records: 0, frames: 0 });
     const removed = { records: this.exportedRecords, frames: mark.frameIds.length };
     const gone = new Set(mark.frameIds);
-    this.frameList = this.frameList.filter((f) => !gone.has(f.id));
+    this.setFrames(this.frameList.filter((f) => !gone.has(f.id)));
     for (const entry of [...this.ring, ...this.ticks]) if (entry.id && gone.has(entry.id)) entry.id = null;
     if (this.strip) this.strip.frameIds = this.strip.frameIds.filter((id) => !gone.has(id));
     this.records -= this.exportedRecords;
     this.exported = null;
     this.exportedRecords = 0;
     this.startedAt = this.records > 0 ? this.startedAt : null;
+    // The routine reads left are those recorded since the export (M153), known from the mark (M154).
+    const known = mark.readRecords !== undefined;
+    if (known) this.readRecords = Math.max(0, this.readRecords - mark.readRecords!);
+    const counts = known ? this.counts() : undefined;
     this.changed();
     return this.inTurn(async () => {
-      await this.store.clearUpTo(mark.seq, mark.frameIds);
+      await this.store.clearUpTo(mark.seq, mark.frameIds, counts);
       await this.store.setMeta('exported', null);
-      // The routine reads left are those recorded since the export (M153).
-      this.readRecords = (await this.store.records()).filter((r) => isRoutineRead(r.rec)).length;
+      if (!known) {
+        // A mark from before M154: count what is left, once.
+        this.readRecords = (await this.store.records()).filter((r) => isRoutineRead(r.rec)).length;
+        await this.store.setMeta(COUNTS, this.counts());
+      }
       this.changed();
       return removed;
     });
@@ -722,7 +783,7 @@ export class DiagRecorder {
     this.changed();
     return this.inTurn(async () => {
       await this.store.clearAll();
-      this.frameList = [];
+      this.setFrames([]);
       this.trimmed = 0;
       this.changed();
     });

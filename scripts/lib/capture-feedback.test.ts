@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { planExport } from '../../src/app/capture/diagnostics/export-parts.ts';
@@ -18,6 +20,7 @@ import {
   parseBundle,
   recognitionReport,
   routeReport,
+  unpackBundle,
 } from './capture-feedback.ts';
 
 const layout = captureLayoutSchema.parse(JSON.parse(readFileSync('public/data/capture-layout.json', 'utf8')));
@@ -159,6 +162,68 @@ describe('parseBundle', () => {
 
   it('refuses a zip without session.json', () => {
     expect(() => parseBundle({})).toThrow('session.json');
+  });
+});
+
+describe("unpackBundle (M154: a zip is someone else's file)", () => {
+  /** Every file under `dir`, as paths relative to it. */
+  const tree = (dir: string): string[] =>
+    readdirSync(dir, { recursive: true, withFileTypes: true })
+      .filter((d) => d.isFile())
+      .map((d) => join(d.parentPath, d.name).slice(dir.length + 1))
+      .sort();
+
+  it('writes session.json and plain frames, and nothing a crafted entry names', () => {
+    // Arrange: a box with the sessions folder inside, so a write outside it would show.
+    const box = mkdtempSync(join(tmpdir(), 'md-unpack-'));
+    const root = join(box, 'sessions');
+    const files = unzipSync(
+      zipSync({
+        'session.json': strToU8(JSON.stringify(bundle())),
+        'frames/f10.jpg': new Uint8Array([0xff, 0xd8]),
+        '../escaped.txt': strToU8('x'),
+        'frames/../../escaped2.jpg': strToU8('x'),
+        'frames/a/b.jpg': strToU8('x'),
+        'frames/..jpg': strToU8('x'),
+        'notes.txt': strToU8('x'),
+      }),
+    );
+    try {
+      // Act
+      const { dir, skipped } = unpackBundle(root, files);
+      // Assert
+      expect(dir).toBe(join(root, '1'));
+      expect(skipped).toBe(5);
+      expect(tree(box)).toEqual(['sessions/1/frames/f10.jpg', 'sessions/1/session.json']);
+    } finally {
+      rmSync(box, { recursive: true, force: true });
+    }
+  });
+
+  it.each(['/tmp/evil', '../evil', '..', 'a/b', ''])(
+    'refuses the bundle id %j, writing nothing',
+    (bundleId) => {
+      // Arrange
+      const box = mkdtempSync(join(tmpdir(), 'md-unpack-'));
+      const root = join(box, 'sessions');
+      const files = { 'session.json': strToU8(JSON.stringify({ ...bundle(), bundleId })) };
+      try {
+        // Act / Assert
+        expect(() => unpackBundle(root, files)).toThrow(/bundle id/);
+        expect(existsSync(root)).toBe(false);
+        expect(tree(box)).toEqual([]);
+      } finally {
+        rmSync(box, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it('refuses parts whose part.json names an unsafe bundle id', () => {
+    // Arrange
+    const part = { bundleId: '../../x', exportedAt: 80, part: 1, total: 1, frames: [] };
+    const files = { 'part.json': strToU8(JSON.stringify(part)), 'session.json': strToU8('{}') };
+    // Act / Assert
+    expect(() => mergeParts([{ name: 'crafted.zip', files }])).toThrow(/crafted\.zip: bundle id/);
   });
 });
 

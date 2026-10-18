@@ -11,9 +11,7 @@
  * `data/gifts.json` says which file is which gift in `srcPath`, keyed by gift id. We save each file
  * under the gift's `icon` key — the same key `public/art/` uses, which is not always the id.
  */
-import { join } from 'node:path';
-import type { Gift, SeasonIndex } from '../../src/core/schema.ts';
-import { readJsonIfExists } from './io.ts';
+import type { Gift } from '../../src/core/schema.ts';
 
 /** Where the icons live, one `{icon}.webp` per key, plus `manifest.json`. */
 export const GIFT_ICON_DIR = 'public/icons/gifts';
@@ -60,19 +58,4 @@ export function planGiftIcons(
 export function isWebp(bytes: Uint8Array): boolean {
   const ascii = (from: number, to: number) => String.fromCharCode(...bytes.subarray(from, to));
   return bytes.length >= 12 && ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP';
-}
-
-/**
- * Every gift of every season `index.json` lists — icons are one pool across seasons, for the same
- * reason `public/art/` is (`art-keys.ts`): a frozen season is still selectable.
- */
-export function giftsAcrossSeasons(dataDir: string): Pick<Gift, 'id' | 'icon'>[] {
-  const index = readJsonIfExists<SeasonIndex>(join(dataDir, 'index.json'));
-  const gifts: Pick<Gift, 'id' | 'icon'>[] = [];
-  for (const season of index?.seasons ?? []) {
-    for (const gift of readJsonIfExists<Gift[]>(join(dataDir, `md${season.id}`, 'gifts.json')) ?? []) {
-      gifts.push({ id: gift.id, icon: gift.icon });
-    }
-  }
-  return gifts;
 }

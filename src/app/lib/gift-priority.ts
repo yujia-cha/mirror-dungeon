@@ -57,7 +57,7 @@ export function compareEntries(a: GiftEntry, b: GiftEntry): number {
 
 export function prioritiseGifts(
   gifts: Gift[],
-  conditionByGift: Map<number, ConditionReport[]>,
+  conditionByGift: ReadonlyMap<number, ConditionReport[]>,
 ): Record<GiftGroup, GiftEntry[]> {
   const groups: Record<GiftGroup, GiftEntry[]> = { active: [], other: [] };
   for (const gift of gifts) {

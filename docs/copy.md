@@ -1229,7 +1229,7 @@
 - 쓰는 곳: src/app/components/RouteDecision.tsx
 
 ### routeDecisionTitleMany
-메모: 하나로는 해결되지 않을 때: {n}은 빼야 하는 수(core의 minDrops).
+메모: 하나로는 해결되지 않을 때: {n}은 빼야 하는 수(해결 방법의 최소 빼기 수, 없으면 빼기 분석의 `resolving` 크기).
 - ko: 전부 얻을 수 없습니다 · {names} 중 {n}개를 목표에서 빼야 합니다
 - en: They do not all fit one run · remove {n} of {names} from the goals
 - 쓰는 곳: src/app/components/RouteDecision.tsx
@@ -2896,12 +2896,12 @@
 메모: 화면에는 나오지 않는다(SILENT_WARNINGS) — 앱은 늘 Hard로 계획한다. CLI만 보인다.
 - ko: 평행중첩({parallelFrom}층 이상)은 1~{lastHard}층을 전부 Hard로 클리어해야 들어갈 수 있어, 1층부터 Hard로 계획했습니다.
 - en: Floors {parallelFrom}+ need floors 1-{lastHard} cleared on Hard, so the plan switches to Hard from floor 1.
-- 쓰는 곳: src/core/index.ts
+- 쓰는 곳: src/core/options.ts
 
 ### warn.packOptionDropped
 - ko: 알 수 없거나 그 층에 나오지 않거나 서로 모순되는 팩 지정은 제외했습니다.
 - en: Pack choices that are unknown, not offered on that floor, or contradictory were dropped.
-- 쓰는 곳: src/core/index.ts
+- 쓰는 곳: src/core/options.ts
 
 ### warn.packOptionUnplaced
 - ko: 포함하기로 한 팩 중 남은 층에 넣을 수 없는 것이 있습니다.
@@ -3026,14 +3026,14 @@
 - 쓰는 곳: src/core/index.ts
 
 ### unresolved.fusionMissing
-메모: {missing}은 구할 수 없는 재료의 id 목록.
-- ko: 재료 {missing}을(를) 구할 수 없어 조합할 수 없습니다.
+메모: {missing}은 구할 수 없는 재료의 이름 목록(ko 「·」, en 「, 」로 잇는다).
+- ko: 재료 {missing|을/를} 구할 수 없어 조합할 수 없습니다.
 - en: Cannot be fused: ingredients {missing} are not obtainable in this plan.
 - 쓰는 곳: src/core/index.ts
 
 ### unresolved.fusionMissingDropped
-메모: 「재료는 목표가 아님」이라 남은 재료의 입장을 취소했을 때. {missing}·{dropped}는 id 목록.
-- ko: 재료 {missing}을(를) 구할 수 없어 조합할 수 없습니다. 나머지 재료({dropped})만을 위한 입장은 취소했습니다.
+메모: 「재료는 목표가 아님」이라 남은 재료의 입장을 취소했을 때. {missing}·{dropped}는 이름 목록(ko 「·」, en 「, 」).
+- ko: 재료 {missing|을/를} 구할 수 없어 조합할 수 없습니다. 나머지 재료({dropped})만을 위한 입장은 취소했습니다.
 - en: Cannot be fused: ingredients {missing} are not obtainable. Pack entries for the remaining ingredients ({dropped}) alone were dropped.
 - 쓰는 곳: src/core/index.ts
 

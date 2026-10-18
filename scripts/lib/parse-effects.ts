@@ -953,10 +953,11 @@ const TYPE_ORDER: EffectRequirement['type'][] = [
 ];
 
 function compareRequirements(a: EffectRequirement, b: EffectRequirement): number {
-  return (
-    TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) ||
-    JSON.stringify(a).localeCompare(JSON.stringify(b))
-  );
+  // Code-point order, like every other sort in this build: `localeCompare` is ICU collation, which
+  // ignores punctuation such as `"` and `_` and depends on the Node build's ICU.
+  const x = JSON.stringify(a);
+  const y = JSON.stringify(b);
+  return TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) || (x < y ? -1 : x > y ? 1 : 0);
 }
 
 /**

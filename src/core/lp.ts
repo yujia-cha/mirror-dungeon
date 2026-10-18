@@ -1,3 +1,5 @@
+const EPS = 1e-9;
+
 /**
  * A small dense simplex for the search's root bound (M84) and its branch and bound (M87).
  *
@@ -16,27 +18,6 @@
  * enough. A pivot budget that runs out means no answer (the caller then has no bound, not a wrong
  * one).
  */
-export function maximizeLp(c: number[], rows: number[][], b: number[], maxPivots = 5_000): number | null {
-  return solveLp(c, rows, b, maxPivots)?.value ?? null;
-}
-
-/**
- * `maximizeLp` with the optimal point as well: `x[j]` for each of the `c.length` variables.
- * `upper[j]` bounds variable j from above (none when left out).
- */
-export function solveLp(
-  c: number[],
-  rows: number[][],
-  b: number[],
-  maxPivots = 5_000,
-  upper?: readonly number[],
-): { value: number; x: Float64Array } | null {
-  const lp = Tableau.build(c, rows, b, upper);
-  return lp.resolve(maxPivots) === 'optimal' ? { value: lp.value(), x: lp.point() } : null;
-}
-
-const EPS = 1e-9;
-
 export class Tableau {
   private constructor(
     /** Constraint rows, slacks included; the last entry of a row is its basic variable's value. */

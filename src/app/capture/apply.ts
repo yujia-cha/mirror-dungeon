@@ -118,6 +118,19 @@ export interface Applied {
 
 const NONE: Applied = { actions: [], ask: null };
 
+/** A gift's status in the run, or null. */
+function statusIn(ctx: ApplyContext, id: number): GiftStatus | null {
+  return ctx.giftStatus[id] ?? null;
+}
+
+/** The status action that sets `ids` to `to` — those it changes; none when it changes nothing. */
+function setStatus(ctx: ApplyContext, ids: readonly number[], to: GiftStatus | null): CaptureAction[] {
+  const changes = ids
+    .filter((id) => statusIn(ctx, id) !== to)
+    .map((id) => ({ giftId: id, from: statusIn(ctx, id), to }));
+  return changes.length > 0 ? [{ kind: 'status', changes }] : [];
+}
+
 /**
  * The run changes for the player's answer to a question (M151, from `useCapture.answer`). An
  * entry for a pack; 「획득」 for the gift a popup meant — and when that popup was a fusion's result,
@@ -131,11 +144,8 @@ export function answerActions(ask: CaptureAsk, picked: readonly number[], ctx: A
     const entry = enterAction(ask.floor, picked[0]!, ctx);
     return entry ? { actions: [entry], ask: null } : NONE;
   }
-  const status = (id: number): GiftStatus | null => ctx.giftStatus[id] ?? null;
-  const change = (ids: readonly number[], to: GiftStatus | null): CaptureAction[] => {
-    const changes = ids.filter((id) => status(id) !== to).map((id) => ({ giftId: id, from: status(id), to }));
-    return changes.length > 0 ? [{ kind: 'status', changes }] : [];
-  };
+  const status = (id: number) => statusIn(ctx, id);
+  const change = (ids: readonly number[], to: GiftStatus | null) => setStatus(ctx, ids, to);
   if (ask.kind === 'consumed') {
     const held = picked.filter(
       (id) => status(id) === 'got' && ctx.giftById.get(id)?.acquisition.kind !== 'material',
@@ -174,12 +184,9 @@ export function enterAction(
 
 /** The run changes for one event. Nothing to do yields no actions (the log skips it). */
 export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
-  const status = (id: number): GiftStatus | null => ctx.giftStatus[id] ?? null;
+  const status = (id: number) => statusIn(ctx, id);
   const isMaterial = (id: number) => ctx.giftById.get(id)?.acquisition.kind === 'material';
-  const change = (ids: readonly number[], to: GiftStatus | null): CaptureAction[] => {
-    const changes = ids.filter((id) => status(id) !== to).map((id) => ({ giftId: id, from: status(id), to }));
-    return changes.length > 0 ? [{ kind: 'status', changes }] : [];
-  };
+  const change = (ids: readonly number[], to: GiftStatus | null) => setStatus(ctx, ids, to);
   switch (event.kind) {
     case 'enter': {
       const action = enterAction(event.floor, event.packId, ctx);
@@ -220,7 +227,7 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
       const fusion = ctx.giftById.get(event.resultId)?.fusion;
       if (fusion?.mixed) {
         // The confirm's five slots may not have been read; the recipe still settles what it can.
-        const fallback = mixedFusionConsumed(fusion.mixed, held, null);
+        const fallback = mixedFusionConsumed(fusion.mixed, held);
         consumed = [...new Set([...consumed, ...fallback.consumed])];
         unsure = [...new Set([...unsure, ...fallback.unsure])].filter((id) => !consumed.includes(id));
       }

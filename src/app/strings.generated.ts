@@ -389,7 +389,7 @@ export const STRINGS = {
     ko: '전부 얻을 수 없습니다 · {names} 중 하나를 목표에서 빼야 합니다',
     en: 'They do not all fit one run · remove one of {names} from the goals',
   },
-  // 하나로는 해결되지 않을 때: {n}은 빼야 하는 수(core의 minDrops).
+  // 하나로는 해결되지 않을 때: {n}은 빼야 하는 수(해결 방법의 최소 빼기 수, 없으면 빼기 분석의 `resolving` 크기).
   routeDecisionTitleMany: {
     ko: '전부 얻을 수 없습니다 · {names} 중 {n}개를 목표에서 빼야 합니다',
     en: 'They do not all fit one run · remove {n} of {names} from the goals',

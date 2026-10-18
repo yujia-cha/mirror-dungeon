@@ -13,7 +13,7 @@ import {
   loadSeasonIndex,
 } from '../core/data/load.ts';
 import { t, type StringKey } from './i18n.ts';
-import { decodeShared, encodeShared, runInProgress, useApp } from './store.ts';
+import { decodeShared, runHasProgress, shareUrlOf, sharedStateOf, useApp } from './store.ts';
 import type { SharedState } from './store.ts';
 import { DEPLOYED_AT_START, defaultDeck } from './lib/default-deck.ts';
 import {
@@ -67,13 +67,14 @@ type Incoming = { kind: 'none' | 'broken' } | { kind: 'ask' | 'apply'; shared: S
  * What the URL hash is carrying right now. A share link must win over whatever localStorage
  * remembers, or the link would not work; a link is someone else's plan, so applying it replaces
  * the deck, the goals and the run. On a fresh app that is what the reader wants; mid-run it
- * destroys a record no undo can get back, so a run in progress is asked about first.
+ * destroys a record no undo can get back, so a run with any progress (`runHasProgress` — a start
+ * the screen reader settled on floor 1 counts) is asked about first.
  */
 function readIncoming(): Incoming {
   if (!window.location.hash.startsWith('#s=')) return { kind: 'none' };
   const shared = decodeShared(window.location.hash);
   if (!shared) return { kind: 'broken' };
-  return runInProgress(useApp.getState().run) ? { kind: 'ask', shared } : { kind: 'apply', shared };
+  return runHasProgress(useApp.getState().run) ? { kind: 'ask', shared } : { kind: 'apply', shared };
 }
 
 export function App() {
@@ -82,8 +83,6 @@ export function App() {
   const textScale = useApp((s) => s.ui.textScale);
   const deck = useApp((s) => s.deck);
   const deployed = useApp((s) => s.deployed);
-  const wanted = useApp((s) => s.wanted);
-  const fusionGoal = useApp((s) => s.fusionGoal);
   const setLang = useApp((s) => s.setLang);
   const toggleDark = useApp((s) => s.toggleDark);
   const applyShared = useApp((s) => s.applyShared);
@@ -253,6 +252,7 @@ export function App() {
           recipes: ingredientTree(nextIndexes, next.rules.fusion.maxShopSlots),
           upgradeLevels: upgradeLevelsOf(next.gifts),
           materials: new Set(next.gifts.filter(isMaterial).map((gift) => gift.id)),
+          identityIds: new Set(next.identities.map((identity) => identity.id)),
         });
         setLoaded({ season: openSeason, attempt, data: next, indexes: nextIndexes });
         setDropped(counts.gifts > 0 ? counts : null);
@@ -280,8 +280,9 @@ export function App() {
   useEffect(() => {
     if (!data || !indexes || seeded.current) return;
     seeded.current = true;
-    // Ids this season cannot resolve are already gone: `adoptSeason` runs on every load, counts
-    // what it dropped and reports it above.
+    // Ids the data cannot resolve are already gone: `adoptSeason` runs on every load and drops
+    // unknown goals (counted, reported above) and unknown identities (quietly, with their deployed
+    // place) — so a deck emptied that way starts from the default here too.
     if (useApp.getState().deck.length === 0) setDeck(defaultDeck(data), DEPLOYED_AT_START);
   }, [data, indexes, setDeck]);
 
@@ -291,7 +292,7 @@ export function App() {
   );
 
   const share = async (): Promise<void> => {
-    const url = `${window.location.origin}${window.location.pathname}${encodeShared({ season: useApp.getState().season, deck, deployed, wanted, fusionGoal, upgrades: useApp.getState().upgrades, options: useApp.getState().options })}`;
+    const url = shareUrlOf(sharedStateOf(useApp.getState()));
     // Plain http and an unfocused document both leave `navigator.clipboard` unusable. Saying so
     // beats an unhandled rejection nobody sees.
     try {

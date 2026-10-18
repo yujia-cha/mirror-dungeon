@@ -12,14 +12,13 @@ import type {
   ObservedGift,
   PlanInput,
   PlanOptions,
-  PlanWarning,
-  Requirement,
   RequirementRoute,
   RoutePlan,
   Unresolved,
 } from './types.ts';
 import { analyseDeck, evaluateConditions } from './deck.ts';
-import { expandRequirements, goalRoots, scarcity, type RunState } from './requirements.ts';
+import { expandRequirements, goalRoots, scarcity } from './requirements.ts';
+import { normaliseOptions, observationBudget, runStateOf } from './options.ts';
 import {
   alternativePacksOn,
   assignPacks,
@@ -31,16 +30,8 @@ import { requirementKey } from './requirements.ts';
 import { chooseStart, observable, startGiftBudget } from './starting.ts';
 import { msg } from './messages.ts';
 
-export {
-  conflictRootsOf,
-  createDropEffects,
-  MAX_TRADEOFFS,
-  minDrops,
-  planAlternatives,
-  planDropEffects,
-} from './alternatives.ts';
+export { createDropEffects, MAX_TRADEOFFS, planDropEffects } from './alternatives.ts';
 export type {
-  AlternativeOptions,
   DropAnalysis,
   DropEffect,
   DropEffectOptions,
@@ -65,8 +56,8 @@ export type {
   ResolutionOptions,
   ResolutionSteps,
 } from './resolutions.ts';
-export { conflictGroups, wantedRoots } from './conflicts.ts';
-export type { ConflictGroup, ConflictCandidate } from './conflicts.ts';
+export { conflictGroups, conflictRootsOf, contestedFloors, wantedRoots } from './conflicts.ts';
+export type { ConflictGroup } from './conflicts.ts';
 export { buildIndexes } from './data/indexes.ts';
 export { analyseDeck, dominantKeyword, evaluateConditions } from './deck.ts';
 export {
@@ -89,6 +80,7 @@ export type {
 export { chooseRecipe, expandRequirements, goalRoots, scarcity } from './requirements.ts';
 export { alternativePacksOn, assignPacks, modeForFloor, observationCost } from './search.ts';
 export { chooseStart, largestStartPool, observable, startGiftBudget } from './starting.ts';
+export { observationBudget } from './options.ts';
 export * from './types.ts';
 export * from './schema.ts';
 
@@ -109,124 +101,9 @@ export function defaultOptions(): PlanOptions {
   };
 }
 
-/** The observation slots this plan may spend: the rules' count, less those the player turned off. */
-export function observationBudget(options: Pick<PlanOptions, 'observationSlots'>, data: GameData): number {
-  const max = data.rules.giftObservation.max;
-  const slots = options.observationSlots;
-  return typeof slots === 'number' && Number.isFinite(slots)
-    ? Math.min(max, Math.max(0, Math.round(slots)))
-    : max;
-}
-
-/**
- * Planning into 평행중첩 requires every floor before it cleared on Hard.
- * Rather than produce an impossible plan, the options are corrected and the change is reported.
- */
-function normaliseOptions(
-  options: PlanOptions,
-  data: GameData,
-  indexes: GameIndexes,
-  deck: number[],
-): { options: PlanOptions; warnings: PlanWarning[]; droppedObservations: number[] } {
-  const warnings: PlanWarning[] = [];
-  let next = { ...options };
-
-  // Pinned observations: known, observable, unique, and within the slot limit. The ones dropped
-  // here join the pins the plan itself cannot use in a single warning (see planRoute).
-  const observedGifts = [...new Set(next.observedGifts ?? [])].filter((id) => {
-    const gift = indexes.giftById.get(id);
-    return gift !== undefined && observable(gift, data.rules);
-  });
-  const kept = observedGifts.slice(0, observationBudget(next, data));
-  const droppedObservations = (next.observedGifts ?? []).filter((id) => !kept.includes(id));
-  next = { ...next, observedGifts: kept };
-
-  const maxFloor = Math.max(
-    ...data.rules.floors.normal,
-    ...data.rules.floors.parallel,
-    ...data.rules.floors.extreme,
-  );
-  const lastFloor = Math.min(maxFloor, Math.max(1, Math.round(next.lastFloor)));
-  if (lastFloor !== next.lastFloor) next = { ...next, lastFloor };
-
-  // 평행중첩 needs every floor before it cleared on Hard. Which floor opens that band is the
-  // season's (`rules.floors.parallel`; a season without the band never forces Hard), and it has to
-  // be settled before the pins are checked: a Hard-only pack pinned on floor 4 is legal on this
-  // plan exactly because the plan is Hard from floor 1. Checking pins first dropped such a pin
-  // with a warning and then placed the same pack on the same floor as a recommendation.
-  const parallelFrom = Math.min(...data.rules.floors.parallel);
-  if (
-    lastFloor >= parallelFrom &&
-    data.rules.difficulty.parallelRequiresAllHard &&
-    next.hardFromFloor !== 1
-  ) {
-    next = { ...next, hardFromFloor: 1 };
-    warnings.push({
-      code: 'parallel-requires-hard',
-      detail: msg('warn.parallelRequiresHard', { parallelFrom, lastHard: parallelFrom - 1 }),
-    });
-  }
-
-  // Run progress: the floor about to be entered stays within the plan — or one past it, which is a
-  // finished run (every floor played, nothing left to plan) — and a gift is either in hand or
-  // missed, never both (in hand wins). Clamping a finished run to the last floor used to plan that
-  // floor again: a pack recommended after the run was over, and its gifts counted as collected.
-  const currentFloor = Number.isFinite(next.currentFloor)
-    ? Math.min(lastFloor + 1, Math.max(1, Math.round(next.currentFloor as number)))
-    : 1;
-  const knownGift = (id: unknown): id is number => typeof id === 'number' && indexes.giftById.has(id);
-  const ownedGifts = [...new Set((next.ownedGifts ?? []).filter(knownGift))];
-  const unobtainableGifts = [...new Set((next.unobtainableGifts ?? []).filter(knownGift))].filter(
-    (id) => !ownedGifts.includes(id),
-  );
-  next = { ...next, currentFloor, ownedGifts, unobtainableGifts };
-
-  if (next.deployed) {
-    const inDeck = new Set(deck);
-    const deployed = [...new Set(next.deployed)]
-      .filter((id) => inDeck.has(id))
-      .slice(0, data.rules.deployment.max);
-    next = { ...next, deployed };
-  }
-
-  // Pack choices: known packs only, no contradiction between a ban and a preference, and an entry
-  // only on a played floor (M118: the route is the goals' to decide — a pack is never forced onto a
-  // floor still ahead) that actually offers the pack in that floor's mode.
-  const known = (id: unknown): id is number => typeof id === 'number' && indexes.packById.has(id);
-  const bannedPacks = [...new Set((next.bannedPacks ?? []).filter(known))];
-  const bannedSet = new Set(bannedPacks);
-  const preferredPacks = [...new Set((next.preferredPacks ?? []).filter(known))].filter(
-    (id) => !bannedSet.has(id),
-  );
-  const pinnedPacks: Record<number, number> = {};
-  const dropped: number[] = [];
-  for (const [floorText, packId] of Object.entries(next.pinnedPacks ?? {})) {
-    const floor = Number(floorText);
-    const offered =
-      Number.isInteger(floor) && floor >= 1 && floor <= lastFloor && floor < currentFloor
-        ? (indexes.packsByFloor[modeForFloor(floor, next, indexes)].get(floor) ?? [])
-        : [];
-    if (known(packId) && offered.includes(packId) && !bannedSet.has(packId)) pinnedPacks[floor] = packId;
-    else if (typeof packId === 'number') dropped.push(packId);
-  }
-  const preferredDropped = (next.preferredPacks ?? []).filter((id) => !preferredPacks.includes(id));
-  const bannedDropped = (next.bannedPacks ?? []).filter((id) => !bannedPacks.includes(id));
-  const droppedAll = [...new Set([...dropped, ...preferredDropped, ...bannedDropped])];
-  if (droppedAll.length > 0) {
-    warnings.push({
-      code: 'pack-option-dropped',
-      packIds: droppedAll,
-      detail: msg('warn.packOptionDropped'),
-    });
-  }
-  next = { ...next, bannedPacks, preferredPacks, pinnedPacks };
-
-  return { options: next, warnings, droppedObservations };
-}
-
 /**
  * The contiguous run of floors around `floor` on which `packId` could equally have been placed:
- * offered on that floor, and not already taken by another required or pinned pack. This is what
+ * offered on that floor, and not already taken by another required pack. This is what
  * lets the UI say "any one of floors 4-5" instead of pinning a floor the search merely happened to
  * pick first.
  *
@@ -246,14 +123,10 @@ function windowFor(
   assignment: Map<number, number>,
   indexes: GameIndexes,
 ): { from: number; to: number } {
-  // Floors a pack could be visited on, in this plan: offered there (in that floor's own mode) and
-  // not pinned to another pack.
+  // Floors a pack could be visited on, in this plan: offered there, in that floor's own mode.
+  // `floors` are the floors still ahead, and no pack entry names one of those (M118).
   const candidates = (id: number): number[] =>
-    floors.filter((g) => {
-      if (!(indexes.packsByFloor[modeForFloor(g, options, indexes)].get(g) ?? []).includes(id)) return false;
-      const pinnedHere = options.pinnedPacks[g];
-      return pinnedHere === undefined || pinnedHere === id;
-    });
+    floors.filter((g) => (indexes.packsByFloor[modeForFloor(g, options, indexes)].get(g) ?? []).includes(id));
   // Played floors are settled and never move, so only packs still on plannable floors compete.
   const others = [...assignment.entries()].filter(([own, id]) => id !== packId && floors.includes(own));
   const otherCandidates = others.map(([, id]) => candidates(id));
@@ -322,11 +195,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     const packId = options.pinnedPacks[floor];
     if (packId !== undefined) passed.set(floor, packId);
   }
-  const run: RunState = {
-    owned: new Set(options.ownedGifts ?? []),
-    failed: new Set(options.unobtainableGifts ?? []),
-    visited: new Set(passed.values()),
-  };
+  // The same run every re-derivation of this plan sees (`runStateOf`): `passed` holds every pack
+  // entry the options kept, since they keep entries for played floors only.
+  const run = runStateOf(options);
 
   const stats = analyseDeck(input.deck, indexes, data.rules.deployment, options.deployed);
   const unresolved: Unresolved[] = [];
@@ -590,13 +461,11 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     }
   }
 
-  // c) flexibility: free a forced pack whose only job is one observable gift
+  // c) flexibility: free a forced pack whose only job is one observable gift. The start is open
+  // only on floor 1, so no floor has been played and every assigned pack is the search's own.
   while (!startOver && observed.length < budget) {
     const forced = [...search.assignment.entries()]
-      .filter(
-        ([floor, packId]) =>
-          options.pinnedPacks[floor] === undefined && !options.preferredPacks.includes(packId),
-      )
+      .filter(([, packId]) => !options.preferredPacks.includes(packId))
       .map(([floor, packId]) => {
         const pickups = requirements.filter(
           (r) => r.via === 'route' && search.supplier.get(requirementKey(r)) === floor,
@@ -869,7 +738,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     const mode = modeForFloor(floor, options, indexes);
     const isPassed = floor < currentFloor;
     const packId = isPassed ? (passed.get(floor) ?? null) : (search.assignment.get(floor) ?? null);
-    const pinned = packId !== null && (isPassed || options.pinnedPacks[floor] === packId);
+    // Only a played floor's pack is settled (M118); every pack ahead is the search's choice.
+    const pinned = packId !== null && isPassed;
     const pickups = (pickupsByFloor.get(floor) ?? []).sort((a, b) => a.giftId - b.giftId);
 
     const needsObservation = packId !== null && !pinned;
@@ -914,6 +784,12 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   });
 
   // ---- 9. Fusions that cannot happen ----------------------------------------
+  // Named like `ingredient-shared`: a reader sees gifts, not ids.
+  const giftNames = (ids: number[]): { ko: string; en: string } => {
+    const name = (id: number, lang: 'ko' | 'en'): string =>
+      indexes.giftById.get(id)?.name[lang] || String(id);
+    return { ko: ids.map((id) => name(id, 'ko')).join('·'), en: ids.map((id) => name(id, 'en')).join(', ') };
+  };
   for (const fusion of fusions) {
     if (!fusion.unreachable) continue;
     const droppedIngredients = droppedFor.get(fusion.result);
@@ -930,10 +806,10 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       ...(droppedIngredients ? { droppedIngredients } : {}),
       detail: droppedIngredients
         ? msg('unresolved.fusionMissingDropped', {
-            missing: missing.join(', '),
-            dropped: droppedIngredients.join(', '),
+            missing: giftNames(missing),
+            dropped: giftNames(droppedIngredients),
           })
-        : msg('unresolved.fusionMissing', { missing: missing.join(', ') }),
+        : msg('unresolved.fusionMissing', { missing: giftNames(missing) }),
     });
   }
 
@@ -945,7 +821,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   );
 
   // Only real gates can go unmet; a count with no threshold has nothing to fail.
-  const unmet = conditions.filter((c) => c.gate && !c.satisfied);
+  // A condition the deck list cannot judge (full resonance: `have` is null) is unknown, not unmet.
+  const unmet = conditions.filter((c) => c.gate && c.have !== null && !c.satisfied);
   if (unmet.length > 0) {
     warnings.push({
       code: 'condition-unmet',
@@ -1044,20 +921,4 @@ function dedupeUnresolved(entries: Unresolved[]): Unresolved[] {
     out.push(entry);
   }
   return out.sort((a, b) => a.giftId - b.giftId || a.reason.localeCompare(b.reason));
-}
-
-/** Requirements with their final routing decision, for callers that want to show the breakdown. */
-export function requirementSummary(requirements: Requirement[]): Record<Requirement['via'], number[]> {
-  const out: Record<Requirement['via'], number[]> = {
-    route: [],
-    startGift: [],
-    observation: [],
-    generalDrop: [],
-    owned: [],
-    dropped: [],
-    unresolved: [],
-  };
-  for (const requirement of requirements) out[requirement.via].push(requirement.giftId);
-  for (const key of Object.keys(out) as Requirement['via'][]) out[key].sort((a, b) => a - b);
-  return out;
 }

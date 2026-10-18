@@ -14,9 +14,8 @@ import {
   conflictRootsOf,
   createDropEffects,
   defaultOptions,
-  minDrops,
-  planAlternatives,
   planDropEffects,
+  planResolutions,
   planRoute,
   startGiftBudget,
   wantedRoots,
@@ -284,7 +283,7 @@ describe('deck conditions', () => {
     const stats = analyseDeck([10504, 10403], indexes, data.rules.deployment);
     expect(indexes.identityById.get(10504)!.keywords.Laceration).toEqual({ skills: 0, specialSkills: 2 });
     expect(stats.keywordCounts.formation.Laceration).toBe(2);
-    expect(stats.baseKeywordCounts.formation.Laceration).toBe(1);
+    expect(stats.baseKeywordMembers.formation.Laceration).toEqual([10403]);
     // 혈향도래 reads 「[Laceration] … 또는 특수 출혈 …」 over the formation, so 못 counts.
     const gift = indexes.giftById.get(9206)!;
     const condition = gift.conditions.find((c) => c.type === 'keywordSkillCount')!;
@@ -370,7 +369,7 @@ describe('deck conditions', () => {
     // 사원증 has no formation condition; its text is an effect, so it may carry none at all.
     if (report) expect(report.have).toBe(2);
     expect(stats.keywordCounts.formation.Charge).toBe(2);
-    expect(stats.baseKeywordCounts.formation.Charge).toBe(2);
+    expect(stats.baseKeywordMembers.formation.Charge).toHaveLength(2);
   });
 
   it('deploys the first `deployment.default` identities when nobody is named', () => {
@@ -1074,114 +1073,6 @@ describe('clear rewards and hidden battles', () => {
   });
 });
 
-describe('alternative routes', () => {
-  it('returns nothing when the main plan has no pack conflict', () => {
-    expect(
-      planAlternatives(
-        { deck: BLADE_LINEAGE_DECK, wanted: want(9423), options: options({ hardFromFloor: 1 }) },
-        data,
-        indexes,
-      ),
-    ).toEqual([]);
-  });
-
-  it('offers one route per gift worth leaving out, best coverage first', () => {
-    const input = {
-      deck: BLADE_LINEAGE_DECK,
-      wanted: want(9283, 9222, 9423),
-      options: options({ hardFromFloor: 1 }),
-    };
-    const main = planRoute(input, noObservation, indexes);
-    expect(main.unresolved.map((u) => u.giftId)).toEqual([9283]);
-    const variants = planAlternatives(input, noObservation, indexes, main);
-    expect(variants.map((v) => v.dropped)).toEqual([[9222], [9283]]);
-    for (const variant of variants) {
-      expect(variant.plan.unresolved).toEqual([]);
-      expect(variant.plan.stats.coveredWanted).toBe(2);
-    }
-    expect(variants[0]!.plan.floors.find((f) => f.floor === 5)!.packId).toBe(1025);
-    expect(variants[1]!.plan.floors.find((f) => f.floor === 5)!.packId).toBe(1026);
-  });
-
-  it('works with observation on, dropping either side of the leftover conflict', () => {
-    const input = {
-      deck: BLADE_LINEAGE_DECK,
-      wanted: want(9283, 9222, 9217, 9435, 9751),
-      options: options({ hardFromFloor: 1 }),
-    };
-    const variants = planAlternatives(input, data, indexes);
-    expect(variants.map((v) => v.dropped)).toEqual([[9283], [9751]]);
-    expect(variants.every((v) => v.plan.unresolved.length === 0 && v.plan.stats.coveredWanted === 4)).toBe(
-      true,
-    );
-  });
-
-  it('never leaves out a gift the user must have', () => {
-    const wanted = [9250, 9251, 9252, 9253, 9254, 9255].map((giftId) => ({
-      giftId,
-      required: giftId === 9255,
-    }));
-    const input = { deck: BLADE_LINEAGE_DECK, wanted, options: options({ lastFloor: 15 }) };
-    const main = planRoute(input, data, indexes);
-    expect(main.unresolved.map((u) => u.giftId)).not.toContain(9255);
-    const variants = planAlternatives(input, data, indexes, main);
-    expect(variants.length).toBeGreaterThan(0);
-    expect(variants.every((v) => !v.dropped.includes(9255))).toBe(true);
-  });
-
-  it('caps the list and stays deterministic', () => {
-    const input = {
-      deck: BLADE_LINEAGE_DECK,
-      wanted: want(9250, 9251, 9252, 9253, 9254, 9255),
-      options: options({ lastFloor: 15 }),
-    };
-    const first = planAlternatives(input, data, indexes);
-    const second = planAlternatives(input, data, indexes);
-    expect(first.length).toBe(4);
-    expect(first.every((v) => v.dropped.length === 1 && v.plan.stats.coveredWanted === 5)).toBe(true);
-    expect(JSON.stringify(first.map((v) => ({ d: v.dropped, f: v.plan.floors.map((x) => x.packId) })))).toBe(
-      JSON.stringify(second.map((v) => ({ d: v.dropped, f: v.plan.floors.map((x) => x.packId) }))),
-    );
-  });
-  it('tries the sides of the conflict before the gifts holding the floor', () => {
-    const input = {
-      deck: BLADE_LINEAGE_DECK,
-      wanted: want(9283, 9222, 9423),
-      options: options({ hardFromFloor: 1 }),
-    };
-    // 9222 has the lower id but only holds floor 5; 9283 is the gift that lost it.
-    const variants = planAlternatives(input, noObservation, indexes, undefined, { maxRuns: 1 });
-    expect(variants.map((v) => v.dropped)).toEqual([[9283]]);
-    expect(minDrops(variants)).toBe(1);
-  });
-
-  it("bundles the main plan's losses when no single drop clears the conflicts", () => {
-    const input = {
-      deck: BLADE_LINEAGE_DECK,
-      wanted: want(9277, 9744, 9751, 9766, 9842),
-      options: options({ hardFromFloor: 1 }),
-    };
-    const main = planRoute(input, noObservation, indexes);
-    expect(main.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId)).toEqual([
-      9751, 9842,
-    ]);
-    const variants = planAlternatives(input, noObservation, indexes, main);
-    expect(variants[0]!.dropped).toEqual([9751, 9842]);
-    expect(variants[0]!.plan.unresolved).toEqual([]);
-    expect(variants[0]!.plan.stats.coveredWanted).toBe(3);
-    // The singles that follow each still leave one conflict.
-    for (const variant of variants.slice(1)) {
-      expect(variant.dropped).toHaveLength(1);
-      expect(variant.plan.unresolved.filter((u) => u.reason === 'pack-conflict')).toHaveLength(1);
-    }
-    expect(minDrops(variants)).toBe(2);
-  });
-
-  it('knows no drop count without variants', () => {
-    expect(minDrops([])).toBeNull();
-  });
-});
-
 describe('drop effects (M80)', () => {
   it('measures every candidate goal by the conflicts leaving it out alone clears', () => {
     const input = {
@@ -1261,6 +1152,24 @@ describe('drop effects (M80)', () => {
     // A partial snapshot only knows single drops; the bundle comes with `finish`.
     expect(steps.snapshot().resolving).toBeNull();
     expect(steps.finish()).toBe(final);
+  });
+
+  it('never measures a goal the user must have, and stays deterministic', () => {
+    const wanted = [9250, 9251, 9252, 9253, 9254, 9255].map((giftId) => ({
+      giftId,
+      required: giftId === 9255,
+    }));
+    const input = { deck: BLADE_LINEAGE_DECK, wanted, options: options({ lastFloor: 15 }) };
+    const main = planRoute(input, data, indexes);
+    expect(main.unresolved.map((u) => u.giftId)).not.toContain(9255);
+    const analysis = planDropEffects(input, data, indexes, main, { maxRuns: Infinity });
+    expect(analysis.effects.length).toBeGreaterThan(0);
+    expect(analysis.effects.map((e) => e.giftId)).not.toContain(9255);
+    expect(analysis.resolving?.dropped ?? []).not.toContain(9255);
+    const again = planDropEffects(input, data, indexes, main, { maxRuns: Infinity });
+    const key = (a: typeof analysis) =>
+      JSON.stringify(a.effects.map((e) => [e.giftId, e.reduces, e.plan.floors.map((f) => f.packId)]));
+    expect(key(again)).toBe(key(analysis));
   });
 
   it('spends no runs without a conflict, and stays within the budget', () => {
@@ -1813,23 +1722,14 @@ describe('pack choices', () => {
 });
 
 describe('conflict groups', () => {
-  it('groups the contested floors with every pack competing for them', () => {
+  it('groups the contested floors', () => {
     const input = {
       deck: BLADE_LINEAGE_DECK,
       wanted: want(9250, 9251, 9252, 9253, 9254, 9255),
       options: options({ lastFloor: 15 }),
     };
     const result = planRoute(input, data, indexes);
-    const groups = conflictGroups(result, input, data, indexes);
-    expect(groups).toHaveLength(1);
-    expect(groups[0]!.floors).toEqual([11, 12, 13, 14, 15]);
-    const candidates = groups[0]!.candidates;
-    expect(candidates).toHaveLength(6);
-    expect(candidates.filter((c) => c.assignedAt !== null)).toHaveLength(5);
-    const left = candidates.find((c) => c.assignedAt === null)!;
-    expect(left.gifts).toEqual([9255]);
-    expect(left.floors).toEqual([11, 12, 13, 14, 15]);
-    expect(candidates.every((c) => c.gifts.length === 1)).toBe(true);
+    expect(conflictGroups(result, input.options, indexes)).toEqual([{ floors: [11, 12, 13, 14, 15] }]);
   });
 
   it('is empty without a pack conflict and maps a fusion ingredient back to its wanted result', () => {
@@ -1838,12 +1738,67 @@ describe('conflict groups', () => {
       wanted: want(9249),
       options: options({ hardFromFloor: 1, lastFloor: 5 }),
     };
-    expect(conflictGroups(planRoute(input, noObservation, indexes), input, noObservation, indexes)).toEqual(
-      [],
-    );
+    expect(conflictGroups(planRoute(input, noObservation, indexes), input.options, indexes)).toEqual([]);
     const roots = wantedRoots(input, noObservation, indexes);
     expect(roots(9706)).toEqual([9249]);
     expect(roots(9249)).toEqual([9249]);
+  });
+});
+
+describe('conflicts in a run in progress (M154)', () => {
+  // 장관 (9717) and 부동 (9718) are both fusions over the 칼자루/칼날 ingredients; with 장관 in hand
+  // only 부동 still needs 녹슨 칼자루 (9713), and that one copy loses its floor.
+  const input: PlanInput = {
+    deck: MIXED_DECK,
+    wanted: [9717, 9718, 9220, 9221, 9290, 9291, 9403].map((giftId) => ({ giftId, required: false })),
+    options: options({ lastFloor: 3, hardFromFloor: 1, ownedGifts: [9717] }),
+  };
+  const plan = planRoute(input, data, indexes);
+
+  it('does not count a goal already in hand as lost to the conflict', () => {
+    expect(plan.unresolved.map((u) => `${u.giftId}:${u.reason}`)).toEqual([
+      '9713:pack-conflict',
+      '9718:fusion-ingredient-unresolved',
+    ]);
+    // The ingredient serves the goal the run still has to fuse, not the one in hand.
+    expect(wantedRoots(input, data, indexes)(9713)).toEqual([9718]);
+    expect(conflictRootsOf(plan, input, data, indexes)).toEqual([9718]);
+    expect(planDropEffects(input, data, indexes, plan).conflicts).toBe(1);
+    const resolutions = planResolutions(input, data, indexes, plan);
+    expect(resolutions.conflicts).toBe(1);
+    expect(resolutions.methods[0]!.removals).toEqual([9718]);
+    expect(resolutions.methods.every((m) => !m.removals.includes(9717) || !m.minimal)).toBe(true);
+  });
+
+  it('names the ingredients a fusion cannot get, in both languages', () => {
+    const entry = plan.unresolved.find((u) => u.reason === 'fusion-ingredient-unresolved')!;
+    const name = (id: number) => indexes.giftById.get(id)!.name;
+    for (const id of [...entry.missing!, ...(entry.droppedIngredients ?? [])]) {
+      expect(entry.detail.ko).toContain(name(id).ko);
+      expect(entry.detail.en).toContain(name(id).en);
+      expect(entry.detail.ko).not.toContain(String(id));
+    }
+  });
+});
+
+describe('condition warnings (M154)', () => {
+  it('does not call a condition no deck list can judge unmet', () => {
+    // 인연 얽힘 (9208) asks for 완전 공명 7: a battle state, so `have` is null for every deck.
+    const result = planWithout({ wanted: want(9208), options: options({ hardFromFloor: 1, lastFloor: 15 }) });
+    const report = result.conditions.find((c) => c.giftId === 9208)!;
+    expect(report.have).toBeNull();
+    expect(result.warnings.find((w) => w.code === 'condition-unmet')).toBeUndefined();
+  });
+
+  it('still warns about a gate the deck misses', () => {
+    // 부동 (9718) wants three 검계 identities deployed; the mixed deck has none.
+    const result = planWithout({ wanted: want(9718), options: options({ hardFromFloor: 1, lastFloor: 15 }) });
+    expect(result.conditions.find((c) => c.giftId === 9718)).toMatchObject({
+      gate: true,
+      have: 0,
+      satisfied: false,
+    });
+    expect(result.warnings.find((w) => w.code === 'condition-unmet')?.giftIds).toEqual([9718]);
   });
 });
 

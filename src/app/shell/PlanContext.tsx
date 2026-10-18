@@ -5,6 +5,7 @@
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
+  conflictGroups,
   conflictRootsOf,
   evaluateConditions,
   giftEffectsReport,
@@ -19,7 +20,7 @@ import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
-import { planInputFor } from '../lib/plan-input.ts';
+import { planInputFor, type PlannedRun } from '../lib/plan-input.ts';
 import { usePlanner } from '../lib/use-planner.ts';
 import { runDrop } from '../lib/planner-protocol.ts';
 import {
@@ -32,6 +33,7 @@ import {
 } from '../lib/stage.ts';
 import { blockedGifts, entanglements, ingredientsOf } from '../lib/entangle.ts';
 import { carriedBy } from '../lib/goal-toggle.ts';
+import { conditionReportsByGift } from '../lib/gift-tile.ts';
 import { upgradeChildren } from '../lib/upgrade-children.ts';
 import { useDesktop } from '../lib/useMediaQuery.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
@@ -108,9 +110,18 @@ export function PlanProvider({
   const lastFloor = useMemo(() => lastFloorOf(data), [data]);
   // Who meets what, read from the built index (M129) — the same answers the computation gives.
   const skillLookup = useMemo(() => (data.skillGifts ? skillGiftLookup(data.skillGifts) : undefined), [data]);
+  // Every gift's condition reports for the deck: the items tab and the browser read the same map.
+  const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
+  // Only the run fields the plan reads (`PlannedRun`): a new `run` object from a stage-floor step
+  // used to rebuild the input and send the worker the same question again.
+  const { currentFloor, visits, giftStatus, startDone, collectRest } = run;
+  const plannedRun = useMemo<PlannedRun>(
+    () => ({ currentFloor, visits, giftStatus, startDone, collectRest }),
+    [currentFloor, visits, giftStatus, startDone, collectRest],
+  );
   const input = useMemo(
-    () => planInputFor({ deck, deployed, wanted, options, fusionGoal, run }, { lastFloor }),
-    [deck, deployed, wanted, options, fusionGoal, run, lastFloor],
+    () => planInputFor({ deck, deployed, wanted, options, fusionGoal, run: plannedRun }, { lastFloor }),
+    [deck, deployed, wanted, options, fusionGoal, plannedRun, lastFloor],
   );
   // The route and its alternatives, off the render thread where the browser allows it. The route
   // arrives first and the alternatives follow, because they are the expensive half — see
@@ -161,6 +172,17 @@ export function PlanProvider({
   const dropConflicts = useMemo(
     () => (dropPlan ? conflictRootsOf(dropPlan, input, data, indexes).length : null),
     [dropPlan, input, data, indexes],
+  );
+  /** The full plan's conflict, for the decision card: worked out once per plan, not per render. */
+  const conflict = useMemo(
+    () =>
+      plan
+        ? {
+            goals: conflictRootsOf(plan, input, data, indexes),
+            groups: conflictGroups(plan, input.options, indexes),
+          }
+        : null,
+    [plan, input, data, indexes],
   );
   const exclusivesOf = useMemo(() => exclusivesIndex(data, indexes), [data, indexes]);
   const childrenOf = useMemo(() => upgradeChildren(data), [data]);
@@ -387,6 +409,8 @@ export function PlanProvider({
       indexes,
       stats,
       lang,
+      skillLookup,
+      conditionByGift,
       input,
       plan,
       shown,
@@ -395,6 +419,7 @@ export function PlanProvider({
       resolutions,
       analysisPending,
       analyzeMore,
+      conflict,
       drops: {
         selection,
         released,
@@ -441,6 +466,8 @@ export function PlanProvider({
     indexes,
     options,
     stats,
+    skillLookup,
+    conditionByGift,
     lang,
     lastFloor,
     input,
@@ -451,6 +478,7 @@ export function PlanProvider({
     resolutions,
     analysisPending,
     analyzeMore,
+    conflict,
     selection,
     released,
     chosen,

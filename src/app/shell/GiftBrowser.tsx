@@ -15,12 +15,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, Search, X } from 'lucide-react';
-import { skillGiftLookup } from '../../core/index.ts';
 import type { Keyword } from '../../core/schema.ts';
 import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { classifyGift, compareEntries, type GiftEntry } from '../lib/gift-priority.ts';
-import { browsableParents, conditionReportsByGift, tilesFor, type GiftTileData } from '../lib/gift-tile.ts';
+import { browsableParents, tilesFor, type GiftTileData } from '../lib/gift-tile.ts';
 import { matchesGiftName } from '../lib/gift-filters.ts';
 import {
   DEFAULT_RECOMMEND_FILTERS,
@@ -55,8 +54,20 @@ export function GiftBrowser({
   /** The query the search box opens with — the tab's, when opened from its >>. */
   initialQuery?: string;
 }) {
-  const { data, indexes, stats, lang, childrenOf, entangled, blocked, toggleGoal, openGift, giftName } =
-    usePlan();
+  const {
+    data,
+    indexes,
+    stats,
+    lang,
+    childrenOf,
+    entangled,
+    blocked,
+    toggleGoal,
+    openGift,
+    giftName,
+    conditionByGift,
+    skillLookup,
+  } = usePlan();
   const wanted = useApp((s) => s.wanted);
   const deckSize = useApp((s) => s.deck.length);
   const filterState = useGiftFilters(initialQuery);
@@ -65,7 +76,6 @@ export function GiftBrowser({
   const [tab, setTab] = useState<BrowserTab>('recommended');
   const [recFilters, setRecFilters] = useState<RecommendFilters>(DEFAULT_RECOMMEND_FILTERS);
 
-  const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
   const entangledIds = useMemo(() => new Set(entangled.keys()), [entangled]);
   // 「모든 기프트」: one list in the tab's own order — pack-bound first, closer first, then id — without the fold.
   const tiles = useMemo(() => {
@@ -77,8 +87,7 @@ export function GiftBrowser({
 
   // 「추천 기프트」: every gift on offer judged on its own (an upgrade child too, as its own tile —
   // its parent's lock still reaches it through `blocked`), then the tab's filters and the query.
-  // Who meets what is read from the built index (M129) when the season has one.
-  const skillLookup = useMemo(() => (data.skillGifts ? skillGiftLookup(data.skillGifts) : undefined), [data]);
+  // Who meets what is read from the built index (M129) when the season has one — the provider's.
   const effectsByGift = useMemo(
     () => effectReportsByGift(data.gifts, stats, indexes, skillLookup),
     [data, stats, indexes, skillLookup],

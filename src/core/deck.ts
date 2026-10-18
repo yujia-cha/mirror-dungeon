@@ -71,11 +71,6 @@ export function analyseDeck(
       formation: sizes(keywordMembers.formation),
       reserve: sizes(keywordMembers.reserve),
     },
-    baseKeywordCounts: {
-      deployed: sizes(baseKeywordMembers.deployed),
-      formation: sizes(baseKeywordMembers.formation),
-      reserve: sizes(baseKeywordMembers.reserve),
-    },
     factionCounts: {
       deployed: sizes(factionMembers.deployed) as Record<string, number>,
       formation: sizes(factionMembers.formation) as Record<string, number>,
@@ -107,6 +102,17 @@ export function dominantKeyword(stats: DeckStats): StatusKeyword | null {
   return entries[0]![0];
 }
 
+/**
+ * Whether a keyword condition counts 특수-only skills (생체 재료, 못 …): when the sentence says
+ * 「또는 특수 X」, and always for 탄환·혈찬. Those have no 특수 variant the game could name in a
+ * condition, and 7 of the 13 ammo identities are 특수-only, so leaving them out would read 데스페라도
+ * as 6/2 on a full ammo deck. The gift conditions (here) and the effect requirements
+ * (`effects.ts`) share this one rule.
+ */
+export function countsSpecial(keyword: string, includesSpecial: boolean): boolean {
+  return includesSpecial || !STATUS_SET.has(keyword);
+}
+
 function conditionCount(condition: Condition, stats: DeckStats): number | null {
   switch (condition.type) {
     case 'keywordSkillCount': {
@@ -114,14 +120,9 @@ function conditionCount(condition: Condition, stats: DeckStats): number | null {
       // over identities, never by adding the two counts.
       const union = new Set<number>();
       for (const keyword of condition.keywords) {
-        // 「또는 특수 X」 counts the 특수 variants too; a plain 「[X]를 부여하는」 does not.
-        // 탄환·혈찬 are the exception: no condition can ask for a 특수 form of them (the game
-        // declares none), and 7 of the 13 ammo identities are 특수-only, so leaving them out
-        // would read 데스페라도 as 6/2 on a full ammo deck.
-        const withSpecial = condition.includesSpecial || !STATUS_SET.has(keyword);
-        const members = (withSpecial ? stats.keywordMembers : stats.baseKeywordMembers)[condition.scope][
-          keyword
-        ];
+        const members = (
+          countsSpecial(keyword, condition.includesSpecial) ? stats.keywordMembers : stats.baseKeywordMembers
+        )[condition.scope][keyword];
         for (const id of members ?? []) union.add(id);
       }
       return union.size;

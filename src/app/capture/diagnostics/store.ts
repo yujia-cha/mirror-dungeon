@@ -22,16 +22,33 @@ export interface StoredFrame {
   class?: DiagFrameClass;
 }
 
+/**
+ * The recorder's counters (M154), kept in the meta store beside the records they count — written
+ * in the same transaction as each record — so opening the device need not read every record back.
+ */
+export interface DiagCounts {
+  records: number;
+  /** Routine reads among them (no event, no frame — M153). */
+  readRecords: number;
+  /** The last record's seq. */
+  seq: number;
+  /** The first record's time, or null. */
+  startedAt: number | null;
+}
+
 export interface DiagStore {
-  addRecord(seq: number, rec: DiagRecord): Promise<void>;
+  /** Add a record; `counts` (M154), when given, are the counters with it, stored with it. */
+  addRecord(seq: number, rec: DiagRecord, counts?: DiagCounts): Promise<void>;
+  /** How many records are stored, without reading them (M154). */
+  countRecords(): Promise<number>;
   addFrame(frame: StoredFrame): Promise<void>;
   records(): Promise<StoredRecord[]>;
   frames(): Promise<StoredFrame[]>;
   deleteFrames(ids: readonly string[]): Promise<void>;
   /** A kept frame turned out to matter more (an event undone): its class goes up. */
   setFrameClass(id: string, cls: DiagFrameClass): Promise<void>;
-  /** Drop records up to and including `seq`, and the frames named. */
-  clearUpTo(seq: number, frameIds: readonly string[]): Promise<void>;
+  /** Drop records up to and including `seq`, and the frames named; `counts` as for `addRecord`. */
+  clearUpTo(seq: number, frameIds: readonly string[], counts?: DiagCounts): Promise<void>;
   clearAll(): Promise<void>;
   getMeta<T>(key: string): Promise<T | undefined>;
   setMeta(key: string, value: unknown): Promise<void>;
@@ -42,7 +59,11 @@ export function memoryStore(): DiagStore {
   const frames = new Map<string, StoredFrame>();
   const meta = new Map<string, unknown>();
   return {
-    addRecord: async (seq, rec) => void records.set(seq, rec),
+    addRecord: async (seq, rec, counts) => {
+      records.set(seq, rec);
+      if (counts) meta.set(COUNTS, counts);
+    },
+    countRecords: async () => records.size,
     addFrame: async (frame) => void frames.set(frame.id, frame),
     records: async () => [...records].sort(([a], [b]) => a - b).map(([seq, rec]) => ({ seq, rec })),
     frames: async () => [...frames.values()].sort((a, b) => a.t - b.t || a.id.localeCompare(b.id)),
@@ -51,9 +72,10 @@ export function memoryStore(): DiagStore {
       const frame = frames.get(id);
       if (frame) frames.set(id, { ...frame, class: cls });
     },
-    clearUpTo: async (seq, ids) => {
+    clearUpTo: async (seq, ids, counts) => {
       for (const key of [...records.keys()]) if (key <= seq) records.delete(key);
       ids.forEach((id) => frames.delete(id));
+      if (counts) meta.set(COUNTS, counts);
     },
     clearAll: async () => {
       records.clear();
@@ -66,6 +88,8 @@ export function memoryStore(): DiagStore {
 }
 
 const DB = 'md-diagnostics';
+/** The meta key of the recorder's counters (`DiagCounts`, M154). */
+export const COUNTS = 'counts';
 
 function request<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -85,10 +109,15 @@ function done(tx: IDBTransaction): Promise<void> {
 function idbStore(db: IDBDatabase): DiagStore {
   const tx = (stores: string[], mode: IDBTransactionMode) => db.transaction(stores, mode);
   return {
-    async addRecord(seq, rec) {
-      const t = tx(['records'], 'readwrite');
+    async addRecord(seq, rec, counts) {
+      const t = tx(counts ? ['records', 'meta'] : ['records'], 'readwrite');
       t.objectStore('records').put(rec, seq);
+      if (counts) t.objectStore('meta').put(counts, COUNTS);
       await done(t);
+    },
+    async countRecords() {
+      const t = tx(['records'], 'readonly');
+      return request(t.objectStore('records').count());
     },
     async addFrame(frame) {
       const t = tx(['frames'], 'readwrite');
@@ -121,10 +150,11 @@ function idbStore(db: IDBDatabase): DiagStore {
       if (frame) store.put({ ...frame, class: cls }, id);
       await done(t);
     },
-    async clearUpTo(seq, ids) {
-      const t = tx(['records', 'frames'], 'readwrite');
+    async clearUpTo(seq, ids, counts) {
+      const t = tx(['records', 'frames', 'meta'], 'readwrite');
       t.objectStore('records').delete(IDBKeyRange.upperBound(seq));
       for (const id of ids) t.objectStore('frames').delete(id);
+      if (counts) t.objectStore('meta').put(counts, COUNTS);
       await done(t);
     },
     async clearAll() {

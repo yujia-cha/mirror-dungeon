@@ -13,7 +13,6 @@
  */
 import { useRef } from 'react';
 import { Star } from 'lucide-react';
-import { conflictGroups, conflictRootsOf } from '../../core/index.ts';
 import { t } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { lostFusions } from '../lib/fusion-lost.ts';
@@ -30,7 +29,6 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     data,
     indexes,
     lang,
-    input,
     plan,
     shown,
     planPending,
@@ -38,6 +36,7 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
     resolutions,
     analysisPending,
     analyzeMore,
+    conflict,
     drops,
     giftName,
     packName,
@@ -122,9 +121,9 @@ export function RoutePlanPanel({ onOpenGifts }: { onOpenGifts?: () => void }) {
   // The decision is the full plan's: it stays on screen while an alternative is previewed, so the
   // header chips and the 「전부 유지」 row read the plan itself, not the preview.
   // The goals lost to the conflict, a starved shared ingredient's fusion among them (M115).
-  const conflicting = conflictRootsOf(plan, input, data, indexes);
+  const conflicting = conflict?.goals ?? [];
   const conflicted = conflicting.length > 0;
-  const groups = conflictGroups(plan, input, data, indexes);
+  const groups = conflict?.groups ?? [];
 
   return (
     <div className="flex flex-col gap-3" data-testid="route-plan">

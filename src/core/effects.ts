@@ -7,7 +7,7 @@ import type {
   IdentitySkill,
   SkillGiftIndex,
 } from './schema.ts';
-import { STATUS_KEYWORDS } from './schema.ts';
+import { countsSpecial } from './deck.ts';
 import type { DeckStats } from './types.ts';
 
 /**
@@ -16,8 +16,6 @@ import type { DeckStats } from './types.ts';
  * gates name. Requirements the deck can never fail — a state on an enemy, a battle situation — were
  * left out at build time, so an effect without requirements is unconditional.
  */
-
-const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
 
 /**
  * `deck`: a usable effect asks something of the deck. `ego`: only an E.G.O skill condition (always
@@ -76,14 +74,6 @@ function anySkill(skills: readonly IdentitySkill[], test: (skill: IdentitySkill)
     if (verdict === null) unknown = true;
   }
   return unknown ? null : false;
-}
-
-/**
- * 탄환·혈찬 have no 특수 variant, so their 특수 entries are the keyword itself; the status keywords count
- * a 특수-only skill only when the sentence says 「또는 특수 X」.
- */
-function countsSpecial(keyword: string, includesSpecial: boolean): boolean {
-  return includesSpecial || !STATUS_SET.has(keyword);
 }
 
 function shapeMatches(skill: IdentitySkill, kind: string, n: number | undefined): Verdict {

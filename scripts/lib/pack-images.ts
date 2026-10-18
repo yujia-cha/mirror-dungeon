@@ -11,9 +11,7 @@
  * that names the art of packs we backfilled from that source (the Canto X packs carry their id as
  * `sprite`). We save each file under the pack's `sprite`, the same key `public/art/` uses.
  */
-import { join } from 'node:path';
-import type { SeasonIndex, ThemePack } from '../../src/core/schema.ts';
-import { readJsonIfExists } from './io.ts';
+import type { ThemePack } from '../../src/core/schema.ts';
 
 /** Where the images live, one `{sprite}.webp` per key, plus `manifest.json`. */
 export const PACK_IMAGE_DIR = 'public/icons/packs';
@@ -59,18 +57,6 @@ export function planPackImages(
     else unmapped.push(key);
   }
   return { downloads, unmapped };
-}
-
-/** Every pack of every season `index.json` lists — one pool across seasons, like the gift icons. */
-export function packsAcrossSeasons(dataDir: string): Pick<ThemePack, 'id' | 'sprite'>[] {
-  const index = readJsonIfExists<SeasonIndex>(join(dataDir, 'index.json'));
-  const packs: Pick<ThemePack, 'id' | 'sprite'>[] = [];
-  for (const season of index?.seasons ?? []) {
-    for (const pack of readJsonIfExists<ThemePack[]>(join(dataDir, `md${season.id}`, 'packs.json')) ?? []) {
-      packs.push({ id: pack.id, sprite: pack.sprite });
-    }
-  }
-  return packs;
 }
 
 export interface Rgba {

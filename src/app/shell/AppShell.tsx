@@ -393,7 +393,6 @@ export function AppShell({
                   <GiftsStep
                     data={data}
                     indexes={indexes}
-                    stats={stats}
                     lang={lang}
                     onGoDeck={() => setUi({ leftTab: 'deck' })}
                     onBrowse={openBrowser}
@@ -406,6 +405,7 @@ export function AppShell({
               {desktop && leftOpen ? (
                 <PanelResizer
                   side="left"
+                  panelId="panel-left"
                   width={ui.leftWidth}
                   onWidth={(leftWidth) => setUi({ leftWidth })}
                   lang={lang}
@@ -473,6 +473,7 @@ export function AppShell({
               {desktop && rightOpen ? (
                 <PanelResizer
                   side="right"
+                  panelId="panel-right"
                   width={ui.rightWidth}
                   onWidth={(rightWidth) => setUi({ rightWidth })}
                   lang={lang}

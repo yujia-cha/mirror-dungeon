@@ -83,10 +83,28 @@ export interface RunState {
 }
 
 /**
+ * Whether the run holds anything the player could lose by starting over (M143): an entry, a gift
+ * marked, a start settled or recorded, a floor behind. The one test for 「is there a run to ask
+ * about」 — a share link, 「화면 인식 시작」 and the feedback report all use it. A run that has seen its
+ * start on floor 1 (the screen reader settled it, nothing entered yet) is already a run: asking
+ * only about floors and entries let a share link wipe it, and its snapshot, without a word.
+ */
+export function runHasProgress(run: RunState): boolean {
+  return (
+    run.currentFloor > 1 ||
+    Object.keys(run.visits).length > 0 ||
+    Object.keys(run.giftStatus).length > 0 ||
+    run.startDone === true ||
+    run.startGifts.length > 0
+  );
+}
+
+/**
  * Whether the start stage (start gifts, 기프트 관측) can still be changed: the window closes the
  * moment floor 1 is left, since the starlight is spent there — or earlier, once the run records
- * that the observation screen is passed (`startDone`, M134). `runInProgress` is not the test — it
- * turns true as soon as a pack is entered on floor 1, which says nothing about the start.
+ * that the observation screen is passed (`startDone`, M134). `runHasProgress` is not the test — it
+ * turns true as soon as a pack is entered or a gift marked on floor 1, which says nothing about
+ * the start.
  */
 export function observationClosed(run: Pick<RunState, 'currentFloor' | 'startDone'>): boolean {
   return run.currentFloor > 1 || run.startDone === true;
@@ -114,6 +132,15 @@ export function plannedGifts(
   }));
 }
 
+/**
+ * The run fields the plan reads — and only these. The stage floor is not one: looking back at an
+ * earlier floor changes what is on show, not the route, so it must not ask for a new plan.
+ */
+export type PlannedRun = Pick<
+  RunState,
+  'currentFloor' | 'visits' | 'giftStatus' | 'startDone' | 'collectRest'
+>;
+
 export function planInputFor(
   state: {
     deck: number[];
@@ -121,7 +148,7 @@ export function planInputFor(
     wanted: number[];
     options: PlanOptions;
     fusionGoal?: FusionGoalMap;
-    run?: RunState;
+    run?: PlannedRun;
   },
   /** How far this season's run goes. Without it the saved bound stands, which is the longest run. */
   season: { lastFloor?: number } = {},

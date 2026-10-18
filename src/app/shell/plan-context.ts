@@ -9,7 +9,14 @@
 import { createContext, useContext } from 'react';
 import type { Gift, GameData } from '../../core/schema.ts';
 import type { DeckStats, GameIndexes, PlanInput, RoutePlan } from '../../core/types.ts';
-import type { DropAnalysis, ResolutionAnalysis, RouteVariant } from '../../core/index.ts';
+import type {
+  ConflictGroup,
+  DropAnalysis,
+  ResolutionAnalysis,
+  RouteVariant,
+  SkillGiftLookup,
+} from '../../core/index.ts';
+import type { ConditionReport } from '../../core/types.ts';
 import type { Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
@@ -48,6 +55,10 @@ export interface PlanState {
   indexes: GameIndexes;
   stats: DeckStats;
   lang: Lang;
+  /** Who meets which gift effect, from the season's built index (M129); undefined = compute it. */
+  skillLookup: SkillGiftLookup | undefined;
+  /** Every conditioned gift's reports for this deck (`conditionReportsByGift`), built once. */
+  conditionByGift: ReadonlyMap<number, ConditionReport[]>;
   input: PlanInput;
   /** The plan for the full goal list, or null without goals. */
   plan: RoutePlan | null;
@@ -72,6 +83,11 @@ export interface PlanState {
   analysisPending: boolean;
   /** Measure the candidates the analysis left out — the card's 「더 계산」 (M115). */
   analyzeMore: () => void;
+  /**
+   * The full plan's conflict, or null without a plan: the goals it loses (`conflictRootsOf`, a
+   * starved shared ingredient's fusion among them) and the contested floors (`conflictGroups`).
+   */
+  conflict: { goals: number[]; groups: ConflictGroup[] } | null;
   /** The goals the decision card has checked to leave out, and the route without them. */
   drops: DropSelection;
   /** The checked set's route while it is previewed on the map; `shown` is its plan. */

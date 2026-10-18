@@ -10,8 +10,8 @@
  *   any number (M103: a real 5/5 confirm had two 빛나는 잔영). Unsure slots say so instead of guessing.
  * - `mixedFusionConsumed` answers the question the owner asked for 달의 기억: it eats 2 of the 7
  *   shards and all 3 memories. The memories need no reading (all of them go), and neither do the
- *   shards when the player holds only two. Only with three or more shards held does it take the
- *   icons, and only among the shards and memories the player holds.
+ *   shards when the player holds only two. With three or more shards held the icons decide, read
+ *   among what the player holds like any fusion's, and what they leave open is asked.
  *
  * Pure: rankings and run state in, ids out. Candidates come from the run (`giftStatus` 'got'),
  * which is what keeps the reading reliable — a handful of held gifts, not the season's 450.
@@ -146,46 +146,22 @@ export function recipeConsumed(
 }
 
 /**
- * What the mixed fusion (달의 기억) ate from what the player holds.
- *
- * `slots` are the confirm screen's rankings over `candidatesForMixed` — or null when the screen was
- * not read, in which case only what needs no reading is settled.
+ * What the mixed fusion (달의 기억) ate from what the player holds, settled without the icons: a
+ * pool the player holds no more of than the recipe takes goes whole; a pool with more to choose
+ * from is asked about. The confirm's icons, when read, come in beside this (`apply.ts`).
  */
-export function mixedFusionConsumed(
-  mixed: MixedRecipe,
-  held: ReadonlySet<number>,
-  slots: readonly SlotRanking[] | null,
-  thresholds: SlotThresholds = DEFAULT_SLOT_THRESHOLDS,
-): Consumed {
+export function mixedFusionConsumed(mixed: MixedRecipe, held: ReadonlySet<number>): Consumed {
   const sorted = (ids: Iterable<number>) => [...ids].sort((a, b) => a - b);
   const heldOf = (pool: readonly number[]) => sorted(pool.filter((id) => held.has(id)));
   const aHeld = heldOf(mixed.aPool);
   const bHeld = heldOf(mixed.bPool);
-  // A pool the player holds no more of than the recipe takes goes whole: nothing to tell apart.
-  const certain = [
+  const consumed = [
     ...(aHeld.length <= mixed.aCount ? aHeld : []),
     ...(bHeld.length <= mixed.bCount ? bHeld : []),
   ];
-  const open = [
-    ...(aHeld.length > mixed.aCount ? [{ held: aHeld, count: mixed.aCount }] : []),
-    ...(bHeld.length > mixed.bCount ? [{ held: bHeld, count: mixed.bCount }] : []),
+  const unsure = [
+    ...(aHeld.length > mixed.aCount ? aHeld : []),
+    ...(bHeld.length > mixed.bCount ? bHeld : []),
   ];
-  if (open.length === 0) return { consumed: sorted(certain), unsure: [] };
-
-  const read = slots ? assignSlots(slots, thresholds) : [];
-  const matched = new Set(read.flatMap((r) => (r.status === 'match' ? [r.id] : [])));
-  const consumed = [...certain];
-  const unsure: number[] = [];
-  for (const pool of open) {
-    const seen = pool.held.filter((id) => matched.has(id));
-    // The screen must account for the whole share; a partial read settles nothing in that pool.
-    if (seen.length === pool.count) consumed.push(...seen);
-    else unsure.push(...pool.held);
-  }
   return { consumed: sorted(consumed), unsure: sorted(unsure) };
-}
-
-/** The gifts to rank the confirm screen's slots against for the mixed fusion: what the player holds of both pools. */
-export function candidatesForMixed(mixed: MixedRecipe, held: ReadonlySet<number>): number[] {
-  return [...mixed.aPool, ...mixed.bPool].filter((id) => held.has(id)).sort((a, b) => a - b);
 }

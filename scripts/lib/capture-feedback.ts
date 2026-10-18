@@ -1,7 +1,7 @@
 /**
  * Reading an owner's diagnostics bundle back (M113, `npm run capture:feedback`): what the screen
  * reader got wrong and missed, labels the spike can measure against, and how the route compared
- * with the run. Pure — the CLI does the files, the OCR and the printing.
+ * with the run. Pure but for `unpackBundle` — the CLI does the other files, the OCR and the printing.
  *
  * Where truth comes from, strongest first:
  * - an answered question names the gift or pack the screen showed (certain);
@@ -13,6 +13,8 @@
  * the report lists their files so a person can see what came and went between reads. They are
  * not full size, so they are never labels and never re-read (`isPreview`).
  */
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join, relative, resolve, isAbsolute } from 'node:path';
 import type { CaptureLayout, DiagnosticsBundle, DiagRecord } from '../../src/core/schema.ts';
 import { DIAG_PART_FILE, diagnosticsBundleSchema, diagPartSchema } from '../../src/core/schema.ts';
 
@@ -62,6 +64,60 @@ export function filmStrips(bundle: DiagnosticsBundle): FilmStrip[] {
     });
 }
 
+/**
+ * What a bundle id or a frame id may be: they become a folder and file names on the owner's disk
+ * (`local-fixtures/sessions/<bundleId>/frames/<id>.jpg`), and the zip they come from is a file
+ * someone handed over. The app makes both from wall-clock numbers (`String(startedAt)`,
+ * `${t}-${seq}`, `p${t}-${seq}`).
+ */
+const SAFE_ID = /^[\w-]+$/;
+
+/** `id` if it is a safe file name (`SAFE_ID`), else an error naming what it was. */
+export function safeId(id: string, what: string): string {
+  if (!SAFE_ID.test(id)) throw new Error(`${what} ${JSON.stringify(id)} is not a plain name — refusing it`);
+  return id;
+}
+
+/**
+ * The files of an unpacked bundle that may be written to its folder: `session.json`, `part.json`
+ * and `frames/<id>.jpg` with a safe id — anything else in the zip (a `../` path, an absolute one,
+ * a stray file) is dropped, never written. Pairs of a path relative to the folder and the bytes.
+ */
+export function unpackableFiles(files: Record<string, Uint8Array>): [string, Uint8Array][] {
+  const keep: [string, Uint8Array][] = [];
+  for (const [path, bytes] of Object.entries(files)) {
+    if (path === 'session.json' || path === DIAG_PART_FILE) keep.push([path, bytes]);
+    else {
+      const frame = /^frames\/([^/]+)\.jpg$/.exec(path);
+      if (frame && SAFE_ID.test(frame[1]!)) keep.push([path, bytes]);
+    }
+  }
+  return keep.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+}
+
+/**
+ * Write a merged bundle into `<root>/<bundleId>/` (a fresh `frames/`), only the files
+ * `unpackableFiles` keeps, and every one checked to land inside that folder. Returns the folder
+ * and how many files of the zip were skipped. Throws, writing nothing, on an unsafe bundle id.
+ */
+export function unpackBundle(
+  root: string,
+  files: Record<string, Uint8Array>,
+): { dir: string; bundle: DiagnosticsBundle; skipped: number } {
+  const { bundle } = parseBundle(files);
+  const dir = resolve(root, bundle.bundleId);
+  const inside = (path: string) => {
+    const rel = relative(dir, path);
+    return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel);
+  };
+  const keep = unpackableFiles(files).filter(([name]) => inside(resolve(dir, name)));
+  // A fresh folder: frames left from another export of the same recording would not match.
+  rmSync(join(dir, 'frames'), { recursive: true, force: true });
+  mkdirSync(join(dir, 'frames'), { recursive: true });
+  for (const [name, bytes] of keep) writeFileSync(join(dir, name), bytes);
+  return { dir, bundle, skipped: Object.keys(files).length - keep.length };
+}
+
 /** A bundle as unzipped: `session.json` and `frames/{id}.jpg`. */
 export function parseBundle(files: Record<string, Uint8Array>): {
   bundle: DiagnosticsBundle;
@@ -70,6 +126,7 @@ export function parseBundle(files: Record<string, Uint8Array>): {
   const json = files['session.json'];
   if (!json) throw new Error('no session.json in the bundle');
   const bundle = diagnosticsBundleSchema.parse(JSON.parse(new TextDecoder().decode(json)));
+  safeId(bundle.bundleId, 'bundle id');
   const frames = new Map<string, Uint8Array>();
   for (const frame of bundle.frames) {
     const bytes = files[`frames/${frame.id}.jpg`];
@@ -112,6 +169,7 @@ export function mergeParts(zips: readonly { name: string; files: Record<string, 
       .parse(decode(session));
     return { name, files, bundleId, exportedAt, part: 1, total: 1 };
   });
+  for (const d of described) safeId(d.bundleId, `${d.name}: bundle id`);
   const exports = new Set(described.map((d) => `${d.bundleId}@${d.exportedAt}`));
   if (exports.size > 1)
     throw new Error(

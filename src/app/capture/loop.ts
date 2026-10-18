@@ -232,6 +232,13 @@ export const INITIAL_LOOP: LoopState = {
 export type Decision = 'read' | 'skip';
 /** A full read of every title, or a popup read of the popup's title only (M136). */
 export type ReadMode = 'full' | 'popup';
+/**
+ * Why a tick reads (M154): the screen differs from the frame last read (`change`); a read is owed
+ * whatever it shows — a change seen while busy, the first frame after black, the full read after a
+ * popup burst (`dirty`); or an unchanged screen is read again (`refresh`). Only `refresh` is a
+ * re-read of a known screen. The session and the bench both take it from `decide`.
+ */
+export type ReadReason = 'change' | 'dirty' | 'refresh';
 
 /**
  * Fold one tick. `isChanged` compares this tick's signature with `state.lastRead` (pass the
@@ -251,11 +258,13 @@ export function decide(
   refresh: RefreshPolicy = BASE_REFRESH,
   urgent = false,
   seen: { black?: boolean; stillMs?: number } = {},
-): { state: LoopState; decision: Decision; mode: ReadMode } {
+): { state: LoopState; decision: Decision; mode: ReadMode; reason: ReadReason } {
   const { black = false, stillMs = 0 } = seen;
   const refreshMs = refresh.firstMs;
   const burst = inBurst(state, now);
   const mode: ReadMode = burst ? 'popup' : 'full';
+  const owed = state.dirty || state.dark || (!burst && state.owed);
+  const reason: ReadReason = isChanged ? 'change' : owed ? 'dirty' : 'refresh';
   // A fade through black between sections (M153): nothing to read, and the hold a battle built up
   // must not reach the screen after it — even when the black comes under a busy read. It ends a
   // popup burst too: popups clicked through blink to the screen under them, never to black, so the
@@ -272,26 +281,28 @@ export function decide(
       },
       decision: 'skip',
       mode,
+      reason,
     };
   if (state.busy) {
     return {
       state: isChanged && !state.dirty ? { ...state, dirty: true } : state,
       decision: 'skip',
       mode,
+      reason,
     };
   }
-  const fresh = isChanged || state.dirty || state.dark || (!burst && state.owed);
+  const fresh = reason !== 'refresh';
   // A moving screen that read as nothing is read again at the range's slow end, not the tick's
   // (M142): the ticks stay fast for what may come, the OCR does not run back to back on a battle.
   // A screen that stopped moving for the hold's base is read through a hold grown past it (M153): a
   // popup over the battle on one frame, the frames after it lost, looks like that.
   const moving = state.holdBase <= 0 || stillMs < state.holdBase;
   if (fresh && !burst && !urgent && !state.owed && !state.dark && moving && now < state.holdUntil)
-    return { state, decision: 'skip', mode };
+    return { state, decision: 'skip', mode, reason };
   // Only the first re-read since a change comes sooner in the burst: `refreshGap` is still at its
   // start then, and doubles after it as ever.
   const gap = burst && state.refreshGap <= refreshMs ? BURST_REFRESH_MS : state.refreshGap;
-  if (!fresh && now - state.lastReadAt < gap) return { state, decision: 'skip', mode };
+  if (!fresh && now - state.lastReadAt < gap) return { state, decision: 'skip', mode, reason };
   return {
     state: {
       ...state,
@@ -308,6 +319,7 @@ export function decide(
     },
     decision: 'read',
     mode,
+    reason,
   };
 }
 

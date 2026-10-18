@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { buildFeedback, type FeedbackInput } from '../../src/app/feedback/body.ts';
+import { encodePayload } from '../../src/app/feedback/payload.ts';
 import { decodePayload, feedbackReport, publicShareLink, stampOf } from './feedback-decode.ts';
 
 const input: FeedbackInput = {
@@ -134,5 +135,64 @@ describe('feedback decode', () => {
     const issue = buildFeedback(input, 'ko');
     const damaged = issue.body.replace(/(```md-feedback\n)(.{40})/, '$1');
     expect(decodePayload(damaged).ok).toBe(false);
+  });
+
+  describe('a block anyone could have written (M154: the issue is public)', () => {
+    const block = (payload: unknown) =>
+      encodePayload(payload as Parameters<typeof encodePayload>[0]).replace(/^.*\n|\n.*$/g, '');
+    const valid = () => {
+      const result = decodePayload(buildFeedback(input, 'ko').body);
+      if (!result.ok) throw new Error(result.error);
+      return result.payload;
+    };
+
+    it('keeps a valid payload as it was sent, unknown keys too', () => {
+      // Arrange
+      const payload = { ...valid(), extra: 'kept' };
+      // Act
+      const result = decodePayload(encodePayload(payload));
+      // Assert
+      expect(result).toEqual({ ok: true, payload });
+    });
+
+    type Payload = ReturnType<typeof valid>;
+    const withState = (p: Payload, shared: object, run: object) => ({
+      ...p,
+      state: { ...p.state!, shared: { ...p.state!.shared, ...shared }, run: { ...p.state!.run, ...run } },
+    });
+    it.each<[string, (p: Payload) => unknown, RegExp]>([
+      ['the version alone', () => ({ v: 1 }), /malformed at (t|kind|title|message|env|screenshot)\b/],
+      ['a message that is a number', (p) => ({ ...p, message: 5 }), /malformed at message\b/],
+      [
+        'a deck of strings',
+        (p) => withState(p, { deck: ['x'] }, {}),
+        /malformed at state\.shared\.deck\.0\b/,
+      ],
+      [
+        'an unknown log kind',
+        (p) => ({ ...p, log: { entries: [{ t: 1, kind: 'boom' }], omitted: 0 } }),
+        /malformed at log\.entries\.0\b/,
+      ],
+      [
+        'a gift status a run cannot have',
+        (p) => withState(p, {}, { giftStatus: { 9088: 'lost' } }),
+        /malformed at state\.run\.giftStatus\.9088\b/,
+      ],
+    ])('refuses %s, naming where', (_, craft, error) => {
+      // Arrange
+      const text = block(craft(valid()));
+      // Act
+      const result = decodePayload(text);
+      // Assert
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toMatch(error);
+    });
+
+    it('still names an unknown version as such', () => {
+      expect(decodePayload(block({ ...valid(), v: 2 }))).toEqual({
+        ok: false,
+        error: 'unknown payload version 2',
+      });
+    });
   });
 });

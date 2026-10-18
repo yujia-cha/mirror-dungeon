@@ -8,6 +8,7 @@ import type { Lang } from './i18n.ts';
 import {
   APP_START,
   observationClosed,
+  runHasProgress,
   type FusionGoalMap,
   type GiftStatus,
   type RunState,
@@ -227,6 +228,12 @@ interface AppState extends SharedState {
     upgradeLevels: ReadonlyMap<number, UpgradeLevel>;
     /** The 잔영 materials (M152): no goal, no mark. Omitted = none. */
     materials?: ReadonlySet<number>;
+    /**
+     * Every identity the data ships (shared by the seasons). A deck slot or a deployed id outside
+     * it cannot be drawn or analysed, so it goes — without a count: no reader chose it, it is a
+     * blob or a link no build of this app wrote. Omitted = the deck is not checked.
+     */
+    identityIds?: ReadonlySet<number>;
   }) => {
     gifts: number;
   };
@@ -279,7 +286,6 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   const source = (raw ?? {}) as Record<string, unknown>;
   const out = { ...defaults } as Record<string, unknown>;
   for (const key of Object.keys(defaults)) if (key in source) out[key] = source[key];
-  if ('deployed' in source) out.deployed = source.deployed;
   const observed = Array.isArray(out.observedGifts) ? out.observedGifts : [];
   out.observedGifts = [...new Set(observed.filter((n): n is number => typeof n === 'number'))];
   // Slots turned off with 「관측하지 않기」 (M120). Core clamps the top to the rules' count.
@@ -301,7 +307,8 @@ export function sanitizeOptions(raw: unknown): PlanOptions {
   out.pinnedPacks = {};
   out.lastFloor = MAX_FLOOR_EVER;
   out.hardFromFloor = 1;
-  // Run progress lives in the `run` slice, never in shared or saved options.
+  // Run progress lives in the `run` slice, never in shared or saved options — and who fights is the
+  // store's `deployed` (`planInputFor` sets it), so a stored or linked copy is not carried along.
   out.currentFloor = 1;
   out.ownedGifts = [];
   out.unobtainableGifts = [];
@@ -386,27 +393,9 @@ export function collectedGifts(wanted: readonly number[], fusionGoal: FusionGoal
   return out;
 }
 
-/**
- * Whether there is a run worth warning about before something discards it. Floor 1 with no visit
- * recorded is the state a fresh app is in, so it is not worth a question.
- */
-export function runInProgress(run: RunState): boolean {
-  return run.currentFloor > 1 || Object.keys(run.visits).length > 0;
-}
-
-/**
- * Whether the run holds anything the player could lose by starting over (M143): an entry, a gift
- * marked, a start settled or recorded, a floor behind. Wider than `runInProgress`, which only asks
- * about floors — a run that has seen its start gifts on floor 1 is already a run.
- */
-export function runHasProgress(run: RunState): boolean {
-  return (
-    runInProgress(run) ||
-    Object.keys(run.giftStatus).length > 0 ||
-    run.startDone === true ||
-    run.startGifts.length > 0
-  );
-}
+// Whether a run holds anything worth asking about lives with the run's other predicates; the
+// screen reader imports it from here.
+export { runHasProgress } from './lib/plan-input.ts';
 
 /** What 「시작 전으로 되돌리기」 restores (M143): the run, and the pins and slots the start may change. */
 export interface RunSnapshot {
@@ -749,12 +738,18 @@ function withObservedIn(options: PlanOptions, wanted: number[], fusionGoal: Fusi
   return observedGifts.length === options.observedGifts.length ? options : { ...options, observedGifts };
 }
 
+/**
+ * One identity per sinner, at most twelve, in the order given. An id that cannot be an identity at
+ * all — not a positive integer, or one whose sinner digits are not 1..12 — is dropped here, on every
+ * way in; an id shaped right that the data does not know goes in `adoptSeason`, which has the data.
+ */
 function uniqueDeck(ids: number[]): number[] {
   const seen = new Set<number>();
   const out: number[] = [];
   for (const id of ids) {
+    if (!Number.isInteger(id) || id <= 0) continue;
     const sinner = sinnerOf(id);
-    if (seen.has(sinner)) continue;
+    if (sinner < 1 || sinner > SINNER_COUNT || seen.has(sinner)) continue;
     seen.add(sinner);
     out.push(id);
   }
@@ -1164,9 +1159,13 @@ export const useApp = create<AppState>()(
         for (const [id, level] of Object.entries(state.upgrades)) {
           if (level <= (upgradeLevels.get(Number(id)) ?? 0)) upgrades[Number(id)] = level;
         }
+        const deck = info.identityIds ? state.deck.filter((id) => info.identityIds!.has(id)) : state.deck;
         set({
           season,
           lastFloor,
+          ...(deck.length === state.deck.length
+            ? {}
+            : { deck, deployed: state.deployed.filter((id) => deck.includes(id)) }),
           run,
           runSnapshot,
           wanted,
@@ -1281,6 +1280,27 @@ export function encodeShared(state: SharedState): string {
     options: state.options,
   });
   return HASH_PREFIX + lzString.compressToEncodedURIComponent(payload);
+}
+
+/**
+ * The plan a link carries, read off the store's state: the same keys whichever surface builds the
+ * link (the header's 「공유」, the feedback report), so the two can never disagree about it.
+ */
+export function sharedStateOf(state: SharedState): SharedState {
+  return {
+    ...(state.season === undefined ? {} : { season: state.season }),
+    deck: state.deck,
+    deployed: state.deployed,
+    wanted: state.wanted,
+    fusionGoal: state.fusionGoal,
+    upgrades: state.upgrades,
+    options: state.options,
+  };
+}
+
+/** The address that opens `shared` on this page: its origin and path (Pages' base), then the hash. */
+export function shareUrlOf(shared: SharedState): string {
+  return `${window.location.origin}${window.location.pathname}${encodeShared(shared)}`;
 }
 
 export function decodeShared(hash: string): SharedState | null {

@@ -187,6 +187,29 @@ describe('adopting a season', () => {
     expect(state.lastFloor).toBe(5);
   });
 
+  it('drops identities the data does not know from the deck and the deployed list, without a count', () => {
+    const known = live.identities.slice(0, 2).map((identity) => identity.id);
+    // Shaped like an identity (sinner 3), but no data has it.
+    const unknown = 10399;
+    expect(live.identities.some((identity) => identity.id === unknown)).toBe(false);
+    act(() => useApp.setState({ deck: [known[0]!, unknown, known[1]!], deployed: [unknown, known[1]!] }));
+    let counts!: { gifts: number };
+    act(() => {
+      counts = useApp.getState().adoptSeason({
+        season: live.meta.dungeon.id,
+        lastFloor: lastFloorOf(live),
+        giftIds: new Set(live.gifts.map((gift) => gift.id)),
+        packIds: new Set(live.packs.map((pack) => pack.id)),
+        recipes: ingredientTree(liveIndexes, live.rules.fusion.maxShopSlots),
+        upgradeLevels: upgradeLevelsOf(live.gifts),
+        identityIds: new Set(live.identities.map((identity) => identity.id)),
+      });
+    });
+    expect(counts).toEqual({ gifts: 0 });
+    expect(useApp.getState().deck).toEqual(known);
+    expect(useApp.getState().deployed).toEqual([known[1]]);
+  });
+
   it('keeps a gift the season ships but cannot award — the planner explains that one itself', () => {
     const shipped = short.gifts[1]!.id;
     act(() => useApp.setState({ wanted: [shipped] }));

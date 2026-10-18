@@ -11,14 +11,14 @@ import {
   keywordIconManifestSchema,
   packImageManifestSchema,
 } from '../src/core/schema.ts';
-import { GIFT_ICON_DIR, giftsAcrossSeasons, isWebp } from '../scripts/lib/gift-icons.ts';
+import { giftsAcrossSeasons, packsAcrossSeasons } from '../scripts/lib/across-seasons.ts';
+import { GIFT_ICON_DIR, isWebp } from '../scripts/lib/gift-icons.ts';
 import { KEYWORD_ICON_DIR, UPSTREAM_KEYWORD_FILES } from '../scripts/lib/keyword-icons.ts';
 import {
   MAX_PACK_IMAGE_BYTES,
   PACK_IMAGE_DIR,
   PACK_IMAGE_QUALITY,
   PACK_IMAGE_WIDTH,
-  packsAcrossSeasons,
 } from '../scripts/lib/pack-images.ts';
 
 const dir = resolve(process.cwd(), GIFT_ICON_DIR);

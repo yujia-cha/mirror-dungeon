@@ -459,3 +459,25 @@ describe('fast ticks after a queued popup (M142)', () => {
     expect(twice.fastUntil).toBe(1000 + QUEUED_FAST_MS);
   });
 });
+
+describe('decide reason (M154)', () => {
+  const idle = finished(decide(INITIAL_LOOP, sig, true, 0).state);
+
+  it('says change for a changed screen, refresh for a re-read of an unchanged one', () => {
+    const other = new Uint8Array([9, 9, 9]);
+    expect(decide(idle, other, true, 10)).toMatchObject({ decision: 'read', reason: 'change' });
+    expect(decide(idle, sig, false, REFRESH_MS)).toMatchObject({ decision: 'read', reason: 'refresh' });
+  });
+
+  it('says dirty for a read owed whatever the screen shows: after black, after a burst, a change seen busy', () => {
+    const read = { decision: 'read', reason: 'dirty' };
+    // A black frame came since the last read.
+    expect(decide({ ...idle, dark: true }, sig, false, 10)).toMatchObject(read);
+    // A burst's popup reads found nothing: the full read after it is owed.
+    expect(decide({ ...idle, owed: true }, sig, false, 10)).toMatchObject(read);
+    expect(decide({ ...idle, dirty: true }, sig, false, 10)).toMatchObject(read);
+    // In the burst the owed full read waits: an unchanged screen is a re-read.
+    const burst = { ...idle, owed: true, burstUntil: 1000 };
+    expect(decide(burst, sig, false, 10).reason).toBe('refresh');
+  });
+});

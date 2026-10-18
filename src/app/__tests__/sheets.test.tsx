@@ -53,14 +53,7 @@ describe('observation slots (M120)', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9267);
     useApp.getState().toggleWanted(9423);
-    renderPlanned(
-      <GiftsStep
-        data={data}
-        indexes={indexes}
-        stats={analyseDeck(BURN_DECK, indexes, data.rules.deployment)}
-        lang="ko"
-      />,
-    );
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     const slots = () => screen.getAllByTestId('observe-slot');
     const open = slots().find((s) => s.querySelector('[data-suggested]'))!;
 

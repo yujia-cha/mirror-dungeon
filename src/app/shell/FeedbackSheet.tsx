@@ -16,7 +16,7 @@ import { Camera, Copy, ExternalLink, Globe } from 'lucide-react';
 import type { GameData } from '../../core/schema.ts';
 import type { RoutePlan } from '../../core/types.ts';
 import { pick, t, type Lang, type StringKey } from '../i18n.ts';
-import { encodeShared, useApp } from '../store.ts';
+import { shareUrlOf, sharedStateOf, useApp } from '../store.ts';
 import { DetailSurface } from '../components/BlockDetail.tsx';
 import { Button, Checkbox, Select, TextArea, TextField } from '../components/ui.tsx';
 import { feedbackLog, type FeedbackLogEntry } from '../lib/feedback-log.ts';
@@ -57,15 +57,7 @@ function issueFor(p: {
   message: string;
 }) {
   const state = useApp.getState();
-  const shared = {
-    ...(state.season === undefined ? {} : { season: state.season }),
-    deck: state.deck,
-    deployed: state.deployed,
-    wanted: state.wanted,
-    fusionGoal: state.fusionGoal,
-    upgrades: state.upgrades,
-    options: state.options,
-  };
+  const shared = sharedStateOf(state);
   return buildFeedback(
     {
       t: p.t,
@@ -81,7 +73,7 @@ function issueFor(p: {
       }),
       include: p.include,
       state: {
-        shareUrl: `${window.location.origin}${window.location.pathname}${encodeShared(shared)}`,
+        shareUrl: shareUrlOf(shared),
         shared,
         run: state.run,
         route: routeSummary(p.plan),

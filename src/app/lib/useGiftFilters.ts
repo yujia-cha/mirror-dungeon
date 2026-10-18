@@ -4,12 +4,10 @@
  * also draws `GiftFilterBar` from what this returns.
  */
 import { useCallback, useMemo, useState } from 'react';
-import type { Gift } from '../../core/schema.ts';
 import {
   EMPTY_FILTERS,
   filtersActive,
   matchesGiftAttrs,
-  matchesGiftFilters,
   matchesGiftName,
   type GiftFilters,
   type GiftMatcher,
@@ -24,7 +22,6 @@ export interface GiftFilterState {
   filtersOn: boolean;
   /** True while a query is being typed. */
   searching: boolean;
-  matchesFilters: (gift: Gift) => boolean;
   /** The name search and the other filters apart, for the parent/child tile rule. */
   matcher: GiftMatcher;
   resetFilters: () => void;
@@ -40,7 +37,6 @@ export function useGiftFilters(initialQuery = ''): GiftFilterState {
   );
   const setQuery = useCallback((query: string): void => set('query', query), [set]);
   const resetFilters = useCallback((): void => setFilters(EMPTY_FILTERS), []);
-  const matchesFilters = useCallback((gift: Gift): boolean => matchesGiftFilters(gift, filters), [filters]);
   const matcher = useMemo<GiftMatcher>(
     () => ({
       name: (gift) => matchesGiftName(gift, filters),
@@ -55,10 +51,9 @@ export function useGiftFilters(initialQuery = ''): GiftFilterState {
       setQuery,
       filtersOn: filtersActive(filters),
       searching: filters.query.trim() !== '',
-      matchesFilters,
       matcher,
       resetFilters,
     }),
-    [filters, set, setQuery, matchesFilters, matcher, resetFilters],
+    [filters, set, setQuery, matcher, resetFilters],
   );
 }

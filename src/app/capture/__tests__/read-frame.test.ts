@@ -123,6 +123,17 @@ describe('readFrame', () => {
     expect(empty.frame.gift).toMatchObject({ status: 'match', id: 9091 });
   });
 
+  it('names a sale among the held ids even when a held gift’s icon did not load (M154)', async () => {
+    // Arrange: the run holds 9091, whose icon failed to load — no reference for it.
+    const answers = { '0.2': { light: ['E.G.O 기프트 판매'] }, '0.5': { light: ['작고 나쁜 인형'] } };
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).fill(255);
+    const ctx = { ...CTX, held: [prepareReference(9993, rgba, 48, 48)], heldIds: [9091, 9993] };
+    // Act
+    const { frame } = await readFrame(fakeReader(answers).reader, LAYOUT, ctx);
+    // Assert
+    expect(frame.gift).toMatchObject({ status: 'match', id: 9091 });
+  });
+
   it('does not let a region speak for a screen whose title lives elsewhere', async () => {
     // A dimmed full-screen title read in the popup region must not make it the popup.
     const { reader } = fakeReader({ '0': { light: ['E.G.O 기프트 판매'] } });

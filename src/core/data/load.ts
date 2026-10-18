@@ -97,65 +97,43 @@ function assertShape(label: string, value: unknown, kind: 'array' | 'object'): v
 }
 
 /**
- * Which hand-drawn art files exist, or `null` when there is no manifest to read.
+ * A manifest the site may or may not ship, or `null` when there is none to read.
  *
- * Deliberately the one loader that never throws: art is decoration, and the planner works without
- * a single image. A missing, half-written or hand-broken manifest must leave the app running with
- * no-art tiles, not send it to the error card — which is why this does not use `fetchJson`.
+ * Deliberately never throws: art and icons are decoration, and the planner works without a single
+ * image. A missing, half-written or hand-broken manifest must leave the app running with plain
+ * tiles, not send it to the error card — which is why this does not use `fetchJson`.
  */
-export async function loadArtManifest(baseUrl = '/'): Promise<ArtManifest | null> {
+async function loadOptionalManifest<T>(
+  baseUrl: string,
+  path: string,
+  schema: { parse: (value: unknown) => T },
+): Promise<T | null> {
   try {
-    const response = await fetch(`${normaliseBase(baseUrl)}${ART_MANIFEST_PATH}`, {
+    const response = await fetch(`${normaliseBase(baseUrl)}${path}`, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!response.ok) return null;
-    return artManifestSchema.parse(await response.json());
+    return schema.parse(await response.json());
   } catch {
     return null;
   }
 }
 
-/**
- * Which game gift icons ship (M92), or `null`. Never throws, for the same reason as the art
- * manifest: a tile without a picture is a finished tile, so a missing manifest is not an error.
- */
-export async function loadGiftIconManifest(baseUrl = '/'): Promise<GiftIconManifest | null> {
-  try {
-    const response = await fetch(`${normaliseBase(baseUrl)}${GIFT_ICON_MANIFEST_PATH}`, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!response.ok) return null;
-    return giftIconManifestSchema.parse(await response.json());
-  } catch {
-    return null;
-  }
-}
+/** Which hand-drawn art files exist, or `null`. */
+export const loadArtManifest = (baseUrl = '/'): Promise<ArtManifest | null> =>
+  loadOptionalManifest(baseUrl, ART_MANIFEST_PATH, artManifestSchema);
 
-/** Which game keyword icons ship (M99), or `null` — the badge then draws its coloured dot. Never throws. */
-export async function loadKeywordIconManifest(baseUrl = '/'): Promise<KeywordIconManifest | null> {
-  try {
-    const response = await fetch(`${normaliseBase(baseUrl)}${KEYWORD_ICON_MANIFEST_PATH}`, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!response.ok) return null;
-    return keywordIconManifestSchema.parse(await response.json());
-  } catch {
-    return null;
-  }
-}
+/** Which game gift icons ship (M92), or `null`: a tile without a picture is a finished tile. */
+export const loadGiftIconManifest = (baseUrl = '/'): Promise<GiftIconManifest | null> =>
+  loadOptionalManifest(baseUrl, GIFT_ICON_MANIFEST_PATH, giftIconManifestSchema);
 
-/** Which game pack images ship (M100), or `null` — the cards then stay empty boxes. Never throws. */
-export async function loadPackImageManifest(baseUrl = '/'): Promise<PackImageManifest | null> {
-  try {
-    const response = await fetch(`${normaliseBase(baseUrl)}${PACK_IMAGE_MANIFEST_PATH}`, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!response.ok) return null;
-    return packImageManifestSchema.parse(await response.json());
-  } catch {
-    return null;
-  }
-}
+/** Which game keyword icons ship (M99), or `null` — the badge then draws its coloured dot. */
+export const loadKeywordIconManifest = (baseUrl = '/'): Promise<KeywordIconManifest | null> =>
+  loadOptionalManifest(baseUrl, KEYWORD_ICON_MANIFEST_PATH, keywordIconManifestSchema);
+
+/** Which game pack images ship (M100), or `null` — the cards then stay empty boxes. */
+export const loadPackImageManifest = (baseUrl = '/'): Promise<PackImageManifest | null> =>
+  loadOptionalManifest(baseUrl, PACK_IMAGE_MANIFEST_PATH, packImageManifestSchema);
 
 /**
  * Which seasons are published and which one to open. Always validated: it is one small object, and

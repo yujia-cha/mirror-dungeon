@@ -71,6 +71,13 @@ export interface ReadContext {
    * fusions eat most — on the run set's two real confirms, five of the eight ingredients.
    */
   materials: readonly IconRef[];
+  /**
+   * The ids of the gifts the run holds and of the 잔영, for a sale's names (M154). The references
+   * above hold only the icons that loaded — a fetch that failed must not drop a held gift from what
+   * can be sold. Omitted = the references' ids.
+   */
+  heldIds?: readonly number[];
+  materialIds?: readonly number[];
   /** Each candidate's tier, to keep a slot to the gifts its numeral allows (M152). Omitted = no filter. */
   tiers?: ReadonlyMap<number, number | null>;
   slotThresholds?: SlotThresholds;
@@ -287,9 +294,10 @@ export async function readFrame(
  * ambiguous. With nothing held yet every name stays a candidate.
  */
 function sellable(ctx: ReadContext): readonly NameCandidate[] {
-  const ids = new Set([...ctx.held, ...ctx.materials].map((ref) => ref.id));
+  const held = ctx.heldIds ?? ctx.held.map((ref) => ref.id);
+  const ids = new Set([...held, ...(ctx.materialIds ?? ctx.materials.map((ref) => ref.id))]);
   const named = ctx.gifts.filter((g) => ids.has(g.id));
-  return ctx.held.length > 0 ? named : ctx.gifts;
+  return held.length > 0 ? named : ctx.gifts;
 }
 
 function sameRegion(a: Region, b: Region): boolean {

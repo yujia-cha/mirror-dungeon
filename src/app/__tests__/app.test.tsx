@@ -186,6 +186,8 @@ describe('share links', () => {
       currentFloor: 1,
       unobtainableGifts: [],
     });
+    // Who fights is the store's `deployed`; an unchecked copy in the options is not carried along.
+    expect('deployed' in sanitizeOptions({ deployed: ['x', 10101] })).toBe(false);
   });
 
   it('writes the season it was made in, and reads a link the same whatever season it names (M145)', () => {
@@ -410,6 +412,29 @@ describe('share links', () => {
     expect(window.location.hash).toBe('');
   });
 
+  // The test used to be floors and entries only. A start the screen reader settled on floor 1 —
+  // nothing entered yet — is a run all the same, with a snapshot to go back to, and a link wiped
+  // both without a word.
+  it('asks before a link discards a floor-1 run whose start is settled', async () => {
+    const user = userEvent.setup();
+    useApp.getState().beginRun('new');
+    useApp.getState().markStartDone();
+    expect(useApp.getState().run.visits).toEqual({});
+    expect(useApp.getState().run.currentFloor).toBe(1);
+    window.location.hash = encodeShared({
+      deck: [10101],
+      deployed: [10101],
+      wanted: [9283],
+      options: defaultOptions(),
+    });
+    render(<App />);
+    const dialog = await screen.findByTestId('confirm-dialog');
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    expect(useApp.getState().run.startDone).toBe(true);
+    expect(useApp.getState().runSnapshot).not.toBeNull();
+    expect(useApp.getState().wanted).not.toEqual([9283]);
+  });
+
   // Pasting a link into the address bar of a tab already on the app is a same-document navigation:
   // no reload, so the first-render read never ran again and the link was silently ignored.
   it('applies a link that arrives as a hash change on the open tab', async () => {
@@ -500,6 +525,20 @@ describe('a saved state that cannot be trusted', () => {
       .getState()
       .applyShared({ deck: doubled, deployed: [10102], wanted: [], options: appDefaultOptions() });
     expect(useApp.getState()).toMatchObject({ deck: [10101, 10203], deployed: [] });
+  });
+
+  it('drops an id that cannot be an identity at all — no sinner 1..12, or not a positive integer', () => {
+    // 11301 would be sinner 13, 99999 sinner 99, 10001 sinner 0: none fills a slot of the deck.
+    const bad = [11301, 99999, 10001, -10101, 10101.5, 0, 10201];
+    expect(sanitizePersisted({ deck: bad, deployed: bad }, PERSIST_VERSION)).toMatchObject({
+      deck: [10201],
+      deployed: [10201],
+    });
+    expect(
+      decodeShared(encodeShared({ deck: bad, deployed: bad, wanted: [], options: appDefaultOptions() }))!,
+    ).toMatchObject({ deck: [10201], deployed: [10201] });
+    useApp.getState().setDeck(bad, 12);
+    expect(useApp.getState().deck).toEqual([10201]);
   });
 
   it('keeps each goal and each deployed identity once, whichever way they come in', () => {
@@ -1357,10 +1396,7 @@ describe('text the screen gets wrong', () => {
 describe('GiftsStep', () => {
   // The detail sheet is hosted by the provider, not by the tab, so the tab needs the shell context.
   const renderGifts = () => {
-    const { deck, deployed } = useApp.getState();
-    return renderPlanned(
-      <GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />,
-    );
+    return renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
   };
   const tile = (id: number) =>
     screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
@@ -1569,16 +1605,7 @@ describe('GiftsStep', () => {
     expect(screen.queryByRole('button', { name: '모두 보기' })).toBeNull();
     unmount();
     const onBrowse = vi.fn();
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(
-      <GiftsStep
-        data={data}
-        indexes={indexes}
-        stats={statsFor(deck, deployed)}
-        lang="ko"
-        onBrowse={onBrowse}
-      />,
-    );
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" onBrowse={onBrowse} />);
     const box = screen.getByRole('textbox', { name: '기프트 검색' });
     const door = screen.getByRole('button', { name: '모두 보기' });
     // The last thing on the search box's row.
@@ -1803,8 +1830,7 @@ describe('GiftsStep', () => {
     // test that skips this is testing a state the app is never in.
     adoptThisSeason();
     for (const id of [9283, 9222, 9217, 9435, 9751]) useApp.getState().toggleWanted(id);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     const slots = () => within(screen.getByTestId('observe-slots')).getAllByTestId('observe-slot');
     // Pins fill from the cheapest cell outward, so the 「+」 no longer claims a numbered slot.
     const plus = () => screen.queryAllByRole('button', { name: /^관측 지정 추가/ });
@@ -1849,8 +1875,7 @@ describe('GiftsStep', () => {
     adoptThisSeason();
     useApp.getState().toggleWanted(9235); // 데스페라도, fused from three pieces
     expect(observableGift(indexes.giftById.get(9235)!, data.rules)).toBe(false);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
 
     await user.click(screen.getAllByRole('button', { name: /^관측 지정 추가/ })[0]!);
     const list = screen.getByTestId('observe-candidates');
@@ -1907,8 +1932,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9283);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     const chip = screen.getByTestId('gift-chip');
     expect(chip).toHaveAttribute('data-gift', '9283');
     await user.click(within(chip).getByRole('button', { name: '상납된 시가 자세히' }));
@@ -2019,8 +2043,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     for (const id of [9283, 9222, 9217]) useApp.getState().toggleWanted(id);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     const chip = (id: number) =>
       screen.getAllByTestId('gift-chip').find((c) => c.getAttribute('data-gift') === String(id))!;
     const slot = (i: number) => screen.getAllByTestId('observe-slot')[i]!;
@@ -2057,8 +2080,7 @@ describe('GiftsStep', () => {
     try {
       useApp.getState().setDeck(BURN_DECK, 7);
       for (const id of [9222, 9217]) useApp.getState().toggleWanted(id);
-      const { deck, deployed } = useApp.getState();
-      renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+      renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
       const chip = (id: number) =>
         screen.getAllByTestId('gift-chip').find((c) => c.getAttribute('data-gift') === String(id))!;
       const slot = (i: number) => screen.getAllByTestId('observe-slot')[i]!;
@@ -2111,15 +2133,11 @@ describe('GiftsStep', () => {
   it('points an empty deck at the deck tab only when it is given somewhere to go', async () => {
     const user = userEvent.setup();
     const onGoDeck = vi.fn();
-    const { unmount } = renderPlanned(
-      <GiftsStep data={data} indexes={indexes} stats={statsFor([])} lang="ko" />,
-    );
+    const { unmount } = renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     expect(screen.getByText('덱이 비어 있습니다')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '덱 탭으로' })).toBeNull();
     unmount();
-    renderPlanned(
-      <GiftsStep data={data} indexes={indexes} stats={statsFor([])} lang="ko" onGoDeck={onGoDeck} />,
-    );
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" onGoDeck={onGoDeck} />);
     await user.click(screen.getByRole('button', { name: '덱 탭으로' }));
     expect(onGoDeck).toHaveBeenCalledTimes(1);
   });
@@ -2127,8 +2145,7 @@ describe('GiftsStep', () => {
   it('finds a gift by the 초성 of its name', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     // 「ㅈㄱㅁㄱ」 is how the name is reached on a Korean keyboard without committing to the vowels.
     // A search answers with one list, so there is no fold to open — see the two tests below.
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), 'ㅈㄱㅁㄱ');
@@ -2143,8 +2160,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9249);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     await user.type(screen.getByRole('textbox', { name: '기프트 검색' }), '조그맣고');
     // The chip above the grid opens the same sheet; here it is opened from the tile.
     await user.click(
@@ -2182,16 +2198,7 @@ describe('GiftsStep', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     const onBrowse = vi.fn();
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(
-      <GiftsStep
-        data={data}
-        indexes={indexes}
-        stats={statsFor(deck, deployed)}
-        lang="ko"
-        onBrowse={onBrowse}
-      />,
-    );
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" onBrowse={onBrowse} />);
     // Act
     const browse = screen.getByTestId('gift-browse-all');
     await user.click(browse);
@@ -3456,6 +3463,52 @@ describe('RoutePlanPanel', () => {
     }
   });
 
+  // `planInputFor` never reads the stage floor, yet the input memo hung on the whole `run`: every
+  // look back along the floor strip sent the worker the same question again.
+  it('asks the planner nothing new when only the stage floor moves', async () => {
+    const planner = createPlanner();
+    const plans: PlannerRequest[] = [];
+    class CountingWorker {
+      private readonly listeners = new Map<string, Set<(event: unknown) => void>>();
+      addEventListener(type: string, listener: (event: unknown) => void): void {
+        this.listeners.set(type, (this.listeners.get(type) ?? new Set()).add(listener));
+      }
+      removeEventListener(type: string, listener: (event: unknown) => void): void {
+        this.listeners.get(type)?.delete(listener);
+      }
+      terminate(): void {}
+      postMessage(request: PlannerRequest): void {
+        if (request.type === 'plan') plans.push(request);
+        const response = planner.handle(request);
+        if (!response) return;
+        queueMicrotask(() => {
+          for (const listener of this.listeners.get('message') ?? []) listener({ data: response });
+        });
+      }
+    }
+    vi.stubGlobal('Worker', CountingWorker);
+    resetPlannerWorker();
+    try {
+      useApp.getState().setDeck(BURN_DECK, 7);
+      useApp.getState().toggleWanted(9283);
+      useApp.getState().visitPack(1402, 1);
+      renderRoute();
+      await waitFor(() => expect(plans.length).toBeGreaterThan(0));
+      const before = plans.length;
+      act(() => useApp.getState().setStageFloor(1));
+      expect(useApp.getState().run.stageFloor).toBe(1);
+      act(() => useApp.getState().setStageFloor(2));
+      expect(useApp.getState().run.stageFloor).toBe(2);
+      expect(plans).toHaveLength(before);
+      // A change the plan does read still asks.
+      act(() => useApp.getState().setGiftStatus(9283, 'got'));
+      expect(plans).toHaveLength(before + 1);
+    } finally {
+      resetPlannerWorker();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps the checked set and its preview when a gift is marked during the run', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
@@ -3481,8 +3534,7 @@ describe('RoutePlanPanel', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9283);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     await user.click(
       within(screen.getByTestId('gift-chip')).getByRole('button', { name: '상납된 시가 자세히' }),
     );
@@ -3831,17 +3883,27 @@ describe('AppShell', () => {
     const divider = screen.getByTestId('panel-resizer-left');
     expect(divider).toHaveAttribute('role', 'separator');
     expect(divider).toHaveAttribute('aria-valuenow', '336');
-    // Dragging right widens the left panel; the width is remembered.
+    // Dragging right widens the left panel at once; the store hears of it once, on release —
+    // writing it on every move re-rendered the shell and the saved state each time.
+    const writes = vi.fn();
+    const unsubscribe = useApp.subscribe((state, prev) => {
+      if (state.ui !== prev.ui) writes(state.ui.leftWidth);
+    });
     fireEvent.pointerDown(divider, { pointerId: 1, button: 0, clientX: 336 });
     fireEvent.pointerMove(window, { pointerId: 1, clientX: 436 });
-    expect(useApp.getState().ui.leftWidth).toBe(436);
     expect(panel()).toHaveStyle({ width: '436px' });
+    expect(divider).toHaveAttribute('aria-valuenow', '436');
+    expect(useApp.getState().ui.leftWidth).toBe(336);
     // It never gets wider than the band allows, and the drag ends with the pointer.
     fireEvent.pointerMove(window, { pointerId: 1, clientX: 2000 });
-    expect(useApp.getState().ui.leftWidth).toBe(560);
+    expect(panel()).toHaveStyle({ width: '560px' });
     fireEvent.pointerUp(window, { pointerId: 1, clientX: 2000 });
+    expect(useApp.getState().ui.leftWidth).toBe(560);
+    expect(writes.mock.calls).toEqual([[560]]);
+    unsubscribe();
     fireEvent.pointerMove(window, { pointerId: 1, clientX: 300 });
     expect(useApp.getState().ui.leftWidth).toBe(560);
+    expect(panel()).toHaveStyle({ width: '560px' });
     // The keyboard nudges it, and a double press puts it back.
     divider.focus();
     await user.keyboard('{ArrowLeft}');
@@ -3855,8 +3917,10 @@ describe('AppShell', () => {
       clientX: 900,
     });
     fireEvent.pointerMove(window, { pointerId: 2, clientX: 850 });
+    expect(screen.getByTestId('panel-right')).toHaveStyle({ width: '386px' });
+    // A cancelled pointer (the browser took it) commits where the drag stood, like a release.
+    fireEvent.pointerCancel(window, { pointerId: 2, clientX: 850 });
     expect(useApp.getState().ui.rightWidth).toBe(386);
-    fireEvent.pointerUp(window, { pointerId: 2, clientX: 850 });
   });
 
   it('opens 「모두 보기」 in the stage on a desktop, picks a goal there, and closes by <<, ✕ and Escape', async () => {
@@ -4103,14 +4167,7 @@ describe('overlays that used to fight each other', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9222);
-    renderPlanned(
-      <GiftsStep
-        data={data}
-        indexes={indexes}
-        stats={statsFor(useApp.getState().deck, useApp.getState().deployed)}
-        lang="ko"
-      />,
-    );
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     const plus = () => screen.getAllByRole('button', { name: /^관측 지정 추가/ })[0]!;
     await user.click(plus());
     expect(screen.getByTestId('observe-candidates')).toBeInTheDocument();
@@ -4127,14 +4184,7 @@ describe('overlays that used to fight each other', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9283);
-    renderPlanned(
-      <GiftsStep
-        data={data}
-        indexes={indexes}
-        stats={statsFor(useApp.getState().deck, useApp.getState().deployed)}
-        lang="ko"
-      />,
-    );
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     const name = within(screen.getByTestId('gift-chip')).getByRole('button', { name: '상납된 시가 자세히' });
     name.focus();
     await user.click(name);
@@ -4971,11 +5021,10 @@ describe('RunStage · start-of-run gifts', () => {
     useApp.getState().setDeck(LCB_DECK, 6);
     for (const id of [9191, 9410, 9419, 9423]) useApp.getState().toggleWanted(id);
     for (const id of PINS) useApp.getState().toggleObserved(id, { max: 3, observable });
-    const { deck, deployed } = useApp.getState();
     renderPlanned(
       <>
         <RunStage onOpenGifts={() => undefined} />
-        <GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />
+        <GiftsStep data={data} indexes={indexes} lang="ko" />
       </>,
     );
     const slots = () => within(screen.getByTestId('observe-slots')).getAllByTestId('observe-slot');
@@ -5197,8 +5246,7 @@ describe('M78 · guide, header doors, clear confirm, observation suggestions', (
     const user = userEvent.setup();
     adopt();
     for (const id of [9267, 9423]) useApp.getState().toggleWanted(id);
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     await user.click(screen.getByTestId('gifts-clear'));
     const dialog = screen.getByTestId('confirm-dialog');
     expect(dialog).toHaveTextContent('목표 2개');
@@ -5217,8 +5265,7 @@ describe('M78 · guide, header doors, clear confirm, observation suggestions', (
     useApp.getState().setDeck(BURN_DECK, 7);
     useApp.getState().toggleWanted(9267);
     useApp.getState().toggleWanted(9423); // observable; the planner recommends observing it
-    const { deck, deployed } = useApp.getState();
-    renderPlanned(<GiftsStep data={data} indexes={indexes} stats={statsFor(deck, deployed)} lang="ko" />);
+    renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
     expect(screen.getByTestId('observe-slots-count')).toHaveTextContent('관측 0/3');
     const cell = await screen.findByRole('button', { name: /^관측 지정 추가 · 추천 / });
     expect(cell).toHaveAttribute('data-suggested', '9423');

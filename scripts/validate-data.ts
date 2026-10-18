@@ -29,9 +29,10 @@ import { familyOf, seasonOf } from './lib/season-files.ts';
 import { identitySkillProblems } from './lib/identity-skills.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
 import { readCuratedGiftEffects, splitEffectBlocks } from './lib/parse-effects.ts';
-import { GIFT_ICON_DIR, MAX_ICON_BYTES, giftsAcrossSeasons, isWebp } from './lib/gift-icons.ts';
+import { giftsAcrossSeasons, packsAcrossSeasons } from './lib/across-seasons.ts';
+import { GIFT_ICON_DIR, MAX_ICON_BYTES, isWebp } from './lib/gift-icons.ts';
 import { KEYWORD_ICON_DIR, MAX_KEYWORD_ICON_BYTES, UPSTREAM_KEYWORD_FILES } from './lib/keyword-icons.ts';
-import { MAX_PACK_IMAGE_BYTES, PACK_IMAGE_DIR, packsAcrossSeasons } from './lib/pack-images.ts';
+import { MAX_PACK_IMAGE_BYTES, PACK_IMAGE_DIR } from './lib/pack-images.ts';
 import { OUT, SEASON_FILES, outPath, outRelPath } from './lib/out.ts';
 import {
   derivedKeywords,

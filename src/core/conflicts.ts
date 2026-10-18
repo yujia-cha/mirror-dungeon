@@ -1,125 +1,101 @@
 /**
- * Pack conflicts, grouped the way the player decides them: a run of contested floors and the
- * packs that compete for them, each with the wanted gifts it would bring. The UI lets the player
- * keep or give up a whole pack from this; `planAlternatives` derives its candidate drops from the
- * same roots.
+ * Pack conflicts: which goals a plan loses to them, and which floors they fight over. The decision
+ * card names the contested floors (`conflictGroups`); the drop analysis and the resolutions start
+ * from the same goals (`wantedRoots`) and the same floors (`contestedFloors`).
  */
 import type { GameData } from './schema.ts';
-import type { GameIndexes, PlanInput, RoutePlan } from './types.ts';
+import type { GameIndexes, PlanInput, PlanOptions, RoutePlan } from './types.ts';
 import { analyseDeck } from './deck.ts';
+import { normaliseOptions, runStateOf } from './options.ts';
 import { expandRequirements, goalRoots } from './requirements.ts';
 import { modeForFloor } from './search.ts';
-
-export interface ConflictCandidate {
-  packId: number;
-  /** Contested floors on which the pack is offered. */
-  floors: number[];
-  /** Wanted gifts (fusion results included, by way of their ingredients) this pack supplies. */
-  gifts: number[];
-  /** The floor the current plan gives the pack, or null when it was left out. */
-  assignedAt: number | null;
-  preferred: boolean;
-}
-
-export interface ConflictGroup {
-  /** Contiguous contested floors. */
-  floors: number[];
-  candidates: ConflictCandidate[];
-}
 
 /**
  * Map a gift back to the wanted gift(s) it serves: a wanted gift is its own root, and a fusion
  * ingredient serves every wanted result above it, however deep (`goalRoots` — the search counts
  * goals in the same unit since M87).
+ *
+ * The recipes are expanded the way `planRoute` expands them — normalised options and the run's
+ * state — because the run changes the tree: a fusion result in hand needs none of its ingredients.
+ * Expanding without it made an owned result the root of an ingredient another goal still needs, so
+ * a goal already in hand was counted as lost to the conflict (M154).
  */
 export function wantedRoots(
   input: PlanInput,
   data: GameData,
   indexes: GameIndexes,
 ): (giftId: number) => number[] {
-  const stats = analyseDeck(input.deck, indexes, data.rules.deployment, input.options.deployed);
-  const { fusions } = expandRequirements(input.wanted, indexes, stats, data.rules.fusion.maxShopSlots);
-  return goalRoots(input.wanted, fusions).ofGift;
-}
-
-export function conflictGroups(
-  plan: RoutePlan,
-  input: PlanInput,
-  data: GameData,
-  indexes: GameIndexes,
-): ConflictGroup[] {
-  const conflicts = plan.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId);
-  if (conflicts.length === 0) return [];
-  const options = input.options;
-  const banned = new Set(options.bannedPacks);
-  const preferred = new Set(options.preferredPacks);
-  const roots = wantedRoots(input, data, indexes);
-  const offeredOn = (floor: number): number[] =>
-    indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? [];
-  const wantedIds = new Set(input.wanted.map((w) => w.giftId));
-
-  // Requirements the wanted set actually routes for, so a pack's gift list stays to the point.
+  const { options } = normaliseOptions(input.options, data, indexes, input.deck);
   const stats = analyseDeck(input.deck, indexes, data.rules.deployment, options.deployed);
-  const routed = expandRequirements(
+  const { fusions } = expandRequirements(
     input.wanted,
     indexes,
     stats,
     data.rules.fusion.maxShopSlots,
-  ).requirements.map((r) => r.giftId);
-  const giftsOf = (packId: number): number[] => {
-    const out = new Set<number>();
-    for (const giftId of routed) {
-      if (indexes.freelyAvailableGifts.has(giftId)) continue;
-      if (!(indexes.packsByGift.get(giftId) ?? []).includes(packId)) continue;
-      for (const root of roots(giftId)) if (wantedIds.has(root)) out.add(root);
-    }
-    return [...out].sort((a, b) => a - b);
-  };
+    runStateOf(options),
+  );
+  return goalRoots(input.wanted, fusions).ofGift;
+}
 
-  // Floors a conflicting gift's pack could have taken, honouring pins and bans.
+/**
+ * The goals a plan loses to the conflict, ingredients mapped to the goal they feed. A copy lost
+ * as `ingredient-shared` counts for the fusion it actually starved — the goal that is itself
+ * unresolved — not for every fusion that eats the ingredient (one copy was planned for another).
+ */
+export function conflictRootsOf(
+  plan: RoutePlan,
+  input: PlanInput,
+  data: GameData,
+  indexes: GameIndexes,
+): number[] {
+  const conflicts = plan.unresolved.filter(
+    (u) => u.reason === 'pack-conflict' || u.reason === 'ingredient-shared',
+  );
+  if (conflicts.length === 0) return [];
+  const roots = wantedRoots(input, data, indexes);
+  const unresolved = new Set(plan.unresolved.map((u) => u.giftId));
+  return [
+    ...new Set(
+      conflicts.flatMap((u) =>
+        u.reason === 'pack-conflict' ? roots(u.giftId) : roots(u.giftId).filter((r) => unresolved.has(r)),
+      ),
+    ),
+  ].sort((a, b) => a - b);
+}
+
+/**
+ * Floors a `pack-conflict` gift's pack could have taken, honouring pack entries and bans: offered
+ * there in that floor's mode, and — on a played floor — the pack actually taken.
+ */
+export function contestedFloors(plan: RoutePlan, options: PlanOptions, indexes: GameIndexes): Set<number> {
+  const banned = new Set(options.bannedPacks);
   const contested = new Set<number>();
-  for (const giftId of conflicts) {
-    const packs = (indexes.packsByGift.get(giftId) ?? []).filter((id) => !banned.has(id));
+  for (const u of plan.unresolved) {
+    if (u.reason !== 'pack-conflict') continue;
+    const packs = (indexes.packsByGift.get(u.giftId) ?? []).filter((id) => !banned.has(id));
     for (const floor of plan.floors) {
+      const offered =
+        indexes.packsByFloor[modeForFloor(floor.floor, options, indexes)].get(floor.floor) ?? [];
       const pinned = options.pinnedPacks[floor.floor];
-      if (packs.some((id) => offeredOn(floor.floor).includes(id) && (pinned === undefined || pinned === id)))
+      if (packs.some((id) => offered.includes(id) && (pinned === undefined || pinned === id)))
         contested.add(floor.floor);
     }
   }
+  return contested;
+}
 
-  // Group contiguous contested floors.
-  const sorted = [...contested].sort((a, b) => a - b);
-  const groups: number[][] = [];
-  for (const floor of sorted) {
-    const last = groups[groups.length - 1];
+export interface ConflictGroup {
+  /** Contiguous contested floors. */
+  floors: number[];
+}
+
+/** The contested floors, in runs of contiguous floors: the chips on the decision card. */
+export function conflictGroups(plan: RoutePlan, options: PlanOptions, indexes: GameIndexes): ConflictGroup[] {
+  const groups: ConflictGroup[] = [];
+  for (const floor of [...contestedFloors(plan, options, indexes)].sort((a, b) => a - b)) {
+    const last = groups[groups.length - 1]?.floors;
     if (last && last[last.length - 1] === floor - 1) last.push(floor);
-    else groups.push([floor]);
+    else groups.push({ floors: [floor] });
   }
-
-  return groups.map((floors) => {
-    const candidateIds = new Set<number>();
-    for (const giftId of conflicts) {
-      for (const packId of indexes.packsByGift.get(giftId) ?? []) {
-        if (!banned.has(packId) && floors.some((f) => offeredOn(f).includes(packId)))
-          candidateIds.add(packId);
-      }
-    }
-    for (const floor of plan.floors) {
-      if (floors.includes(floor.floor) && floor.packId !== null && floor.reason !== 'free')
-        candidateIds.add(floor.packId);
-    }
-    const candidates: ConflictCandidate[] = [...candidateIds]
-      .map((packId) => {
-        const assigned = plan.floors.find((f) => f.packId === packId && f.reason !== 'free');
-        return {
-          packId,
-          floors: floors.filter((f) => offeredOn(f).includes(packId)),
-          gifts: giftsOf(packId),
-          assignedAt: assigned ? assigned.floor : null,
-          preferred: preferred.has(packId),
-        };
-      })
-      .sort((a, b) => (a.assignedAt ?? 99) - (b.assignedAt ?? 99) || a.packId - b.packId);
-    return { floors, candidates };
-  });
+  return groups;
 }

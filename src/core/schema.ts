@@ -1273,3 +1273,128 @@ export interface GameData {
   /** `md{n}/skill-gifts.json`; absent for a frozen season built before it existed (M129). */
   skillGifts?: SkillGiftIndex;
 }
+
+/**
+ * The machine-readable half of a visitor's feedback issue (M127, `src/app/feedback/payload.ts`),
+ * as `npm run feedback:decode` reads it back. The issue is public, so anyone can write the block:
+ * the decoder checks every field its report reads before trusting it (M154). The share state's
+ * plan options, which the report only passes on, are checked as an object. Unknown keys are
+ * allowed — the decoder keeps the payload as it was sent.
+ */
+export const FEEDBACK_PAYLOAD_VERSION = 1;
+
+const feedbackLogEntrySchema = z.discriminatedUnion('kind', [
+  z.object({
+    t: z.number(),
+    kind: z.literal('error'),
+    source: z.enum(['render', 'load', 'window', 'promise']),
+    message: z.string(),
+    stack: z.string().optional(),
+  }),
+  z.object({ t: z.number(), kind: z.literal('action'), text: z.string() }),
+]);
+
+const visitorRecordSchema = z.discriminatedUnion('kind', [
+  z.object({
+    t: z.number(),
+    kind: z.literal('error'),
+    source: z.string(),
+    message: z.string(),
+    stack: z.string().optional(),
+  }),
+  z.object({ t: z.number(), kind: z.literal('action'), text: z.string() }),
+  z.object({
+    t: z.number(),
+    kind: z.literal('floor'),
+    floor: z.number(),
+    recommended: z.number().nullable(),
+    alternatives: z.array(z.number()),
+    entered: z.number().nullable(),
+    expected: z.array(z.tuple([z.number(), z.string().nullable()])),
+  }),
+  z.object({
+    t: z.number(),
+    kind: z.literal('read'),
+    screen: z.string().nullable(),
+    floor: z.number().nullable(),
+    pack: z.number().nullable(),
+    gift: z.number().nullable(),
+    events: z.array(z.string()),
+  }),
+  z.object({
+    t: z.number(),
+    kind: z.literal('applied'),
+    event: z.string(),
+    actions: z.number(),
+    fromRead: z.boolean(),
+  }),
+  z.object({ t: z.number(), kind: z.literal('undo'), logId: z.number() }),
+  z.object({ t: z.number(), kind: z.literal('answer'), ask: z.string(), picked: z.array(z.number()) }),
+  z.object({ t: z.number(), kind: z.literal('session'), status: z.string(), error: z.string().nullable() }),
+]);
+
+const feedbackIds = z.array(z.number().int());
+
+export const feedbackPayloadSchema = z.object({
+  v: z.literal(FEEDBACK_PAYLOAD_VERSION),
+  t: z.number(),
+  kind: z.enum(['bug', 'idea', 'data', 'other']),
+  title: z.string(),
+  message: z.string(),
+  env: z.object({
+    dataVersion: z.string(),
+    season: z.number(),
+    seasonName: z.string(),
+    lang: z.enum(['ko', 'en']),
+    theme: z.enum(['dark', 'light']),
+    viewport: z.string(),
+    browser: z.string(),
+    touch: z.boolean(),
+    page: z.string(),
+  }),
+  state: z
+    .object({
+      shareUrl: z.string(),
+      shared: z.object({
+        season: z.number().optional(),
+        deck: feedbackIds,
+        deployed: feedbackIds,
+        wanted: feedbackIds,
+        options: z.custom<object>((v) => typeof v === 'object' && v !== null && !Array.isArray(v), {
+          message: 'expected an object',
+        }),
+      }),
+      run: z.object({
+        currentFloor: z.number().int(),
+        stageFloor: z.number().int(),
+        visits: z.record(z.string(), z.number().int()),
+        giftStatus: z.record(z.string(), z.enum(['got', 'failed', 'used'])),
+        startGifts: feedbackIds,
+        collectRest: feedbackIds.optional(),
+        startDone: z.boolean().optional(),
+      }),
+      route: z
+        .object({
+          covered: z.number(),
+          total: z.number(),
+          unresolved: z.array(z.object({ giftId: z.number().int(), reason: z.string() })),
+          warnings: z.array(z.string()),
+          capped: z.boolean(),
+        })
+        .nullable(),
+    })
+    .optional(),
+  log: z.object({ entries: z.array(feedbackLogEntrySchema), omitted: z.number() }).optional(),
+  diagnostics: z
+    .object({
+      total: z.number(),
+      counts: z.record(z.string(), z.number()),
+      from: z.number().nullable(),
+      to: z.number().nullable(),
+      records: z.array(visitorRecordSchema),
+      omitted: z.number(),
+    })
+    .optional(),
+  screenshot: z.boolean(),
+});
+export type CheckedFeedbackPayload = z.infer<typeof feedbackPayloadSchema>;

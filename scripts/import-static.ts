@@ -12,11 +12,13 @@
  *
  * The extraction itself is not done here: see `docs/research/data-sources.md` for the catalog →
  * bundle → UnityPy route. This script takes the folder that comes out of it, checks the files are
- * what they claim to be, and copies the ones the lock asks for. It never edits the lock — a new
+ * what they claim to be, and copies the ones the lock asks for — all of them, or none if any was
+ * rejected (`scripts/lib/import-static.ts`). It never edits the lock — a new
  * season's file names are printed for a person to read and decide on.
  */
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, dirname, join, relative } from 'node:path';
+import { existsSync, statSync } from 'node:fs';
+import { basename, relative } from 'node:path';
+import { indexByName, planImport, writeImport } from './lib/import-static.ts';
 import { hasFlag, readJson, repoPath } from './lib/io.ts';
 import { seasonOf } from './lib/season-files.ts';
 
@@ -30,41 +32,6 @@ function usage(message: string): never {
   console.error(message);
   console.error('usage: npm run data:import -- <extracted static-data folder> [--write]');
   process.exit(1);
-}
-
-/** Every file under `dir`, keyed by base name, so an extraction's own layout does not matter. */
-function indexByName(dir: string): Map<string, string[]> {
-  const out = new Map<string, string[]>();
-  const walk = (current: string): void => {
-    for (const entry of readdirSync(current)) {
-      const path = join(current, entry);
-      if (statSync(path).isDirectory()) walk(path);
-      else if (entry.endsWith('.json')) out.set(entry, [...(out.get(entry) ?? []), path]);
-    }
-  };
-  walk(dir);
-  return out;
-}
-
-/**
- * Whether a file looks like the static record it is supposed to be.
- *
- * Pointing this at the wrong folder should change nothing, so every candidate is parsed and shape-
- * checked before a single byte is written.
- */
-function looksLikeStaticData(path: string): string | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(readFileSync(path, 'utf8'));
-  } catch {
-    return 'not valid JSON';
-  }
-  if (parsed === null || typeof parsed !== 'object') return 'not a JSON object';
-  const record = parsed as Record<string, unknown>;
-  const hasList = Array.isArray(record['list']) || Array.isArray(record['dataList']);
-  // Some static files are a bare object of settings rather than a list, so an id-bearing object counts.
-  if (!hasList && !('id' in record) && Object.keys(record).length === 0) return 'empty';
-  return null;
 }
 
 function main(): void {
@@ -84,39 +51,11 @@ function main(): void {
     wanted.map((file) => seasonOf(basename(file))).filter((n): n is number => n !== null),
   );
 
-  const copied: string[] = [];
-  const missing: string[] = [];
-  const rejected: string[] = [];
-  const unchanged: string[] = [];
-
-  for (const file of wanted) {
-    const name = basename(file);
-    const candidates = available.get(name);
-    if (!candidates || candidates.length === 0) {
-      missing.push(file);
-      continue;
-    }
-    if (candidates.length > 1) {
-      rejected.push(`${file} — ${candidates.length} files share this name; cannot tell them apart`);
-      continue;
-    }
-    const from = candidates[0]!;
-    const problem = looksLikeStaticData(from);
-    if (problem) {
-      rejected.push(`${file} — ${problem}`);
-      continue;
-    }
-    const to = repoPath(STATIC_PREFIX, file);
-    if (existsSync(to) && readFileSync(to, 'utf8') === readFileSync(from, 'utf8')) {
-      unchanged.push(file);
-      continue;
-    }
-    if (write) {
-      mkdirSync(dirname(to), { recursive: true });
-      copyFileSync(from, to);
-    }
-    copied.push(file);
-  }
+  // Every file is checked first; with --write they are copied only if none was rejected.
+  const plan = planImport(wanted, available, (file) => repoPath(STATIC_PREFIX, file));
+  const wrote = write && writeImport(plan);
+  const copied = plan.copies.map((c) => c.file);
+  const { missing, rejected, unchanged } = plan;
 
   // A new season arrives as files the lock has never heard of. Naming them is this script's job;
   // deciding to track them is a person's.
@@ -128,9 +67,9 @@ function main(): void {
     newSeasonFiles.push(`${name} (season ${season}) — ${relative(source, paths[0]!)}`);
   }
 
-  console.log(`${write ? 'Imported' : 'Would import'} from ${source}:`);
-  console.log(`  ${copied.length} file(s) ${write ? 'written' : 'to write'}, ${unchanged.length} unchanged`);
-  for (const file of copied) console.log(`    ${write ? '+' : '·'} ${file}`);
+  console.log(`${wrote ? 'Imported' : 'Would import'} from ${source}:`);
+  console.log(`  ${copied.length} file(s) ${wrote ? 'written' : 'to write'}, ${unchanged.length} unchanged`);
+  for (const file of copied) console.log(`    ${wrote ? '+' : '·'} ${file}`);
   if (missing.length > 0) {
     console.log(`  ${missing.length} not found in the folder:`);
     for (const file of missing) console.log(`    ? ${file}`);
@@ -144,7 +83,9 @@ function main(): void {
     console.log('    npm run data:lock-next-season -- <season>   (preview; --write to apply)');
     for (const file of newSeasonFiles) console.log(`    * ${file}`);
   }
-  if (!write && copied.length > 0) console.log('\nNothing was written. Re-run with --write to apply.');
+  if (write && !wrote)
+    console.log(`\nNothing was written: ${rejected.length} file(s) were rejected. Fix them and re-run.`);
+  else if (!write && copied.length > 0) console.log('\nNothing was written. Re-run with --write to apply.');
   if (rejected.length > 0) process.exitCode = 1;
 }
 

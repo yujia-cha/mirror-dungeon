@@ -38,10 +38,9 @@
  */
 import type { GameData } from './schema.ts';
 import type { GameIndexes, PlanInput, RoutePlan, WantedGift } from './types.ts';
-import { conflictRootsOf } from './alternatives.ts';
-import { wantedRoots } from './conflicts.ts';
+import { conflictRootsOf, contestedFloors, wantedRoots } from './conflicts.ts';
 import { planRoute } from './index.ts';
-import { modeForFloor } from './search.ts';
+import { binomial } from './search.ts';
 
 /**
  * The minimal ways of one release state, summed up for the card: the goals every way removes
@@ -132,11 +131,6 @@ export const MAX_PACK_GROUPS = 4;
 export const MAX_GROUP_SIZE = 4;
 
 const byId = (a: number, b: number): number => a - b;
-const choose = (n: number, r: number): number => {
-  let out = 1;
-  for (let i = 1; i <= r; i += 1) out = (out * (n - r + i)) / i;
-  return Math.round(out);
-};
 const keyOf = (ids: readonly number[]): string => [...ids].sort(byId).join(',');
 const lexical = (a: readonly number[], b: readonly number[]): number => {
   for (let i = 0; i < Math.min(a.length, b.length); i += 1) if (a[i] !== b[i]) return a[i]! - b[i]!;
@@ -353,17 +347,7 @@ export function createResolutions(
   const wantedIds = new Set(input.wanted.map((w) => w.giftId));
   const keep = new Set(tiered ? input.wanted.filter((w) => w.required).map((w) => w.giftId) : []);
   const groups: number[][] = (() => {
-    const lostGoals = base.unresolved.filter((u) => u.reason === 'pack-conflict').map((u) => u.giftId);
-    const banned = new Set(options.bannedPacks);
-    const contested = new Set<number>();
-    for (const giftId of lostGoals) {
-      const packs = (indexes.packsByGift.get(giftId) ?? []).filter((id) => !banned.has(id));
-      for (const floor of base.floors) {
-        const offered =
-          indexes.packsByFloor[modeForFloor(floor.floor, options, indexes)].get(floor.floor) ?? [];
-        if (packs.some((id) => offered.includes(id))) contested.add(floor.floor);
-      }
-    }
+    const contested = contestedFloors(base, options, indexes);
     const goalRoot = wantedRoots(scoped, data, indexes);
     const out = new Map<string, number[]>();
     for (const floor of base.floors) {
@@ -479,7 +463,7 @@ export function createResolutions(
         essential,
         pool,
         pick,
-        any: enumerated && pick > 0 && pool.length > pick && minimal.length === choose(pool.length, pick),
+        any: enumerated && pick > 0 && pool.length > pick && minimal.length === binomial(pool.length, pick),
         complete: enumerated,
         ways: minimal.length,
       });

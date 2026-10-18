@@ -208,7 +208,7 @@ const EXACT_CHOICES = 256;
  *   - one pack per floor, and a pack cannot be visited twice in a run
  *   - a floor only accepts packs available in that floor's mode (which encodes Hard-only packs,
  *     평행중첩 and EXTREME)
- *   - pinned floors keep their pack; banned packs are never used
+ *   - played floors keep their pack; banned packs are never used
  */
 export function assignPacks(input: SearchInput): SearchResult {
   const { requirements, floors, options, indexes } = input;
@@ -216,15 +216,11 @@ export function assignPacks(input: SearchInput): SearchResult {
   const tieBreakNodes = input.tieBreakNodes ?? TIE_BREAK_NODES;
   const banned = new Set(options.bannedPacks);
 
-  // Floors already settled — played floors and pins — keep their pack and are not up for grabs.
-  const passed = input.passed ?? new Map<number, number>();
-  const visitedPacks = new Set(passed.values());
+  // Played floors keep their pack and are not up for grabs. Since M118 they are the only settled
+  // floors: `planRoute` keeps a pack entry only for a floor already played (`passed`), never for
+  // one of the open `floors`.
+  const settled = input.passed ?? new Map<number, number>();
   const failed = input.failed ?? new Set<number>();
-  const settled = new Map<number, number>(passed);
-  for (const [floorText, packId] of Object.entries(options.pinnedPacks)) {
-    const floor = Number(floorText);
-    if (floors.includes(floor) && !banned.has(packId) && !settled.has(floor)) settled.set(floor, packId);
-  }
   const settledPacks = new Set(settled.values());
   const openFloors = floors.filter((floor) => !settled.has(floor)).sort((a, b) => a - b);
 
@@ -233,7 +229,7 @@ export function assignPacks(input: SearchInput): SearchResult {
   const floorsFor = (packId: number): number[] => {
     const known = floorsOf.get(packId);
     if (known) return known;
-    // A pack is visited once per run. One already settled on a played or pinned floor has no open
+    // A pack is visited once per run. One already taken on a played floor has no open
     // floor left whatever the mode tables say: it hands over one copy of each of its gifts for
     // free (see `freeLeft` below), and a second copy has to come from another pack. Without this
     // the second copy could pick the settled pack again and put it on two floors at once.
@@ -283,11 +279,9 @@ export function assignPacks(input: SearchInput): SearchResult {
     const supplying = (indexes.packsByGift.get(requirement.giftId) ?? []).filter((p) => !banned.has(p));
     let pool = freeLeft.get(requirement.giftId);
     if (!pool) {
-      // A pack already settled on a played or pinned floor hands the gift over at no cost — unless
-      // the player already left that pack's floor without it. A pack pinned on a floor still ahead
-      // is not the one it was missed on, so that one still counts.
-      const missedOn = failed.has(requirement.giftId) ? visitedPacks : null;
-      pool = supplying.filter((packId) => settledPacks.has(packId) && !missedOn?.has(packId));
+      // A pack already taken on a played floor hands the gift over at no cost — unless the player
+      // left that pack's floor without it.
+      pool = failed.has(requirement.giftId) ? [] : supplying.filter((packId) => settledPacks.has(packId));
       freeLeft.set(requirement.giftId, pool);
     }
     const freePack = pool.shift() ?? null;
@@ -1345,11 +1339,9 @@ export function assignPacks(input: SearchInput): SearchResult {
       if (serving.length > packs.length && packs.length > 0) short.push({ copies: serving, packs });
     });
     let best = score(picked, new Map());
-    const choose = (n: number, k: number): number =>
-      k === 0 || k === n ? 1 : choose(n - 1, k - 1) + choose(n - 1, k);
     if (
       short.length === 0 ||
-      short.reduce((product, s) => product * choose(s.copies.length, s.packs.length), 1) > EXACT_CHOICES
+      short.reduce((product, s) => product * binomial(s.copies.length, s.packs.length), 1) > EXACT_CHOICES
     )
       return best;
     const reserved = new Map<number, number>();
@@ -1651,6 +1643,13 @@ export function assignPacks(input: SearchInput): SearchResult {
     capped,
     tieBreakCut,
   };
+}
+
+/** n choose r. Each partial product is itself a binomial, so the division is exact. */
+export function binomial(n: number, r: number): number {
+  let out = 1;
+  for (let i = 1; i <= r; i += 1) out = (out * (n - r + i)) / i;
+  return out;
 }
 
 /**

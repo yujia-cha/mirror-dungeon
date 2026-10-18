@@ -107,14 +107,14 @@ export const MESSAGES = {
     ko: '{gift|을/를} 주는 팩이 계획한 층 범위에 없습니다.',
     en: 'No pack that supplies it appears within the planned floors.',
   },
-  // {missing}은 구할 수 없는 재료의 id 목록.
+  // {missing}은 구할 수 없는 재료의 이름 목록(ko 「·」, en 「, 」로 잇는다).
   'unresolved.fusionMissing': {
-    ko: '재료 {missing}을(를) 구할 수 없어 조합할 수 없습니다.',
+    ko: '재료 {missing|을/를} 구할 수 없어 조합할 수 없습니다.',
     en: 'Cannot be fused: ingredients {missing} are not obtainable in this plan.',
   },
-  // 「재료는 목표가 아님」이라 남은 재료의 입장을 취소했을 때. {missing}·{dropped}는 id 목록.
+  // 「재료는 목표가 아님」이라 남은 재료의 입장을 취소했을 때. {missing}·{dropped}는 이름 목록(ko 「·」, en 「, 」).
   'unresolved.fusionMissingDropped': {
-    ko: '재료 {missing}을(를) 구할 수 없어 조합할 수 없습니다. 나머지 재료({dropped})만을 위한 입장은 취소했습니다.',
+    ko: '재료 {missing|을/를} 구할 수 없어 조합할 수 없습니다. 나머지 재료({dropped})만을 위한 입장은 취소했습니다.',
     en: 'Cannot be fused: ingredients {missing} are not obtainable. Pack entries for the remaining ingredients ({dropped}) alone were dropped.',
   },
   'unresolved.failed': {

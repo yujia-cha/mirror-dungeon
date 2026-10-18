@@ -17,7 +17,7 @@ import { Download, Trash2 } from 'lucide-react';
 import { t } from '../i18n.ts';
 import { useCaptureSession } from '../capture/capture-context.ts';
 import { PART_MAX_BYTES } from '../capture/diagnostics/export-parts.ts';
-import type { ExportResult } from '../capture/diagnostics/useDiagnostics.ts';
+import { useDiagStats, type ExportResult } from '../capture/diagnostics/useDiagnostics.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { Button, Checkbox, LinkButton } from '../components/ui.tsx';
 import { useApp } from '../store.ts';
@@ -40,7 +40,7 @@ export function DiagnosticsSection() {
   const [justExported, setJustExported] = useState<ExportResult | null>(null);
   const [cleared, setCleared] = useState<{ records: number; frames: number } | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
-  const { stats } = diagnostics;
+  const stats = useDiagStats(diagnostics);
   if (!diagnostics.enabled) return null;
 
   const onExport = async (): Promise<void> => {

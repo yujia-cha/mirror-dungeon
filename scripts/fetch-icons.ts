@@ -33,11 +33,11 @@ import type {
 import {
   GIFT_ICON_DIR,
   MAX_ICON_BYTES,
-  giftsAcrossSeasons,
   isWebp,
   planGiftIcons,
   type DerivedGiftEntry,
 } from './lib/gift-icons.ts';
+import { giftsAcrossSeasons, packsAcrossSeasons } from './lib/across-seasons.ts';
 import { KEYWORD_ICON_DIR, MAX_KEYWORD_ICON_BYTES, planKeywordIcons } from './lib/keyword-icons.ts';
 import {
   MAX_PACK_IMAGE_BYTES,
@@ -46,7 +46,6 @@ import {
   PACK_IMAGE_QUALITY,
   PACK_IMAGE_WIDTH,
   downscaleRgba,
-  packsAcrossSeasons,
   planPackImages,
   type DerivedPackEntry,
 } from './lib/pack-images.ts';

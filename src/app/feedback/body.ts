@@ -15,7 +15,7 @@
  */
 import { t, type Lang, type StringKey } from '../i18n.ts';
 import type { FeedbackLogEntry } from '../lib/feedback-log.ts';
-import type { RunState } from '../lib/plan-input.ts';
+import { runHasProgress, type RunState } from '../lib/plan-input.ts';
 import type { SharedState } from '../store.ts';
 import {
   encodePayload,
@@ -134,7 +134,8 @@ function stateLines(state: FeedbackInput['state'], lang: Lang): string[] {
   const { run, route } = state;
   const statuses = Object.values(run.giftStatus);
   const visits = Object.keys(run.visits).length;
-  const started = visits > 0 || run.currentFloor > 1 || statuses.length > 0;
+  // The same test a share link and 「화면 인식 시작」 ask: a start settled on floor 1 is a run too.
+  const started = runHasProgress(run);
   const none = t('feedbackBodyNone', lang);
   return [
     `- ${t('feedbackBodyPlanLink', lang, { url: state.shareUrl })}`,

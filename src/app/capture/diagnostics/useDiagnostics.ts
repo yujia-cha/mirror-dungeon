@@ -113,12 +113,10 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
     recorder?.setFlags(enabled && recordOn, enabled && recordOn && imagesOn);
   }, [recorder, enabled, recordOn, imagesOn]);
 
+  // The counts change with every record; only the section that shows them listens (`useDiagStats`,
+  // M154) — in the provider's value they re-rendered every screen that reads the session.
   const subscribe = useCallback((fn: () => void) => recorder?.subscribe(fn) ?? (() => undefined), [recorder]);
-  const stats = useSyncExternalStore(
-    subscribe,
-    () => recorder?.stats() ?? EMPTY,
-    () => EMPTY,
-  );
+  const getStats = useCallback(() => recorder?.stats() ?? EMPTY, [recorder]);
 
   // The plan as it was when the run changed: the listener runs before the next render.
   const latest = useRef({ data, plan, shown, expectedIn, capture });
@@ -262,11 +260,26 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
     [recorder],
   );
   const clearAll = useCallback(async () => recorder?.clearAll(), [recorder]);
-  // One object while nothing in it changes, so the provider's value holds still (M116).
+  // One object while nothing in it changes, so the provider's value holds still (M116) — the
+  // counts are read apart (`useDiagStats`, M154).
   return useMemo(
-    () => ({ enabled, ready: recorder !== null, stats, hooks, exportZip, clearExported, clearAll }),
-    [enabled, recorder, stats, hooks, exportZip, clearExported, clearAll],
+    () => ({
+      enabled,
+      ready: recorder !== null,
+      subscribe,
+      getStats,
+      hooks,
+      exportZip,
+      clearExported,
+      clearAll,
+    }),
+    [enabled, recorder, subscribe, getStats, hooks, exportZip, clearExported, clearAll],
   );
 }
 
 export type DiagnosticsApi = ReturnType<typeof useDiagnostics>;
+
+/** The recorder's counts, re-read when they change (M154): for the section that shows them. */
+export function useDiagStats(api: Pick<DiagnosticsApi, 'subscribe' | 'getStats'>): DiagStats {
+  return useSyncExternalStore(api.subscribe, api.getStats, () => EMPTY);
+}

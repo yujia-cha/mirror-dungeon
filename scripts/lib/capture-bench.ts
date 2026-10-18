@@ -496,7 +496,6 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       movingSince = motionSince(movingSince, before, previous, popupNow, t);
     }
     const urgent = movingSince === null && changed(loop.lastRead ? part(loop.lastRead) : null, popupNow);
-    const fresh = changed(loop.lastRead, sig) || loop.dirty || loop.owed || loop.dark;
     const black = darkRules && isBlack(sig);
     const step = decide(loop, sig, changed(loop.lastRead, sig), t, refreshFor(level()), urgent, {
       black,
@@ -526,7 +525,8 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       input.log?.(`${Math.round(t)} read ${step.mode} shot ${shot}`);
       // The ticks under this read queue what differs from its frame (M147).
       backlog = readStarted(backlog, popupNow);
-      readingChange = fresh;
+      // Why it reads is the loop's to say, as in the session (M154).
+      readingChange = step.reason !== 'refresh';
       await startRead(shot, t, step.mode);
     }
     next = book(t);

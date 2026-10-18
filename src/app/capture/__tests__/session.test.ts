@@ -430,3 +430,143 @@ describe('CaptureSession environment (M142)', () => {
     expect(created.level).toBeGreaterThanOrEqual(1);
   }, 10_000);
 });
+
+describe('CaptureSession tick booking (M154)', () => {
+  /** What the share shows: every pixel this grey, so a change of level is a change of screen. */
+  let level = GREY;
+  beforeEach(() => {
+    level = GREY;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance', 'Date'] });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ json: async () => LAYOUT })),
+    );
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoWidth', 'get').mockReturnValue(1920);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoHeight', 'get').mockReturnValue(1009);
+    const ctx = {
+      drawImage: () => undefined,
+      getImageData: (_x: number, _y: number, w: number, h: number) => ({
+        data: new Uint8ClampedArray(w * h * 4).fill(level),
+        width: w,
+        height: h,
+      }),
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+    engine.recognize.mockReset();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const context = () => ({
+    lang: 'ko' as const,
+    packs: [],
+    gifts: [],
+    held: [],
+    materials: [],
+    iconUrl: () => null,
+    startOpen: false,
+  });
+
+  it('books the next tick at the range’s min as soon as a tick sees the screen change', async () => {
+    // Arrange: a still screen relaxes the interval to the range's max; every OCR call takes 50 ms.
+    const { release } = fakeShare();
+    release();
+    engine.recognize.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return [] as never;
+    });
+    const ticks: { t: number; changed: boolean }[] = [];
+    const created = new CaptureSession({
+      interval: { min: 50, max: 1000 },
+      context,
+      onEvents: vi.fn(),
+      onStatus: vi.fn(),
+      onTick: (tick) => ticks.push(tick),
+    });
+    await created.start();
+    await vi.advanceTimersByTimeAsync(30_000);
+    const last = ticks.slice(-3);
+    expect(last[2]!.t - last[1]!.t).toBeGreaterThanOrEqual(900);
+    // Act: the screen changes (a shop opens) while the next tick is booked a second away.
+    level = 120;
+    const before = ticks.length;
+    await vi.advanceTimersByTimeAsync(2500);
+    // Assert: the tick that saw the change booked the next within the range's min, not its max —
+    // a popup shown under the read it started is ticked on.
+    const seen = ticks.findIndex((tick, i) => i >= before && tick.changed);
+    expect(seen).toBeGreaterThanOrEqual(0);
+    expect(ticks[seen + 1]!.t - ticks[seen]!.t).toBeLessThanOrEqual(60);
+    created.stop();
+  });
+
+  it('tries a held gift’s icon again after it failed, and frees the decoded picture (M154)', async () => {
+    // Arrange: the run holds one gift; its icon's first fetch fails, the next works.
+    const { release } = fakeShare();
+    release();
+    engine.recognize.mockResolvedValue([] as never);
+    let iconFetches = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (!url.endsWith('.webp')) return { json: async () => LAYOUT };
+        iconFetches += 1;
+        if (iconFetches === 1) throw new Error('offline');
+        return { blob: async () => new Blob([]) };
+      }),
+    );
+    const close = vi.fn();
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => ({ width: 4, height: 4, close })),
+    );
+    const created = new CaptureSession({
+      interval: { min: 50, max: 50 },
+      context: () => ({ ...context(), held: [9006], iconUrl: () => '/icons/gifts/x.webp' }),
+      onEvents: vi.fn(),
+      onStatus: vi.fn(),
+    });
+    // Act: reads at the start, then the re-reads 2, 6 and 14 s on.
+    await created.start();
+    await vi.advanceTimersByTimeAsync(7000);
+    const early = iconFetches;
+    await vi.advanceTimersByTimeAsync(25_000);
+    created.stop();
+    // Assert: the failure was not kept for the session, nor retried on every read; the loaded
+    // icon is kept and its bitmap closed.
+    expect(early).toBe(1);
+    expect(iconFetches).toBe(2);
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails with the engine error, not stuck running, when OCR rejects', async () => {
+    // Arrange
+    const { release } = fakeShare();
+    release();
+    engine.recognize.mockRejectedValue(new Error('worker died'));
+    const onStatus = vi.fn();
+    const created = new CaptureSession({
+      interval: { min: 50, max: 50 },
+      context,
+      onEvents: vi.fn(),
+      onStatus,
+    });
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => rejections.push(reason);
+    process.on('unhandledRejection', onRejection);
+    // Act
+    await created.start();
+    await vi.advanceTimersByTimeAsync(500);
+    await vi.useRealTimers();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    process.off('unhandledRejection', onRejection);
+    // Assert
+    expect(onStatus).toHaveBeenLastCalledWith('error', 'engine');
+    expect(rejections).toEqual([]);
+    created.stop();
+  });
+});

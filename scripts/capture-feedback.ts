@@ -31,7 +31,7 @@
  *
  * Local only.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { unzipSync } from 'fflate';
 import { chipTiers } from '../src/app/capture/tier-chip.ts';
@@ -50,6 +50,7 @@ import {
   previewIds,
   recognitionReport,
   routeReport,
+  unpackBundle,
   type PartsReport,
 } from './lib/capture-feedback.ts';
 import { hasFlag } from './lib/io.ts';
@@ -119,12 +120,17 @@ async function main(): Promise<void> {
         `part 1 holds session.json and is missing; have ${parts.present.map((n) => `part ${n}`).join(', ')}`,
       );
     files = merged.files;
-    const { bundle } = parseBundle(files);
-    dir = resolve('local-fixtures/sessions', bundle.bundleId);
-    // A fresh folder: frames left from another export of the same recording would not match.
-    rmSync(join(dir, 'frames'), { recursive: true, force: true });
-    mkdirSync(join(dir, 'frames'), { recursive: true });
-    for (const [name, bytes] of Object.entries(files)) writeFileSync(join(dir, name), bytes);
+    let unpacked: ReturnType<typeof unpackBundle>;
+    try {
+      // Only session.json, part.json and frames/<plain id>.jpg, inside the bundle's folder: the
+      // zip is someone else's file.
+      unpacked = unpackBundle(resolve('local-fixtures/sessions'), files);
+    } catch (error) {
+      fail((error as Error).message);
+    }
+    dir = unpacked.dir;
+    if (unpacked.skipped > 0)
+      console.warn(`capture-feedback: ⚠ skipped ${unpacked.skipped} unexpected file(s) in the zip`);
     const savedParts = join(dir, 'parts.json');
     if (parts.total > 1) writeFileSync(savedParts, `${JSON.stringify(parts, null, 2)}\n`);
     else rmSync(savedParts, { force: true });

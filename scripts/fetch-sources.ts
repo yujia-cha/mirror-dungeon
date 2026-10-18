@@ -11,6 +11,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { shaFromGit } from './lib/git-remote.ts';
 import { hasFlag, readJson, repoPath } from './lib/io.ts';
+import { advancePin } from './lib/lock-pin.ts';
 
 /** One language of a source, when the upstream splits languages across branches rather than folders. */
 interface LanguageEntry {
@@ -102,13 +103,13 @@ async function revisionFor(
   if (!update) return pin.sha;
   const tip = await latestSha(entry.repo, pin.ref);
   if (tip) {
-    const moved = tip.sha !== pin.sha;
+    const before = pin.sha;
     const via = tip.via === 'git' ? ' (GitHub API unreachable; sha from git ls-remote)' : '';
+    // fetchedAt moves only with the sha: an update that finds nothing new changes nothing.
+    const moved = advancePin(pin, entry, tip.sha, new Date().toISOString().slice(0, 10));
     console.log(
-      `  ${label}: ${moved ? `${pin.sha.slice(0, 8)} -> ${tip.sha.slice(0, 8)}` : `${pin.sha.slice(0, 8)} unchanged`}${via}`,
+      `  ${label}: ${moved ? `${before.slice(0, 8)} -> ${tip.sha.slice(0, 8)}` : `${before.slice(0, 8)} unchanged`}${via}`,
     );
-    pin.sha = tip.sha;
-    entry.fetchedAt = new Date().toISOString().slice(0, 10);
     return tip.sha;
   }
   console.log(

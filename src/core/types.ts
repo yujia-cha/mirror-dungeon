@@ -109,8 +109,6 @@ export interface DeckStats {
    * for the deck summary; no gift condition asks for it.
    */
   keywordCounts: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number>>>;
-  /** The same, counting only the base keyword: what 「[Laceration]을 부여하는 …」 counts. */
-  baseKeywordCounts: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number>>>;
   factionCounts: Record<'deployed' | 'formation' | 'reserve', Record<string, number>>;
   /**
    * The identities behind each count. A condition naming several keywords or factions counts
@@ -118,6 +116,7 @@ export interface DeckStats {
    * union has to be taken over ids and never by adding the counts above, which are these lengths.
    */
   keywordMembers: Record<'deployed' | 'formation' | 'reserve', Partial<Record<IdentityKeywordId, number[]>>>;
+  /** The same, counting only the base keyword: what 「[Laceration]을 부여하는 …」 counts. */
   baseKeywordMembers: Record<
     'deployed' | 'formation' | 'reserve',
     Partial<Record<IdentityKeywordId, number[]>>

@@ -73,6 +73,7 @@ import {
   tickDelay,
   type LoopState,
   type ReadMode,
+  type ReadReason,
 } from './loop.ts';
 import { prepareReference, prepareSlot, type IconRef } from './match-icon.ts';
 import { chipTiers } from './tier-chip.ts';
@@ -106,9 +107,6 @@ export interface CaptureContext {
 export interface CaptureStats {
   ticks: number;
   reads: number;
-  ocrCalls: number;
-  /** Total time spent in reads, ms. */
-  readMs: number;
   /** Reads of popups queued while a read was busy (M141), and queued popups pushed out unread. */
   queued: number;
   queueDropped: number;
@@ -118,7 +116,8 @@ export interface CaptureStats {
 export interface ReadReport {
   /** Wall-clock time of the read's start, ms. */
   t: number;
-  reason: 'change' | 'dirty' | 'refresh';
+  /** Why the loop read it (`decide`, M154). */
+  reason: ReadReason;
   /** A full read, or a popup read of the popup burst (M136) — every queued read is one. */
   mode: ReadMode;
   /**
@@ -174,6 +173,11 @@ export interface EnvReport {
 export const ENV_PERIOD_MS = 10_000;
 /** The frame watch is trusted to tell new frames apart only this long after its last callback. */
 const FRAME_WATCH_STALE_MS = 500;
+/** A gift icon that failed to load is tried again after this long (M154), not on every read. */
+const REF_RETRY_MS = 10_000;
+
+/** The OCR engine rejected a call (M154): the session cannot read on, and stops with `engine`. */
+class EngineFailure extends Error {}
 
 export interface SessionOptions {
   /** The preset's range (M142); the tick interval floats inside it. */
@@ -287,7 +291,10 @@ export class CaptureSession {
   private geometry: CaptureGeometry | null = null;
   private loop: LoopState = INITIAL_LOOP;
   private tracker: TrackerState = INITIAL_TRACKER;
+  /** Icon references by gift, loaded once each; a failed one is dropped after `REF_RETRY_MS` (M154). */
   private refs = new Map<number, Promise<IconRef | null>>();
+  /** When a gift's icon last failed to load (M154). */
+  private refFailedAt = new Map<number, number>();
   /** The tick interval and load level (M142). */
   private pace: PaceState;
   /** The previous tick's signature: what moved since then pulls the interval in (M142). */
@@ -319,7 +326,7 @@ export class CaptureSession {
   /** Where a queued popup's crop is drawn to be read (M141). */
   private queueCanvas = document.createElement('canvas');
   private stopped = false;
-  readonly stats: CaptureStats = { ticks: 0, reads: 0, ocrCalls: 0, readMs: 0, queued: 0, queueDropped: 0 };
+  readonly stats: CaptureStats = { ticks: 0, reads: 0, queued: 0, queueDropped: 0 };
 
   constructor(private readonly options: SessionOptions) {
     this.pace = initialPace(options.interval ?? READ_INTERVALS.balanced, performance.now());
@@ -507,7 +514,8 @@ export class CaptureSession {
 
   /**
    * The booked tick is due: book the next, then tick. A timer tick tells how late it fired (M142) —
-   * the page's thread was busy that long; a frame tick has no due time.
+   * the page's thread was busy that long; a frame tick has no due time. The booking is from the
+   * state before the tick; the tick books again once it has decided (`rebook`, M154).
    */
   private fire(timer: boolean): void {
     const now = performance.now();
@@ -515,6 +523,23 @@ export class CaptureSession {
     this.cancelTick();
     this.schedule(tickDelay(this.loop, now, this.pace.interval));
     void this.tick();
+  }
+
+  /**
+   * After a tick decided (M154): book again from what it changed. A change that pulled the interval
+   * in to the range's `min`, a black frame that made the ticks fast (`TRANSITION_TICKS_MS`), a
+   * burst just begun — the booking `fire` made before the tick still had the old interval (a
+   * second on economy's still map) and the old frame-following, so a popup shown under the read
+   * this tick started could pass untouched. A timer due later than the new delay is brought in;
+   * a tick that now follows the frames books the next frame too; the share's rate follows.
+   */
+  private rebook(): void {
+    if (this.stopped || this.timer === null) return;
+    const now = performance.now();
+    const delay = tickDelay(this.loop, now, this.pace.interval);
+    if (this.timerDue - now > delay) this.schedule(delay);
+    else if (fastTicks(this.loop, now) || followFrames(this.pace)) this.bookFrame();
+    this.followBurst();
   }
 
   /** Cancel the booked tick, both its timer and its frame. */
@@ -585,7 +610,6 @@ export class CaptureSession {
     const isChanged = changed(this.loop.lastRead, signature);
     // A fade through black between sections (M153): not read, and the screen after it reads at once.
     const black = isBlack(signature);
-    const reason: ReadReport['reason'] = isChanged ? 'change' : this.loop.dirty ? 'dirty' : 'refresh';
     const now = performance.now();
     // The interval follows what moves (M142): a change since the last tick, not since the last read.
     const moved = changed(this.signatureBefore, signature);
@@ -624,6 +648,7 @@ export class CaptureSession {
       stillMs: now - this.movedAt,
     });
     this.loop = step.state;
+    this.rebook();
     const busy = step.decision === 'skip' && step.state.busy;
     this.reportTick(step.decision === 'read', busy, isChanged);
     // A black popup region shows no popup: nothing to queue.
@@ -635,13 +660,25 @@ export class CaptureSession {
     let frame: Frame | null = null;
     try {
       // A read of a change (or of the backlog) is of a screen not known yet; a re-read is not.
-      this.readingChange = reason !== 'refresh';
-      frame = await this.read(video, width, height, reason, step.mode, started);
+      this.readingChange = step.reason !== 'refresh';
+      frame = await this.read(video, width, height, step.reason, step.mode, started);
+    } catch (error) {
+      this.readFailed(error);
     } finally {
       this.settle(frame, started, step.mode);
       // The popups that came meanwhile, before the loop is free again (M141).
       await this.drain();
     }
+  }
+
+  /**
+   * A read threw. An OCR call that failed (the worker died, M154) leaves nothing to read with: the
+   * session stops with `engine` rather than run on as if reading. Anything else is not the engine's
+   * and goes on as an error of the page.
+   */
+  private readFailed(error: unknown): void {
+    if (!(error instanceof EngineFailure)) throw error;
+    if (!this.stopped) this.fail('engine');
   }
 
   /**
@@ -651,7 +688,6 @@ export class CaptureSession {
   private settle(frame: Frame | null, started: number, mode: ReadMode): void {
     const now = performance.now();
     this.stats.reads += 1;
-    this.stats.readMs += now - started;
     if (isLoadSample(mode, frame?.partial === true))
       this.setPace(paceRead(this.pace, now, mode, now - started));
     // A popup read that found nothing says nothing of the screen; any other read names it, or none.
@@ -721,6 +757,8 @@ export class CaptureSession {
       let frame: Frame | null = null;
       try {
         frame = await this.readQueued(shot, started);
+      } catch (error) {
+        this.readFailed(error);
       } finally {
         this.stats.queued += 1;
         this.settle(frame, started, 'popup');
@@ -810,7 +848,9 @@ export class CaptureSession {
     const reader: RegionReader = {
       ocr: async (region, light) => {
         const { rect, data } = pixelsOf(region);
-        return engine.recognize(toPnm(data, rect.width, rect.height, light));
+        return engine.recognize(toPnm(data, rect.width, rect.height, light)).catch((error: unknown) => {
+          throw new EngineFailure(String(error));
+        });
       },
       slot: async (region) => {
         const { rect, data } = pixelsOf(region);
@@ -830,6 +870,9 @@ export class CaptureSession {
       gifts: ctx.gifts,
       held,
       materials,
+      // A sale is matched by the ids, not by the icons that loaded (M154).
+      heldIds: ctx.held,
+      materialIds: ctx.materials,
       tiers: ctx.tiers,
       startOpen: ctx.startOpen,
       popupOnly: job.mode === 'popup',
@@ -838,7 +881,6 @@ export class CaptureSession {
       // A popup's icon, when its name is no sure match (M136): a handful of gifts, loaded once each.
       iconRefs: refsOf,
     });
-    this.stats.ocrCalls += ocrCalls;
     if (this.stopped) return null;
     const out = trackFrame(this.tracker, frame);
     this.tracker = out.state;
@@ -900,14 +942,24 @@ export class CaptureSession {
     this.options.onTick({ t: Date.now(), read, busy, changed }, preview);
   }
 
-  /** A gift icon reduced for matching, decoded once per session. */
+  /**
+   * A gift icon reduced for matching, decoded once per session. One that did not load (no picture,
+   * a fetch that failed) is not kept for the session (M154): it is tried again `REF_RETRY_MS` later.
+   */
   private ref(id: number, iconUrl: (giftId: number) => string | null): Promise<IconRef | null> {
-    let cached = this.refs.get(id);
-    if (!cached) {
-      cached = loadRef(id, iconUrl(id));
-      this.refs.set(id, cached);
-    }
-    return cached;
+    const cached = this.refs.get(id);
+    if (cached) return cached;
+    const failedAt = this.refFailedAt.get(id);
+    if (failedAt !== undefined && performance.now() - failedAt < REF_RETRY_MS) return Promise.resolve(null);
+    const loading = loadRef(id, iconUrl(id)).then((ref) => {
+      if (ref === null) {
+        this.refs.delete(id);
+        this.refFailedAt.set(id, performance.now());
+      } else this.refFailedAt.delete(id);
+      return ref;
+    });
+    this.refs.set(id, loading);
+    return loading;
   }
 }
 
@@ -1009,12 +1061,18 @@ async function loadRef(id: number, url: string | null): Promise<IconRef | null> 
   if (!url) return null;
   try {
     const bitmap = await createImageBitmap(await (await fetch(url)).blob());
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(bitmap, 0, 0);
-    const image = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+    let image: ImageData;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(bitmap, 0, 0);
+      image = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+    } finally {
+      // The decoded picture is not needed past its pixels (M154).
+      bitmap.close();
+    }
     return prepareReference(id, image.data, image.width, image.height);
   } catch {
     return null;

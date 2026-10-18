@@ -17,14 +17,15 @@
  *        pinning a pack on a floor ahead, M118: the goals decide the route),
  *        --own gift,… (already in hand), --failed gift,… (not taken from the pack entered on a played floor; routed again elsewhere),
  *        --result-only gift,… (fusion results whose ingredients are not goals of their own),
- *        --alternatives, --json, --explain, --trace
+ *        --alternatives (the decision card's drop analysis: what leaving each goal out alone clears,
+ *        and the drop that clears everything), --json, --explain, --trace
  */
 // lz-string ships CommonJS, so under Node's ESM loader it only has a default export.
 import lzString from 'lz-string';
 import { loadGameDataFromDisk } from '../src/core/data/node.ts';
-import { buildIndexes, defaultOptions, planAlternatives, planRoute } from '../src/core/index.ts';
+import { buildIndexes, defaultOptions, planDropEffects, planRoute } from '../src/core/index.ts';
 import type { Keyword } from '../src/core/schema.ts';
-import type { PlanInput, PlanOptions } from '../src/core/types.ts';
+import type { PlanInput, PlanOptions, RoutePlan } from '../src/core/types.ts';
 import { plannedGifts, type FusionGoalMap } from '../src/app/lib/plan-input.ts';
 import { flagValue, hasFlag } from './lib/io.ts';
 
@@ -134,10 +135,13 @@ const input: PlanInput = share
     };
 
 const plan = planRoute(input, data, indexes);
-const variants = hasFlag('--alternatives') ? planAlternatives(input, data, indexes, plan) : [];
+// The same analysis the app's decision card shows, measured to the end (no budget here).
+const drops = hasFlag('--alternatives')
+  ? planDropEffects(input, data, indexes, plan, { maxRuns: Number.POSITIVE_INFINITY })
+  : null;
 
 if (hasFlag('--json')) {
-  console.log(JSON.stringify(hasFlag('--alternatives') ? { plan, variants } : plan, null, 2));
+  console.log(JSON.stringify(drops ? { plan, drops } : plan, null, 2));
   process.exit(0);
 }
 
@@ -245,20 +249,38 @@ console.log(
     `${plan.stats.coveredWanted}/${plan.stats.totalWanted} 확보, ${plan.stats.elapsedMs}ms`,
 );
 
-if (variants.length > 0) {
-  console.log('\n대안 루트');
-  for (const variant of variants) {
-    const packs = variant.plan.floors
+if (drops && drops.conflicts > 0) {
+  const routeText = (plan: RoutePlan): string => {
+    const packs = plan.floors
       .filter((f) => f.packId !== null)
       .map((f) => `${f.floor}층 ${packName(f.packId!)}`);
+    return (
+      `${plan.stats.coveredWanted}/${plan.stats.totalWanted} 확보, ${packs.join(' · ') || '자유'}` +
+      (plan.unresolved.length > 0
+        ? ` (미해결 ${plan.unresolved.map((u) => giftName(u.giftId)).join(', ')})`
+        : '')
+    );
+  };
+  console.log(`\n빼기 효과 (충돌 목표 ${drops.conflicts}개)`);
+  for (const effect of drops.effects) {
+    const peers = effect.sharesPackWith
+      ? ` · 같은 팩: ${effect.sharesPackWith.map(giftName).join(', ')}`
+      : '';
     console.log(
-      `  ${variant.dropped.map(giftName).join(', ')} 제외 → ${variant.plan.stats.coveredWanted}/${variant.plan.stats.totalWanted} 확보, ` +
-        `${packs.join(' · ') || '자유'}` +
-        (variant.plan.unresolved.length > 0
-          ? ` (미해결 ${variant.plan.unresolved.map((u) => giftName(u.giftId)).join(', ')})`
-          : ''),
+      `  −${effect.reduces} ${giftName(effect.giftId)} [${effect.role}]${peers} → ${routeText(effect.plan)}`,
     );
   }
+  for (const tradeoff of drops.tradeoffs) {
+    console.log(
+      `  ${giftName(tradeoff.lost)}: 대신 잃음 ${tradeoff.causes.map(giftName).join(', ') || '-'}` +
+        ` · 빼면 사는 ${tradeoff.rivals.map(giftName).join(', ') || '-'}`,
+    );
+  }
+  console.log(
+    drops.resolving
+      ? `  해결: ${drops.resolving.dropped.map(giftName).join(', ')} 제외 → ${routeText(drops.resolving.plan)}`
+      : '  해결: 찾지 못함',
+  );
 }
 
 if (hasFlag('--trace')) {

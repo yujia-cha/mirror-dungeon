@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { maximizeLp, solveLp, Tableau } from '../lp.ts';
+import { Tableau } from '../lp.ts';
 
-describe('maximizeLp', () => {
+/** Solve from scratch: the optimum and its point, or null past the pivot budget. */
+const solveLp = (
+  c: number[],
+  rows: number[][],
+  b: number[],
+  maxPivots = 5_000,
+  upper?: readonly number[],
+): { value: number; x: Float64Array } | null => {
+  const lp = Tableau.build(c, rows, b, upper);
+  return lp.resolve(maxPivots) === 'optimal' ? { value: lp.value(), x: lp.point() } : null;
+};
+const maximizeLp = (c: number[], rows: number[][], b: number[], maxPivots = 5_000): number | null =>
+  solveLp(c, rows, b, maxPivots)?.value ?? null;
+
+describe('Tableau', () => {
   it('solves a textbook problem', () => {
     // max 3x + 5y  s.t.  x ≤ 4,  2y ≤ 12,  3x + 2y ≤ 18  →  x = 2, y = 6, 36.
     expect(

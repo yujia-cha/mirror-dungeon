@@ -8,6 +8,7 @@ import {
   MAX_PREVIEW_BYTES,
   MAX_PREVIEWS,
   MAX_READ_RECORDS,
+  MAX_RECORDS,
   RING_SIZE,
   SAMPLES_PER_SCREEN,
   STRIP_AFTER_MS,
@@ -15,7 +16,7 @@ import {
   SUMMARY_PERIOD_MS,
   UNKNOWN_FRAME_GAP_MS,
 } from '../recorder.ts';
-import { memoryStore, type DiagStore } from '../store.ts';
+import { COUNTS, memoryStore, type DiagStore } from '../store.ts';
 
 const META = { dataVersion: '7.test', season: 7, layoutReference: { width: 1920, height: 1009 } };
 
@@ -473,6 +474,72 @@ describe('DiagRecorder', () => {
     const again = await DiagRecorder.open(store);
     // Assert
     expect(again.stats()).toMatchObject({ records: 1, frames: 1, bytes: 7 });
+  });
+
+  it('counts a reload from the stored counters, without reading the records back (M154)', async () => {
+    // Arrange: a read of nothing, a popup and an undo, exported.
+    const { r, store } = await recorder();
+    r.onRead(report(1), null);
+    r.onRead(popup(2, 9006), null);
+    r.onUndo(1);
+    await r.markExported((await r.exportBundle(META)).mark);
+    r.onUndo(2);
+    await r.flush();
+    const records = vi.spyOn(store, 'records');
+    // Act
+    const again = await DiagRecorder.open(store);
+    again.recording = true;
+    const cleared = await again.clearExported();
+    // Assert: the counts agree with the device, and neither opening nor clearing read it all back.
+    expect(records).not.toHaveBeenCalled();
+    expect(cleared).toEqual({ records: 3, frames: 0 });
+    expect(again.stats()).toMatchObject({ records: 1, exportedRecords: 0 });
+    records.mockRestore();
+    expect((await store.records()).map((x) => x.rec.kind)).toEqual(['undo']);
+    const reloaded = await DiagRecorder.open(store);
+    expect(reloaded.stats()).toMatchObject({ records: 1, full: false });
+  });
+
+  it('counts a device stored before M154, which has no counters, by reading it once', async () => {
+    // Arrange: records written straight to the store, as an older version left them.
+    const store = memoryStore();
+    const nothing = { kind: 'read', reason: 'change', ms: 1, ocrCalls: 1, screen: null, floor: null };
+    const rest = { pack: null, gift: null, ingredients: null, trace: [], frameId: null, events: [] };
+    await store.addRecord(1, { ...nothing, ...rest, t: 1 } as DiagRecord);
+    await store.addRecord(2, { kind: 'undo', logId: 1, t: 2 });
+    await store.setMeta('exported', { seq: 1, frameIds: [], at: 5 });
+    // Act
+    const r = await DiagRecorder.open(store);
+    r.recording = true;
+    const cleared = await r.clearExported();
+    // Assert
+    expect(cleared).toEqual({ records: 1, frames: 0 });
+    expect(r.stats()).toMatchObject({ records: 1 });
+    const reloaded = await DiagRecorder.open(store);
+    expect(reloaded.stats()).toMatchObject({ records: 1, exportedRecords: 0 });
+  });
+
+  it('keeps no frames and no previews once recording stopped at the record cap (M154)', async () => {
+    // Arrange: a device at the cap.
+    const full = memoryStore();
+    const store: DiagStore = { ...full, countRecords: async () => MAX_RECORDS };
+    await full.setMeta(COUNTS, { records: MAX_RECORDS, readRecords: 0, seq: MAX_RECORDS, startedAt: 1 });
+    const r = await DiagRecorder.open(store);
+    r.recording = true;
+    r.images = true;
+    const frame = jpeg();
+    const preview = jpeg();
+    // Act
+    r.onTick({ t: 1, read: true, busy: false, changed: true }, preview);
+    r.onRead(popup(2, 9006), frame);
+    r.onManual({ visits: [], status: [], currentFloor: null, capturing: true });
+    await r.flush();
+    // Assert
+    expect(r.stats()).toMatchObject({ stopped: true, frames: 0 });
+    expect(frame.encode).not.toHaveBeenCalled();
+    expect(frame.close).toHaveBeenCalled();
+    expect(preview.encode).not.toHaveBeenCalled();
+    expect(preview.close).toHaveBeenCalled();
   });
 
   it('clears everything', async () => {

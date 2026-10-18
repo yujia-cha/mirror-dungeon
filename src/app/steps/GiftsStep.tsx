@@ -18,8 +18,8 @@ import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronsLeft, ChevronsRight, Search, User } from 'lucide-react';
 import type { GameData, Keyword } from '../../core/schema.ts';
-import { observable, observationBudget } from '../../core/index.ts';
-import type { DeckStats, GameIndexes } from '../../core/types.ts';
+import { observationBudget } from '../../core/index.ts';
+import type { GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { observationClosed } from '../lib/plan-input.ts';
@@ -32,7 +32,7 @@ import { GiftIcon } from '../components/GiftIcon.tsx';
 import { GiftNoMatch } from '../components/GiftFilterBar.tsx';
 import { GiftTileGrid } from '../components/GiftGrid.tsx';
 import { SelectedTiles } from '../components/SelectedTiles.tsx';
-import { browsableParents, conditionReportsByGift, tilesFor } from '../lib/gift-tile.ts';
+import { browsableParents, tilesFor } from '../lib/gift-tile.ts';
 import { ObserveSlots } from '../components/ObserveSlots.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { usePlan } from '../shell/plan-context.ts';
@@ -40,7 +40,6 @@ import { usePlan } from '../shell/plan-context.ts';
 interface Props {
   data: GameData;
   indexes: GameIndexes;
-  stats: DeckStats;
   lang: Lang;
   /** Where to send the player when the deck is empty (the deck tab). */
   onGoDeck?: () => void;
@@ -54,7 +53,6 @@ interface Props {
 export function GiftsStep({
   data,
   indexes,
-  stats,
   lang,
   onGoDeck,
   onBrowse,
@@ -76,7 +74,17 @@ export function GiftsStep({
   const observeBudget = observationBudget({ observationSlots }, data);
   // The selection rule and the derived views over `wanted` are the shell's (`PlanProvider`), so
   // they are computed once and every surface agrees.
-  const { plan, openGift, childrenOf, entangled, blocked, needed, toggleGoal: toggle } = usePlan();
+  const {
+    plan,
+    openGift,
+    childrenOf,
+    entangled,
+    blocked,
+    needed,
+    toggleGoal: toggle,
+    conditionByGift,
+    ctx: { observable: canObserve },
+  } = usePlan();
 
   // Only the query: the filters live in the 「모두 보기」 browser.
   const filterState = useGiftFilters();
@@ -91,8 +99,6 @@ export function GiftsStep({
   // Clearing drops every goal, their fusion settings and the observation pins in one press, and
   // nothing brings them back — so it asks first, like the header's reset.
   const [confirmClear, setConfirmClear] = useState(false);
-
-  const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
 
   // Two fusion goals can eat the same ingredient; a state that already holds both still says so.
   const entangledIds = useMemo(() => new Set(entangled.keys()), [entangled]);
@@ -131,10 +137,6 @@ export function GiftsStep({
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wanted, indexes, lang, chipSort, chipKeyword, chipPack]);
-  const canObserve = (id: number): boolean => {
-    const gift = indexes.giftById.get(id);
-    return gift ? observable(gift, data.rules) : false;
-  };
 
   // Observation: the slots take a selected gift from the 「+」 list or from a dragged chip. A drop
   // on a filled slot replaces its gift; a drop elsewhere, or of a gift that cannot be observed,

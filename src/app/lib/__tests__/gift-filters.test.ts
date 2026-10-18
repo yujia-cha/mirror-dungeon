@@ -7,7 +7,8 @@ import { act, renderHook } from '@testing-library/react';
 import { buildIndexes } from '../../../core/index.ts';
 import { loadGameDataFromDisk } from '../../../core/data/node.ts';
 import { EMPTY_FILTERS, filtersActive, hasDeckCondition, matchesGiftFilters } from '../gift-filters.ts';
-import { useGiftFilters } from '../useGiftFilters.ts';
+import { useGiftFilters, type GiftFilterState } from '../useGiftFilters.ts';
+import type { Gift } from '../../../core/schema.ts';
 
 const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
@@ -80,23 +81,27 @@ describe('matchesGiftFilters', () => {
 });
 
 describe('useGiftFilters', () => {
+  /** Both halves of the hook's matcher, as a tile list asks them. */
+  const matches = (state: GiftFilterState, g: Gift): boolean =>
+    state.matcher.name(g) && state.matcher.attrs(g);
+
   it('holds one set of filters, says when they narrow, and resets in one go', () => {
     const { result } = renderHook(() => useGiftFilters());
     expect(result.current.filtersOn).toBe(false);
     expect(result.current.searching).toBe(false);
-    expect(result.current.matchesFilters(gift(9235))).toBe(true);
+    expect(matches(result.current, gift(9235))).toBe(true);
     act(() => result.current.set('condition', 'none'));
     expect(result.current.filtersOn).toBe(true);
     expect(result.current.filters.condition).toBe('none');
-    expect(result.current.matchesFilters(gift(9235))).toBe(false);
-    expect(result.current.matchesFilters(gift(9001))).toBe(true);
+    expect(matches(result.current, gift(9235))).toBe(false);
+    expect(matches(result.current, gift(9001))).toBe(true);
     act(() => result.current.setQuery('진혼'));
     expect(result.current.searching).toBe(true);
     expect(result.current.filters.query).toBe('진혼');
     act(() => result.current.resetFilters());
     expect(result.current.filters).toEqual(EMPTY_FILTERS);
     expect(result.current.filtersOn).toBe(false);
-    expect(result.current.matchesFilters(gift(9235))).toBe(true);
+    expect(matches(result.current, gift(9235))).toBe(true);
   });
 
   it('knows only keyword, condition, tier and sin besides the name — no price, no source', () => {
@@ -107,8 +112,8 @@ describe('useGiftFilters', () => {
     const { result } = renderHook(() => useGiftFilters('진혼'));
     expect(result.current.filters.query).toBe('진혼');
     expect(result.current.searching).toBe(true);
-    expect(result.current.matchesFilters(gift(9088))).toBe(true);
-    expect(result.current.matchesFilters(gift(9235))).toBe(false);
+    expect(matches(result.current, gift(9088))).toBe(true);
+    expect(matches(result.current, gift(9235))).toBe(false);
     act(() => result.current.resetFilters());
     expect(result.current.filters.query).toBe('');
   });

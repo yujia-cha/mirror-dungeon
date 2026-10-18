@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  assignSlots,
-  candidatesForMixed,
-  mixedFusionConsumed,
-  recipeConsumed,
-  type SlotRanking,
-} from '../fusion.ts';
+import { assignSlots, mixedFusionConsumed, recipeConsumed, type SlotRanking } from '../fusion.ts';
 
 /** 달의 기억 (9083): 2 of the seven shards, all 3 memories. */
 const MOON = {
@@ -117,63 +111,21 @@ describe('mixedFusionConsumed (달의 기억)', () => {
     // Arrange
     const held = new Set([9105, 9131, ...MEMORIES, 9001]);
     // Act
-    const out = mixedFusionConsumed(MOON, held, null);
+    const out = mixedFusionConsumed(MOON, held);
     // Assert: both shards and all three memories, nothing else held.
     expect(out).toEqual({ consumed: [9105, 9131, ...MEMORIES], unsure: [] });
   });
 
-  it('reads which two of three or more shards went from the confirm screen', () => {
-    // Arrange: four shards held; the five slots show 업화·교만 and the three memories.
-    const held = new Set([9105, 9110, 9126, 9131, ...MEMORIES]);
-    const top = (id: number): SlotRanking => [
-      [id, 0.9],
-      ...candidatesForMixed(MOON, held)
-        .filter((other) => other !== id)
-        .map((other): [number, number] => [other, 0.5]),
-    ];
-    const slots = [top(9105), top(9131), top(9142), top(9147), top(9152)];
-    // Act
-    const out = mixedFusionConsumed(MOON, held, slots);
-    // Assert
-    expect(out).toEqual({ consumed: [9105, 9131, ...MEMORIES], unsure: [] });
-  });
-
-  it('leaves the shards to the player when the screen settles only one of the two', () => {
-    // Arrange: one shard slot reads cleanly, the other cannot tell 매혹 from 잠식.
+  it('asks about the shards when the player holds more than it takes', () => {
     const held = new Set([9105, 9110, 9126, ...MEMORIES]);
-    const slots: SlotRanking[] = [
-      [
-        [9105, 0.9],
-        [9110, 0.4],
-      ],
-      [
-        [9110, 0.7],
-        [9126, 0.69],
-      ],
-    ];
-    // Act
-    const out = mixedFusionConsumed(MOON, held, slots);
-    // Assert: the memories are certain regardless; the three shards are asked about.
-    expect(out).toEqual({ consumed: MEMORIES, unsure: [9105, 9110, 9126] });
-  });
-
-  it('asks about the shards when the screen was not read at all', () => {
-    const held = new Set([9105, 9110, 9126, ...MEMORIES]);
-    expect(mixedFusionConsumed(MOON, held, null)).toEqual({ consumed: MEMORIES, unsure: [9105, 9110, 9126] });
+    expect(mixedFusionConsumed(MOON, held)).toEqual({ consumed: MEMORIES, unsure: [9105, 9110, 9126] });
   });
 
   it('takes whatever is held of a pool the player holds less of than it takes', () => {
     // Boundary: one shard and two memories — the fusion could not have been made, but nothing held
     // of either pool can have survived it.
     const held = new Set([9116, 9142, 9147]);
-    expect(mixedFusionConsumed(MOON, held, null)).toEqual({ consumed: [9116, 9142, 9147], unsure: [] });
-  });
-});
-
-describe('candidatesForMixed', () => {
-  it('ranks only what the player holds of both pools', () => {
-    const held = new Set([9152, 9001, 9131, 9105]);
-    expect(candidatesForMixed(MOON, held)).toEqual([9105, 9131, 9152]);
+    expect(mixedFusionConsumed(MOON, held)).toEqual({ consumed: [9116, 9142, 9147], unsure: [] });
   });
 });
 

@@ -20,10 +20,10 @@ import { createPortal } from 'react-dom';
 import { TriangleAlert } from 'lucide-react';
 import { pick, t } from '../i18n.ts';
 import { useApp } from '../store.ts';
-import { feedbackLog, type FeedbackLog, type FeedbackLogEntry } from '../lib/feedback-log.ts';
+import { feedbackLog, type FeedbackLog } from '../lib/feedback-log.ts';
 import { useCaptureSession } from '../capture/capture-context.ts';
 import { giftName, statusTextOf } from '../capture/capture-text.ts';
-import { factKeys, overlayFacts, type FactEntry, type FactLog } from './overlay-log.ts';
+import { factKeys, overlayFacts, type FactLog } from './overlay-log.ts';
 import { captureKeys, captureSentence, factSentence, type NameOf } from './overlay-text.ts';
 import { GiftIcon } from '../components/GiftIcon.tsx';
 import { Badge, Button } from '../components/ui.tsx';
@@ -44,31 +44,24 @@ import {
   type StartCandidate,
 } from './overlay-model.ts';
 
-/** One copy of the log's entries per revision, so `useSyncExternalStore` sees a stable snapshot. */
-const snapshots = new WeakMap<FeedbackLog, { revision: number; entries: FeedbackLogEntry[] }>();
-function snapshotOf(log: FeedbackLog): FeedbackLogEntry[] {
-  const cached = snapshots.get(log);
-  if (cached?.revision === log.revision) return cached.entries;
-  const entries = log.entries();
-  snapshots.set(log, { revision: log.revision, entries });
-  return entries;
+/** A log the window reads: its entries, a revision that moves with them, and a way to listen. */
+interface RevisionLog<T> {
+  readonly revision: number;
+  entries(): T[];
+  subscribe(listener: () => void): () => void;
 }
 
-/** The feedback log's entries, re-read whenever it grows. */
-function useFeedbackEntries(log: FeedbackLog): FeedbackLogEntry[] {
+/** One copy of a log's entries per revision, so `useSyncExternalStore` sees a stable snapshot. */
+const snapshots = new WeakMap<object, { revision: number; entries: unknown[] }>();
+
+/** A log's entries — the feedback log's errors, the run facts (M151) — re-read whenever it grows. */
+function useLogEntries<T>(log: RevisionLog<T>): T[] {
   const subscribe = useCallback((onChange: () => void) => log.subscribe(() => onChange()), [log]);
-  return useSyncExternalStore(subscribe, () => snapshotOf(log));
-}
-
-const factSnapshots = new WeakMap<FactLog, { revision: number; entries: FactEntry[] }>();
-/** The run facts (M151), re-read whenever one is added. */
-function useFactEntries(log: FactLog): FactEntry[] {
-  const subscribe = useCallback((onChange: () => void) => log.subscribe(onChange), [log]);
   return useSyncExternalStore(subscribe, () => {
-    const cached = factSnapshots.get(log);
-    if (cached?.revision === log.revision) return cached.entries;
+    const cached = snapshots.get(log);
+    if (cached?.revision === log.revision) return cached.entries as T[];
     const entries = log.entries();
-    factSnapshots.set(log, { revision: log.revision, entries });
+    snapshots.set(log, { revision: log.revision, entries });
     return entries;
   });
 }
@@ -362,8 +355,8 @@ export function OverlayBody({
   const capture = useCaptureSession();
   const run = useApp((s) => s.run);
   const lastFloor = useApp((s) => s.lastFloor);
-  const feedback = useFeedbackEntries(log);
-  const changes = useFactEntries(facts);
+  const feedback = useLogEntries(log);
+  const changes = useLogEntries(facts);
 
   const running = capture.status === 'running';
   const asking = capture.questions.length;

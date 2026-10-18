@@ -19,6 +19,8 @@ const diagnostics = {
     parts: 1,
   },
   hooks: {},
+  subscribe: () => () => undefined,
+  getStats: () => diagnostics.stats,
   exportZip: vi.fn<() => Promise<ExportResult>>(),
   clearExported: vi.fn(async () => ({ records: 0, frames: 0 })),
   clearAll: vi.fn(async () => undefined),

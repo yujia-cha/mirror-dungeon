@@ -166,15 +166,7 @@ describe('enhancement on screen (M130)', () => {
   });
 
   const renderGifts = () => {
-    const { deck, deployed } = useApp.getState();
-    return renderPlanned(
-      <GiftsStep
-        data={data}
-        indexes={indexes}
-        stats={analyseDeck(deck, indexes, data.rules.deployment, deployed)}
-        lang="ko"
-      />,
-    );
+    return renderPlanned(<GiftsStep data={data} indexes={indexes} lang="ko" />);
   };
   const chip = (id: number) =>
     screen.getAllByTestId('gift-chip').find((el) => el.getAttribute('data-gift') === String(id))!;
