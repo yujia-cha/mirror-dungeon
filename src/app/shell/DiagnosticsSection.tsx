@@ -119,7 +119,15 @@ export function DiagnosticsSection() {
           ? ` · ${t('diagLastExport', lang, { time: time(stats.lastExportAt) })}`
           : ''}
       </p>
-      {stats.full ? <p className="text-body text-fg">⚠ {t('diagFull', lang)}</p> : null}
+      {stats.stopped ? (
+        <p className="text-body text-fg" data-testid="diag-stopped">
+          ⚠ {t('diagStopped', lang)}
+        </p>
+      ) : stats.full ? (
+        <p className="text-body text-fg-muted" data-testid="diag-full">
+          {t('diagFull', lang)}
+        </p>
+      ) : null}
       {stats.trimmedFrames > 0 ? (
         <p className="text-body text-fg-muted">{t('diagTrimmed', lang, { n: stats.trimmedFrames })}</p>
       ) : null}

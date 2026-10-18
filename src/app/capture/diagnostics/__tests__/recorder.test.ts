@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { diagnosticsBundleSchema } from '../../../../core/schema.ts';
+import { diagnosticsBundleSchema, type DiagRecord } from '../../../../core/schema.ts';
 import type { EnvReport, FrameSource, ReadReport, TickReport } from '../../session.ts';
 import {
   DiagRecorder,
@@ -7,10 +7,12 @@ import {
   MAX_FRAME_BYTES,
   MAX_PREVIEW_BYTES,
   MAX_PREVIEWS,
+  MAX_READ_RECORDS,
   RING_SIZE,
   SAMPLES_PER_SCREEN,
   STRIP_AFTER_MS,
   STRIP_BEFORE_MS,
+  SUMMARY_PERIOD_MS,
   UNKNOWN_FRAME_GAP_MS,
 } from '../recorder.ts';
 import { memoryStore, type DiagStore } from '../store.ts';
@@ -206,6 +208,135 @@ describe('DiagRecorder', () => {
     expect(reads[0]).not.toHaveProperty('queueDropped');
     expect(reads[1]).toMatchObject({ t: 6, queueDropped: 2 });
     expect(reads[1]).not.toHaveProperty('queued');
+  });
+
+  describe('reads summed, not kept one by one (M153)', () => {
+    /** A popup read that found no popup: the title alone. */
+    const scan = (t: number, over: Partial<ReadReport> = {}) =>
+      report(t, {
+        mode: 'popup',
+        ms: 3.4,
+        frame: { screen: null, floor: null, pack: null, gift: null, partial: true },
+        ...over,
+      });
+
+    it('sums popup reads that found nothing, and keeps the popup that was found', async () => {
+      // Arrange
+      const { r } = await recorder();
+      // Act: two scans in the burst, a popup found in the queue, two queued scans (one telling of a
+      // popup pushed out), and a busy tick that saw the screen change.
+      r.onRead(scan(1000), null);
+      r.onRead(scan(1100), null);
+      r.onRead({ ...popup(1200, 9006), mode: 'popup', queued: { lagMs: 40 } }, null);
+      r.onTick({ t: 1250, read: false, busy: true, changed: true }, null);
+      r.onRead(scan(1300, { queued: { lagMs: 120.4 }, queueDropped: 1 }), null);
+      r.onRead(scan(1400, { queued: { lagMs: 80 } }), null);
+      const { bundle } = await r.exportBundle(META);
+      // Assert: one read record (the popup) and one summary of the four scans.
+      expect(diagnosticsBundleSchema.safeParse(bundle).success).toBe(true);
+      expect(bundle.records.filter((x) => x.kind === 'read')).toHaveLength(1);
+      expect(bundle.records.filter((x) => x.kind === 'readSummary')).toEqual([
+        {
+          kind: 'readSummary',
+          t: 1400,
+          from: 1000,
+          cause: 'scan',
+          mode: 'popup',
+          reads: 4,
+          ms: 12,
+          ocrCalls: 4,
+          queued: 2,
+          lagMs: 200,
+          lagMaxMs: 120,
+          popups: 0,
+          queuedPopups: 0,
+          queueDropped: 1,
+          busyTicks: 1,
+          busyChanges: 1,
+          changedUnder: 1,
+          screens: { '(none)': 4 },
+        },
+      ]);
+    });
+
+    it('writes a summary once it is SUMMARY_PERIOD_MS old, when the session stops, or on export', async () => {
+      // Arrange
+      const { r } = await recorder();
+      // Act: scans across 10 s, an env record, then more scans and the session stopping.
+      r.onRead(scan(0), null);
+      r.onRead(scan(SUMMARY_PERIOD_MS - 1), null);
+      r.onRead(scan(SUMMARY_PERIOD_MS), null);
+      r.onRead(scan(SUMMARY_PERIOD_MS + 10), null);
+      r.onSession({ status: 'idle', error: null, interval: 'balanced', lang: 'ko', captureSize: null });
+      await r.flush();
+      const { bundle } = await r.exportBundle(META);
+      // Assert: the first summary closed at the read 10 s on, the second when the session stopped.
+      const sums = bundle.records.filter((x) => x.kind === 'readSummary');
+      expect(sums.map((x) => x.kind === 'readSummary' && [x.from, x.t, x.reads])).toEqual([
+        [0, SUMMARY_PERIOD_MS - 1, 2],
+        [SUMMARY_PERIOD_MS, SUMMARY_PERIOD_MS + 10, 2],
+      ]);
+      expect(bundle.records.map((x) => x.kind)).toEqual(['readSummary', 'readSummary', 'session']);
+    });
+
+    it('counts reads of nothing past their cap, and goes on recording events and everything else', async () => {
+      // Arrange: the cap of reads that say nothing is reached.
+      const { r } = await recorder();
+      for (let i = 0; i < MAX_READ_RECORDS; i++) r.onRead(report(i), null);
+      expect(r.stats()).toMatchObject({ full: true, stopped: false });
+      // Act: more of them, a popup with its event, what was applied, a floor.
+      r.onRead(report(MAX_READ_RECORDS), null);
+      r.onRead(
+        report(MAX_READ_RECORDS + 1, { frame: { screen: 'exploring', floor: 2, pack: null, gift: null } }),
+        null,
+      );
+      r.onRead(popup(MAX_READ_RECORDS + 2, 9007), null);
+      r.onApplied(1, { kind: 'got' }, [], true);
+      r.onFloor({
+        floor: 1,
+        recommended: null,
+        window: null,
+        alternatives: [],
+        entered: null,
+        expected: [],
+        startGifts: [],
+      });
+      const { bundle } = await r.exportBundle(META);
+      // Assert
+      const kinds = bundle.records.slice(MAX_READ_RECORDS).map((x) => x.kind);
+      expect(kinds).toEqual(['read', 'applied', 'floor', 'readSummary']);
+      const capped = bundle.records.find((x) => x.kind === 'readSummary');
+      expect(capped).toMatchObject({
+        cause: 'capped',
+        mode: 'full',
+        reads: 2,
+        screens: { '(none)': 1, exploring: 1 },
+      });
+      expect(r.stats()).toMatchObject({ full: true, stopped: false });
+    });
+
+    it('counts the reads of nothing already kept after a reload, and not the others', async () => {
+      // Arrange: a device holding one short of the cap of reads of nothing, and a popup read.
+      const store = memoryStore();
+      const nothing = { kind: 'read', reason: 'change', ms: 1, ocrCalls: 1, screen: null, floor: null };
+      const rest = { pack: null, gift: null, ingredients: null, trace: [], frameId: null };
+      for (let i = 1; i < MAX_READ_RECORDS; i++)
+        await store.addRecord(i, { ...nothing, ...rest, t: i, events: [] } as DiagRecord);
+      await store.addRecord(MAX_READ_RECORDS, {
+        ...nothing,
+        ...rest,
+        t: MAX_READ_RECORDS,
+        events: [{ kind: 'got', giftId: 9008 }],
+      } as DiagRecord);
+      // Act
+      const reloaded = await DiagRecorder.open(store);
+      const full = { before: reloaded.stats().full };
+      reloaded.recording = true;
+      reloaded.onRead(report(MAX_READ_RECORDS + 1), null);
+      // Assert: the popup read did not count; the next read of nothing reaches the cap.
+      expect(full.before).toBe(false);
+      expect(reloaded.stats().full).toBe(true);
+    });
   });
 
   it('records the environment as text, with or without pictures, and the schema takes it (M142)', async () => {

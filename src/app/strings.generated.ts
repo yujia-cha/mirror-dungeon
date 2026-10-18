@@ -772,8 +772,12 @@ export const STRINGS = {
   },
   diagLastExport: { ko: '마지막 내보내기 {time}', en: 'last exported {time}' },
   diagFull: {
-    ko: '기록이 가득 찼습니다(2만 건). 내보내고 지워야 다시 기록합니다.',
-    en: 'The record is full (20,000). Export and clear it to record again.',
+    ko: '아무것도 찾지 못한 판독이 상한(2만 건)에 닿아 이제부터는 개수만 남깁니다. 이벤트·적용·층 기록은 계속 남습니다.',
+    en: 'Reads that found nothing reached their cap (20,000); from now on only their counts are kept. Events, what was applied and floors are still recorded.',
+  },
+  diagStopped: {
+    ko: '기록이 가득 찼습니다(10만 건). 내보내고 지워야 다시 기록합니다.',
+    en: 'The record is full (100,000). Export and clear it to record again.',
   },
   diagTrimmed: {
     ko: '이미지 상한을 넘어 덜 중요한 {n}장을 오래된 것부터 지웠습니다.',

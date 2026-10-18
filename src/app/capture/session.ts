@@ -41,7 +41,7 @@ import {
   take,
   type Backlog,
 } from './backlog.ts';
-import { changed, signatureOf, watchedRegions } from './change.ts';
+import { changed, isBlack, signatureOf, watchedRegions } from './change.ts';
 import {
   followFrames,
   initialPace,
@@ -292,6 +292,8 @@ export class CaptureSession {
   private pace: PaceState;
   /** The previous tick's signature: what moved since then pulls the interval in (M142). */
   private signatureBefore: Uint8Array | null = null;
+  /** When the signature last moved from one tick to the next (M153): how long the screen held still. */
+  private movedAt = 0;
   /** The popup part of the two frames before this one, oldest first: is it animating (M142)? */
   private popupTicks: [Uint8Array | null, Uint8Array | null] = [null, null];
   /** The read in flight is of a change or a queued popup, not a re-read of a known screen (M142). */
@@ -581,6 +583,8 @@ export class CaptureSession {
     );
     const signature = signatureOf(preview.data, preview.width, preview.height, this.regions);
     const isChanged = changed(this.loop.lastRead, signature);
+    // A fade through black between sections (M153): not read, and the screen after it reads at once.
+    const black = isBlack(signature);
     const reason: ReadReport['reason'] = isChanged ? 'change' : this.loop.dirty ? 'dirty' : 'refresh';
     const now = performance.now();
     // The interval follows what moves (M142): a change since the last tick, not since the last read.
@@ -595,6 +599,7 @@ export class CaptureSession {
           isChanged ||
           (this.loop.busy && this.readingChange) ||
           this.loop.dirty ||
+          this.loop.dark ||
           this.backlog.entries.length > 0,
         screen: this.lastScreen,
       }),
@@ -613,11 +618,16 @@ export class CaptureSession {
     const urgent =
       this.movingSince === null &&
       changed(this.loop.lastRead ? popupPart(this.loop.lastRead, indices) : null, popupNow);
-    const step = decide(this.loop, signature, isChanged, now, refreshFor(this.pace.level), urgent);
+    if (moved) this.movedAt = now;
+    const step = decide(this.loop, signature, isChanged, now, refreshFor(this.pace.level), urgent, {
+      black,
+      stillMs: now - this.movedAt,
+    });
     this.loop = step.state;
     const busy = step.decision === 'skip' && step.state.busy;
     this.reportTick(step.decision === 'read', busy, isChanged);
-    if (busy) this.queueShot(video, popupNow, width, height);
+    // A black popup region shows no popup: nothing to queue.
+    if (busy && !black) this.queueShot(video, popupNow, width, height);
     if (step.decision === 'skip') return;
     // The ticks under this read queue what differs from its frame (M147, `readStarted`).
     this.backlog = readStarted(this.backlog, popupNow);
@@ -646,8 +656,8 @@ export class CaptureSession {
       this.setPace(paceRead(this.pace, now, mode, now - started));
     // A popup read that found nothing says nothing of the screen; any other read names it, or none.
     if (frame && !frame.partial) this.lastScreen = frame.screen;
-    // A moving screen of nothing is read again at the range's slow end (M142); a map read short of
-    // its floor or pack is read again soon (M148).
+    // A moving screen of nothing is read again at the range's slow end (M142), later the longer it
+    // goes on (M153); a map read short of its floor or pack is read again soon (M148).
     this.loop = finished(
       this.loop,
       frame ? outcomeOf(frame, performance.now(), this.pace.range.max) : undefined,

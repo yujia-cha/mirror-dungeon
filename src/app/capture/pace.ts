@@ -18,7 +18,8 @@
  *      fast (a popup burst, a popup just queued), the screen has not been read since it changed
  *      (its kind is not known yet), or the screen last read is one where popups come — an acquired
  *      popup, a start picker, a screen inside a pack (shop, sell, enhance, fusion —
- *      `isInPackScreen`). Pulling in is never delayed: it is the safe direction.
+ *      `isInPackScreen`). Pulling in is never delayed: it is the safe direction. (Fast ticks include
+ *      the seconds after a fade through black, M153 — `fastTicks`, `loop.ts`.)
  *    - *A still screen* relaxes it toward `max`, one step (×`RELAX_FACTOR`) per `RELAX_STEP_MS` of
  *      stillness. The asymmetry is the hysteresis: one change undoes it, a second of stillness
  *      starts it again, so it cannot oscillate faster than that.
@@ -34,8 +35,12 @@
  *    - Work never stacks: the session books one tick at a time, from when the last one fired.
  *
  * 2. **A load level** (`LoadLevel`) from what the machine shows — tick lateness (when a timer tick
- *    fired after it was due: the page's thread is busy), read times (full and popup reads apart),
- *    and backlog overflow. Each level cuts optional reads, in this order and no further:
+ *    fired after it was due: the page's thread is busy), full read times, and backlog overflow.
+ *    Popup read times are measured and reported but raise nothing (M153): a title read over a busy
+ *    battle frame is slower for the noise in it, not for the machine — on the owner's 71-minute
+ *    session every level 1 (11% of the time) came from popup reads at p90 120–128 ms while the
+ *    timer ticks were late by 1–14 ms. A loaded machine shows in the lateness and the full reads.
+ *    Each level cuts optional reads, in this order and no further:
  *    - level 1: the later **refresh re-reads** of an unchanged screen wait longer (`refreshFor`).
  *      The first re-read keeps its 2 s — it is the one that catches a popup read mid-fade (M108).
  *    - level 2: also the **raw pass of titles not needed in this phase of the run** — the pack
@@ -57,7 +62,8 @@
  * that does not repaint sends no frames, so a low rate says nothing about the machine.
  *
  * Elsewhere, and not by level: a full read of nothing that the screen moved under holds the next
- * change read back by the range's `max` (`holdUntil`, `loop.ts`), and a moving popup region
+ * change read back by the range's `max`, longer the more such reads in a row, up to a second
+ * (`holdUntil`, `holdFor`, `loop.ts`, M153), and a moving popup region
  * queues little (`admit`, `backlog.ts`). `capture:stress` measures all of it under bad
  * conditions (`scripts/lib/capture-stress.ts`).
  */
@@ -88,16 +94,15 @@ export const LOWER_HOLD_MS = 10_000;
 
 /**
  * The thresholds (p90, ms) at which a measure raises the level to 1 and to 2. From the owner's
- * sessions: popup reads averaged 34 ms (M136), full reads ran 325 ms median / 986 ms p95 (M108)
- * and up to 860 ms for a confirm dialog (M141), and a healthy page fires its timers within a few
- * ms. Lateness is also held against the range: a tick late by half the shortest interval is a tick
- * the range no longer delivers.
+ * sessions: full reads ran 325 ms median / 986 ms p95 (M108) and up to 860 ms for a confirm dialog
+ * (M141), and a healthy page fires its timers within a few ms. Lateness is also held against the
+ * range: a tick late by half the shortest interval is a tick the range no longer delivers. Popup
+ * reads have no threshold since M153 (see the file's comment).
  */
 export const STRAIN = {
   lateness: { level1: 50, level2: 150 },
   /** Lateness thresholds are at least these fractions of the range's `min`. */
   latenessOfMin: { level1: 0.5, level2: 1.5 },
-  popupRead: { level1: 120, level2: 300 },
   fullRead: { level1: 1500, level2: 3000 },
 } as const;
 
@@ -201,10 +206,10 @@ export function paceLateness(state: PaceState, now: number, ms: number): PaceSta
 }
 
 /**
- * Whether a finished read is a load sample (M146). Full reads always are. A popup read is one only
- * when it found no popup: that is the title alone, the cost of looking. One that found a popup also
- * read the name (and maybe the icon) — 120–270 ms on the owner's machine — and counting those
- * raised the load level on every click-through.
+ * Whether a finished read is a sample (M146). Full reads always are. A popup read is one only when
+ * it found no popup: that is the title alone, the cost of looking. One that found a popup also read
+ * the name (and maybe the icon) — 120–270 ms on the owner's machine. Since M153 popup samples are
+ * reported only (`paceStats`), never a load signal.
  */
 export function isLoadSample(mode: 'full' | 'popup', foundNoPopup: boolean): boolean {
   return mode === 'full' || foundNoPopup;
@@ -249,16 +254,14 @@ function thresholdsFor(range: IntervalRange, level: 1 | 2) {
   const key = level === 1 ? 'level1' : 'level2';
   return {
     lateness: Math.max(STRAIN.lateness[key], STRAIN.latenessOfMin[key] * range.min),
-    popupRead: STRAIN.popupRead[key],
     fullRead: STRAIN.fullRead[key],
   };
 }
 
-/** The measures' p90s now (null where there are too few samples). */
+/** The load measures' p90s now (null where there are too few samples). Popup reads are not one (M153). */
 function measures(state: PaceState, now: number) {
   return {
     lateness: percentileOf(state.lateness, now, 90, MIN_LATENESS_SAMPLES),
-    popupRead: percentileOf(state.popupReads, now, 90, MIN_READ_SAMPLES),
     fullRead: percentileOf(state.fullReads, now, 90, MIN_READ_SAMPLES),
   };
 }
@@ -269,7 +272,6 @@ function over(state: PaceState, now: number, level: 1 | 2, scale: number): boole
   const th = thresholdsFor(state.range, level);
   return (
     (m.lateness !== null && m.lateness >= scale * th.lateness) ||
-    (m.popupRead !== null && m.popupRead >= scale * th.popupRead) ||
     (m.fullRead !== null && m.fullRead >= scale * th.fullRead)
   );
 }

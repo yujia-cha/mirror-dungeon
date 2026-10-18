@@ -14,6 +14,8 @@ const { CaptureSession } = await import('../session.ts');
 const { createOcrEngine } = await import('../ocr-engine.ts');
 
 const LAYOUT: unknown = JSON.parse(readFileSync('public/data/capture-layout.json', 'utf8'));
+/** The fake share's grey: plain, no text, not black (a black frame is not read, M153). */
+const GREY = 60;
 
 /** A share whose answer the test releases, and its one track. */
 function fakeShare() {
@@ -120,12 +122,12 @@ describe('CaptureSession reads', () => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
     vi.spyOn(HTMLVideoElement.prototype, 'videoWidth', 'get').mockReturnValue(1920);
     vi.spyOn(HTMLVideoElement.prototype, 'videoHeight', 'get').mockReturnValue(1009);
-    // A blank frame: jsdom draws nothing, so every region reads as black.
+    // A plain grey frame: no text on it, and not black — a black frame is not read (M153).
     const ctx = {
       drawImage: () => undefined,
       putImageData: () => undefined,
       getImageData: (_x: number, _y: number, w: number, h: number) => ({
-        data: new Uint8ClampedArray(w * h * 4),
+        data: new Uint8ClampedArray(w * h * 4).fill(GREY),
         width: w,
         height: h,
       }),
@@ -207,9 +209,9 @@ describe('CaptureSession reads', () => {
 
 describe('CaptureSession backlog (M141)', () => {
   /** What the share shows: every pixel this grey, so a change of level is a change of screen. */
-  let level = 0;
+  let level = GREY;
   beforeEach(() => {
-    level = 0;
+    level = GREY;
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({ json: async () => LAYOUT })),
@@ -279,7 +281,7 @@ describe('CaptureSession backlog (M141)', () => {
     // Act: the popup shows while the read is busy, then is clicked away before it is done.
     level = 120;
     await vi.waitFor(() => expect(crops).toHaveLength(1));
-    level = 0;
+    level = GREY;
     unblock();
     await vi.waitFor(() => expect(onEvents).toHaveBeenCalled());
     created.stop();
@@ -292,6 +294,38 @@ describe('CaptureSession backlog (M141)', () => {
     const [, , width, height] = crops[0]!;
     expect(width! * height!).toBeLessThan(1920 * 1009 * 0.25);
     expect(created.stats.queued).toBe(1);
+  });
+
+  it('reads no black frame, and the first frame after the black at once (M153)', async () => {
+    // Arrange: the share shows black — a fade between sections.
+    level = 0;
+    const { release } = fakeShare();
+    release();
+    engine.recognize.mockReset();
+    engine.recognize.mockResolvedValue([] as never);
+    const created = new CaptureSession({
+      interval: { min: 5, max: 5 },
+      context: () => ({
+        lang: 'ko',
+        packs: [],
+        gifts: [],
+        held: [],
+        materials: [],
+        iconUrl: () => null,
+        startOpen: false,
+      }),
+      onEvents: vi.fn(),
+      onStatus: vi.fn(),
+    });
+    await created.start();
+    await vi.waitFor(() => expect(created.stats.ticks).toBeGreaterThan(5));
+    const blackReads = created.stats.reads;
+    // Act: the next screen fades in.
+    level = GREY;
+    await vi.waitFor(() => expect(created.stats.reads).toBe(1));
+    created.stop();
+    // Assert
+    expect(blackReads).toBe(0);
   });
 });
 
@@ -307,7 +341,7 @@ describe('CaptureSession environment (M142)', () => {
     const ctx = {
       drawImage: () => undefined,
       getImageData: (_x: number, _y: number, w: number, h: number) => ({
-        data: new Uint8ClampedArray(w * h * 4),
+        data: new Uint8ClampedArray(w * h * 4).fill(GREY),
         width: w,
         height: h,
       }),

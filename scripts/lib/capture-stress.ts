@@ -18,6 +18,7 @@ import type { IntervalRange } from '../../src/app/capture/pace.ts';
 import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame } from '../../src/app/capture/tracker.ts';
 import {
   compareEvents,
+  eventKey,
   latencies,
   simulate,
   type ShotRead,
@@ -35,12 +36,19 @@ export type Screen =
   | { kind: 'nothing'; animated?: boolean }
   /** A confirm dialog: nothing to the tracker, the slowest full read (M141). */
   | { kind: 'confirm' }
+  /** The loading screen after a battle (M153): a still picture, nothing to the tracker. */
+  | { kind: 'loading' }
+  /** The fade between sections (M153): every watched region black. */
+  | { kind: 'black' }
   /**
    * A popup. `look` is what its regions look like to the signature (default: its gift): two
    * different gifts' popups often look alike there (M147 — the title is the same and the change
    * signature rarely tells two names apart), so the same `look` on two gifts is the real case.
    */
-  | { kind: 'popup'; giftId: number; over: 'shop' | 'nothing' | 'confirm'; look?: number };
+  | { kind: 'popup'; giftId: number; over: PopupGround; look?: number };
+
+/** What a popup comes over; `battle` keeps moving around it (M153). */
+export type PopupGround = 'shop' | 'nothing' | 'confirm' | 'battle';
 
 /** A screen and how long it stays, ms. */
 export type Step = [Screen, number];
@@ -48,6 +56,8 @@ export type Step = [Screen, number];
 const PATCH = PATCH_W * PATCH_H;
 const POPUP_TITLE_MS = 34;
 const OCR_MS = 66;
+/** A full read of a black frame (M153). */
+const BLACK_READ_MS = 28;
 
 /** The grey level each screen paints its two patches with (far enough apart to count as changes). */
 const LEVEL: Record<Exclude<Screen['kind'], 'popup'>, [number, number]> = {
@@ -56,7 +66,12 @@ const LEVEL: Record<Exclude<Screen['kind'], 'popup'>, [number, number]> = {
   shop: [50, 50],
   nothing: [70, 70],
   confirm: [90, 90],
+  loading: [110, 110],
+  black: [0, 0],
 };
+
+/** A battle's moving grey at `t` (period 97 ms), never a popup's level (>= 140). */
+const battleLevel = (t: number) => 20 + (Math.floor(t) % 97);
 
 /**
  * A screen's signature at `t` (when its frame was taken): the popup's two patches, then the rest.
@@ -69,13 +84,16 @@ export function signatureOf(screen: Screen, t: number): Uint8Array {
   const out = new Uint8Array(3 * PATCH);
   let [a, b] =
     screen.kind === 'popup'
-      ? [140 + (((screen.look ?? screen.giftId) * 17) % 110), LEVEL[screen.over][1]]
+      ? [
+          140 + (((screen.look ?? screen.giftId) * 17) % 110),
+          screen.over === 'battle' ? battleLevel(t) : LEVEL[screen.over][1],
+        ]
       : LEVEL[screen.kind];
   if (screen.kind === 'map') b = (b + screen.floor * 9) % 256;
   let a2 = a;
   if (screen.kind === 'nothing' && screen.animated) {
     // The whole screen moves, the popup's regions with it — never to a popup's level (>= 140).
-    a = 20 + (Math.floor(t) % 97);
+    a = battleLevel(t);
     a2 = 20 + (Math.floor(t * 0.37) % 97);
     b = a;
   }
@@ -120,6 +138,8 @@ export function fullRead(screen: Screen, lean: boolean): { frame: Frame; ocrCall
       return { frame: { ...NONE, screen: 'purchase' }, ocrCalls: 4 };
     case 'nothing':
     case 'confirm':
+    case 'loading':
+    case 'black':
       return { frame: NONE, ocrCalls: lean ? 8 : 9 };
   }
 }
@@ -131,6 +151,12 @@ function costOf(ocrCalls: number, extra = 0): number {
 
 /** Read a screen as the loop asks: in full, or the popup's title only (M136). */
 export function readScreen(screen: Screen, mode: ReadMode, lean: boolean): ShotRead {
+  // OCR finds no text on black fast: the owner's full reads of a blank frame took 28 ms (p50 of 86,
+  // M153) for the same nine calls, a popup read of one 2–3 ms.
+  if (screen.kind === 'black')
+    return mode === 'popup'
+      ? { frame: { ...NONE, partial: true }, ms: 3, ocrCalls: 1 }
+      : { ...fullRead(screen, lean), ms: BLACK_READ_MS };
   if (mode === 'popup' && screen.kind !== 'popup')
     return { frame: { ...NONE, partial: true }, ms: POPUP_TITLE_MS, ocrCalls: 1 };
   const { frame, ocrCalls } = fullRead(screen, lean);
@@ -152,7 +178,7 @@ export function timelineOfSteps(steps: readonly Step[]): { spans: Span[]; screen
 }
 
 let nextGift = 9000;
-const popup = (over: 'shop' | 'nothing' | 'confirm'): Screen => ({ kind: 'popup', giftId: nextGift++, over });
+const popup = (over: PopupGround): Screen => ({ kind: 'popup', giftId: nextGift++, over });
 
 /**
  * A click-through from a shop (M139, M141): five popups at the owner's pace — the first stands
@@ -201,6 +227,43 @@ export function battle(floor: number): Step[] {
   ];
 }
 
+/**
+ * A battle's end as the owner's filmstrips show it (M153): the battle, the loading screen (a still
+ * picture), a fade through black, the reward picker fading in, the gift's popup over it; then black
+ * again and the map.
+ */
+export function battleEnd(floor: number, battleMs = 20_000): Step[] {
+  return [
+    [{ kind: 'nothing', animated: true }, battleMs],
+    [{ kind: 'loading' }, 2500],
+    [{ kind: 'black' }, 500],
+    [{ kind: 'nothing' }, 1500],
+    [popup('nothing'), 700],
+    [{ kind: 'nothing' }, 300],
+    [{ kind: 'black' }, 400],
+    [{ kind: 'map', floor, packId: 100 + floor }, 3000],
+  ];
+}
+
+/**
+ * The worst case for a battle's hold (M153): the popup comes right over the battle, no loading
+ * screen, no black — the battle moving on around it — then the map without black either.
+ */
+export function battleToPopup(floor: number, battleMs = 20_000): Step[] {
+  return [
+    [{ kind: 'nothing', animated: true }, battleMs],
+    [popup('battle'), 700],
+    [{ kind: 'nothing', animated: true }, 1500],
+    [{ kind: 'map', floor, packId: 100 + floor }, 3000],
+  ];
+}
+
+/** Both battle ends, then a click-through: about a minute. */
+export function battleEndSteps(): Step[] {
+  nextGift = 9500;
+  return [...battleEnd(1), ...battleToPopup(2), ...clickThrough(3)];
+}
+
 /** A run of the above, about 75 s: what the stress table is measured on. */
 export function sessionSteps(): Step[] {
   nextGift = 9000;
@@ -232,6 +295,8 @@ export interface StressRun {
   /** Any event missed (entries too). */
   missed: string[];
   meanLatencyMs: number;
+  /** Each event's latency from its screen coming on, by `eventKey`, the first of each (M153). */
+  latencyOf: Map<string, number>;
   /** OCR time over the run's length, %. */
   ocrPercent: number;
 }
@@ -242,6 +307,8 @@ export async function stressRun(
   options: {
     range: IntervalRange;
     adaptive?: boolean;
+    /** M142's hold, black read like anything else: the loop before M153. */
+    legacyHold?: boolean;
     stress?: StressKnobs;
     firstTickMs?: number;
     log?: (line: string) => void;
@@ -251,6 +318,7 @@ export async function stressRun(
   const result = await simulate({
     range: options.range,
     adaptive: options.adaptive,
+    legacyHold: options.legacyHold,
     firstTickMs: options.firstTickMs,
     timeline: spans,
     signature: (shot, t) => signatureOf(screens[shot]!, t),
@@ -265,7 +333,13 @@ export async function stressRun(
     result.events.map((e) => e.event),
   );
   const lat = latencies(result.events, spans);
+  const latencyOf = new Map<string, number>();
+  result.events.forEach((e, i) => {
+    const key = eventKey(e.event);
+    if (!latencyOf.has(key)) latencyOf.set(key, lat[i]!);
+  });
   return {
+    latencyOf,
     result,
     missed,
     missedPopups: missed.filter((key) => key.startsWith('got:')),

@@ -923,6 +923,37 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     queueDropped: z.number().optional(),
   }),
   z.object({
+    /**
+     * Reads not kept one record each, summed (M153): `scan` — popup reads that found no popup (the
+     * title alone, `Frame.partial`, queued or not; an hour's run made eleven thousand of them, more
+     * than half the records); `capped` — reads that made no event and kept no frame, past the cap of
+     * such read records. One record per kind of read (`cause` × `mode`) at most every 10 s, and when
+     * the session's status changes or the device exports. `t` is the last read's time, `from` the
+     * first's; `ms`, `ocrCalls`, `lagMs` sums like the reads' own; `popups`/`queuedPopups` the reads
+     * whose screen was `acquired` (none for `scan`); `screens` the reads by screen (`(none)` for
+     * null); `changedUnder` the reads with a busy tick that saw the screen change. Missing before
+     * M153: every read was a record.
+     */
+    kind: z.literal('readSummary'),
+    t: z.number(),
+    from: z.number(),
+    cause: z.enum(['scan', 'capped']),
+    mode: z.enum(['full', 'popup']),
+    reads: z.number(),
+    ms: z.number(),
+    ocrCalls: z.number(),
+    queued: z.number(),
+    lagMs: z.number(),
+    lagMaxMs: z.number(),
+    popups: z.number(),
+    queuedPopups: z.number(),
+    queueDropped: z.number(),
+    busyTicks: z.number(),
+    busyChanges: z.number(),
+    changedUnder: z.number(),
+    screens: z.record(z.string(), z.number()),
+  }),
+  z.object({
     kind: z.literal('applied'),
     t: z.number(),
     logId: z.number(),

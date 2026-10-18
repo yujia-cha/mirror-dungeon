@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  afterTransition,
   BURST_REFRESH_MS,
   BURST_TICK_MS,
   decide,
   fastTicks,
   finished,
+  HOLD_MAX_MS,
+  inBurst,
+  holdFor,
   INITIAL_LOOP,
   outcomeOf,
   POPUP_BURST_MS,
@@ -14,6 +18,7 @@ import {
   REFRESH_MAX_MS,
   REFRESH_MS,
   tickDelay,
+  TRANSITION_TICKS_MS,
   type LoopState,
 } from '../loop.ts';
 import { refreshFor } from '../pace.ts';
@@ -289,6 +294,150 @@ describe('the hold on a moving screen of nothing (M142)', () => {
     const owed: LoopState = { ...heldAt600(), owed: true };
     // Act + Assert
     expect(decide(owed, sig, false, 700).decision).toBe('read');
+  });
+});
+
+describe('the growing hold and black frames (M153)', () => {
+  const moved = new Uint8Array([9, 9, 9]);
+  /** A full read of nothing at `start`, the screen moving under it, done `ms` later. */
+  function battleRead(state: LoopState, start: number, ms = 300, holdMaxMs?: number): LoopState {
+    let s = decide(state, sig, true, start).state;
+    s = decide(s, moved, true, start + ms / 2).state;
+    return finished(s, outcomeOf({ screen: null, floor: null, pack: null }, start + ms, 250, holdMaxMs));
+  }
+
+  it('grows the hold with each read of nothing in a row, 250 → 500 → 1000, and no further', () => {
+    // Arrange / Act: four battle reads back to back, each as soon as the hold lets it.
+    let s = INITIAL_LOOP;
+    const holds: number[] = [];
+    let at = 0;
+    for (let i = 0; i < 4; i++) {
+      s = battleRead(s, at);
+      holds.push(s.holdUntil - (at + 300));
+      at = s.holdUntil;
+    }
+    // Assert
+    expect(holds).toEqual([250, 500, HOLD_MAX_MS, HOLD_MAX_MS]);
+    expect(s.holdStreak).toBe(4);
+  });
+
+  it('keeps M142’s fixed hold when the outcome caps it at its own length', () => {
+    // Act
+    const s = battleRead(battleRead(INITIAL_LOOP, 0, 300, 250), 550, 300, 250);
+    // Assert
+    expect(s.holdUntil).toBe(850 + 250);
+  });
+
+  it('holds economy at its own range max, never less', () => {
+    // Act / Assert
+    expect(holdFor(1000, 1)).toBe(1000);
+    expect(holdFor(1000, 5)).toBe(1000);
+    expect(holdFor(250, 0)).toBe(0);
+    expect(holdFor(150, 4)).toBe(1000);
+  });
+
+  it('lets the grown hold go when a read names something, and on a still screen keeps its count', () => {
+    // Arrange: three battle reads in a row.
+    let s = INITIAL_LOOP;
+    for (const at of [0, 550, 1350]) s = battleRead(s, at);
+    // Act
+    const named = finished(decide(s, sig, true, 3000, undefined, true).state, {
+      at: 3100,
+      popup: true,
+      partial: false,
+      nothing: false,
+      holdMs: 250,
+    });
+    const still = finished(decide(s, sig, true, 3000, undefined, true).state, {
+      at: 3100,
+      popup: false,
+      partial: false,
+      nothing: true,
+      holdMs: 250,
+    });
+    // Assert: a pause in the battle keeps the count — the next moving read of nothing holds 1 s.
+    expect(named).toMatchObject({ holdUntil: -Infinity, holdStreak: 0 });
+    expect(still).toMatchObject({ holdUntil: -Infinity, holdStreak: 3 });
+    expect(battleRead(still, 3200).holdUntil).toBe(3500 + HOLD_MAX_MS);
+  });
+
+  it('does not read a black frame, lets the hold go, and reads the next frame at once', () => {
+    // Arrange: a battle read leaves a hold to 2650 (third in a row).
+    let s = INITIAL_LOOP;
+    for (const at of [0, 550, 1350]) s = battleRead(s, at);
+    expect(s.holdUntil).toBe(2650);
+    // Act: black at 1700, then the reward screen at 1800 — unchanged to the signature, no urgency.
+    const black = decide(s, new Uint8Array(3), true, 1700, undefined, false, { black: true });
+    const after = decide(black.state, sig, false, 1800);
+    // Assert
+    expect(black.decision).toBe('skip');
+    expect(black.state).toMatchObject({ dark: true, holdUntil: -Infinity, holdStreak: 0, busy: false });
+    expect(after.decision).toBe('read');
+    expect(after.state.dark).toBe(false);
+  });
+
+  it('lets no hold follow a read that a black frame came under', () => {
+    // Arrange: a read of a battle frame; the screen moves, then goes black, under it.
+    let s = decide(INITIAL_LOOP, sig, true, 0).state;
+    s = decide(s, moved, true, 100).state;
+    s = decide(s, new Uint8Array(3), true, 200, undefined, false, { black: true }).state;
+    // Act
+    const done = finished(s, outcomeOf({ screen: null, floor: null, pack: null }, 300, 250));
+    // Assert: no hold, and the next frame reads at once.
+    expect(done).toMatchObject({ holdUntil: -Infinity, holdStreak: 0, dark: true });
+    expect(decide(done, moved, false, 310).decision).toBe('read');
+  });
+
+  it('skips black frames in a row without reading them, and ticks fast for a while after', () => {
+    // Arrange
+    const black = new Uint8Array(3);
+    const first = decide(INITIAL_LOOP, black, true, 0, undefined, false, { black: true });
+    // Act
+    const second = decide(first.state, black, true, 100, undefined, false, { black: true });
+    // Assert
+    expect(first.decision).toBe('skip');
+    expect(second.decision).toBe('skip');
+    expect(second.state).toMatchObject({ dark: true, blackAt: 100 });
+    expect(afterTransition(second.state, 100 + TRANSITION_TICKS_MS - 1)).toBe(true);
+    expect(afterTransition(second.state, 100 + TRANSITION_TICKS_MS)).toBe(false);
+    expect(afterTransition(INITIAL_LOOP, 0)).toBe(false);
+    expect(fastTicks(second.state, 100 + TRANSITION_TICKS_MS - 1)).toBe(true);
+    expect(tickDelay(second.state, 200, 250)).toBe(BURST_TICK_MS);
+    expect(decide(second.state, sig, true, 200).mode).toBe('full');
+  });
+
+  it('ends a popup burst on black, so the screen after it is read in full at once', () => {
+    // Arrange: a popup read at 0 began a burst to 3000.
+    const popupRead = finished(decide(INITIAL_LOOP, sig, true, 0).state, {
+      at: 100,
+      popup: true,
+      partial: false,
+    });
+    expect(inBurst(popupRead, 1000)).toBe(true);
+    // Act: black at 1000, the map at 1400.
+    const black = decide(popupRead, new Uint8Array(3), true, 1000, undefined, false, { black: true });
+    const map = decide(black.state, moved, true, 1400);
+    // Assert
+    expect(inBurst(black.state, 1001)).toBe(false);
+    expect(map).toMatchObject({ decision: 'read', mode: 'full' });
+  });
+
+  it('reads a screen that held still for the hold’s base through a grown hold', () => {
+    // Arrange: three battle reads in a row hold the next to 2650.
+    let s = INITIAL_LOOP;
+    for (const at of [0, 550, 1350]) s = battleRead(s, at);
+    // Act + Assert: still for 249 ms it waits; for the base (250) it reads.
+    expect(decide(s, sig, true, 1900, undefined, false, { stillMs: 249 }).decision).toBe('skip');
+    expect(decide(s, sig, true, 1900, undefined, false, { stillMs: 250 }).decision).toBe('read');
+  });
+
+  it('still lets a settled popup region through a grown hold at once (`urgent`)', () => {
+    // Arrange
+    let s = INITIAL_LOOP;
+    for (const at of [0, 550, 1350]) s = battleRead(s, at);
+    // Act + Assert
+    expect(decide(s, sig, true, 1700).decision).toBe('skip');
+    expect(decide(s, sig, true, 1700, undefined, true).decision).toBe('read');
   });
 });
 

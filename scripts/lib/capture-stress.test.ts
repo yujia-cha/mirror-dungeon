@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { isBlack } from '../../src/app/capture/change.ts';
 import { READ_INTERVALS, type ReadIntervalPreset } from '../../src/app/capture/loop.ts';
 import type { StressKnobs } from './capture-bench.ts';
 import {
   battle,
+  battleEnd,
+  battleToPopup,
   clickThrough,
   conditions,
   quietSteps,
@@ -13,6 +16,7 @@ import {
   stressRun,
   timelineOfSteps,
   type Step,
+  type StressRun,
 } from './capture-stress.ts';
 
 const PRESETS = Object.keys(READ_INTERVALS) as ReadIntervalPreset[];
@@ -229,6 +233,172 @@ describe('the savings (M142)', () => {
   });
 });
 
+describe('battles (M153)', () => {
+  const battleMinute: Step[] = [[{ kind: 'nothing', animated: true }, 60_000]];
+
+  /**
+   * The popup's latency after a battle, ms, and the popups missed, over `n` battle lengths that
+   * sweep the read cycle — against M142's hold on the same sweep. Latencies are compared where both
+   * loops recorded the popup (a frame drop can hide one from either).
+   */
+  async function afterBattle(
+    make: (battleMs: number) => Step[],
+    range: (typeof READ_INTERVALS)[ReadIntervalPreset],
+    stress: StressKnobs,
+    n = 40,
+  ) {
+    const now: number[] = [];
+    const before: number[] = [];
+    const missed = { now: 0, before: 0 };
+    for (let k = 0; k < n; k++) {
+      const runs = [];
+      for (const legacyHold of [false, true])
+        runs.push(
+          await stressRun(make(20_000 + k * 83), {
+            range,
+            legacyHold,
+            firstTickMs: 37 + k,
+            stress: { ...stress, seed: 100 + k },
+          }),
+        );
+      const [a, b] = runs as [StressRun, StressRun];
+      missed.now += a.missedPopups.length;
+      missed.before += b.missedPopups.length;
+      // One popup a run (its gift id differs from run to run).
+      const got = (r: StressRun) => [...r.latencyOf].find(([key]) => key.startsWith('got:'))?.[1];
+      const [x, y] = [got(a), got(b)];
+      if (x === undefined || y === undefined) continue;
+      now.push(x);
+      before.push(y);
+    }
+    return { now, before, missed };
+  }
+  const mean = (v: readonly number[]) => v.reduce((a, b) => a + b, 0) / v.length;
+
+  it.each(['performance', 'balanced', 'quality'] as const)(
+    'reads a minute of battle with far less OCR than M142’s fixed hold, on %s',
+    async (preset) => {
+      // Act
+      const grown = await stressRun(battleMinute, { range: READ_INTERVALS[preset], stress: { frames: {} } });
+      const fixed = await stressRun(battleMinute, {
+        range: READ_INTERVALS[preset],
+        stress: { frames: {} },
+        legacyHold: true,
+      });
+      // Assert: balanced 65% → 36%; the hold tops out at a second.
+      expect(grown.ocrPercent).toBeLessThan(fixed.ocrPercent - 10);
+      expect(grown.ocrPercent).toBeLessThan(40);
+    },
+  );
+
+  it('changes nothing on economy, whose range already holds a second', async () => {
+    // Act
+    const grown = await stressRun(battleMinute, { range: READ_INTERVALS.economy });
+    const fixed = await stressRun(battleMinute, { range: READ_INTERVALS.economy, legacyHold: true });
+    // Assert
+    expect(grown.ocrPercent).toBe(fixed.ocrPercent);
+  });
+
+  /** The owner's machine and its share: every moment, 8/30 fps, three frames in ten dropped. */
+  const SHARES: StressKnobs[] = [{}, { frames: {} }, { frames: { drop: 0.3, jitterMs: 15 } }];
+
+  /** One test per preset and share: each sweep is 80 simulations, and CI runs them slowly. */
+  const PRESET_SHARES = PRESETS.flatMap((preset) =>
+    SHARES.map((stress, share) => [preset, share, stress] as const),
+  );
+
+  it.each(PRESET_SHARES)(
+    'records the gift after a battle’s black fade no later than before, on %s (share %i)',
+    async (preset, _share, stress) => {
+      // Arrange
+      const range = READ_INTERVALS[preset];
+      // Act: battle → loading → black → reward → popup, over a sweep of battle lengths.
+      const { now, before, missed } = await afterBattle((ms) => battleEnd(1, ms), range, stress);
+      // Assert: none missed, never later on average or at worst (the ticks are fast after black,
+      // the share at 30 fps).
+      expect(missed.now).toBe(0);
+      expect(now.length).toBeGreaterThan(30);
+      expect(mean(now)).toBeLessThanOrEqual(mean(before));
+      expect(Math.max(...now)).toBeLessThanOrEqual(Math.max(...before));
+    },
+  );
+
+  it.each(PRESET_SHARES)(
+    'records a popup that comes right over a battle no later than before on average, on %s (share %i)',
+    async (preset, _share, stress) => {
+      // Arrange
+      const range = READ_INTERVALS[preset];
+      // Act: no black, no loading screen — the popup settles the popup region (`urgent`).
+      const { now, before, missed } = await afterBattle((ms) => battleToPopup(1, ms), range, stress);
+      // Assert: a battle read in flight when it comes is what it waits for, in both loops; the
+      // longer hold leaves one in flight less often. Under the hold it is read once its region
+      // shows settled on a second frame (`urgent`), where M142's shorter hold sometimes ran out
+      // on the first — with three frames in ten lost that second frame can be late (performance:
+      // 431 against 425 ms), so dropped frames get 5%. A popup left on one frame over the moving
+      // battle is the known limit (`admit`, M142) for both alike.
+      expect(missed.now).toBeLessThanOrEqual(missed.before);
+      expect(now.length).toBeGreaterThan(30);
+      expect(mean(now)).toBeLessThanOrEqual(mean(before) * (stress.frames?.drop ? 1.05 : 1));
+    },
+  );
+
+  const SLOW_CASES = PRESETS.flatMap((preset) =>
+    (['black fade', 'popup over the battle'] as const).map((kind) => [preset, kind] as const),
+  );
+
+  it.each(SLOW_CASES)(
+    'stays within a few per cent on average when reads are four times slower, on %s (%s)',
+    async (preset, kind) => {
+      // Arrange: a read of nothing takes 2.4 s. Whether the reward picker's read covers the popup
+      // turns on tens of ms either way, for both loops alike (sweeps per preset and reward
+      // length: −23% … +3%).
+      const range = READ_INTERVALS[preset];
+      const stress: StressKnobs = { frames: {}, readCost: 4 };
+      const make =
+        kind === 'black fade' ? (ms: number) => battleEnd(1, ms) : (ms: number) => battleToPopup(1, ms);
+      // Act
+      const { now, before, missed } = await afterBattle(make, range, stress);
+      // Assert
+      expect(missed.now).toBe(0);
+      expect(mean(now)).toBeLessThanOrEqual(mean(before) * 1.05);
+    },
+  );
+
+  it('reads the map after the reward’s popup at once, not after the popup burst', async () => {
+    // Act
+    const now = await stressRun(battleEnd(1), { range: READ_INTERVALS.balanced });
+    const before = await stressRun(battleEnd(1), { range: READ_INTERVALS.balanced, legacyHold: true });
+    // Assert: the burst's 3 s are gone (2.9 s → 0.6 s on the ideal share).
+    expect(now.latencyOf.get('enter:1:101')!).toBeLessThan(1000);
+    expect(before.latencyOf.get('enter:1:101')!).toBeGreaterThan(2000);
+  });
+
+  it.each(PRESETS)(
+    'misses no popup after battles on %s, under ×10 reads, three frames in ten dropped and 500 ms stalls',
+    async (preset) => {
+      // Arrange
+      const steps = [...battleEnd(1), ...clickThrough(2), ...battleEnd(3, 15_000)];
+      const duration = timelineOfSteps(steps).spans.at(-1)!.end;
+      const range = READ_INTERVALS[preset];
+      const runs = [];
+      // Act
+      for (let seed = 1; seed <= 4; seed++)
+        runs.push(
+          await stressRun(steps, {
+            range,
+            firstTickMs: 13 * seed,
+            stress: hostile(duration, seed * 7919),
+          }),
+        );
+      // Assert
+      for (const run of runs) {
+        expect(run.missedPopups).toEqual([]);
+        expect(run.result.events.filter((e) => e.event.kind === 'got').length).toBeGreaterThan(4);
+      }
+    },
+  );
+});
+
 describe('the synthetic screens', () => {
   it('reads a popup in full or by its title alike, and anything else by its title as nothing', () => {
     // Arrange
@@ -241,6 +411,17 @@ describe('the synthetic screens', () => {
     });
     expect(readScreen({ kind: 'confirm' }, 'full', false).ms).toBe(860);
     expect(readScreen({ kind: 'packSelect' }, 'full', true).frame.screen).toBeNull();
+    expect(readScreen({ kind: 'black' }, 'full', false)).toMatchObject({ ms: 28, ocrCalls: 9 });
+  });
+
+  it('paints black as black and a popup over a battle as settled in its own regions (M153)', () => {
+    // Arrange
+    const over = { kind: 'popup' as const, giftId: 9300, over: 'battle' as const };
+    // Act + Assert
+    expect(isBlack(signatureOf({ kind: 'black' }, 0))).toBe(true);
+    expect(isBlack(signatureOf({ kind: 'loading' }, 0))).toBe(false);
+    expect(signatureOf(over, 0).subarray(0, 256)).toEqual(signatureOf(over, 50).subarray(0, 256));
+    expect(signatureOf(over, 0)[256]).not.toBe(signatureOf(over, 50)[256]);
   });
 
   it('keeps a battle’s popup regions apart from any popup’s, frame to frame', () => {

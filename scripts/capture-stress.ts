@@ -11,16 +11,20 @@
  * 500 ms stalls of the page's thread. For each preset × condition it prints the popups missed
  * (of those the page could have seen — on a frame that arrived, outside a stall), all events
  * missed, the mean latency, the OCR occupancy, the backlog's overflow and the highest load level.
- * `fixed 250 (M141)` is the loop before M142: one interval, no load ladder.
+ * `fixed 250 (M141)` is the loop before M142: one interval, no load ladder; `balanced (M152 hold)` is
+ * balanced with M142's fixed hold and black read like anything else — the loop before M153.
  *
  * Then the quiet screens — a map held still for two minutes, a minute of battle — where the
- * controller's savings show: ticks, and under load, OCR.
+ * controller's savings show: ticks, and under load, OCR. And battle ends (M153): a battle, its
+ * loading screen, black, the reward picker and the gift's popup; a popup right over a battle; a
+ * click-through — what the growing hold and black frames change.
  *
  * Each row is the mean over timer phases × seeds. Flags: --phases (default 4), --seeds (default 2).
  */
 import { READ_INTERVALS, type ReadIntervalPreset } from '../src/app/capture/loop.ts';
 import type { IntervalRange } from '../src/app/capture/pace.ts';
 import {
+  battleEndSteps,
   conditions,
   quietSteps,
   sessionSteps,
@@ -39,6 +43,7 @@ interface Preset {
   name: string;
   range: IntervalRange;
   adaptive: boolean;
+  legacyHold?: boolean;
 }
 
 const PRESETS: Preset[] = [
@@ -48,6 +53,7 @@ const PRESETS: Preset[] = [
     adaptive: true,
   })),
   { name: 'fixed 250 (M141)', range: { min: 250, max: 250 }, adaptive: false },
+  { name: 'balanced (M152 hold)', range: READ_INTERVALS.balanced, adaptive: true, legacyHold: true },
 ];
 
 async function averaged(steps: readonly Step[], preset: Preset, stress: StressKnobs) {
@@ -58,6 +64,7 @@ async function averaged(steps: readonly Step[], preset: Preset, stress: StressKn
         await stressRun(steps, {
           range: preset.range,
           adaptive: preset.adaptive,
+          legacyHold: preset.legacyHold,
           firstTickMs: Math.round(((p + 0.5) / PHASES) * preset.range.min),
           stress: { ...stress, seed: seed * 7919 + p },
         }),
@@ -114,12 +121,31 @@ async function main(): Promise<void> {
       ['reads ×4', { frames: {}, readCost: 4 }],
       ['reads ×10', { frames: {}, readCost: 10 }],
     ] as [string, StressKnobs][])
-      for (const preset of [PRESETS[2]!, PRESETS[4]!]) {
+      for (const preset of [PRESETS[2]!, PRESETS[5]!, PRESETS[4]!]) {
         const m = await averaged(screen.steps, preset, stress);
         console.log(
           `| ${screen.name} | ${name} | ${preset.name} | ${Math.round(m.ticks)} | ${m.ocr.toFixed(1)}% | ${m.maxLevel} |`,
         );
       }
+
+  console.log('');
+  console.log('## Battle ends (M153)');
+  console.log('');
+  const ends = battleEndSteps();
+  const endDuration = timelineOfSteps(ends).spans.at(-1)!.end;
+  console.log(
+    `${(endDuration / 1000).toFixed(1)} s: a battle → loading → black → reward → popup → black → map, a popup right over a battle, a click-through.`,
+  );
+  console.log('');
+  console.log('| condition | preset | missed popups | missed events | mean latency | OCR busy | max level |');
+  console.log('|---|---|---|---|---|---|---|');
+  for (const condition of conditions(endDuration))
+    for (const preset of [PRESETS[1]!, PRESETS[2]!, PRESETS[5]!, PRESETS[3]!]) {
+      const m = await averaged(ends, preset, condition.stress);
+      console.log(
+        `| ${condition.name} | ${preset.name} | ${m.missedPopups.toFixed(2)} | ${m.missed.toFixed(2)} | ${Math.round(m.latency)} ms | ${m.ocr.toFixed(1)}% | ${m.maxLevel} |`,
+      );
+    }
 }
 
 await main();

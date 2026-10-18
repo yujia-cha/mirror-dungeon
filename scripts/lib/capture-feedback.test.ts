@@ -2,7 +2,12 @@ import { readFileSync } from 'node:fs';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { planExport } from '../../src/app/capture/diagnostics/export-parts.ts';
-import { captureLayoutSchema, type DiagnosticsBundle, type DiagRecord } from '../../src/core/schema.ts';
+import {
+  captureLayoutSchema,
+  diagnosticsBundleSchema,
+  type DiagnosticsBundle,
+  type DiagRecord,
+} from '../../src/core/schema.ts';
 import {
   captureGeometries,
   environmentLines,
@@ -462,6 +467,109 @@ describe('filmstrips (M134)', () => {
     expect(r.queuedReads).toEqual({ reads: 2, popups: 1, meanLagMs: 200, dropped: 1 });
     expect(text).toContain('대기열 판독 2회 · 그중 팝업 1회 · 평균 지연 200ms · 넘침 1');
     expect(recognitionReport(bundle()).queuedReads).toBeNull();
+  });
+
+  it('counts the reads the recorder summed as the reads they were, and says so (M153)', () => {
+    // Arrange: the same five reads — three popup reads of nothing in the burst (one queued, telling
+    // of a popup pushed out), two reads of nothing past the cap — kept one by one (before M153) and
+    // summed (M153).
+    const scan = (t: number, over: Partial<Extract<DiagRecord, { kind: 'read' }>> = {}) =>
+      read(t, {
+        mode: 'popup',
+        screen: null,
+        ms: 4,
+        ocrCalls: 1,
+        frameId: null,
+        busyTicks: 0,
+        busyChanges: 0,
+        ...over,
+      });
+    const nothing = (t: number) =>
+      read(t, { screen: null, ms: 300, ocrCalls: 9, frameId: null, busyTicks: 2, busyChanges: 1 });
+    const kept = bundle();
+    kept.records.push(
+      scan(70),
+      scan(71),
+      scan(72, { queued: true, lagMs: 30, queueDropped: 1, busyTicks: 1, busyChanges: 1 }),
+      nothing(80),
+      nothing(81),
+    );
+    const summed = bundle();
+    const base = { lagMaxMs: 0, popups: 0, queuedPopups: 0 };
+    summed.records.push(
+      {
+        kind: 'readSummary',
+        t: 72,
+        from: 70,
+        cause: 'scan',
+        mode: 'popup',
+        reads: 3,
+        ms: 12,
+        ocrCalls: 3,
+        queued: 1,
+        lagMs: 30,
+        ...base,
+        lagMaxMs: 30,
+        queueDropped: 1,
+        busyTicks: 1,
+        busyChanges: 1,
+        changedUnder: 1,
+        screens: { '(none)': 3 },
+      },
+      {
+        kind: 'readSummary',
+        t: 81,
+        from: 80,
+        cause: 'capped',
+        mode: 'full',
+        reads: 2,
+        ms: 600,
+        ocrCalls: 18,
+        queued: 0,
+        lagMs: 0,
+        ...base,
+        queueDropped: 0,
+        busyTicks: 4,
+        busyChanges: 2,
+        changedUnder: 2,
+        screens: { '(none)': 2 },
+      },
+    );
+    const names = { gift: (id: number) => `G${id}`, pack: (id: number) => `P${id}` };
+    const text = (b: DiagnosticsBundle) =>
+      formatReport(
+        b,
+        recognitionReport(b),
+        routeReport(b, () => 'general'),
+        { certain: 0, unconfirmed: 0 },
+        names,
+      );
+    // Act
+    const one = recognitionReport(kept);
+    const two = recognitionReport(summed);
+    // Assert: the schema takes the summaries; every count comes out the same.
+    expect(diagnosticsBundleSchema.safeParse(summed).success).toBe(true);
+    const counts = (r: typeof one) => ({
+      reads: r.reads,
+      readsByScreen: r.readsByScreen,
+      ocrCalls: r.ocrCalls,
+      meanReadMs: r.meanReadMs,
+      waiting: r.waiting,
+      popupReads: r.popupReads,
+      queuedReads: r.queuedReads,
+    });
+    expect(counts(two)).toEqual(counts(one));
+    expect(one.summed).toBeNull();
+    expect(two.summed).toEqual({ scans: 3, capped: 2 });
+    for (const line of [
+      '팝업 연속 판독 3회 · 평균 4ms · 그중 팝업 0회',
+      '대기열 판독 1회 · 그중 팝업 0회 · 평균 지연 30ms · 넘침 1',
+    ])
+      for (const b of [kept, summed]) expect(text(b)).toContain(line);
+    expect(text(summed)).toContain(
+      '묶어 적은 판독: 팝업 없는 팝업 판독 3회 · ⚠ 판독 기록 상한 뒤 아무것도 찾지 못한 판독 2회(개수만)',
+    );
+    expect(text(kept)).not.toContain('묶어 적은 판독');
   });
 
   it('lists the run starts and the rollback in the report, and parses them in a bundle (M143)', () => {

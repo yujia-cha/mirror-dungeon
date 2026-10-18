@@ -18,6 +18,10 @@
  * hostile (`StressKnobs`): frames that arrive late, irregularly or not at all, slower reads, late
  * timers and stalls of the page's thread. `capture:stress` sweeps them.
  *
+ * And M153's: the hold on a moving screen of nothing grows with each such read in a row, and a black
+ * frame is not read, lets the hold go and has the frame after it read at once (`legacyHold` turns
+ * both off, for comparison).
+ *
  * The caller supplies the two costly parts — a shot's signature and reading a shot — so this file
  * stays free of pixels and engines and its rules can be tested with fakes.
  */
@@ -32,7 +36,7 @@ import {
   take,
   type Backlog,
 } from '../../src/app/capture/backlog.ts';
-import { changed } from '../../src/app/capture/change.ts';
+import { changed, isBlack } from '../../src/app/capture/change.ts';
 import {
   decide,
   fastTicks,
@@ -96,7 +100,8 @@ export interface ShotRead {
 
 /**
  * What can go wrong with the environment (M142, `capture:stress`). Each knob is deterministic — the
- * random ones draw from `seed` — so a run is the same every time.
+ * random ones draw from `seed` — so a run is the same every time. The frames and the timers draw from
+ * streams of their own (M153), so two loops that tick differently still see the same frames dropped.
  */
 export interface StressKnobs {
   /**
@@ -130,6 +135,11 @@ export interface SimulateInput {
    * comparison. Default: on with `range`, off with a fixed `intervalMs` (the tests of M108–M141).
    */
   adaptive?: boolean;
+  /**
+   * M142's hold only: the range's `max` after every read of nothing on a moving screen, black frames
+   * read like any other — the loop before M153, for comparison. Default false (with `adaptive`).
+   */
+  legacyHold?: boolean;
   /**
    * When the first tick fires (default: one interval in, as setInterval does). The timer's phase
    * against the screens is arbitrary in the browser; the bench averages a few.
@@ -294,10 +304,13 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
   const stress = input.stress ?? {};
   const stalls = stress.stalls ?? [];
   const random = seeded(stress.seed ?? 1);
+  const lateRandom = seeded(((stress.seed ?? 1) ^ 0x5bd1e995) >>> 0);
   const readCost = stress.readCost ?? 1;
   const lateMs = stress.lateMs ?? 0;
   const range: IntervalRange = input.range ?? { min: input.intervalMs ?? 250, max: input.intervalMs ?? 250 };
   const adaptive = input.adaptive ?? input.range !== undefined;
+  /** M153's growing hold and black frames: with M142's rules, unless asked for the loop before. */
+  const darkRules = adaptive && input.legacyHold !== true;
   const part = (sig: Uint8Array) => (input.popupRegions ? popupPart(sig, input.popupRegions) : sig);
   const durationMs = timeline.length > 0 ? timeline[timeline.length - 1]!.end : 0;
   let loop: LoopState = INITIAL_LOOP;
@@ -306,6 +319,8 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
   let backlog: Backlog<number> = emptyBacklog();
   let lastScreen: Frame['screen'] = null;
   let tickedBefore: Uint8Array | null = null;
+  /** When the signature last moved from one tick to the next (M153). */
+  let movedAt = 0;
   let popupTicks: [Uint8Array | null, Uint8Array | null] = [null, null];
   let movingSince: number | null = null;
   let tickedFrame = -1;
@@ -352,7 +367,7 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
   type Booked = { due: number; at: number; timer: boolean };
   const timerAt = (due: number): Booked => ({
     due,
-    at: afterStalls(stalls, due + (lateMs > 0 ? random() * lateMs : 0)),
+    at: afterStalls(stalls, due + (lateMs > 0 ? lateRandom() * lateMs : 0)),
     timer: true,
   });
   /** A fast tick from `from` (M141, M142): the next frame, or the timer as the backstop. */
@@ -418,7 +433,10 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       out.events.push({ event, at: lands, shot });
     }
     // A moving screen of nothing holds the next change read back (M142).
-    loop = finished(loop, outcomeOf(result.frame, lands, adaptive ? range.max : 0));
+    loop = finished(
+      loop,
+      outcomeOf(result.frame, lands, adaptive ? range.max : 0, darkRules ? undefined : range.max),
+    );
     if (fastTicks(loop, lands)) {
       const sooner = fastTick(lands);
       if (sooner.at < next.at) next = sooner;
@@ -454,14 +472,17 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
     // A frame shows the screen as it was when the share took it, not when the tick looks.
     const frame = frames ? frames.frameAt(t) : out.ticks;
     const sig = signature(shot, frames ? frames.arrived[frame]!.t : t);
+    const moved = changed(tickedBefore, sig);
+    if (moved) movedAt = t;
     pace = paceTick(pace, {
       now: t,
-      changed: changed(tickedBefore, sig),
+      changed: moved,
       burst: fastTicks(loop, t),
       unread:
         changed(loop.lastRead, sig) ||
         (loop.busy && readingChange) ||
         loop.dirty ||
+        loop.dark ||
         backlog.entries.length > 0,
       screen: lastScreen,
     });
@@ -475,10 +496,16 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       movingSince = motionSince(movingSince, before, previous, popupNow, t);
     }
     const urgent = movingSince === null && changed(loop.lastRead ? part(loop.lastRead) : null, popupNow);
-    const fresh = changed(loop.lastRead, sig) || loop.dirty || loop.owed;
-    const step = decide(loop, sig, changed(loop.lastRead, sig), t, refreshFor(level()), urgent);
+    const fresh = changed(loop.lastRead, sig) || loop.dirty || loop.owed || loop.dark;
+    const black = darkRules && isBlack(sig);
+    const step = decide(loop, sig, changed(loop.lastRead, sig), t, refreshFor(level()), urgent, {
+      black,
+      stillMs: darkRules ? t - movedAt : 0,
+    });
     loop = step.state;
-    if (step.decision === 'skip') {
+    if (step.decision === 'skip' && black) {
+      // A black frame (M153): nothing to read, nothing to queue.
+    } else if (step.decision === 'skip') {
       // A busy tick whose popup changed queues its shot (M141); since M142 the ticks go fast
       // after it, and a region in motion queues a frame or two only (`admit`).
       const admitted = adaptive

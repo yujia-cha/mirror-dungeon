@@ -191,17 +191,27 @@ describe('the load level', () => {
     expect(late(slow, 0, 10, 125).level).toBe(1);
   });
 
-  it('raises to 2 on slow reads, full and popup apart', () => {
+  it('raises to 2 on slow full reads', () => {
     // Act
     let full = initialPace(RANGE, 0);
     for (let i = 0; i < MIN_READ_SAMPLES; i++)
       full = paceRead(full, i * 4000, 'full', STRAIN.fullRead.level2);
-    let popup = initialPace(RANGE, 0);
-    for (let i = 0; i < MIN_READ_SAMPLES; i++)
-      popup = paceRead(popup, i * 400, 'popup', STRAIN.popupRead.level1);
-    // Assert: full reads at level 2's threshold, popup reads at level 1's.
+    // Assert
     expect(full.level).toBe(2);
-    expect(popup.level).toBe(1);
+  });
+
+  it('raises nothing on slow popup reads while the timer ticks are on time (M153)', () => {
+    // Arrange: the owner's session — title reads over battle frames at p90 120–128 ms, ticks late by
+    // 1–14 ms.
+    let s = initialPace(RANGE, 0);
+    // Act: a minute of it.
+    for (let t = 0; t < 60_000; t += 100) {
+      s = paceLateness(s, t, t % 1400 === 0 ? 14 : 1);
+      if (t % 300 === 0) s = paceRead(s, t, 'popup', t % 900 === 0 ? 300 : 128);
+    }
+    // Assert: reported, not a load signal.
+    expect(s.level).toBe(0);
+    expect(paceStats(s, 60_000).popupRead!.p90).toBeGreaterThanOrEqual(128);
   });
 
   it('raises to at least 1 when the backlog overflows, and lets go once that is old', () => {

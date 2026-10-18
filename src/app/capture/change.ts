@@ -71,6 +71,33 @@ export function signatureOf(
 }
 
 /**
+ * A black frame (M153): the game fades through black between sections. Measured on the owner's
+ * filmstrips (1651 previews of three sessions, the signature as the session takes it): black and
+ * the darkest frames of a fade average 1.0–3.1 over the signature's cells with at most 0.5% of the
+ * cells above 24 (the cursor); the darkest screen with anything on it averages 8.3 with 5.9% above
+ * 24 (a lobby, a picker fading in: 9–12, 9–18%). The thresholds sit between, nearer black.
+ */
+export const BLACK_MEAN = 4;
+export const BLACK_CELL = 24;
+export const BLACK_SHARE = 0.01;
+
+/**
+ * Whether a signature (`signatureOf`) is black: its cells average at most `BLACK_MEAN` and at most
+ * `BLACK_SHARE` of them are brighter than `BLACK_CELL`. Every watched region is dark then — no
+ * title, no name, no popup — so there is nothing to read on it. An empty signature is not black.
+ */
+export function isBlack(signature: Uint8Array): boolean {
+  if (signature.length === 0) return false;
+  let sum = 0;
+  let bright = 0;
+  for (const v of signature) {
+    sum += v;
+    if (v > BLACK_CELL) bright += 1;
+  }
+  return sum / signature.length <= BLACK_MEAN && bright / signature.length <= BLACK_SHARE;
+}
+
+/**
  * Whether `next` differs from `prev` anywhere: some region's patch moved by more than `threshold`
  * on average. No previous signature, or one of another length (the layout changed), counts as
  * changed.

@@ -21,6 +21,7 @@ type Applied = Extract<DiagRecord, { kind: 'applied' }>;
 type Manual = Extract<DiagRecord, { kind: 'manual' }>;
 type Strip = Extract<DiagRecord, { kind: 'strip' }>;
 type Env = Extract<DiagRecord, { kind: 'env' }>;
+type ReadSummary = Extract<DiagRecord, { kind: 'readSummary' }>;
 
 /** The ids of a bundle's filmstrip previews, which are not full-size frames. */
 export function previewIds(bundle: DiagnosticsBundle): Set<string> {
@@ -184,6 +185,12 @@ export interface RecognitionReport {
    * neither (before M141, or nothing queued).
    */
   queuedReads: { reads: number; popups: number; meanLagMs: number; dropped: number } | null;
+  /**
+   * Reads the recorder summed instead of keeping one by one (M153, `readSummary`): popup reads
+   * that found nothing, and reads of nothing past their cap. Counted into everything above; null
+   * for a bundle without any (before M153).
+   */
+  summed: { scans: number; capped: number } | null;
 }
 
 const count = (into: Record<string, number>, key: string): void => {
@@ -214,12 +221,25 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
   const timed = reads.filter((r) => r.busyTicks !== undefined);
   const burst = reads.filter((r) => r.mode === 'popup');
   const queued = reads.filter((r) => r.queued === true);
-  const dropped = reads.reduce((sum, r) => sum + (r.queueDropped ?? 0), 0);
+  // Reads summed by the recorder (M153) count as the reads they were.
+  const sums = bundle.records.filter((r): r is ReadSummary => r.kind === 'readSummary');
+  const total = (pick: (s: ReadSummary) => number, of = sums) => of.reduce((sum, s) => sum + pick(s), 0);
+  const popupSums = sums.filter((s) => s.mode === 'popup');
+  for (const s of sums)
+    for (const [screen, n] of Object.entries(s.screens))
+      readsByScreen[screen] = (readsByScreen[screen] ?? 0) + n;
+  const dropped = reads.reduce((sum, r) => sum + (r.queueDropped ?? 0), 0) + total((s) => s.queueDropped);
+  const readCount = reads.length + total((s) => s.reads);
+  const burstCount = burst.length + total((s) => s.reads, popupSums);
+  const queuedCount = queued.length + total((s) => s.queued);
+  const timedCount = timed.length + sums.length;
   return {
-    reads: reads.length,
+    reads: readCount,
     readsByScreen,
-    ocrCalls: reads.reduce((sum, r) => sum + r.ocrCalls, 0),
-    meanReadMs: reads.length ? Math.round(reads.reduce((sum, r) => sum + r.ms, 0) / reads.length) : 0,
+    ocrCalls: reads.reduce((sum, r) => sum + r.ocrCalls, 0) + total((s) => s.ocrCalls),
+    meanReadMs: readCount
+      ? Math.round((reads.reduce((sum, r) => sum + r.ms, 0) + total((s) => s.ms)) / readCount)
+      : 0,
     applied: applied.length,
     appliedByKind,
     misreads: applied
@@ -238,31 +258,48 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
     framesByClass,
     previewsKept: previews.size,
     strips: filmStrips(bundle),
-    waiting: timed.length
+    waiting: timedCount
       ? {
-          busyTicks: timed.reduce((sum, r) => sum + (r.busyTicks ?? 0), 0),
-          busyChanges: timed.reduce((sum, r) => sum + (r.busyChanges ?? 0), 0),
-          readsChangedUnder: timed.filter((r) => (r.busyChanges ?? 0) > 0).length,
+          busyTicks: timed.reduce((sum, r) => sum + (r.busyTicks ?? 0), 0) + total((s) => s.busyTicks),
+          busyChanges: timed.reduce((sum, r) => sum + (r.busyChanges ?? 0), 0) + total((s) => s.busyChanges),
+          readsChangedUnder:
+            timed.filter((r) => (r.busyChanges ?? 0) > 0).length + total((s) => s.changedUnder),
         }
       : null,
-    popupReads: burst.length
+    popupReads: burstCount
       ? {
-          reads: burst.length,
-          meanMs: Math.round(burst.reduce((sum, r) => sum + r.ms, 0) / burst.length),
-          popups: burst.filter((r) => r.screen === 'acquired').length,
+          reads: burstCount,
+          meanMs: Math.round(
+            (burst.reduce((sum, r) => sum + r.ms, 0) + total((s) => s.ms, popupSums)) / burstCount,
+          ),
+          popups: burst.filter((r) => r.screen === 'acquired').length + total((s) => s.popups, popupSums),
         }
       : null,
     queuedReads:
-      queued.length > 0 || dropped > 0
+      queuedCount > 0 || dropped > 0
         ? {
-            reads: queued.length,
-            popups: queued.filter((r) => r.screen === 'acquired').length,
-            meanLagMs: queued.length
-              ? Math.round(queued.reduce((sum, r) => sum + (r.lagMs ?? 0), 0) / queued.length)
+            reads: queuedCount,
+            popups: queued.filter((r) => r.screen === 'acquired').length + total((s) => s.queuedPopups),
+            meanLagMs: queuedCount
+              ? Math.round(
+                  (queued.reduce((sum, r) => sum + (r.lagMs ?? 0), 0) + total((s) => s.lagMs)) / queuedCount,
+                )
               : 0,
             dropped,
           }
         : null,
+    summed: sums.length
+      ? {
+          scans: total(
+            (s) => s.reads,
+            sums.filter((s) => s.cause === 'scan'),
+          ),
+          capped: total(
+            (s) => s.reads,
+            sums.filter((s) => s.cause === 'capped'),
+          ),
+        }
+      : null,
   };
 }
 
@@ -583,6 +620,14 @@ export function formatReport(
   if (rec.queuedReads)
     lines.push(
       `- 대기열 판독 ${rec.queuedReads.reads}회 · 그중 팝업 ${rec.queuedReads.popups}회 · 평균 지연 ${rec.queuedReads.meanLagMs}ms · 넘침 ${rec.queuedReads.dropped}`,
+    );
+  if (rec.summed)
+    lines.push(
+      `- 묶어 적은 판독: 팝업 없는 팝업 판독 ${rec.summed.scans}회${
+        rec.summed.capped > 0
+          ? ` · ⚠ 판독 기록 상한 뒤 아무것도 찾지 못한 판독 ${rec.summed.capped}회(개수만)`
+          : ''
+      }`,
     );
   if (rec.waiting)
     lines.push(

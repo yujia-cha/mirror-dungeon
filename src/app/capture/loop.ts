@@ -47,6 +47,20 @@
  *   stress bench: 96% of a minute of battle on balanced, 84% at the fixed 250 ms before). The
  *   ticks go on; a popup region that settles into something new reads at once (`urgent`), and so
  *   does the full read a burst owes.
+ * - **A long battle** (M153) → each further read of nothing the screen moved under doubles the hold
+ *   (`HOLD_GROWTH`), up to `HOLD_MAX_MS`: the owner's 71-minute session spent 74% of its time in
+ *   such stretches and read OCR 59% of it, every read finding nothing. A read that names anything
+ *   lets the hold go and starts it over; one that finds nothing on a screen that held still lets it
+ *   go but keeps the count (a battle pauses between moves). A screen that holds still for the hold's
+ *   base length is read through it.
+ * - **A black frame** (M153, `isBlack`, `change.ts`) → the game fades through black between
+ *   sections (battle → loading → black → reward or map; seen on every filmstrip of a battle's end).
+ *   A black frame is not read — there is nothing on it — and lets the hold go at once, even under a
+ *   busy read; the first frame after it reads at once (`dark`), whatever it looks like. So a battle's
+ *   longer hold never reaches the screen after it. A popup over a battle, which comes without
+ *   black, settles the popup region and reads at once as ever (`urgent`). Black also ends a popup
+ *   burst (the map after the reward's popup used to wait out the burst's 3 s), and the ticks stay
+ *   fast for `TRANSITION_TICKS_MS` after it, where the next section's popups come.
  *
  * Pure: the caller owns the clock and the timer.
  */
@@ -99,14 +113,55 @@ export const FRAME_RATE = { idle: 8, burst: 30 } as const;
  */
 export const QUEUED_FAST_MS = 1000;
 
+/**
+ * A moving screen of nothing holds the next change read back by the range's `max`, and each further
+ * read of nothing in a row by `HOLD_GROWTH` times as long, up to `HOLD_MAX_MS` (M153). On balanced:
+ * 250, 500, 1000 ms. A battle read is ~300 ms (the owner's p50 284 ms), so at 1 s a read of a
+ * battle costs about a fifth of its time instead of more than half. No longer: the screen after a
+ * battle comes through black or a still loading screen, both of which let the hold go, but a moving
+ * screen that is something (a map scrolling in without black) waits out what is left of it.
+ */
+export const HOLD_GROWTH = 2;
+export const HOLD_MAX_MS = 1000;
+
+/**
+ * The hold after the `streak`-th read of nothing in a row on a moving screen: `baseMs` (the range's
+ * `max`) for the first, growing by `HOLD_GROWTH`, never past `maxMs` (default: `HOLD_MAX_MS`, or
+ * `baseMs` when that is longer — economy's 1000 ms already is). 0 with no streak.
+ */
+export function holdFor(baseMs: number, streak: number, maxMs = Math.max(HOLD_MAX_MS, baseMs)): number {
+  if (streak <= 0 || baseMs <= 0) return 0;
+  return Math.min(maxMs, baseMs * HOLD_GROWTH ** (streak - 1));
+}
+
+/**
+ * After a black frame the ticks are fast this long (M153, `afterTransition`, `fastTicks`): every
+ * frame of the share, which runs at `FRAME_RATE.burst`. The screen after a section's end is where
+ * its rewards come — the reward picker, then the gift's popup over it, a second or two later on the
+ * owner's filmstrips. Left to itself the interval would relax on that still screen toward the
+ * range's `max` (a second on economy) and the share stay at its idle rate, and the popup would wait
+ * for the next tick that long. Before M153 a read of the black frame often queued it by chance and
+ * so sped the ticks up for a second (`QUEUED_FAST_MS`); now it is the rule. Ticks cost next to
+ * nothing (0.4 ms); reads do not change.
+ */
+export const TRANSITION_TICKS_MS = 5000;
+
+/** A black frame came within `TRANSITION_TICKS_MS` (M153). */
+export function afterTransition(state: LoopState, now: number): boolean {
+  return now - state.blackAt < TRANSITION_TICKS_MS;
+}
+
 /** Reads are popup reads until `burstUntil` (M136). */
 export function inBurst(state: LoopState, now: number): boolean {
   return now < state.burstUntil;
 }
 
-/** Ticks follow the share's frames: in a burst, or just after a popup was queued (M142). */
+/**
+ * Ticks follow the share's frames: in a burst, just after a popup was queued (M142), or just after
+ * a black frame (M153).
+ */
 export function fastTicks(state: LoopState, now: number): boolean {
-  return inBurst(state, now) || now < state.fastUntil;
+  return inBurst(state, now) || now < state.fastUntil || afterTransition(state, now);
 }
 
 /** A tick queued a popup under the busy read (`backlog.ts`): tick fast for `QUEUED_FAST_MS` (M142). */
@@ -145,6 +200,17 @@ export interface LoopState {
    * moved under it — a battle. `-Infinity` when nothing holds.
    */
   holdUntil: number;
+  /** Reads of nothing in a row that the screen moved under (M153): how long the hold is (`holdFor`). */
+  holdStreak: number;
+  /** The hold's base length, the range's `max` (M153): a screen still that long is read through it. */
+  holdBase: number;
+  /**
+   * A black frame came since the last read started (M153): the hold is gone, and the first frame
+   * that is not black reads at once.
+   */
+  dark: boolean;
+  /** When the last black frame came (M153); `-Infinity` before any. */
+  blackAt: number;
 }
 
 export const INITIAL_LOOP: LoopState = {
@@ -157,6 +223,10 @@ export const INITIAL_LOOP: LoopState = {
   owed: false,
   fastUntil: -Infinity,
   holdUntil: -Infinity,
+  holdStreak: 0,
+  holdBase: 0,
+  dark: false,
+  blackAt: -Infinity,
 };
 
 export type Decision = 'read' | 'skip';
@@ -168,7 +238,10 @@ export type ReadMode = 'full' | 'popup';
  * `changed` result). On 'read' the caller starts a read of `mode` and calls `finished` when it is
  * done. `refresh` is the load level's re-read schedule (`refreshFor`, M142). `urgent`: the popup's
  * regions settled into something new since the last read (M142) — read now even while a moving
- * screen holds the reads back (`holdUntil`).
+ * screen holds the reads back (`holdUntil`). `seen` (M153): `black`, the frame is black
+ * (`isBlack`) — it is not read, the hold goes, and the next frame that is not black reads at once;
+ * `stillMs`, how long the signature has not moved from tick to tick — a screen that held still for
+ * the hold's base length is no longer moving and is read through the hold.
  */
 export function decide(
   state: LoopState,
@@ -177,10 +250,29 @@ export function decide(
   now: number,
   refresh: RefreshPolicy = BASE_REFRESH,
   urgent = false,
+  seen: { black?: boolean; stillMs?: number } = {},
 ): { state: LoopState; decision: Decision; mode: ReadMode } {
+  const { black = false, stillMs = 0 } = seen;
   const refreshMs = refresh.firstMs;
   const burst = inBurst(state, now);
   const mode: ReadMode = burst ? 'popup' : 'full';
+  // A fade through black between sections (M153): nothing to read, and the hold a battle built up
+  // must not reach the screen after it — even when the black comes under a busy read. It ends a
+  // popup burst too: popups clicked through blink to the screen under them, never to black, so the
+  // section is over and the screen after it (the map) is read in full at once, not after the burst.
+  if (black)
+    return {
+      state: {
+        ...state,
+        dark: true,
+        holdUntil: -Infinity,
+        holdStreak: 0,
+        blackAt: now,
+        burstUntil: Math.min(state.burstUntil, now),
+      },
+      decision: 'skip',
+      mode,
+    };
   if (state.busy) {
     return {
       state: isChanged && !state.dirty ? { ...state, dirty: true } : state,
@@ -188,10 +280,13 @@ export function decide(
       mode,
     };
   }
-  const fresh = isChanged || state.dirty || (!burst && state.owed);
+  const fresh = isChanged || state.dirty || state.dark || (!burst && state.owed);
   // A moving screen that read as nothing is read again at the range's slow end, not the tick's
   // (M142): the ticks stay fast for what may come, the OCR does not run back to back on a battle.
-  if (fresh && !burst && !urgent && !state.owed && now < state.holdUntil)
+  // A screen that stopped moving for the hold's base is read through a hold grown past it (M153): a
+  // popup over the battle on one frame, the frames after it lost, looks like that.
+  const moving = state.holdBase <= 0 || stillMs < state.holdBase;
+  if (fresh && !burst && !urgent && !state.owed && !state.dark && moving && now < state.holdUntil)
     return { state, decision: 'skip', mode };
   // Only the first re-read since a change comes sooner in the burst: `refreshGap` is still at its
   // start then, and doubles after it as ever.
@@ -204,6 +299,7 @@ export function decide(
       lastReadAt: now,
       busy: true,
       dirty: false,
+      dark: false,
       refreshGap: fresh
         ? refreshMs
         : Math.min(state.refreshGap * refresh.growth, Math.max(refreshMs, refresh.maxMs)),
@@ -227,6 +323,8 @@ export interface ReadOutcome {
    */
   nothing?: boolean;
   holdMs?: number;
+  /** How long the hold may grow over a streak of such reads (M153, `holdFor`); default its own. */
+  holdMaxMs?: number;
   /** It was a popup read that found none (`Frame.partial`). */
   partial: boolean;
   /** It saw the map header but not a sure floor and pack (M148). */
@@ -235,12 +333,14 @@ export interface ReadOutcome {
 
 /**
  * The outcome of a read that produced `frame` at `at` — the session and the bench share it.
- * `holdMs` is how long a moving screen of nothing holds the next change read back (M142).
+ * `holdMs` is how long a moving screen of nothing holds the next change read back (M142), and
+ * `holdMaxMs` how long that grows to over a streak (M153; `holdMs` itself keeps M142's fixed hold).
  */
 export function outcomeOf(
   frame: Pick<Frame, 'screen' | 'partial' | 'floor' | 'pack'>,
   at: number,
   holdMs = 0,
+  holdMaxMs = Math.max(HOLD_MAX_MS, holdMs),
 ): ReadOutcome {
   return {
     at,
@@ -248,6 +348,7 @@ export function outcomeOf(
     partial: frame.partial === true,
     nothing: frame.screen === null && frame.partial !== true,
     holdMs,
+    holdMaxMs,
     incomplete: frame.screen === 'exploring' && (frame.floor === null || frame.pack?.status !== 'match'),
   };
 }
@@ -255,27 +356,41 @@ export function outcomeOf(
 /**
  * The read started by the last 'read' decision is done. A popup it found starts (or extends) the
  * burst; a popup read that found none leaves a full read owed; a popup found clears it; a map read
- * short of its floor or pack brings the next re-read in to `BURST_REFRESH_MS`.
+ * short of its floor or pack brings the next re-read in to `BURST_REFRESH_MS`. A read of nothing the
+ * screen moved under holds the next change read back, longer each time in a row (M142, M153) —
+ * unless a black frame came under it (`dark`).
  */
 export function finished(state: LoopState, outcome?: ReadOutcome): LoopState {
   if (!state.busy) return state;
   if (!outcome) return { ...state, busy: false };
+  const base = outcome.holdMs ?? 0;
+  const hold = (streak: number) => holdFor(base, streak, outcome.holdMaxMs ?? base);
+  // Nothing read while the screen moved holds the next change read back (M142), the longer the
+  // more such reads in a row (M153); a popup read that found none says nothing either way, and the
+  // queued popup reads that follow a read (partial) count the hold from the last of them; a still
+  // screen lets the hold go but not the streak (a battle pauses between moves); anything named or a
+  // black frame lets both go.
+  const moving = outcome.nothing === true && base > 0 && state.dirty && !state.dark;
+  const holdStreak = moving
+    ? state.holdStreak + 1
+    : outcome.partial || (outcome.nothing === true && !state.dark)
+      ? state.holdStreak
+      : 0;
+  const holdUntil = moving
+    ? outcome.at + hold(holdStreak)
+    : outcome.partial
+      ? state.holdUntil > -Infinity && base > 0
+        ? Math.max(state.holdUntil, outcome.at + hold(Math.max(1, holdStreak)))
+        : state.holdUntil
+      : -Infinity;
   return {
     ...state,
     busy: false,
     refreshGap: outcome.incomplete ? Math.min(state.refreshGap, BURST_REFRESH_MS) : state.refreshGap,
     burstUntil: outcome.popup ? outcome.at + POPUP_BURST_MS : state.burstUntil,
     owed: outcome.partial ? true : outcome.popup ? false : state.owed,
-    // Nothing read while the screen moved holds the next change read back (M142); a popup read
-    // that found none says nothing either way; anything named lets go.
-    // The queued popup reads that follow it (partial) count from the last of them.
-    holdUntil:
-      outcome.nothing && outcome.holdMs && state.dirty
-        ? outcome.at + outcome.holdMs
-        : outcome.partial
-          ? state.holdUntil > -Infinity && outcome.holdMs
-            ? Math.max(state.holdUntil, outcome.at + outcome.holdMs)
-            : state.holdUntil
-          : -Infinity,
+    holdUntil,
+    holdStreak,
+    holdBase: base,
   };
 }

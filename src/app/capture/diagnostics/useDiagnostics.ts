@@ -36,6 +36,7 @@ const EMPTY: DiagStats = {
   lastExportAt: null,
   trimmedFrames: 0,
   full: false,
+  stopped: false,
   parts: 1,
 };
 

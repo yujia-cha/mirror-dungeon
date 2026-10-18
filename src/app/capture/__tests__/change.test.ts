@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { CaptureLayout } from '../../../core/schema.ts';
-import { changed, PATCH_H, PATCH_W, signatureOf, watchedRegions } from '../change.ts';
+import {
+  BLACK_CELL,
+  BLACK_MEAN,
+  BLACK_SHARE,
+  changed,
+  isBlack,
+  PATCH_H,
+  PATCH_W,
+  signatureOf,
+  watchedRegions,
+} from '../change.ts';
 import type { Region } from '../preprocess.ts';
 
 const W = 200;
@@ -51,6 +61,47 @@ describe('signatureOf / changed', () => {
     const next = signatureOf(flat(40), W, H, regions);
     expect(changed(null, next)).toBe(true);
     expect(changed(new Uint8Array(3), next)).toBe(true);
+  });
+});
+
+describe('isBlack (M153)', () => {
+  const cells = 2 * PATCH_W * PATCH_H;
+
+  it('takes a black frame and a cursor on it for black', () => {
+    // Arrange: all black; then a cursor lighting one cell in two hundred.
+    const black = signatureOf(flat(0), W, H, regions);
+    const cursor = new Uint8Array(cells).fill(1);
+    cursor[5] = 200;
+    // Act + Assert
+    expect(isBlack(black)).toBe(true);
+    expect(isBlack(cursor)).toBe(true);
+  });
+
+  it('takes the dimmest screen with something on it for a screen, at the thresholds’ edges', () => {
+    // Arrange: an average just over BLACK_MEAN; a share of bright cells just over BLACK_SHARE.
+    const dim = new Uint8Array(cells).fill(BLACK_MEAN + 1);
+    const atMean = new Uint8Array(cells).fill(BLACK_MEAN);
+    const text = new Uint8Array(cells);
+    const n = Math.floor(cells * BLACK_SHARE) + 1;
+    for (let i = 0; i < n; i++) text[i * 3] = BLACK_CELL + 1;
+    const textAtShare = new Uint8Array(cells);
+    for (let i = 0; i < n - 1; i++) textAtShare[i * 3] = BLACK_CELL + 1;
+    // Act + Assert
+    expect(isBlack(dim)).toBe(false);
+    expect(isBlack(atMean)).toBe(true);
+    expect(isBlack(text)).toBe(false);
+    expect(isBlack(textAtShare)).toBe(true);
+  });
+
+  it('takes a bright title on a dark screen for a screen', () => {
+    // Arrange: one watched region dark, the other showing a title.
+    const rgba = paint(flat(0), regions[1]!, 180);
+    // Act + Assert
+    expect(isBlack(signatureOf(rgba, W, H, regions))).toBe(false);
+  });
+
+  it('takes no signature for black', () => {
+    expect(isBlack(new Uint8Array(0))).toBe(false);
   });
 });
 
