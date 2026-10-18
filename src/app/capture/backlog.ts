@@ -5,14 +5,21 @@
  * ticks (`decide`, `loop.ts`). So a popup shorter than a read was structurally missed: on the
  * owner's third session the observation 「프레스티지 카드」 stood 42.57–42.84 s, entirely under a
  * full read of a confirm dialog that ran 42.31–43.17 s. Now a tick skipped for a busy read whose
- * popup regions differ from the last snapshot queued — and from what the busy read is reading —
- * snapshots just the popup's box, and once the read is done the session reads the queue oldest
- * first, each as a popup read (`popupOnly`), before the loop is free again. The tracker sees the
- * frames in the order they were on screen: the busy read's snapshot, then the queue.
+ * popup regions differ from the last frame taken care of (`last`: what the busy read is reading,
+ * until something else is queued — `readStarted`) snapshots just the popup's box, and once the
+ * read is done the session reads the queue oldest first, each as a popup read (`popupOnly`),
+ * before the loop is free again. The tracker sees the frames in the order they were on screen: the
+ * busy read's snapshot, then the queue.
  *
  * Only the popup's regions count (`popupPart`): a queued read sees nothing else, so a change
  * elsewhere (an animated background, the map scrolling) would queue reads that can only find what
  * the busy read already saw — and at 30 frames a second in a burst they would never drain.
+ *
+ * Two gifts' popups are often the same to the signature (M147): the title is the same, and the
+ * name region's patch rarely moves by the change threshold from one name to another (the e2e's
+ * five gifts: 7 of 10 pairs; the owner's sessions: one pair in five). So a frame that looks like
+ * what the busy read reads is the same popup only while the screen has not moved off it; after a
+ * blink it may be the next popup, and it is queued like any other.
  *
  * At most `BACKLOG_MAX` wait; past it one goes and `dropped` says so.
  *
@@ -40,7 +47,11 @@ export interface Queued<T> {
 export interface Backlog<T> {
   /** Oldest first. */
   entries: readonly Queued<T>[];
-  /** The signature last pushed — still there once it is taken, so a popup standing still is queued once. */
+  /**
+   * The popup part last taken care of: the last one pushed — still there once it is taken, so a
+   * popup standing still is queued once — or, from a read's start, the frame that read reads
+   * (`readStarted`).
+   */
   last: Uint8Array | null;
   /** Entries pushed out by newer ones past `BACKLOG_MAX`. */
   dropped: number;
@@ -51,17 +62,24 @@ export function emptyBacklog<T>(): Backlog<T> {
 }
 
 /**
- * Whether a tick's frame goes in the queue: a read is busy, and the popup part of its signature
- * differs from the last one pushed and from the busy read's (`reading`, the popup part of
- * `loop.lastRead`). A popup clicked away to what the read is reading queues nothing.
+ * A read starts on a frame whose popup part is `reading` (M147): the read takes care of that frame,
+ * so the ticks under it queue only what differs from it — or, once something else was queued, from
+ * that. A frame that looks like the read's after a blink is queued: it may be the next popup.
+ *
+ * Before M147 the busy read's frame was a second filter beside `last`, for good, and a popup that
+ * came after a blink of the map under a read of the popup before it was never queued when the two
+ * looked alike (`e2e/capture-stress.spec.ts`, 「장미 면류관」 under the re-read of 「커피와 종이학」).
  */
-export function shouldQueue<T>(
-  backlog: Backlog<T>,
-  busy: boolean,
-  reading: Uint8Array | null,
-  signature: Uint8Array,
-): boolean {
-  return busy && changed(backlog.last, signature) && changed(reading, signature);
+export function readStarted<T>(backlog: Backlog<T>, reading: Uint8Array): Backlog<T> {
+  return { ...backlog, last: reading };
+}
+
+/**
+ * Whether a tick's frame goes in the queue: a read is busy, and the popup part of its signature
+ * differs from the last one taken care of (`last` — `readStarted`, `push`).
+ */
+export function shouldQueue<T>(backlog: Backlog<T>, busy: boolean, signature: Uint8Array): boolean {
+  return busy && changed(backlog.last, signature);
 }
 
 /**
@@ -113,11 +131,10 @@ export function motionSince(
 export function admit<T>(
   backlog: Backlog<T>,
   busy: boolean,
-  reading: Uint8Array | null,
   now: Uint8Array,
   movingFor: number | null,
 ): { queue: boolean; moving: boolean } {
-  if (!shouldQueue(backlog, busy, reading, now) || (movingFor !== null && movingFor > ANIMATION_GUARD_MS))
+  if (!shouldQueue(backlog, busy, now) || (movingFor !== null && movingFor > ANIMATION_GUARD_MS))
     return { queue: false, moving: false };
   return { queue: true, moving: movingFor !== null };
 }

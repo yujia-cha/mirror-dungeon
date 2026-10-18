@@ -37,6 +37,7 @@ import {
   popupPart,
   popupRegionIndices,
   push,
+  readStarted,
   take,
   type Backlog,
 } from './backlog.ts';
@@ -612,8 +613,10 @@ export class CaptureSession {
     this.loop = step.state;
     const busy = step.decision === 'skip' && step.state.busy;
     this.reportTick(step.decision === 'read', busy, isChanged);
-    if (busy) this.queueShot(video, indices, popupNow, width, height);
+    if (busy) this.queueShot(video, popupNow, width, height);
     if (step.decision === 'skip') return;
+    // The ticks under this read queue what differs from its frame (M147, `readStarted`).
+    this.backlog = readStarted(this.backlog, popupNow);
     const started = performance.now();
     let frame: Frame | null = null;
     try {
@@ -656,26 +659,19 @@ export class CaptureSession {
   }
 
   /**
-   * A tick skipped for a busy read (M141): when the popup's regions differ from the last queued
-   * and from what the busy read reads, copy the popup's box off the video — that crop alone, not the
-   * frame — and queue it for a popup read. Without `createImageBitmap` nothing is queued.
+   * A tick skipped for a busy read (M141): when the popup's regions differ from the last frame taken
+   * care of (the busy read's, until something else is queued — M147), copy the popup's box off the
+   * video — that crop alone, not the frame — and queue it for a popup read. Without
+   * `createImageBitmap` nothing is queued.
    */
-  private queueShot(
-    video: HTMLVideoElement,
-    indices: readonly number[],
-    shot: Uint8Array,
-    width: number,
-    height: number,
-  ): void {
+  private queueShot(video: HTMLVideoElement, shot: Uint8Array, width: number, height: number): void {
     const layout = this.frameLayout;
     if (!layout || typeof createImageBitmap !== 'function') return;
-    const reading = this.loop.lastRead ? popupPart(this.loop.lastRead, indices) : null;
     // A popup region in motion (a battle) queues a tick or two and no more (M142, `admit`).
     const since = this.movingSince;
     const admitted = admit(
       this.backlog,
       this.loop.busy,
-      reading,
       shot,
       since === null ? null : performance.now() - since,
     );

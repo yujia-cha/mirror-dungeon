@@ -12,6 +12,7 @@ import {
   popupPart,
   popupRegionIndices,
   push,
+  readStarted,
   shouldQueue,
   take,
   type Backlog,
@@ -25,11 +26,14 @@ const LAYOUT = captureLayoutSchema.parse(JSON.parse(readFileSync('public/data/ca
 const sig = (level: number) => new Uint8Array(PATCH).fill(level);
 const READING = sig(0);
 
+/** A read just started on `READING` (`readStarted`). */
+const underRead = (reading = READING) => readStarted(emptyBacklog<number>(), reading);
+
 /** Push `levels` in order as a busy tick would: only what `shouldQueue` lets in. */
-function feed(levels: readonly number[], start: Backlog<number> = emptyBacklog()): Backlog<number> {
+function feed(levels: readonly number[], start: Backlog<number> = underRead()): Backlog<number> {
   let backlog = start;
   for (const level of levels)
-    if (shouldQueue(backlog, true, READING, sig(level))) backlog = push(backlog, sig(level), level).backlog;
+    if (shouldQueue(backlog, true, sig(level))) backlog = push(backlog, sig(level), level).backlog;
   return backlog;
 }
 
@@ -38,7 +42,7 @@ describe('shouldQueue', () => {
     // Arrange
     const backlog = emptyBacklog<number>();
     // Act
-    const queued = shouldQueue(backlog, false, READING, sig(100));
+    const queued = shouldQueue(backlog, false, sig(100));
     // Assert
     expect(queued).toBe(false);
   });
@@ -50,19 +54,28 @@ describe('shouldQueue', () => {
     expect(backlog.entries.map((e) => e.payload)).toEqual([100]);
   });
 
-  it('queues nothing that looks like what the busy read is reading', () => {
-    // Act: a popup, clicked away back to the screen under the read, then the next popup.
-    const backlog = feed([100, 0, 200]);
+  it('queues nothing that looks like what the busy read is reading while the screen stays on it', () => {
+    // Act: the screen under the read, still, then a popup.
+    const backlog = feed([0, 0, 200]);
     // Assert
-    expect(backlog.entries.map((e) => e.payload)).toEqual([100, 200]);
+    expect(backlog.entries.map((e) => e.payload)).toEqual([200]);
+  });
+
+  it('queues a popup that looks like the one the busy read is reading once a blink came between (M147)', () => {
+    // Arrange: a read of a popup; the next gift's popup looks the same to the signature.
+    const start = underRead(sig(100));
+    // Act: the first popup still, a blink of the map, the next popup.
+    const backlog = feed([100, 0, 100], start);
+    // Assert: the blink and the next popup, both read off the queue.
+    expect(backlog.entries.map((e) => e.payload)).toEqual([0, 100]);
   });
 
   it('queues a change just above the threshold and not one at it', () => {
     // Arrange: `changed` counts a mean difference above 6 per patch.
     const after = feed([100]);
     // Act + Assert
-    expect(shouldQueue(after, true, READING, sig(106))).toBe(false);
-    expect(shouldQueue(after, true, READING, sig(107))).toBe(true);
+    expect(shouldQueue(after, true, sig(106))).toBe(false);
+    expect(shouldQueue(after, true, sig(107))).toBe(true);
   });
 });
 
@@ -115,7 +128,7 @@ describe('push and take', () => {
     // Arrange
     const drained = take(feed([100])).backlog;
     // Act + Assert
-    expect(shouldQueue(drained, true, READING, sig(100))).toBe(false);
+    expect(shouldQueue(drained, true, sig(100))).toBe(false);
   });
 });
 
@@ -181,9 +194,9 @@ describe('the animation guard (M142)', () => {
     // Arrange
     const backlog = emptyBacklog<number>();
     // Act
-    const still = admit(backlog, true, READING, sig(100), null);
-    const early = admit(backlog, true, READING, sig(100), ANIMATION_GUARD_MS);
-    const late = admit(backlog, true, READING, sig(100), ANIMATION_GUARD_MS + 1);
+    const still = admit(backlog, true, sig(100), null);
+    const early = admit(backlog, true, sig(100), ANIMATION_GUARD_MS);
+    const late = admit(backlog, true, sig(100), ANIMATION_GUARD_MS + 1);
     // Assert
     expect(still).toEqual({ queue: true, moving: false });
     expect(early).toEqual({ queue: true, moving: true });
@@ -191,7 +204,7 @@ describe('the animation guard (M142)', () => {
   });
 
   it('admits nothing shouldQueue would not', () => {
-    expect(admit(emptyBacklog<number>(), false, READING, sig(100), null).queue).toBe(false);
+    expect(admit(emptyBacklog<number>(), false, sig(100), null).queue).toBe(false);
   });
 
   it('drops a moving newcomer to a full queue rather than a popup queued before it', () => {

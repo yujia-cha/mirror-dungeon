@@ -24,6 +24,7 @@
 import {
   admit,
   emptyBacklog,
+  readStarted,
   shouldQueue,
   motionSince,
   popupPart,
@@ -485,10 +486,9 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
     if (step.decision === 'skip') {
       // A busy tick whose popup changed queues its shot (M141); since M142 the ticks go fast
       // after it, and a region in motion queues a frame or two only (`admit`).
-      const reading = loop.lastRead ? part(loop.lastRead) : null;
       const admitted = adaptive
-        ? admit(backlog, loop.busy, reading, popupNow, movingSince === null ? null : t - movingSince)
-        : { queue: shouldQueue(backlog, loop.busy, reading, popupNow), moving: false };
+        ? admit(backlog, loop.busy, popupNow, movingSince === null ? null : t - movingSince)
+        : { queue: shouldQueue(backlog, loop.busy, popupNow), moving: false };
       if (admitted.queue) {
         const pushed = push(backlog, popupNow, shot, admitted.moving);
         input.log?.(`${Math.round(t)} queue shot ${shot}${admitted.moving ? ' moving' : ''}`);
@@ -502,6 +502,8 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       }
     } else {
       input.log?.(`${Math.round(t)} read ${step.mode} shot ${shot}`);
+      // The ticks under this read queue what differs from its frame (M147).
+      backlog = readStarted(backlog, popupNow);
       readingChange = fresh;
       await startRead(shot, t, step.mode);
     }

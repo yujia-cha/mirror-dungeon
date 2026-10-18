@@ -35,7 +35,12 @@ export type Screen =
   | { kind: 'nothing'; animated?: boolean }
   /** A confirm dialog: nothing to the tracker, the slowest full read (M141). */
   | { kind: 'confirm' }
-  | { kind: 'popup'; giftId: number; over: 'shop' | 'nothing' | 'confirm' };
+  /**
+   * A popup. `look` is what its regions look like to the signature (default: its gift): two
+   * different gifts' popups often look alike there (M147 — the title is the same and the change
+   * signature rarely tells two names apart), so the same `look` on two gifts is the real case.
+   */
+  | { kind: 'popup'; giftId: number; over: 'shop' | 'nothing' | 'confirm'; look?: number };
 
 /** A screen and how long it stays, ms. */
 export type Step = [Screen, number];
@@ -64,7 +69,7 @@ export function signatureOf(screen: Screen, t: number): Uint8Array {
   const out = new Uint8Array(3 * PATCH);
   let [a, b] =
     screen.kind === 'popup'
-      ? [140 + ((screen.giftId * 17) % 110), LEVEL[screen.over][1]]
+      ? [140 + (((screen.look ?? screen.giftId) * 17) % 110), LEVEL[screen.over][1]]
       : LEVEL[screen.kind];
   if (screen.kind === 'map') b = (b + screen.floor * 9) % 256;
   let a2 = a;

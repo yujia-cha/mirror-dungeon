@@ -120,6 +120,33 @@ describe('the guarantees (M142)', () => {
     expect(runs.some((r) => r.result.observable.has(5))).toBe(true);
   });
 
+  it('reads a popup that looks like the one under the busy read, once the screen moved between them (M147)', async () => {
+    // Arrange: two gifts whose popups look alike to the signature (same title, names it cannot
+    // tell apart), clicked through with a blink of the map — all under the slow read of the first.
+    const steps: Step[] = [
+      [{ kind: 'map', floor: 1, packId: 101 }, 3000],
+      [{ kind: 'popup', giftId: 9106, over: 'nothing', look: 1 }, 400],
+      [{ kind: 'map', floor: 1, packId: 101 }, 150],
+      [{ kind: 'popup', giftId: 9107, over: 'nothing', look: 1 }, 300],
+      [{ kind: 'map', floor: 1, packId: 101 }, 4000],
+    ];
+    // Act: every phase of the timer.
+    const runs = [];
+    for (const first of [10, 40, 70])
+      runs.push(
+        await stressRun(steps, {
+          range: READ_INTERVALS.balanced,
+          firstTickMs: first,
+          stress: { readCost: 10 },
+        }),
+      );
+    // Assert: the second is queued and read, though its signature equals what the busy read reads.
+    for (const run of runs) {
+      expect(run.result.observable.has(3)).toBe(true);
+      expect(run.missedPopups).toEqual([]);
+    }
+  });
+
   it('does not count a popup that came and went inside a stall: no page could have seen it', async () => {
     // Arrange: a popup at 3000–3200, entirely inside a stall of 2900–3400.
     const steps: Step[] = [
