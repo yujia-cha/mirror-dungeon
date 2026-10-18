@@ -874,6 +874,33 @@
 - en: Skill spending own {keywords}
 - 쓰는 곳: src/app/lib/effect-text.ts
 
+### effReqMechanic
+메모: 진동 폭발·진폭 변환·진폭 얽힘을 일으키는 기본 스킬(M150). 진동 폭발은 원문이 스킬이나 아군을 주어로 밝힌 조건만, 진폭 변환·얽힘은 기프트가 직접 변환하는 것이 아니면 요구다.
+- ko: {mechanics} 스킬
+- en: {mechanics} skill
+- 쓰는 곳: src/app/lib/effect-text.ts
+
+### effReqHint
+메모: 효과의 참고(M150) — 요구는 아니지만 그 스킬이 있으면 돕는 것(「[진동 폭발]이 적용된 적에게」). 그 스킬을 가진 출격 인격이 있을 때만 칩과 함께 보인다.
+- ko: 참고: {name}
+- en: Helps: {name}
+- 쓰는 곳: src/app/components/EffectLines.tsx
+
+### effMechanicVibrationExplosion
+- ko: 진동 폭발
+- en: Tremor Burst
+- 쓰는 곳: src/app/lib/effect-text.ts (동적)
+
+### effMechanicSwitch_Vibration
+- ko: 진폭 변환
+- en: Amplitude Conversion
+- 쓰는 곳: src/app/lib/effect-text.ts (동적)
+
+### effMechanicFusionVibration
+- ko: 진폭 얽힘
+- en: Amplitude Entanglement
+- 쓰는 곳: src/app/lib/effect-text.ts (동적)
+
 ### effReqIdentityBuff
 메모: 기프트가 주지 않아 인격만 가져오는 버프(진동 - 작열·각력【묘】·버림 등).
 - ko: 인격 전용 효과

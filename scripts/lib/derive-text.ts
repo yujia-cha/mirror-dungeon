@@ -11,7 +11,7 @@
  * property it holds to is one-sided: the text may miss a keyword, it must never invent one.
  */
 import { CONSUMED_KEYWORDS, IDENTITY_KEYWORDS, type IdentityKeywordId } from '../../src/core/schema.ts';
-import type { StatusKeyword } from '../../src/core/schema.ts';
+import type { SkillMechanic, StatusKeyword } from '../../src/core/schema.ts';
 import {
   countSkillKeywords,
   IDENTITY_KEYWORD_BY_KO,
@@ -396,6 +396,30 @@ export function selfKeywordsInSkillText(skill: LocalizedSkill): SelfUse {
     }
   }
   return out;
+}
+
+/**
+ * What one skill's sentence sets off (M150, `skills[].mechanics`): 「[OnSucceedAttack]
+ * [VibrationExplosion]」, 「… [VibrationExplosion] 2회」 explode; 「[VibrationIgnition]로
+ * [Switch_Vibration]」 converts and 「[VibrationEcho]으로 [FusionVibration]」 entangles. A check is
+ * neither: 「대상이 [Switch_Vibration] 상태면」, 「[VibrationExplosion]된 적」 — a conversion is always
+ * written after the type it turns into, and an explosion the skill sets off ends its clause.
+ */
+export function mechanicsInSkillText(skill: LocalizedSkill): SkillMechanic[] {
+  const out = new Set<SkillMechanic>();
+  for (const line of ownLinesOf(skill)) {
+    for (const m of line.matchAll(/\[(VibrationExplosion|Switch_Vibration|FusionVibration)\]/g)) {
+      const id = m[1] as SkillMechanic;
+      const before = line.slice(Math.max(0, m.index - 6), m.index);
+      const after = line.slice(m.index + m[0].length);
+      const sets =
+        id === 'VibrationExplosion'
+          ? /^\s*(?:\d+\s*회)?\s*(?:$|[.,)(])/.test(after)
+          : /\]\s*(?:으로|로)\s*$/.test(before);
+      if (sets) out.add(id);
+    }
+  }
+  return [...out].sort();
 }
 
 const KO_OF: Partial<Record<IdentityKeywordId, string>> = {

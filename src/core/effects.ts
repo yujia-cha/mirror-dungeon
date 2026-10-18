@@ -42,6 +42,8 @@ export interface EffectReport {
   index: number;
   kind: GiftEffect['kind'];
   requirements: RequirementReport[];
+  /** `effect.hints` on the deck — shown, never counted toward `usable`, relevance or rank (M150). */
+  hints: RequirementReport[];
   /** Every requirement here is met. A note is never usable. */
   usable: boolean;
   unconditional: boolean;
@@ -144,6 +146,11 @@ function skillTest(requirement: EffectRequirement): SkillTest | null {
       return (skill) =>
         skill.self ? keywords.some((keyword) => skill.self![keyword]?.[verb] === true) : null;
     }
+    case 'skillMechanic': {
+      // Read from every skill's text at build time, so no `mechanics` means the skill sets off none.
+      const { mechanics } = requirement;
+      return (skill) => mechanics.some((m) => skill.mechanics?.includes(m) === true);
+    }
     default:
       return null;
   }
@@ -178,6 +185,7 @@ export function identityMeets(identity: Identity, requirement: EffectRequirement
     }
     case 'shape':
     case 'selfKeyword':
+    case 'skillMechanic':
       return null;
     case 'identityBuff':
       return identity.buffs ? requirement.buffs.some((buff) => identity.buffs!.includes(buff)) : null;
@@ -333,6 +341,8 @@ export function giftEffectsReport(
       index,
       kind: effect.kind,
       requirements,
+      // Always computed: the built index covers requirements only, and a hint is one skill scan.
+      hints: (effect.hints ?? []).map((hint) => reportRequirement(hint, stats, identityById)),
       usable: isEffect && gateOpen && requirements.every((report) => report.satisfied),
       unconditional: isEffect && requirements.length === 0,
       unclassified: effect.unclassified === true,
@@ -384,6 +394,8 @@ export function requirementLabel(requirement: EffectRequirement): string {
       return `defense/${requirement.kinds.join('|')}`;
     case 'selfKeyword':
       return `selfKeyword/${requirement.keywords.join('|')}:${requirement.verb}`;
+    case 'skillMechanic':
+      return `skillMechanic/${requirement.mechanics.join('|')}`;
     case 'egoSkill':
       return 'egoSkill';
     case 'anyOf':

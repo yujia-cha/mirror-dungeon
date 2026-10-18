@@ -39,6 +39,7 @@ const eff = (
   index: 0,
   kind: 'effect',
   requirements,
+  hints: [],
   usable,
   unconditional: requirements.length === 0,
   unclassified: false,

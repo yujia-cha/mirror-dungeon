@@ -48,6 +48,11 @@ const sinName = new Map<string, string>(
 const identityName = new Map(identities.map((i) => [i.id, `${i.title.ko} ${i.sinner.ko}`]));
 const ATTACK_KO: Record<string, string> = { Slash: '참격', Penetrate: '관통', Hit: '타격' };
 const DEFENSE_KO: Record<string, string> = { guard: '가드', evade: '회피', counter: '반격' };
+const MECHANIC_KO: Record<string, string> = {
+  VibrationExplosion: '진동 폭발',
+  Switch_Vibration: '진폭 변환',
+  FusionVibration: '진폭 얽힘',
+};
 const SCOPE_KO: Record<string, string> = { deployed: '출격', formation: '편성', reserve: '대기' };
 const KIND_KO: Record<GiftEffect['kind'], string> = { effect: '효과', gate: '발동 조건', note: '메모' };
 const ACQUISITION_KO: Record<string, string> = {
@@ -107,6 +112,8 @@ function describeRequirement(req: EffectRequirement): string {
       const names = req.keywords.map((k) => keywordName.get(k) ?? k).join('·');
       return req.verb === 'gain' ? `자신에게 ${names} 부여하는 스킬` : `자신의 ${names} 소모하는 스킬`;
     }
+    case 'skillMechanic':
+      return `${req.mechanics.map((m) => MECHANIC_KO[m]).join('·')} 스킬`;
     case 'egoSkill':
       return 'E.G.O 스킬 (늘 충족, 「E.G.O」 절)';
     case 'anyOf':
@@ -191,7 +198,8 @@ for (const gift of gifts) {
   out.push('|---|---|---|');
   list.forEach((effect, i) => {
     const text = paired ? shorten(blocks[i]!.head) : '';
-    const reqs = effect.requires.map(describeRequirement).join(' + ') || '—';
+    const hints = (effect.hints ?? []).map((h) => ` · 참고: ${describeRequirement(h)}`).join('');
+    const reqs = `${effect.requires.map(describeRequirement).join(' + ') || '—'}${hints}`;
     out.push(`| ${KIND_KO[effect.kind]} | ${cell(text)} | ${effect.unclassified ? '⚠ ' : ''}${cell(reqs)} |`);
   });
   out.push('');

@@ -11,6 +11,7 @@ import type {
   Identity,
   IdentityKeywordId,
   IdentitySkill,
+  SkillMechanic,
 } from '../../src/core/schema.ts';
 import { IDENTITY_KEYWORDS, STATUS_KEYWORDS } from '../../src/core/schema.ts';
 import type { SelfUse, SkillKeywords } from './derive.ts';
@@ -92,6 +93,8 @@ export function staticSkillFacts(
   keywords: SkillKeywords | undefined,
   /** `selfFlags` of the skill's scripts and sentence. The scripts are always there, so it is always set. */
   self: NonNullable<IdentitySkill['self']> = {},
+  /** `mechanicsInSkillText` of the skill's sentence (M150); none leaves the field out. */
+  mechanics: SkillMechanic[] = [],
 ): IdentitySkill {
   const slot = slotOfSkill(skillId);
   if (slot === null) throw new Error(`skill ${skillId} is a base attack skill without suffix 01–03`);
@@ -113,6 +116,7 @@ export function staticSkillFacts(
       : null,
     keywords: skillKeywordFlags(keywords),
     self,
+    ...(mechanics.length > 0 ? { mechanics } : {}),
   };
 }
 
@@ -153,6 +157,8 @@ export function derivedSkillFacts(
    * so `self` is set only when the sentence names something — otherwise it stays out, 「모름」.
    */
   self: Map<number, SelfUse> = new Map(),
+  /** `mechanicsInSkillText` by skill id (M150). */
+  mechanics: Map<number, SkillMechanic[]> = new Map(),
 ): IdentitySkill[] {
   const out: IdentitySkill[] = [];
   const base = new Set(derivedAttackSkillIds(entry));
@@ -168,6 +174,7 @@ export function derivedSkillFacts(
       coins: null,
       keywords: skillKeywordFlags(keywords.get(id)),
       ...(self.has(id) && self.get(id)!.size > 0 ? { self: selfFlags(self.get(id)) } : {}),
+      ...(mechanics.get(id)?.length ? { mechanics: mechanics.get(id)! } : {}),
     });
   }
   return out.sort((a, b) => a.slot - b.slot);

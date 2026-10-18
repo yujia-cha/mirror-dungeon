@@ -48,6 +48,10 @@ export function requirementText(
       const keywords = list(requirement.keywords.map((k) => keywordName(k, enums, lang)));
       return t(requirement.verb === 'gain' ? 'effReqSelfGain' : 'effReqSelfConsume', lang, { keywords });
     }
+    case 'skillMechanic':
+      return t('effReqMechanic', lang, {
+        mechanics: list(requirement.mechanics.map((m) => t(`effMechanic${m}` as StringKey, lang))),
+      });
     case 'identityBuff':
       return t('effReqIdentityBuff', lang);
     case 'faction':

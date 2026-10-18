@@ -11,7 +11,8 @@
  * — never colour alone. Notes carry no bar and no chip line. Under the body, inside the bar, each
  * requirement is named and followed by one chip per identity that meets it (「이상 1.3」), a
  * dashed 「없음」 when nobody does, and 「n/m명」 when it asks for more than one; an effect that asks
- * nothing reads 「조건 없음」.
+ * nothing reads 「조건 없음」. A hint (M150) follows as 「참고: …」 with its chips, only when a deployed
+ * identity has the skill — it is never why an effect is off.
  */
 import type { EffectReport, GiftEffectsReport, RequirementReport } from '../../core/effects.ts';
 import type { Enums, Identity } from '../../core/schema.ts';
@@ -74,6 +75,31 @@ function RequirementWho({
   );
 }
 
+/** A hint (M150): skills that help an effect without being asked for — drawn only when someone has one. */
+function HintWho({
+  report,
+  enums,
+  identityById,
+  lang,
+}: {
+  report: RequirementReport;
+  enums: Enums;
+  identityById: ReadonlyMap<number, Identity>;
+  lang: Lang;
+}) {
+  const name = requirementText(report.requirement, enums, identityById, lang);
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1" data-testid="effect-hint">
+      <span className="text-caption text-fg-subtle">{t('effReqHint', lang, { name })}</span>
+      {whoChips(report, identityById, lang).map((chip) => (
+        <Chip key={chip.id} title={chip.full} ariaLabel={chip.full}>
+          {chip.label}
+        </Chip>
+      ))}
+    </span>
+  );
+}
+
 function WhoLine({
   effect,
   enums,
@@ -94,6 +120,11 @@ function WhoLine({
           <RequirementWho key={j} report={r} enums={enums} identityById={identityById} lang={lang} />
         ))
       )}
+      {effect.hints
+        .filter((h) => h.have > 0)
+        .map((h, j) => (
+          <HintWho key={`h${j}`} report={h} enums={enums} identityById={identityById} lang={lang} />
+        ))}
     </div>
   );
 }

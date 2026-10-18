@@ -1989,6 +1989,14 @@
                   "SLOTH"
                 ],
                 "type": "skill"
+              },
+              {
+                "mechanics": [
+                  "FusionVibration",
+                  "Switch_Vibration",
+                  "VibrationExplosion"
+                ],
+                "type": "skillMechanic"
               }
             ],
             "type": "anyOf"
@@ -3176,6 +3184,14 @@
     },
     "effects": [
       {
+        "hints": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ],
         "kind": "effect",
         "requires": []
       }
@@ -12168,6 +12184,14 @@
     },
     "effects": [
       {
+        "hints": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ],
         "kind": "effect",
         "requires": []
       }
@@ -12265,10 +12289,26 @@
         "requires": []
       },
       {
+        "hints": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ],
         "kind": "effect",
         "requires": []
       },
       {
+        "hints": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ],
         "kind": "effect",
         "requires": []
       },
@@ -12276,11 +12316,11 @@
         "kind": "effect",
         "requires": [
           {
-            "includesSpecial": false,
-            "keywords": [
-              "Vibration"
+            "mechanics": [
+              "FusionVibration",
+              "Switch_Vibration"
             ],
-            "type": "skillKeyword"
+            "type": "skillMechanic"
           }
         ]
       }
@@ -19862,6 +19902,14 @@
         ]
       },
       {
+        "hints": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ],
         "kind": "effect",
         "requires": []
       },
@@ -19869,11 +19917,11 @@
         "kind": "effect",
         "requires": [
           {
-            "includesSpecial": false,
-            "keywords": [
-              "Vibration"
+            "mechanics": [
+              "FusionVibration",
+              "Switch_Vibration"
             ],
-            "type": "skillKeyword"
+            "type": "skillMechanic"
           }
         ]
       }
@@ -20092,17 +20140,17 @@
         "kind": "effect",
         "requires": [
           {
-            "includesSpecial": false,
-            "keywords": [
-              "Vibration"
-            ],
-            "type": "skillKeyword"
-          },
-          {
             "buffs": [
               "VibrationNesting"
             ],
             "type": "identityBuff"
+          },
+          {
+            "mechanics": [
+              "FusionVibration",
+              "Switch_Vibration"
+            ],
+            "type": "skillMechanic"
           }
         ]
       }
@@ -28740,6 +28788,14 @@
         ]
       },
       {
+        "hints": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ],
         "kind": "effect",
         "requires": []
       }
@@ -29309,7 +29365,14 @@
       },
       {
         "kind": "effect",
-        "requires": []
+        "requires": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ]
       },
       {
         "kind": "effect",
@@ -29480,11 +29543,25 @@
     "effects": [
       {
         "kind": "effect",
-        "requires": []
+        "requires": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ]
       },
       {
         "kind": "effect",
-        "requires": []
+        "requires": [
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
+          }
+        ]
       }
     ],
     "fusion": null,
@@ -32769,6 +32846,12 @@
               "Vibration"
             ],
             "type": "skillKeyword"
+          },
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
           }
         ]
       }
@@ -33190,6 +33273,13 @@
               "Vibration"
             ],
             "type": "skillKeyword"
+          },
+          {
+            "mechanics": [
+              "FusionVibration",
+              "Switch_Vibration"
+            ],
+            "type": "skillMechanic"
           }
         ]
       },
@@ -38796,11 +38886,11 @@
         "kind": "effect",
         "requires": [
           {
-            "includesSpecial": false,
-            "keywords": [
-              "Vibration"
+            "mechanics": [
+              "FusionVibration",
+              "Switch_Vibration"
             ],
-            "type": "skillKeyword"
+            "type": "skillMechanic"
           }
         ]
       }
@@ -39050,6 +39140,12 @@
               "Vibration"
             ],
             "type": "skillKeyword"
+          },
+          {
+            "mechanics": [
+              "VibrationExplosion"
+            ],
+            "type": "skillMechanic"
           }
         ]
       },

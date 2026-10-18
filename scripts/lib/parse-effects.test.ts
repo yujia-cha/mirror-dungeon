@@ -428,3 +428,81 @@ describe('readCuratedGiftEffects', () => {
     expect(curated.errors).toHaveLength(2);
   });
 });
+
+describe('parseEffects — 진동 폭발·진폭 변환·진폭 얽힘 (skillMechanic, M150)', () => {
+  // 폭우 hands out 「[진동 폭발] 효과」 and a gift nails enemies, so the real build counts both as granted.
+  const real: EffectContext = { ...ctx, grantedBuffs: new Set(['VibrationExplosion', 'NailPersonality']) };
+  const parse = (text: string) => parseEffects(text, real).effects;
+  const requiresOf = (text: string) => parse(text).map((e) => e.requires);
+  const hintsOf = (text: string) => parse(text).map((e) => e.hints ?? []);
+  const explode = { type: 'skillMechanic', mechanics: ['VibrationExplosion'] };
+  const convert = { type: 'skillMechanic', mechanics: ['FusionVibration', 'Switch_Vibration'] };
+
+  it('requires an explosion skill when a skill or an ally sets it off (owner’s rule)', () => {
+    // Arrange: KR lines of 9283, 9286 (both lines) and 9721.
+    const lines = [
+      '자신의 스킬 효과로 [VibrationExplosion]이 발동되었다면, 다음 턴에 [AttackUp] 2 얻음 (턴당 3회)',
+      '아군이 스킬로 [VibrationExplosion] 시 [VibrationExplosion]마다 (자신의 [Charge] 위력 / 3)만큼 다음 턴에 [AttackUp] 얻음',
+      '[Charge] 위력이 2 이상인 아군이 [VibrationExplosion] 시 아래 효과 적용',
+      '해당 스킬로 적에게 이번 턴 동안 처음으로 [VibrationExplosion]을 적용하였다면, 다음 턴에 [Vibration] 횟수 2 부여 (턴 당 1회).',
+    ];
+    for (const line of lines) {
+      // Act
+      const [effect] = parse(line);
+      // Assert
+      expect(effect!.requires).toEqual([explode]);
+      expect(effect!.hints).toBeUndefined();
+    }
+  });
+
+  it('only hints at an explosion skill when nothing says who sets it off — a gift can too', () => {
+    // Arrange: 9091 (its parenthetical is a per-skill cap, not a condition), 9092, 9024, 9275.
+    const lines = [
+      '[VibrationExplosion]이 적용된 적에게 이번 턴에 [Vulnerable] 1 부여  (공격 스킬을 사용하여 진동 폭발 부여 시, 스킬 당 최대 1회).',
+      '이번 턴에 대상에게 [VibrationExplosion]을 3회 부여하였을 경우, 다음 턴 시작 시 대상을 흐트러뜨리고 현재 체력 기준 66%, 33%에 새로운 흐트러짐 구간 추가 (전투 당 1회 발동).',
+      '[VibrationExplosion]된 적에게 다음 턴에 [AttackDown] 5와 [DefenseDown] 5 부여. (턴 당 최대 3회)',
+      '[NailPersonality]을 보유한 적에게 [VibrationExplosion]을 적용했으면 다음 턴에 [Binding] 1 부여 (턴당 3회)',
+    ];
+    for (const line of lines) {
+      expect(requiresOf(line)).toEqual([[]]);
+      expect(hintsOf(line)).toEqual([[explode]]);
+    }
+  });
+
+  it('requires a conversion skill wherever the gift does not convert itself', () => {
+    // Arrange: 9092/9165, 9812, 9167 (「[진동]으로 … 사용하면」 is the ally converting) and 9728.
+    expect(
+      requiresOf('[Switch_Vibration], [FusionVibration] 시 [Vulnerable] 1 부여 (턴 당 최대 3회)'),
+    ).toEqual([[convert]]);
+    const timepiece = parse(
+      '적에게 [Switch_Vibration] 혹은 [FusionVibration] 시킬 경우, 대상에게 [VibrationExplosion] (인격마다 턴 당 1회)',
+    );
+    // The explosion there is what the gift does, so it is not a hint either.
+    expect(timepiece.map((e) => [e.requires, e.hints])).toEqual([[[convert], undefined]]);
+    expect(
+      requiresOf(
+        '대상에게 [VibrationNesting]이 있을 때, 그 대상에게 중첩되지 않은 유형의 [Vibration]으로 [Switch_Vibration], [FusionVibration]을 사용하면, 턴 종료 시 대상이 보유한 [VibrationNesting]을 다음 턴까지 연장함',
+      )[0],
+    ).toContainEqual(convert);
+    expect(
+      requiresOf(
+        '[Vibration] 위력 또는 [Vibration] 횟수 또는 특수 진동을 부여하는 아군이 공격 스킬(E.G.O 스킬 포함)을 사용하여 적을 [Switch_Vibration] 또는 [FusionVibration] 상태로 만들 경우, 다음 턴에 [DefenseDown] 5를 부여 (턴 당 1회).',
+      )[0],
+    ).toContainEqual(convert);
+  });
+
+  it('is nothing when the gift sets it off itself, after a skill clause too', () => {
+    // Arrange: 9255 converts with the gift's own random type; 9256 explodes on 합 승리; 9814; 9055.
+    const lines = [
+      '적에게 [Vibration] 위력, [Vibration] 횟수 또는 특수 진동을 부여하는 기본 스킬로 합 승리시 아래 특수 진동 중 무작위 특수 진동으로 [FusionVibration] (턴당 최대 1회)',
+      '합 승리 시 메인 타겟에게 [VibrationIgnition]로 [Switch_Vibration]하고, [VibrationExplosion]. 대상의 [Vibration] 횟수 1 감소',
+      '턴 시작 시 [Vibration] 횟수가 가장 많은 인격 1명의 [Vibration]을 [VibrationDistribution]로 [FusionVibration]',
+      '턴 종료 시, 모든 적(환상체일 경우, 모든 부위)에게 [VibrationExplosion] 효과 부여.',
+    ];
+    for (const line of lines) {
+      const [effect] = parse(line);
+      expect(effect!.requires).not.toContainEqual(expect.objectContaining({ type: 'skillMechanic' }));
+      expect(effect!.hints).toBeUndefined();
+    }
+  });
+});

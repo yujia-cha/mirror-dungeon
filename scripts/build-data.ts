@@ -90,6 +90,7 @@ import {
   deriveSkillKeywordsFromText,
   keywordsInSkillText,
   selfKeywordsInSkillText,
+  mechanicsInSkillText,
   skillsOfIdentity,
   skillTextDiscards,
   specialAmmoFamiliesOf,
@@ -865,7 +866,7 @@ const derivedIdentities: Identity[] = rawPersonalities.map((raw): Identity => {
         skill ? selfUseInSkill(skill) : undefined,
         text ? selfKeywordsInSkillText(text) : undefined,
       );
-      return staticSkillFacts(id, skill, perSkill.get(id), self);
+      return staticSkillFacts(id, skill, perSkill.get(id), self, text ? mechanicsInSkillText(text) : []);
     })
     .sort((a, b) => a.slot - b.slot);
   if (new Set(skillFacts.map((s) => s.slot)).size !== skillFacts.length)
@@ -973,6 +974,11 @@ const backfilledIdentities: Identity[] = [...derivedSource.entries()]
       new Map(
         attackIds.flatMap((sid) =>
           textById.has(sid) ? [[sid, selfKeywordsInSkillText(textById.get(sid)!)]] : [],
+        ),
+      ),
+      new Map(
+        attackIds.flatMap((sid) =>
+          textById.has(sid) ? [[sid, mechanicsInSkillText(textById.get(sid)!)]] : [],
         ),
       ),
     );

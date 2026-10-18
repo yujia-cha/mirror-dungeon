@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { deriveIdentityKeywordsFromText, keywordsInSkillText, looksLikeAttackSkill } from './derive-text.ts';
+import {
+  deriveIdentityKeywordsFromText,
+  keywordsInSkillText,
+  looksLikeAttackSkill,
+  mechanicsInSkillText,
+} from './derive-text.ts';
 import type { IdentityKeywordId } from '../../src/core/schema.ts';
 import type { LocalizedSkill } from './raw.ts';
 
@@ -133,5 +138,48 @@ describe('deriveIdentityKeywordsFromText', () => {
     expect(deriveIdentityKeywordsFromText(skills, variants)).toEqual({
       Bullet: { skills: 2, specialSkills: 0 },
     });
+  });
+});
+
+describe('mechanicsInSkillText (M150)', () => {
+  it('reads what the skill sets off, from the KR text the game ships', () => {
+    // Arrange: real coin lines (10216 S3, 10609 S3, 11113 S2).
+    const converts = skill(
+      1021603,
+      '',
+      ...[
+        '[OnSucceedAttack] [VibrationIgnition]로 [Switch_Vibration]',
+        '[OnSucceedAttack] [VibrationExplosion]',
+      ],
+    );
+    const entangles = skill(
+      1060903,
+      '',
+      ...['스킬 사용시 [Vibration] 횟수를 소모했다면, [VibrationEcho]으로 [FusionVibration]'],
+    );
+    const twice = skill(
+      1041603,
+      '',
+      ...['[OnSucceedAttack] 자신의 [ChargeNoirAlly] 위력이 3 이상이면, [VibrationExplosion] 2회'],
+    );
+
+    // Act + Assert
+    expect(mechanicsInSkillText(converts)).toEqual(['Switch_Vibration', 'VibrationExplosion']);
+    expect(mechanicsInSkillText(entangles)).toEqual(['FusionVibration']);
+    expect(mechanicsInSkillText(twice)).toEqual(['VibrationExplosion']);
+  });
+
+  it('does not count a check on the target as setting it off', () => {
+    // Arrange: 11113 S2's coin, and an explosion already on the target.
+    const checks = skill(
+      1111302,
+      '',
+      ...[
+        '대상이 [Switch_Vibration]이나 [FusionVibration] 상태면, 이 코인 피해량 +60%',
+        '[VibrationExplosion]된 적에게 피해량 +10%',
+      ],
+    );
+    // Act + Assert
+    expect(mechanicsInSkillText(checks)).toEqual([]);
   });
 });

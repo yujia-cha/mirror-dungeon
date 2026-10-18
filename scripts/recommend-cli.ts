@@ -71,8 +71,9 @@ function print(gift: Gift, verdict: string, report: GiftEffectsReport): void {
       )
       .join(', ');
     const mark = effect.kind === 'effect' ? (effect.usable ? '●' : '○') : '·';
+    const hints = effect.hints.map((h) => ` · 참고 ${requirementLabel(h.requirement)} ${h.have}명`).join('');
     console.log(
-      `  ${mark} [${effect.kind}]${effect.unclassified ? ' ⚠미분류' : ''} ${reqs || '(조건 없음)'}`,
+      `  ${mark} [${effect.kind}]${effect.unclassified ? ' ⚠미분류' : ''} ${reqs || '(조건 없음)'}${hints}`,
     );
   }
 }

@@ -1539,6 +1539,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "ENVY",
         "slot": 2,
@@ -1562,6 +1565,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "GLUTTONY",
         "slot": 3,
@@ -3566,6 +3572,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "SLOTH",
         "slot": 2,
@@ -3589,6 +3598,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "WRATH",
         "slot": 3,
@@ -4493,6 +4506,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": false,
@@ -4517,6 +4533,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -5243,6 +5263,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "ENVY",
         "slot": 2,
@@ -5266,6 +5289,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "SLOTH",
         "slot": 3,
@@ -6211,6 +6238,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -6543,6 +6573,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "WRATH",
         "slot": 2,
@@ -6566,6 +6599,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "LUST",
         "slot": 3,
@@ -6819,6 +6856,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "GLOOM",
         "slot": 3,
@@ -7066,6 +7106,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "PRIDE",
         "slot": 2,
@@ -7089,6 +7132,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "SLOTH",
         "slot": 3,
@@ -8385,6 +8431,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "LUST",
         "slot": 2,
@@ -8412,6 +8461,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "WRATH",
         "slot": 3,
@@ -9746,6 +9799,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": false,
@@ -9765,6 +9821,10 @@
           "unbreakable": false
         },
         "keywords": {},
+        "mechanics": [
+          "FusionVibration",
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -11482,6 +11542,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration"
+        ],
         "self": {},
         "sin": "PRIDE",
         "slot": 3,
@@ -12419,6 +12482,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "SLOTH",
         "slot": 2,
@@ -12442,6 +12508,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "WRATH",
         "slot": 3,
@@ -13582,6 +13652,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -13944,6 +14017,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration"
+        ],
         "self": {},
         "sin": "GLOOM",
         "slot": 3,
@@ -15246,6 +15322,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -16112,6 +16191,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "SLOTH",
         "slot": 2,
@@ -16139,6 +16221,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "WRATH",
         "slot": 3,
@@ -16242,6 +16328,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "ENVY",
         "slot": 2,
@@ -16265,6 +16354,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "SLOTH",
         "slot": 3,
@@ -17323,6 +17415,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -17635,6 +17730,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "SLOTH",
         "slot": 2,
@@ -17662,6 +17760,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "WRATH",
         "slot": 3,
@@ -19399,6 +19501,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -19423,6 +19529,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {
           "Vibration": {
             "consume": true,
@@ -19563,6 +19672,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "GLOOM",
         "slot": 3,
@@ -21111,6 +21223,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "LUST",
         "slot": 2,
@@ -21134,6 +21249,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "PRIDE",
         "slot": 3,
@@ -21491,6 +21610,9 @@
             "special": false
           }
         },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "PRIDE",
         "slot": 2,
@@ -21514,6 +21636,10 @@
             "special": false
           }
         },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
         "self": {},
         "sin": "WRATH",
         "slot": 3,

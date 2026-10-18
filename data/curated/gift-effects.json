@@ -1,5 +1,24 @@
 {
   "_note": "기프트 효과 요구(M129)의 수기 보정. 기프트 id마다 { _source, effects }를 적으면 scripts/lib/parse-effects.ts가 읽은 효과를 통째로 대신한다. effects는 설명의 효과 블록(줄 + 그 아래 '- ' 줄) 순서와 수를 그대로 따른다 — 수가 어긋나면 data:validate가 경고한다. 형식은 src/core/schema.ts의 giftEffectSchema·curatedGiftEffectSchema.",
+  "9015": {
+    "_source": "「진동 위력, 진동 횟수를 부여하거나, 진폭 변환, 진동 폭발, 진폭 얽힘 효과를 보유한 스킬 또는 나태 속성 스킬」(KR 원문 EGOgift) — 앞의 「…를 부여하거나,」는 쉼표 뒤의 「스킬」을 함께 꾸며 파서가 진동 부여 선택지를 잃는다(M150). 세 선택지(진동 부여 스킬 · 진폭 변환/진동 폭발/진폭 얽힘을 일으키는 스킬 · 나태 스킬) 중 하나로 적는다.",
+    "effects": [
+      { "kind": "effect", "requires": [] },
+      {
+        "kind": "effect",
+        "requires": [
+          {
+            "type": "anyOf",
+            "options": [
+              { "type": "skillKeyword", "keywords": ["Vibration"], "includesSpecial": false },
+              { "type": "skill", "sins": ["SLOTH"] },
+              { "type": "skillMechanic", "mechanics": ["FusionVibration", "Switch_Vibration", "VibrationExplosion"] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "9213": {
     "_source": "「혈귀인 모든 아군」·「아군에 <혈귀>가 있다면」은 인격 특성 혈귀(BLOODFIEND)를 묻는데 요구 종류에 특성이 없다. 혈귀 특성 인격은 라만차랜드 5인(10310·10513·10911·11111·11210)이고 그 5인이 정확히 혈찬을 소모하는 인격이다(public/data/identities.json, 2026-10-16 확인) — 그래서 혈찬 스킬 요구로 적는다.",
     "effects": [

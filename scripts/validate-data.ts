@@ -1445,7 +1445,7 @@ function checkGiftEffects(gifts: Gift[], identities: Identity[], enums: Enums): 
   }
   for (const gift of gifts) {
     for (const effect of gift.effects ?? []) {
-      for (const req of effect.requires) {
+      for (const req of [...effect.requires, ...(effect.hints ?? [])]) {
         if (req.type === 'faction') {
           for (const f of req.factions) {
             if (!factionIds.has(f)) err('reference', `gift ${gift.id} effect names unknown faction "${f}"`);

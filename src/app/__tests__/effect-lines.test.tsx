@@ -14,10 +14,10 @@ const data = loadGameDataFromDisk();
 const indexes = buildIndexes(data);
 const PIPE = indexes.giftById.get(9767)!; // 흑염 파이프: slot heading, two plain effects, Pride Pierce
 
-function renderFor(deployed: number[]) {
+function renderFor(deployed: number[], gift = PIPE) {
   const stats = analyseDeck(deployed, indexes, data.rules.deployment, deployed);
-  const report = giftEffectsReport(PIPE, stats, indexes.identityById);
-  const text = renderEffect(PIPE.desc, data.enums, 'ko');
+  const report = giftEffectsReport(gift, stats, indexes.identityById);
+  const text = renderEffect(gift.desc, data.enums, 'ko');
   render(
     <EffectLines
       text={text}
@@ -71,6 +71,27 @@ describe('effect lines (M129, chips M131)', () => {
       expect(effect).not.toHaveAttribute('aria-describedby');
     }
     expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
+  it('names who could set off a hinted explosion, only when someone can (M150)', () => {
+    // Arrange: 진실의 종 (9091) asks nothing, hints explosion skills; 10216 explodes, 10101 does not.
+    const bell = indexes.giftById.get(9091)!;
+    const exploder = indexes.identityById.get(10216)!;
+    // Act
+    const [withIt] = renderFor([10216], bell);
+    // Assert: still active and unconditional, the hint follows with the chip.
+    expect(withIt).toHaveAttribute('data-active', 'true');
+    const who = within(withIt!).getByTestId('effect-who');
+    expect(who).toHaveTextContent('조건 없음');
+    const hint = within(who).getByTestId('effect-hint');
+    expect(hint).toHaveTextContent('참고: 진동 폭발 스킬');
+    expect(hint).toHaveTextContent(exploder.sinner.ko);
+  });
+
+  it('draws no hint when no deployed identity has the skill', () => {
+    const [effect] = renderFor([10101], indexes.giftById.get(9091)!);
+    expect(effect).toHaveAttribute('data-active', 'true');
+    expect(within(effect!).queryByTestId('effect-hint')).toBeNull();
   });
 
   it('leaves the text plain when it does not split into the judged effects', () => {

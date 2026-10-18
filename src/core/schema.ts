@@ -100,6 +100,14 @@ export const conditionTierSchema = z.object({
 });
 
 export const conditionScopeSchema = z.enum(['deployed', 'formation', 'reserve']);
+
+/**
+ * What a base skill sets off rather than inflicts (M150): [진동 폭발], [진폭 변환], [진폭 얽힘] —
+ * the game's buff ids, as the skill text writes them.
+ */
+export const SKILL_MECHANICS = ['VibrationExplosion', 'Switch_Vibration', 'FusionVibration'] as const;
+export const skillMechanicSchema = z.enum(SKILL_MECHANICS);
+export type SkillMechanic = z.infer<typeof skillMechanicSchema>;
 export type ConditionScope = z.infer<typeof conditionScopeSchema>;
 
 export const conditionSchema = z.discriminatedUnion('type', [
@@ -222,6 +230,12 @@ const singleRequirementSchemas = [
    * [진동] 횟수를 소모하는 스킬」, 「자신에게 [화상]을 부여하는 기본 공격 스킬」 (M129). `skillKeyword`
    * counts only what lands on an enemy, so these are read from the skill's `self` facts.
    */
+  /**
+   * A base skill that sets off any of these — 「스킬로 [진동 폭발] 시」, 「[진폭 변환] … 효과를 보유한
+   * 스킬」 (M150). Only a condition that names the skill is one (owner's call): 「[진동 폭발]된 적」 and
+   * 「[진폭 변환] 시」 can come from a gift too, so they stay no requirement.
+   */
+  z.object({ type: z.literal('skillMechanic'), mechanics: z.array(skillMechanicSchema).min(1) }),
   z.object({
     type: z.literal('selfKeyword'),
     keywords: z.array(statusKeywordSchema).min(1),
@@ -263,6 +277,11 @@ export type SingleRequirement = Exclude<EffectRequirement, { type: 'anyOf' }>;
 export const giftEffectSchema = z.object({
   kind: z.enum(['effect', 'gate', 'note']),
   requires: z.array(effectRequirementSchema),
+  /**
+   * Shown with who meets them, never required (M150): a condition a gift can meet as well as a skill —
+   * 「[진동 폭발]이 적용된 적」 — names the skills that help without asking for them.
+   */
+  hints: z.array(effectRequirementSchema).optional(),
   unclassified: z.literal(true).optional(),
 });
 
@@ -463,6 +482,8 @@ export const identitySkillSchema = z.object({
   self: z
     .partialRecord(statusKeywordSchema, z.object({ gain: z.boolean(), consume: z.boolean() }))
     .optional(),
+  /** What the skill sets off (M150, `skillMechanic`) — read from its Korean text. Absent when none. */
+  mechanics: z.array(skillMechanicSchema).optional(),
 });
 
 export type IdentitySkill = z.infer<typeof identitySkillSchema>;

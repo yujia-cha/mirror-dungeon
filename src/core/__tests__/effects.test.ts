@@ -318,6 +318,56 @@ describe('M129 follow-up: 하나라도, 자기 키워드, E.G.O', () => {
     expect(identityMeets(unknown, consume)).toBeNull();
   });
 
+  it('reads 「스킬로 [진동 폭발]」 from the skills that set it off, with their slots (M150)', () => {
+    // Arrange: S2 explodes; another identity only inflicts 진동; a third has no per-skill facts.
+    const exploder = identity(1, {
+      skills: [skill(1), skill(2, { mechanics: ['VibrationExplosion'] })],
+    });
+    const tremor = identity(2, {
+      skills: [skill(1, { keywords: { Vibration: { base: true, special: false } } })],
+    });
+    const bare = identity(3, { skills: undefined });
+    const explode: EffectRequirement = { type: 'skillMechanic', mechanics: ['VibrationExplosion'] };
+    const convert: EffectRequirement = {
+      type: 'skillMechanic',
+      mechanics: ['Switch_Vibration', 'FusionVibration'],
+    };
+    const deck = deckOf([exploder, tremor]);
+
+    // Act
+    const report = giftEffectsReport(gift([effect(explode)]), deck.stats, deck.byId);
+
+    // Assert
+    expect(identityMeets(exploder, explode)).toBe(true);
+    expect(identityMeets(exploder, convert)).toBe(false);
+    expect(identityMeets(tremor, explode)).toBe(false);
+    expect(identityMeets(bare, explode)).toBeNull();
+    expect(report.relevance).toBe('deck');
+    expect(report.effects[0]!.requirements[0]!.matches).toEqual([{ id: 1, slots: [2] }]);
+  });
+
+  it('shows who could set off a hinted explosion without ever requiring it (M150)', () => {
+    // Arrange: 「[진동 폭발]이 적용된 적에게 …」 — no requirement, a hint of explosion skills.
+    const explode: EffectRequirement = { type: 'skillMechanic', mechanics: ['VibrationExplosion'] };
+    const bell = gift([{ kind: 'effect', requires: [], hints: [explode] }]);
+    const exploder = identity(1, { skills: [skill(1), skill(2, { mechanics: ['VibrationExplosion'] })] });
+    const withIt = deckOf([exploder, identity(2)]);
+    const without = deckOf([identity(2)]);
+
+    // Act
+    const yes = giftEffectsReport(bell, withIt.stats, withIt.byId);
+    const no = giftEffectsReport(bell, without.stats, without.byId);
+
+    // Assert: the hint lists who has the skill; the effect stays unconditional either way.
+    expect(yes.effects[0]!.hints[0]!.matches).toEqual([{ id: 1, slots: [2] }]);
+    expect(no.effects[0]!.hints[0]!.have).toBe(0);
+    for (const report of [yes, no]) {
+      expect(report.effects[0]!.usable).toBe(true);
+      expect(report.effects[0]!.unconditional).toBe(true);
+    }
+    expect([yes.relevance, no.relevance]).toEqual(['free', 'free']);
+  });
+
   it('puts a gift held only by an E.G.O skill condition in a group of its own, even with nobody deployed', () => {
     // Arrange: an 조각 — 「…E.G.O 스킬 사용 시 발동」, then an effect.
     const shard = gift([{ kind: 'gate', requires: [{ type: 'egoSkill' }] }, effect()]);

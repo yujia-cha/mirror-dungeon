@@ -40,6 +40,7 @@ import {
   type GiftEffect,
   type IdentityKeywordId,
   type Sin,
+  type SkillMechanic,
 } from '../../src/core/schema.ts';
 import { RUNTIME_PLACEHOLDER, stripRichText } from '../../src/core/text.ts';
 
@@ -95,11 +96,11 @@ const ATTACK_BY_WORD: Record<string, AttackType> = { Slash: 'Slash', Penetrate: 
 
 /**
  * Buff ids that are read by a dedicated rule rather than as an identity buff: coin shapes, the
- * per-type and per-sin power buffs, the vibration conversions a vibration skill performs, retreat
- * and discard (battle mechanics), and the accumulators of 혈찬.
+ * per-type and per-sin power buffs, what a vibration skill sets off (`scanMechanics`), retreat and
+ * discard (battle mechanics), and the accumulators of 혈찬.
  */
 const DEDICATED_IDS =
-  /^(?:SuperCoin|(?:Slash|Penetrate|Hit|Crimson|Scarlet|Amber|Shamrock|Azure|Indigo|Violet)(?:Damage|Result)Up|Switch_Vibration|FusionVibration|RetreatForCommon|Discard|BloodDinner_\w+)$/;
+  /^(?:SuperCoin|(?:Slash|Penetrate|Hit|Crimson|Scarlet|Amber|Shamrock|Azure|Indigo|Violet)(?:Damage|Result)Up|Switch_Vibration|FusionVibration|VibrationExplosion|RetreatForCommon|Discard|BloodDinner_\w+)$/;
 
 // Private-use characters stand in for a keyword run (「[Combustion] 위력, 횟수 또는 특수 화상」)
 // once it has been read, so the rules below see one token and no inner commas.
@@ -177,6 +178,8 @@ interface Run {
 
 interface LineAnalysis {
   requires: EffectRequirement[];
+  /** Shown with who meets them, never required (M150). */
+  hints: EffectRequirement[];
   unclassified: boolean;
 }
 
@@ -191,6 +194,9 @@ function normalizeKeywords(text: string): string {
     (_, ko: string) => `[${KEYWORD_BY_KO.get(ko)!}]`,
   );
   out = out.replace(/(?<![가-힣])혈찬/g, '[BloodDinner]');
+  // 「진폭 변환, 진동 폭발, 진폭 얽힘 효과를 보유한 스킬」 (9015) and 「진동 폭발 부여 시」 (9091) name them bare.
+  for (const [ko, id] of MECHANIC_BY_KO)
+    out = out.replace(new RegExp(`(?<![가-힣\\[])${ko}`, 'g'), `[${id}]`);
   return out;
 }
 
@@ -613,6 +619,63 @@ function scanIdentities(text: string, ctx: EffectContext): EffectRequirement[] {
   return out;
 }
 
+const MECHANIC_BY_KO: [string, SkillMechanic][] = [
+  ['진동 폭발', 'VibrationExplosion'],
+  ['진폭 변환', 'Switch_Vibration'],
+  ['진폭 얽힘', 'FusionVibration'],
+];
+/** 「[VibrationEcho]으로 」, 「특수 진동으로 」 — the type a conversion turns into, not 「처음으로」·「효과로」. */
+const CONVERTS_TO = new RegExp(`(?:\\]|${RUN_CHAR}|진동)\\s*(?:으로|로)\\s*$`);
+const MECHANIC_TOKEN = /\[(VibrationExplosion|Switch_Vibration|FusionVibration)\]/g;
+/** 「[A], [B] 또는 [C]」 — the rest of a list of them after the first. */
+const MECHANIC_LIST =
+  /^(?:\s*(?:,|또는|혹은|이나|및)\s*\[(?:VibrationExplosion|Switch_Vibration|FusionVibration)\])*/;
+
+/** After a list of conversions: what makes it a condition, not the gift converting (「…을 사용하면」, 9167). */
+const CONDITION_TAIL =
+  /^\s*(?:(?:을|를)\s*사용|시킬|시키|상태로|시(?![가-힣])|효과(?:를|을)?\s*(?:보유한|가진))/;
+/** After [진동 폭발]: the gift setting it off (「[진동 폭발] 효과 부여」, 「대상에게 [진동 폭발]」). */
+const EXPLOSION_ACTION = /^\s*(?:$|[.(]|효과\s*부여)/;
+
+/**
+ * What a skill sets off, in condition position (M150): [진동 폭발], [진폭 변환], [진폭 얽힘]. A list of
+ * them is one requirement, spanning the list. The owner's rules:
+ * - A gift sets off [진동 폭발] too (폭우 explodes every enemy), so it is a requirement only when the
+ *   condition says a skill or an ally does it — 「아군이 스킬로 [진동 폭발] 시」, 「자신의 스킬 효과로 …」,
+ *   「…2 이상인 아군이 [진동 폭발] 시」, 「[진동 폭발] 효과를 보유한 스킬」. Otherwise (「[진동 폭발]이
+ *   적용된 적」, 「…을 3회 부여하였을 경우」) it is a hint: shown with who could set it off, never required.
+ * - [진폭 변환]·[진폭 얽힘] are a requirement unless the gift converts (「[X]로 [진폭 변환]」 with no
+ *   condition after it) — 「[진폭 변환], [진폭 얽힘] 시」 counts.
+ */
+function scanMechanics(t: string, hits: Hit[], hints: EffectRequirement[]): void {
+  const taken: number[] = [];
+  for (const m of t.matchAll(MECHANIC_TOKEN)) {
+    if (taken.some((end) => m.index < end)) continue;
+    const listEnd = m.index + m[0].length + MECHANIC_LIST.exec(t.slice(m.index + m[0].length))![0].length;
+    taken.push(listEnd);
+    const after = t.slice(listEnd);
+    const converted =
+      CONVERTS_TO.test(t.slice(Math.max(0, m.index - 8), m.index)) && !CONDITION_TAIL.test(after);
+    if (converted) continue;
+    const listed = [...t.slice(m.index, listEnd).matchAll(MECHANIC_TOKEN)].map((x) => x[1] as SkillMechanic);
+    const clause = t.slice(0, m.index).split(/[.。]/).pop()!;
+    const bySkill = /스킬\s*(?:로|을\s*사용하여|효과로)/.test(clause);
+    const ofSkill = /^\s*(?:효과(?:를|을)?\s*)?(?:보유한|가진)[^.,]*?스킬/.test(after);
+    const byAlly = /(?:아군|자신|인격)(?:이|가)\s*$/.test(clause);
+    const required = bySkill || ofSkill || byAlly;
+    const mechanics = required ? listed : listed.filter((x) => x !== 'VibrationExplosion');
+    if (!required && mechanics.length < listed.length && !EXPLOSION_ACTION.test(after)) {
+      hints.push({ type: 'skillMechanic', mechanics: ['VibrationExplosion'] });
+    }
+    if (mechanics.length === 0) continue;
+    hits.push({
+      start: m.index,
+      end: listEnd,
+      req: { type: 'skillMechanic', mechanics: [...new Set(mechanics)].sort() },
+    });
+  }
+}
+
 /** An identity buff in condition position — 「[LegStrength]가 있으면」, 「보유한 [VibrationIgnition] 1당」. */
 function scanIdentityBuffs(t: string, hits: Hit[], ctx: EffectContext): void {
   const COND_AFTER =
@@ -620,16 +683,6 @@ function scanIdentityBuffs(t: string, hits: Hit[], ctx: EffectContext): void {
   for (const m of t.matchAll(/\[([A-Za-z0-9_]+)\]/g)) {
     const id = m[1]!;
     const end = m.index + m[0].length;
-    if (/^Switch_Vibration$|^FusionVibration$/.test(id)) {
-      // A vibration conversion is something a vibration skill does; a gift doing it (「[X]로 [Switch_Vibration]」) is not a condition.
-      if (/로\s*$/.test(t.slice(Math.max(0, m.index - 3), m.index))) continue;
-      hits.push({
-        start: m.index,
-        end,
-        req: { type: 'skillKeyword', keywords: ['Vibration'], includesSpecial: false },
-      });
-      continue;
-    }
     if (/^BloodDinner_/.test(id)) {
       hits.push({
         start: m.index,
@@ -697,6 +750,8 @@ function analyzeLine(text: string, bullets: readonly string[], ctx: EffectContex
   scanDefense(t, hits);
   if (scanFactions(t, hits, ctx)) unclassified = true;
   scanIdentityBuffs(t, hits, ctx);
+  const hints: EffectRequirement[] = [];
+  scanMechanics(t, hits, hints);
   scanDiscard(t, hits);
   if (UNCLASSIFIED.some((re) => re.test(scanText))) unclassified = true;
 
@@ -750,7 +805,14 @@ function analyzeLine(text: string, bullets: readonly string[], ctx: EffectContex
     }
   }
 
-  return { requires: normalizeRequirements(requires), unclassified };
+  const required = normalizeRequirements(requires);
+  // A hint the line already requires (「아군이 스킬로 [진동 폭발] 시 [진동 폭발]마다」) says nothing more.
+  const shown = normalizeRequirements(hints).filter(
+    (hint) =>
+      hint.type !== 'skillMechanic' ||
+      !required.some((r) => JSON.stringify(r).includes('VibrationExplosion')),
+  );
+  return { requires: required, hints: shown, unclassified };
 }
 
 /**
@@ -853,6 +915,15 @@ function mergeSameKind(reqs: readonly SingleRequirement[]): SingleRequirement | 
     case 'shape':
     case 'egoSkill':
       return reqs.every((r) => JSON.stringify(r) === JSON.stringify(reqs[0])) ? reqs[0]! : null;
+    case 'skillMechanic':
+      return {
+        type,
+        mechanics: [
+          ...new Set(
+            (reqs as Extract<SingleRequirement, { type: 'skillMechanic' }>[]).flatMap((r) => r.mechanics),
+          ),
+        ].sort(),
+      };
     case 'selfKeyword': {
       const all = reqs as Extract<SingleRequirement, { type: 'selfKeyword' }>[];
       if (!all.every((r) => r.verb === all[0]!.verb)) return null;
@@ -876,6 +947,7 @@ const TYPE_ORDER: EffectRequirement['type'][] = [
   'shape',
   'defense',
   'selfKeyword',
+  'skillMechanic',
   'egoSkill',
   'anyOf',
 ];
@@ -1033,6 +1105,7 @@ export function parseEffects(rawKo: string, ctx: EffectContext): ParsedEffects {
 
     const analysis = analyzeLine(head, block.bullets, ctx);
     const own = analysis.unclassified ? [] : analysis.requires;
+    const hints = analysis.unclassified || analysis.hints.length === 0 ? {} : { hints: analysis.hints };
     const unclassified = analysis.unclassified || headingUnresolved;
 
     // 「…을 부여하는 인격이 편성된 수에 따라 기프트 효과 강화」: with steps below it, the steps carry the
@@ -1063,7 +1136,12 @@ export function parseEffects(rawKo: string, ctx: EffectContext): ParsedEffects {
       const reqs = normalizeRequirements([...section, ...own]);
       if (!anyEffect) {
         return emit(
-          { kind: 'gate', requires: reqs, ...(unclassified ? { unclassified: true as const } : {}) },
+          {
+            kind: 'gate',
+            requires: reqs,
+            ...hints,
+            ...(unclassified ? { unclassified: true as const } : {}),
+          },
           line,
         );
       }
@@ -1080,7 +1158,10 @@ export function parseEffects(rawKo: string, ctx: EffectContext): ParsedEffects {
     // A line that strengthens the one above it is not what a later 「해당 …」 line refers to.
     if (!STRENGTHEN_RE.test(head)) previous = requires;
     anyEffect = true;
-    emit({ kind: 'effect', requires, ...(unclassified ? { unclassified: true as const } : {}) }, line);
+    emit(
+      { kind: 'effect', requires, ...hints, ...(unclassified ? { unclassified: true as const } : {}) },
+      line,
+    );
   });
 
   return { effects, lines };
