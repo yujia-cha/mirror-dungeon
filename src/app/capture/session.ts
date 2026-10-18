@@ -49,6 +49,7 @@ import {
   paceFrame,
   paceLateness,
   paceRead,
+  isLoadSample,
   paceStats,
   paceTick,
   refreshFor,
@@ -634,7 +635,8 @@ export class CaptureSession {
     const now = performance.now();
     this.stats.reads += 1;
     this.stats.readMs += now - started;
-    this.setPace(paceRead(this.pace, now, mode, now - started));
+    if (isLoadSample(mode, frame?.partial === true))
+      this.setPace(paceRead(this.pace, now, mode, now - started));
     // A popup read that found nothing says nothing of the screen; any other read names it, or none.
     if (frame && !frame.partial) this.lastScreen = frame.screen;
     this.loop = finished(

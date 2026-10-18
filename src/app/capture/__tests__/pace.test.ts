@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isLoadSample,
   BASE_REFRESH,
   followFrames,
   initialPace,
@@ -317,5 +318,18 @@ describe('paceStats', () => {
     for (let i = 0; i < 20; i++) s = paceFrame(s, i * 1000, 1000);
     // Assert
     expect(s.level).toBe(0);
+  });
+});
+
+describe('isLoadSample (M146)', () => {
+  it('samples every full read', () => {
+    expect(isLoadSample('full', false)).toBe(true);
+    expect(isLoadSample('full', true)).toBe(true);
+  });
+
+  it('samples a popup read only when it found no popup', () => {
+    // Arrange / Act / Assert: the title-only scan is the cost of looking; a found popup read the name too.
+    expect(isLoadSample('popup', true)).toBe(true);
+    expect(isLoadSample('popup', false)).toBe(false);
   });
 });

@@ -2216,6 +2216,21 @@
 - en: Once {name} is saved, clear the record on this device. That one file is all you hand over.
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
+### diagSavedPromptParts
+- ko: {n}개 파일로 나눠 받았습니다(각 {mb}MB 이하): {names}. 모두 저장했으면 기기의 기록을 지우세요. 받지 못한 파일이 있으면 지우기 전에 다시 내보내세요.
+- en: Exported in {n} files ({mb} MB or less each): {names}. Once all are saved, clear the record on this device. If one did not arrive, export again before clearing.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagSessionOver
+- ko: 기록이 많아 1번 파일이 {mb}MB를 넘습니다. 그 파일에 기록 전부가 들어 있어 나눌 수 없습니다.
+- en: There is so much recorded that part 1 is over {mb} MB. It holds the whole record and cannot be split.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
+### diagSplitHint
+- ko: 약 {n}개 파일로 나눠 받습니다(각 {mb}MB 이하). 브라우저가 여러 파일 다운로드를 허용할지 물으면 허용하세요.
+- en: This comes in about {n} files ({mb} MB or less each). If the browser asks whether to allow several downloads, allow it.
+- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
+
 ### diagClearExported
 - ko: 기록 지우기
 - en: Clear the record
@@ -2257,8 +2272,8 @@
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
 ### diagWhere
-- ko: 보낼 곳: 내보낸 zip을 Claude Code 개발 세션에 첨부하고 「진단 기록 분석해 줘」라고 보내세요. 직접 돌릴 때는 개발 저장소의 local-fixtures/sessions/에 넣고 npm run capture:feedback을 실행합니다. 게임 화면이 들어 있으니 이슈·채팅방 같은 공개된 곳에는 올리지 마세요.
-- en: Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. To run it yourself, put it in local-fixtures/sessions/ of the development repository and run npm run capture:feedback. It contains game screens, so keep it out of public places such as issues and chat rooms.
+- ko: 보낼 곳: 내보낸 zip을 Claude Code 개발 세션에 첨부하고 「진단 기록 분석해 줘」라고 보내세요. 여러 파일로 나눠 받았으면 전부 첨부하세요 — 1번 파일(part1)은 꼭 있어야 합니다. 직접 돌릴 때는 개발 저장소의 local-fixtures/sessions/에 넣고 npm run capture:feedback에 그 파일들이나 폴더를 주어 실행합니다. 게임 화면이 들어 있으니 이슈·채팅방 같은 공개된 곳에는 올리지 마세요.
+- en: Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. If it came in several files, attach them all — part 1 (part1) is required. To run it yourself, put them in local-fixtures/sessions/ of the development repository and run npm run capture:feedback on the files or their folder. It contains game screens, so keep it out of public places such as issues and chat rooms.
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
 ## 피드백 보내기 (⋯ 메뉴와 그 창)

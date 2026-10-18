@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
-import { diagnosticsBundleSchema } from '../src/core/schema.ts';
+import { diagnosticsBundleSchema, diagPartSchema } from '../src/core/schema.ts';
 import { shareHash } from './share.ts';
 
 /**
@@ -172,19 +172,27 @@ test('the owner records, exports one zip with frames, and clears the device (M11
   if (process.env.DIAG_ZIP_OUT) await download.saveAs(process.env.DIAG_ZIP_OUT);
   const files = unzipSync(new Uint8Array(readFileSync((await download.path())!)));
   const bundle = diagnosticsBundleSchema.parse(JSON.parse(strFromU8(files['session.json']!)));
+  // M146: a small export stays one file, saying it is part 1 of 1 and listing its frames.
+  const part = diagPartSchema.parse(JSON.parse(strFromU8(files['part.json']!)));
+  expect(part).toMatchObject({ bundleId: bundle.bundleId, exportedAt: bundle.exportedAt, part: 1, total: 1 });
+  await expect(diag.getByTestId('diag-saved')).toHaveAttribute('data-parts', '1');
+  await expect(diag.getByTestId('diag-split')).toHaveCount(0);
   const kinds = new Set(bundle.records.map((r) => r.kind));
   expect([...kinds]).toEqual(expect.arrayContaining(['session', 'read', 'applied', 'undo']));
   const popupRead = bundle.records.find((r) => r.kind === 'read' && r.events.length > 0);
   expect(popupRead?.kind === 'read' && popupRead.trace.length).toBeGreaterThan(0);
-  expect(popupRead?.kind === 'read' && popupRead.frameId).toBeTruthy();
   const frames = Object.keys(files).filter((name) => name.startsWith('frames/'));
   expect(frames.length).toBe(bundle.frames.length);
   expect(frames.length).toBeGreaterThan(0);
+  expect([...part.frames].sort()).toEqual([...frames].sort());
   expect(files[frames[0]!]!.slice(0, 2)).toEqual(new Uint8Array([0xff, 0xd8])); // JPEG
   // M134: the undone event's frame is evidence, and a filmstrip of tick previews surrounds it
-  // (ended by Stop).
+  // (ended by Stop). When the popup came while a full read was busy, it was read from the queue
+  // (M141): a crop, which keeps no frame by design — the filmstrip holds its ticks. Which of the
+  // two happens is the timing of the paint against the read in flight.
   if (popupRead?.kind !== 'read') throw new Error('no popup read');
-  expect(bundle.frames.find((f) => f.id === popupRead.frameId)?.class).toBe('evidence');
+  if (popupRead.queued) expect(popupRead.frameId).toBeNull();
+  else expect(bundle.frames.find((f) => f.id === popupRead.frameId)?.class).toBe('evidence');
   expect(popupRead.busyTicks).toBeGreaterThanOrEqual(0);
   const strip = bundle.records.find((r) => r.kind === 'strip');
   expect(strip?.kind === 'strip' && strip.reads).toContain(popupRead.t);

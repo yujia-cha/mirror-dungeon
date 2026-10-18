@@ -50,6 +50,7 @@ import {
   paceDrop,
   paceLateness,
   paceRead,
+  isLoadSample,
   paceTick,
   refreshFor,
   type IntervalRange,
@@ -406,7 +407,7 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
     pending = null;
     noteLevel(lands);
     // The page measures a read from its start to when it lands — a stall in between counts.
-    pace = paceRead(pace, lands, mode, lands - at);
+    if (isLoadSample(mode, result.frame.partial === true)) pace = paceRead(pace, lands, mode, lands - at);
     if (!result.frame.partial) lastScreen = result.frame.screen;
     const folded = trackFrame(tracker, result.frame);
     tracker = folded.state;

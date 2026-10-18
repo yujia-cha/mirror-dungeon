@@ -1,6 +1,6 @@
 /**
  * The owner's diagnostics wired into the app (M112): the recorder, fed by the screen reader's
- * hooks and by the run itself, and the export that zips it.
+ * hooks and by the run itself, and the export that zips it (in parts past 25 MB — M146).
  *
  * Shown only to the owner — `#diag` in the address turns `ui.diagEnabled` on (and is dropped from
  * the address at once); nothing is recorded until they tick 「진단 기록」. Route feedback (floors
@@ -23,6 +23,7 @@ import { downloadBlob } from '../../lib/download.ts';
 import { usePlan } from '../../shell/plan-context.ts';
 import { useApp } from '../../store.ts';
 import type { CaptureHooks } from '../useCapture.ts';
+import { downloadParts, planExport } from './export-parts.ts';
 import { DiagRecorder, type DiagStats } from './recorder.ts';
 import { FRESH_RUN, runStep, type RunMemory } from './run-records.ts';
 import { openDiagStore } from './store.ts';
@@ -35,7 +36,15 @@ const EMPTY: DiagStats = {
   lastExportAt: null,
   trimmedFrames: 0,
   full: false,
+  parts: 1,
 };
+
+/** What an export handed to the browser: its files in order, part 1 first (M146). */
+export interface ExportResult {
+  names: string[];
+  /** `session.json` alone was over a part's limit: part 1 holds it anyway. */
+  sessionOver: boolean;
+}
 
 /** `#diag` in the address opens the owner's section; the hash is consumed so a reload is clean. */
 export function consumeDiagHash(): boolean {
@@ -219,10 +228,11 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
   );
 
   /**
-   * Zip everything stored and hand it to the browser as a download. The export is marked only
-   * after the zip was built and handed over (M116); any failure throws and marks nothing.
+   * Zip everything stored — in parts of at most 25 MB when it is bigger (M146) — and hand each to
+   * the browser as a download, one after another. The export is marked only after the last part
+   * was built and handed over (M116); any failure throws and marks nothing.
    */
-  const exportZip = useCallback(async (): Promise<string> => {
+  const exportZip = useCallback(async (): Promise<ExportResult> => {
     if (!recorder) throw new Error('diagnostics are not open');
     const layoutReference = await fetch(`${import.meta.env.BASE_URL}data/capture-layout.json`)
       .then(async (r) => captureLayoutSchema.parse(await r.json()).reference)
@@ -232,16 +242,18 @@ export function useDiagnostics(capture: { status: () => string; applying: () => 
       season: latest.current.data.meta.dungeon.id,
       layoutReference,
     });
-    const { zipSync, strToU8 } = await import('fflate');
-    const files: Record<string, Uint8Array | [Uint8Array, { level: 0 }]> = {
-      'session.json': strToU8(JSON.stringify(bundle, null, 1)),
-    };
-    for (const frame of frames)
-      // JPEGs are compressed already; storing them saves the time a second pass would waste.
-      files[`frames/${frame.id}.jpg`] = [new Uint8Array(await frame.blob.arrayBuffer()), { level: 0 }];
-    downloadBlob(new Blob([zipSync(files) as Uint8Array<ArrayBuffer>], { type: 'application/zip' }), name);
+    const plan = await planExport({
+      bundleId: bundle.bundleId,
+      exportedAt: bundle.exportedAt,
+      session: JSON.stringify(bundle, null, 1),
+      frames,
+      name,
+    });
+    await downloadParts(plan, (data, part) =>
+      downloadBlob(new Blob([data as Uint8Array<ArrayBuffer>], { type: 'application/zip' }), part),
+    );
     await recorder.markExported(mark);
-    return name;
+    return { names: plan.names, sessionOver: plan.sessionOver };
   }, [recorder]);
 
   const clearExported = useCallback(

@@ -1036,6 +1036,23 @@ export const diagnosticsBundleSchema = z.object({
   ),
 });
 export type DiagnosticsBundle = z.infer<typeof diagnosticsBundleSchema>;
+
+/**
+ * One part of a diagnostics export split to fit an attachment limit (M146): every part is a zip of
+ * its own carrying this as `part.json`, and part 1 also carries `session.json`. `frames` are the
+ * frame files (`frames/{id}.jpg`) in this part. A bundle exported before M146 has no `part.json`
+ * and is one whole part.
+ */
+export const DIAG_PART_FILE = 'part.json';
+export const diagPartSchema = z.object({
+  bundleId: z.string(),
+  /** With `bundleId`, which export this is: two exports of one recording share the bundle id. */
+  exportedAt: z.number(),
+  part: z.number().int().min(1),
+  total: z.number().int().min(1),
+  frames: z.array(z.string()),
+});
+export type DiagPart = z.infer<typeof diagPartSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];
 
 /**

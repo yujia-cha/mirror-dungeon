@@ -2,10 +2,16 @@
  * Read back an owner's diagnostics export (M113).
  *
  *   npm run capture:feedback -- path/to/md-diagnostics-20261016-1430.zip
+ *   npm run capture:feedback -- md-diagnostics-20261016-1430-part1of3.zip …-part2of3.zip …
+ *   npm run capture:feedback -- path/to/folder-with-the-part-zips
  *   npm run capture:feedback -- local-fixtures/sessions/<id> --reread
  *
- * A zip is unpacked into `local-fixtures/sessions/<bundleId>/` (gitignored: the frames are game
- * screens and are never committed), then the folder gets:
+ * A zip — or the parts of a split export (M146), given as files or as a folder holding them — is
+ * unpacked into `local-fixtures/sessions/<bundleId>/` (gitignored: the frames are game screens and
+ * are never committed), the parts' frames merged into one `frames/`. `part.json` in each part says
+ * which export and which part it is: zips of different exports are refused, and missing parts are
+ * reported (and written to `parts.json` in the folder) while the rest is read — part 1 holds
+ * `session.json` and cannot be missing. Then the folder gets:
  *
  * - `report.md`: what the reader read, what it got wrong (undone) and missed (changed by hand
  *   while reading), with the OCR lines and the frames for each; and how the route compared with
@@ -25,7 +31,7 @@
  *
  * Local only.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { unzipSync } from 'fflate';
 import { prepareSlot, type IconRef } from '../src/app/capture/match-icon.ts';
@@ -38,10 +44,12 @@ import { decodeImage, loadIconRefs, LocalOcr, titleBarOf } from './lib/capture-l
 import {
   formatReport,
   labelsFrom,
+  mergeParts,
   parseBundle,
   previewIds,
   recognitionReport,
   routeReport,
+  type PartsReport,
 } from './lib/capture-feedback.ts';
 import { hasFlag } from './lib/io.ts';
 
@@ -50,36 +58,76 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-/** Every file of a folder, keyed by its path inside it (the shape `unzipSync` gives). */
+/** Every file of an unpacked folder, keyed by its path inside it (the shape `unzipSync` gives). */
 function readFolder(dir: string): Record<string, Uint8Array> {
   const files: Record<string, Uint8Array> = {};
-  const session = join(dir, 'session.json');
-  if (!existsSync(session)) fail(`no session.json in ${dir}`);
-  files['session.json'] = readFileSync(session);
+  files['session.json'] = readFileSync(join(dir, 'session.json'));
   const frames = join(dir, 'frames');
   if (existsSync(frames))
     for (const name of readdirSync(frames)) files[`frames/${name}`] = readFileSync(join(frames, name));
   return files;
 }
 
+/** The zips the arguments name: zip files, and the zips directly inside a folder given. */
+function zipsOf(paths: readonly string[]): string[] {
+  return paths.flatMap((path) =>
+    statSync(path).isDirectory()
+      ? readdirSync(path)
+          .filter((name) => name.toLowerCase().endsWith('.zip'))
+          .sort()
+          .map((name) => join(path, name))
+      : [path],
+  );
+}
+
 async function main(): Promise<void> {
-  const arg = process.argv.slice(2).find((a) => !a.startsWith('--'));
-  if (!arg) fail('give the exported zip or an unpacked folder');
-  const path = resolve(arg);
-  if (!existsSync(path)) fail(`no such file or folder: ${path}`);
+  const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+  if (args.length === 0)
+    fail('give the exported zip (or all its parts, or their folder) or an unpacked folder');
+  const paths = args.map((arg) => resolve(arg));
+  for (const path of paths) if (!existsSync(path)) fail(`no such file or folder: ${path}`);
 
   let dir: string;
   let files: Record<string, Uint8Array>;
-  if (statSync(path).isDirectory()) {
-    dir = path;
+  let parts: PartsReport | null = null;
+  const [only] = paths;
+  if (paths.length === 1 && statSync(only!).isDirectory() && existsSync(join(only!, 'session.json'))) {
+    // A folder unpacked before: the parts it was merged from, if it was, are in `parts.json`.
+    dir = only!;
     files = readFolder(dir);
+    const saved = join(dir, 'parts.json');
+    if (existsSync(saved)) parts = JSON.parse(readFileSync(saved, 'utf8')) as PartsReport;
   } else {
-    files = unzipSync(new Uint8Array(readFileSync(path)));
+    const zips = zipsOf(paths);
+    if (zips.length === 0) fail(`no zip in ${paths.join(', ')}`);
+    let merged: ReturnType<typeof mergeParts>;
+    try {
+      merged = mergeParts(
+        zips.map((path) => ({ name: basename(path), files: unzipSync(readFileSync(path)) })),
+      );
+    } catch (error) {
+      fail((error as Error).message);
+    }
+    parts = merged.parts;
+    if (parts.missing.length > 0)
+      console.warn(
+        `capture-feedback: ⚠ missing ${parts.missing.map((n) => `part ${n}`).join(', ')} of ${parts.total} — reading what is there`,
+      );
+    if (!merged.files['session.json'])
+      fail(
+        `part 1 holds session.json and is missing; have ${parts.present.map((n) => `part ${n}`).join(', ')}`,
+      );
+    files = merged.files;
     const { bundle } = parseBundle(files);
     dir = resolve('local-fixtures/sessions', bundle.bundleId);
+    // A fresh folder: frames left from another export of the same recording would not match.
+    rmSync(join(dir, 'frames'), { recursive: true, force: true });
     mkdirSync(join(dir, 'frames'), { recursive: true });
     for (const [name, bytes] of Object.entries(files)) writeFileSync(join(dir, name), bytes);
-    console.log(`unpacked ${basename(path)} → ${dir}`);
+    const savedParts = join(dir, 'parts.json');
+    if (parts.total > 1) writeFileSync(savedParts, `${JSON.stringify(parts, null, 2)}\n`);
+    else rmSync(savedParts, { force: true });
+    console.log(`unpacked ${zips.map((z) => basename(z)).join(', ')} → ${dir}`);
   }
   const { bundle, frames } = parseBundle(files);
 
@@ -108,6 +156,7 @@ async function main(): Promise<void> {
     route,
     { certain: labels.certain.length, unconfirmed: labels.unconfirmed.length },
     name,
+    parts ? { report: parts, framesMissing: bundle.frames.length - frames.size } : null,
   );
   writeFileSync(join(dir, 'report.md'), report);
   console.log(report);

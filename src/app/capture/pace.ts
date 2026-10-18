@@ -200,7 +200,17 @@ export function paceLateness(state: PaceState, now: number, ms: number): PaceSta
   return assess({ ...state, lateness: keep(state.lateness, now, Math.max(0, ms)) }, now);
 }
 
-/** A read took `ms`; queued reads are popup reads. */
+/**
+ * Whether a finished read is a load sample (M146). Full reads always are. A popup read is one only
+ * when it found no popup: that is the title alone, the cost of looking. One that found a popup also
+ * read the name (and maybe the icon) — 120–270 ms on the owner's machine — and counting those
+ * raised the load level on every click-through.
+ */
+export function isLoadSample(mode: 'full' | 'popup', foundNoPopup: boolean): boolean {
+  return mode === 'full' || foundNoPopup;
+}
+
+/** A read took `ms`; queued reads are popup reads. Popup samples are title-only scans (`isLoadSample`). */
 export function paceRead(state: PaceState, now: number, mode: 'full' | 'popup', ms: number): PaceState {
   const next =
     mode === 'popup'

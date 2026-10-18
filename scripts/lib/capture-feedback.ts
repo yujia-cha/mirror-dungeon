@@ -14,7 +14,7 @@
  * not full size, so they are never labels and never re-read (`isPreview`).
  */
 import type { CaptureLayout, DiagnosticsBundle, DiagRecord } from '../../src/core/schema.ts';
-import { diagnosticsBundleSchema } from '../../src/core/schema.ts';
+import { DIAG_PART_FILE, diagnosticsBundleSchema, diagPartSchema } from '../../src/core/schema.ts';
 
 type Read = Extract<DiagRecord, { kind: 'read' }>;
 type Applied = Extract<DiagRecord, { kind: 'applied' }>;
@@ -75,6 +75,69 @@ export function parseBundle(files: Record<string, Uint8Array>): {
     if (bytes) frames.set(frame.id, bytes);
   }
   return { bundle, frames };
+}
+
+/** Which parts of a split export (M146) were given, and which are missing. */
+export interface PartsReport {
+  bundleId: string;
+  exportedAt: number;
+  total: number;
+  /** Part numbers given, from 1. */
+  present: number[];
+  missing: number[];
+}
+
+/**
+ * Merge the zips of one export (M146) into the files of one bundle, as `parseBundle` reads them.
+ * Each zip says which part it is in `part.json`; a zip without it is a whole export from before
+ * M146 (part 1 of 1, its bundle from `session.json`). Zips of different exports — another bundle,
+ * or the same recording exported again — are refused by name: their frames would not match.
+ * A part given twice counts once. Missing parts are reported, not refused: what is there is read.
+ */
+export function mergeParts(zips: readonly { name: string; files: Record<string, Uint8Array> }[]): {
+  files: Record<string, Uint8Array>;
+  parts: PartsReport;
+} {
+  if (zips.length === 0) throw new Error('no zip given');
+  const decode = (bytes: Uint8Array): unknown => JSON.parse(new TextDecoder().decode(bytes));
+  const described = zips.map(({ name, files }) => {
+    const part = files[DIAG_PART_FILE];
+    if (part) return { name, files, ...diagPartSchema.parse(decode(part)) };
+    const session = files['session.json'];
+    if (!session)
+      throw new Error(`${name}: neither ${DIAG_PART_FILE} nor session.json — not a diagnostics export`);
+    const { bundleId, exportedAt } = diagnosticsBundleSchema
+      .pick({ bundleId: true, exportedAt: true })
+      .parse(decode(session));
+    return { name, files, bundleId, exportedAt, part: 1, total: 1 };
+  });
+  const exports = new Set(described.map((d) => `${d.bundleId}@${d.exportedAt}`));
+  if (exports.size > 1)
+    throw new Error(
+      `the zips come from ${exports.size} different exports — give the parts of one: ${described
+        .map((d) => `${d.name} (bundle ${d.bundleId}, exported ${d.exportedAt}, part ${d.part}/${d.total})`)
+        .join(', ')}`,
+    );
+  const [first] = described;
+  const total = Math.max(...described.map((d) => d.total));
+  const files: Record<string, Uint8Array> = {};
+  const present = new Set<number>();
+  for (const d of [...described].sort((a, b) => a.part - b.part)) {
+    if (present.has(d.part)) continue;
+    present.add(d.part);
+    for (const [path, bytes] of Object.entries(d.files)) if (path !== DIAG_PART_FILE) files[path] = bytes;
+  }
+  const all = Array.from({ length: total }, (_, i) => i + 1);
+  return {
+    files,
+    parts: {
+      bundleId: first!.bundleId,
+      exportedAt: first!.exportedAt,
+      total,
+      present: all.filter((n) => present.has(n)),
+      missing: all.filter((n) => !present.has(n)),
+    },
+  };
 }
 
 export interface Misread {
@@ -462,6 +525,8 @@ export function formatReport(
   route: RouteReport,
   labels: { certain: number; unconfirmed: number },
   name: { gift: (id: number) => string; pack: (id: number) => string },
+  /** A split export's parts (M146), and how many of the bundle's frames are not in the files. */
+  parts: { report: PartsReport; framesMissing: number } | null = null,
 ): string {
   const lines: string[] = [];
   const when = (t: number) => new Date(t).toISOString().replace('T', ' ').slice(0, 19);
@@ -483,6 +548,15 @@ export function formatReport(
     }) · 미리 보기 ${rec.previewsKept}장`,
     '',
   );
+  if (parts && parts.report.total > 1)
+    lines.push(
+      `나눠 받은 파일 ${parts.report.present.length}/${parts.report.total}개${
+        parts.report.missing.length > 0
+          ? ` · ⚠ 빠진 파일: ${parts.report.missing.map((n) => `part${n}`).join(', ')} — 이미지 ${parts.framesMissing}장 없음`
+          : ''
+      }`,
+      '',
+    );
   lines.push('## 화면 인식', '');
   lines.push(`- 판독 ${rec.reads}회 · OCR ${rec.ocrCalls}회 · 평균 ${rec.meanReadMs}ms`);
   lines.push(`- 캡처 크기: ${captureGeometries(bundle).join(', ') || '기록 없음'}`);

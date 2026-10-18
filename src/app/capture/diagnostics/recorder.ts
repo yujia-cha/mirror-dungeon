@@ -25,8 +25,8 @@
  * later undone, a read that asked). So an hour's run keeps its first floors' misses. Previews are
  * a pool of their own with their own caps, oldest first.
  *
- * Lifecycle: everything stored goes into the next export, one zip. After exporting, the player
- * clears what that zip holds (the browser cannot say whether the file was saved, so it is never
+ * Lifecycle: everything stored goes into the next export — one zip, or several of at most 25 MB
+ * each when it is bigger (M146, `export-parts.ts`). After exporting, the player clears what it holds (the browser cannot say whether the file was saved, so it is never
  * cleared on its own); until then the stats say how much exported data is still on the device.
  * The export is marked only once the zip was handed to the browser (`markExported`, M116) — a
  * failed zip leaves nothing to clear.
@@ -44,6 +44,7 @@ import {
   type DiagnosticsBundle,
 } from '../../../core/schema.ts';
 import type { EnvReport, FrameSource, ReadReport, TickReport } from '../session.ts';
+import { planParts } from './export-parts.ts';
 import { memoryStore, type DiagStore, type StoredFrame } from './store.ts';
 
 /** Reads kept in memory for a hand-made change to look back on. */
@@ -97,6 +98,11 @@ export interface DiagStats {
   trimmedFrames: number;
   /** The record cap was reached: nothing more is recorded until the device is cleared. */
   full: boolean;
+  /**
+   * How many files the export would take by the frames alone (M146, `planParts`); the records
+   * may add one. More than one says the export comes in parts.
+   */
+  parts: number;
 }
 
 export interface ExportMark {
@@ -205,6 +211,7 @@ export class DiagRecorder {
       lastExportAt: this.exported?.at ?? null,
       trimmedFrames: this.trimmed,
       full: this.records >= MAX_RECORDS,
+      parts: planParts(0, this.frameList).parts.length,
     };
   }
 

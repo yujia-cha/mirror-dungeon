@@ -2,7 +2,9 @@
  * The owner's diagnostics, at the foot of the screen reader's popover (M112). Shown only after
  * `#diag` opened it (`ui.diagEnabled`); visitors never see it.
  *
- * The flow it is built around: record → export one zip → clear the device → hand over the zip.
+ * The flow it is built around: record → export → clear the device → hand over the zip. Past 25 MB
+ * the export comes in parts (M146, `export-parts.ts`): the section says so before (an estimate,
+ * with the browser's question about several downloads) and after (the files, part 1 first).
  * The browser cannot say whether the download was saved, so clearing is the player's step right
  * after the export, never automatic; until then the section says how much exported data is still
  * here. Where the zip goes is said on the section itself, not left to memory.
@@ -14,6 +16,8 @@ import { useState } from 'react';
 import { Download, Trash2 } from 'lucide-react';
 import { t } from '../i18n.ts';
 import { useCaptureSession } from '../capture/capture-context.ts';
+import { PART_MAX_BYTES } from '../capture/diagnostics/export-parts.ts';
+import type { ExportResult } from '../capture/diagnostics/useDiagnostics.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { Button, Checkbox, LinkButton } from '../components/ui.tsx';
 import { useApp } from '../store.ts';
@@ -32,8 +36,8 @@ export function DiagnosticsSection() {
   /** What is running: the buttons that touch the stored records wait for it. */
   const [busy, setBusy] = useState<'export' | 'clear' | null>(null);
   const [failed, setFailed] = useState(false);
-  /** The file just exported: the clean-up step shows until the player answers it. */
-  const [justExported, setJustExported] = useState<string | null>(null);
+  /** The files just exported: the clean-up step shows until the player answers it. */
+  const [justExported, setJustExported] = useState<ExportResult | null>(null);
   const [cleared, setCleared] = useState<{ records: number; frames: number } | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const { stats } = diagnostics;
@@ -128,7 +132,20 @@ export function DiagnosticsSection() {
           aria-label={t('diagSavedTitle', lang)}
           data-testid="diag-cleanup"
         >
-          <p className="text-body text-fg">{t('diagSavedPrompt', lang, { name: justExported })}</p>
+          <p className="text-body text-fg" data-testid="diag-saved" data-parts={justExported.names.length}>
+            {justExported.names.length === 1
+              ? t('diagSavedPrompt', lang, { name: justExported.names[0]! })
+              : t('diagSavedPromptParts', lang, {
+                  n: justExported.names.length,
+                  mb: megabytes(PART_MAX_BYTES),
+                  names: justExported.names.join(', '),
+                })}
+          </p>
+          {justExported.sessionOver ? (
+            <p className="text-body text-fg-muted">
+              {t('diagSessionOver', lang, { mb: megabytes(PART_MAX_BYTES) })}
+            </p>
+          ) : null}
           <div className="flex gap-1.5">
             <Button
               size="sm"
@@ -171,6 +188,11 @@ export function DiagnosticsSection() {
         </p>
       ) : null}
 
+      {stats.parts > 1 ? (
+        <p className="text-body text-fg-muted" data-testid="diag-split" data-parts={stats.parts}>
+          {t('diagSplitHint', lang, { n: stats.parts, mb: megabytes(PART_MAX_BYTES) })}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-1.5">
         <Button
           variant="primary"

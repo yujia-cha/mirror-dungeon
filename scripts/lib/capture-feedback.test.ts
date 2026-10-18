@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
+import { planExport } from '../../src/app/capture/diagnostics/export-parts.ts';
 import { captureLayoutSchema, type DiagnosticsBundle, type DiagRecord } from '../../src/core/schema.ts';
 import {
   captureGeometries,
@@ -8,6 +9,7 @@ import {
   environmentReport,
   formatReport,
   labelsFrom,
+  mergeParts,
   parseBundle,
   recognitionReport,
   routeReport,
@@ -152,6 +154,113 @@ describe('parseBundle', () => {
 
   it('refuses a zip without session.json', () => {
     expect(() => parseBundle({})).toThrow('session.json');
+  });
+});
+
+describe('mergeParts', () => {
+  /** The bundle exported in parts by the app's own export (M146): two 50 KB frames a part. */
+  async function exportedParts(over: Partial<DiagnosticsBundle> = {}) {
+    const b: DiagnosticsBundle = {
+      ...bundle(),
+      ...over,
+      frames: Array.from({ length: 6 }, (_, i) => ({
+        id: `g${i}`,
+        t: i,
+        bytes: 50_000,
+        class: 'evidence' as const,
+      })),
+    };
+    const plan = await planExport(
+      {
+        bundleId: b.bundleId,
+        exportedAt: b.exportedAt,
+        session: JSON.stringify(b),
+        frames: b.frames.map((f) => ({ ...f, blob: new Blob([new Uint8Array(f.bytes)]) })),
+        name: 'md-diagnostics-20261018-1430.zip',
+      },
+      120_000,
+    );
+    const zips = await Promise.all(
+      plan.names.map(async (name, i) => ({ name, files: unzipSync(await plan.zip(i)) })),
+    );
+    return { b, zips };
+  }
+
+  it('merges every part into one bundle with all its frames', async () => {
+    // Arrange
+    const { b, zips } = await exportedParts();
+    // Act: given in any order.
+    const { files, parts } = mergeParts([...zips].reverse());
+    const { bundle: parsed, frames } = parseBundle(files);
+    // Assert
+    expect(zips.length).toBe(3);
+    expect(parts).toEqual({ bundleId: '1', exportedAt: 80, total: 3, present: [1, 2, 3], missing: [] });
+    expect(parsed.records).toHaveLength(b.records.length);
+    expect([...frames.keys()].sort()).toEqual(['g0', 'g1', 'g2', 'g3', 'g4', 'g5']);
+    expect('part.json' in files).toBe(false);
+  });
+
+  it('reports a missing part and keeps what the others hold', async () => {
+    // Arrange
+    const { zips } = await exportedParts();
+    // Act: part 1 given twice counts once.
+    const { files, parts } = mergeParts([zips[0]!, zips[2]!, zips[0]!]);
+    const { frames } = parseBundle(files);
+    // Assert
+    expect(parts.present).toEqual([1, 3]);
+    expect(parts.missing).toEqual([2]);
+    expect(frames.size).toBe(4);
+  });
+
+  it('says part 1 is missing, and with it the session', async () => {
+    // Arrange
+    const { zips } = await exportedParts();
+    // Act
+    const { files, parts } = mergeParts(zips.slice(1));
+    // Assert
+    expect(parts.missing).toEqual([1]);
+    expect(files['session.json']).toBeUndefined();
+  });
+
+  it('reads an old bundle without part.json as one whole part', () => {
+    // Arrange: a zip as exported before M146.
+    const files = unzipSync(
+      zipSync({
+        'session.json': strToU8(JSON.stringify(bundle())),
+        'frames/f10.jpg': new Uint8Array([0xff, 0xd8]),
+      }),
+    );
+    // Act
+    const merged = mergeParts([{ name: 'md-diagnostics-20261016-1430.zip', files }]);
+    // Assert
+    expect(merged.parts).toEqual({ bundleId: '1', exportedAt: 80, total: 1, present: [1], missing: [] });
+    expect([...parseBundle(merged.files).frames.keys()]).toEqual(['f10']);
+  });
+
+  it('refuses parts of two different exports, naming them', async () => {
+    // Arrange: the same recording exported twice.
+    const first = await exportedParts();
+    const again = await exportedParts({ exportedAt: 90 });
+    // Act / Assert
+    expect(() => mergeParts([first.zips[0]!, again.zips[1]!])).toThrow(/2 different exports.*part2of3/);
+  });
+
+  it('puts the missing parts at the top of the report', async () => {
+    // Arrange
+    const { zips } = await exportedParts();
+    const { files, parts } = mergeParts([zips[0]!, zips[1]!]);
+    const { bundle: b, frames } = parseBundle(files);
+    // Act
+    const text = formatReport(
+      b,
+      recognitionReport(b),
+      routeReport(b, () => 'general'),
+      { certain: 0, unconfirmed: 0 },
+      { gift: String, pack: String },
+      { report: parts, framesMissing: b.frames.length - frames.size },
+    );
+    // Assert
+    expect(text).toContain('나눠 받은 파일 2/3개 · ⚠ 빠진 파일: part3 — 이미지 2장 없음');
   });
 });
 
