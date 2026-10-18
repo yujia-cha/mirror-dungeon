@@ -14,8 +14,9 @@
  * - **The next pack** is the route pack the stage would put first on the frontier
  *   (`run.currentFloor`), the floor the player decides next.
  * - **In the shop** (M148) the window shows what a shop decides instead of the next pack: the gifts
- *   only the pack entered last hands out (all of them, whatever the route wants), the tracker's
- *   tier-4 gifts without the 조각 series, and the goals not yet in hand.
+ *   only the pack entered last hands out (all of them, whatever the route wants, each marked got
+ *   or not — M151, which dropped the list of goals not yet in hand) and the tracker's tier-4 gifts
+ *   without the 조각 series.
  * - **The start candidates** (M138) are what the plan expects the run start to hand over while it
  *   is still open — the start gifts and the observations, pinned or recommended — and what floor 1
  *   already collected (M140). With the screen reader off the player says which ones the game
@@ -23,8 +24,7 @@
  *   itself (M141). Either way the rest is routed again.
  */
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
-import type { FeedbackLogEntry } from '../lib/feedback-log.ts';
-import { giftDone, observationClosed, type RunState } from '../lib/plan-input.ts';
+import { observationClosed, type RunState } from '../lib/plan-input.ts';
 import { enterablePacks } from '../lib/stage.ts';
 import { runDoneFloor } from '../store.ts';
 
@@ -106,50 +106,42 @@ export function nextPack(
 export interface RecentLine {
   /** When it happened (ms since the epoch). */
   at: number;
+  /** `action`: a run fact (M151); `error`: the feedback log's; `capture`: a screen reader entry. */
   kind: 'action' | 'error' | 'capture';
-  /** For `action` / `error` the log's own text; for `capture` the caller's words for the entry. */
+  /** The sentence to show. */
   text: string;
   /** A screen reader entry the player took back. */
   undone?: boolean;
   /** A stable key for the list. */
   key: string;
-}
-
-/** The fields of a screen reader log entry this needs (`CaptureLogEntry` carries more). */
-export interface CaptureLine {
-  id: number;
-  at: number;
-  undone: boolean;
+  /** The gifts and packs it is about (`factKeys`, `captureKeys`), for dropping echoes. */
+  about?: readonly string[];
 }
 
 /**
- * The newest `limit` lines of both logs, newest first: the store changes and errors the feedback
- * log holds (`lib/feedback-log.ts`) and the screen reader's entries. A tie keeps the reader's entry
- * on top — it is the cause of the store change logged in the same millisecond.
+ * How close in time a run fact must be to a screen reader entry to be its echo: the reader applies
+ * its actions in the same task, so the store change lands within a few milliseconds.
  */
-export function recentLines<C extends CaptureLine>(
-  feedback: readonly FeedbackLogEntry[],
-  capture: readonly C[],
-  captureText: (entry: C) => string,
-  limit = 5,
-): RecentLine[] {
-  const lines: RecentLine[] = [
-    ...feedback.map((entry, i): RecentLine => ({
-      at: entry.t,
-      kind: entry.kind,
-      text: entry.kind === 'error' ? entry.message : entry.text,
-      key: `f${entry.t}-${i}`,
-    })),
-    ...capture.map((entry): RecentLine => ({
-      at: entry.at,
-      kind: 'capture',
-      text: captureText(entry),
-      undone: entry.undone,
-      key: `c${entry.id}`,
-    })),
-  ];
+export const ECHO_MS = 1_500;
+
+/**
+ * The newest `limit` lines, newest first, from the run facts, the errors and the screen reader's
+ * entries. A run fact the reader's entry already says — every gift or pack it is about named by
+ * an entry within `ECHO_MS` — is dropped (M151): 「획득했습니다」 once, not twice. A tie keeps the
+ * reader's entry on top — it is the cause of the change logged in the same millisecond.
+ */
+export function recentLines(lines: readonly RecentLine[], limit = 5): RecentLine[] {
+  const reads = lines.filter((line) => line.kind === 'capture' && line.about?.length);
+  const echo = (line: RecentLine) =>
+    line.kind === 'action' &&
+    (line.about?.length ?? 0) > 0 &&
+    reads.some(
+      (read) =>
+        Math.abs(read.at - line.at) <= ECHO_MS && line.about!.every((key) => read.about!.includes(key)),
+    );
   const rank = (line: RecentLine) => (line.kind === 'capture' ? 1 : 0);
   return lines
+    .filter((line) => !echo(line))
     .map((line, order) => ({ line, order }))
     .sort((a, b) => b.line.at - a.line.at || rank(b.line) - rank(a.line) || b.order - a.order)
     .slice(0, limit)
@@ -241,15 +233,12 @@ export interface ShopView {
   exclusive: number[];
   /** The tracker's tier-4 gifts without the 조각 series. */
   t4: number[];
-  /** The goals not marked 「획득」, in the order they were picked. */
-  goals: number[];
 }
 
 export function shopView(
-  run: Pick<RunState, 'visits' | 'giftStatus'>,
+  run: Pick<RunState, 'visits'>,
   exclusivesOf: (packId: number) => number[],
   trackerGroups: readonly { id: string; gifts: readonly { id: number }[] }[],
-  wanted: readonly number[],
 ): ShopView {
   const entry = lastEntry(run);
   return {
@@ -258,6 +247,5 @@ export function shopView(
     t4: trackerGroups
       .filter((group) => group.id !== 'shard')
       .flatMap((group) => group.gifts.map((g) => g.id)),
-    goals: wanted.filter((id) => !giftDone(run.giftStatus[id])),
   };
 }

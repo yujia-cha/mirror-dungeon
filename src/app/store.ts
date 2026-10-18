@@ -225,6 +225,8 @@ interface AppState extends SharedState {
     recipes: ReadonlyMap<number, readonly number[]>;
     /** The highest enhancement step each gift has text for (`gift.upgrades`); others have none. */
     upgradeLevels: ReadonlyMap<number, UpgradeLevel>;
+    /** The 잔영 materials (M152): no goal, no mark. Omitted = none. */
+    materials?: ReadonlySet<number>;
   }) => {
     gifts: number;
   };
@@ -354,6 +356,14 @@ let recipeTree: ReadonlyMap<number, readonly number[]> = new Map();
 
 /** What the last `adoptSeason` was told, so a share link applied after the load is adopted too. */
 let adoptedSeason: Parameters<AppState['adoptSeason']>[0] | null = null;
+
+/**
+ * The season's 잔영 materials (M152, owner's call): always held, never a goal. They come from
+ * toasts the reader cannot see, any number at a time, and are spent by fusions and sales the run
+ * cannot count — and no recipe of the season eats one (`tests/generated-data.test.ts`). So the run
+ * keeps no mark for them and the goals take none. Set by `adoptSeason`, like the recipe tree.
+ */
+let materialIds: ReadonlySet<number> = new Set();
 
 /** For tests: forget the season's recipes, the way a fresh page load starts out. */
 export function forgetRecipes(): void {
@@ -808,6 +818,8 @@ export const useApp = create<AppState>()(
 
       toggleWanted: (giftId, dropWithIt = []) =>
         set((state) => {
+          // A 잔영 is held always and never a goal (M152); one already in the list can still go.
+          if (materialIds.has(giftId) && !state.wanted.includes(giftId)) return {};
           // Kept in the order things were picked, not by id: that order is what the selection tray
           // shows by default and what a shared link hands the next person. The planner sorts the
           // goals itself (`expandRequirements`), so the route does not depend on it.
@@ -1098,11 +1110,14 @@ export const useApp = create<AppState>()(
       adoptSeason: (info) => {
         const { season, lastFloor, giftIds, packIds, recipes, upgradeLevels } = info;
         recipeTree = recipes;
+        materialIds = info.materials ?? new Set();
         adoptedSeason = info;
         const state = get();
         // A run saved while another season was open walked that season's floors and packs.
         const otherSeason = state.season !== undefined && state.season !== season;
-        const wanted = state.wanted.filter((id) => giftIds.has(id));
+        // A 잔영 goal goes too (M152), without a word: it is held always, so nothing was lost.
+        const known = state.wanted.filter((id) => giftIds.has(id));
+        const wanted = known.filter((id) => !materialIds.has(id));
         // A pin is a decision about what the route collects: one left on a gift that is neither a
         // goal nor a goal's ingredient would spend observation budget and then vanish without a
         // word at the next toggle. This is also where a rehydrated blob's pins are first judged —
@@ -1111,7 +1126,7 @@ export const useApp = create<AppState>()(
         const observed = (state.options.observedGifts ?? []).filter(
           (id) => giftIds.has(id) && collected.has(id),
         );
-        const droppedGifts = state.wanted.length - wanted.length;
+        const droppedGifts = state.wanted.length - known.length;
         // A run recorded on a longer season cannot be replayed on a shorter one; one that still
         // fits keeps only the packs and gifts this season can draw, so no nameless row survives.
         // The done floor is one past the last (that is where the done card lives), so a finished
@@ -1127,7 +1142,9 @@ export const useApp = create<AppState>()(
                   Object.entries(r.visits).filter(([, packId]) => packIds.has(packId)),
                 ),
                 giftStatus: Object.fromEntries(
-                  Object.entries(r.giftStatus).filter(([id]) => giftIds.has(Number(id))),
+                  Object.entries(r.giftStatus).filter(
+                    ([id]) => giftIds.has(Number(id)) && !materialIds.has(Number(id)),
+                  ),
                 ),
                 startGifts: r.startGifts.filter((id) => giftIds.has(id)),
                 ...(r.collectRest ? { collectRest: r.collectRest.filter((id) => giftIds.has(id)) } : {}),

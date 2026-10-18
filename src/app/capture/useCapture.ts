@@ -10,16 +10,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { observable, observationBudget } from '../../core/index.ts';
 import { giftIconUrl } from '../lib/assets.ts';
-import { consumedStatus, observationClosed } from '../lib/plan-input.ts';
+import { observationClosed } from '../lib/plan-input.ts';
 import { feedbackLog } from '../lib/feedback-log.ts';
 import type { RunState } from '../lib/plan-input.ts';
 import { usePlan } from '../shell/plan-context.ts';
 import { collectedGifts, runHasProgress, useApp } from '../store.ts';
 import {
   actionsFor,
-  enterAction,
+  answerActions,
   execute,
   inverseOf,
+  type ApplyContext,
   type CaptureAction,
   type CaptureAsk,
   type CaptureStep,
@@ -57,6 +58,24 @@ export interface CaptureQuestion {
 
 /** The log keeps the latest entries only; older ones cannot be undone from the panel anyway. */
 const LOG_LIMIT = 20;
+/**
+ * What an event or an answer meets in the run (M151 shares it between the two): read from the
+ * store the moment it lands, not from the render that started the session.
+ */
+function applyContext(giftById: ApplyContext['giftById']): ApplyContext {
+  const { run: now, options, wanted, fusionGoal } = useApp.getState();
+  return {
+    giftStatus: now.giftStatus,
+    giftById,
+    visits: now.visits,
+    stageFloor: now.stageFloor,
+    observed: options.observedGifts,
+    startDone: now.startDone === true,
+    currentFloor: now.currentFloor,
+    collected: collectedGifts(wanted, fusionGoal),
+  };
+}
+
 /** Questions nobody answers pile up over a long run; the oldest give way (M116). */
 const QUESTION_LIMIT = 10;
 
@@ -193,17 +212,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const onEvents = useCallback(
     (events: CaptureEvent[]) => {
       for (const event of events) {
-        const { run: now, options, wanted, fusionGoal } = useApp.getState();
-        const applied = actionsFor(event, {
-          giftStatus: now.giftStatus,
-          giftById: latest.current.indexes.giftById,
-          visits: now.visits,
-          stageFloor: now.stageFloor,
-          observed: options.observedGifts,
-          startDone: now.startDone === true,
-          currentFloor: now.currentFloor,
-          collected: collectedGifts(wanted, fusionGoal),
-        });
+        const applied = actionsFor(event, applyContext(latest.current.indexes.giftById));
         if (event.kind === 'place') setInShop(event.shop);
         record(event, run(applied.actions));
         // A clean read of a floor settles the question its muddled read left (M116).
@@ -235,6 +244,8 @@ export function useCapture(hooks: CaptureHooks = {}) {
           packs: d.packs.map((p) => ({ id: p.id, name: p.name[lang] })),
           gifts: d.gifts.map((g) => ({ id: g.id, name: g.name[lang] })),
           materials: d.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id),
+          // 「EX」 has no numeral of bars: unknown, so the slots never drop it.
+          tiers: new Map(d.gifts.map((g) => [g.id, typeof g.tier === 'number' ? g.tier : null])),
         },
       };
     const { run: now } = useApp.getState();
@@ -367,29 +378,15 @@ export function useCapture(hooks: CaptureHooks = {}) {
       latest.current.hooks.onAnswer?.(question.ask, picked);
       if (picked.length === 0) return;
       const { ask: asked } = question;
-      const { run: now, wanted, fusionGoal } = useApp.getState();
-      const entry = asked.kind === 'pack' ? enterAction(asked.floor, picked[0]!, now) : null;
-      const steps: CaptureAction[] =
-        asked.kind === 'pack'
-          ? entry
-            ? [entry]
-            : []
-          : [
-              {
-                kind: 'status',
-                changes: picked.map((giftId) => ({
-                  giftId,
-                  from: now.giftStatus[giftId] ?? null,
-                  to:
-                    asked.kind === 'gift'
-                      ? ('got' as const)
-                      : consumedStatus(asked.resultId, collectedGifts(wanted, fusionGoal)),
-                })),
-              },
-            ];
-      record({ kind: 'answer', ask: asked, picked }, run(steps));
+      const applied = answerActions(asked, picked, applyContext(latest.current.indexes.giftById));
+      record({ kind: 'answer', ask: asked, picked }, run(applied.actions));
+      // A fusion's result named by the answer may leave what it ate to ask about (M151).
+      if (applied.ask) {
+        ask(applied.ask);
+        latest.current.hooks.onAsk?.(applied.ask);
+      }
     },
-    [questions, record, run],
+    [ask, questions, record, run],
   );
 
   // One object while nothing in it changes, so the provider's value holds still (M116).

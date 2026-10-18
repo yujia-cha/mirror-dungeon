@@ -34,6 +34,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { unzipSync } from 'fflate';
+import { chipTiers } from '../src/app/capture/tier-chip.ts';
 import { prepareSlot, type IconRef } from '../src/app/capture/match-icon.ts';
 import type { NameCandidate } from '../src/app/capture/match-name.ts';
 import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
@@ -169,6 +170,8 @@ async function main(): Promise<void> {
   const refs = await loadIconRefs(data.gifts);
   const materialIds = new Set(data.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id));
   const materials: IconRef[] = refs.filter((r) => materialIds.has(r.id));
+  // The fusion slots' tier numerals (M152), as the app reads them.
+  const tiers = new Map(data.gifts.map((g) => [g.id, typeof g.tier === 'number' ? g.tier : null]));
   const ocr = new LocalOcr('best');
   let compared = 0;
   let barred = 0;
@@ -190,6 +193,7 @@ async function main(): Promise<void> {
     const reader: RegionReader = {
       ocr: async (region, light) => (await ocr.region(image, region, lang, !light)).lines,
       slot: async (region) => prepareSlot(image.data, image.width, image.height, region),
+      tier: async (region) => chipTiers(image.data, image.width, image.height, region),
     };
     const { frame } = await readFrame(reader, inFrame, {
       lang,
@@ -197,6 +201,7 @@ async function main(): Promise<void> {
       gifts,
       held: [],
       materials,
+      tiers,
       startOpen,
       iconRefs: async (ids) => refs.filter((ref) => ids.includes(ref.id)),
     });

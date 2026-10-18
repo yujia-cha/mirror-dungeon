@@ -25,6 +25,7 @@ import {
 import { lastFloorOf } from './lib/stage.ts';
 import { ingredientTree } from './lib/entangle.ts';
 import { upgradeLevelsOf } from './lib/upgrade.ts';
+import { isMaterial } from './lib/material.ts';
 import { Button, Card, Skeleton, Toast } from './components/ui.tsx';
 import { ConfirmDialog } from './components/ConfirmDialog.tsx';
 import { AppShell } from './shell/AppShell.tsx';
@@ -251,6 +252,7 @@ export function App() {
           packIds: new Set(next.packs.map((pack) => pack.id)),
           recipes: ingredientTree(nextIndexes, next.rules.fusion.maxShopSlots),
           upgradeLevels: upgradeLevelsOf(next.gifts),
+          materials: new Set(next.gifts.filter(isMaterial).map((gift) => gift.id)),
         });
         setLoaded({ season: openSeason, attempt, data: next, indexes: nextIndexes });
         setDropped(counts.gifts > 0 ? counts : null);

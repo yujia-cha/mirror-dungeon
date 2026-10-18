@@ -109,6 +109,20 @@ describe('readFrame', () => {
     expect(trace[2]).toMatchObject({ lines: ['작고 나쁜 인형'], match: { status: 'match', id: 9091 } });
   });
 
+  it('names a sale only among what the run holds, every name while it holds nothing (M151)', async () => {
+    // Arrange: the sell list, its selection read as 「작고 나쁜 인형」; the run holds 9993 only.
+    const answers = { '0.2': { light: ['E.G.O 기프트 판매'] }, '0.5': { light: ['작고 나쁜 인형'] } };
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).fill(255);
+    const held = [prepareReference(9993, rgba, 48, 48)];
+    // Act
+    const holding = await readFrame(fakeReader(answers).reader, LAYOUT, { ...CTX, held });
+    const empty = await readFrame(fakeReader(answers).reader, LAYOUT, CTX);
+    // Assert: a gift the run does not hold cannot be what it sells.
+    expect(holding.frame).toMatchObject({ screen: 'sell' });
+    expect(holding.frame.gift?.status).not.toBe('match');
+    expect(empty.frame.gift).toMatchObject({ status: 'match', id: 9091 });
+  });
+
   it('does not let a region speak for a screen whose title lives elsewhere', async () => {
     // A dimmed full-screen title read in the popup region must not make it the popup.
     const { reader } = fakeReader({ '0': { light: ['E.G.O 기프트 판매'] } });
@@ -137,7 +151,68 @@ describe('readFrame', () => {
     const { frame } = await readFrame(reader, LAYOUT, { ...CTX, held: [other], materials: [ref] });
     // Assert: five-shape slots 8, 9, 8 → 잔영, 인형, 잔영 (the 잔영 fills two slots).
     expect(frame.screen).toBe('fusionConfirm');
-    expect(frame.ingredients).toEqual({ consumed: [9091, 9993, 9993], unsure: [] });
+    expect(frame.ingredients).toEqual({ consumed: [9091, 9993, 9993], unsure: [], filled: 3 });
+  });
+
+  it('keeps each slot to the candidates of the tier its numeral shows (M152)', async () => {
+    // Arrange: a held gift (Ⅰ) whose icon is the same picture as a 잔영 (Ⅱ) — the icons alone tie.
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).map((_, i) => (i % 4 === 3 ? 255 : (i * 37) % 251));
+    const held = prepareReference(9091, rgba, 48, 48);
+    const material = prepareReference(9992, rgba, 48, 48);
+    const answers = {
+      '0.1': { light: ['선택한 E.G.O 기프트를 조합하시겠습니까?'] },
+      '0.7': { light: ['선택한 기프트 1/5'] },
+    };
+    const base = { ...CTX, held: [held], materials: [material] };
+    const tiers = new Map([
+      [9091, 1],
+      [9992, 2],
+    ]);
+    const withTier = (numeral: number[] | null) => {
+      const { reader } = fakeReader(answers, { '0.8': [held.rgb] });
+      return { ...reader, tier: async () => numeral };
+    };
+    // Act
+    const tie = await readFrame(withTier(null), LAYOUT, { ...base, tiers });
+    const residue = await readFrame(withTier([2]), LAYOUT, { ...base, tiers });
+    const gift = await readFrame(withTier([1]), LAYOUT, { ...base, tiers });
+    // Assert: unread, the tie is asked; read, the numeral settles it either way.
+    expect(tie.frame.ingredients).toMatchObject({ consumed: [], unsure: [9091, 9992] });
+    expect(residue.frame.ingredients).toMatchObject({ consumed: [9992], unsure: [] });
+    expect(gift.frame.ingredients).toMatchObject({ consumed: [9091], unsure: [] });
+    expect(residue.trace.find((step) => step.step === 'slots')?.slots?.tiers).toEqual([[2]]);
+  });
+
+  it('ranks every candidate after all when nothing of the numeral’s tier looks like the icon (M152)', async () => {
+    // Arrange: the numeral reads Ⅲ (yellow art beside it), but the only Ⅲ candidate is unlike the icon.
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).map((_, i) => (i % 4 === 3 ? 255 : (i * 37) % 251));
+    const held = prepareReference(9091, rgba, 48, 48);
+    const unlike = prepareReference(
+      9993,
+      rgba.map((v, i) => (i % 4 === 3 ? 255 : 255 - v)),
+      48,
+      48,
+    );
+    const { reader } = fakeReader(
+      {
+        '0.1': { light: ['선택한 E.G.O 기프트를 조합하시겠습니까?'] },
+        '0.7': { light: ['선택한 기프트 1/5'] },
+      },
+      { '0.8': [held.rgb] },
+    );
+    const tiers = new Map([
+      [9091, 1],
+      [9993, 3],
+    ]);
+    // Act
+    const { frame } = await readFrame({ ...reader, tier: async () => [3] }, LAYOUT, {
+      ...CTX,
+      held: [held],
+      materials: [unlike],
+      tiers,
+    });
+    // Assert: the misread numeral did not cost the slot its gift.
+    expect(frame.ingredients).toMatchObject({ consumed: [9091] });
   });
 
   it('leaves the ingredients unread when the header cannot be read', async () => {

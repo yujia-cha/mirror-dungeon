@@ -849,3 +849,21 @@ describe('the start never changes the pack route (M145)', () => {
     expect(startPool.filter((id) => !indexes.freelyAvailableGifts.has(id))).toEqual([]);
   });
 });
+
+describe('the 잔영 are held always (M152)', () => {
+  // The app keeps no mark for a 잔영 and takes none as a goal: they come from toasts the reader
+  // cannot see, any number at a time, and fusions and sales spend them uncounted. That changes no
+  // route only while no recipe eats one — a season whose recipe needs a 잔영 makes their count
+  // matter for planning again, and this fails before the app plans a fusion it cannot make.
+  it('no recipe of the default season eats a 잔영, and no pack drops one', async () => {
+    const { loadGameDataFromDisk } = await import('../src/core/data/node.ts');
+    const data = loadGameDataFromDisk(undefined, season);
+    const materials = new Set(data.gifts.filter((g) => g.acquisition.kind === 'material').map((g) => g.id));
+    expect(materials.size).toBeGreaterThan(0);
+    const eating = data.gifts.filter((g) =>
+      (g.fusion?.recipes ?? []).some((r) => r.ingredients.some((id) => materials.has(id))),
+    );
+    expect(eating.map((g) => g.id)).toEqual([]);
+    expect(data.gifts.filter((g) => materials.has(g.id) && g.acquisition.packs.length > 0)).toEqual([]);
+  });
+});

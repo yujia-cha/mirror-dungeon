@@ -682,11 +682,12 @@ export const STRINGS = {
   // 오버레이 창의 제목 표시줄(`document.title`).
   overlayTitle: { ko: '거울 던전 오버레이', en: 'Mirror Dungeon overlay' },
   overlayCaptureOff: { ko: '화면 인식 꺼짐', en: 'Screen reader off' },
-  // 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 세 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부다.
+  // 오버레이 「다음 팩」 격자(M151)는 3열 2줄까지 보이고 나머지는 아래로 스크롤한다. 그 아래 줄이 가려진 팩 수를 말한다.
+  overlayPacksMore: { ko: '팩 {n}개 더 · 아래로 스크롤', en: '{n} more packs · scroll down' },
+  // 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다).
   overlayShopExclusive: { ko: '이 층의 전용 기프트', en: "This floor's pack-only gifts" },
   // 추적기의 4등급 이상 기프트에서 조각 묶음을 뺀 것(키워드·기억·공격 유형·그 밖).
   overlayShopT4: { ko: 'T4 기프트', en: 'Tier 4 gifts' },
-  overlayShopGoals: { ko: '아직 못 얻은 목표', en: 'Goals still to get' },
   overlayShopNone: { ko: '없습니다', en: 'None' },
   // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 관측(지정·추천)과 1층에서 이미 얻은 것을 늘어놓는다(앱은 시작 기프트를 계획하지 않으므로(M145) 시작 기프트는 1층에서 얻은 것으로만 선다). 화면 인식이 돌고 있으면 누를 것이 없다(M141): 인식이 기록한 것은 ✓, 아직 못 본 것은 점선으로 보여 줄 뿐이고, 1층 테마팩 선택 화면을 보면 인식이 스스로 확정한다(일찍 손으로 확정하면 인식이 관측 화면을 그만 찾아 관측 팝업을 놓쳤다). 화면 인식이 꺼져 있으면 전부 켜진 토글로 서고, 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하며, 얻지 못한 관측은 관측하지 않은 것으로 보아 지정을 풀고 루트가 다시 찾는다.
   overlayStartTitle: { ko: '시작 시 획득', en: 'Collected at start' },
@@ -708,10 +709,52 @@ export const STRINGS = {
   overlayEntered: { ko: '{floor}층 · {name}', en: 'Floor {floor} · {name}' },
   overlayRemainingNone: { ko: '남은 기프트 없음', en: 'Nothing left here' },
   overlayNotEntered: { ko: '아직 입장한 팩이 없습니다', en: 'No pack entered yet' },
-  // 디버그용. 스토어 변화는 피드백 기록의 영문 짧은 줄(`describeChange`) 그대로 나온다.
+  // 오버레이 창의 최근 기록 5줄(M151부터 사람이 읽는 문장). 런의 변화(`overlay/overlay-log.ts`의 사실)와 화면 인식 기록을 시각순으로 섞고, 화면 인식이 이미 말한 변화는 한 번만 적는다. 이름은 「」로 감싸므로 조사는 낱말(기프트·팩)에 붙인다.
   overlayRecent: { ko: '방금 한 행동', en: 'Recent actions' },
   overlayRecentEmpty: { ko: '아직 없습니다', en: 'Nothing yet' },
-  overlayLogError: { ko: '오류 · {text}', en: 'Error · {text}' },
+  overlayLogError: { ko: '오류가 났습니다: {text}', en: 'Something went wrong: {text}' },
+  // 오버레이 기록에서 화면 인식이 적은 줄 앞의 작은 표식(M151).
+  overlayLogReader: { ko: '인식', en: 'Reader' },
+  // 오버레이 기록의 이름 목록이 세 개를 넘을 때 나머지 수(M151). 층을 떠나며 여러 기프트가 한꺼번에 미획득이 되는 경우.
+  overlayLogMore: { ko: '외 {n}개', en: 'and {n} more' },
+  overlayLogGoalAdd: { ko: '{names} 기프트를 목표에 추가했습니다', en: 'Added {names} to the goals' },
+  overlayLogGoalRemove: { ko: '{names} 기프트를 목표에서 뺐습니다', en: 'Removed {names} from the goals' },
+  overlayLogEnter: { ko: '{floor}층 {name}에 입장했습니다', en: 'Entered {name} on floor {floor}' },
+  overlayLogLeave: {
+    ko: '{floor}층 {name} 입장을 취소했습니다',
+    en: 'Took back entering {name} on floor {floor}',
+  },
+  overlayLogSkip: { ko: '{floor}층을 건너뛰었습니다', en: 'Skipped floor {floor}' },
+  overlayLogGot: { ko: '{names} 기프트를 획득했습니다', en: 'Got {names}' },
+  overlayLogGotStart: { ko: '{names} 기프트를 시작 기프트로 받았습니다', en: 'Got {names} as a start gift' },
+  overlayLogGotObserved: { ko: '{names} 기프트를 관측으로 획득했습니다', en: 'Got {names} by observation' },
+  overlayLogUsed: { ko: '{names} 기프트를 조합에 썼습니다', en: 'Used {names} in a fusion' },
+  overlayLogFailed: { ko: '{names} 기프트를 얻지 못했습니다', en: 'Did not get {names}' },
+  overlayLogClearedGot: {
+    ko: '{names} 기프트의 획득 표시를 지웠습니다',
+    en: 'Cleared the got mark on {names}',
+  },
+  overlayLogClearedFailed: {
+    ko: '{names} 기프트의 미획득 표시를 지웠습니다',
+    en: 'Cleared the not-got mark on {names}',
+  },
+  overlayLogClearedUsed: {
+    ko: '{names} 기프트의 조합에 씀 표시를 지웠습니다',
+    en: 'Cleared the used-in-a-fusion mark on {names}',
+  },
+  overlayLogSold: { ko: '{names} 기프트를 판매했습니다', en: 'Sold {names}' },
+  overlayLogFused: {
+    ko: '{ingredients} 기프트로 {name} 기프트를 합성했습니다',
+    en: 'Fused {ingredients} into {name}',
+  },
+  overlayLogFusedPlain: { ko: '{name} 기프트를 합성했습니다', en: 'Fused {name}' },
+  overlayLogAnswer: { ko: '직접 골랐습니다: {names}', en: 'You picked {names}' },
+  overlayLogStartDone: { ko: '시작 기프트와 관측을 마쳤습니다', en: 'The run start is over' },
+  overlayLogStartOpen: { ko: '시작 기프트와 관측을 다시 고릅니다', en: 'Choosing the run start again' },
+  overlayLogRunNew: { ko: '새 런을 시작했습니다', en: 'Started a new run' },
+  overlayLogRollback: { ko: '런을 시작 전으로 되돌렸습니다', en: 'Rolled the run back to before it started' },
+  overlayLogRunCleared: { ko: '런 기록을 비웠습니다', en: 'Cleared the run' },
+  overlayLogDeck: { ko: '덱을 바꿨습니다', en: 'Changed the deck' },
 
   // ── 진단 기록 (소유자 전용 — 주소에 #diag를 붙여 열 때만)
   diagTitle: { ko: '진단 기록 (소유자용)', en: 'Diagnostics (owner only)' },

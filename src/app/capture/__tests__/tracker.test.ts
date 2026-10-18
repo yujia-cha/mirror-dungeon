@@ -152,6 +152,33 @@ describe('trackFrame — selling', () => {
     const { events } = run([confirm(none), list(none)]);
     expect(events).toEqual([]);
   });
+
+  it('waits through a frame of nothing between the confirm and the list (M151)', () => {
+    // Arrange: the dialog fades out over a frame that names no screen.
+    const frames = [list(match(9993)), confirm(match(9993)), frame({}), list(none)];
+    // Act
+    const { events } = run(frames);
+    // Assert
+    expect(events).toEqual([{ kind: 'sold', giftId: 9993 }]);
+  });
+
+  it('sells nothing when the confirm names another gift than the list had selected (M151)', () => {
+    // Arrange: one of the two reads is wrong; unmarking a gift still held costs more than a miss.
+    const { events, state } = run([list(match(9993)), confirm(match(9001)), list(none)]);
+    // Assert
+    expect(events).toEqual([]);
+    expect(state.selling).toBeNull();
+  });
+
+  it('lets the selection name a muddled confirm when it is one of the candidates (M151)', () => {
+    const { events } = run([list(match(9993)), confirm(unsure(9992, 9993)), list(none)]);
+    expect(events).toEqual([{ kind: 'sold', giftId: 9993 }]);
+  });
+
+  it('does not take a selection from before another screen (M151)', () => {
+    const { events } = run([list(match(9993)), map(2, match(1101)), confirm(unsure(9992, 9993)), list(none)]);
+    expect(events.filter((e) => e.kind === 'sold')).toEqual([]);
+  });
 });
 
 describe('trackFrame — fusion (M101)', () => {
@@ -195,9 +222,34 @@ describe('trackFrame — fusion (M101)', () => {
     });
   });
 
-  it('waits for nothing when the confirm read no ingredients', () => {
-    const { events, state } = run([frame({ screen: 'fusionConfirm', ingredients: null }), popup(match(10))]);
-    expect(events).toEqual([{ kind: 'got', giftId: 10 }]);
+  it('still waits for the result when the confirm read no ingredients (M151)', () => {
+    // Arrange: the 「N/M」 went unread, so no slot was ranked; the result's recipe settles it later.
+    const unread = frame({ screen: 'fusionConfirm', ingredients: null });
+    // Act
+    const { events, state } = run([unread, popup(match(10))]);
+    // Assert
+    expect(events).toEqual([
+      { kind: 'got', giftId: 10 },
+      { kind: 'fused', resultId: 10, consumed: [], unsure: [] },
+    ]);
+    expect(state.fusing).toBeNull();
+  });
+
+  it('keeps a read of the slots over a later unread frame, and takes a later read over an unread one', () => {
+    const unread = frame({ screen: 'fusionConfirm', ingredients: null });
+    const kept = run([confirm([1, 2]), unread, popup(match(10))]).events.at(-1);
+    const replaced = run([unread, confirm([1, 2]), popup(match(10))]).events.at(-1);
+    expect(kept).toEqual({ kind: 'fused', resultId: 10, consumed: [1, 2], unsure: [] });
+    expect(replaced).toEqual({ kind: 'fused', resultId: 10, consumed: [1, 2], unsure: [] });
+  });
+
+  it('carries the fusion into the question when its result name is muddled (M151)', () => {
+    // Arrange: the confirm read, then a result popup close to two names.
+    const { events, state } = run([confirm([1, 2]), popup(unsure(10, 11))]);
+    // Assert: one question, with what the fusion ate; nothing waits any more.
+    expect(events).toEqual([
+      { kind: 'unsure', about: 'got', ids: [10, 11], fusing: { consumed: [1, 2], unsure: [] } },
+    ]);
     expect(state.fusing).toBeNull();
   });
 });

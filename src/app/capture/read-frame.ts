@@ -30,7 +30,13 @@
  */
 import type { CaptureLayout, DiagTraceStep } from '../../core/schema.ts';
 import type { Lang } from '../i18n.ts';
-import { assignSlots, type Consumed, type SlotRanking, type SlotThresholds } from './fusion.ts';
+import {
+  assignSlots,
+  DEFAULT_SLOT_THRESHOLDS,
+  type Consumed,
+  type SlotRanking,
+  type SlotThresholds,
+} from './fusion.ts';
 import { decideIcon, rankIcons, type IconRef, type IconThresholds } from './match-icon.ts';
 import { matchName, rankNames, type MatchResult, type NameCandidate } from './match-name.ts';
 import type { Region } from './preprocess.ts';
@@ -49,6 +55,8 @@ export interface RegionReader {
   ocr(region: Region, light: boolean): Promise<string[]>;
   /** The reduced views of an icon slot (`prepareSlot`), for ranking against references. */
   slot(region: Region): Promise<Float32Array[]>;
+  /** The tiers a fusion slot's numeral allows (`chipTiers`, M152); omitted = not read. */
+  tier?(region: Region): Promise<number[] | null>;
 }
 
 export interface ReadContext {
@@ -63,6 +71,8 @@ export interface ReadContext {
    * fusions eat most — on the run set's two real confirms, five of the eight ingredients.
    */
   materials: readonly IconRef[];
+  /** Each candidate's tier, to keep a slot to the gifts its numeral allows (M152). Omitted = no filter. */
+  tiers?: ReadonlyMap<number, number | null>;
   slotThresholds?: SlotThresholds;
   /** The run start is still open: look for its pickers (M135). Omitted = closed. */
   startOpen?: boolean;
@@ -260,14 +270,26 @@ export async function readFrame(
           isObservationTitle(lines, ctx.lang) ? true : null,
         )) === true;
   } else if (screen === 'sellConfirm') {
-    frame.gift = await nameIn(layout.names.centerConfirm, ctx.gifts);
+    frame.gift = await nameIn(layout.names.centerConfirm, sellable(ctx));
   } else if (screen === 'sell') {
-    frame.gift = await nameIn(layout.names.selected, ctx.gifts);
+    frame.gift = await nameIn(layout.names.selected, sellable(ctx));
   } else if (screen === 'fusionConfirm') {
     const filled = await readEither(layout.fusion.count, 'fusionCount', parseFusionCount);
     if (filled) frame.ingredients = await readIngredients(reader, layout, ctx, filled, trace);
   }
   return { frame, ocrCalls, trace };
+}
+
+/**
+ * The names a sale can be about (M151): the gifts the run holds and the 잔영 materials, which the
+ * run holds without marks (toasts hand them out). Only these can be sold, and a sale of anything
+ * else would change nothing, so matching against the season's 450 names only made a blurred read
+ * ambiguous. With nothing held yet every name stays a candidate.
+ */
+function sellable(ctx: ReadContext): readonly NameCandidate[] {
+  const ids = new Set([...ctx.held, ...ctx.materials].map((ref) => ref.id));
+  const named = ctx.gifts.filter((g) => ids.has(g.id));
+  return ctx.held.length > 0 ? named : ctx.gifts;
 }
 
 function sameRegion(a: Region, b: Region): boolean {
@@ -301,10 +323,29 @@ async function readIngredients(
 ): Promise<Consumed> {
   const heldIds = new Set(ctx.held.map((h) => h.id));
   const candidates = [...ctx.held, ...ctx.materials.filter((m) => !heldIds.has(m.id))];
+  // The slot's tier numeral (M152) keeps it to the candidates of that tier: a held gift of another
+  // tier cannot be there, and of the five 잔영 — one bottle, five tints — only one is left. A slot
+  // whose numeral reads is ranked against those alone; one that does not read keeps every candidate.
+  // A tier the data does not give as a number (「EX」) is never dropped.
+  const fits = (id: number, allowed: readonly number[]) => {
+    const tier = ctx.tiers?.get(id) ?? null;
+    return tier === null || allowed.includes(tier);
+  };
   const rank = async (regions: readonly Region[]) => {
     const out = [];
-    for (const region of regions) out.push(rankIcons(await reader.slot(region), candidates));
-    return out;
+    const tiers: (number[] | null)[] = [];
+    for (const region of regions) {
+      const allowed = ctx.tiers && reader.tier ? await reader.tier(region) : null;
+      const views = await reader.slot(region);
+      const pool = allowed ? candidates.filter((c) => fits(c.id, allowed)) : candidates;
+      const narrowed = pool.length > 0 ? rankIcons(views, pool) : [];
+      // A numeral misread (yellow art beside it) must not cost the slot its gift: when nothing of
+      // the allowed tiers looks like the icon, every candidate is ranked after all.
+      const weak = (narrowed[0]?.[1] ?? 0) < (ctx.slotThresholds ?? DEFAULT_SLOT_THRESHOLDS).minScore;
+      out.push(allowed && weak ? rankIcons(views, candidates) : narrowed);
+      tiers.push(allowed && weak ? null : allowed);
+    }
+    return Object.assign(out, { tiers });
   };
   const meanBest = (rankings: SlotRanking[]) =>
     rankings.reduce((sum, r) => sum + (r[0]?.[1] ?? 0), 0) / Math.max(1, rankings.length);
@@ -323,10 +364,11 @@ async function readIngredients(
     slots: {
       shape,
       top: rankings.map((r) => r.slice(0, 3).map(([id, score]) => [id, score] as [number, number])),
+      tiers: rankings.tiers,
     },
   });
   const read = assignSlots(rankings, ctx.slotThresholds, new Set(ctx.materials.map((m) => m.id)));
   const consumed = read.flatMap((r) => (r.status === 'match' ? [r.id] : []));
   const unsure = [...new Set(read.flatMap((r) => (r.status === 'ambiguous' ? r.ids : [])))];
-  return { consumed: consumed.sort((a, b) => a - b), unsure: unsure.sort((a, b) => a - b) };
+  return { consumed: consumed.sort((a, b) => a - b), unsure: unsure.sort((a, b) => a - b), filled };
 }

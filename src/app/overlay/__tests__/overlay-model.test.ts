@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { loadGameDataFromDisk } from '../../../core/data/node.ts';
 import { buildIndexes } from '../../../core/index.ts';
 import type { FloorPlan, RoutePlan } from '../../../core/types.ts';
-import type { FeedbackLogEntry } from '../../lib/feedback-log.ts';
 import type { GiftStatus } from '../../lib/plan-input.ts';
 import {
   clockOf,
   lastEntry,
   nextPack,
   recentLines,
+  type RecentLine,
   remainingIn,
   shopView,
   startCandidates,
@@ -148,33 +148,51 @@ describe('nextPack', () => {
   });
 });
 
-describe('recentLines', () => {
-  const action = (t: number, text: string): FeedbackLogEntry => ({ t, kind: 'action', text });
-  const capture = (id: number, at: number, undone = false) => ({ id, at, undone, label: `read ${id}` });
+describe('recentLines (M151)', () => {
+  const line = (at: number, kind: RecentLine['kind'], text: string, about?: string[]): RecentLine => ({
+    at,
+    kind,
+    text,
+    key: `${kind}${at}${text}`,
+    ...(about ? { about } : {}),
+  });
 
-  it('interleaves both logs newest first and keeps five', () => {
+  it('interleaves the lines newest first and keeps five', () => {
     // Arrange
-    const feedback = [action(1, 'a1'), action(3, 'a3'), action(5, 'a5'), action(7, 'a7')];
-    const reads = [capture(2, 6, true), capture(1, 2)];
+    const lines = [
+      line(1, 'action', 'a1'),
+      line(3, 'action', 'a3'),
+      line(5, 'action', 'a5'),
+      line(7, 'action', 'a7'),
+      { ...line(6, 'capture', 'read 2'), undone: true },
+      line(2, 'capture', 'read 1'),
+    ];
     // Act
-    const lines = recentLines(feedback, reads, (entry) => entry.label);
+    const shown = recentLines(lines);
     // Assert
-    expect(lines.map((line) => line.text)).toEqual(['a7', 'read 2', 'a5', 'a3', 'read 1']);
-    expect(lines[1]).toMatchObject({ kind: 'capture', undone: true });
+    expect(shown.map((l) => l.text)).toEqual(['a7', 'read 2', 'a5', 'a3', 'read 1']);
+    expect(shown[1]).toMatchObject({ kind: 'capture', undone: true });
   });
 
-  it('puts the screen reader’s entry above the store change it caused in the same millisecond', () => {
-    const lines = recentLines([action(10, 'gift 9001 - → got')], [capture(1, 10)], (entry) => entry.label);
-    expect(lines.map((line) => line.kind)).toEqual(['capture', 'action']);
+  it('drops a run fact the screen reader’s entry already said, and keeps one it did not', () => {
+    // Arrange: the reader got 9001; the store marked it got in the same moment, and 9002 by hand.
+    const lines = [
+      line(1_000, 'capture', 'got 9001', ['g9001']),
+      line(1_002, 'action', 'marked 9001', ['g9001']),
+      line(1_003, 'action', 'marked 9002', ['g9002']),
+      line(9_000, 'action', 'marked 9001 again', ['g9001']),
+    ];
+    // Act + Assert: the echo goes; a later change of the same gift is news.
+    expect(recentLines(lines).map((l) => l.text)).toEqual(['marked 9001 again', 'marked 9002', 'got 9001']);
   });
 
-  it('carries an error’s message', () => {
-    const error: FeedbackLogEntry = { t: 1, kind: 'error', source: 'window', message: 'boom' };
-    expect(recentLines([error], [], () => '')).toEqual([{ at: 1, kind: 'error', text: 'boom', key: 'f1-0' }]);
+  it('puts the screen reader’s entry above a change in the same millisecond', () => {
+    const shown = recentLines([line(10, 'action', 'other', ['g1']), line(10, 'capture', 'read', ['g2'])]);
+    expect(shown.map((l) => l.kind)).toEqual(['capture', 'action']);
   });
 
   it('is empty with nothing logged', () => {
-    expect(recentLines([], [], () => '')).toEqual([]);
+    expect(recentLines([])).toEqual([]);
   });
 });
 
@@ -264,17 +282,17 @@ describe('shopView (M148)', () => {
   const exclusives: Record<number, number[]> = { 1002: [9001, 9002], 1005: [9100] };
   const exclusivesOf = (packId: number) => exclusives[packId] ?? [];
 
-  it('lists the last entered pack’s exclusives, the tracker without shards, and the goals not in hand', () => {
+  it('lists the last entered pack’s exclusives and the tracker without shards — no goals (M151)', () => {
     // Arrange
-    const run = { visits: { 1: 1005, 2: 1002 }, giftStatus: { 9300: 'got' as GiftStatus } };
+    const run = { visits: { 1: 1005, 2: 1002 } };
     // Act
-    const view = shopView(run, exclusivesOf, groups, [9300, 9301, 9302]);
+    const view = shopView(run, exclusivesOf, groups);
     // Assert
-    expect(view).toEqual({ packId: 1002, exclusive: [9001, 9002], t4: [1, 2, 4], goals: [9301, 9302] });
+    expect(view).toEqual({ packId: 1002, exclusive: [9001, 9002], t4: [1, 2, 4] });
   });
 
   it('has no pack and no exclusives before the first entry', () => {
-    const view = shopView({ visits: {}, giftStatus: {} }, exclusivesOf, groups, []);
-    expect(view).toMatchObject({ packId: null, exclusive: [], goals: [] });
+    const view = shopView({ visits: {} }, exclusivesOf, groups);
+    expect(view).toMatchObject({ packId: null, exclusive: [] });
   });
 });

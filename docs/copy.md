@@ -743,12 +743,12 @@
 ### giftsObserveNotAllowed
 - ko: 관측할 수 없는 기프트
 - en: Cannot be observed
-- 쓰는 곳: 참조 없음
+- 쓰는 곳: src/app/overlay/overlay-log.ts (동적), src/app/overlay/overlay-text.ts (동적)
 
 ### giftsObserveFull
 - ko: 관측은 최대 {max}개
 - en: Up to {max} observations
-- 쓰는 곳: 참조 없음
+- 쓰는 곳: src/app/overlay/overlay-log.ts (동적), src/app/overlay/overlay-text.ts (동적)
 
 ### giftsObserveClosed
 - ko: 1층을 떠난 뒤에는 관측을 바꿀 수 없습니다
@@ -889,17 +889,17 @@
 ### effMechanicVibrationExplosion
 - ko: 진동 폭발
 - en: Tremor Burst
-- 쓰는 곳: src/app/lib/effect-text.ts (동적)
+- 쓰는 곳: src/app/lib/effect-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### effMechanicSwitch_Vibration
 - ko: 진폭 변환
 - en: Amplitude Conversion
-- 쓰는 곳: src/app/lib/effect-text.ts (동적)
+- 쓰는 곳: src/app/lib/effect-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### effMechanicFusionVibration
 - ko: 진폭 얽힘
 - en: Amplitude Entanglement
-- 쓰는 곳: src/app/lib/effect-text.ts (동적)
+- 쓰는 곳: src/app/lib/effect-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### effReqIdentityBuff
 메모: 기프트가 주지 않아 인격만 가져오는 버프(진동 - 작열·각력【묘】·버림 등).
@@ -1105,12 +1105,12 @@
 ### giftExclusive
 - ko: 전용
 - en: Exclusive
-- 쓰는 곳: 참조 없음
+- 쓰는 곳: src/app/overlay/overlay-log.ts (동적), src/app/overlay/overlay-text.ts (동적)
 
 ### giftWanted
 - ko: 목표
 - en: Goal
-- 쓰는 곳: 참조 없음
+- 쓰는 곳: src/app/overlay/overlay-log.ts (동적), src/app/overlay/overlay-text.ts (동적)
 
 ### giftUnjudgeable
 - ko: 판정 불가
@@ -1932,27 +1932,27 @@
 ### captureErr_unsupported
 - ko: 이 브라우저는 화면 공유를 지원하지 않습니다
 - en: This browser cannot share a screen
-- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### captureErr_denied
 - ko: 화면 공유를 허용하지 않았습니다. 다시 시작하면 다시 묻습니다
 - en: Screen sharing was not allowed. Starting again asks again
-- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### captureErr_ended
 - ko: 화면 공유가 끝났습니다
 - en: Screen sharing ended
-- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### captureErr_engine
 - ko: 글자 인식 엔진을 불러오지 못했습니다
 - en: Could not load the text recognition engine
-- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### captureErr_layout
 - ko: 화면 배치 정보를 불러오지 못했습니다
 - en: Could not load the screen layout
-- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/overlay-model.ts (동적)
+- 쓰는 곳: src/app/capture/capture-text.ts (동적), src/app/overlay/OverlayView.tsx (동적)
 
 ### captureInterval
 - ko: 판독 간격
@@ -1962,22 +1962,22 @@
 ### captureInterval_economy
 - ko: 최고 성능 · 0.25~1초
 - en: Lightest · 0.25–1 s
-- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/OverlayView.tsx (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_performance
 - ko: 성능 · 0.15~0.5초
 - en: Light · 0.15–0.5 s
-- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/OverlayView.tsx (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_balanced
 - ko: 밸런스 · 0.1~0.25초
 - en: Balanced · 0.1–0.25 s
-- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/OverlayView.tsx (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureInterval_quality
 - ko: 품질 · 0.08~0.15초
 - en: Quality · 0.08–0.15 s
-- 쓰는 곳: src/app/overlay/overlay-model.ts (동적), src/app/shell/CapturePanel.tsx (동적)
+- 쓰는 곳: src/app/overlay/OverlayView.tsx (동적), src/app/shell/CapturePanel.tsx (동적)
 
 ### captureStrained
 - ko: 이 환경에서는 판독이 밀려 간격을 늘렸습니다 · 팝업은 그대로 읽습니다
@@ -2112,8 +2112,14 @@
 - en: Screen reader off
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
+### overlayPacksMore
+메모: 오버레이 「다음 팩」 격자(M151)는 3열 2줄까지 보이고 나머지는 아래로 스크롤한다. 그 아래 줄이 가려진 팩 수를 말한다.
+- ko: 팩 {n}개 더 · 아래로 스크롤
+- en: {n} more packs · scroll down
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
 ### overlayShopExclusive
-메모: 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 세 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부다.
+메모: 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다).
 - ko: 이 층의 전용 기프트
 - en: This floor's pack-only gifts
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
@@ -2122,11 +2128,6 @@
 메모: 추적기의 4등급 이상 기프트에서 조각 묶음을 뺀 것(키워드·기억·공격 유형·그 밖).
 - ko: T4 기프트
 - en: Tier 4 gifts
-- 쓰는 곳: src/app/overlay/OverlayView.tsx
-
-### overlayShopGoals
-- ko: 아직 못 얻은 목표
-- en: Goals still to get
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayShopNone
@@ -2193,7 +2194,7 @@
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayRecent
-메모: 디버그용. 스토어 변화는 피드백 기록의 영문 짧은 줄(`describeChange`) 그대로 나온다.
+메모: 오버레이 창의 최근 기록 5줄(M151부터 사람이 읽는 문장). 런의 변화(`overlay/overlay-log.ts`의 사실)와 화면 인식 기록을 시각순으로 섞고, 화면 인식이 이미 말한 변화는 한 번만 적는다. 이름은 「」로 감싸므로 조사는 낱말(기프트·팩)에 붙인다.
 - ko: 방금 한 행동
 - en: Recent actions
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
@@ -2204,9 +2205,136 @@
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayLogError
-- ko: 오류 · {text}
-- en: Error · {text}
+- ko: 오류가 났습니다: {text}
+- en: Something went wrong: {text}
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayLogReader
+메모: 오버레이 기록에서 화면 인식이 적은 줄 앞의 작은 표식(M151).
+- ko: 인식
+- en: Reader
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayLogMore
+메모: 오버레이 기록의 이름 목록이 세 개를 넘을 때 나머지 수(M151). 층을 떠나며 여러 기프트가 한꺼번에 미획득이 되는 경우.
+- ko: 외 {n}개
+- en: and {n} more
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogGoalAdd
+- ko: {names} 기프트를 목표에 추가했습니다
+- en: Added {names} to the goals
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogGoalRemove
+- ko: {names} 기프트를 목표에서 뺐습니다
+- en: Removed {names} from the goals
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogEnter
+- ko: {floor}층 {name}에 입장했습니다
+- en: Entered {name} on floor {floor}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogLeave
+- ko: {floor}층 {name} 입장을 취소했습니다
+- en: Took back entering {name} on floor {floor}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogSkip
+- ko: {floor}층을 건너뛰었습니다
+- en: Skipped floor {floor}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogGot
+- ko: {names} 기프트를 획득했습니다
+- en: Got {names}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogGotStart
+- ko: {names} 기프트를 시작 기프트로 받았습니다
+- en: Got {names} as a start gift
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogGotObserved
+- ko: {names} 기프트를 관측으로 획득했습니다
+- en: Got {names} by observation
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogUsed
+- ko: {names} 기프트를 조합에 썼습니다
+- en: Used {names} in a fusion
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogFailed
+- ko: {names} 기프트를 얻지 못했습니다
+- en: Did not get {names}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogClearedGot
+- ko: {names} 기프트의 획득 표시를 지웠습니다
+- en: Cleared the got mark on {names}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogClearedFailed
+- ko: {names} 기프트의 미획득 표시를 지웠습니다
+- en: Cleared the not-got mark on {names}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogClearedUsed
+- ko: {names} 기프트의 조합에 씀 표시를 지웠습니다
+- en: Cleared the used-in-a-fusion mark on {names}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogSold
+- ko: {names} 기프트를 판매했습니다
+- en: Sold {names}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogFused
+- ko: {ingredients} 기프트로 {name} 기프트를 합성했습니다
+- en: Fused {ingredients} into {name}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogFusedPlain
+- ko: {name} 기프트를 합성했습니다
+- en: Fused {name}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogAnswer
+- ko: 직접 골랐습니다: {names}
+- en: You picked {names}
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogStartDone
+- ko: 시작 기프트와 관측을 마쳤습니다
+- en: The run start is over
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogStartOpen
+- ko: 시작 기프트와 관측을 다시 고릅니다
+- en: Choosing the run start again
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogRunNew
+- ko: 새 런을 시작했습니다
+- en: Started a new run
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogRollback
+- ko: 런을 시작 전으로 되돌렸습니다
+- en: Rolled the run back to before it started
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogRunCleared
+- ko: 런 기록을 비웠습니다
+- en: Cleared the run
+- 쓰는 곳: src/app/overlay/overlay-text.ts
+
+### overlayLogDeck
+- ko: 덱을 바꿨습니다
+- en: Changed the deck
+- 쓰는 곳: src/app/overlay/overlay-text.ts
 
 ## 진단 기록 (소유자 전용 — 주소에 #diag를 붙여 열 때만)
 
@@ -2354,22 +2482,22 @@
 ### feedbackKind_bug
 - ko: 버그
 - en: Bug
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackKind_idea
 - ko: 제안
 - en: Suggestion
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackKind_data
 - ko: 데이터 오류
 - en: Data error
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackKind_other
 - ko: 기타
 - en: Other
-- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/overlay/overlay-model.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
+- 쓰는 곳: src/app/feedback/body.ts (동적), src/app/shell/FeedbackSheet.tsx (동적)
 
 ### feedbackTitleLabel
 - ko: 제목 (선택)
@@ -3049,7 +3177,7 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: 「다음 층」(또는 아래로 당기기)으로 넘어가고, 「입장 취소」(위로 당기기)는 입장을 취소하며 그 팩에서 표시한 것을 지웁니다. 층 스트립을 눌러 지난 층을 다시 볼 수 있습니다.
 - readme: 루트는 현재 층부터 다시 계산됩니다. 계획에 없는 팩에 들어가도 됩니다.
 - readme: **화면 인식**(데스크톱 Chrome·Edge·Firefox): 헤더의 「화면 인식」 버튼을 눌러 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. **화면 인식을 시작하는 것이 곧 런 시작입니다**: 지난 런의 기록이 남아 있으면 「새 런으로 시작」(기록을 비웁니다)과 「이어서」(새로고침한 뒤 같은 런) 중에서 고르고, 런을 잘못 시작했으면 「런 중단 · 시작 전으로 되돌리기」로 획득·입장·시작 기록과 관측 지정을 시작 전으로 되돌립니다(목표와 덱은 그대로). 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다(버튼에 개수가 뜹니다). 창을 닫아도 인식은 계속됩니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.
-- readme: **오버레이 창**(데스크톱 Chrome·Edge 116 이상, Firefox 151 이상): 「화면 인식」 팝오버의 「오버레이 창 열기」는 게임 위에 늘 떠 있는 작은 창을 엽니다. 인식 상태, 지금 층, 다음 층에 들어갈 수 있는 루트 팩 전부(계획이 그 층에 앉힌 팩이 맨 앞), 들어간 팩에서 남은 기프트, 방금 한 행동을 보여 줍니다. 런을 시작할 때는 계획한 관측을 늘어놓습니다. 화면 인식 중이면 누를 것이 없습니다: 인식한 것에 ✓가 붙고, 1층 팩 선택 화면을 보면 인식이 스스로 확정합니다. 화면 인식 없이 쓸 때는 게임에서 실제로 얻은 것만 켜 두고 「확인하고 진행」을 누르세요. 어느 쪽이든 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다. 누를 것은 이 확인뿐입니다. 화면 인식이 상점을 보면 그동안은 이 층의 전용 기프트, T4 기프트(조각 제외), 아직 못 얻은 목표를 보여 주고, 상점을 나가면 원래대로 돌아갑니다. 화면 공유 없이도 열리고, 팝오버를 닫아도 남습니다. 테두리 없는 창 모드의 게임 위에는 보이지만 전체 화면(독점) 모드에서는 가려집니다.
+- readme: **오버레이 창**(데스크톱 Chrome·Edge 116 이상, Firefox 151 이상): 「화면 인식」 팝오버의 「오버레이 창 열기」는 게임 위에 늘 떠 있는 작은 창을 엽니다. 인식 상태, 지금 층, 다음 층에 들어갈 수 있는 루트 팩 전부(계획이 그 층에 앉힌 팩이 맨 앞), 들어간 팩에서 남은 기프트, 방금 한 행동을 보여 줍니다. 런을 시작할 때는 계획한 관측을 늘어놓습니다. 화면 인식 중이면 누를 것이 없습니다: 인식한 것에 ✓가 붙고, 1층 팩 선택 화면을 보면 인식이 스스로 확정합니다. 화면 인식 없이 쓸 때는 게임에서 실제로 얻은 것만 켜 두고 「확인하고 진행」을 누르세요. 어느 쪽이든 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다. 누를 것은 이 확인뿐입니다. 화면 인식이 상점을 보면 그동안은 이 층의 전용 기프트(줄마다 획득·미획득 표시)와 T4 기프트(조각 제외)를 보여 주고, 상점을 나가면 원래대로 돌아갑니다. 화면 공유 없이도 열리고, 팝오버를 닫아도 남습니다. 테두리 없는 창 모드의 게임 위에는 보이지만 전체 화면(독점) 모드에서는 가려집니다.
 - readme: **⋯ 메뉴**의 「링크 복사」가 덱·목표·설정을 담은 공유 링크를 만듭니다(런 진행은 담지 않습니다). 「초기화」는 덱을 기본 LCB 수감자로, 목표·설정·런을 처음으로 되돌립니다. 「테마 변경」·「기프트 아이콘 크기」·「글자 크기」도 여기 있고, 이 기기에만 저장됩니다.
 - 설명서: 가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.
 - en: On the stage in the middle, press 「Enter」 on a pack card or pull the card down.

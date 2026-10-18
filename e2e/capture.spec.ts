@@ -333,7 +333,7 @@ test('tells the shop apart and the overlay window follows it (M148)', async ({ p
   await paint(page, [{ text: '특별한 상점', region: [0.13, 0.11, 0.15, 0.08], size: 40 }]);
   await expect(pip.getByTestId('overlay-shop-exclusive')).toBeVisible({ timeout: 20_000 });
   await expect(pip.getByTestId('overlay-shop-t4')).toBeVisible();
-  await expect(pip.getByTestId('overlay-shop-goals')).toBeVisible();
+  await expect(pip.getByTestId('overlay-shop-goals')).toHaveCount(0);
   await expect(pip.getByTestId('overlay-next')).toHaveCount(0);
 
   // Out on the map again: back to the next pack.

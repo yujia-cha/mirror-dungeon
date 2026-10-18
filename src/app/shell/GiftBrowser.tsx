@@ -40,6 +40,7 @@ import { GiftTileGrid } from '../components/GiftGrid.tsx';
 import { RecommendFilterBar, RecommendedSections } from '../components/RecommendedGifts.tsx';
 import { TabBar, type PanelTab } from './SidePanel.tsx';
 import { usePlan } from './plan-context.ts';
+import { isGoalCandidate } from '../lib/material.ts';
 
 type BrowserTab = 'recommended' | 'all';
 
@@ -85,7 +86,7 @@ export function GiftBrowser({
   const recommendation = useMemo(
     () =>
       recommendedGifts(
-        data.gifts.filter((gift) => gift.obtainable || wanted.includes(gift.id)),
+        data.gifts.filter((gift) => isGoalCandidate(gift, wanted)),
         conditionByGift,
         effectsByGift,
         { deployed: stats.deployed },

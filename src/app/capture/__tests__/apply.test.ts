@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Gift } from '../../../core/schema.ts';
 import { emptyRun, useApp } from '../../store.ts';
-import { actionsFor, execute, inverseOf, statusDiff, type RunOps } from '../apply.ts';
+import { actionsFor, answerActions, execute, inverseOf, statusDiff, type RunOps } from '../apply.ts';
 
 const MOON = {
   aCount: 2,
@@ -13,6 +13,15 @@ const giftById = new Map<number, Gift>([
   [9083, { id: 9083, fusion: { recipes: [], mixed: MOON } } as unknown as Gift],
   // A 잔영 material: held in any number.
   [9800, { id: 9800, acquisition: { kind: 'material' } } as unknown as Gift],
+  // A recipe result (M151): three gifts, or four with a 잔영.
+  [
+    70,
+    {
+      id: 70,
+      acquisition: { kind: 'fusionOnly' },
+      fusion: { recipes: [{ ingredients: [1, 2, 3] }, { ingredients: [1, 2, 4, 9800] }] },
+    } as unknown as Gift,
+  ],
 ]);
 const ctx = (
   giftStatus: Record<number, 'got' | 'failed' | 'used'>,
@@ -146,6 +155,118 @@ describe('actionsFor', () => {
       floor: 2,
       ids: [1, 2],
     });
+  });
+});
+
+describe('sales and fusions, the exceptions (M151)', () => {
+  const statuses = (out: { actions: unknown[] }) =>
+    out.actions.flatMap((a) =>
+      (a as { kind: string }).kind === 'status' ? (a as { changes: unknown[] }).changes : [],
+    );
+
+  it('leaves a sold 잔영 material marked — one mark cannot say the last one went', () => {
+    expect(actionsFor({ kind: 'sold', giftId: 9800 }, ctx({ 9800: 'got' }))).toEqual({
+      actions: [],
+      ask: null,
+    });
+  });
+
+  it('does nothing for a sale of a gift used up or missed — the run does not hold it', () => {
+    expect(actionsFor({ kind: 'sold', giftId: 7 }, ctx({ 7: 'used' })).actions).toEqual([]);
+    expect(actionsFor({ kind: 'sold', giftId: 7 }, ctx({ 7: 'failed' })).actions).toEqual([]);
+  });
+
+  it('takes a recipe result’s ingredients from its recipe, asking nothing the icons left muddled', () => {
+    // Arrange: the icons were sure of 1 only and torn between 2 and 4; the slot count says three.
+    const event = { kind: 'fused' as const, resultId: 70, consumed: [1], unsure: [2, 4], filled: 3 };
+    // Act
+    const out = actionsFor(event, ctx({ 1: 'got', 2: 'got', 3: 'got', 4: 'got' }));
+    // Assert
+    expect(statuses(out)).toEqual([
+      { giftId: 1, from: 'got', to: null },
+      { giftId: 2, from: 'got', to: null },
+      { giftId: 3, from: 'got', to: null },
+    ]);
+    expect(out.ask).toBeNull();
+  });
+
+  it('settles a recipe result from what the run holds when nothing on the confirm was read', () => {
+    // Arrange: only the three-gift recipe is held whole (4 is not).
+    const event = { kind: 'fused' as const, resultId: 70, consumed: [], unsure: [] };
+    // Act
+    const out = actionsFor(event, ctx({ 1: 'got', 2: 'got', 3: 'got' }));
+    // Assert
+    expect(statuses(out).map((c) => (c as { giftId: number }).giftId)).toEqual([1, 2, 3]);
+    expect(out.ask).toBeNull();
+  });
+
+  it('asks only about what its recipes disagree on', () => {
+    // Arrange: both recipes held whole and nothing read: 1 and 2 surely went, 3 or 4 is asked.
+    const out = actionsFor(
+      { kind: 'fused', resultId: 70, consumed: [], unsure: [] },
+      ctx({ 1: 'got', 2: 'got', 3: 'got', 4: 'got' }),
+    );
+    expect(statuses(out).map((c) => (c as { giftId: number }).giftId)).toEqual([1, 2]);
+    expect(out.ask).toEqual({ kind: 'consumed', resultId: 70, ids: [3, 4] });
+  });
+
+  it('leaves alone a held gift the icons matched that no recipe of the result names', () => {
+    // Arrange: 8 was a misread (an unrecorded ingredient's icon matched the nearest held gift).
+    const out = actionsFor(
+      { kind: 'fused', resultId: 70, consumed: [8, 1], unsure: [], filled: 3 },
+      ctx({ 1: 'got', 2: 'got', 3: 'got', 8: 'got' }),
+    );
+    expect(statuses(out).map((c) => (c as { giftId: number }).giftId)).not.toContain(8);
+  });
+
+  it('carries a fusion into the question its muddled result raised', () => {
+    const fusing = { consumed: [1], unsure: [] };
+    expect(actionsFor({ kind: 'unsure', about: 'got', ids: [70, 71], fusing }, ctx({})).ask).toEqual({
+      kind: 'gift',
+      ids: [70, 71],
+      fusing,
+    });
+  });
+});
+
+describe('the 잔영 are held always (M152)', () => {
+  it('records no mark for a 잔영 a popup named, nor for one an answer picked', () => {
+    expect(actionsFor({ kind: 'got', giftId: 9800 }, ctx({}))).toEqual({ actions: [], ask: null });
+    expect(answerActions({ kind: 'gift', ids: [9800, 7] }, [9800], ctx({})).actions).toEqual([]);
+  });
+});
+
+describe('answerActions (M151)', () => {
+  it('records the gift a muddled fusion result was, and settles what that fusion ate', () => {
+    // Arrange: the player says the popup was 70; its recipe settles 1, 2, 3.
+    const ask = { kind: 'gift' as const, ids: [70, 71], fusing: { consumed: [], unsure: [], filled: 3 } };
+    // Act
+    const out = answerActions(ask, [70], ctx({ 1: 'got', 2: 'got', 3: 'got' }));
+    // Assert
+    expect(out.actions).toEqual([
+      { kind: 'status', changes: [{ giftId: 70, from: null, to: 'got' }] },
+      {
+        kind: 'status',
+        changes: [
+          { giftId: 1, from: 'got', to: null },
+          { giftId: 2, from: 'got', to: null },
+          { giftId: 3, from: 'got', to: null },
+        ],
+      },
+    ]);
+    expect(out.ask).toBeNull();
+  });
+
+  it('marks only the ticked ingredients the run still holds — the player may have changed one since', () => {
+    const ask = { kind: 'consumed' as const, resultId: 50, ids: [1, 2, 9800] };
+    const out = answerActions(ask, [1, 2, 9800], ctx({ 1: 'got', 2: 'failed', 9800: 'got' }));
+    expect(out.actions).toEqual([{ kind: 'status', changes: [{ giftId: 1, from: 'got', to: null }] }]);
+  });
+
+  it('enters the picked pack, and does nothing for a dismissed question', () => {
+    const pack = answerActions({ kind: 'pack', floor: 2, ids: [1005, 1006] }, [1006], ctx({}));
+    expect(pack.actions[0]).toMatchObject({ kind: 'enter', floor: 2, packId: 1006 });
+    expect(answerActions({ kind: 'gift', ids: [5, 6] }, [], ctx({}))).toEqual({ actions: [], ask: null });
   });
 });
 

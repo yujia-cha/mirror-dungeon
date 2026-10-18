@@ -13,6 +13,7 @@ import { evaluateConditions } from '../../core/index.ts';
 import type { GiftMatcher } from './gift-filters.ts';
 import type { GiftEntry } from './gift-priority.ts';
 import type { Block } from './entangle.ts';
+import { isGoalCandidate } from './material.ts';
 
 export interface GiftTileData {
   entry: GiftEntry;
@@ -68,7 +69,8 @@ export function browsableParents(
   childrenOf: ReadonlyMap<number, Gift[]>,
   matches: GiftMatcher,
 ): Gift[] {
-  const candidates = data.gifts.filter((gift) => gift.obtainable || wanted.includes(gift.id));
+  // No 잔영 (M152): held always, never a goal.
+  const candidates = data.gifts.filter((gift) => isGoalCandidate(gift, wanted));
   return candidates.filter((gift) => {
     const isChild = gift.upgradeOf !== null && indexes.giftById.has(gift.upgradeOf);
     if (isChild) return false;

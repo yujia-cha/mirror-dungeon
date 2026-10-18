@@ -13,10 +13,18 @@
  *   each other: several popups in a row (three start gifts, a fusion's two results) each count, the
  *   same name seen again after a blink does not.
  * - `sold` — the sell confirm names a gift and the sell list comes back with nothing selected
- *   (confirmed). Back with the same gift still selected means 「취소」, and nothing is sold.
- * - `fused` — the fusion confirm read its ingredients and the popup that follows names the result
- *   (M101): the result is `got` as usual, and the ingredients it ate are to be unmarked. What it ate
- *   is worked out before this file (`fusion.ts`); this only ties it to the result that came of it.
+ *   (confirmed). Back with the same gift still selected means 「취소」, and nothing is sold. A frame
+ *   of nothing between them (the dialog fading) decides nothing (M151). The gift the sell list had
+ *   selected before the confirm checks it: when both are read and differ, one of them is a misread
+ *   and nothing is sold — a missed sale costs less than unmarking a gift still held; when the
+ *   confirm's name is muddled between candidates and the selection is one of them, the selection
+ *   names it.
+ * - `fused` — the fusion confirm was seen and the popup that follows names the result (M101): the
+ *   result is `got` as usual, and the ingredients it ate are to be unmarked. What it ate is worked
+ *   out before this file (`fusion.ts`) from the icons, and after it from the result's recipe
+ *   (`apply.ts`, M151) — so a confirm whose slot count went unread still waits for its popup. A
+ *   muddled result name carries the fusion into its question (`unsure.fusing`): the answer settles
+ *   both.
  * - `unsure` — a name that is close to more than one candidate. The UI asks instead of recording.
  * - `place` (M148, `trackPlace`) — into a pack's shop (its front 「상점」 or any screen opened from
  *   it) or out of it (the map, a pack picker). Nothing in the run changes; the overlay shows other
@@ -65,13 +73,14 @@ export type CaptureEvent =
   | { kind: 'enter'; floor: number; packId: number }
   | { kind: 'got'; giftId: number; source?: StartSource }
   | { kind: 'sold'; giftId: number }
-  | { kind: 'fused'; resultId: number; consumed: number[]; unsure: number[] }
+  | { kind: 'fused'; resultId: number; consumed: number[]; unsure: number[]; filled?: number }
   /** The run start is behind the player (M135). */
   | { kind: 'startDone' }
   /** The player walked into a pack's shop, or out of it (M148). Changes nothing in the run. */
   | { kind: 'place'; shop: boolean }
   | { kind: 'unsure'; about: 'enter'; floor: number; ids: number[] }
-  | { kind: 'unsure'; about: 'got'; ids: number[] };
+  /** `fusing`: the popup was a fusion's result (M151) — the answer names it, and what it ate. */
+  | { kind: 'unsure'; about: 'got'; ids: number[]; fusing?: Consumed };
 
 export interface TrackerState {
   /** The last pack entered, so the map seen again on the same floor enters nothing. */
@@ -80,6 +89,8 @@ export interface TrackerState {
   popupGifts: readonly number[];
   /** A gift whose sale awaits the sell list's answer. */
   selling: number | null;
+  /** The gift the sell list shows selected, read before its confirm (M151). */
+  sellPick?: number | null;
   /** What a confirmed fusion will eat, waiting for the popup that names its result. */
   fusing: Consumed | null;
   /** The start picker last seen while the run start is open (M135). */
@@ -177,14 +188,22 @@ export function trackFrame(
   // Popups follow each other; anything else ends the run of them.
   if (frame.screen !== 'acquired' && next.popupGifts.length > 0) next = { ...next, popupGifts: [] };
 
-  // A sale is decided by what the sell list shows after the confirm, and by nothing else.
-  if (next.selling !== null && frame.screen !== 'sellConfirm') {
+  // A sale is decided by what the sell list shows after the confirm, and by nothing else. A frame
+  // of nothing (the dialog fading out) is not that answer (M151).
+  if (next.selling !== null && frame.screen !== null && frame.screen !== 'sellConfirm') {
     if (frame.screen === 'sell') {
       const selected = matchedId(frame.gift);
       if (selected === null && frame.gift?.status !== 'ambiguous')
         events.push({ kind: 'sold', giftId: next.selling });
     }
     next = { ...next, selling: null };
+  }
+  // What the sell list has selected, for the confirm to agree with (M151).
+  if (frame.screen === 'sell') {
+    const picked = matchedId(frame.gift);
+    if (picked !== null || frame.gift?.status !== 'ambiguous') next = { ...next, sellPick: picked };
+  } else if (frame.screen !== null && frame.screen !== 'sellConfirm' && next.sellPick != null) {
+    next = { ...next, sellPick: null };
   }
 
   // A fusion waits through the confirm, the animation (no screen) and its popup; going back to the
@@ -206,8 +225,14 @@ export function trackFrame(
           next = { ...next, fusing: null };
         }
       } else if (gift?.status === 'ambiguous' && !gift.ids.some((id) => next.popupGifts.includes(id))) {
-        events.push({ kind: 'unsure', about: 'got', ids: gift.ids });
-        next = { ...next, popupGifts: [...next.popupGifts, ...gift.ids] };
+        // A muddled fusion result takes the fusion into its question (M151): dropped here, what
+        // the fusion ate would never be settled.
+        events.push(
+          next.fusing
+            ? { kind: 'unsure', about: 'got', ids: gift.ids, fusing: next.fusing }
+            : { kind: 'unsure', about: 'got', ids: gift.ids },
+        );
+        next = { ...next, popupGifts: [...next.popupGifts, ...gift.ids], fusing: null };
       }
       break;
     }
@@ -229,12 +254,19 @@ export function trackFrame(
       break;
     }
     case 'fusionConfirm': {
+      // Seen is enough to wait for the result (M151): its recipe can settle what the icons did not.
+      // A read with ingredients replaces whatever came before; an unread frame keeps it.
       if (frame.ingredients) next = { ...next, fusing: frame.ingredients };
+      else if (!next.fusing) next = { ...next, fusing: { consumed: [], unsure: [] } };
       break;
     }
     case 'sellConfirm': {
-      const id = matchedId(frame.gift);
-      if (id !== null) next = { ...next, selling: id };
+      const named = matchedId(frame.gift);
+      const pick = next.sellPick ?? null;
+      const muddled = frame.gift?.status === 'ambiguous' ? frame.gift.ids : [];
+      const id = named ?? (pick !== null && muddled.includes(pick) ? pick : null);
+      if (named !== null && pick !== null && named !== pick) next = { ...next, selling: null };
+      else if (id !== null) next = { ...next, selling: id };
       break;
     }
     default:

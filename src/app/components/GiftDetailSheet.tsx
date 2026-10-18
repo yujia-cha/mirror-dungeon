@@ -31,6 +31,7 @@ import { effectBlocksFor } from '../lib/effect-text.ts';
 import type { GiftEffectsReport } from '../../core/effects.ts';
 import { upgradeStep } from '../lib/upgrade.ts';
 import { splitHighlight } from '../../core/text.ts';
+import { isMaterial } from '../lib/material.ts';
 
 /**
  * 「조합으로만 · 화왕지절 전용」 — the badges of the old list row, said as a sentence. A gift with
@@ -290,24 +291,27 @@ export function GiftDetailSheet({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          {/* The grid disables a blocked tile; the name beside it was never disabled, so the sheet
+        {/* A 잔영 is held always and never a goal (M152): no button to make it one. */}
+        {isMaterial(gift) && !selected ? null : (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/* The grid disables a blocked tile; the name beside it was never disabled, so the sheet
               behind it used to be a way around the lock. */}
-          <Button
-            variant={selected ? 'secondary' : 'primary'}
-            onClick={() => onToggleWanted(gift)}
-            disabled={blockedBy !== undefined}
-            title={blockedBy}
-          >
-            {selected ? <Check size={13} aria-hidden /> : null}
-            {t(selected ? 'giftRemoveGoal' : 'giftAddGoal', lang)}
-          </Button>
-          {blockedBy && blocked ? (
-            <span className="text-body text-fg-muted">
-              <LinkedText text={blockedBy} links={giftLink(blocked.by)} />
-            </span>
-          ) : null}
-        </div>
+            <Button
+              variant={selected ? 'secondary' : 'primary'}
+              onClick={() => onToggleWanted(gift)}
+              disabled={blockedBy !== undefined}
+              title={blockedBy}
+            >
+              {selected ? <Check size={13} aria-hidden /> : null}
+              {t(selected ? 'giftRemoveGoal' : 'giftAddGoal', lang)}
+            </Button>
+            {blockedBy && blocked ? (
+              <span className="text-body text-fg-muted">
+                <LinkedText text={blockedBy} links={giftLink(blocked.by)} />
+              </span>
+            ) : null}
+          </div>
+        )}
 
         {reports.length > 0 ? (
           <div

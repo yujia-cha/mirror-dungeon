@@ -7,6 +7,7 @@ import { buildIndexes } from '../../../core/index.ts';
 import type { FloorPlan, RoutePlan } from '../../../core/types.ts';
 import { pick } from '../../i18n.ts';
 import { FeedbackLog } from '../../lib/feedback-log.ts';
+import { FactLog } from '../overlay-log.ts';
 import { emptyRun, useApp } from '../../store.ts';
 import { CaptureContext, type CaptureApi } from '../../capture/capture-context.ts';
 import type { CaptureLogEntry, CaptureQuestion } from '../../capture/useCapture.ts';
@@ -130,14 +131,15 @@ describe('OverlayView (M132)', () => {
       ],
     } as unknown as RoutePlan;
     const log = new FeedbackLog(50, () => 1_000);
-    log.action('enter F1 pack 1');
+    const facts = new FactLog(() => 1_000);
+    facts.push([{ kind: 'enter', floor: 1, packId: PACK_1 }]);
     const capture = captureOf({
       log: [{ id: 1, at: 2_000, event: { kind: 'got', giftId: GIFT_B }, actions: [], undone: true }],
     });
     const target = document.createElement('div');
     document.body.append(target);
     // Act
-    render(<OverlayView target={target} log={log} />, { wrapper: withCapture(capture) });
+    render(<OverlayView target={target} log={log} facts={facts} />, { wrapper: withCapture(capture) });
     // Assert: everything lands in the target, not in the page's own container.
     const overlay = within(target).getByTestId('overlay');
     const status = within(overlay).getByTestId('overlay-status');
@@ -163,8 +165,9 @@ describe('OverlayView (M132)', () => {
     expect(overlay.querySelectorAll('button, a, input, [role="button"]')).toHaveLength(0);
     const recent = within(overlay).getByTestId('overlay-recent');
     const lines = within(recent).getAllByRole('listitem');
-    expect(lines[0]).toHaveTextContent(`획득 · ${giftLabel(GIFT_B)} · 되돌림`);
-    expect(lines[1]).toHaveTextContent('enter F1 pack 1');
+    // Sentences with names (M151): the reader's entry tagged, its undo said; the run's entry by hand.
+    expect(lines[0]).toHaveTextContent(`인식「${giftLabel(GIFT_B)}」 기프트를 획득했습니다 · 되돌림`);
+    expect(lines[1]).toHaveTextContent(`1층 「${packLabel(PACK_1)}」에 입장했습니다`);
     expect(screen.queryByTestId('overlay')).toBe(overlay);
   });
 
@@ -347,7 +350,7 @@ describe('OverlayView run start (M138)', () => {
 });
 
 describe('OverlayView in the shop (M148)', () => {
-  it('shows this floor’s exclusives, the tier-4 gifts and the goals left instead of the next pack', () => {
+  it('shows this floor’s exclusives marked got or not and the tier-4 gifts instead of the next pack', () => {
     // Arrange: floor 1 entered, one of two goals in hand, the reader in the shop.
     useApp.setState({
       run: {
@@ -375,10 +378,15 @@ describe('OverlayView in the shop (M148)', () => {
     expect(
       within(target).getByTestId('overlay-shop-t4').querySelectorAll('[data-gift]').length,
     ).toBeGreaterThan(0);
-    const goals = within(target).getByTestId('overlay-shop-goals');
-    expect(
-      [...goals.querySelectorAll('[data-gift]')].map((n) => Number(n.getAttribute('data-gift'))),
-    ).toEqual([GIFT_C]);
+    // M151: each exclusive says whether the run has it; the goals left are not listed any more.
+    const got = exclusive.querySelector(`[data-gift="${GIFT_A}"]`)!;
+    expect(got).toHaveAttribute('data-status', 'got');
+    expect(got).toHaveTextContent('획득');
+    const missing = exclusive.querySelector(`[data-gift="${GIFT_B}"]`)!;
+    expect(missing).toHaveAttribute('data-status', 'missing');
+    expect(missing).toHaveTextContent('미획득');
+    expect(missing.querySelector('[data-pending]')).not.toBeNull();
+    expect(within(target).queryByTestId('overlay-shop-goals')).toBeNull();
     expect(within(target).queryByTestId('overlay-recent')).not.toBeNull();
   });
 

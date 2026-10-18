@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { assignSlots, candidatesForMixed, mixedFusionConsumed, type SlotRanking } from '../fusion.ts';
+import {
+  assignSlots,
+  candidatesForMixed,
+  mixedFusionConsumed,
+  recipeConsumed,
+  type SlotRanking,
+} from '../fusion.ts';
 
 /** 달의 기억 (9083): 2 of the seven shards, all 3 memories. */
 const MOON = {
@@ -73,6 +79,39 @@ describe('assignSlots', () => {
   });
 });
 
+describe('assignSlots — the 잔영 are one (M152)', () => {
+  it('takes a 잔영 whose nearest rival is another 잔영 — which one changes nothing', () => {
+    // Arrange: 9993 and 9992 are both 잔영, close together; the held gift 7 is far behind.
+    const read = assignSlots(
+      [
+        [
+          [9993, 0.8],
+          [9992, 0.78],
+          [7, 0.6],
+        ],
+      ],
+      undefined,
+      new Set([9992, 9993]),
+    );
+    // Assert
+    expect(read[0]).toMatchObject({ status: 'match', id: 9993 });
+  });
+
+  it('still asks when a held gift is as close to the slot as the 잔영', () => {
+    const read = assignSlots(
+      [
+        [
+          [9993, 0.8],
+          [7, 0.78],
+        ],
+      ],
+      undefined,
+      new Set([9993]),
+    );
+    expect(read[0]).toMatchObject({ status: 'ambiguous', ids: [9993, 7] });
+  });
+});
+
 describe('mixedFusionConsumed (달의 기억)', () => {
   it('needs no reading when the player holds only the two shards it takes', () => {
     // Arrange
@@ -135,5 +174,69 @@ describe('candidatesForMixed', () => {
   it('ranks only what the player holds of both pools', () => {
     const held = new Set([9152, 9001, 9131, 9105]);
     expect(candidatesForMixed(MOON, held)).toEqual([9105, 9131, 9152]);
+  });
+});
+
+describe('recipeConsumed (M151)', () => {
+  // Two recipes of one result: three gifts, or two of them with another gift and a 잔영.
+  const RECIPES = [{ ingredients: [1, 2, 3] }, { ingredients: [1, 2, 4, 900] }];
+  const isMaterial = (id: number) => id === 900;
+  const read = (consumed: number[] = [], unsure: number[] = [], filled?: number) => ({
+    consumed,
+    unsure,
+    ...(filled === undefined ? {} : { filled }),
+  });
+
+  it('takes the only recipe the run holds whole, without the icons', () => {
+    expect(recipeConsumed(RECIPES, new Set([1, 2, 3]), read(), isMaterial)).toEqual({
+      consumed: [1, 2, 3],
+      unsure: [],
+    });
+  });
+
+  it('tells two recipes apart by the confirm’s slot count, the 잔영 counting as a slot', () => {
+    const held = new Set([1, 2, 3, 4]);
+    expect(recipeConsumed(RECIPES, held, read([], [], 4), isMaterial)).toEqual({
+      consumed: [1, 2, 4],
+      unsure: [],
+    });
+    expect(recipeConsumed(RECIPES, held, read([], [], 3), isMaterial)).toEqual({
+      consumed: [1, 2, 3],
+      unsure: [],
+    });
+  });
+
+  it('lets a matched icon choose the recipe', () => {
+    expect(recipeConsumed(RECIPES, new Set([1, 2, 3, 4]), read([4]), isMaterial)).toEqual({
+      consumed: [1, 2, 4],
+      unsure: [],
+    });
+  });
+
+  it('settles what the open recipes share and asks the rest', () => {
+    expect(recipeConsumed(RECIPES, new Set([1, 2, 3, 4]), read(), isMaterial)).toEqual({
+      consumed: [1, 2],
+      unsure: [3, 4],
+    });
+  });
+
+  it('names only held gifts when the run never recorded an ingredient', () => {
+    // Arrange: 3 was never marked; the three-slot recipe is still the one.
+    expect(recipeConsumed(RECIPES, new Set([1, 2]), read([], [], 3), isMaterial)).toEqual({
+      consumed: [1, 2],
+      unsure: [],
+    });
+  });
+
+  it('drops an icon no recipe names when icons and recipes disagree', () => {
+    // Arrange: 8 matched, which no recipe of the result takes — a misread.
+    expect(recipeConsumed(RECIPES, new Set([1, 2, 8]), read([8, 1], [2]), isMaterial)).toEqual({
+      consumed: [1],
+      unsure: [2],
+    });
+  });
+
+  it('is null for a result with no recipe — a keyword fusion: the icons decide alone', () => {
+    expect(recipeConsumed([], new Set([1]), read([1]), isMaterial)).toBeNull();
   });
 });

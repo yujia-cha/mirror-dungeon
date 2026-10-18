@@ -853,7 +853,12 @@ export const diagTraceStepSchema = z.object({
   screen: z.string().nullable().optional(),
   /** Icon slots: the shape tried and each slot's top candidates. */
   slots: z
-    .object({ shape: z.enum(['five', 'three']), top: z.array(z.array(z.tuple([z.number(), z.number()]))) })
+    .object({
+      shape: z.enum(['five', 'three']),
+      top: z.array(z.array(z.tuple([z.number(), z.number()]))),
+      /** What each slot's tier numeral allowed (M152); null where it did not read. */
+      tiers: z.array(z.array(z.number()).nullable()).optional(),
+    })
     .optional(),
   /** The popup's icon (M136): every candidate tried, [gift, score], best first. */
   icon: z.array(z.tuple([z.number(), z.number()])).optional(),

@@ -72,7 +72,10 @@ export function assignSlots(
       out[pick] = { status: 'none' };
       continue;
     }
-    const margin = best[1] - (ranked[1]?.[1] ?? 0);
+    // The 잔영 are one bottle in five tints, and which one a slot held changes nothing (the run
+    // keeps no count of them, M152): one 잔영 close behind another is no rival.
+    const rival = ranked.find(([id], i) => i > 0 && !(repeatable.has(best[0]) && repeatable.has(id)));
+    const margin = best[1] - (rival?.[1] ?? 0);
     if (best[1] >= thresholds.minScore && margin >= thresholds.minMargin) {
       out[pick] = { status: 'match', id: best[0], score: best[1], margin };
       if (!repeatable.has(best[0])) taken.add(best[0]);
@@ -89,6 +92,57 @@ export interface Consumed {
   consumed: number[];
   /** Held gifts it may have eaten but the screen did not settle, ascending. Ask about these. */
   unsure: number[];
+  /** How many slots the confirm's 「N/M」 said were filled, when it was read (M151). */
+  filled?: number;
+}
+
+type Recipe = NonNullable<Gift['fusion']>['recipes'][number];
+
+/**
+ * What a recipe fusion (조합식 합성) ate, from the result its popup named (M151). A result with
+ * recipes only ever comes of one of them, so the ingredients are known without the icons: the
+ * icons only choose between recipes. Of the result's recipes, those count whose length is the
+ * confirm's slot count (when read) and that hold every gift the icons matched; of those, the ones
+ * the run holds whole win. Their common ingredients were eaten; the ones they disagree on are
+ * asked. Only held gifts are named — an ingredient the run never recorded has nothing to unmark —
+ * and the 잔영 materials are left out, as everywhere (held in any number). A gift the icons
+ * matched that no recipe names was a misread: dropped, not eaten.
+ *
+ * `held` is what the run marks held before the fusion, without the materials and the result.
+ * Null when the result has no recipe (a keyword fusion's random result): the icons decide alone.
+ */
+export function recipeConsumed(
+  recipes: readonly Recipe[],
+  held: ReadonlySet<number>,
+  read: Consumed,
+  isMaterial: (id: number) => boolean,
+): Consumed | null {
+  if (recipes.length === 0) return null;
+  const sorted = (ids: Iterable<number>) => [...new Set(ids)].sort((a, b) => a - b);
+  const own = recipes.map((r) => ({
+    size: r.ingredients.length,
+    gifts: sorted(r.ingredients.filter((id) => !isMaterial(id))),
+  }));
+  const sized = own.filter((r) => read.filled === undefined || r.size === read.filled);
+  const fits = (sized.length > 0 ? sized : own).filter((r) =>
+    read.consumed.every((id) => r.gifts.includes(id)),
+  );
+  if (fits.length === 0) {
+    // The icons and the recipes disagree: keep only what some recipe could have eaten.
+    const named = new Set(own.flatMap((r) => r.gifts));
+    return {
+      consumed: read.consumed.filter((id) => named.has(id) && held.has(id)),
+      unsure: read.unsure.filter((id) => named.has(id) && held.has(id)),
+    };
+  }
+  const whole = fits.filter((r) => r.gifts.every((id) => held.has(id)));
+  const pool = whole.length > 0 ? whole : fits;
+  const common = pool[0]!.gifts.filter((id) => pool.every((r) => r.gifts.includes(id)));
+  const any = sorted(pool.flatMap((r) => r.gifts));
+  return {
+    consumed: common.filter((id) => held.has(id)),
+    unsure: any.filter((id) => !common.includes(id) && held.has(id)),
+  };
 }
 
 /**

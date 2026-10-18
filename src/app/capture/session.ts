@@ -75,6 +75,7 @@ import {
   type ReadMode,
 } from './loop.ts';
 import { prepareReference, prepareSlot, type IconRef } from './match-icon.ts';
+import { chipTiers } from './tier-chip.ts';
 import type { NameCandidate } from './match-name.ts';
 import { createOcrEngine, type OcrEngine } from './ocr-engine.ts';
 import { pixelRect, toPnm, type PixelRect, type Region } from './preprocess.ts';
@@ -94,6 +95,8 @@ export interface CaptureContext {
   held: readonly number[];
   /** The 잔영 materials, always candidates. */
   materials: readonly number[];
+  /** Every gift's tier, for the fusion slots' numerals (M152). */
+  tiers?: ReadonlyMap<number, number | null>;
   /** The picture URL of a gift's game icon, or null. */
   iconUrl: (giftId: number) => string | null;
   /** The run start is open: look for its pickers (M135). */
@@ -803,6 +806,10 @@ export class CaptureSession {
         const { rect, data } = pixelsOf(region);
         return prepareSlot(data, width, height, region, rect);
       },
+      tier: async (region) => {
+        const { rect, data } = pixelsOf(region);
+        return chipTiers(data, width, height, region, rect);
+      },
     };
     const refsOf = async (ids: readonly number[]) =>
       (await Promise.all(ids.map((id) => this.ref(id, ctx.iconUrl)))).filter((r): r is IconRef => r !== null);
@@ -813,6 +820,7 @@ export class CaptureSession {
       gifts: ctx.gifts,
       held,
       materials,
+      tiers: ctx.tiers,
       startOpen: ctx.startOpen,
       popupOnly: job.mode === 'popup',
       // Rung (ii) of the load ladder (M142): an unneeded raw pass, on a strained machine only.
