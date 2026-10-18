@@ -67,6 +67,7 @@ import {
   finished,
   FRAME_RATE,
   INITIAL_LOOP,
+  outcomeOf,
   queuedPopup,
   READ_INTERVALS,
   tickDelay,
@@ -642,18 +643,11 @@ export class CaptureSession {
       this.setPace(paceRead(this.pace, now, mode, now - started));
     // A popup read that found nothing says nothing of the screen; any other read names it, or none.
     if (frame && !frame.partial) this.lastScreen = frame.screen;
+    // A moving screen of nothing is read again at the range's slow end (M142); a map read short of
+    // its floor or pack is read again soon (M148).
     this.loop = finished(
       this.loop,
-      frame
-        ? {
-            at: performance.now(),
-            popup: frame.screen === 'acquired',
-            partial: frame.partial === true,
-            // A moving screen of nothing is read again at the range's slow end (M142).
-            nothing: frame.screen === null && frame.partial !== true,
-            holdMs: this.pace.range.max,
-          }
-        : undefined,
+      frame ? outcomeOf(frame, performance.now(), this.pace.range.max) : undefined,
     );
     this.followBurst();
   }

@@ -34,6 +34,10 @@
  * - **After the burst** → a popup read that found no popup saw only the title, so the first tick
  *   after the burst reads in full even when nothing changed (`owed`): what the popups gave way to
  *   (a map, the pack picker) is read late, never lost.
+ * - **A map read short of its floor or pack** (M148) → the next re-read of an unchanged screen comes
+ *   after `BURST_REFRESH_MS`, then doubles as ever. Right after an entry the header settles while it
+ *   is read; a read that saw 「층 탐사 중」 but not the floor or the pack's name used to wait 2 s and
+ *   then 4 s for the same frame read clean — the owner's 「each floor is recognised slowly」.
  * - **Ranges and load** (M142) → a preset is a range the tick interval floats in, and the re-read
  *   schedule is the load level's (`pace.ts`: activity pulls the interval to the range's `min`, a
  *   still screen relaxes it to `max`; a strained machine re-reads unchanged screens later).
@@ -47,6 +51,7 @@
  * Pure: the caller owns the clock and the timer.
  */
 import { BASE_REFRESH, type IntervalRange, type RefreshPolicy } from './pace.ts';
+import type { Frame } from './tracker.ts';
 
 /**
  * Read interval presets, the four of the reference site's assist mode. `balanced` is the default.
@@ -210,7 +215,7 @@ export function decide(
   };
 }
 
-/** What the finished read found, for the popup burst (M136). */
+/** What the finished read found, for the popup burst (M136) and a short map read (M148). */
 export interface ReadOutcome {
   /** When it finished. */
   at: number;
@@ -224,11 +229,33 @@ export interface ReadOutcome {
   holdMs?: number;
   /** It was a popup read that found none (`Frame.partial`). */
   partial: boolean;
+  /** It saw the map header but not a sure floor and pack (M148). */
+  incomplete?: boolean;
+}
+
+/**
+ * The outcome of a read that produced `frame` at `at` — the session and the bench share it.
+ * `holdMs` is how long a moving screen of nothing holds the next change read back (M142).
+ */
+export function outcomeOf(
+  frame: Pick<Frame, 'screen' | 'partial' | 'floor' | 'pack'>,
+  at: number,
+  holdMs = 0,
+): ReadOutcome {
+  return {
+    at,
+    popup: frame.screen === 'acquired',
+    partial: frame.partial === true,
+    nothing: frame.screen === null && frame.partial !== true,
+    holdMs,
+    incomplete: frame.screen === 'exploring' && (frame.floor === null || frame.pack?.status !== 'match'),
+  };
 }
 
 /**
  * The read started by the last 'read' decision is done. A popup it found starts (or extends) the
- * burst; a popup read that found none leaves a full read owed; a popup found clears it.
+ * burst; a popup read that found none leaves a full read owed; a popup found clears it; a map read
+ * short of its floor or pack brings the next re-read in to `BURST_REFRESH_MS`.
  */
 export function finished(state: LoopState, outcome?: ReadOutcome): LoopState {
   if (!state.busy) return state;
@@ -236,6 +263,7 @@ export function finished(state: LoopState, outcome?: ReadOutcome): LoopState {
   return {
     ...state,
     busy: false,
+    refreshGap: outcome.incomplete ? Math.min(state.refreshGap, BURST_REFRESH_MS) : state.refreshGap,
     burstUntil: outcome.popup ? outcome.at + POPUP_BURST_MS : state.burstUntil,
     owed: outcome.partial ? true : outcome.popup ? false : state.owed,
     // Nothing read while the screen moved holds the next change read back (M142); a popup read

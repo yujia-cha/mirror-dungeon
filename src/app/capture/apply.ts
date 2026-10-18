@@ -10,9 +10,13 @@
  * - `got` → mark the gift collected, unless it already is.
  * - `sold` → unmark a collected gift: it is no longer held, and the route may send the player for it
  *   again — which is true.
- * - `fused` → unmark the ingredients it ate (the result itself came as its own `got`). For the mixed
- *   recipe (달의 기억) whatever needs no reading is settled even when the screen read nothing.
- *   What stays unclear is asked, not guessed.
+ * - `fused` → the ingredients it ate are no longer held (the result itself came as its own `got`).
+ *   When the result is a gift the route collects — a goal or a goal's ingredient — they went up
+ *   into it: `used`, not lost (M149), so they show as dealt with and no floor settles them as
+ *   missed. Otherwise they are unmarked and the route may send the player for them again. The 잔영
+ *   materials are held in any number and the run keeps one mark per gift, so a fusion never
+ *   touches theirs. For the mixed recipe (달의 기억) whatever needs no reading is settled even when
+ *   the screen read nothing. What stays unclear is asked, not guessed.
  * - `unsure` → nothing changes; the player is asked to pick.
  * - At the run start (M135): a popup's gift from the observation (`got` with source `observation`)
  *   is also pinned as observed — a spent observation on floor 1 (M134) — when the pin is legal
@@ -24,7 +28,7 @@
  * actions it is handed, so the same steps play forward and back in tests against the real store.
  */
 import type { Gift } from '../../core/schema.ts';
-import type { GiftStatus, RunState } from '../lib/plan-input.ts';
+import { consumedStatus, type GiftStatus, type RunState } from '../lib/plan-input.ts';
 import { mixedFusionConsumed } from './fusion.ts';
 import type { CaptureEvent } from './tracker.ts';
 
@@ -79,7 +83,7 @@ export type CaptureStep =
 export type CaptureAsk =
   | { kind: 'gift'; ids: number[] }
   | { kind: 'pack'; floor: number; ids: number[] }
-  /** Which of these did the fusion eat — tick the ones to unmark. */
+  /** Which of these did the fusion eat — tick the ones to unmark (or mark used up, M149). */
   | { kind: 'consumed'; resultId: number; ids: number[] };
 
 export interface ApplyContext {
@@ -92,6 +96,11 @@ export interface ApplyContext {
   observed?: readonly number[];
   startDone?: boolean;
   currentFloor?: number;
+  /**
+   * What the route collects: the goals and their ingredients (`collectedGifts`). A fusion making
+   * one of these uses its ingredients up rather than losing them (M149). Omitted = none.
+   */
+  collected?: ReadonlySet<number>;
 }
 
 export interface Applied {
@@ -140,6 +149,9 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
           : [];
       return { actions: [...change([event.giftId], 'got'), ...observe], ask: null };
     }
+    case 'place':
+      // In or out of the shop (M148): the overlay follows it; the run is untouched.
+      return NONE;
     case 'startDone':
       // Past floor 1 the start is long over; nothing to record.
       return ctx.startDone || (ctx.currentFloor ?? 1) > 1
@@ -154,6 +166,8 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
           .map(([id]) => Number(id)),
       );
       held.delete(event.resultId);
+      // Held in any number: one mark cannot say whether this fusion ate the last one.
+      for (const id of [...held]) if (ctx.giftById.get(id)?.acquisition.kind === 'material') held.delete(id);
       let consumed = event.consumed.filter((id) => held.has(id));
       let unsure = event.unsure.filter((id) => held.has(id) && !consumed.includes(id));
       const mixed = ctx.giftById.get(event.resultId)?.fusion?.mixed;
@@ -166,7 +180,7 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
       return {
         actions: change(
           consumed.sort((a, b) => a - b),
-          null,
+          consumedStatus(event.resultId, ctx.collected),
         ),
         ask:
           unsure.length > 0

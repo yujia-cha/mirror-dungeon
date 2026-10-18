@@ -304,6 +304,45 @@ test('reads the run start: only the popup it saw records a gift — the other pi
   await panel.getByTestId('capture-stop').click();
 });
 
+test('tells the shop apart and the overlay window follows it (M148)', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await fakeShare(page);
+  await page.goto('./');
+  await page.getByTestId('capture-open').click();
+  const panel = page.getByTestId('capture-panel');
+  if (!(await page.evaluate(() => 'documentPictureInPicture' in window))) test.skip();
+  await panel.getByTestId('capture-start').click();
+  await expect(panel.getByTestId('capture-status')).toHaveAttribute('data-status', 'running', {
+    timeout: 45_000,
+  });
+  const [pip] = await Promise.all([
+    context.waitForEvent('page'),
+    panel.getByTestId('overlay-toggle').click(),
+  ]);
+  const map = [
+    { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045] as Region, size: 34 },
+    { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045] as Region, size: 34 },
+  ];
+
+  // The map: an entry, and the window shows the next pack.
+  await paint(page, map);
+  await expect(panel.getByTestId('capture-log')).toContainText('1층 입장 · 헬스치킨', { timeout: 20_000 });
+  await expect(pip.getByTestId('overlay-next')).toBeVisible();
+
+  // The shop's front: its red heading top left. The window shows what a shop decides.
+  await paint(page, [{ text: '특별한 상점', region: [0.13, 0.11, 0.15, 0.08], size: 40 }]);
+  await expect(pip.getByTestId('overlay-shop-exclusive')).toBeVisible({ timeout: 20_000 });
+  await expect(pip.getByTestId('overlay-shop-t4')).toBeVisible();
+  await expect(pip.getByTestId('overlay-shop-goals')).toBeVisible();
+  await expect(pip.getByTestId('overlay-next')).toHaveCount(0);
+
+  // Out on the map again: back to the next pack.
+  await paint(page, map);
+  await expect(pip.getByTestId('overlay-next')).toBeVisible({ timeout: 20_000 });
+  await expect(pip.getByTestId('overlay-shop-exclusive')).toHaveCount(0);
+  await panel.getByTestId('capture-stop').click();
+});
+
 test('starting the reader over an old run starts a new one, reads its start, and rolls back (M143)', async ({
   page,
 }) => {

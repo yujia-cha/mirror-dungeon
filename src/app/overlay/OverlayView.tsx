@@ -15,7 +15,7 @@
  * observation screen — so the section just shows what it has seen and settles on floor 1's pack
  * select by itself (tracker `startDone` → `settleStart`).
  */
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { TriangleAlert } from 'lucide-react';
 import { pick, t } from '../i18n.ts';
@@ -27,11 +27,13 @@ import { GiftIcon } from '../components/GiftIcon.tsx';
 import { PackCard } from '../components/PackCard.tsx';
 import { Badge, Button } from '../components/ui.tsx';
 import { usePlan } from '../shell/plan-context.ts';
+import { trackerGifts } from '../lib/tracker.ts';
 import {
   clockOf,
   nextPack,
   recentLines,
   remainingIn,
+  shopView,
   startCandidates,
   startEvidence,
   startInitiallyOn,
@@ -123,6 +125,83 @@ function StartChoice({ candidates, initial }: { candidates: StartCandidate[]; in
   );
 }
 
+/** A gift in a list: icon (its run status) and name. */
+function GiftLine({ id }: { id: number }) {
+  const { indexes, lang, needed } = usePlan();
+  const status = useApp((s) => s.run.giftStatus[id] ?? null);
+  const gift = indexes.giftById.get(id);
+  if (!gift) return null;
+  return (
+    <li className="flex min-w-0 items-center gap-2" data-gift={id} data-needed={needed.has(id) || undefined}>
+      <GiftIcon gift={gift} size={32} lang={lang} status={status === 'failed' ? null : status} />
+      <span className="min-w-0 flex-1 break-keep text-caption text-fg">{pick(gift.name, lang)}</span>
+    </li>
+  );
+}
+
+/**
+ * In a pack's shop (M148, the owner's pick): every gift only this floor's pack hands out, the
+ * tracker's tier-4 gifts without the 조각 series, and the goals still to collect — what to look
+ * for on the shelves. The next pack and what is left in it come back when the player walks out.
+ */
+function ShopSections() {
+  const { data, indexes, lang, packName, exclusivesOf } = usePlan();
+  const run = useApp((s) => s.run);
+  const wanted = useApp((s) => s.wanted);
+  const groups = useMemo(() => trackerGifts(data, indexes), [data, indexes]);
+  const view = shopView(run, exclusivesOf, groups, wanted);
+  const none = <p className="text-caption text-fg-subtle">{t('overlayShopNone', lang)}</p>;
+  return (
+    <>
+      <section className="flex flex-col gap-2" data-testid="overlay-shop-exclusive">
+        <SectionTitle>{t('overlayShopExclusive', lang)}</SectionTitle>
+        {view.packId !== null ? (
+          <p className="break-keep text-caption text-fg-muted">{packName(view.packId)}</p>
+        ) : null}
+        {view.exclusive.length > 0 ? (
+          <ul className="flex flex-col gap-1.5">
+            {view.exclusive.map((id) => (
+              <GiftLine key={id} id={id} />
+            ))}
+          </ul>
+        ) : (
+          none
+        )}
+      </section>
+      <section className="flex flex-col gap-2" data-testid="overlay-shop-t4">
+        <SectionTitle>{t('overlayShopT4', lang)}</SectionTitle>
+        <ul className="flex flex-wrap gap-1.5">
+          {view.t4.map((id) => {
+            const gift = indexes.giftById.get(id);
+            return gift ? (
+              <li key={id} data-gift={id} title={pick(gift.name, lang)}>
+                <GiftIcon
+                  gift={gift}
+                  size={32}
+                  lang={lang}
+                  status={run.giftStatus[id] === 'failed' ? null : (run.giftStatus[id] ?? null)}
+                />
+              </li>
+            ) : null;
+          })}
+        </ul>
+      </section>
+      <section className="flex flex-col gap-2" data-testid="overlay-shop-goals">
+        <SectionTitle>{t('overlayShopGoals', lang)}</SectionTitle>
+        {view.goals.length > 0 ? (
+          <ul className="flex flex-col gap-1.5">
+            {view.goals.map((id) => (
+              <GiftLine key={id} id={id} />
+            ))}
+          </ul>
+        ) : (
+          none
+        )}
+      </section>
+    </>
+  );
+}
+
 /**
  * The run start while the screen reader runs (M141): the same rows, nothing to press. A gift the
  * reader recorded on floor 1 (`got`) has the collected border and ✓, the rest the dotted border of
@@ -193,8 +272,6 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
     status = t('overlayCaptureOff', lang);
   }
 
-  const nextPackData = next.kind === 'pack' ? indexes.packById.get(next.packId) : undefined;
-
   return (
     <div className="flex min-w-0 flex-col gap-4 p-3" data-testid="overlay">
       <section className="flex flex-col gap-1" data-testid="overlay-head">
@@ -241,60 +318,80 @@ export function OverlayBody({ log = feedbackLog }: { log?: FeedbackLog }) {
         </div>
       ) : null}
 
-      <section className="flex flex-col gap-2" data-testid="overlay-next" data-kind={next.kind}>
-        <SectionTitle>
-          {next.kind === 'done'
-            ? t('stageDone', lang, { last: lastFloor })
-            : t('overlayNext', lang, { floor: next.floor })}
-        </SectionTitle>
-        {next.kind === 'pack' && nextPackData ? (
-          <div className="flex min-w-0 items-center gap-3" data-pack={next.packId}>
-            <PackCard pack={nextPackData} size={48} lang={lang} testId="overlay-pack-card" />
-            <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-              <span className="break-keep text-subheading text-fg">{pick(nextPackData.name, lang)}</span>
-              {next.alternatives > 0 ? (
-                <span data-testid="overlay-alternatives">
-                  <Badge tone="neutral">{t('stagePackAlternatives', lang, { n: next.alternatives })}</Badge>
-                </span>
-              ) : null}
-            </div>
-          </div>
-        ) : next.kind === 'noPlan' ? (
-          <p className="text-caption text-fg-subtle">{t('stageNoGoals', lang)}</p>
-        ) : next.kind === 'none' ? (
-          <p className="text-caption text-fg-subtle">{t('stageNoRoutePack', lang)}</p>
-        ) : null}
-      </section>
-
-      <section className="flex flex-col gap-2" data-testid="overlay-remaining">
-        <SectionTitle>{t('overlayRemaining', lang)}</SectionTitle>
-        {left ? (
-          <>
-            <p className="break-keep text-caption text-fg-muted" data-pack={left.packId}>
-              {t('overlayEntered', lang, { floor: left.floor, name: packName(left.packId) })}
-            </p>
-            {left.remaining.length === 0 ? (
-              <p className="text-caption text-fg-subtle">{t('overlayRemainingNone', lang)}</p>
-            ) : (
-              <ul className="flex flex-col gap-1.5" data-testid="overlay-remaining-list">
-                {left.remaining.map((id) => {
-                  const gift = indexes.giftById.get(id);
-                  return gift ? (
-                    <li key={id} className="flex min-w-0 items-center gap-2" data-gift={id}>
-                      <GiftIcon gift={gift} size={32} lang={lang} />
+      {capture.inShop ? (
+        <ShopSections />
+      ) : (
+        <>
+          <section className="flex flex-col gap-2" data-testid="overlay-next" data-kind={next.kind}>
+            <SectionTitle>
+              {next.kind === 'done'
+                ? t('stageDone', lang, { last: lastFloor })
+                : t('overlayNext', lang, { floor: next.floor })}
+            </SectionTitle>
+            {next.kind === 'pack' ? (
+              <ul className="flex flex-col gap-2" data-testid="overlay-pack-list">
+                {next.packs.map((row) => {
+                  const pack = indexes.packById.get(row.packId);
+                  return pack ? (
+                    <li
+                      key={row.packId}
+                      className="flex min-w-0 items-center gap-3"
+                      data-pack={row.packId}
+                      data-planned={row.planned || undefined}
+                    >
+                      <PackCard pack={pack} size={28} lang={lang} testId="overlay-pack-card" />
                       <span className="min-w-0 flex-1 break-keep text-caption text-fg">
-                        {pick(gift.name, lang)}
+                        {pick(pack.name, lang)}
                       </span>
+                      {row.alternatives > 0 ? (
+                        <span data-testid="overlay-alternatives">
+                          <Badge tone="neutral">
+                            {t('stagePackAlternatives', lang, { n: row.alternatives })}
+                          </Badge>
+                        </span>
+                      ) : null}
                     </li>
                   ) : null;
                 })}
               </ul>
+            ) : next.kind === 'noPlan' ? (
+              <p className="text-caption text-fg-subtle">{t('stageNoGoals', lang)}</p>
+            ) : next.kind === 'none' ? (
+              <p className="text-caption text-fg-subtle">{t('stageNoRoutePack', lang)}</p>
+            ) : null}
+          </section>
+
+          <section className="flex flex-col gap-2" data-testid="overlay-remaining">
+            <SectionTitle>{t('overlayRemaining', lang)}</SectionTitle>
+            {left ? (
+              <>
+                <p className="break-keep text-caption text-fg-muted" data-pack={left.packId}>
+                  {t('overlayEntered', lang, { floor: left.floor, name: packName(left.packId) })}
+                </p>
+                {left.remaining.length === 0 ? (
+                  <p className="text-caption text-fg-subtle">{t('overlayRemainingNone', lang)}</p>
+                ) : (
+                  <ul className="flex flex-col gap-1.5" data-testid="overlay-remaining-list">
+                    {left.remaining.map((id) => {
+                      const gift = indexes.giftById.get(id);
+                      return gift ? (
+                        <li key={id} className="flex min-w-0 items-center gap-2" data-gift={id}>
+                          <GiftIcon gift={gift} size={32} lang={lang} />
+                          <span className="min-w-0 flex-1 break-keep text-caption text-fg">
+                            {pick(gift.name, lang)}
+                          </span>
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p className="text-caption text-fg-subtle">{t('overlayNotEntered', lang)}</p>
             )}
-          </>
-        ) : (
-          <p className="text-caption text-fg-subtle">{t('overlayNotEntered', lang)}</p>
-        )}
-      </section>
+          </section>
+        </>
+      )}
 
       <section className="flex flex-col gap-1" data-testid="overlay-recent">
         <SectionTitle>{t('overlayRecent', lang)}</SectionTitle>

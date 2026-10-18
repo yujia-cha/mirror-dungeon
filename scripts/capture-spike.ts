@@ -214,6 +214,8 @@ async function main(): Promise<void> {
             return `FUSED ${giftName(e.resultId)} ← ${e.consumed.map(giftName).join(', ') || '—'}${e.unsure.length ? ` (? ${e.unsure.map(giftName).join(' / ')})` : ''}`;
           case 'startDone':
             return 'START DONE';
+          case 'place':
+            return e.shop ? 'SHOP IN' : 'SHOP OUT';
           case 'unsure':
             return `UNSURE ${e.about} ${e.ids.map(e.about === 'enter' ? packName : giftName).join(' / ')}`;
         }

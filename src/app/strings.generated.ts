@@ -522,6 +522,8 @@ export const STRINGS = {
   runVisitedShort: { ko: '입장 · {floor}층', en: 'Entered · F{floor}' },
   runPassed: { ko: '지남', en: 'Passed' },
   giftStatusGot: { ko: '획득', en: 'Got' },
+  // 합성이 루트가 모으는 기프트(목표나 목표의 재료)를 만들며 먹은 재료(M149). 손에는 없지만 잃은 것이 아니라서 「미획득」으로 적지 않고, 층을 떠날 때도 미획득으로 정산하지 않는다. 루트가 모으지 않는 기프트를 만든 합성의 재료는 그냥 획득이 풀린다.
+  giftStatusUsed: { ko: '조합에 씀', en: 'Used in a fusion' },
   giftStatusFailed: { ko: '미획득', en: 'Not got' },
   stageFloor: { ko: '{floor}층', en: 'Floor {floor}' },
   stageOf: { ko: '/ {last}', en: '/ {last}' },
@@ -667,12 +669,18 @@ export const STRINGS = {
   overlayOpen: { ko: '오버레이 창 열기', en: 'Open overlay window' },
   overlayClose: { ko: '오버레이 창 닫기', en: 'Close overlay window' },
   overlayHint: {
-    ko: '게임 위에 늘 떠 있는 작은 창입니다(Chrome·Edge). 테두리 없는 창 모드에서는 보이고, 전체 화면에서는 가려집니다',
-    en: 'A small window that stays above the game (Chrome, Edge). It shows over a borderless window, not over fullscreen',
+    ko: '게임 위에 늘 떠 있는 작은 창입니다(Chrome·Edge·Firefox). 테두리 없는 창 모드에서는 보이고, 전체 화면에서는 가려집니다',
+    en: 'A small window that stays above the game (Chrome, Edge, Firefox). It shows over a borderless window, not over fullscreen',
   },
   // 오버레이 창의 제목 표시줄(`document.title`).
   overlayTitle: { ko: '거울 던전 오버레이', en: 'Mirror Dungeon overlay' },
   overlayCaptureOff: { ko: '화면 인식 꺼짐', en: 'Screen reader off' },
+  // 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 세 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부다.
+  overlayShopExclusive: { ko: '이 층의 전용 기프트', en: "This floor's pack-only gifts" },
+  // 추적기의 4등급 이상 기프트에서 조각 묶음을 뺀 것(키워드·기억·공격 유형·그 밖).
+  overlayShopT4: { ko: 'T4 기프트', en: 'Tier 4 gifts' },
+  overlayShopGoals: { ko: '아직 못 얻은 목표', en: 'Goals still to get' },
+  overlayShopNone: { ko: '없습니다', en: 'None' },
   // 오버레이 창의 런 시작 절(M138). 1층을 떠나기 전, 시작 단계가 열려 있는 동안만 보인다. 계획이 기대하는 관측(지정·추천)과 1층에서 이미 얻은 것을 늘어놓는다(앱은 시작 기프트를 계획하지 않으므로(M145) 시작 기프트는 1층에서 얻은 것으로만 선다). 화면 인식이 돌고 있으면 누를 것이 없다(M141): 인식이 기록한 것은 ✓, 아직 못 본 것은 점선으로 보여 줄 뿐이고, 1층 테마팩 선택 화면을 보면 인식이 스스로 확정한다(일찍 손으로 확정하면 인식이 관측 화면을 그만 찾아 관측 팝업을 놓쳤다). 화면 인식이 꺼져 있으면 전부 켜진 토글로 서고, 게임에서 실제로 얻은 것만 켜 둔 채 확인하면 그대로 기록하며, 얻지 못한 관측은 관측하지 않은 것으로 보아 지정을 풀고 루트가 다시 찾는다.
   overlayStartTitle: { ko: '시작 시 획득', en: 'Collected at start' },
   overlayStartHint: {
@@ -688,7 +696,7 @@ export const STRINGS = {
   // 시작을 확인한 뒤 1층을 떠나기 전까지 남는 한 줄. {n}은 기록한 기프트 수.
   overlayStartDone: { ko: '시작 확인 · 획득 {n}', en: 'Start confirmed · {n} collected' },
   overlayStartReopen: { ko: '다시 고르기', en: 'Choose again' },
-  overlayNext: { ko: '{floor}층에 들어갈 팩', en: 'Pack for floor {floor}' },
+  overlayNext: { ko: '{floor}층에 들어갈 수 있는 팩', en: 'Packs for floor {floor}' },
   overlayRemaining: { ko: '이 팩에서 남은 기프트', en: 'Gifts left in this pack' },
   overlayEntered: { ko: '{floor}층 · {name}', en: 'Floor {floor} · {name}' },
   overlayRemainingNone: { ko: '남은 기프트 없음', en: 'Nothing left here' },
@@ -908,11 +916,12 @@ export const STRINGS = {
   trackerGroupAttack: { ko: '공격 유형', en: 'Attack type' },
   trackerGroupPlain: { ko: '키워드 없음', en: 'Keywordless' },
   trackerFusionNotice: {
-    ko: '조합으로 소모한 조각 {a}개·기억 {b}개는 미획득으로 표시하세요.',
-    en: 'Mark the {a} shards and {b} memories the fusion consumed as not got.',
+    ko: '조합에 쓴 조각 {a}개·기억 {b}개를 골라 소모로 표시하세요.',
+    en: 'Mark the {a} shards and {b} memories the fusion used up.',
   },
   trackerFusionHeld: { ko: '지금 획득으로 표시된 재료', en: 'Ingredients marked as got' },
-  trackerUnmark: { ko: '미획득으로', en: 'Not got' },
+  // 누르면 획득 표시가 풀린다. 달의 기억이 루트가 모으는 기프트(목표나 목표의 재료)면 「조합에 씀」이 되고(M149), 아니면 그냥 풀린다. 「미획득」은 층을 떠날 때의 자동 기록이라 이 버튼의 낱말로 쓰지 않는다.
+  trackerUnmark: { ko: '소모함', en: 'Used up' },
 
   // ── 확인창
   // 런을 버리고 되돌릴 수 없는 동작(링크 열기)이라 먼저 묻는다 — 런이 진행 중일 때만.

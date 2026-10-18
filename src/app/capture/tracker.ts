@@ -18,6 +18,9 @@
  *   (M101): the result is `got` as usual, and the ingredients it ate are to be unmarked. What it ate
  *   is worked out before this file (`fusion.ts`); this only ties it to the result that came of it.
  * - `unsure` — a name that is close to more than one candidate. The UI asks instead of recording.
+ * - `place` (M148, `trackPlace`) — into a pack's shop (its front 「상점」 or any screen opened from
+ *   it) or out of it (the map, a pack picker). Nothing in the run changes; the overlay shows other
+ *   things while the player shops.
  * - The run start (M135, `trackStart`): a popup says which picker its gift came from
  *   (`got.source`) — the observation when its title shows behind the popup, the start gift picker
  *   when that was the picker last seen — and `startDone` says the start is over: the observation
@@ -30,7 +33,7 @@
  */
 import type { Consumed } from './fusion.ts';
 import type { MatchResult } from './match-name.ts';
-import { isStartScreen, type Screen, type StartScreen } from './screens.ts';
+import { isShopScreen, isStartScreen, type Screen, type StartScreen } from './screens.ts';
 
 /** What one captured frame shows, as read and matched. */
 export interface Frame {
@@ -65,6 +68,8 @@ export type CaptureEvent =
   | { kind: 'fused'; resultId: number; consumed: number[]; unsure: number[] }
   /** The run start is behind the player (M135). */
   | { kind: 'startDone' }
+  /** The player walked into a pack's shop, or out of it (M148). Changes nothing in the run. */
+  | { kind: 'place'; shop: boolean }
   | { kind: 'unsure'; about: 'enter'; floor: number; ids: number[] }
   | { kind: 'unsure'; about: 'got'; ids: number[] };
 
@@ -81,6 +86,8 @@ export interface TrackerState {
   start?: StartScreen | null;
   /** `startDone` was told, and is not told again until a start picker is seen (M135). */
   startClosed?: boolean;
+  /** The player is in a pack's shop (M148): its front or a screen opened from it. */
+  inShop?: boolean;
 }
 
 export const INITIAL_TRACKER: TrackerState = { entered: null, popupGifts: [], selling: null, fusing: null };
@@ -127,6 +134,24 @@ function trackStart(state: TrackerState, frame: Frame): { state: TrackerState; e
   return { state: { ...state, start, startClosed: closed }, events };
 }
 
+/**
+ * In the shop or not (M148). The shop's front and every screen opened from it (`isShopScreen`) put
+ * the player in it; the map or a pack picker — and the run start's pickers — take them out. A
+ * popup or a frame that names nothing says nothing: popups come in the shop too, and a battle
+ * shows no title at all.
+ */
+function trackPlace(state: TrackerState, frame: Frame): { state: TrackerState; events: CaptureEvent[] } {
+  const screen = frame.screen;
+  const was = state.inShop ?? false;
+  const now = isShopScreen(screen)
+    ? true
+    : screen === 'exploring' || screen === 'packSelect' || isStartScreen(screen)
+      ? false
+      : was;
+  if (now === was) return { state, events: [] };
+  return { state: { ...state, inShop: now }, events: [{ kind: 'place', shop: now }] };
+}
+
 /** The gift a confirmed match names, or null. */
 function matchedId(result: MatchResult | null): number | null {
   return result?.status === 'match' ? result.id : null;
@@ -145,8 +170,9 @@ export function trackFrame(
   if (frame.partial && frame.screen === null) return { state, events: [] };
 
   const started = trackStart(state, frame);
-  const events: CaptureEvent[] = started.events;
-  let next: TrackerState = started.state;
+  const placed = trackPlace(started.state, frame);
+  const events: CaptureEvent[] = [...started.events, ...placed.events];
+  let next: TrackerState = placed.state;
 
   // Popups follow each other; anything else ends the run of them.
   if (frame.screen !== 'acquired' && next.popupGifts.length > 0) next = { ...next, popupGifts: [] };

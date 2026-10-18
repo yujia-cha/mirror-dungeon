@@ -3,14 +3,15 @@
   "reference": { "width": 1920, "height": 1009 },
   "titles": [
     { "region": [0.333, 0.205, 0.34, 0.07], "screens": ["acquired"], "_note": "popup title 「E.G.O 기프트를 획득했습니다.」" },
+    { "region": [0.01, 0.13, 0.17, 0.09], "screens": ["exploring"], "raw": "only", "_note": "map header 「N층 탐사 중」 over the pack name; brown on red, which the light pass erases (M95, M108 bench: 2 shots). M148: raw only — the light pass read it on none of the 5 local map shots — and second, right after the popup (a popup over the map still wins): read last, a map frame took 13 OCR calls. Its raw pass read 「탐사」 on no other screen of the ~150 local shots" },
     { "region": [0.1094, 0.0396, 0.1615, 0.0595], "screens": ["observationSelect"], "raw": "only", "_note": "M135, MD8 start shots: top-left 「E.G.O 기프트 관측」 in blue, which only the raw pass reads (4/4 shots) — so since M136 the light pass is not tried. Read only while the run start is open, and also behind an acquired popup to tell an observed gift from a start gift." },
     { "region": [0.6094, 0.1734, 0.1823, 0.0644], "screens": ["startGiftSelect"], "raw": "only", "_note": "M135: the start gift picker has no screen title; its side panel's 「선택한 E.G.O 기프트」 is gold, raw only (1/1, no light pass since M136). The observation picker shows the same words lower and further right, so its own title is read first. Read only while the run start is open." },
     { "region": [0.31, 0.69, 0.385, 0.055], "screens": ["fusionConfirm"], "_note": "fusion confirm line under the slots" },
     { "region": [0.28, 0.42, 0.44, 0.12], "screens": ["sellConfirm"], "_note": "centre confirm 「[이름]을(를) 코스트 300에 / 판매하시겠습니까?」" },
     { "region": [0.29, 0.19, 0.29, 0.06], "screens": ["purchase"], "_note": "purchase dialog title" },
     { "region": [0.33, 0.075, 0.34, 0.09], "screens": ["fusionKeyword", "sell", "enhance", "fusion"], "_note": "full-screen title. No raw pass since M135: in the M108 bench it only ever found the pack picker, which has its own region now" },
-    { "region": [0.33, 0.075, 0.34, 0.105], "screens": ["packSelect"], "raw": true, "_note": "the pack picker's 「N층 테마팩 선택」, found only by the raw pass (M108 bench: 3 shots). Taller than the full-screen title since M135: in MD8 the title spans y 0.114–0.168 and the shorter region cut it (owner session, floor 1: 「1증레마팩선택」 → read whole)" },
-    { "region": [0.01, 0.13, 0.17, 0.09], "screens": ["exploring"], "raw": true, "_note": "map header 「N층 탐사 중」 over the pack name; brown on red, which the light pass erases (M95, M108 bench: 2 shots)" }
+    { "region": [0.13, 0.11, 0.15, 0.08], "screens": ["shop"], "raw": "only", "_note": "M148: the shop front's red heading 「특별한 상점」/「상점」, top left (x 0.148–0.253, y 0.124–0.173 on the local shots). Only the raw pass reads it (every local shop shot, nothing on any other screen); it stays readable behind the purchase dialog, whose own title comes first" },
+    { "region": [0.33, 0.075, 0.34, 0.105], "screens": ["packSelect"], "raw": true, "_note": "the pack picker's 「N층 테마팩 선택」, found only by the raw pass (M108 bench: 3 shots). Taller than the full-screen title since M135: in MD8 the title spans y 0.114–0.168 and the shorter region cut it (owner session, floor 1: 「1증레마팩선택」 → read whole)" }
   ],
   "names": {
     "popup": [0.2526, 0.56, 0.138, 0.1338],

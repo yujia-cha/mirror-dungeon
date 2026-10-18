@@ -214,6 +214,8 @@ export async function readFrame(
 
   const frame: Frame = { screen: null, floor: null, pack: null, gift: null };
   let screen: Screen | null = null;
+  /** The lines of the pass that named the screen, and where they were read (set in `accept`). */
+  let named = null as { lines: string[]; region: Region } | null;
   for (const title of layout.titles) {
     if (ctx.popupOnly && !title.screens.includes('acquired')) continue;
     if (!ctx.startOpen && title.screens.every(isStartScreen)) continue;
@@ -222,7 +224,9 @@ export async function readFrame(
       const s = classifyScreen(lines, ctx.lang);
       // A region only speaks for the screens whose title lives there: a dimmed full-screen title
       // must not be read as the popup it sits behind.
-      return s !== null && title.screens.includes(s) ? s : null;
+      if (s === null || !title.screens.includes(s)) return null;
+      named = { lines, region: title.region };
+      return s;
     };
     // Only titles the light pass can erase get the second, raw read (M108): on a frame that shows
     // nothing, every title region is read, and the raw reads were half of it.
@@ -237,8 +241,14 @@ export async function readFrame(
   if (ctx.popupOnly && screen === null) {
     frame.partial = true;
   } else if (screen === 'exploring') {
-    frame.floor = await readEither(layout.names.mapHeader, 'floor', parseFloor);
-    frame.pack = await nameIn(layout.names.mapHeader, ctx.packs);
+    // The map title is read in the very region the floor and the pack's name live in (M148): the
+    // lines that named the screen usually carry both, and reading the region twice more, light
+    // pass first, made a map frame the dearest of all. Only what they lack is read again.
+    const header = layout.names.mapHeader;
+    const own = named && sameRegion(named.region, header) ? named.lines : [];
+    frame.floor = parseFloor(own) ?? (await readEither(header, 'floor', parseFloor));
+    const fromTitle = own.length > 0 ? matchName(own, ctx.packs) : null;
+    frame.pack = fromTitle?.status === 'match' ? fromTitle : await nameIn(header, ctx.packs);
   } else if (screen === 'acquired') {
     frame.gift = await popupGift();
     const behind = ctx.startOpen
@@ -258,6 +268,10 @@ export async function readFrame(
     if (filled) frame.ingredients = await readIngredients(reader, layout, ctx, filled, trace);
   }
   return { frame, ocrCalls, trace };
+}
+
+function sameRegion(a: Region, b: Region): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
 /**

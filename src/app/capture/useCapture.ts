@@ -10,11 +10,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { observable, observationBudget } from '../../core/index.ts';
 import { giftIconUrl } from '../lib/assets.ts';
-import { observationClosed } from '../lib/plan-input.ts';
+import { consumedStatus, observationClosed } from '../lib/plan-input.ts';
 import { feedbackLog } from '../lib/feedback-log.ts';
 import type { RunState } from '../lib/plan-input.ts';
 import { usePlan } from '../shell/plan-context.ts';
-import { runHasProgress, useApp } from '../store.ts';
+import { collectedGifts, runHasProgress, useApp } from '../store.ts';
 import {
   actionsFor,
   enterAction,
@@ -125,6 +125,8 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const [strained, setStrained] = useState(false);
   const [log, setLog] = useState<CaptureLogEntry[]>([]);
   const [questions, setQuestions] = useState<CaptureQuestion[]>([]);
+  /** The player is in a pack's shop, as the reader last saw (M148). Off whenever it is not reading. */
+  const [inShop, setInShop] = useState(false);
   const session = useRef<CaptureSession | null>(null);
   const nextId = useRef(1);
 
@@ -191,7 +193,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const onEvents = useCallback(
     (events: CaptureEvent[]) => {
       for (const event of events) {
-        const { run: now, options } = useApp.getState();
+        const { run: now, options, wanted, fusionGoal } = useApp.getState();
         const applied = actionsFor(event, {
           giftStatus: now.giftStatus,
           giftById: latest.current.indexes.giftById,
@@ -200,7 +202,9 @@ export function useCapture(hooks: CaptureHooks = {}) {
           observed: options.observedGifts,
           startDone: now.startDone === true,
           currentFloor: now.currentFloor,
+          collected: collectedGifts(wanted, fusionGoal),
         });
+        if (event.kind === 'place') setInShop(event.shop);
         record(event, run(applied.actions));
         // A clean read of a floor settles the question its muddled read left (M116).
         if (event.kind === 'enter')
@@ -251,6 +255,8 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const start = useCallback(async () => {
     session.current?.stop();
     setError(null);
+    // A new session's tracker starts outside the shop (M148).
+    setInShop(false);
     setStrained(false);
     /**
      * Callbacks that speak only while their session is the current one (M116): a session replaced
@@ -361,7 +367,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
       latest.current.hooks.onAnswer?.(question.ask, picked);
       if (picked.length === 0) return;
       const { ask: asked } = question;
-      const now = useApp.getState().run;
+      const { run: now, wanted, fusionGoal } = useApp.getState();
       const entry = asked.kind === 'pack' ? enterAction(asked.floor, picked[0]!, now) : null;
       const steps: CaptureAction[] =
         asked.kind === 'pack'
@@ -374,7 +380,10 @@ export function useCapture(hooks: CaptureHooks = {}) {
                 changes: picked.map((giftId) => ({
                   giftId,
                   from: now.giftStatus[giftId] ?? null,
-                  to: asked.kind === 'gift' ? ('got' as const) : null,
+                  to:
+                    asked.kind === 'gift'
+                      ? ('got' as const)
+                      : consumedStatus(asked.resultId, collectedGifts(wanted, fusionGoal)),
                 })),
               },
             ];
@@ -391,6 +400,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
       error,
       log,
       questions,
+      inShop: inShop && status === 'running',
       start,
       begin,
       stop,
@@ -401,6 +411,6 @@ export function useCapture(hooks: CaptureHooks = {}) {
       // Only while reading: a stopped session's last level says nothing.
       strained: strained && status === 'running',
     }),
-    [status, error, log, questions, start, begin, stop, rollback, undo, answer, strained],
+    [status, error, log, questions, inShop, start, begin, stop, rollback, undo, answer, strained],
   );
 }

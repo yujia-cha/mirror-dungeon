@@ -17,7 +17,29 @@ export const APP_START = { startGiftCount: 0, startKeyword: 'auto' } as const sa
 /** Fusion results the user wants only as a whole: their ingredients are not goals of their own. */
 export type FusionGoalMap = Record<number, 'resultOnly'>;
 
-export type GiftStatus = 'got' | 'failed';
+/**
+ * `got` in hand · `failed` missed where the route expected it · `used` (M149) eaten by a fusion that
+ * made a gift the route collects — not in hand any more (the planner does not count it owned, so a
+ * second fusion that eats the same gift routes for another), yet nothing is lost: it is not 「미획득」
+ * and no floor settles it as missed.
+ */
+export type GiftStatus = 'got' | 'failed' | 'used';
+
+/**
+ * What a fusion's eaten ingredients become (M149): used up when it made a gift the route collects
+ * (`collected` = goals and their ingredients, `collectedGifts`), gone otherwise.
+ */
+export function consumedStatus(
+  resultId: number,
+  collected: ReadonlySet<number> | undefined,
+): GiftStatus | null {
+  return collected?.has(resultId) ? 'used' : null;
+}
+
+/** The gift is dealt with for this run: in hand, or used up in a fusion the route wanted (M149). */
+export function giftDone(status: GiftStatus | null | undefined): boolean {
+  return status === 'got' || status === 'used';
+}
 
 /** The run being played, as the player reports it. */
 export interface RunState {

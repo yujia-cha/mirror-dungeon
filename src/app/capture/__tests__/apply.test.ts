@@ -11,9 +11,11 @@ const MOON = {
 };
 const giftById = new Map<number, Gift>([
   [9083, { id: 9083, fusion: { recipes: [], mixed: MOON } } as unknown as Gift],
+  // A 잔영 material: held in any number.
+  [9800, { id: 9800, acquisition: { kind: 'material' } } as unknown as Gift],
 ]);
 const ctx = (
-  giftStatus: Record<number, 'got' | 'failed'>,
+  giftStatus: Record<number, 'got' | 'failed' | 'used'>,
   run: { visits?: Record<number, number>; stageFloor?: number } = {},
 ) => ({ giftStatus, giftById, visits: run.visits ?? {}, stageFloor: run.stageFloor ?? 1 });
 
@@ -81,6 +83,39 @@ describe('actionsFor', () => {
       },
     ]);
     expect(out.ask).toEqual({ kind: 'consumed', resultId: 50, ids: [4] });
+  });
+
+  it('marks what a fusion ate as used up when it made a gift the route collects (M149)', () => {
+    // Arrange: 50 is a goal (or a goal's ingredient); 60 is not.
+    const event = (resultId: number) => ({ kind: 'fused' as const, resultId, consumed: [1, 2], unsure: [4] });
+    const held = ctx({ 1: 'got', 2: 'got', 4: 'got' });
+    const collected = new Set([50]);
+    // Act
+    const upper = actionsFor(event(50), { ...held, collected });
+    const other = actionsFor(event(60), { ...held, collected });
+    // Assert: into a wanted gift they went up, not lost; anything else eats them for good.
+    expect(upper.actions).toEqual([
+      {
+        kind: 'status',
+        changes: [
+          { giftId: 1, from: 'got', to: 'used' },
+          { giftId: 2, from: 'got', to: 'used' },
+        ],
+      },
+    ]);
+    expect(other.actions[0]).toMatchObject({ changes: [{ to: null }, { to: null }] });
+    // The unclear one is still asked, never guessed.
+    expect(upper.ask).toEqual({ kind: 'consumed', resultId: 50, ids: [4] });
+  });
+
+  it('leaves a 잔영 material marked — held in any number, one mark cannot say the last one went', () => {
+    // Arrange: two 잔영 slots read as the same material.
+    const event = { kind: 'fused' as const, resultId: 50, consumed: [1, 9800], unsure: [9800] };
+    // Act
+    const out = actionsFor(event, ctx({ 1: 'got', 9800: 'got' }));
+    // Assert
+    expect(out.actions).toEqual([{ kind: 'status', changes: [{ giftId: 1, from: 'got', to: null }] }]);
+    expect(out.ask).toBeNull();
   });
 
   it('settles 달의 기억 from its recipe when the confirm screen was not read', () => {

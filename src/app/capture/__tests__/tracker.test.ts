@@ -13,14 +13,17 @@ const frame = (over: Partial<Frame>): Frame => ({
   ...over,
 });
 
-/** Feed frames in order; return every event and the final state. */
+/**
+ * Feed frames in order; return every event and the final state. Walking into or out of the shop
+ * (`place`, M148) has its own tests below, so it is left out here.
+ */
 function run(frames: Frame[], from: TrackerState = INITIAL_TRACKER) {
   let state = from;
   const events: CaptureEvent[] = [];
   for (const f of frames) {
     const out = trackFrame(state, f);
     state = out.state;
-    events.push(...out.events);
+    events.push(...out.events.filter((e) => e.kind !== 'place'));
   }
   return { state, events };
 }
@@ -206,8 +209,9 @@ describe('trackFrame — other screens', () => {
   });
 
   it('returns the same state object when nothing changed', () => {
-    const { state } = trackFrame(INITIAL_TRACKER, frame({ screen: 'purchase' }));
-    expect(state).toBe(INITIAL_TRACKER);
+    const inShop = trackFrame(INITIAL_TRACKER, frame({ screen: 'purchase' })).state;
+    const { state } = trackFrame(inShop, frame({ screen: 'purchase' }));
+    expect(state).toBe(inShop);
   });
 });
 
@@ -301,5 +305,58 @@ describe('trackFrame — a popup read of nothing (M136)', () => {
     expect(sale.state).toBe(selling);
     expect(sale.events).toEqual([]);
     expect(popups.events).toEqual([{ kind: 'got', giftId: 5 }]);
+  });
+});
+
+describe('trackFrame — in the shop or not (M148)', () => {
+  /** Fold frames in order; every event and the last state. */
+  const fold = (frames: Frame[], from: TrackerState = INITIAL_TRACKER) => {
+    let state = from;
+    const events: CaptureEvent[] = [];
+    for (const f of frames) {
+      const out = trackFrame(state, f);
+      state = out.state;
+      events.push(...out.events);
+    }
+    return { state, events };
+  };
+  const places = (events: CaptureEvent[]) => events.filter((e) => e.kind === 'place');
+
+  it('goes in at the shop front and out at the map, saying so once each', () => {
+    // Act
+    const { state, events } = fold([
+      frame({ screen: 'shop' }),
+      frame({ screen: 'shop' }),
+      frame({ screen: 'purchase' }),
+      map(2, match(1002)),
+    ]);
+    // Assert
+    expect(places(events)).toEqual([
+      { kind: 'place', shop: true },
+      { kind: 'place', shop: false },
+    ]);
+    expect(state.inShop).toBe(false);
+  });
+
+  it('counts any screen opened from the shop as in it, even when its front was never read', () => {
+    const { state, events } = fold([frame({ screen: 'fusion' })]);
+    expect(places(events)).toEqual([{ kind: 'place', shop: true }]);
+    expect(state.inShop).toBe(true);
+  });
+
+  it('stays put through popups and frames that name nothing', () => {
+    // Arrange: in the shop.
+    const inShop = fold([frame({ screen: 'shop' })]).state;
+    // Act
+    const { state, events } = fold([popup(match(9091)), frame({}), frame({ screen: null })], inShop);
+    // Assert
+    expect(places(events)).toEqual([]);
+    expect(state.inShop).toBe(true);
+  });
+
+  it('leaves at a pack picker too', () => {
+    const inShop = fold([frame({ screen: 'sell' })]).state;
+    const { state } = fold([frame({ screen: 'packSelect', floor: 3 })], inShop);
+    expect(state.inShop).toBe(false);
   });
 });

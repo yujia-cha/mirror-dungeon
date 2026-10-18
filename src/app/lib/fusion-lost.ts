@@ -10,7 +10,7 @@
  * recomputes it.
  */
 import type { RoutePlan } from '../../core/types.ts';
-import type { GiftStatus } from './plan-input.ts';
+import { giftDone, type GiftStatus } from './plan-input.ts';
 
 export interface LostFusion {
   /** The fusion result that can no longer be made. */
@@ -47,7 +47,7 @@ export function lostFusions(plan: RoutePlan, giftStatus: Record<number, GiftStat
     if (entry.reason !== 'fusion-ingredient-unresolved' || !byRun(entry.giftId, new Set())) return [];
     const missing = entry.missing ?? [];
     const ingredients = plan.fusions.find((f) => f.result === entry.giftId)?.ingredients ?? [];
-    const remaining = ingredients.filter((id) => !missing.includes(id) && giftStatus[id] !== 'got');
+    const remaining = ingredients.filter((id) => !missing.includes(id) && !giftDone(giftStatus[id]));
     return [{ result: entry.giftId, missing, dropped: entry.droppedIngredients ?? [], remaining }];
   });
 }

@@ -733,6 +733,8 @@ export const CAPTURE_SCREENS = [
   'sell',
   'enhance',
   'fusion',
+  // The shop's own screen (M148): its red 「상점」/「특별한 상점」 heading, top left.
+  'shop',
   'packSelect',
   'exploring',
   // The run start (M135): 기프트 관측 has a title of its own; the start gift picker only its panel's.
@@ -840,7 +842,10 @@ export type DiagTraceStep = z.infer<typeof diagTraceStepSchema>;
 /** A measure's p50/p90 over its recent samples, ms (M142); `n` how many, where counted. */
 const diagPercentilesSchema = z.object({ p50: z.number(), p90: z.number(), n: z.number().optional() });
 
-const diagFloorGiftSchema = z.object({ giftId: z.number(), status: z.enum(['got', 'failed']).nullable() });
+const diagFloorGiftSchema = z.object({
+  giftId: z.number(),
+  status: z.enum(['got', 'failed', 'used']).nullable(),
+});
 
 export const diagRecordSchema = z.discriminatedUnion('kind', [
   z.object({
@@ -934,8 +939,8 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     status: z.array(
       z.object({
         giftId: z.number(),
-        from: z.enum(['got', 'failed']).nullable(),
-        to: z.enum(['got', 'failed']).nullable(),
+        from: z.enum(['got', 'failed', 'used']).nullable(),
+        to: z.enum(['got', 'failed', 'used']).nullable(),
       }),
     ),
     currentFloor: z.object({ from: z.number(), to: z.number() }).nullable(),

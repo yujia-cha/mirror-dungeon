@@ -6,6 +6,7 @@ import {
   fastTicks,
   finished,
   INITIAL_LOOP,
+  outcomeOf,
   POPUP_BURST_MS,
   QUEUED_FAST_MS,
   queuedPopup,
@@ -189,6 +190,34 @@ describe('tickDelay (M139)', () => {
     const fast = tickDelay(burst, 500, BURST_TICK_MS / 2);
     // Assert
     expect(fast).toBe(BURST_TICK_MS / 2);
+  });
+});
+
+describe('a map read short of its floor or pack (M148)', () => {
+  it('brings the next re-read of the unchanged screen in to BURST_REFRESH_MS, then doubles', () => {
+    // Arrange: a read of a changed frame, which saw the map but not the pack.
+    expect(BURST_REFRESH_MS).toBe(500);
+    let state = decide(INITIAL_LOOP, sig, true, 0).state;
+    state = finished(state, { at: 300, popup: false, partial: false, incomplete: true });
+    // Act / Assert: nothing before 500 ms, a read at 500 ms, the next one a second later.
+    expect(decide(state, sig, false, 400).decision).toBe('skip');
+    const second = decide(state, sig, false, 500);
+    expect(second.decision).toBe('read');
+    state = finished(second.state, { at: 600, popup: false, partial: false });
+    expect(decide(state, sig, false, 1400).decision).toBe('skip');
+    expect(decide(state, sig, false, 1500).decision).toBe('read');
+  });
+
+  it('counts a map read without a sure floor and pack as incomplete, and only that', () => {
+    const map = { screen: 'exploring' as const, partial: undefined };
+    expect(outcomeOf({ ...map, floor: 3, pack: { status: 'none' } }, 1).incomplete).toBe(true);
+    expect(
+      outcomeOf({ ...map, floor: null, pack: { status: 'match', id: 1, score: 1, margin: 1 } }, 1).incomplete,
+    ).toBe(true);
+    expect(
+      outcomeOf({ ...map, floor: 3, pack: { status: 'match', id: 1, score: 1, margin: 1 } }, 1).incomplete,
+    ).toBe(false);
+    expect(outcomeOf({ screen: 'shop', floor: null, pack: null }, 1).incomplete).toBe(false);
   });
 });
 

@@ -5,7 +5,13 @@ import type { PlanOptions } from '../core/types.ts';
 import type { UpgradeLevel } from '../core/schema.ts';
 import { defaultOptions } from '../core/index.ts';
 import type { Lang } from './i18n.ts';
-import { APP_START, observationClosed, type FusionGoalMap, type RunState } from './lib/plan-input.ts';
+import {
+  APP_START,
+  observationClosed,
+  type FusionGoalMap,
+  type GiftStatus,
+  type RunState,
+} from './lib/plan-input.ts';
 import { DEFAULT_READ_INTERVAL, READ_INTERVALS, type ReadIntervalPreset } from './capture/loop.ts';
 
 export type LeftTab = 'deck' | 'gifts';
@@ -187,7 +193,7 @@ interface AppState extends SharedState {
    */
   captureLive: boolean;
   setCaptureLive: (live: boolean) => void;
-  setGiftStatus: (giftId: number, status: 'got' | 'failed' | null) => void;
+  setGiftStatus: (giftId: number, status: GiftStatus | null) => void;
   /**
    * 「남은 재료 모으기」 on a fusion the run lost: keep entering packs for its remaining
    * ingredients (`on`), or give them up with the fusion (the default once the run is under way).
@@ -515,7 +521,7 @@ export function sanitizeRun(raw: unknown): RunState {
   }
   if (source.giftStatus && typeof source.giftStatus === 'object') {
     for (const [id, status] of Object.entries(source.giftStatus as Record<string, unknown>)) {
-      if (Number.isInteger(Number(id)) && (status === 'got' || status === 'failed'))
+      if (Number.isInteger(Number(id)) && (status === 'got' || status === 'failed' || status === 'used'))
         out.giftStatus[Number(id)] = status;
     }
   }

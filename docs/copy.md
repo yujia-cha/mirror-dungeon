@@ -1614,6 +1614,13 @@
 - en: Got
 - 쓰는 곳: src/app/components/GiftIcon.tsx
 
+### giftStatusUsed
+- ko: 조합에 씀
+- en: Used in a fusion
+- 쓰는 곳: src/app/components/GiftIcon.tsx
+
+메모: 합성이 루트가 모으는 기프트(목표나 목표의 재료)를 만들며 먹은 재료(M149). 손에는 없지만 잃은 것이 아니라서 「미획득」으로 적지 않고, 층을 떠날 때도 미획득으로 정산하지 않는다. 루트가 모으지 않는 기프트를 만든 합성의 재료는 그냥 획득이 풀린다.
+
 ### giftStatusFailed
 - ko: 미획득
 - en: Not got
@@ -2063,8 +2070,8 @@
 - 쓰는 곳: src/app/overlay/OverlayToggle.tsx
 
 ### overlayHint
-- ko: 게임 위에 늘 떠 있는 작은 창입니다(Chrome·Edge). 테두리 없는 창 모드에서는 보이고, 전체 화면에서는 가려집니다
-- en: A small window that stays above the game (Chrome, Edge). It shows over a borderless window, not over fullscreen
+- ko: 게임 위에 늘 떠 있는 작은 창입니다(Chrome·Edge·Firefox). 테두리 없는 창 모드에서는 보이고, 전체 화면에서는 가려집니다
+- en: A small window that stays above the game (Chrome, Edge, Firefox). It shows over a borderless window, not over fullscreen
 - 쓰는 곳: src/app/overlay/OverlayToggle.tsx
 
 ### overlayTitle
@@ -2076,6 +2083,28 @@
 ### overlayCaptureOff
 - ko: 화면 인식 꺼짐
 - en: Screen reader off
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayShopExclusive
+메모: 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 세 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부다.
+- ko: 이 층의 전용 기프트
+- en: This floor's pack-only gifts
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayShopT4
+메모: 추적기의 4등급 이상 기프트에서 조각 묶음을 뺀 것(키워드·기억·공격 유형·그 밖).
+- ko: T4 기프트
+- en: Tier 4 gifts
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayShopGoals
+- ko: 아직 못 얻은 목표
+- en: Goals still to get
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
+### overlayShopNone
+- ko: 없습니다
+- en: None
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayStartTitle
@@ -2112,8 +2141,8 @@
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayNext
-- ko: {floor}층에 들어갈 팩
-- en: Pack for floor {floor}
+- ko: {floor}층에 들어갈 수 있는 팩
+- en: Packs for floor {floor}
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayRemaining
@@ -2629,8 +2658,8 @@
 - 쓰는 곳: src/app/tracker/Tracker.tsx
 
 ### trackerFusionNotice
-- ko: 조합으로 소모한 조각 {a}개·기억 {b}개는 미획득으로 표시하세요.
-- en: Mark the {a} shards and {b} memories the fusion consumed as not got.
+- ko: 조합에 쓴 조각 {a}개·기억 {b}개를 골라 소모로 표시하세요.
+- en: Mark the {a} shards and {b} memories the fusion used up.
 - 쓰는 곳: src/app/components/FusionNotice.tsx
 
 ### trackerFusionHeld
@@ -2639,9 +2668,11 @@
 - 쓰는 곳: src/app/components/FusionNotice.tsx
 
 ### trackerUnmark
-- ko: 미획득으로
-- en: Not got
+- ko: 소모함
+- en: Used up
 - 쓰는 곳: src/app/components/FusionNotice.tsx
+
+메모: 누르면 획득 표시가 풀린다. 달의 기억이 루트가 모으는 기프트(목표나 목표의 재료)면 「조합에 씀」이 되고(M149), 아니면 그냥 풀린다. 「미획득」은 층을 떠날 때의 자동 기록이라 이 버튼의 낱말로 쓰지 않는다.
 
 ## 확인창
 
@@ -2991,7 +3022,7 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 - readme: 「다음 층」(또는 아래로 당기기)으로 넘어가고, 「입장 취소」(위로 당기기)는 입장을 취소하며 그 팩에서 표시한 것을 지웁니다. 층 스트립을 눌러 지난 층을 다시 볼 수 있습니다.
 - readme: 루트는 현재 층부터 다시 계산됩니다. 계획에 없는 팩에 들어가도 됩니다.
 - readme: **화면 인식**(데스크톱 Chrome·Edge·Firefox): 헤더의 「화면 인식」 버튼을 눌러 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. **화면 인식을 시작하는 것이 곧 런 시작입니다**: 지난 런의 기록이 남아 있으면 「새 런으로 시작」(기록을 비웁니다)과 「이어서」(새로고침한 뒤 같은 런) 중에서 고르고, 런을 잘못 시작했으면 「런 중단 · 시작 전으로 되돌리기」로 획득·입장·시작 기록과 관측 지정을 시작 전으로 되돌립니다(목표와 덱은 그대로). 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다(버튼에 개수가 뜹니다). 창을 닫아도 인식은 계속됩니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.
-- readme: **오버레이 창**(데스크톱 Chrome·Edge 116 이상): 「화면 인식」 팝오버의 「오버레이 창 열기」는 게임 위에 늘 떠 있는 작은 창을 엽니다. 인식 상태, 지금 층, 다음 층에 들어갈 팩, 들어간 팩에서 남은 기프트, 방금 한 행동을 보여 줍니다. 런을 시작할 때는 계획한 관측을 늘어놓습니다. 화면 인식 중이면 누를 것이 없습니다: 인식한 것에 ✓가 붙고, 1층 팩 선택 화면을 보면 인식이 스스로 확정합니다. 화면 인식 없이 쓸 때는 게임에서 실제로 얻은 것만 켜 두고 「확인하고 진행」을 누르세요. 어느 쪽이든 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다. 누를 것은 이 확인뿐입니다. 화면 공유 없이도 열리고, 팝오버를 닫아도 남습니다. 테두리 없는 창 모드의 게임 위에는 보이지만 전체 화면(독점) 모드에서는 가려집니다.
+- readme: **오버레이 창**(데스크톱 Chrome·Edge 116 이상, Firefox 151 이상): 「화면 인식」 팝오버의 「오버레이 창 열기」는 게임 위에 늘 떠 있는 작은 창을 엽니다. 인식 상태, 지금 층, 다음 층에 들어갈 수 있는 루트 팩 전부(계획이 그 층에 앉힌 팩이 맨 앞), 들어간 팩에서 남은 기프트, 방금 한 행동을 보여 줍니다. 런을 시작할 때는 계획한 관측을 늘어놓습니다. 화면 인식 중이면 누를 것이 없습니다: 인식한 것에 ✓가 붙고, 1층 팩 선택 화면을 보면 인식이 스스로 확정합니다. 화면 인식 없이 쓸 때는 게임에서 실제로 얻은 것만 켜 두고 「확인하고 진행」을 누르세요. 어느 쪽이든 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다. 누를 것은 이 확인뿐입니다. 화면 인식이 상점을 보면 그동안은 이 층의 전용 기프트, T4 기프트(조각 제외), 아직 못 얻은 목표를 보여 주고, 상점을 나가면 원래대로 돌아갑니다. 화면 공유 없이도 열리고, 팝오버를 닫아도 남습니다. 테두리 없는 창 모드의 게임 위에는 보이지만 전체 화면(독점) 모드에서는 가려집니다.
 - readme: **⋯ 메뉴**의 「링크 복사」가 덱·목표·설정을 담은 공유 링크를 만듭니다(런 진행은 담지 않습니다). 「초기화」는 덱을 기본 LCB 수감자로, 목표·설정·런을 처음으로 되돌립니다. 「테마 변경」·「기프트 아이콘 크기」·「글자 크기」도 여기 있고, 이 기기에만 저장됩니다.
 - 설명서: 가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.
 - en: On the stage in the middle, press 「Enter」 on a pack card or pull the card down.

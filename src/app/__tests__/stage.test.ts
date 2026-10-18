@@ -129,6 +129,8 @@ describe('stage', () => {
     expect(autoFailedFor([9267, 9282], {})).toEqual([9267, 9282]);
     expect(autoFailedFor([9267, 9282], { 9267: 'got', 9282: 'failed' })).toEqual([]);
     expect(autoFailedFor([], { 9267: 'got' })).toEqual([]);
+    // Used up in a fusion the route wanted (M149) is dealt with: leaving the floor does not miss it.
+    expect(autoFailedFor([9267], { 9267: 'used' })).toEqual([]);
   });
 
   it('makes an entry answer for its exclusives, what was expected of it, and a pool pickup already missed', () => {

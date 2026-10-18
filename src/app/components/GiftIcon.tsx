@@ -18,7 +18,8 @@
  * for missed, and a faded picture for a tile that cannot be pressed at all (`dim`).
  */
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, CornerRightUp, X } from 'lucide-react';
+import type { GiftStatus } from '../lib/plan-input.ts';
 import type { Gift, Keyword } from '../../core/schema.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { giftIconUrl, holdImage, keywordIconUrl } from '../lib/assets.ts';
@@ -77,8 +78,9 @@ const DIM = 'opacity-45';
 const DIM_FAILED = 'opacity-50';
 
 /** The frame: dashed while a toggle is not pressed, ink once collected, the plain line otherwise. */
-function frameClass(status: 'got' | 'failed' | null, pending: boolean): string {
-  if (status === 'got') return 'border-primary';
+function frameClass(status: GiftStatus | null, pending: boolean): string {
+  // Used up in a fusion the route wanted (M149) is as done as in hand: the same ink frame.
+  if (status === 'got' || status === 'used') return 'border-primary';
   if (pending) return 'border-dashed border-border-control';
   return 'border-border';
 }
@@ -101,8 +103,11 @@ export function GiftIcon({
   name?: boolean;
   /** Extra hover text after the name (a condition sentence, a reason). */
   title?: string;
-  /** Run progress: collected (check badge) or missed (dimmed, cross badge). */
-  status?: 'got' | 'failed' | null;
+  /**
+   * Run progress: collected (check badge), used up in a fusion the route wanted (up-arrow badge,
+   * M149) or missed (dimmed, cross badge).
+   */
+  status?: GiftStatus | null;
   /** A run toggle not pressed yet: a dashed frame, the picture at full colour. */
   pending?: boolean;
   /**
@@ -122,7 +127,13 @@ export function GiftIcon({
   const label = pick(gift.name, lang);
   const judged = judgement ? t(JUDGEMENT_KEY[judgement], lang) : null;
   const statusText =
-    status === 'got' ? t('giftStatusGot', lang) : status === 'failed' ? t('giftStatusFailed', lang) : null;
+    status === 'got'
+      ? t('giftStatusGot', lang)
+      : status === 'used'
+        ? t('giftStatusUsed', lang)
+        : status === 'failed'
+          ? t('giftStatusFailed', lang)
+          : null;
   const keywordText = useKeywordName(gift.keyword, lang);
   // The badge and the tier chip are `aria-hidden`, and the badge is the only thing that carries a
   // gift's keyword — seven of them differ by hue alone, and 범용 is told by the badge being absent.
@@ -189,10 +200,12 @@ export function GiftIcon({
         ) : null}
         {status ? (
           <span
-            className={`absolute right-0 top-0 rounded-bl-sm p-px ${status === 'got' ? 'bg-primary text-primary-fg' : 'bg-surface text-fg'}`}
+            className={`absolute right-0 top-0 rounded-bl-sm p-px ${status === 'failed' ? 'bg-surface text-fg' : 'bg-primary text-primary-fg'}`}
           >
             {status === 'got' ? (
               <Check size={size >= 32 ? 10 : 8} strokeWidth={3} />
+            ) : status === 'used' ? (
+              <CornerRightUp size={size >= 32 ? 10 : 8} strokeWidth={3} />
             ) : (
               <X size={size >= 32 ? 10 : 8} strokeWidth={3} />
             )}

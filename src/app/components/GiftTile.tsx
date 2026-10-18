@@ -10,7 +10,7 @@ import type { Gift } from '../../core/schema.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
 import { tierLabel } from '../lib/labels.ts';
-import type { GiftStatus } from '../lib/plan-input.ts';
+import { giftDone, type GiftStatus } from '../lib/plan-input.ts';
 import { useKeywordName } from '../lib/useEnums.ts';
 import { GiftIcon, type GiftIconSize } from './GiftIcon.tsx';
 import { LinkButton } from './ui.tsx';
@@ -38,7 +38,8 @@ export function GiftTile({
   lang: Lang;
 }) {
   const name = pick(gift.name, lang);
-  const got = status === 'got';
+  // Used up in a fusion the route wanted is as pressed as in hand (M149); pressing it unmarks.
+  const got = giftDone(status);
   const width = Math.max(size + 16, 64);
   const keyword = useKeywordName(gift.keyword, lang);
   // The button's own label replaces the icon's `role="img"` name rather than adding to it, so
@@ -59,7 +60,7 @@ export function GiftTile({
     <div
       className={`relative flex select-none flex-col items-center gap-1 rounded-md border p-1.5 text-center ${
         wanted ? 'border-primary ring-1 ring-primary' : 'border-border'
-      } ${status === 'got' ? 'bg-surface-muted' : ''}`}
+      } ${got ? 'bg-surface-muted' : ''}`}
       style={{ width }}
       data-testid="gift-tile"
       data-gift={gift.id}

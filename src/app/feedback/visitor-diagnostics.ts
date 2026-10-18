@@ -78,6 +78,8 @@ export function eventText(event: CaptureEvent | { kind: string }): string {
       return `got ${e.giftId}${e.source ? ` ${e.source}` : ''}`;
     case 'startDone':
       return 'startDone';
+    case 'place':
+      return e.shop ? 'shop in' : 'shop out';
     case 'sold':
       return `sold ${e.giftId}`;
     case 'fused':

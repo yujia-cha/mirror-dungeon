@@ -5,7 +5,8 @@
  */
 import { useMemo, useState } from 'react';
 import { t } from '../i18n.ts';
-import { useApp } from '../store.ts';
+import { collectedGifts, useApp } from '../store.ts';
+import { consumedStatus, giftDone } from '../lib/plan-input.ts';
 import { trackerGifts, type TrackerGroupId } from '../lib/tracker.ts';
 import { FusionNotice } from '../components/FusionNotice.tsx';
 import { GiftTile } from '../components/GiftTile.tsx';
@@ -32,6 +33,8 @@ export function Tracker() {
   const { data, indexes, lang, goals, openGift } = usePlan();
   const giftStatus = useApp((s) => s.run.giftStatus);
   const setGiftStatus = useApp((s) => s.setGiftStatus);
+  const wanted = useApp((s) => s.wanted);
+  const fusionGoal = useApp((s) => s.fusionGoal);
   const tileSize = useTileIconSize(32);
   const groups = useMemo(() => trackerGifts(data, indexes), [data, indexes]);
   const [notice, setNotice] = useState<number | null>(null);
@@ -45,7 +48,10 @@ export function Tracker() {
           gift={noticeGift}
           giftStatus={giftStatus}
           indexes={indexes}
-          onUnmark={(id) => setGiftStatus(id, null)}
+          // Eaten by the fusion: used up when the route wanted 달의 기억, gone otherwise (M149).
+          onUnmark={(id) =>
+            setGiftStatus(id, consumedStatus(noticeGift.id, collectedGifts(wanted, fusionGoal)))
+          }
           onClose={() => setNotice(null)}
           lang={lang}
         />
@@ -54,7 +60,7 @@ export function Tracker() {
         <Card key={group.id} className="px-3 py-3" testId={`tracker-${group.id}`}>
           <SectionTitle
             right={
-              <span className="font-num text-caption text-fg-subtle">{`${group.gifts.filter((g) => giftStatus[g.id] === 'got').length}/${group.gifts.length}`}</span>
+              <span className="font-num text-caption text-fg-subtle">{`${group.gifts.filter((g) => giftDone(giftStatus[g.id])).length}/${group.gifts.length}`}</span>
             }
           >
             {t(GROUP_KEY[group.id], lang)}

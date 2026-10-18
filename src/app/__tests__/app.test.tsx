@@ -5077,15 +5077,38 @@ describe('Tracker', () => {
     renderPlanned(<Tracker />);
     await user.click(within(tile(9083)).getByTestId('gift-tile-toggle'));
     const notice = screen.getByTestId('fusion-notice');
-    expect(notice).toHaveTextContent('조합으로 소모한 조각 2개·기억 3개는 미획득으로 표시하세요.');
+    expect(notice).toHaveTextContent('조합에 쓴 조각 2개·기억 3개를 골라 소모로 표시하세요.');
     expect(within(notice).getAllByRole('listitem')).toHaveLength(3); // the heading and the two held ingredients
-    await user.click(within(notice).getByRole('button', { name: '업화 조각 미획득으로' }));
+    await user.click(within(notice).getByRole('button', { name: '업화 조각 소모함' }));
     expect(useApp.getState().run.giftStatus).toEqual({ 9142: 'got', 9083: 'got' });
-    expect(within(notice).queryByRole('button', { name: '업화 조각 미획득으로' })).toBeNull();
+    expect(within(notice).queryByRole('button', { name: '업화 조각 소모함' })).toBeNull();
     // Unmarking 달의 기억 closes the reminder.
     await user.click(within(tile(9083)).getByTestId('gift-tile-toggle'));
     expect(screen.queryByTestId('fusion-notice')).toBeNull();
     expect(useApp.getState().run.giftStatus).toEqual({ 9142: 'got' });
+  });
+
+  it('marks what 달의 기억 ate as used up when it is a goal, not lost (M149)', async () => {
+    // Arrange: 달의 기억 is a goal, so its ingredients went up into it.
+    const user = userEvent.setup();
+    useApp.getState().setDeck(BURN_DECK, 7);
+    useApp.setState({ wanted: [9083] });
+    useApp.getState().setGiftStatus(9105, 'got'); // 업화 조각
+    renderPlanned(<Tracker />);
+    // Act
+    await user.click(within(tile(9083)).getByTestId('gift-tile-toggle'));
+    await user.click(
+      within(screen.getByTestId('fusion-notice')).getByRole('button', { name: '업화 조각 소모함' }),
+    );
+    // Assert: used, shown as dealt with — pressed, counted, and labelled so.
+    expect(useApp.getState().run.giftStatus).toEqual({ 9105: 'used', 9083: 'got' });
+    const toggle = within(tile(9105)).getByTestId('gift-tile-toggle');
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(within(tile(9105)).getByRole('img', { name: /조합에 씀/ })).toBeInTheDocument();
+    expect(screen.getByTestId('tracker-shard')).toHaveTextContent('1/');
+    // Pressing it again unmarks it, as for a gift in hand.
+    await user.click(toggle);
+    expect(useApp.getState().run.giftStatus).toEqual({ 9083: 'got' });
   });
 });
 

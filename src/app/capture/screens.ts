@@ -37,6 +37,8 @@ export const SCREEN_TITLES = {
   sell: { ko: 'E.G.O 기프트 판매', en: '' },
   enhance: { ko: 'E.G.O 기프트 강화', en: '' },
   fusion: { ko: 'E.G.O 기프트 합성', en: '' },
+  // The shop's front (M148): a red heading top left, 「상점」 or 「특별한 상점」 — contained either way.
+  shop: { ko: '상점', en: '' },
   // Without the 「N층」 before it: OCR reads 층 as 증 or 중 and drops it as often as not, and the floor
   // number is read on its own (`parseFloor`).
   packSelect: { ko: '테마팩 선택', en: '' },
@@ -53,6 +55,13 @@ export type Screen = CaptureScreen;
 
 /** A line counts as a title at this similarity. */
 export const TITLE_MIN = 0.8;
+
+/**
+ * Titles so short that containment alone would find them inside other text (M148): 「상점」 is in the
+ * shop's own banner 「다음 층에서 특별한 상점 등장 확률」. Such a title counts only in a line at most
+ * this many compared characters long — 「특별한 상점」 is five.
+ */
+const SHORT_TITLE_LINE: Partial<Record<CaptureScreen, number>> = { shop: 6 };
 
 /** Hangul syllables only — what tells Korean titles apart once 「E.G.O」 is unreadable. */
 function hangulOnly(text: string): string {
@@ -77,6 +86,8 @@ export function classifyScreen(lines: readonly string[], lang: Lang): Screen | n
     let best: Screen | null = null;
     let bestScore = TITLE_MIN;
     for (const screen of titles) {
+      const maxLine = SHORT_TITLE_LINE[screen];
+      if (maxLine !== undefined && text.length > maxLine) continue;
       const score = containedSimilarity(text, comparable(SCREEN_TITLES[screen][lang], lang));
       if (score > bestScore || (score === bestScore && best === null)) [best, bestScore] = [screen, score];
     }
@@ -135,7 +146,17 @@ const IN_PACK_SCREENS: ReadonlySet<Screen> = new Set([
   'sell',
   'enhance',
   'fusion',
+  'shop',
 ]);
+
+/**
+ * The screens that mean the player is in a pack's shop (M148): its front and every screen opened
+ * from it. The map or a pack picker means they left; a popup or a frame that names nothing says
+ * nothing either way.
+ */
+export function isShopScreen(screen: Screen | null): boolean {
+  return screen !== null && IN_PACK_SCREENS.has(screen);
+}
 
 export function isInPackScreen(screen: Screen): boolean {
   return IN_PACK_SCREENS.has(screen);

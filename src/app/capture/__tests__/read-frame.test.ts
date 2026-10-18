@@ -354,6 +354,51 @@ describe('readFrame: the popup icon when the name is unsure (M136)', () => {
   });
 });
 
+describe('readFrame: the map (M148)', () => {
+  /** The shipped order: the map header right after the popup, raw only. */
+  const MAP_FIRST: CaptureLayout = {
+    ...LAYOUT,
+    titles: [
+      { region: R(0), screens: ['acquired'] },
+      { region: R(3), screens: ['exploring'], raw: 'only' },
+      { region: R(1), screens: ['fusionConfirm'] },
+      { region: R(2), screens: ['sell', 'fusion'] },
+    ],
+  };
+
+  it('reads a map frame in two calls: the floor and the pack come from the title pass itself', async () => {
+    // Arrange
+    const { reader, calls } = fakeReader({ '0.3': { raw: ['1증탐사 중', '속하지 못하는'] } });
+    // Act
+    const { frame, ocrCalls } = await readFrame(reader, MAP_FIRST, CTX);
+    // Assert
+    expect(frame).toMatchObject({ screen: 'exploring', floor: 1, pack: { status: 'match', id: 1002 } });
+    expect(calls).toEqual(['0:light', '0.3:raw']);
+    expect(ocrCalls).toBe(2);
+  });
+
+  it('reads the region again only for what the title pass lacked', async () => {
+    // Arrange: the title pass caught the floor but not the pack's name (mid-transition).
+    const { reader, calls } = fakeReader({ '0.3': { raw: ['2증탐사중'] } });
+    // Act
+    const { frame } = await readFrame(reader, MAP_FIRST, CTX);
+    // Assert: no second floor read; the pack is looked for in both passes and not found.
+    expect(frame).toMatchObject({ screen: 'exploring', floor: 2, pack: { status: 'none' } });
+    expect(calls).toEqual(['0:light', '0.3:raw', '0.3:light', '0.3:raw']);
+  });
+
+  it('still lets a popup over the map win', async () => {
+    const { reader, calls } = fakeReader({
+      '0': { light: ['E.G.O 기프트를 획득했습니다.'] },
+      '0.4': { light: ['작고 나쁜 인형'] },
+      '0.3': { raw: ['1층 탐사 중', '속하지 못하는'] },
+    });
+    const { frame } = await readFrame(reader, MAP_FIRST, CTX);
+    expect(frame.screen).toBe('acquired');
+    expect(calls).toEqual(['0:light', '0.4:light']);
+  });
+});
+
 describe('readFrame: a popup read of the popup burst (M136)', () => {
   it('reads the popup title only, and stops there when no popup shows', async () => {
     // Arrange: a map behind — a full read would find it.

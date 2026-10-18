@@ -13,6 +13,9 @@
  *   would tell the player to look for it in a pack they cannot go back to.
  * - **The next pack** is the route pack the stage would put first on the frontier
  *   (`run.currentFloor`), the floor the player decides next.
+ * - **In the shop** (M148) the window shows what a shop decides instead of the next pack: the gifts
+ *   only the pack entered last hands out (all of them, whatever the route wants), the tracker's
+ *   tier-4 gifts without the 조각 series, and the goals not yet in hand.
  * - **The start candidates** (M138) are what the plan expects the run start to hand over while it
  *   is still open — the start gifts and the observations, pinned or recommended — and what floor 1
  *   already collected (M140). With the screen reader off the player says which ones the game
@@ -21,7 +24,7 @@
  */
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
 import type { FeedbackLogEntry } from '../lib/feedback-log.ts';
-import { observationClosed, type RunState } from '../lib/plan-input.ts';
+import { giftDone, observationClosed, type RunState } from '../lib/plan-input.ts';
 import { enterablePacks } from '../lib/stage.ts';
 import { runDoneFloor } from '../store.ts';
 
@@ -65,9 +68,22 @@ export type NextPack =
   | { kind: 'noPlan'; floor: number }
   /** The plan seats no pack on the frontier (a floor it passes). */
   | { kind: 'none'; floor: number }
-  | { kind: 'pack'; floor: number; packId: number; alternatives: number };
+  | { kind: 'pack'; floor: number; packs: NextPackRow[] };
 
-/** The route pack for the frontier floor, as the stage orders them (the one planned there first). */
+/** A route pack the frontier floor can take: its window covers the floor. */
+export interface NextPackRow {
+  packId: number;
+  /** The plan seated it on this very floor (the stage puts it first). */
+  planned: boolean;
+  /** Packs off the route that hand over the same gifts on this floor (「외 N」). */
+  alternatives: number;
+}
+
+/**
+ * Every route pack the frontier floor can take, in the stage's order (the one planned there
+ * first). A route pack's window often spans floors, so one seated further on may be entered here
+ * too — showing only the first left the player guessing when the game offered another (M148).
+ */
 export function nextPack(
   plan: RoutePlan | null,
   run: Pick<RunState, 'currentFloor'>,
@@ -77,9 +93,13 @@ export function nextPack(
   const floor = run.currentFloor;
   if (floor >= runDoneFloor(lastFloor)) return { kind: 'done' };
   if (!plan) return { kind: 'noPlan', floor };
-  const first = enterablePacks(plan, floor, indexes)[0];
-  if (!first) return { kind: 'none', floor };
-  return { kind: 'pack', floor, packId: first.packId, alternatives: first.alternatives.length };
+  const packs = enterablePacks(plan, floor, indexes).map((entry) => ({
+    packId: entry.packId,
+    planned: entry.recommended,
+    alternatives: entry.alternatives.length,
+  }));
+  if (packs.length === 0) return { kind: 'none', floor };
+  return { kind: 'pack', floor, packs };
 }
 
 /** One line of 「방금 한 행동」. */
@@ -210,5 +230,34 @@ export function startPicks(
     got: candidates.filter((c) => taken.has(c.giftId)).map((c) => c.giftId),
     dropped: candidates.filter((c) => !taken.has(c.giftId)).map((c) => c.giftId),
     observed: candidates.filter((c) => isObservation(c) && taken.has(c.giftId)).map((c) => c.giftId),
+  };
+}
+
+/** What the window lists while the player is in a pack's shop (M148). */
+export interface ShopView {
+  /** The pack entered last, whose shop this is; null before the first entry. */
+  packId: number | null;
+  /** Every gift only that pack hands out. */
+  exclusive: number[];
+  /** The tracker's tier-4 gifts without the 조각 series. */
+  t4: number[];
+  /** The goals not marked 「획득」, in the order they were picked. */
+  goals: number[];
+}
+
+export function shopView(
+  run: Pick<RunState, 'visits' | 'giftStatus'>,
+  exclusivesOf: (packId: number) => number[],
+  trackerGroups: readonly { id: string; gifts: readonly { id: number }[] }[],
+  wanted: readonly number[],
+): ShopView {
+  const entry = lastEntry(run);
+  return {
+    packId: entry?.packId ?? null,
+    exclusive: entry ? exclusivesOf(entry.packId) : [],
+    t4: trackerGroups
+      .filter((group) => group.id !== 'shard')
+      .flatMap((group) => group.gifts.map((g) => g.id)),
+    goals: wanted.filter((id) => !giftDone(run.giftStatus[id])),
   };
 }

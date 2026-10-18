@@ -16,6 +16,8 @@ const indexes = buildIndexes(data);
 const offeredOn2 = indexes.packsByFloor.hard.get(2) ?? [];
 const PACK_1 = indexes.packsByFloor.hard.get(1)![0]!;
 const PACK_2 = offeredOn2[0]!;
+/** A route pack seated on floor 3 whose window reaches back to floor 2. */
+const PACK_3 = offeredOn2[1]!;
 const [GIFT_A, GIFT_B, GIFT_C] = data.gifts.slice(0, 3).map((gift) => gift.id) as [number, number, number];
 const giftLabel = (id: number) => pick(indexes.giftById.get(id)!.name, 'ko');
 const packLabel = (id: number) => pick(indexes.packById.get(id)!.name, 'ko');
@@ -42,6 +44,9 @@ const plan = {
   expectedIn: (floor: number, _packId: number): number[] => (floor === 1 ? [GIFT_A, GIFT_B, GIFT_C] : []),
   confirmStart: vi.fn(),
   reopenStart: vi.fn(),
+  data,
+  needed: new Set<number>(),
+  exclusivesOf: (packId: number): number[] => (packId === PACK_1 ? [GIFT_A, GIFT_B] : []),
 };
 vi.mock('../../shell/plan-context.ts', () => ({ usePlan: () => plan }));
 
@@ -92,7 +97,7 @@ function fakePictureInPicture() {
 }
 
 beforeEach(() => {
-  useApp.setState({ run: emptyRun(), lang: 'ko', lastFloor: 15 });
+  useApp.setState({ run: emptyRun(), wanted: [], lang: 'ko', lastFloor: 15 });
   plan.shown = null;
   plan.confirmStart.mockClear();
   plan.reopenStart.mockClear();
@@ -107,7 +112,8 @@ afterEach(() => {
 
 describe('OverlayView (M132)', () => {
   it('shows the state, the floor, the next pack, what is left and the recent actions', () => {
-    // Arrange: floor 1 entered with one of three gifts in hand; the route enters PACK_2 on floor 2.
+    // Arrange: floor 1 entered with one of three gifts in hand; the route enters PACK_2 on floor 2,
+    // and PACK_3, seated on floor 3, may be entered on floor 2 too.
     useApp.setState({
       run: {
         ...emptyRun(),
@@ -118,7 +124,10 @@ describe('OverlayView (M132)', () => {
       },
     });
     plan.shown = {
-      floors: [floorPlan({ floor: 2, packId: PACK_2, window: { from: 2, to: 2 } })],
+      floors: [
+        floorPlan({ floor: 2, packId: PACK_2, window: { from: 2, to: 2 } }),
+        floorPlan({ floor: 3, packId: PACK_3, window: { from: 2, to: 3 } }),
+      ],
     } as unknown as RoutePlan;
     const log = new FeedbackLog(50, () => 1_000);
     log.action('enter F1 pack 1');
@@ -137,8 +146,12 @@ describe('OverlayView (M132)', () => {
     expect(within(overlay).getByTestId('overlay-floor')).toHaveTextContent('2/ 15');
     const next = within(overlay).getByTestId('overlay-next');
     expect(next).toHaveAttribute('data-kind', 'pack');
-    expect(next).toHaveTextContent('2층에 들어갈 팩');
-    expect(next).toHaveTextContent(packLabel(PACK_2));
+    expect(next).toHaveTextContent('2층에 들어갈 수 있는 팩');
+    // Every pack the floor can take, the one planned here first (M148).
+    const rows = [...within(next).getByTestId('overlay-pack-list').querySelectorAll('[data-pack]')];
+    expect(rows.map((row) => Number(row.getAttribute('data-pack')))).toEqual([PACK_2, PACK_3]);
+    expect(rows.map((row) => row.hasAttribute('data-planned'))).toEqual([true, false]);
+    expect(rows[1]).toHaveTextContent(packLabel(PACK_3));
     const remaining = within(overlay).getByTestId('overlay-remaining');
     expect(remaining).toHaveTextContent(`1층 · ${packLabel(PACK_1)}`);
     const left = within(remaining).getByTestId('overlay-remaining-list');
@@ -330,6 +343,52 @@ describe('OverlayView run start (M138)', () => {
     render(<OverlayView target={target} log={new FeedbackLog()} />, { wrapper: withCapture(captureOf()) });
     expect(within(target).queryByTestId('overlay-start')).toBeNull();
     expect(within(target).queryByTestId('overlay-start-done')).toBeNull();
+  });
+});
+
+describe('OverlayView in the shop (M148)', () => {
+  it('shows this floor’s exclusives, the tier-4 gifts and the goals left instead of the next pack', () => {
+    // Arrange: floor 1 entered, one of two goals in hand, the reader in the shop.
+    useApp.setState({
+      run: {
+        ...emptyRun(),
+        currentFloor: 2,
+        stageFloor: 2,
+        visits: { 1: PACK_1 },
+        giftStatus: { [GIFT_A]: 'got' },
+      },
+      wanted: [GIFT_A, GIFT_C],
+    });
+    const target = document.createElement('div');
+    // Act
+    render(<OverlayView target={target} log={new FeedbackLog()} />, {
+      wrapper: withCapture(captureOf({ status: 'running', inShop: true })),
+    });
+    // Assert
+    expect(within(target).queryByTestId('overlay-next')).toBeNull();
+    expect(within(target).queryByTestId('overlay-remaining')).toBeNull();
+    const exclusive = within(target).getByTestId('overlay-shop-exclusive');
+    expect(exclusive).toHaveTextContent(packLabel(PACK_1));
+    expect(
+      [...exclusive.querySelectorAll('[data-gift]')].map((n) => Number(n.getAttribute('data-gift'))),
+    ).toEqual([GIFT_A, GIFT_B]);
+    expect(
+      within(target).getByTestId('overlay-shop-t4').querySelectorAll('[data-gift]').length,
+    ).toBeGreaterThan(0);
+    const goals = within(target).getByTestId('overlay-shop-goals');
+    expect(
+      [...goals.querySelectorAll('[data-gift]')].map((n) => Number(n.getAttribute('data-gift'))),
+    ).toEqual([GIFT_C]);
+    expect(within(target).queryByTestId('overlay-recent')).not.toBeNull();
+  });
+
+  it('goes back to the next pack once the reader is out of the shop', () => {
+    const target = document.createElement('div');
+    render(<OverlayView target={target} log={new FeedbackLog()} />, {
+      wrapper: withCapture(captureOf({ status: 'running', inShop: false })),
+    });
+    expect(within(target).queryByTestId('overlay-next')).not.toBeNull();
+    expect(within(target).queryByTestId('overlay-shop-exclusive')).toBeNull();
   });
 });
 

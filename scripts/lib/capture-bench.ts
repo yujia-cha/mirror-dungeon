@@ -39,6 +39,7 @@ import {
   finished,
   FRAME_RATE,
   INITIAL_LOOP,
+  outcomeOf,
   queuedPopup,
   tickDelay,
   type LoopState,
@@ -416,14 +417,8 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
       foldHeld(held, event);
       out.events.push({ event, at: lands, shot });
     }
-    loop = finished(loop, {
-      at: lands,
-      popup: result.frame.screen === 'acquired',
-      partial: result.frame.partial === true,
-      // A moving screen of nothing holds the next change read back (M142).
-      nothing: result.frame.screen === null && result.frame.partial !== true,
-      holdMs: adaptive ? range.max : 0,
-    });
+    // A moving screen of nothing holds the next change read back (M142).
+    loop = finished(loop, outcomeOf(result.frame, lands, adaptive ? range.max : 0));
     if (fastTicks(loop, lands)) {
       const sooner = fastTick(lands);
       if (sooner.at < next.at) next = sooner;
@@ -538,6 +533,8 @@ export function eventKey(event: CaptureEvent): string {
       return `unsure:${event.about}:${[...event.ids].sort((a, b) => a - b).join(',')}`;
     case 'startDone':
       return 'startDone';
+    case 'place':
+      return `place:${event.shop ? 'shop' : 'out'}`;
   }
 }
 

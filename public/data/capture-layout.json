@@ -110,6 +110,18 @@
     {
       "raw": "only",
       "region": [
+        0.01,
+        0.13,
+        0.17,
+        0.09
+      ],
+      "screens": [
+        "exploring"
+      ]
+    },
+    {
+      "raw": "only",
+      "region": [
         0.1094,
         0.0396,
         0.1615,
@@ -179,6 +191,18 @@
       ]
     },
     {
+      "raw": "only",
+      "region": [
+        0.13,
+        0.11,
+        0.15,
+        0.08
+      ],
+      "screens": [
+        "shop"
+      ]
+    },
+    {
       "raw": true,
       "region": [
         0.33,
@@ -188,18 +212,6 @@
       ],
       "screens": [
         "packSelect"
-      ]
-    },
-    {
-      "raw": true,
-      "region": [
-        0.01,
-        0.13,
-        0.17,
-        0.09
-      ],
-      "screens": [
-        "exploring"
       ]
     }
   ]

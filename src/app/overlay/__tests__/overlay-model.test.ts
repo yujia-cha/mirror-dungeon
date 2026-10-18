@@ -10,6 +10,7 @@ import {
   nextPack,
   recentLines,
   remainingIn,
+  shopView,
   startCandidates,
   startEvidence,
   startInitiallyOn,
@@ -103,7 +104,7 @@ describe('nextPack', () => {
   const planOf = (floors: FloorPlan[]) => ({ floors }) as unknown as RoutePlan;
   const offeredOn3 = indexes.packsByFloor.hard.get(3) ?? [];
 
-  it('is the route pack planned on the frontier floor', () => {
+  it('lists every route pack the frontier floor can take, the one planned there first', () => {
     // Arrange: one pack planned on floor 3, another whose window also covers it.
     const [planned, spanning] = offeredOn3;
     const plan = planOf([
@@ -112,8 +113,29 @@ describe('nextPack', () => {
     ]);
     // Act
     const next = nextPack(plan, { currentFloor: 3 }, 15, indexes);
-    // Assert: the one planned here comes first, as on the stage.
-    expect(next).toEqual({ kind: 'pack', floor: 3, packId: planned, alternatives: 0 });
+    // Assert: both, the one planned here first as on the stage (M148 — not just the first).
+    expect(next).toEqual({
+      kind: 'pack',
+      floor: 3,
+      packs: [
+        { packId: planned, planned: true, alternatives: 0 },
+        { packId: spanning, planned: false, alternatives: 0 },
+      ],
+    });
+  });
+
+  it('leaves out a route pack whose window does not reach the frontier floor', () => {
+    // Arrange: the boundary — a window that ends on floor 2 and one that starts on floor 4.
+    const [planned, before, after] = offeredOn3;
+    const plan = planOf([
+      floorPlan({ floor: 2, packId: before!, window: { from: 1, to: 2 } }),
+      floorPlan({ floor: 3, packId: planned!, window: { from: 3, to: 3 } }),
+      floorPlan({ floor: 4, packId: after!, window: { from: 4, to: 5 } }),
+    ]);
+    // Act
+    const next = nextPack(plan, { currentFloor: 3 }, 15, indexes);
+    // Assert
+    expect(next.kind === 'pack' ? next.packs.map((row) => row.packId) : []).toEqual([planned]);
   });
 
   it('says why when there is no plan, no pack on the floor, or the run is over', () => {
@@ -230,5 +252,29 @@ describe('startPicks (M138)', () => {
 
   it('records nothing when everything is off', () => {
     expect(startPicks(candidates, new Set())).toEqual({ got: [], dropped: [1, 2, 3, 4], observed: [] });
+  });
+});
+
+describe('shopView (M148)', () => {
+  const groups = [
+    { id: 'keyword', gifts: [{ id: 1 }, { id: 2 }] },
+    { id: 'shard', gifts: [{ id: 3 }] },
+    { id: 'plain', gifts: [{ id: 4 }] },
+  ];
+  const exclusives: Record<number, number[]> = { 1002: [9001, 9002], 1005: [9100] };
+  const exclusivesOf = (packId: number) => exclusives[packId] ?? [];
+
+  it('lists the last entered pack’s exclusives, the tracker without shards, and the goals not in hand', () => {
+    // Arrange
+    const run = { visits: { 1: 1005, 2: 1002 }, giftStatus: { 9300: 'got' as GiftStatus } };
+    // Act
+    const view = shopView(run, exclusivesOf, groups, [9300, 9301, 9302]);
+    // Assert
+    expect(view).toEqual({ packId: 1002, exclusive: [9001, 9002], t4: [1, 2, 4], goals: [9301, 9302] });
+  });
+
+  it('has no pack and no exclusives before the first entry', () => {
+    const view = shopView({ visits: {}, giftStatus: {} }, exclusivesOf, groups, []);
+    expect(view).toMatchObject({ packId: null, exclusive: [], goals: [] });
   });
 });

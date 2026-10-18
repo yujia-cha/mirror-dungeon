@@ -36,6 +36,12 @@ describe('classifyScreen', () => {
     expect(classifyScreen(['다음 층에서 특별한 상점 등장 확률'], 'ko')).toBeNull();
   });
 
+  it('reads the shop front heading, plain or special, but not the shop banner (M148)', () => {
+    expect(classifyScreen(['특별한 상점 ：'], 'ko')).toBe('shop');
+    expect(classifyScreen(['상점'], 'ko')).toBe('shop');
+    expect(classifyScreen(['다음 층에서 특별한 상점 등장 확률'], 'ko')).toBeNull();
+  });
+
   it('matches nothing in a language whose titles are not known yet', () => {
     expect(classifyScreen(['E.G.O Gift Acquired'], 'en')).toBeNull();
   });
