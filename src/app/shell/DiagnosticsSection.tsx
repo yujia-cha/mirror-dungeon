@@ -223,9 +223,6 @@ export function DiagnosticsSection() {
           {t('diagClearAll', lang)}
         </Button>
       </div>
-      <p className="text-body text-fg-subtle" data-testid="diag-where">
-        {t('diagWhere', lang)}
-      </p>
       {confirmAll ? (
         <ConfirmDialog
           title={t('diagClearAll', lang)}

@@ -83,14 +83,38 @@ test('the guide turns its cards by scrolling and closes on back', async ({ page 
   await page.goto('./');
   await page.getByTestId('guide-open').click();
   const live = page.getByTestId('guide-live');
-  await expect(live).toHaveText('1 / 6 · 무엇을 해 주나');
+  await expect(live).toHaveText('1 / 9 · 기능');
   await page.getByTestId('guide-track').evaluate((el) => el.scrollTo({ left: el.clientWidth * 2 }));
-  await expect(live).toHaveText('3 / 6 · 기프트');
+  await expect(live).toHaveText('3 / 9 · 덱');
   // No card spills past the viewport: the page itself never scrolls sideways.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
   await page.goBack();
   await expect(page.getByTestId('guide')).toHaveCount(0);
   await expect(page.getByTestId('stage-floor')).toBeVisible();
+});
+
+/**
+ * M157: a card longer than the sheet scrolls inside itself. The controls under it (‹ › and the dots)
+ * stay on screen the whole time — they used to scroll away with the sheet, out of reach.
+ */
+test('a long guide card scrolls its body while the controls stay in view', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.goto('./');
+  await page.getByTestId('guide-open').click();
+  const next = page.getByRole('button', { name: '다음 카드' });
+  // 「빠른 시작」: five pictures, far longer than the sheet.
+  await next.click();
+  await expect(page.getByTestId('guide-live')).toHaveText('2 / 9 · 빠른 시작');
+  const body = page.locator('[data-testid="guide-card"][data-current] [data-testid="guide-body"]');
+  await expect(next).toBeInViewport({ ratio: 1 });
+  const overflow = await body.evaluate((el) => el.scrollHeight - el.clientHeight);
+  expect(overflow).toBeGreaterThan(0);
+  await body.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+  await expect(next).toBeInViewport({ ratio: 1 });
+  // The sheet as a whole never scrolls: only the body does.
+  expect(await page.getByTestId('block-sheet').evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
+  await next.click();
+  await expect(page.getByTestId('guide-live')).toHaveText('3 / 9 · 덱');
 });
 
 /**

@@ -7,7 +7,12 @@
  * a smooth scroll passes through every position on the way, and reading those would make the
  * counter flicker. Cards off screen are `inert`, so Tab stays on the one being read.
  *
- * A card is sentences and pictures in the order `docs/copy.md` gives (M114). A sentence may carry
+ * The sheet itself does not scroll (`ownScroll`, M157): the counter, each card's title and the
+ * controls at the foot stay in view, and only a card's body scrolls when it is longer than the
+ * sheet. When the whole sheet scrolled, a long card pushed ‹ › out of reach.
+ *
+ * A card is sentences and pictures in the order `docs/copy.md` gives (M114). A sentence is a
+ * bullet, a numbered step, a sub-heading or a paragraph (`GuideLine.form`, M157). It may carry
  * `**bold**`, `` `code` `` and links (`parseInline`). An image reserves its box from the size the
  * generator read, loads lazily and never outgrows the sheet; a video plays muted and looped only
  * while its card is on show, and not at all on its own under 「동작 줄이기」 — then it waits on
@@ -133,9 +138,15 @@ export function GuideSheet({
     t('guideCard', lang, { n: i + 1, total, title: pick(GUIDE_CARDS[i]!.title, lang) });
 
   return (
-    <DetailSurface mode="sheet" label={t('guide', lang)} closeLabel={t('routeClose', lang)} onClose={onClose}>
+    <DetailSurface
+      mode="sheet"
+      label={t('guide', lang)}
+      closeLabel={t('routeClose', lang)}
+      onClose={onClose}
+      ownScroll
+    >
       <div
-        className="flex flex-col gap-3"
+        className="flex min-h-0 flex-1 flex-col gap-3"
         data-testid="guide"
         onKeyDown={(event) => {
           if (event.key === 'ArrowRight') {
@@ -147,7 +158,7 @@ export function GuideSheet({
           }
         }}
       >
-        <div className="flex items-baseline gap-2 pr-8">
+        <div className="flex flex-none items-baseline gap-2 pr-8">
           <h2 className="text-heading ">{t('guide', lang)}</h2>
           <span className="font-num text-caption text-fg-subtle" aria-hidden>
             {index + 1} / {total}
@@ -156,7 +167,7 @@ export function GuideSheet({
         <div
           ref={track}
           onScroll={onScroll}
-          className="scroll-x flex snap-x snap-mandatory"
+          className="scroll-x flex min-h-0 flex-1 snap-x snap-mandatory overflow-y-hidden"
           aria-roledescription="carousel"
           aria-label={t('guide', lang)}
           data-testid="guide-track"
@@ -170,35 +181,60 @@ export function GuideSheet({
               inert={i !== index || undefined}
               data-testid="guide-card"
               data-current={i === index || undefined}
-              className="flex w-full flex-none snap-start snap-always flex-col gap-2 px-0.5"
+              className="flex min-h-0 w-full flex-none snap-start snap-always flex-col gap-2 px-0.5"
             >
-              <h3 className="text-title ">{pick(card.title, lang)}</h3>
-              <ul className="flex flex-col gap-2 break-keep text-body text-fg">
-                {card.lines.map((line) =>
-                  isGuideMedia(line) ? (
-                    <li key={line.src}>
-                      <GuideFigure media={line} lang={lang} active={i === index} />
-                    </li>
-                  ) : (
-                    <li key={line.ko} className="flex gap-2">
-                      <span className="mt-[0.6em] h-1 w-1 flex-none rounded-full bg-fg-subtle" aria-hidden />
-                      <span>
+              <h3 className="flex-none text-title">{pick(card.title, lang)}</h3>
+              {/* Only this part scrolls: the title above and the controls below stay in view. A
+                  scroller is a tab stop so a keyboard can scroll it (the card's links may be none). */}
+              <div
+                className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain"
+                tabIndex={0}
+                data-testid="guide-body"
+              >
+                <ul className="flex flex-col gap-2 break-keep text-body text-fg">
+                  {card.lines.map((line) =>
+                    isGuideMedia(line) ? (
+                      <li key={line.src}>
+                        <GuideFigure media={line} lang={lang} active={i === index} />
+                      </li>
+                    ) : line.form === 'heading' ? (
+                      <li key={line.ko} className="pt-2">
+                        <h4 className="text-heading">
+                          <GuideText text={pick(line, lang)} />
+                        </h4>
+                      </li>
+                    ) : line.form === 'paragraph' ? (
+                      <li key={line.ko}>
                         <GuideText text={pick(line, lang)} />
-                      </span>
-                    </li>
-                  ),
-                )}
-              </ul>
-              {'notice' in card ? (
-                <a
-                  className="text-body text-fg-muted underline hover:text-fg"
-                  href={noticeUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  {t('guideNotice', lang)}
-                </a>
-              ) : null}
+                      </li>
+                    ) : (
+                      <li key={line.ko} className="flex gap-2">
+                        {line.form === 'numbered' ? (
+                          <span className="font-num w-4 flex-none text-label text-fg-muted">{line.n}.</span>
+                        ) : (
+                          <span
+                            className="mt-[0.6em] h-1 w-1 flex-none rounded-full bg-fg-subtle"
+                            aria-hidden
+                          />
+                        )}
+                        <span>
+                          <GuideText text={pick(line, lang)} />
+                        </span>
+                      </li>
+                    ),
+                  )}
+                </ul>
+                {'notice' in card ? (
+                  <a
+                    className="text-body text-fg-muted underline hover:text-fg"
+                    href={noticeUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    {t('guideNotice', lang)}
+                  </a>
+                ) : null}
+              </div>
             </section>
           ))}
         </div>
@@ -206,7 +242,7 @@ export function GuideSheet({
         <p className="sr-only" aria-live="polite" data-testid="guide-live">
           {cardLabel(index)}
         </p>
-        <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+        <div className="flex flex-none items-center justify-between gap-2 border-t border-border pt-3">
           <IconButton
             onClick={() => go(index - 1)}
             disabled={index === 0}

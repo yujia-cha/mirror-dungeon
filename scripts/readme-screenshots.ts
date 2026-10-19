@@ -1,29 +1,31 @@
 /**
- * The guide's and the README's screenshots and the example share link, taken from a running copy
- * of the app.
+ * App screenshots and the example share link, taken from a running copy of the app — raw material
+ * for the guide's and the README's pictures.
  *
  *   npm run dev                                   (in another shell)
  *   npm run shots -- --url http://localhost:5173/
  *
- * Flags: --url (the app, default http://localhost:5173/), --out (default public/guide),
+ * Flags: --url (the app, default http://localhost:5173/), --out (default local-fixtures/shots),
  *        --dry (print the example link and stop).
  *
- * The pictures land in `public/guide/` as WebP (M114) — the folder the 「# 안내」 cards of
- * `docs/copy.md` point at with `- 그림:`, so one command refreshes the guide and the README. They
- * are encoded by the same Chromium (canvas `toBlob('image/webp')`), so no image codec is added.
+ * Since M157 the pictures in `public/guide/` are the owner's own captures of the app, put there by
+ * hand and named by the 「# 안내」 cards of `docs/copy.md`. So this writes elsewhere by default
+ * (gitignored): a picture worth keeping is copied into `public/guide/` and given a `- 그림:` line —
+ * the copy generator warns about any file there that no card uses. The shots are WebP, encoded by
+ * the same Chromium (canvas `toBlob('image/webp')`), so no image codec is added.
  *
  * The example is one plan — a burn deck and six goals: a two-level fusion (진혼) and five gifts
  * that only a theme pack gives — so the pictures and the link show the same route. It is opened
  * through a share link rather than clicked together, which makes the shots repeatable after any
  * UI change. These are app screens only: the game images they show are the gift and keyword
  * icons and pack art the owner already allowed (M92/M99/M100); a game-client screen never goes
- * here. Chromium comes from `PW_CHROMIUM` when it is set (this container's is at
+ * in the guide. Chromium comes from `PW_CHROMIUM` when it is set (this container's is at
  * `/opt/pw-browsers/chromium`).
  */
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, type Page } from '@playwright/test';
-import { appDefaultOptions, encodeShared } from '../src/app/store.ts';
+import { appDefaultOptions, encodeShared, PERSIST_VERSION } from '../src/app/store.ts';
 import { flagValue, hasFlag } from './lib/io.ts';
 
 const SITE = 'https://yujia-cha.github.io/mirror-dungeon/';
@@ -47,7 +49,7 @@ console.log(`example link: ${SITE}${hash}`);
 if (hasFlag('--dry')) process.exit(0);
 
 const url = (flagValue('--url') ?? 'http://localhost:5173/').replace(/\/?$/, '/');
-const out = flagValue('--out') ?? 'public/guide';
+const out = flagValue('--out') ?? join('local-fixtures', 'shots');
 /** WebP quality: screenshots of flat UI stay sharp at 0.8 and land well under the 300 KB limit. */
 const QUALITY = 0.8;
 mkdirSync(out, { recursive: true });
@@ -69,6 +71,14 @@ async function open(
     deviceScaleFactor: mobile ? 2 : 1,
   });
   const page = await context.newPage();
+  // A first visit is always dark (M122), so the light pictures come from a saved choice, as a
+  // returning player's 「테마 변경」 would leave it.
+  await page.addInitScript(
+    ({ isDark, version }) => {
+      window.localStorage.setItem('md-route-planner', JSON.stringify({ state: { dark: isDark }, version }));
+    },
+    { isDark: dark, version: PERSIST_VERSION },
+  );
   await page.goto(url + hash);
   await page.getByTestId('floor-strip').waitFor();
   return page;

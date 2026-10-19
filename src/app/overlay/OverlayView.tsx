@@ -1,7 +1,8 @@
 /**
- * What the overlay window (M132) shows, top to bottom: the screen reader's state and the floor, the
- * pack the route enters next, what is still to collect in the pack the player is in, and the last
- * few things that happened. Drawn into the window's body through a portal, so it reads the same
+ * What the overlay window (M132) shows, top to bottom: the screen reader's state and the floor,
+ * what is still to collect in the pack the player is in and the packs the route can enter next, and
+ * the last few things that happened. Inside a pack the gifts left come first; once the reader has
+ * seen the player leave the shop — the floor's last stop — the next packs do (M157). Drawn into the window's body through a portal, so it reads the same
  * plan, store and session as the page.
  *
  * A glance, not a second app (the owner's call). Every listener the app's floating layers use
@@ -217,6 +218,84 @@ function PackGrid({
   );
 }
 
+/** How many gifts a row of 「남은 기프트」 holds and how many rows show before it scrolls (M157). */
+const GIFT_GRID_ROWS = 2;
+const GIFT_GRID_COLUMNS = 4;
+const GIFT_GRID_ICON = 44;
+/** Rows of a 44px icon, a 4px gap and a two-line name (2.6em at the caption size), 8px apart. */
+const GIFT_GRID_HEIGHT = `calc(${GIFT_GRID_ROWS} * (${GIFT_GRID_ICON}px + 4px + 2.6em) + ${(GIFT_GRID_ROWS - 1) * 8}px + 1px)`;
+
+/**
+ * The gifts to take from the pack entered last, laid out as the packs are (M157, the owner's
+ * pick): rows of four, icon with the name under it — two rows in sight, the rest under them by
+ * scrolling, which a line says. A long list no longer pushes everything below it away. A gift
+ * collected keeps its place with the collected frame and ✓ (the fusion arrow when used), one still
+ * to get the dotted frame — the stage's and the shop's marks, so shape says it, not colour alone.
+ */
+function GiftGrid({ ids }: { ids: readonly number[] }) {
+  const { indexes, lang } = usePlan();
+  const giftStatus = useApp((s) => s.run.giftStatus);
+  const hidden = ids.length - GIFT_GRID_ROWS * GIFT_GRID_COLUMNS;
+  return (
+    <div className="flex flex-col gap-1">
+      <ul
+        className="grid grid-cols-4 gap-2 overflow-y-auto text-caption"
+        style={{ maxHeight: GIFT_GRID_HEIGHT }}
+        data-testid="overlay-remaining-list"
+        data-uniform="width"
+      >
+        {ids.map((id) => {
+          const gift = indexes.giftById.get(id);
+          if (!gift) return null;
+          const name = pick(gift.name, lang);
+          const status = giftStatus[id] ?? null;
+          return (
+            <li
+              key={id}
+              className="flex min-w-0 flex-col items-center gap-1"
+              data-gift={id}
+              data-status={status ?? 'pending'}
+              title={name}
+            >
+              <GiftIcon
+                gift={gift}
+                size={GIFT_GRID_ICON}
+                lang={lang}
+                status={status}
+                pending={status === null}
+              />
+              <span className="line-clamp-2 h-[2.6em] w-full break-keep text-center text-caption text-fg">
+                {name}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {hidden > 0 ? (
+        <p className="text-caption text-fg-subtle" data-testid="overlay-remaining-more">
+          {t('overlayGiftsMore', lang, { n: hidden })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Whether the reader has seen the player leave the shop since the pack entered last (M157): the
+ * shop is the floor's last stop, so from then on the next pack is what the player is choosing.
+ * Read during render (not in an effect), so the window never draws one frame in the old order.
+ * A session that stops while in the shop is not a way out of it.
+ */
+function useLeftShop(inShop: boolean, running: boolean, entry: string | null): boolean {
+  const [seen, setSeen] = useState<{ inShop: boolean; leftFor: string | null | undefined }>({
+    inShop,
+    leftFor: undefined,
+  });
+  if (seen.inShop !== inShop)
+    setSeen({ inShop, leftFor: seen.inShop && !inShop && running ? entry : seen.leftFor });
+  return seen.leftFor !== undefined && seen.leftFor === entry;
+}
+
 /** The words a shop line says about a gift: in hand, used in a fusion, or not got (M151). */
 const SHOP_STATUS = { got: 'giftStatusGot', used: 'giftStatusUsed', missing: 'giftStatusFailed' } as const;
 
@@ -362,6 +441,8 @@ export function OverlayBody({
   const asking = capture.questions.length;
   const next = nextPack(shown, run, lastFloor, indexes);
   const left = remainingIn(run, expectedIn);
+  // In a pack, what is left to take comes first; once out of the shop, the next pack does (M157).
+  const packsFirst = useLeftShop(capture.inShop, running, left ? `${left.floor}:${left.packId}` : null);
   const start = startCandidates(shown, run);
   const evidence = startEvidence(run);
   // While the reader runs its record is the answer (M141); without it, the plan's guess, all on.
@@ -412,6 +493,42 @@ export function OverlayBody({
     status = t('overlayCaptureOff', lang);
   }
 
+  const nextSection = (
+    <section className="flex flex-col gap-2" data-testid="overlay-next" data-kind={next.kind}>
+      <SectionTitle>
+        {next.kind === 'done'
+          ? t('stageDone', lang, { last: lastFloor })
+          : t('overlayNext', lang, { floor: next.floor })}
+      </SectionTitle>
+      {next.kind === 'pack' ? (
+        <PackGrid packs={next.packs} />
+      ) : next.kind === 'noPlan' ? (
+        <p className="text-caption text-fg-subtle">{t('stageNoGoals', lang)}</p>
+      ) : next.kind === 'none' ? (
+        <p className="text-caption text-fg-subtle">{t('stageNoRoutePack', lang)}</p>
+      ) : null}
+    </section>
+  );
+  const remainingSection = (
+    <section className="flex flex-col gap-2" data-testid="overlay-remaining">
+      <SectionTitle>{t('overlayRemaining', lang)}</SectionTitle>
+      {left ? (
+        <>
+          <p className="break-keep text-caption text-fg-muted" data-pack={left.packId}>
+            {t('overlayEntered', lang, { floor: left.floor, name: packName(left.packId) })}
+          </p>
+          {left.listed.length === 0 ? (
+            <p className="text-caption text-fg-subtle">{t('overlayRemainingNone', lang)}</p>
+          ) : (
+            <GiftGrid ids={left.listed} />
+          )}
+        </>
+      ) : (
+        <p className="text-caption text-fg-subtle">{t('overlayNotEntered', lang)}</p>
+      )}
+    </section>
+  );
+
   return (
     <div className="flex min-w-0 flex-col gap-4 p-3" data-testid="overlay">
       <section className="flex flex-col gap-1" data-testid="overlay-head">
@@ -460,52 +577,15 @@ export function OverlayBody({
 
       {capture.inShop ? (
         <ShopSections />
+      ) : packsFirst ? (
+        <>
+          {nextSection}
+          {remainingSection}
+        </>
       ) : (
         <>
-          <section className="flex flex-col gap-2" data-testid="overlay-next" data-kind={next.kind}>
-            <SectionTitle>
-              {next.kind === 'done'
-                ? t('stageDone', lang, { last: lastFloor })
-                : t('overlayNext', lang, { floor: next.floor })}
-            </SectionTitle>
-            {next.kind === 'pack' ? (
-              <PackGrid packs={next.packs} />
-            ) : next.kind === 'noPlan' ? (
-              <p className="text-caption text-fg-subtle">{t('stageNoGoals', lang)}</p>
-            ) : next.kind === 'none' ? (
-              <p className="text-caption text-fg-subtle">{t('stageNoRoutePack', lang)}</p>
-            ) : null}
-          </section>
-
-          <section className="flex flex-col gap-2" data-testid="overlay-remaining">
-            <SectionTitle>{t('overlayRemaining', lang)}</SectionTitle>
-            {left ? (
-              <>
-                <p className="break-keep text-caption text-fg-muted" data-pack={left.packId}>
-                  {t('overlayEntered', lang, { floor: left.floor, name: packName(left.packId) })}
-                </p>
-                {left.remaining.length === 0 ? (
-                  <p className="text-caption text-fg-subtle">{t('overlayRemainingNone', lang)}</p>
-                ) : (
-                  <ul className="flex flex-col gap-1.5" data-testid="overlay-remaining-list">
-                    {left.remaining.map((id) => {
-                      const gift = indexes.giftById.get(id);
-                      return gift ? (
-                        <li key={id} className="flex min-w-0 items-center gap-2" data-gift={id}>
-                          <GiftIcon gift={gift} size={32} lang={lang} />
-                          <span className="min-w-0 flex-1 break-keep text-caption text-fg">
-                            {pick(gift.name, lang)}
-                          </span>
-                        </li>
-                      ) : null;
-                    })}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <p className="text-caption text-fg-subtle">{t('overlayNotEntered', lang)}</p>
-            )}
-          </section>
+          {remainingSection}
+          {nextSection}
         </>
       )}
 

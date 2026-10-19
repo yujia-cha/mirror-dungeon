@@ -7,9 +7,9 @@
  * Markdown, not the generated file. `{name}` placeholders are filled by `t(key, lang, params)`.
  */
 import type { Localized } from '../core/schema.ts';
-import { STRINGS } from './strings.generated.ts';
+import { GUIDE_CARDS as GENERATED_GUIDE_CARDS, STRINGS } from './strings.generated.ts';
 
-export { STRINGS, GUIDE_CARDS } from './strings.generated.ts';
+export { STRINGS } from './strings.generated.ts';
 
 export type Lang = 'ko' | 'en';
 
@@ -42,13 +42,23 @@ export interface GuideMedia {
   height?: number;
 }
 
+/** A text line of a guide card: a list item unless `form` says otherwise (M157). */
+export interface GuideLine extends Localized {
+  form?: 'numbered' | 'heading' | 'paragraph';
+  /** The step number of a `numbered` line. */
+  n?: number;
+}
+
 export interface GuideCard {
   title: Localized;
-  lines: readonly (Localized | GuideMedia)[];
+  lines: readonly (GuideLine | GuideMedia)[];
   /** The card ends with the link to `NOTICE`. */
   notice?: true;
 }
 
-export function isGuideMedia(line: Localized | GuideMedia): line is GuideMedia {
+/** The guide's cards, read as the general shape (the generated literals each lack the optional fields). */
+export const GUIDE_CARDS: readonly GuideCard[] = GENERATED_GUIDE_CARDS;
+
+export function isGuideMedia(line: GuideLine | GuideMedia): line is GuideMedia {
   return 'src' in line;
 }

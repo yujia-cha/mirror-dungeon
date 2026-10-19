@@ -3164,6 +3164,12 @@ describe('RoutePlanPanel', () => {
     expect(tradeoff).toHaveTextContent(
       '박수 짝짝!을(를) 얻으려면 보급형 K사 앰플 · 불타는 운명 · 못과 망치 · 회전 목마 모형 · 한 잔 더! 중 하나를 빼면 됩니다',
     );
+    // M157: every name in the line opens its sheet, as in the method rows below it.
+    expect(
+      within(tradeoff)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['박수 짝짝!', '보급형 K사 앰플', '불타는 운명', '못과 망치', '회전 목마 모형', '한 잔 더!']);
     expect(card).toHaveTextContent('뺐을 때 줄어드는 충돌');
     // Six goals for five floors: leaving any one of them out clears the one conflict.
     const bars = within(card).getAllByTestId('drop-effect');
@@ -5226,11 +5232,14 @@ describe('M78 · guide, header doors, clear confirm, observation suggestions', (
         .findIndex((c) => c.dataset.current);
     const cards = within(guide).getAllByTestId('guide-card');
     expect(cards.map((c) => c.querySelector('h3')!.textContent)).toEqual([
-      '무엇을 해 주나',
+      '기능',
+      '빠른 시작',
       '덱',
       '기프트',
       '루트',
       '런',
+      '공유와 설정',
+      '피드백',
       '데이터와 권리',
     ]);
     expect(current()).toBe(0);
@@ -5239,15 +5248,19 @@ describe('M78 · guide, header doors, clear confirm, observation suggestions', (
     expect(within(guide).getByRole('button', { name: '이전 카드' })).toBeDisabled();
     await user.click(within(guide).getByRole('button', { name: '다음 카드' }));
     expect(current()).toBe(1);
-    expect(screen.getByTestId('guide-live')).toHaveTextContent('2 / 6 · 덱');
+    expect(screen.getByTestId('guide-live')).toHaveTextContent('2 / 9 · 빠른 시작');
     fireEvent.keyDown(guide, { key: 'ArrowRight' });
     expect(current()).toBe(2);
     fireEvent.keyDown(guide, { key: 'ArrowLeft' });
     expect(current()).toBe(1);
-    for (let i = 0; i < 4; i++) fireEvent.keyDown(guide, { key: 'ArrowRight' });
-    expect(current()).toBe(5);
+    for (let i = 0; i < 7; i++) fireEvent.keyDown(guide, { key: 'ArrowRight' });
+    expect(current()).toBe(8);
     // The last card links the notice and its forward button closes the guide.
-    expect(within(cards[5]!).getByRole('link')).toHaveAttribute('href', expect.stringMatching(/NOTICE$/));
+    expect(
+      within(cards[8]!)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toContainEqual(expect.stringMatching(/NOTICE$/));
     await user.click(within(guide).getByTestId('guide-done'));
     expect(screen.queryByTestId('guide')).toBeNull();
     // Escape closes it too.
@@ -5377,7 +5390,8 @@ describe('screen reader (M107)', () => {
     // change is.
     expect(window.location.hash).toBe('');
     expect(useApp.getState().ui.diagEnabled).toBe(true);
-    expect(within(section).getByTestId('diag-where')).toHaveTextContent('Claude Code');
+    // M157: no 「보낼 곳」 note — the section is the owner's, who knows where the file goes.
+    expect(within(section).queryByTestId('diag-where')).toBeNull();
     const images = within(section).getByRole('checkbox', { name: '화면 이미지 포함' });
     expect(images).toBeDisabled();
     act(() => useApp.getState().setGiftStatus(9006, 'got'));

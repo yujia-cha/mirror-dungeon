@@ -30,6 +30,7 @@ export function DetailSurface({
   variant = 'detail',
   alert = false,
   describedBy,
+  ownScroll = false,
   children,
 }: {
   /** The surface's DOM id, so a control with `aria-controls` can close what it opened. */
@@ -47,6 +48,10 @@ export function DetailSurface({
   /** Sheet only: a confirmation that interrupts (`alertdialog`), described by `describedBy`. */
   alert?: boolean;
   describedBy?: string;
+  /** Sheet only: the sheet does not scroll as a whole. Its children fill a column under the close
+   *  row and scroll their own part, so the controls they keep outside that part stay in view (the
+   *  guide's ‹ › and 「완료」). */
+  ownScroll?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -86,12 +91,12 @@ export function DetailSurface({
           // A sheet: the large radius and the deepest shadow (design system §4–5). Its bottom clears
           // the home indicator. No drag handle — nothing drags it, so a handle would promise a swipe.
           style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}
-          className="fixed inset-x-0 bottom-0 z-[60] max-h-[80dvh] overflow-y-auto rounded-t-lg border-t border-border-strong bg-surface px-4 pt-2 shadow-lg lg:inset-x-auto lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2 lg:rounded-lg lg:border"
+          className={`fixed inset-x-0 bottom-0 z-[60] max-h-[80dvh] rounded-t-lg border-t border-border-strong bg-surface px-4 pt-2 shadow-lg lg:inset-x-auto lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2 lg:rounded-lg lg:border ${ownScroll ? 'flex flex-col' : 'overflow-y-auto'}`}
         >
-          <div className="mb-2 flex justify-end">
+          <div className="mb-2 flex flex-none justify-end">
             <CloseButton label={closeLabel} onClick={onClose} className="-mr-2" />
           </div>
-          {children}
+          {ownScroll ? <div className="flex min-h-0 flex-1 flex-col">{children}</div> : children}
         </div>
       </>,
       document.body,

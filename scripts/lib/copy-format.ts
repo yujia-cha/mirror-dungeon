@@ -20,6 +20,9 @@
  * readme lines as list items and its pictures, in order. Every card has exactly one marker, in
  * card order, so the guide and the README cannot drift apart in shape.
  *
+ * A text line is a list item unless its text opens with a shape (M157, `lineShape`): `1. ` a
+ * numbered step, `### ` a sub-heading, `¶ ` a paragraph. The shape holds in both outputs.
+ *
  * An entry is its `### key` heading followed by `메모:` lines (optional), `- ko:` and `- en:`,
  * and a `- 쓰는 곳:` line the generator rewrites from a scan of `src/` (never edited by hand).
  * Prose anywhere outside an entry is a free comment. Everything here is pure; the script
@@ -54,6 +57,24 @@ export type GuideItemModel =
   | { kind: 'readme'; ko: string; line: number }
   /** `- 그림:` — both. `src` is relative to `public/`. */
   | { kind: 'media'; src: string; alt: CopyText; line: number };
+
+/** How a text line of a card is laid out (M157) — read from how its text opens. */
+export type LineShape =
+  | { form: 'item'; text: string }
+  | { form: 'numbered'; text: string; n: number }
+  | { form: 'heading'; text: string }
+  | { form: 'paragraph'; text: string };
+
+/** `1. 글` a numbered step, `### 글` a sub-heading, `¶ 글` a paragraph, anything else a list item. */
+export function lineShape(text: string): LineShape {
+  const numbered = /^(\d+)\.\s+(.*)$/.exec(text);
+  if (numbered) return { form: 'numbered', text: numbered[2]!, n: Number(numbered[1]) };
+  const heading = /^###\s+(.*)$/.exec(text);
+  if (heading) return { form: 'heading', text: heading[1]! };
+  const paragraph = /^¶\s*(.*)$/.exec(text);
+  if (paragraph) return { form: 'paragraph', text: paragraph[1]! };
+  return { form: 'item', text };
+}
 
 export interface GuideCardModel {
   title: CopyText;
@@ -453,9 +474,14 @@ export function renderStringsModule(
   for (const card of doc.guide) {
     out += `  {\n    title: { ko: ${lit(card.title.ko)}, en: ${lit(card.title.en)} },\n    lines: [\n`;
     for (const item of card.items) {
-      if (item.kind === 'shared' || item.kind === 'app')
-        out += `      { ko: ${lit(item.ko)}, en: ${lit(item.en)} },\n`;
-      else if (item.kind === 'media') {
+      if (item.kind === 'shared' || item.kind === 'app') {
+        const ko = lineShape(item.ko);
+        // The shape is read from the Korean line; an English line that repeats the marker drops it.
+        const en = lineShape(item.en).text;
+        const form =
+          ko.form === 'item' ? '' : `, form: ${lit(ko.form)}${ko.form === 'numbered' ? `, n: ${ko.n}` : ''}`;
+        out += `      { ko: ${lit(ko.text)}, en: ${lit(ko.form === 'item' ? item.en : en)}${form} },\n`;
+      } else if (item.kind === 'media') {
         const size = sizes.get(item.src);
         const box = size?.width && size.height ? `, width: ${size.width}, height: ${size.height}` : '';
         out += `      { src: ${lit(item.src)}, kind: ${lit(mediaKind(item.src) ?? 'image')}, alt: { ko: ${lit(item.alt.ko)}, en: ${lit(item.alt.en)} }${box} },\n`;
@@ -504,27 +530,44 @@ export const README_NOTICE = `<!-- 이 파일은 ${COPY_PATH}의 「README」에
 export const MEDIA_ROOT = 'public/';
 
 /**
- * One card as a README section: `## 제목`, then its ko and readme lines as list items and its
+ * One card as a README section: `## 제목`, then its ko and readme lines in their shapes
+ * (`lineShape` — list items unless they say otherwise) and its
  * pictures as their own paragraphs, in the card's order. A video becomes an HTML `<video>` with a
  * plain link inside, so a renderer that drops the tag still leaves a working link.
  */
 export function renderCardSection(card: GuideCardModel): string {
   const blocks: string[] = [];
   let list: string[] = [];
+  let listForm: 'item' | 'numbered' = 'item';
+  let lastWasMedia = false;
   const flush = (): void => {
     if (list.length > 0) blocks.push(list.join('\n'));
     list = [];
   };
   for (const item of card.items) {
-    if (item.kind === 'shared' || item.kind === 'readme') list.push(`- ${item.ko}`);
-    else if (item.kind === 'media') {
+    if (item.kind === 'shared' || item.kind === 'readme') {
+      lastWasMedia = false;
+      const shape = lineShape(item.ko);
+      if (shape.form === 'heading' || shape.form === 'paragraph') {
+        flush();
+        blocks.push(shape.form === 'heading' ? `### ${shape.text}` : shape.text);
+        continue;
+      }
+      // A bullet list and a numbered list are separate blocks.
+      if (shape.form !== listForm) flush();
+      listForm = shape.form;
+      list.push(shape.form === 'numbered' ? `${shape.n}. ${shape.text}` : `- ${shape.text}`);
+    } else if (item.kind === 'media') {
       flush();
       const path = MEDIA_ROOT + item.src;
-      blocks.push(
+      const media =
         mediaKind(item.src) === 'video'
           ? `<video src="${path}" controls muted loop playsinline width="100%">[${item.alt.ko}](${path})</video>`
-          : `![${item.alt.ko}](${path})`,
-      );
+          : `![${item.alt.ko}](${path})`;
+      // Pictures in a row share a paragraph, so GitHub sets narrow ones side by side.
+      if (lastWasMedia) blocks[blocks.length - 1] += `\n${media}`;
+      else blocks.push(media);
+      lastWasMedia = true;
     }
   }
   flush();

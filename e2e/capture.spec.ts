@@ -200,8 +200,7 @@ test('the owner records, exports one zip with frames, and clears the device (M11
   expect(previews.length).toBeGreaterThan(0);
   expect(strip?.kind === 'strip' && strip.frameIds).toEqual(previews);
 
-  // The clean-up step clears exactly that, and says where the file goes.
-  await expect(diag.getByTestId('diag-where')).toContainText('Claude Code');
+  // The clean-up step clears exactly that.
   await diag.getByTestId('diag-clear-exported').click();
   await expect(diag.getByTestId('diag-stats')).toHaveAttribute('data-records', '0');
   // And it stays cleared across a reload (IndexedDB).

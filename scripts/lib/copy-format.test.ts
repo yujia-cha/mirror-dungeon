@@ -350,6 +350,62 @@ describe('안내 cards', () => {
     );
   });
 
+  describe('line shapes (M157)', () => {
+    const shaped = [
+      '## 시작 | Start',
+      '- ko: ¶ 첫 문단입니다.',
+      '- en: A first paragraph.',
+      '- 그림: guide/a.webp | 가 | A',
+      '- 그림: guide/b.webp | 나 | B',
+      '- ko: 1. **덱** : 고릅니다.',
+      '- en: 1. **Deck**: pick.',
+      '- ko: 2. 다음 단계',
+      '- en: Next step',
+      '- ko: 보통 항목',
+      '- en: A plain item',
+      '- ko: ### 소제목',
+      '- en: Sub-heading',
+    ].join('\n');
+    const parsed = (): ReturnType<typeof parseCopy> =>
+      parseCopy(copy({ guide: shaped, readme: '````markdown\n<!-- 카드: 시작 -->\n````' }));
+
+    it('reads a numbered step, a sub-heading and a paragraph from how the text opens', () => {
+      // Arrange
+      const { doc, issues } = parsed();
+
+      // Act
+      const section = renderCardSection(doc.guide[0]!);
+
+      // Assert: pictures in a row share a paragraph; a numbered list and a bullet list are apart.
+      expect(issues).toEqual([]);
+      expect(section).toBe(
+        [
+          '## 시작',
+          '첫 문단입니다.',
+          '![가](public/guide/a.webp)\n![나](public/guide/b.webp)',
+          '1. **덱** : 고릅니다.\n2. 다음 단계',
+          '- 보통 항목',
+          '### 소제목',
+        ].join('\n\n'),
+      );
+    });
+
+    it('hands the guide the shape without its marker, in both languages', () => {
+      // Arrange
+      const { doc } = parsed();
+
+      // Act
+      const module = renderStringsModule(doc, new Map());
+
+      // Assert: the English marker is optional and dropped when it is written.
+      expect(module).toContain('{ ko: "첫 문단입니다.", en: "A first paragraph.", form: "paragraph" }');
+      expect(module).toContain('{ ko: "**덱** : 고릅니다.", en: "**Deck**: pick.", form: "numbered", n: 1 }');
+      expect(module).toContain('{ ko: "다음 단계", en: "Next step", form: "numbered", n: 2 }');
+      expect(module).toContain('{ ko: "보통 항목", en: "A plain item" }');
+      expect(module).toContain('{ ko: "소제목", en: "Sub-heading", form: "heading" }');
+    });
+  });
+
   it('writes a video with a link inside, so a renderer that drops the tag still leaves a link', () => {
     // Arrange
     const { doc } = parseCopy(

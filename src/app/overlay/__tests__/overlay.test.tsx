@@ -155,11 +155,16 @@ describe('OverlayView (M132)', () => {
     expect(rows.map((row) => row.hasAttribute('data-planned'))).toEqual([true, false]);
     expect(rows[1]).toHaveTextContent(packLabel(PACK_3));
     const remaining = within(overlay).getByTestId('overlay-remaining');
+    // M157: inside a pack, what is left to take comes before the packs to enter next.
+    expect(remaining.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(remaining).toHaveTextContent(`1층 · ${packLabel(PACK_1)}`);
     const left = within(remaining).getByTestId('overlay-remaining-list');
-    expect(
-      [...left.querySelectorAll('[data-gift]')].map((row) => Number(row.getAttribute('data-gift'))),
-    ).toEqual([GIFT_A, GIFT_C]);
+    // M157: the collected gift keeps its place, marked; the others wait in the dotted frame.
+    const cells = [...left.querySelectorAll('[data-gift]')];
+    expect(cells.map((row) => Number(row.getAttribute('data-gift')))).toEqual([GIFT_A, GIFT_B, GIFT_C]);
+    expect(cells.map((row) => row.getAttribute('data-status'))).toEqual(['pending', 'got', 'pending']);
+    expect(cells[1]!.querySelector('[data-pending]')).toBeNull();
+    expect(cells[0]!.querySelector('[data-pending]')).not.toBeNull();
     expect(left).toHaveTextContent(giftLabel(GIFT_A));
     // Past the start nothing in the window can be pressed or followed.
     expect(overlay.querySelectorAll('button, a, input, [role="button"]')).toHaveLength(0);
@@ -397,6 +402,88 @@ describe('OverlayView in the shop (M148)', () => {
     });
     expect(within(target).queryByTestId('overlay-next')).not.toBeNull();
     expect(within(target).queryByTestId('overlay-shop-exclusive')).toBeNull();
+  });
+
+  it('puts the next packs first once the reader saw the shop left, until the next entry (M157)', () => {
+    // Arrange: floor 1 entered; the reader is in the shop.
+    useApp.setState({
+      run: { ...emptyRun(), currentFloor: 2, stageFloor: 2, visits: { 1: PACK_1 } },
+    });
+    plan.shown = {
+      floors: [floorPlan({ floor: 2, packId: PACK_2, window: { from: 2, to: 2 } })],
+    } as unknown as RoutePlan;
+    const target = document.createElement('div');
+    const at = (capture: CaptureApi) => (
+      <CaptureContext.Provider value={capture}>
+        <OverlayView target={target} log={new FeedbackLog()} />
+      </CaptureContext.Provider>
+    );
+    const order = () =>
+      [...target.querySelectorAll('[data-testid="overlay-next"], [data-testid="overlay-remaining"]')].map(
+        (section) => section.getAttribute('data-testid'),
+      );
+    const view = render(at(captureOf({ status: 'running', inShop: true })));
+
+    // Act: out of the shop.
+    view.rerender(at(captureOf({ status: 'running', inShop: false })));
+
+    // Assert: the player is choosing the next pack now.
+    expect(order()).toEqual(['overlay-next', 'overlay-remaining']);
+
+    // Act: the next floor's pack is entered.
+    act(() =>
+      useApp.setState((state) => ({
+        run: { ...state.run, currentFloor: 3, visits: { 1: PACK_1, 2: PACK_2 } },
+      })),
+    );
+
+    // Assert: inside the new pack, what is left comes first again.
+    expect(order()).toEqual(['overlay-remaining', 'overlay-next']);
+  });
+
+  it('does not count a session stopped in the shop as leaving it', () => {
+    // Arrange
+    useApp.setState({ run: { ...emptyRun(), currentFloor: 2, stageFloor: 2, visits: { 1: PACK_1 } } });
+    const target = document.createElement('div');
+    const at = (capture: CaptureApi) => (
+      <CaptureContext.Provider value={capture}>
+        <OverlayView target={target} log={new FeedbackLog()} />
+      </CaptureContext.Provider>
+    );
+    const view = render(at(captureOf({ status: 'running', inShop: true })));
+
+    // Act: the session ends (the shop flag goes with it).
+    view.rerender(at(captureOf({ status: 'idle', inShop: false })));
+
+    // Assert
+    const sections = [
+      ...target.querySelectorAll('[data-testid="overlay-next"], [data-testid="overlay-remaining"]'),
+    ];
+    expect(sections.map((section) => section.getAttribute('data-testid'))).toEqual([
+      'overlay-remaining',
+      'overlay-next',
+    ]);
+  });
+
+  it('lays a long list of gifts left out in rows of four and says how many scroll out of sight', () => {
+    // Arrange: ten gifts expected from the pack entered on floor 1, none taken yet.
+    const ten = [...indexes.giftById.keys()].slice(0, 10);
+    const expectedIn = plan.expectedIn;
+    plan.expectedIn = (floor: number) => (floor === 1 ? ten : []);
+    useApp.setState({ run: { ...emptyRun(), currentFloor: 2, stageFloor: 2, visits: { 1: PACK_1 } } });
+    const target = document.createElement('div');
+
+    // Act
+    render(<OverlayView target={target} log={new FeedbackLog()} />, { wrapper: withCapture(captureOf()) });
+
+    // Assert: every gift is in the grid; two rows of four show and the line names the other two.
+    const list = within(target).getByTestId('overlay-remaining-list');
+    expect(list).toHaveClass('grid-cols-4');
+    expect(list.querySelectorAll('[data-gift]')).toHaveLength(10);
+    expect(within(target).getByTestId('overlay-remaining-more')).toHaveTextContent(
+      '기프트 2개 더 · 아래로 스크롤',
+    );
+    plan.expectedIn = expectedIn;
   });
 });
 

@@ -336,16 +336,19 @@ export function RouteDecision({
               ? need !== null && need > 1
                 ? t('routeDecisionTitleShortMany', lang, { n: need })
                 : t('routeDecisionTitleShort', lang)
-              : need !== null && need > 1
-                ? t('routeDecisionTitleMany', lang, { names, n: need })
-                : t('routeDecisionTitle', lang, { names })}
+              : linked(
+                  need !== null && need > 1
+                    ? t('routeDecisionTitleMany', lang, { names, n: need })
+                    : t('routeDecisionTitle', lang, { names }),
+                  conflicting,
+                )}
           </h2>
         </div>
         {tradeoffs.length > 0 ? (
           <ul className="flex flex-col gap-0.5 pl-6 text-body" data-testid="drop-tradeoffs">
             {tradeoffs.map((tradeoff) => (
               <li key={tradeoff.lost} data-testid="drop-tradeoff" data-lost={tradeoff.lost}>
-                {tradeoffLine(tradeoff)}
+                {linked(tradeoffLine(tradeoff), [tradeoff.lost, ...tradeoff.rivals, ...tradeoff.causes])}
               </li>
             ))}
           </ul>

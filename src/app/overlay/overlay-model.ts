@@ -48,6 +48,11 @@ export interface Remaining extends LastEntry {
   expected: number[];
   /** Of those, the ones neither collected nor missed yet. */
   remaining: number[];
+  /**
+   * What the overlay lists (M157): the expected gifts but the missed ones — a gift collected (or
+   * used in a fusion) stays in its place, marked, instead of leaving the list.
+   */
+  listed: number[];
 }
 
 /** The last entry and what is still to collect there; null before the first entry. */
@@ -58,7 +63,12 @@ export function remainingIn(
   const entry = lastEntry(run);
   if (!entry) return null;
   const expected = expectedIn(entry.floor, entry.packId);
-  return { ...entry, expected, remaining: expected.filter((id) => run.giftStatus[id] === undefined) };
+  return {
+    ...entry,
+    expected,
+    remaining: expected.filter((id) => run.giftStatus[id] === undefined),
+    listed: expected.filter((id) => run.giftStatus[id] !== 'failed'),
+  };
 }
 
 export type NextPack =

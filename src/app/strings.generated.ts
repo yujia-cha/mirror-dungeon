@@ -134,10 +134,7 @@ export const STRINGS = {
   deckSearchModeOr: { ko: '하나라도', en: 'Any' },
   deckSearchModeAnd: { ko: '모두', en: 'All' },
   deckSearchModeOrHint: { ko: '검색어 중 하나라도 맞는 인격 (OR)', en: 'Identities matching any word (OR)' },
-  deckSearchModeAndHint: {
-    ko: '검색어가 모두 맞는 인격 (AND) — 예: 화상 파우스트',
-    en: 'Identities matching every word (AND) — e.g. Burn Faust',
-  },
+  deckSearchModeAndHint: { ko: '검색어가 모두 맞는 인격 (AND)', en: 'Identities matching every word (AND)' },
   // 지금 덱의 그 수감자 칸에 들어 있는 인격의 검색 결과 행에 붙는 배지.
   deckInDeck: { ko: '편성 중', en: 'In deck' },
   // 그 수감자 칸에 LCB 수감자가 아닌 인격이 있을 때, 다른 인격 행 아래에 적는다(고르면 그것을 바꾼다).
@@ -684,6 +681,8 @@ export const STRINGS = {
   overlayCaptureOff: { ko: '화면 인식 꺼짐', en: 'Screen reader off' },
   // 오버레이 「다음 팩」 격자(M151)는 3열 2줄까지 보이고 나머지는 아래로 스크롤한다. 그 아래 줄이 가려진 팩 수를 말한다.
   overlayPacksMore: { ko: '팩 {n}개 더 · 아래로 스크롤', en: '{n} more packs · scroll down' },
+  // 오버레이 「이 팩에서 챙길 기프트」 격자(M157)는 4열 2줄까지 보이고 나머지는 아래로 스크롤한다. 그 아래 줄이 가려진 기프트 수를 말한다.
+  overlayGiftsMore: { ko: '기프트 {n}개 더 · 아래로 스크롤', en: '{n} more gifts · scroll down' },
   // 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다).
   overlayShopExclusive: { ko: '이 층의 전용 기프트', en: "This floor's pack-only gifts" },
   // 추적기의 4등급 이상 기프트에서 조각 묶음을 뺀 것(키워드·기억·공격 유형·그 밖).
@@ -705,9 +704,10 @@ export const STRINGS = {
   overlayStartDone: { ko: '시작 확인 · 획득 {n}', en: 'Start confirmed · {n} collected' },
   overlayStartReopen: { ko: '다시 고르기', en: 'Choose again' },
   overlayNext: { ko: '{floor}층에 들어갈 수 있는 팩', en: 'Packs for floor {floor}' },
-  overlayRemaining: { ko: '이 팩에서 남은 기프트', en: 'Gifts left in this pack' },
+  // M157부터 획득한 기프트도 자리에 남아 표시만 바뀐다(테두리·✓). 그래서 「남은」이 아니라 스테이지와 같은 「챙길」이다.
+  overlayRemaining: { ko: '이 팩에서 챙길 기프트', en: 'Gifts to collect in this pack' },
   overlayEntered: { ko: '{floor}층 · {name}', en: 'Floor {floor} · {name}' },
-  overlayRemainingNone: { ko: '남은 기프트 없음', en: 'Nothing left here' },
+  overlayRemainingNone: { ko: '챙길 기프트 없음', en: 'Nothing to collect here' },
   overlayNotEntered: { ko: '아직 입장한 팩이 없습니다', en: 'No pack entered yet' },
   // 오버레이 창의 최근 기록 5줄(M151부터 사람이 읽는 문장). 런의 변화(`overlay/overlay-log.ts`의 사실)와 화면 인식 기록을 시각순으로 섞고, 화면 인식이 이미 말한 변화는 한 번만 적는다. 이름은 「」로 감싸므로 조사는 낱말(기프트·팩)에 붙인다.
   overlayRecent: { ko: '방금 한 행동', en: 'Recent actions' },
@@ -819,10 +819,6 @@ export const STRINGS = {
   diagClearAllConfirm: {
     ko: '내보내지 않은 것까지 기록 {records}건과 이미지 {frames}장을 모두 지웁니다. 되돌릴 수 없습니다.',
     en: 'This clears all {records} records and {frames} images, exported or not. It cannot be undone.',
-  },
-  diagWhere: {
-    ko: '보낼 곳: 내보낸 zip을 Claude Code 개발 세션에 첨부하고 「진단 기록 분석해 줘」라고 보내세요. 여러 파일로 나눠 받았으면 전부 첨부하세요 — 1번 파일(part1)은 꼭 있어야 합니다. 직접 돌릴 때는 개발 저장소의 local-fixtures/sessions/에 넣고 npm run capture:feedback에 그 파일들이나 폴더를 주어 실행합니다. 게임 화면이 들어 있으니 이슈·채팅방 같은 공개된 곳에는 올리지 마세요.',
-    en: 'Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. If it came in several files, attach them all — part 1 (part1) is required. To run it yourself, put them in local-fixtures/sessions/ of the development repository and run npm run capture:feedback on the files or their folder. It contains game screens, so keep it out of public places such as issues and chat rooms.',
   },
 
   // ── 피드백 보내기 (⋯ 메뉴와 그 창)
@@ -1000,33 +996,87 @@ export const STRINGS = {
 
 export const GUIDE_CARDS = [
   {
-    title: { ko: '무엇을 해 주나', en: 'What it does' },
+    title: { ko: '기능', en: 'Features' },
     lines: [
       {
-        src: 'guide/desktop-light.webp',
+        ko: '**루트 계산** : 덱과 목표 기프트를 고르면, 루트를 계산해 보여줍니다.',
+        en: '**Route planning**: pick a deck and goal gifts, and it plans and shows the route.',
+      },
+      {
+        ko: '**조건 판정** : 조건부 기프트가 지금 덱으로 발동하는지 보여줍니다.',
+        en: '**Condition check**: it shows whether a conditional gift goes off with your deck now.',
+      },
+      {
+        ko: '**충돌 처리** : 기프트를 모두 얻을 수 없으면, 무엇을 빼면 되는지 알려줍니다.',
+        en: '**Conflicts**: when not every gift fits, it tells you what to leave out.',
+      },
+      {
+        ko: '**기록 추적** : 게임을 하며 팩 입장과 기프트 획득을 기록하면, 남은 루트를 재계산합니다.',
+        en: '**Run tracking**: record pack entries and gifts got as you play, and it re-plans the rest of the route.',
+      },
+    ],
+  },
+  {
+    title: { ko: '빠른 시작', en: 'Quick start' },
+    lines: [
+      {
+        src: 'guide/deck.webp',
         kind: 'image',
-        alt: {
-          ko: '왼쪽에 목표 기프트, 가운데에 6층에서 들어갈 수 있는 팩, 오른쪽에 층별 루트 노선도가 있는 화면',
-          en: 'Goal gifts on the left, the packs to enter on floor 6 in the middle, the floor-by-floor route map on the right',
-        },
-        width: 1440,
-        height: 900,
+        alt: { ko: '덱 설정', en: 'Setting up the deck' },
+        width: 381,
+        height: 682,
       },
       {
-        ko: '덱과 목표 E.G.O 기프트를 고르면, 몇 층에서 어느 테마팩에 들어가야 하는지 루트를 계산합니다.',
-        en: 'Pick a deck and the E.G.O gifts you want, and it plans the route: which theme pack to enter on which floor.',
+        ko: '**덱 설정** : 편성 코드를 붙여 넣거나 인격을 직접 고릅니다.',
+        en: '**Deck**: paste a formation code or pick the identities yourself.',
+        form: 'numbered',
+        n: 1,
       },
       {
-        ko: '계산 순서: 조합 기프트를 재료로 펼치고 → 팩이 필요 없는 범용 드랍을 빼고 → 관측을 정한 뒤 → 기프트마다 그것을 주는 팩을 골라 층에 앉힙니다.',
-        en: 'In order: fusions are unfolded into ingredients → general drops, which need no pack, are set aside → observation and the starting gift are chosen → each gift gets a pack that gives it, seated on a floor.',
+        src: 'guide/gifts-browser.webp',
+        kind: 'image',
+        alt: { ko: '목표 설정', en: 'Setting goals' },
+        width: 1559,
+        height: 804,
       },
       {
-        ko: '전부 얻을 수 없으면 무엇을 목표에서 빼야 하는지 알려 줍니다.',
-        en: 'When not everything fits, it says which goal to drop.',
+        ko: '**목표 설정** : 원하는 기프트의 아이콘을 눌러 목표에 넣습니다.',
+        en: '**Goals**: press the icon of a gift you want to add it as a goal.',
+        form: 'numbered',
+        n: 2,
       },
       {
-        ko: '덱과 목표는 메뉴의 「링크 복사」로 공유할 수 있습니다.',
-        en: 'Share the deck and goals with 「Copy link」 in the menu.',
+        src: 'guide/route.webp',
+        kind: 'image',
+        alt: { ko: '루트 확인', en: 'Checking the route' },
+        width: 331,
+        height: 836,
+      },
+      {
+        ko: '**루트 확인** : 층마다 어느 팩을 입장해야 하는지 확인합니다.',
+        en: '**Route**: see which pack to enter on each floor.',
+        form: 'numbered',
+        n: 3,
+      },
+      {
+        src: 'guide/stage-packs.webp',
+        kind: 'image',
+        alt: { ko: '팩 선택', en: 'Choosing a pack' },
+        width: 474,
+        height: 483,
+      },
+      {
+        src: 'guide/stage-entered.webp',
+        kind: 'image',
+        alt: { ko: '기프트 선택', en: 'Marking gifts' },
+        width: 1153,
+        height: 441,
+      },
+      {
+        ko: '**게임 시작** : 게임을 하며 스테이지에서 들어간 팩과 얻은 기프트를 기록합니다.',
+        en: '**Play**: as you play, record on the stage the packs you entered and the gifts you got.',
+        form: 'numbered',
+        n: 4,
       },
     ],
   },
@@ -1034,20 +1084,34 @@ export const GUIDE_CARDS = [
     title: { ko: '덱', en: 'Deck' },
     lines: [
       {
-        ko: '왼쪽 위 「덱」 버튼이 덱과 기프트 패널을 엽니다.',
-        en: 'The 「Deck」 button at the top left opens the deck and gift panel.',
+        src: 'guide/deck-search.webp',
+        kind: 'image',
+        alt: { ko: '인격 검색', en: 'Identity search' },
+        width: 368,
+        height: 480,
       },
       {
-        ko: '수감자 칸을 눌러 인격을 고르거나, 게임의 편성 코드를 「코드 가져오기」에 붙여 넣습니다.',
-        en: 'Press a sinner’s slot to pick an identity, or paste the game’s formation code into 「Import code」.',
+        src: 'guide/deck-code.webp',
+        kind: 'image',
+        alt: { ko: '덱 전체 화면', en: 'The whole deck tab' },
+        width: 372,
+        height: 806,
       },
       {
-        ko: '인격 검색은 이름·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣고 「모두」를 고르면 전부 맞는 인격만 남습니다(`화상 파우스트`).',
-        en: 'The identity search reads names, factions, keywords, attack types and sins. With several words, 「All」 keeps only identities matching every one (`Burn Faust`).',
+        ko: '「코드 가져오기」에 인게임 덱의 편성 코드를 붙여넣어 덱을 빠르게 편성할 수 있습니다.',
+        en: 'Paste the in-game formation code into 「Import code」 to set up the deck quickly.',
       },
       {
-        ko: '조건부 기프트는 「출격」으로 선택된 인격을 기준으로 셉니다.',
-        en: 'Conditional gifts count the identities set to 「Deployed」.',
+        ko: '수감자 칸을 눌러 인격을 고르거나, 검색해서 원하는 인격을 편성할 수 있습니다.',
+        en: "Press a sinner's slot to pick an identity, or search for the one you want.",
+      },
+      {
+        ko: '칸의 「대기」를 눌러 「출격」으로 바꿉니다.',
+        en: 'Press 「Standby」 on a slot to switch it to 「Deployed」.',
+      },
+      {
+        ko: '인격 검색은 이름/소속/키워드/죄악으로 찾을 수 있습니다.',
+        en: 'The identity search finds names, factions, keywords and sins.',
       },
     ],
   },
@@ -1055,20 +1119,27 @@ export const GUIDE_CARDS = [
     title: { ko: '기프트', en: 'Gifts' },
     lines: [
       {
-        ko: '기프트 탭에서 아이콘을 눌러 목표에 추가합니다.',
-        en: 'In the Gifts tab, press an icon to add it as a goal.',
+        src: 'guide/gifts-browser.webp',
+        kind: 'image',
+        alt: { ko: '목표 설정', en: 'Setting goals' },
+        width: 1559,
+        height: 804,
       },
       {
-        ko: '검색창 끝의 >>를 누르면 「추천 기프트」가 먼저 열립니다. 지금 덱으로 발동할 수 있는 기프트만 모았고, 「모든 기프트」 탭에 전체가 있습니다.',
-        en: 'The >> at the end of the search box opens 「Recommended」 first: the gifts your deck can set off now. The 「All gifts」 tab has every gift.',
+        ko: '원하는 기프트를 검색하거나, 검색창 끝의 `>>`로 찾아 목표로 설정합니다.',
+        en: 'Search for a gift, or find it with `>>` at the end of the search box, and set it as a goal.',
       },
       {
-        ko: '아이콘의 바깥 링은 조건 판정을 표시합니다. (초록 충족 · 빨강 미충족)',
-        en: 'The ring around an icon shows the condition (green met · red not met).',
+        ko: '아이콘을 누르면 **목표에 추가**, 이름을 누르면 설명이 열립니다.',
+        en: 'Press an icon to **add it as a goal**; press a name to open its description.',
       },
       {
-        ko: '관측 칸에 관측 가능한 기프트를 넣으면 기프트 관측으로 받습니다. 1층을 떠나면 바꿀 수 없습니다.',
-        en: 'Put an observable gift in an observation cell to take it through Gift Observation. It locks once you leave floor 1.',
+        ko: '조합 기프트를 목표로 하면 재료도 목표로 포함합니다.',
+        en: 'A fusion gift as a goal brings its ingredients in as goals too.',
+      },
+      {
+        ko: '**관측 칸**에 넣은 기프트는 「기프트 관측」으로 받는 것으로 계획합니다. 1층을 떠나면 바꿀 수 없습니다.',
+        en: 'A gift in an **observation cell** is planned to come from 「Gift Observation」. It locks once you leave floor 1.',
       },
     ],
   },
@@ -1076,12 +1147,34 @@ export const GUIDE_CARDS = [
     title: { ko: '루트', en: 'Route' },
     lines: [
       {
-        ko: '오른쪽 위 「전체 루트」가 층별 테마팩을 노선도로 보여 줍니다.',
-        en: '「Full route」 at the top right draws the packs floor by floor as a route map.',
+        src: 'guide/route.webp',
+        kind: 'image',
+        alt: { ko: '루트 확인', en: 'Checking the route' },
+        width: 331,
+        height: 836,
       },
       {
-        ko: '전부 얻을 수 없으면 「해결 방법」이 뺄 목표가 가장 적은 방법부터 보여 줍니다. 직접 지정한 관측을 풀어 해결되면 「관측 지정 해제」로 목표를 그대로 둡니다. 「이 방법 고르기」로 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 적용합니다. 목표마다 혼자 뺐을 때의 막대는 「자세히」에 있습니다.',
-        en: 'When not everything fits, 「Ways to fit」 lists the ways that remove the fewest goals first. If releasing one of your pins does it, 「Release pin」 keeps every goal. 「Pick this way」 computes the real result; check it with 「Preview route」, then apply it. The bar for leaving out each goal alone is under 「Details」.',
+        ko: '오른쪽 「전체 루트」가 층마다 들어갈 팩을 노선도로 그립니다.',
+        en: '「Full route」 on the right draws the pack to enter on each floor as a route map.',
+      },
+      {
+        ko: '팩 이름을 누르면 그 팩에서만 얻는 기프트가 나옵니다.',
+        en: "Press a pack's name to see the gifts only that pack gives.",
+      },
+      {
+        src: 'guide/route-conflict.webp',
+        kind: 'image',
+        alt: { ko: '충돌', en: 'A conflict' },
+        width: 332,
+        height: 659,
+      },
+      {
+        ko: '목표로 한 기프트를 전부 얻을 수 없으면, 카드가 **해결 방법**을 좋은 순서로 늘어놓습니다.',
+        en: 'When not every goal fits, a card lists the **ways to fit**, best first.',
+      },
+      {
+        ko: '「이 방법 고르기」 → 「루트 미리 보기」로 확인하고, 「선택한 n개 목표에서 빼기」로 반영합니다.',
+        en: 'Check with 「Pick this way」 → 「Preview route」, then apply it with 「Remove n from goals」.',
       },
     ],
   },
@@ -1089,32 +1182,78 @@ export const GUIDE_CARDS = [
     title: { ko: '런', en: 'Run' },
     lines: [
       {
-        ko: '가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.',
-        en: 'On the stage in the middle, press 「Enter」 on a pack card or pull the card down.',
+        src: 'guide/run-desktop.webp',
+        kind: 'image',
+        alt: { ko: '런 화면', en: 'The run screen' },
+        width: 1919,
+        height: 937,
       },
       {
-        ko: '얻은 기프트는 아이콘을 눌러 획득으로 표시하세요. 표시하지 않고 층을 떠나면 「미획득」으로 남고, 다른 팩이 주는 것은 남은 층에서 다시 찾습니다.',
-        en: 'Mark what you got by pressing its icon. Leaving a floor without marking records it as 「Not got」, and what another pack gives is routed again on the floors left.',
+        ko: '스테이지의 팩 카드를 아래로 당기거나 「입장」 버튼을 눌러 입장하면, 그 팩에서 챙길 기프트가 나옵니다. 얻은 기프트는 아이콘을 눌러 획득으로 표시할 수 있습니다.',
+        en: 'Pull a pack card on the stage down or press 「Enter」 to enter, and the gifts to take from that pack appear. Mark a gift you got by pressing its icon.',
       },
       {
-        ko: '「다음 층」으로 넘어가고 「입장 취소」로 되돌립니다. 층 칸을 눌러 지난 층을 다시 볼 수 있습니다.',
-        en: '「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.',
+        ko: '표시하지 않고 층을 떠나면 「미획득」으로 기록되고, 루트가 남은 층에서 다시 찾습니다.',
+        en: 'Leave a floor without marking it and it is recorded as 「Not got」; the route looks for it again on the floors left.',
       },
       {
-        ko: '데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있습니다.',
-        en: 'On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone.',
+        ko: '열린 카드를 아래로 당기거나 「다음 층」버튼을 눌러 다음 층으로 이동합니다.',
+        en: 'Pull the open card down or press 「Next floor」 to move to the next floor.',
       },
       {
-        ko: '화면 인식을 시작하면 런이 시작됩니다. 지난 런의 기록이 남아 있으면 「새 런으로 시작」과 「이어서」 중에서 고르고, 「런 중단 · 시작 전으로 되돌리기」로 시작 전으로 돌아갈 수 있습니다.',
-        en: "Starting the screen reader starts the run. If the last run's record is still there, choose 「Start a new run」 or 「Continue」; 「Stop the run · back to before it started」 takes you back.",
+        ko: '열린 카드를 위로 밀거나 「입장 취소」버튼을 눌러 되돌립니다.',
+        en: 'Push the open card up or press 「Undo entry」 to take it back.',
       },
       {
-        ko: 'Chrome·Edge에서는 같은 팝오버의 「오버레이 창 열기」가 게임 위에 늘 떠 있는 작은 창을 엽니다. 테두리 없는 창 모드에서 보이고, 전체 화면에서는 가려집니다.',
-        en: 'In Chrome and Edge, 「Open overlay window」 in the same popover opens a small window that stays above the game. It shows over a borderless window, not over fullscreen.',
+        ko: '계획에 없는 팩에 들어가도 됩니다. 루트는 지금 층부터 다시 계산됩니다.',
+        en: 'Entering a pack the plan did not pick is fine. The route is planned again from this floor.',
+      },
+      { ko: '화면 인식 · 오버레이 (데스크톱)', en: 'Screen reader · overlay (desktop)', form: 'heading' },
+      {
+        src: 'guide/capture.webp',
+        kind: 'image',
+        alt: { ko: '화면 인식', en: 'The screen reader' },
+        width: 623,
+        height: 396,
       },
       {
-        ko: '재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.',
-        en: "When a missed ingredient makes a fusion impossible, the top of 「Full route」 says so and the route is re-planned. By default the fusion is given up (「Don't collect」); press the remaining ingredients to switch to 「Collect」.",
+        ko: '헤더의 「화면 인식」으로 게임 창을 공유하면 팩 입장, 기프트 획득/판매/합성을 자동으로 기록합니다.',
+        en: 'Share the game window with 「Screen reader」 in the header, and it records pack entries and gifts got, sold and fused for you.',
+      },
+      {
+        ko: '「오버레이 창 열기」는 다음 층의 추천 팩과 남은 기프트를 보여 주는 오버레이 창을 띄워 줍니다. (Chrome·Edge 116 이상, Firefox 151 이상, 테두리 없는 창 모드)',
+        en: "「Open overlay window」 opens a window over the game with the next floor's packs and the gifts left. (Chrome·Edge 116+, Firefox 151+, borderless window mode)",
+      },
+      {
+        ko: '화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 지금은 한국어 클라이언트만 지원합니다.',
+        en: 'The screen is read inside the browser only and sent nowhere. Only the Korean client is supported for now.',
+      },
+    ],
+  },
+  {
+    title: { ko: '공유와 설정', en: 'Sharing and settings' },
+    lines: [
+      {
+        ko: '⋯ 메뉴의 「링크 복사」는 덱, 목표 기프트, 설정을 담은 링크를 만듭니다.',
+        en: '「Copy link」 in the ⋯ menu makes a link with your deck, goal gifts and settings.',
+      },
+      {
+        ko: '「테마 변경」,「기프트 아이콘 크기」,「글자 크기」도 ⋯ 메뉴에 있습니다.',
+        en: '「Change theme」, 「Gift icon size」 and 「Text size」 are in the ⋯ menu too.',
+      },
+      {
+        ko: '모든 기록은 이 브라우저에만 저장되고 서버로 가지 않습니다.',
+        en: 'Everything is saved in this browser only and never goes to a server.',
+      },
+    ],
+  },
+  {
+    title: { ko: '피드백', en: 'Feedback' },
+    lines: [
+      {
+        ko: '버그나 데이터 오류는 ⋯ 메뉴의 「피드백 보내기」로 알려 주세요. 공개 GitHub 이슈로 열리고, 덱, 목표 기프트, 설정과 체크한 기록이 함께 붙습니다(게임 화면은 보내지 않습니다).',
+        en: 'Report a bug or a data error with 「Send feedback」 in the ⋯ menu. It opens a public GitHub issue with your deck, goal gifts, settings and the logs you tick (no game screens).',
+        form: 'paragraph',
       },
     ],
   },
@@ -1122,18 +1261,22 @@ export const GUIDE_CARDS = [
     title: { ko: '데이터와 권리', en: 'Data and rights' },
     lines: [
       {
-        ko: '게임 데이터와 텍스트의 권리는 Project Moon에 있습니다. 비상업 팬 프로젝트이며 Project Moon과 제휴하거나 승인받지 않았습니다.',
-        en: 'Game data and text belong to Project Moon. This is a non-commercial fan project, not affiliated with or endorsed by Project Moon.',
+        ko: '게임 데이터·텍스트·이미지의 권리는 **Project Moon**에 있습니다. 이 저장소는 비상업 팬 프로젝트이며 Project Moon과 제휴하거나 승인받지 않았습니다.',
+        en: 'Game data, text and images belong to **Project Moon**. This is a non-commercial fan project, not affiliated with or endorsed by Project Moon.',
+        form: 'paragraph',
       },
       {
-        ko: '코드는 MIT 라이선스이고, 게임 데이터와 텍스트에는 적용되지 않습니다.',
-        en: 'The code is MIT-licensed; that does not extend to the game data and text.',
+        ko: '게임 데이터는 플래너가 동작하는 데 필요한 범위에서 [LEAGUE-OF-NINE/OpenLethe](https://github.com/LEAGUE-OF-NINE/OpenLethe)(클라이언트 정적 데이터), [x1bViolet/Limbus-Localization-Files](https://github.com/x1bViolet/Limbus-Localization-Files)(공식 한국어·영어 현지화 원문), [eldritchtools/limbus-assets](https://github.com/eldritchtools/limbus-assets)(정적 데이터에 없는 인격을 채우는 가공 데이터)에서 가져옵니다. 자세한 것은 [`data/README.md`](data/README.md)와 [`data/sources.lock.json`](data/sources.lock.json)에 있습니다.',
+        en: 'Game data is taken, only as far as the planner needs it, from [LEAGUE-OF-NINE/OpenLethe](https://github.com/LEAGUE-OF-NINE/OpenLethe) (client static data), [x1bViolet/Limbus-Localization-Files](https://github.com/x1bViolet/Limbus-Localization-Files) (the official Korean and English text) and [eldritchtools/limbus-assets](https://github.com/eldritchtools/limbus-assets) (processed data for identities the static data lacks). The details are in [`data/README.md`](data/README.md) and [`data/sources.lock.json`](data/sources.lock.json).',
       },
       {
-        ko: '버그나 데이터 오류는 ⋯ 메뉴의 「피드백 보내기」로 알려 주세요. 공개 GitHub 이슈로 열리고, 덱·목표·설정과 체크한 기록이 함께 붙습니다(게임 화면은 보내지 않습니다).',
-        en: 'Report a bug or a data error with 「Send feedback」 in the ⋯ menu. It opens a public GitHub issue with your deck, goals, settings and the logs you tick (no game screens).',
+        ko: '게임 이미지는 **기프트 아이콘·키워드 아이콘·테마팩 그림**만 담습니다(eldritchtools/limbus-assets 사본). 그 밖의 게임 이미지는 담지 않습니다.',
+        en: 'The only game images included are **gift icons, keyword icons and theme pack art** (copies from eldritchtools/limbus-assets). No other game images are included.',
+      },
+      {
+        ko: '**코드는 MIT 라이선스입니다. 게임 데이터·텍스트·이미지에는 적용되지 않습니다** — [`NOTICE`](NOTICE)를 보세요.',
+        en: '**The code is MIT-licensed. That does not cover the game data, text or images** — see [`NOTICE`](NOTICE).',
       },
     ],
-    notice: true,
   },
 ] as const satisfies readonly GuideCard[];

@@ -407,8 +407,8 @@
 - 쓰는 곳: src/app/steps/DeckStep.tsx
 
 ### deckSearchModeAndHint
-- ko: 검색어가 모두 맞는 인격 (AND) — 예: 화상 파우스트
-- en: Identities matching every word (AND) — e.g. Burn Faust
+- ko: 검색어가 모두 맞는 인격 (AND)
+- en: Identities matching every word (AND)
 - 쓰는 곳: src/app/steps/DeckStep.tsx
 
 ### deckInDeck
@@ -2118,6 +2118,12 @@
 - en: {n} more packs · scroll down
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
+### overlayGiftsMore
+메모: 오버레이 「이 팩에서 챙길 기프트」 격자(M157)는 4열 2줄까지 보이고 나머지는 아래로 스크롤한다. 그 아래 줄이 가려진 기프트 수를 말한다.
+- ko: 기프트 {n}개 더 · 아래로 스크롤
+- en: {n} more gifts · scroll down
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
+
 ### overlayShopExclusive
 메모: 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다).
 - ko: 이 층의 전용 기프트
@@ -2174,8 +2180,9 @@
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayRemaining
-- ko: 이 팩에서 남은 기프트
-- en: Gifts left in this pack
+메모: M157부터 획득한 기프트도 자리에 남아 표시만 바뀐다(테두리·✓). 그래서 「남은」이 아니라 스테이지와 같은 「챙길」이다.
+- ko: 이 팩에서 챙길 기프트
+- en: Gifts to collect in this pack
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayEntered
@@ -2184,8 +2191,8 @@
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayRemainingNone
-- ko: 남은 기프트 없음
-- en: Nothing left here
+- ko: 챙길 기프트 없음
+- en: Nothing to collect here
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayNotEntered
@@ -2458,11 +2465,6 @@
 ### diagClearAllConfirm
 - ko: 내보내지 않은 것까지 기록 {records}건과 이미지 {frames}장을 모두 지웁니다. 되돌릴 수 없습니다.
 - en: This clears all {records} records and {frames} images, exported or not. It cannot be undone.
-- 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
-
-### diagWhere
-- ko: 보낼 곳: 내보낸 zip을 Claude Code 개발 세션에 첨부하고 「진단 기록 분석해 줘」라고 보내세요. 여러 파일로 나눠 받았으면 전부 첨부하세요 — 1번 파일(part1)은 꼭 있어야 합니다. 직접 돌릴 때는 개발 저장소의 local-fixtures/sessions/에 넣고 npm run capture:feedback에 그 파일들이나 폴더를 주어 실행합니다. 게임 화면이 들어 있으니 이슈·채팅방 같은 공개된 곳에는 올리지 마세요.
-- en: Where it goes: attach the exported zip to a Claude Code development session and say “analyse the diagnostics”. If it came in several files, attach them all — part 1 (part1) is required. To run it yourself, put them in local-fixtures/sessions/ of the development repository and run npm run capture:feedback on the files or their folder. It contains game screens, so keep it out of public places such as issues and chat rooms.
 - 쓰는 곳: src/app/shell/DiagnosticsSection.tsx
 
 ## 피드백 보내기 (⋯ 메뉴와 그 창)
@@ -3112,102 +3114,122 @@
 - `- 그림: guide/파일 | 대체 텍스트 | alt text` — 둘 다에 나옵니다. 파일은 `public/guide/`에 두고, 이미지(webp·png·jpg)는 300KB, 동영상(mp4·webm)은 2MB까지입니다.
 - `- notice: true` — 설명서 카드 끝에 NOTICE 링크를 붙입니다.
 
+글 줄은 목록 항목입니다. 글이 `1. `로 시작하면 번호 단계, `### `로 시작하면 소제목, `¶ `로 시작하면 문단이 되고, 설명서와 README 둘 다 그 모양을 따릅니다(영어 줄에는 표시를 적지 않습니다).
+
 README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그 카드가 `## 제목` 절로 들어갑니다. 카드마다 표식이 하나씩, 카드 순서대로 있어야 합니다.
 
-## 무엇을 해 주나 | What it does
+## 기능 | Features
 
-- readme: 덱(인격 12인)을 고르거나 게임의 **편성 코드**를 붙여넣어 불러오기
-- readme: 목표 기프트 정하기 — 키워드·조건·등급·죄악으로 필터, 조건부 기프트는 **내 덱이 조건을 충족하는지** 바로 표시
-- readme: 층별 루트 제시 — 각 층에 들어갈 테마팩과 그 팩에서 챌 기프트, 그리고 **어떤 기프트를 관측하면 루트가 유연해지는지**(관측 추천)
-- readme: 불가능한 요구는 이유와 함께 알려줌 (그 층 범위에 팩이 없음 / 전용 기프트끼리 층이 충돌 / 덱이 조건을 못 채움). 팩이 충돌하면 결정 카드가 가장 적게 빼는 방법(관측 지정 해제 포함)을 순서대로 보여 주고, 고른 방법이 실제로 어떻게 되는지 계산해 줌
-- readme: 계산 결과를 URL로 공유
-- 그림: guide/desktop-light.webp | 왼쪽에 목표 기프트, 가운데에 6층에서 들어갈 수 있는 팩, 오른쪽에 층별 루트 노선도가 있는 화면 | Goal gifts on the left, the packs to enter on floor 6 in the middle, the floor-by-floor route map on the right
-- 설명서: 덱과 목표 E.G.O 기프트를 고르면, 몇 층에서 어느 테마팩에 들어가야 하는지 루트를 계산합니다.
-- en: Pick a deck and the E.G.O gifts you want, and it plans the route: which theme pack to enter on which floor.
-- 설명서: 계산 순서: 조합 기프트를 재료로 펼치고 → 팩이 필요 없는 범용 드랍을 빼고 → 관측을 정한 뒤 → 기프트마다 그것을 주는 팩을 골라 층에 앉힙니다.
-- en: In order: fusions are unfolded into ingredients → general drops, which need no pack, are set aside → observation and the starting gift are chosen → each gift gets a pack that gives it, seated on a floor.
-- 설명서: 전부 얻을 수 없으면 무엇을 목표에서 빼야 하는지 알려 줍니다.
-- en: When not everything fits, it says which goal to drop.
-- 설명서: 덱과 목표는 메뉴의 「링크 복사」로 공유할 수 있습니다.
-- en: Share the deck and goals with 「Copy link」 in the menu.
+- ko: **루트 계산** : 덱과 목표 기프트를 고르면, 루트를 계산해 보여줍니다.
+- en: **Route planning**: pick a deck and goal gifts, and it plans and shows the route.
+- ko: **조건 판정** : 조건부 기프트가 지금 덱으로 발동하는지 보여줍니다.
+- en: **Condition check**: it shows whether a conditional gift goes off with your deck now.
+- ko: **충돌 처리** : 기프트를 모두 얻을 수 없으면, 무엇을 빼면 되는지 알려줍니다.
+- en: **Conflicts**: when not every gift fits, it tells you what to leave out.
+- ko: **기록 추적** : 게임을 하며 팩 입장과 기프트 획득을 기록하면, 남은 루트를 재계산합니다.
+- en: **Run tracking**: record pack entries and gifts got as you play, and it re-plans the rest of the route.
+
+## 빠른 시작 | Quick start
+
+- 그림: guide/deck.webp | 덱 설정 | Setting up the deck
+- ko: 1. **덱 설정** : 편성 코드를 붙여 넣거나 인격을 직접 고릅니다.
+- en: **Deck**: paste a formation code or pick the identities yourself.
+- 그림: guide/gifts-browser.webp | 목표 설정 | Setting goals
+- ko: 2. **목표 설정** : 원하는 기프트의 아이콘을 눌러 목표에 넣습니다.
+- en: **Goals**: press the icon of a gift you want to add it as a goal.
+- 그림: guide/route.webp | 루트 확인 | Checking the route
+- ko: 3. **루트 확인** : 층마다 어느 팩을 입장해야 하는지 확인합니다.
+- en: **Route**: see which pack to enter on each floor.
+- 그림: guide/stage-packs.webp | 팩 선택 | Choosing a pack
+- 그림: guide/stage-entered.webp | 기프트 선택 | Marking gifts
+- ko: 4. **게임 시작** : 게임을 하며 스테이지에서 들어간 팩과 얻은 기프트를 기록합니다.
+- en: **Play**: as you play, record on the stage the packs you entered and the gifts you got.
 
 ## 덱 | Deck
 
-- readme: **덱 탭**에서 수감자 칸을 눌러 인격을 고르거나, 게임의 **편성 코드**를 「코드 가져오기」에 붙여 넣습니다. 코드에 출격 순서가 있으면 그대로 따릅니다.
-- readme: 조건부 기프트(「출격 인원 중 화상 부여 스킬 3개 이상」 같은 것)는 대부분 **출격한 인격**만 셉니다. 칸의 「대기」를 눌러 「출격」으로 바꿔 출격 인원을 정해 두어야 조건 판정이 맞습니다.
-- readme: 덱 아래 칩(「화상 2/5」)은 출격 인원 / 편성 전체의 스킬 수입니다.
-- readme: 인격 검색은 이름·수감자·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣으면 「하나라도」는 하나라도 맞는 인격, 「모두」는 전부 맞는 인격입니다(`화상 파우스트` + 「모두」 = 화상을 쓰는 파우스트 인격). 결과와 덱 칸에는 키워드 · 공격 유형 · 탄환/혈찬이 게임 아이콘으로 보이고(마우스를 올리면 이름), 지금 덱에 든 인격에는 「편성 중」이 붙습니다.
-- 설명서: 왼쪽 위 「덱」 버튼이 덱과 기프트 패널을 엽니다.
-- en: The 「Deck」 button at the top left opens the deck and gift panel.
-- 설명서: 수감자 칸을 눌러 인격을 고르거나, 게임의 편성 코드를 「코드 가져오기」에 붙여 넣습니다.
-- en: Press a sinner’s slot to pick an identity, or paste the game’s formation code into 「Import code」.
-- 설명서: 인격 검색은 이름·소속·키워드·공격 유형·죄악으로 찾습니다. 낱말을 여럿 넣고 「모두」를 고르면 전부 맞는 인격만 남습니다(`화상 파우스트`).
-- en: The identity search reads names, factions, keywords, attack types and sins. With several words, 「All」 keeps only identities matching every one (`Burn Faust`).
-- 설명서: 조건부 기프트는 「출격」으로 선택된 인격을 기준으로 셉니다.
-- en: Conditional gifts count the identities set to 「Deployed」.
+- 그림: guide/deck-search.webp | 인격 검색 | Identity search
+- 그림: guide/deck-code.webp | 덱 전체 화면 | The whole deck tab
+- ko: 「코드 가져오기」에 인게임 덱의 편성 코드를 붙여넣어 덱을 빠르게 편성할 수 있습니다.
+- en: Paste the in-game formation code into 「Import code」 to set up the deck quickly.
+- ko: 수감자 칸을 눌러 인격을 고르거나, 검색해서 원하는 인격을 편성할 수 있습니다.
+- en: Press a sinner's slot to pick an identity, or search for the one you want.
+- ko: 칸의 「대기」를 눌러 「출격」으로 바꿉니다.
+- en: Press 「Standby」 on a slot to switch it to 「Deployed」.
+- ko: 인격 검색은 이름/소속/키워드/죄악으로 찾을 수 있습니다.
+- en: The identity search finds names, factions, keywords and sins.
 
 ## 기프트 | Gifts
 
-- readme: **기프트 탭**에서 기프트를 찾아 목표로 삼습니다(타일의 아이콘을 누르면 목표에 추가, 이름을 누르면 상세). 검색은 전체 기프트에서, 부분 문자열로 찾고, 초성만 치면 초성 검색입니다. 검색 결과는 검색창 바로 아래에 나옵니다.
-- readme: 검색창 오른쪽 끝의 **`>>`(모두 보기)**는 기프트를 넓은 격자로 엽니다(데스크톱은 가운데 스테이지 자리, 휴대폰은 새 페이지). 열려 있는 동안 같은 버튼이 **`<<`**로 바뀌어 누르면 다시 스테이지로 돌아옵니다. 탭에 친 검색어를 그대로 가져가며, 탭은 둘입니다.
-- readme: **「추천 기프트」**는 열 때마다 먼저 열리는 탭으로, 지금 덱으로 발동할 수 있는 기프트만 모았습니다. 기프트를 효과 하나하나로 읽어, 출격한 인격으로 쓸 수 있는 효과가 있는지 봅니다. 「지금 덱으로 발동」은 그 효과가 덱에 무언가를 요구하는 기프트와, 그런 요구가 없는 효과만 쓸 수 있는 팩 전용 기프트를 함께 모은 곳입니다. 팩 전용은 한 팩(또는 보스)만 주는 기프트와, 모든 조합식에 그런 기프트가 재료로 드는 조합 기프트입니다. 덱에 요구하는 것은 그 키워드를 부여하거나 소모하는 스킬(스킬 3처럼 슬롯을 말하면 그 슬롯), 소속, 특정 인격만 거는 버프(예: 진동 - 작열), 죄악·공격 유형, 코인·공격 가중치, 반격·회피 같은 방어 스킬입니다. 적이나 자신의 상태(화상을 보유한 적 등), 체력·흐트러짐 같은 전투 상황은 어느 덱에서나 만들 수 있으므로 요구로 보지 않습니다. 맨 아래 「E.G.O 스킬 조건」은 E.G.O 스킬을 쓸 때만 발동하는 기프트입니다(인격의 E.G.O는 판정하지 않습니다). 「획득」(팩 전용 · 범용, 처음에는 팩 전용)·「조합 기프트 포함」·「키워드」로 거르고, 「정렬」로 「키워드별」과 「팩 전용 먼저」를 고르며(「키워드별」은 덱이 가진 키워드를 출격 인격이 많은 순으로 먼저 보이고, 그다음 키워드 없음, 덱에 없는 키워드, 참격·관통·타격 순입니다), 어느 쪽이든 효과가 적용되는 인격이 많은 기프트가 앞에 섭니다(「E.G.O 스킬 조건」은 키워드로 나누지 않고 한 격자에 늘어놓습니다). 이미 목표인 기프트도 테두리와 ✓를 달고 그대로 나옵니다.
-- readme: **「모든 기프트」**는 전체 기프트와 필터(키워드·조건·등급·죄악)입니다. 「조건」 필터의 **「조건 없음」**은 덱이 판정할 조건이 없는 기프트만 남깁니다(편성 수에 따라 강화되는 것과 완전 공명 조건은 덱 조건이 아닙니다).
-- readme: 타일의 **바깥 링**이 조건 판정입니다(초록 충족 · 빨강 미충족 · 회색 조건 없음). 우하 배지는 키워드입니다.
-- readme: 조합으로만 나오는 기프트를 고르면 재료까지 루트가 모으러 갑니다. 상세 시트의 「재료도 목표」를 끄면 결과만 목표로 둡니다. 조합식의 재료를 누르면 그 기프트의 설명으로 넘어가고, 맨 위 「←」로 돌아옵니다.
-- readme: **강화**(`+`·`++`)가 있는 기프트는 단계를 고르면 그 단계의 이름과 설명(바뀐 수치는 굵게)이 보입니다. 목표 타일에서는 아이콘 좌하의 **「+」 배지**를 누를 때마다 강화 전 → `+` → `++` → 강화 전으로 바뀌고(점선 테두리가 강화 전, 채운 배지가 고른 단계), 상세 시트에서는 이름 옆 `+`·`++` 버튼으로 고르며 고른 단계를 다시 누르면 강화 전으로 돌아갑니다. 선택은 이 기기와 공유 링크에 남습니다.
-- readme: **시작 기프트는 계획하지 않습니다.** 시작 기프트 풀의 기프트는 모두 범용 드랍이라 어느 팩에 들어갈지를 바꾸지 않기 때문입니다. 게임에서 받은 시작 기프트는 화면 인식이 획득 팝업을 읽어 적고, 목표인 것은 추적기에서 직접 획득으로 적을 수도 있습니다.
-- readme: **관측**: 검색창 아래 슬롯(최대 3칸)에 기프트를 넣으면 「관측 지정」으로 「기프트 관측」에서 받습니다. 조합 결과는 관측할 수 없으므로 조합에 관측을 쓰려면 **재료**를 넣습니다. 관측은 1층을 떠나기 전까지만 바꿀 수 있습니다.
-- 설명서: 기프트 탭에서 아이콘을 눌러 목표에 추가합니다.
-- en: In the Gifts tab, press an icon to add it as a goal.
-- 설명서: 검색창 끝의 >>를 누르면 「추천 기프트」가 먼저 열립니다. 지금 덱으로 발동할 수 있는 기프트만 모았고, 「모든 기프트」 탭에 전체가 있습니다.
-- en: The >> at the end of the search box opens 「Recommended」 first: the gifts your deck can set off now. The 「All gifts」 tab has every gift.
-- 설명서: 아이콘의 바깥 링은 조건 판정을 표시합니다. (초록 충족 · 빨강 미충족)
-- en: The ring around an icon shows the condition (green met · red not met).
-- 설명서: 관측 칸에 관측 가능한 기프트를 넣으면 기프트 관측으로 받습니다. 1층을 떠나면 바꿀 수 없습니다.
-- en: Put an observable gift in an observation cell to take it through Gift Observation. It locks once you leave floor 1.
+- 그림: guide/gifts-browser.webp | 목표 설정 | Setting goals
+- ko: 원하는 기프트를 검색하거나, 검색창 끝의 `>>`로 찾아 목표로 설정합니다.
+- en: Search for a gift, or find it with `>>` at the end of the search box, and set it as a goal.
+- ko: 아이콘을 누르면 **목표에 추가**, 이름을 누르면 설명이 열립니다.
+- en: Press an icon to **add it as a goal**; press a name to open its description.
+- ko: 조합 기프트를 목표로 하면 재료도 목표로 포함합니다.
+- en: A fusion gift as a goal brings its ingredients in as goals too.
+- ko: **관측 칸**에 넣은 기프트는 「기프트 관측」으로 받는 것으로 계획합니다. 1층을 떠나면 바꿀 수 없습니다.
+- en: A gift in an **observation cell** is planned to come from 「Gift Observation」. It locks once you leave floor 1.
 
 ## 루트 | Route
 
-- readme: 오른쪽 **전체 루트**가 층별 테마팩을 노선도로 그립니다. 요약의 「획득 M/T」는 목표 기프트 중 루트가 가져다주는 수입니다. 팩이 아니라 **어느 팩에서나 나올 수 있는** 범용 드랍도 획득으로 셉니다(반드시 나오지는 않습니다 — 상점·새로고침을 함께 쓰세요. 어느 기프트가 범용 드랍인지는 기프트 탭과 상세 시트가 말합니다).
-- readme: **전부 얻을 수 없으면** 요약 아래에 「전부 얻을 수 없습니다」 카드가 뜹니다. 맨 위 「해결 방법」이 들어가게 하는 방법을 좋은 순서로 늘어놓습니다 — **뺄 목표가 가장 적은 것**부터, 같으면 해제할 관측 지정이 적은 것부터입니다. 루트는 관측 지정을 그대로 둘 때 잃는 목표 수를 이미 가장 적게 잡으므로, 그보다 적게 빼서는 들어가지 않고 그 수만큼 빼는 방법을 전부 찾아 줍니다. 직접 지정한 관측을 풀면 목표를 덜 빼도 되는지도 계산해 「관측 지정 해제: … · 목표 유지」처럼 적습니다. 아무거나 고르면 되는 목표는 「이 중 아무거나 n개」 한 줄로 묶고, 모든 방법이 빼는 목표는 「꼭 빼야 함」으로 표시합니다. 한 팩이 주는 목표를 함께 빼는 방법은 필요한 수보다 많이 빼더라도 「다른 방법」에 둡니다. 「이 방법 고르기」는 그 방법의 목표를 체크하고 관측 지정을 풀어 실제 루트를 다시 계산해, 전부 들어가는지 알려 줍니다. 놓친 목표마다 「A을(를) 얻으려면 B · C 중 하나를 빼면 됩니다」라고 무엇과 자리를 다투는지도 씁니다. 「자세히」를 열면 목표마다 **혼자 뺐을 때 줄어드는 충돌** 수가 막대로 나옵니다(「원인」·「놓친 목표」·「마지막에 추가」 표식). 막대는 더해지지 않으니, 체크한 조합은 실제로 다시 계산합니다. 후보가 많아 다 계산하지 못했으면 「더 계산」으로 나머지를 계산합니다. 「루트 미리 보기」는 그 루트를 노선도로 보여 주고(노선도로 스크롤합니다), 「선택한 n개 목표에서 빼기」는 확인을 거쳐 목표에서 빼고 고른 관측 지정을 풉니다.
-- readme: 런 중에 조합 재료를 **미획득**해서 상위 기프트를 조합할 수 없게 되면, 전체 루트 맨 위에 어떤 재료 때문에 어느 조합이 막혔는지와 루트를 다시 계산했다는 알림이 뜹니다. 기본은 그 조합을 통째로 버리는 것이라 남은 재료만을 위한 입장도 취소됩니다. 알림의 남은 재료 묶음(아래 「모으지 않기」 막대)을 누르면 「모으기」로 바뀌고 남은 재료를 계속 모으러 갑니다.
-- 설명서: 오른쪽 위 「전체 루트」가 층별 테마팩을 노선도로 보여 줍니다.
-- en: 「Full route」 at the top right draws the packs floor by floor as a route map.
-- 설명서: 전부 얻을 수 없으면 「해결 방법」이 뺄 목표가 가장 적은 방법부터 보여 줍니다. 직접 지정한 관측을 풀어 해결되면 「관측 지정 해제」로 목표를 그대로 둡니다. 「이 방법 고르기」로 실제 결과를 계산하고, 「루트 미리 보기」로 확인한 뒤 적용합니다. 목표마다 혼자 뺐을 때의 막대는 「자세히」에 있습니다.
-- en: When not everything fits, 「Ways to fit」 lists the ways that remove the fewest goals first. If releasing one of your pins does it, 「Release pin」 keeps every goal. 「Pick this way」 computes the real result; check it with 「Preview route」, then apply it. The bar for leaving out each goal alone is under 「Details」.
+- 그림: guide/route.webp | 루트 확인 | Checking the route
+- ko: 오른쪽 「전체 루트」가 층마다 들어갈 팩을 노선도로 그립니다.
+- en: 「Full route」 on the right draws the pack to enter on each floor as a route map.
+- ko: 팩 이름을 누르면 그 팩에서만 얻는 기프트가 나옵니다.
+- en: Press a pack's name to see the gifts only that pack gives.
+- 그림: guide/route-conflict.webp | 충돌 | A conflict
+- ko: 목표로 한 기프트를 전부 얻을 수 없으면, 카드가 **해결 방법**을 좋은 순서로 늘어놓습니다.
+- en: When not every goal fits, a card lists the **ways to fit**, best first.
+- ko: 「이 방법 고르기」 → 「루트 미리 보기」로 확인하고, 「선택한 n개 목표에서 빼기」로 반영합니다.
+- en: Check with 「Pick this way」 → 「Preview route」, then apply it with 「Remove n from goals」.
 
 ## 런 | Run
 
-- readme: 스테이지의 팩 카드에서 **입장**하면(버튼 또는 카드를 아래로 당기기) 그 팩에서 챙길 기프트 타일이 나옵니다. **얻은 것은 아이콘을 눌러 획득 표시**하세요(이름을 누르면 상세) — 표시하지 않고 층을 떠나면 「미획득」으로 기록됩니다. 미획득은 「그 팩에서 못 얻음」이라, 다른 팩이 주는 기프트는 남은 층에서 다시 루팅되고, 그 팩에서만 나오는 기프트는 이 런에서 끝입니다.
-- readme: 「다음 층」(또는 아래로 당기기)으로 넘어가고, 「입장 취소」(위로 당기기)는 입장을 취소하며 그 팩에서 표시한 것을 지웁니다. 층 스트립을 눌러 지난 층을 다시 볼 수 있습니다.
-- readme: 루트는 현재 층부터 다시 계산됩니다. 계획에 없는 팩에 들어가도 됩니다.
-- readme: **화면 인식**(데스크톱 Chrome·Edge·Firefox): 헤더의 「화면 인식」 버튼을 눌러 「화면 인식 시작」으로 게임 창을 공유하면, 지도 머리의 「N층 탐사 중」으로 입장을, 「E.G.O 기프트를 획득했습니다」 팝업으로 획득을, 판매·합성 확인창으로 보유에서 빠진 것을 직접 기록합니다. **화면 인식을 시작하는 것이 곧 런 시작입니다**: 지난 런의 기록이 남아 있으면 「새 런으로 시작」(기록을 비웁니다)과 「이어서」(새로고침한 뒤 같은 런) 중에서 고르고, 런을 잘못 시작했으면 「런 중단 · 시작 전으로 되돌리기」로 획득·입장·시작 기록과 관측 지정을 시작 전으로 되돌립니다(목표와 덱은 그대로). 기록마다 「되돌리기」가 있고, 확실하지 않으면 고르라고 묻습니다(버튼에 개수가 뜹니다). 창을 닫아도 인식은 계속됩니다. 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 게임은 창 모드나 테두리 없는 창으로, 지금은 한국어 클라이언트만 화면 제목을 압니다.
-- readme: **오버레이 창**(데스크톱 Chrome·Edge 116 이상, Firefox 151 이상): 「화면 인식」 팝오버의 「오버레이 창 열기」는 게임 위에 늘 떠 있는 작은 창을 엽니다. 인식 상태, 지금 층, 다음 층에 들어갈 수 있는 루트 팩 전부(계획이 그 층에 앉힌 팩이 맨 앞), 들어간 팩에서 남은 기프트, 방금 한 행동을 보여 줍니다. 런을 시작할 때는 계획한 관측을 늘어놓습니다. 화면 인식 중이면 누를 것이 없습니다: 인식한 것에 ✓가 붙고, 1층 팩 선택 화면을 보면 인식이 스스로 확정합니다. 화면 인식 없이 쓸 때는 게임에서 실제로 얻은 것만 켜 두고 「확인하고 진행」을 누르세요. 어느 쪽이든 얻지 못한 관측은 관측하지 않은 것으로 보고 루트가 다시 찾습니다. 누를 것은 이 확인뿐입니다. 화면 인식이 상점을 보면 그동안은 이 층의 전용 기프트(줄마다 획득·미획득 표시)와 T4 기프트(조각 제외)를 보여 주고, 상점을 나가면 원래대로 돌아갑니다. 화면 공유 없이도 열리고, 팝오버를 닫아도 남습니다. 테두리 없는 창 모드의 게임 위에는 보이지만 전체 화면(독점) 모드에서는 가려집니다.
-- readme: **⋯ 메뉴**의 「링크 복사」가 덱·목표·설정을 담은 공유 링크를 만듭니다(런 진행은 담지 않습니다). 「초기화」는 덱을 기본 LCB 수감자로, 목표·설정·런을 처음으로 되돌립니다. 「테마 변경」·「기프트 아이콘 크기」·「글자 크기」도 여기 있고, 이 기기에만 저장됩니다.
-- 설명서: 가운데 스테이지에서 팩 카드의 「입장」을 누르거나 카드를 아래로 당겨 들어갑니다.
-- en: On the stage in the middle, press 「Enter」 on a pack card or pull the card down.
-- 설명서: 얻은 기프트는 아이콘을 눌러 획득으로 표시하세요. 표시하지 않고 층을 떠나면 「미획득」으로 남고, 다른 팩이 주는 것은 남은 층에서 다시 찾습니다.
-- en: Mark what you got by pressing its icon. Leaving a floor without marking records it as 「Not got」, and what another pack gives is routed again on the floors left.
-- 설명서: 「다음 층」으로 넘어가고 「입장 취소」로 되돌립니다. 층 칸을 눌러 지난 층을 다시 볼 수 있습니다.
-- en: 「Next floor」 moves on and 「Undo entry」 takes it back. Press a floor cell to look at a past floor.
-- 설명서: 데스크톱에서는 헤더의 「화면 인식」에서 게임 창을 공유하면 입장·획득·판매·합성을 대신 기록합니다. 기록마다 되돌릴 수 있습니다.
-- en: On desktop, 「Screen reader」 in the header shares the game window and records entries, gifts got, sales and fusions for you. Every record can be undone.
-- 설명서: 화면 인식을 시작하면 런이 시작됩니다. 지난 런의 기록이 남아 있으면 「새 런으로 시작」과 「이어서」 중에서 고르고, 「런 중단 · 시작 전으로 되돌리기」로 시작 전으로 돌아갈 수 있습니다.
-- en: Starting the screen reader starts the run. If the last run's record is still there, choose 「Start a new run」 or 「Continue」; 「Stop the run · back to before it started」 takes you back.
-- 설명서: Chrome·Edge에서는 같은 팝오버의 「오버레이 창 열기」가 게임 위에 늘 떠 있는 작은 창을 엽니다. 테두리 없는 창 모드에서 보이고, 전체 화면에서는 가려집니다.
-- en: In Chrome and Edge, 「Open overlay window」 in the same popover opens a small window that stays above the game. It shows over a borderless window, not over fullscreen.
-- 설명서: 재료를 미획득해서 조합할 수 없게 되면 「전체 루트」 맨 위에 알리고 루트를 다시 계산합니다. 기본은 그 조합을 버리는 것(「모으지 않기」)이고, 남은 재료 묶음을 누르면 「모으기」로 바뀌어 계속 모으러 갑니다.
-- en: When a missed ingredient makes a fusion impossible, the top of 「Full route」 says so and the route is re-planned. By default the fusion is given up (「Don't collect」); press the remaining ingredients to switch to 「Collect」.
+- 그림: guide/run-desktop.webp | 런 화면 | The run screen
+- ko: 스테이지의 팩 카드를 아래로 당기거나 「입장」 버튼을 눌러 입장하면, 그 팩에서 챙길 기프트가 나옵니다. 얻은 기프트는 아이콘을 눌러 획득으로 표시할 수 있습니다.
+- en: Pull a pack card on the stage down or press 「Enter」 to enter, and the gifts to take from that pack appear. Mark a gift you got by pressing its icon.
+- ko: 표시하지 않고 층을 떠나면 「미획득」으로 기록되고, 루트가 남은 층에서 다시 찾습니다.
+- en: Leave a floor without marking it and it is recorded as 「Not got」; the route looks for it again on the floors left.
+- ko: 열린 카드를 아래로 당기거나 「다음 층」버튼을 눌러 다음 층으로 이동합니다.
+- en: Pull the open card down or press 「Next floor」 to move to the next floor.
+- ko: 열린 카드를 위로 밀거나 「입장 취소」버튼을 눌러 되돌립니다.
+- en: Push the open card up or press 「Undo entry」 to take it back.
+- ko: 계획에 없는 팩에 들어가도 됩니다. 루트는 지금 층부터 다시 계산됩니다.
+- en: Entering a pack the plan did not pick is fine. The route is planned again from this floor.
+- ko: ### 화면 인식 · 오버레이 (데스크톱)
+- en: Screen reader · overlay (desktop)
+- 그림: guide/capture.webp | 화면 인식 | The screen reader
+- ko: 헤더의 「화면 인식」으로 게임 창을 공유하면 팩 입장, 기프트 획득/판매/합성을 자동으로 기록합니다.
+- en: Share the game window with 「Screen reader」 in the header, and it records pack entries and gifts got, sold and fused for you.
+- ko: 「오버레이 창 열기」는 다음 층의 추천 팩과 남은 기프트를 보여 주는 오버레이 창을 띄워 줍니다. (Chrome·Edge 116 이상, Firefox 151 이상, 테두리 없는 창 모드)
+- en: 「Open overlay window」 opens a window over the game with the next floor's packs and the gifts left. (Chrome·Edge 116+, Firefox 151+, borderless window mode)
+- ko: 화면은 브라우저 안에서만 읽고 어디로도 보내지 않습니다. 지금은 한국어 클라이언트만 지원합니다.
+- en: The screen is read inside the browser only and sent nowhere. Only the Korean client is supported for now.
+
+## 공유와 설정 | Sharing and settings
+
+- ko: ⋯ 메뉴의 「링크 복사」는 덱, 목표 기프트, 설정을 담은 링크를 만듭니다.
+- en: 「Copy link」 in the ⋯ menu makes a link with your deck, goal gifts and settings.
+- ko: 「테마 변경」,「기프트 아이콘 크기」,「글자 크기」도 ⋯ 메뉴에 있습니다.
+- en: 「Change theme」, 「Gift icon size」 and 「Text size」 are in the ⋯ menu too.
+- ko: 모든 기록은 이 브라우저에만 저장되고 서버로 가지 않습니다.
+- en: Everything is saved in this browser only and never goes to a server.
+
+## 피드백 | Feedback
+
+- ko: ¶ 버그나 데이터 오류는 ⋯ 메뉴의 「피드백 보내기」로 알려 주세요. 공개 GitHub 이슈로 열리고, 덱, 목표 기프트, 설정과 체크한 기록이 함께 붙습니다(게임 화면은 보내지 않습니다).
+- en: Report a bug or a data error with 「Send feedback」 in the ⋯ menu. It opens a public GitHub issue with your deck, goal gifts, settings and the logs you tick (no game screens).
 
 ## 데이터와 권리 | Data and rights
 
-- 설명서: 게임 데이터와 텍스트의 권리는 Project Moon에 있습니다. 비상업 팬 프로젝트이며 Project Moon과 제휴하거나 승인받지 않았습니다.
-- en: Game data and text belong to Project Moon. This is a non-commercial fan project, not affiliated with or endorsed by Project Moon.
-- 설명서: 코드는 MIT 라이선스이고, 게임 데이터와 텍스트에는 적용되지 않습니다.
-- en: The code is MIT-licensed; that does not extend to the game data and text.
-- ko: 버그나 데이터 오류는 ⋯ 메뉴의 「피드백 보내기」로 알려 주세요. 공개 GitHub 이슈로 열리고, 덱·목표·설정과 체크한 기록이 함께 붙습니다(게임 화면은 보내지 않습니다).
-- en: Report a bug or a data error with 「Send feedback」 in the ⋯ menu. It opens a public GitHub issue with your deck, goals, settings and the logs you tick (no game screens).
-- notice: true
+- ko: ¶ 게임 데이터·텍스트·이미지의 권리는 **Project Moon**에 있습니다. 이 저장소는 비상업 팬 프로젝트이며 Project Moon과 제휴하거나 승인받지 않았습니다.
+- en: Game data, text and images belong to **Project Moon**. This is a non-commercial fan project, not affiliated with or endorsed by Project Moon.
+- ko: 게임 데이터는 플래너가 동작하는 데 필요한 범위에서 [LEAGUE-OF-NINE/OpenLethe](https://github.com/LEAGUE-OF-NINE/OpenLethe)(클라이언트 정적 데이터), [x1bViolet/Limbus-Localization-Files](https://github.com/x1bViolet/Limbus-Localization-Files)(공식 한국어·영어 현지화 원문), [eldritchtools/limbus-assets](https://github.com/eldritchtools/limbus-assets)(정적 데이터에 없는 인격을 채우는 가공 데이터)에서 가져옵니다. 자세한 것은 [`data/README.md`](data/README.md)와 [`data/sources.lock.json`](data/sources.lock.json)에 있습니다.
+- en: Game data is taken, only as far as the planner needs it, from [LEAGUE-OF-NINE/OpenLethe](https://github.com/LEAGUE-OF-NINE/OpenLethe) (client static data), [x1bViolet/Limbus-Localization-Files](https://github.com/x1bViolet/Limbus-Localization-Files) (the official Korean and English text) and [eldritchtools/limbus-assets](https://github.com/eldritchtools/limbus-assets) (processed data for identities the static data lacks). The details are in [`data/README.md`](data/README.md) and [`data/sources.lock.json`](data/sources.lock.json).
+- ko: 게임 이미지는 **기프트 아이콘·키워드 아이콘·테마팩 그림**만 담습니다(eldritchtools/limbus-assets 사본). 그 밖의 게임 이미지는 담지 않습니다.
+- en: The only game images included are **gift icons, keyword icons and theme pack art** (copies from eldritchtools/limbus-assets). No other game images are included.
+- ko: **코드는 MIT 라이선스입니다. 게임 데이터·텍스트·이미지에는 적용되지 않습니다** — [`NOTICE`](NOTICE)를 보세요.
+- en: **The code is MIT-licensed. That does not cover the game data, text or images** — see [`NOTICE`](NOTICE).
 
 # README
 
@@ -3216,15 +3238,15 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 ````markdown
 # 거울 던전 루트 플래너
 
-림버스 컴퍼니 **거울 던전**에서 쓰려는 덱과 원하는 E.G.O 기프트를 고르면, 그 기프트를 모으기 위한 **층별 테마팩 루트**를 계산해 주는 웹 도구입니다.
+림버스 컴퍼니 **거울 던전**에서 원하는 E.G.O 기프트를 모으려면 **몇 층에서 어느 테마팩에 들어가야 하는지** 계산해 주는 웹 도구입니다.
 
-거울 던전의 기프트는 어느 팩에서나 나오는 범용 드랍과 특정 테마팩에서만 나오는 전용 기프트로 갈리고, 일부는 서로 다른 팩에서 얻은 재료를 조합해야 합니다. 게다가 테마팩은 정해진 층에서만 등장합니다. 그래서 "이 기프트들을 원한다"가 정해지면 **어느 층에서 어느 팩에 들어가야 하는지**가 따라 정해집니다. 이 도구가 그 계산을 합니다.
+**[사이트 열기](https://yujia-cha.github.io/mirror-dungeon/)**
 
-<!-- 카드: 무엇을 해 주나 -->
+![전체 화면](public/guide/run-desktop.webp)
 
-## 쓰는 법
+<!-- 카드: 기능 -->
 
-배포된 사이트(https://yujia-cha.github.io/mirror-dungeon/)를 열면 바로 런 화면입니다. 가운데 스테이지에 지금 층과 들어갈 수 있는 테마팩이 있고, 헤더 왼쪽의 「덱」 버튼이 여는 패널에서 덱과 원하는 기프트를 고르고, 오른쪽의 「전체 루트」 버튼이 여는 패널에서 전체 루트·추적기를 봅니다. 모바일에서는 두 패널이 각각 전체 화면 페이지로 열립니다.
+<!-- 카드: 빠른 시작 -->
 
 <!-- 카드: 덱 -->
 
@@ -3234,31 +3256,20 @@ README에서는 아래 「# README」의 `<!-- 카드: 제목 -->` 자리에 그
 
 <!-- 카드: 런 -->
 
-로컬에서 돌리려면:
+<!-- 카드: 공유와 설정 -->
 
-```bash
-npm ci
-npm run data:build   # 동봉된 원본 데이터로 게임 데이터 생성
-npm run dev
-```
+<!-- 카드: 피드백 -->
+
+<!-- 카드: 데이터와 권리 -->
 
 ## 개발
 
 ```bash
+npm ci
+npm run data:build   # 동봉된 원본 데이터로 게임 데이터 생성
+npm run dev          # 개발 서버
 npm run check        # lint + typecheck + 문구 생성물 + test + 데이터 검증
-npm test             # 단위 테스트
-npm run route -- --deck 10101,10203 --want 9088 --floors 1-5 --difficulty hard
 ```
 
-루트가 어떻게 계산되는지는 [`docs/route-algorithm.md`](docs/route-algorithm.md)에 단계별로 적어 두었습니다. 게임 데이터의 출처와 가공 방식은 [`data/README.md`](data/README.md)에 있습니다. 화면 문구·설명서·루트 경고·이 README는 [`docs/copy.md`](docs/copy.md) 한 파일에서 고치고 `npm run copy`로 반영합니다. 설계 규칙과 마일스톤별 변경 기록은 개발 저장소의 `CLAUDE.md`·`docs/design/`·`docs/review/`·`docs/research/`에 있습니다.
-
-<!-- 카드: 데이터와 권리 -->
-
-게임 데이터·텍스트·이미지의 권리는 **Project Moon**에 있습니다. 이 저장소는 비상업 팬 프로젝트이며 Project Moon과 제휴하거나 승인받지 않았습니다.
-
-플래너가 동작하는 데 필요한 범위의 게임 데이터를 세 곳에서 가져옵니다 — [LEAGUE-OF-NINE/OpenLethe](https://github.com/LEAGUE-OF-NINE/OpenLethe) (클라이언트 정적 데이터), [x1bViolet/Limbus-Localization-Files](https://github.com/x1bViolet/Limbus-Localization-Files) (공식 한국어·영어 현지화 원문), [eldritchtools/limbus-assets](https://github.com/eldritchtools/limbus-assets) (정적 데이터에 없는 인격을 채우는 가공 데이터). 어떤 파일을 어디서 가져오는지는 [`data/README.md`](data/README.md)와 [`data/sources.lock.json`](data/sources.lock.json)에 있습니다.
-
-게임 이미지는 이 저장소에 담지 않습니다.
-
-**코드는 MIT 라이선스입니다. 게임 데이터와 텍스트에는 적용되지 않습니다** — [`NOTICE`](NOTICE)를 보세요.
+루트 계산 방식은 [`docs/route-algorithm.md`](docs/route-algorithm.md), 데이터 출처와 가공은 [`data/README.md`](data/README.md)에 있습니다. 화면 문구·설명서·이 README는 [`docs/copy.md`](docs/copy.md) 한 파일에서 고치고 `npm run copy`로 반영합니다.
 ````

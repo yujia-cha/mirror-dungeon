@@ -42,7 +42,7 @@ describe('lastEntry', () => {
   });
 });
 
-describe('remainingIn (the overlay’s 「이 팩에서 남은 기프트」)', () => {
+describe('remainingIn (the overlay’s 「이 팩에서 챙길 기프트」)', () => {
   it('is null before any entry', () => {
     // Arrange / Act
     const left = remainingIn(runWith({}), expectedIn);
@@ -61,6 +61,8 @@ describe('remainingIn (the overlay’s 「이 팩에서 남은 기프트」)', (
       packId: 1300,
       expected: [9100, 9101, 9102],
       remaining: [9100, 9102],
+      // M157: the collected one stays listed, in its place, to be shown marked.
+      listed: [9100, 9101, 9102],
     });
   });
 
@@ -76,6 +78,8 @@ describe('remainingIn (the overlay’s 「이 팩에서 남은 기프트」)', (
     const left = remainingIn(run, expectedIn);
     // Assert: the failed one is behind the player; only the unmarked one stays.
     expect(left?.remaining).toEqual([9102]);
+    // …and the list keeps the collected one but not the missed one.
+    expect(left?.listed).toEqual([9100, 9102]);
   });
 
   it('still names the last floor’s pack when the frontier has passed the last floor', () => {

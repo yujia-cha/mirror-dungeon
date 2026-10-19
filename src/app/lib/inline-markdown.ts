@@ -42,7 +42,8 @@ export function parseInline(source: string): InlineToken[] {
     else if (m[2] !== undefined) out.push({ kind: 'code', text: m[2] });
     else {
       const href = linkTarget(m[4]!);
-      if (href) out.push({ kind: 'link', text: m[3]!, href });
+      // A code-styled link text (`` [`NOTICE`](NOTICE) ``) shows as its plain name.
+      if (href) out.push({ kind: 'link', text: m[3]!.replace(/`/g, ''), href });
       else text(m[3]!);
     }
   }

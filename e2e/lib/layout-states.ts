@@ -113,6 +113,13 @@ export async function walkLayoutStates(
   await visit({ id: 'first-load', title: 'first load (no goals)' });
   await menu();
 
+  // The guide (「?」), first card: its controls stay fixed while a long card's body scrolls (M157).
+  await page.getByTestId('guide-open').click();
+  await page.getByTestId('guide').waitFor();
+  await visit({ id: 'guide', title: 'guide sheet, first card' });
+  await page.keyboard.press('Escape');
+  await page.getByTestId('guide').waitFor({ state: 'detached' });
+
   // The left panel: beside the stage on a desktop, a page of its own on a phone.
   let left = page.getByTestId('panel-left');
   if (device === 'phone') {
