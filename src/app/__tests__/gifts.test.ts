@@ -34,7 +34,7 @@ describe('condition chip', () => {
 
   it('shows the condition still short, not just the first one', () => {
     const reports = reportsFor(9092);
-    const entry = classifyGift(indexes.giftById.get(9092)!, reports);
+    const entry = classifyGift(indexes.giftById.get(9092)!, reports, indexes.giftById);
     expect(decidingReport(reports, entry.lack)).toBe(entry.lack ?? reports[0]);
     expect(conditionShort(decidingReport(reports, entry.lack), data.enums, 'ko')).toBe('진동 2/5');
   });
@@ -245,7 +245,7 @@ describe('special keyword conditions', () => {
     expect(conditionText(report, data.enums, 'ko')).toContain('수에 따라 강화');
     expect(judgementOf([report])).toBeNull();
     // and it neither activates the gift nor holds it back
-    expect(classifyGift(indexes.giftById.get(9842)!, [report])).toMatchObject({
+    expect(classifyGift(indexes.giftById.get(9842)!, [report], indexes.giftById)).toMatchObject({
       group: 'other',
       ratio: null,
     });

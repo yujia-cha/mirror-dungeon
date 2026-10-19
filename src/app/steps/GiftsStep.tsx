@@ -104,7 +104,12 @@ export function GiftsStep({
   const entangledIds = useMemo(() => new Set(entangled.keys()), [entangled]);
 
   const groups = useMemo(
-    () => prioritiseGifts(browsableParents(data, indexes, wanted, childrenOf, matcher), conditionByGift),
+    () =>
+      prioritiseGifts(
+        browsableParents(data, indexes, wanted, childrenOf, matcher),
+        conditionByGift,
+        indexes.giftById,
+      ),
     [data, indexes, wanted, conditionByGift, childrenOf, matcher],
   );
 

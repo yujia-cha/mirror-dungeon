@@ -22,6 +22,7 @@ import { classifyGift, compareEntries, type GiftEntry } from '../lib/gift-priori
 import { browsableParents, tilesFor, type GiftTileData } from '../lib/gift-tile.ts';
 import { matchesGiftName } from '../lib/gift-filters.ts';
 import {
+  CLEARED_RECOMMEND_FILTERS,
   DEFAULT_RECOMMEND_FILTERS,
   effectReportsByGift,
   matchesRecommendFilters,
@@ -80,7 +81,7 @@ export function GiftBrowser({
   // 「모든 기프트」: one list in the tab's own order — pack-bound first, closer first, then id — without the fold.
   const tiles = useMemo(() => {
     const entries = browsableParents(data, indexes, wanted, childrenOf, matcher)
-      .map((gift) => classifyGift(gift, conditionByGift.get(gift.id) ?? []))
+      .map((gift) => classifyGift(gift, conditionByGift.get(gift.id) ?? [], indexes.giftById))
       .sort(compareEntries);
     return tilesFor(entries, childrenOf, wanted, conditionByGift, matcher.attrs);
   }, [data, indexes, wanted, childrenOf, matcher, conditionByGift]);
@@ -99,8 +100,9 @@ export function GiftBrowser({
         conditionByGift,
         effectsByGift,
         { deployed: stats.deployed },
+        indexes.giftById,
       ),
-    [data, wanted, conditionByGift, effectsByGift, stats],
+    [data, wanted, conditionByGift, effectsByGift, stats, indexes],
   );
   // 「키워드별」 groups: the deck's own keywords first, most deployed first (owner's call, M133).
   const keywordOrder = useMemo(
@@ -113,7 +115,8 @@ export function GiftBrowser({
   );
   const recommended = useMemo(() => {
     const keep = (entry: GiftEntry): boolean =>
-      matchesGiftName(entry.gift, filters) && matchesRecommendFilters(entry.gift, recFilters);
+      matchesGiftName(entry.gift, filters) &&
+      matchesRecommendFilters(entry.gift, recFilters, indexes.giftById);
     // The order is `lib/recommend-rank.ts`'s, whichever 정렬 is chosen.
     const scoreOf = (id: number): number => recommendation.scores.get(id) ?? 0;
     const shown = (list: readonly GiftEntry[]): GiftEntry[] =>
@@ -127,10 +130,10 @@ export function GiftBrowser({
       reasons: recommendation.reasons,
       scores: recommendation.scores,
     };
-  }, [recommendation, filters, recFilters]);
+  }, [recommendation, filters, recFilters, indexes]);
   const recNarrowed = recommendFiltersActive(recFilters) || filters.query.trim() !== '';
   const resetRecommended = useCallback((): void => {
-    setRecFilters(DEFAULT_RECOMMEND_FILTERS);
+    setRecFilters(CLEARED_RECOMMEND_FILTERS);
     filterState.setQuery('');
   }, [filterState]);
   let deckEmpty: string;
@@ -274,7 +277,7 @@ export function GiftBrowser({
             <RecommendFilterBar
               filters={recFilters}
               onChange={setRecFilters}
-              onReset={() => setRecFilters(DEFAULT_RECOMMEND_FILTERS)}
+              onReset={() => setRecFilters(CLEARED_RECOMMEND_FILTERS)}
               enums={data.enums}
               lang={lang}
             />

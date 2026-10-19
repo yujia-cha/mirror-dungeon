@@ -23,7 +23,7 @@
  */
 import type { GiftEffectsReport } from '../../core/index.ts';
 import { ATTACK_TYPES, type Keyword } from '../../core/schema.ts';
-import { compareEntries, isPackBound, type GiftEntry } from './gift-priority.ts';
+import { compareEntries, type GiftEntry } from './gift-priority.ts';
 
 /** What a score may depend on beyond the gift's own report. */
 export interface RankContext {
@@ -55,7 +55,7 @@ export function compareRecommended(
 
 /** 「팩 전용 먼저」: pack-bound first, then by score, then the usual order. */
 export function comparePackFirst(a: GiftEntry, b: GiftEntry, scoreOf: ScoreOf): number {
-  return Number(isPackBound(b.gift)) - Number(isPackBound(a.gift)) || compareRecommended(a, b, scoreOf);
+  return Number(b.packBound) - Number(a.packBound) || compareRecommended(a, b, scoreOf);
 }
 
 /**

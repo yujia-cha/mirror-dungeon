@@ -108,7 +108,7 @@ describe('recommendationScore', () => {
 });
 
 describe('compareRecommended', () => {
-  const entries = [9214, 9088, 9215].map((id) => classifyGift(gift(id), []));
+  const entries = [9214, 9088, 9215].map((id) => classifyGift(gift(id), [], indexes.giftById));
 
   it('puts the higher score first', () => {
     // Arrange
@@ -162,6 +162,7 @@ describe('the ranking on real data', () => {
       conditionReportsByGift(data, stats, indexes),
       effectReportsByGift(gifts, stats, indexes),
       { deployed: stats.deployed },
+      indexes.giftById,
     );
     const ranked = deck.map((e) => scores.get(e.gift.id)!);
     // Assert

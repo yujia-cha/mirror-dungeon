@@ -10,6 +10,7 @@ import { loadGameDataFromDisk } from '../../../core/data/node.ts';
 import { conditionReportsByGift } from '../gift-tile.ts';
 import { classifyGift } from '../gift-priority.ts';
 import {
+  CLEARED_RECOMMEND_FILTERS,
   DEFAULT_RECOMMEND_FILTERS,
   activationOf,
   effectReportsByGift,
@@ -18,6 +19,7 @@ import {
   matchesRecommendFilters,
   recommendFiltersActive,
   recommendedGifts,
+  type RecommendFilters,
 } from '../recommend.ts';
 
 const data = loadGameDataFromDisk();
@@ -42,6 +44,7 @@ function judge(gifts: Gift[], stats = burnStats) {
     conditionReportsByGift(data, stats, indexes),
     effectReportsByGift(gifts, stats, indexes),
     { deployed: stats.deployed },
+    indexes.giftById,
   );
 }
 
@@ -50,14 +53,20 @@ describe('activationOf', () => {
     // Arrange: a burn deck, a burn-skill effect.
     const g = withEffects(9215, [effect(burnSkill)]);
     // Act
-    const activation = activationOf(g, effectReportsByGift([g], burnStats, indexes).get(g.id));
+    const activation = activationOf(
+      g,
+      effectReportsByGift([g], burnStats, indexes).get(g.id),
+      indexes.giftById,
+    );
     // Assert
     expect(activation).toBe('deck');
   });
 
   it('leaves out a gift whose every conditional effect the deck cannot use', () => {
     const g = withEffects(9215, [effect(nobodyHas)]);
-    expect(activationOf(g, effectReportsByGift([g], burnStats, indexes).get(g.id))).toBeNull();
+    expect(
+      activationOf(g, effectReportsByGift([g], burnStats, indexes).get(g.id), indexes.giftById),
+    ).toBeNull();
   });
 
   it('keeps a plain usable gift only when it is pack-bound (붉은색 넥타이 is, 지옥나비의 꿈 is not)', () => {
@@ -68,14 +77,24 @@ describe('activationOf', () => {
     // Act + Assert
     expect(packBound.acquisition.kind).toBe('packLimited');
     expect(general.acquisition.kind).toBe('general');
-    expect(activationOf(packBound, reports.get(packBound.id))).toBe('free');
-    expect(activationOf(general, reports.get(general.id))).toBeNull();
+    expect(activationOf(packBound, reports.get(packBound.id), indexes.giftById)).toBe('free');
+    expect(activationOf(general, reports.get(general.id), indexes.giftById)).toBeNull();
+  });
+
+  it('keeps a plain fusion result when it is pack-bound (선물 is, 진혼 is not — M156)', () => {
+    // Arrange: 선물 eats two pack-limited gifts; 진혼's recipe is 범용 gifts only.
+    const present = withEffects(9764, [effect()]);
+    const requiem = withEffects(9088, [effect()]);
+    const reports = effectReportsByGift([present, requiem], burnStats, indexes);
+    // Act + Assert
+    expect(activationOf(present, reports.get(present.id), indexes.giftById)).toBe('free');
+    expect(activationOf(requiem, reports.get(requiem.id), indexes.giftById)).toBeNull();
   });
 
   it('recommends nothing that needs the deck when nobody is deployed', () => {
     const nobody = analyseDeck(BURN_DECK, indexes, data.rules.deployment, []);
     const g = withEffects(9215, [effect(burnSkill)]);
-    expect(activationOf(g, effectReportsByGift([g], nobody, indexes).get(g.id))).toBeNull();
+    expect(activationOf(g, effectReportsByGift([g], nobody, indexes).get(g.id), indexes.giftById)).toBeNull();
   });
 });
 
@@ -121,38 +140,42 @@ describe('the recommended tab filters', () => {
     expect(isFusionGift(gift(9215))).toBe(false);
   });
 
-  it('narrows by 획득, by 조합 and by keyword, and passes everything by default', () => {
+  it('narrows by 획득, by 조합 and by keyword; opens on 팩 전용 and clears to everything', () => {
     // Arrange
-    const requiem = gift(9088); // fusion, 화상, not pack-bound
+    const requiem = gift(9088); // fusion of 범용 gifts, 화상, not pack-bound
     const tie = gift(9215); // pack-limited, 화상
     const hammer = gift(9214); // pack-limited, 진동
+    const present = gift(9764); // fusion of two pack-limited gifts: pack-bound (M156)
     // Act
-    const byDefault = [requiem, tie, hammer].every((g) =>
-      matchesRecommendFilters(g, DEFAULT_RECOMMEND_FILTERS),
-    );
-    const packOnly = { ...DEFAULT_RECOMMEND_FILTERS, acquisition: 'pack' as const };
-    const generalOnly = { ...DEFAULT_RECOMMEND_FILTERS, acquisition: 'general' as const };
-    const noFusion = { ...DEFAULT_RECOMMEND_FILTERS, fusion: false };
-    const vibration = { ...DEFAULT_RECOMMEND_FILTERS, keyword: 'Vibration' as const };
-    // Assert
-    expect(byDefault).toBe(true);
-    expect(recommendFiltersActive(DEFAULT_RECOMMEND_FILTERS)).toBe(false);
-    expect(matchesRecommendFilters(requiem, packOnly)).toBe(false);
-    expect(matchesRecommendFilters(tie, packOnly)).toBe(true);
-    expect(matchesRecommendFilters(requiem, generalOnly)).toBe(true);
-    expect(matchesRecommendFilters(tie, generalOnly)).toBe(false);
-    expect(matchesRecommendFilters(requiem, noFusion)).toBe(false);
-    expect(matchesRecommendFilters(tie, noFusion)).toBe(true);
-    expect(matchesRecommendFilters(hammer, vibration)).toBe(true);
-    expect(matchesRecommendFilters(tie, vibration)).toBe(false);
+    const passes = (filters: RecommendFilters) =>
+      [requiem, tie, hammer, present].filter((g) => matchesRecommendFilters(g, filters, indexes.giftById));
+    const packOnly = DEFAULT_RECOMMEND_FILTERS;
+    const generalOnly = { ...CLEARED_RECOMMEND_FILTERS, acquisition: 'general' as const };
+    const noFusion = { ...CLEARED_RECOMMEND_FILTERS, fusion: false };
+    const vibration = { ...CLEARED_RECOMMEND_FILTERS, keyword: 'Vibration' as const };
+    // Assert: the tab opens on 팩 전용 (owner's call, M156); 「필터 초기화」 lets everything through.
+    expect(DEFAULT_RECOMMEND_FILTERS.acquisition).toBe('pack');
+    expect(passes(DEFAULT_RECOMMEND_FILTERS)).toEqual([tie, hammer, present]);
+    expect(passes(CLEARED_RECOMMEND_FILTERS)).toEqual([requiem, tie, hammer, present]);
+    expect(recommendFiltersActive(DEFAULT_RECOMMEND_FILTERS)).toBe(true);
+    expect(recommendFiltersActive(CLEARED_RECOMMEND_FILTERS)).toBe(false);
+    expect(matchesRecommendFilters(present, generalOnly, indexes.giftById)).toBe(false);
+    expect(matchesRecommendFilters(requiem, packOnly, indexes.giftById)).toBe(false);
+    expect(matchesRecommendFilters(tie, packOnly, indexes.giftById)).toBe(true);
+    expect(matchesRecommendFilters(requiem, generalOnly, indexes.giftById)).toBe(true);
+    expect(matchesRecommendFilters(tie, generalOnly, indexes.giftById)).toBe(false);
+    expect(matchesRecommendFilters(requiem, noFusion, indexes.giftById)).toBe(false);
+    expect(matchesRecommendFilters(tie, noFusion, indexes.giftById)).toBe(true);
+    expect(matchesRecommendFilters(hammer, vibration, indexes.giftById)).toBe(true);
+    expect(matchesRecommendFilters(tie, vibration, indexes.giftById)).toBe(false);
     expect([packOnly, noFusion, vibration].every(recommendFiltersActive)).toBe(true);
     // The sort is not a filter.
-    expect(recommendFiltersActive({ ...DEFAULT_RECOMMEND_FILTERS, sort: 'pack' })).toBe(false);
+    expect(recommendFiltersActive({ ...CLEARED_RECOMMEND_FILTERS, sort: 'pack' })).toBe(false);
   });
 
   it('groups by keyword in the enums order, keeping the order inside each group', () => {
     // Arrange
-    const entries = [9214, 9088, 9215, 9002].map((id) => classifyGift(gift(id), []));
+    const entries = [9214, 9088, 9215, 9002].map((id) => classifyGift(gift(id), [], indexes.giftById));
     const order = data.enums.keywords.map((k) => k.id);
     // Act
     const groups = groupByKeyword(entries, order);
@@ -163,7 +186,7 @@ describe('the recommended tab filters', () => {
 
   it('puts a keyword the order does not know last', () => {
     // Arrange
-    const entries = [9214, 9088].map((id) => classifyGift(gift(id), []));
+    const entries = [9214, 9088].map((id) => classifyGift(gift(id), [], indexes.giftById));
     // Act
     const groups = groupByKeyword(entries, ['Vibration']);
     // Assert

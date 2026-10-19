@@ -8,8 +8,9 @@
  * buff, a sin and attack type, coins, a defense kind. States and battle situations ask nothing.
  *
  * - `deck` (drawn in 「지금 덱으로 발동」): some usable effect asks something of the deck, or a met gate opens it;
- * - `free` (drawn in the same section since M137): only unconditional effects are usable, and only one pack (or
- *   boss) hands the gift out (`isPackBound`) — that is what decides a route; a general one is left out;
+ * - `free` (drawn in the same section since M137): only unconditional effects are usable, and the gift takes a
+ *   particular pack (`isPackBound` — one pack or boss hands it out, or, since M156, every recipe of a fusion
+ *   result eats such a gift) — that is what decides a route; a general one is left out;
  * - `ego` (「E.G.O 스킬 조건」, last): only an E.G.O skill condition holds it — our data has no
  *   identity's E.G.O, so the owner counts it as met but keeps such gifts apart;
  * - anything else is not recommended.
@@ -25,18 +26,22 @@ import {
 } from '../../core/index.ts';
 import type { Gift, Keyword } from '../../core/schema.ts';
 import type { ConditionReport, DeckStats, GameIndexes } from '../../core/types.ts';
-import { classifyGift, isPackBound, type GiftEntry } from './gift-priority.ts';
+import { classifyGift, isPackBound, type GiftById, type GiftEntry } from './gift-priority.ts';
 import { compareRecommended, recommendationScore, type RankContext } from './recommend-rank.ts';
 
 /**
  * Why a gift is recommended: the deck can use an effect that asks for it (`deck`), it is plain and
- * pack-bound (`free`), or only an E.G.O skill condition — always met, owner's call — holds it (`ego`).
+ * pack-bound (`free`, a pack-bound fusion result too), or only an E.G.O skill condition — always met, owner's call — holds it (`ego`).
  */
 export type Activation = 'deck' | 'free' | 'ego';
 
-export function activationOf(gift: Gift, report: GiftEffectsReport | undefined): Activation | null {
+export function activationOf(
+  gift: Gift,
+  report: GiftEffectsReport | undefined,
+  giftById: GiftById,
+): Activation | null {
   if (!report || report.relevance === null) return null;
-  if (report.relevance === 'free') return isPackBound(gift) ? 'free' : null;
+  if (report.relevance === 'free') return isPackBound(gift, giftById) ? 'free' : null;
   return report.relevance;
 }
 
@@ -60,7 +65,7 @@ export function isFusionGift(gift: Gift): boolean {
 export interface Recommendation {
   /** The deck can use an effect that asks something of it (「지금 덱으로 발동」). */
   deck: GiftEntry[];
-  /** Only plain effects are usable, and only one pack (or boss) hands it out (same section, M137). */
+  /** Only plain effects are usable, and the gift takes a particular pack (same section, M137). */
   free: GiftEntry[];
   /** 「E.G.O 스킬 조건」: held only by an E.G.O skill condition, any source — the last group. */
   ego: GiftEntry[];
@@ -80,13 +85,14 @@ export function recommendedGifts(
   conditionByGift: ReadonlyMap<number, ConditionReport[]>,
   effectsByGift: ReadonlyMap<number, GiftEffectsReport>,
   rank: RankContext,
+  giftById: GiftById,
 ): Recommendation {
   const out: Recommendation = { deck: [], free: [], ego: [], reasons: new Map(), scores: new Map() };
   for (const gift of gifts) {
     const report = effectsByGift.get(gift.id);
-    const activation = activationOf(gift, report);
+    const activation = activationOf(gift, report, giftById);
     if (activation === null) continue;
-    out[activation].push(classifyGift(gift, conditionByGift.get(gift.id) ?? []));
+    out[activation].push(classifyGift(gift, conditionByGift.get(gift.id) ?? [], giftById));
     out.reasons.set(gift.id, relevanceReason(report!));
     out.scores.set(gift.id, recommendationScore(report!, rank));
   }
@@ -95,7 +101,7 @@ export function recommendedGifts(
   return out;
 }
 
-/** 획득: 팩 전용 = `isPackBound`; 범용 = everything else (범용 드랍, 조합, 시작 …). */
+/** 획득: 팩 전용 = `isPackBound` (팩 전용 재료가 든 조합 포함, M156); 범용 = everything else (범용 드랍, 시작, 범용 재료만의 조합 …). */
 export type RecommendAcquisition = 'pack' | 'general';
 /** 정렬: by keyword (the default), or pack-bound first — each by score inside (`recommend-rank.ts`). */
 export type RecommendSort = 'keyword' | 'pack';
@@ -108,7 +114,19 @@ export interface RecommendFilters {
   sort: RecommendSort;
 }
 
+/** What the tab opens with: 팩 전용 (owner's call, M156) — the gifts that decide a route. */
 export const DEFAULT_RECOMMEND_FILTERS: RecommendFilters = {
+  acquisition: 'pack',
+  fusion: true,
+  keyword: 'all',
+  sort: 'keyword',
+};
+
+/**
+ * What 「필터 초기화」 goes back to: nothing narrowing. Not the default, whose 팩 전용 could leave the
+ * list as empty as before the reset.
+ */
+export const CLEARED_RECOMMEND_FILTERS: RecommendFilters = {
   acquisition: 'all',
   fusion: true,
   keyword: 'all',
@@ -120,8 +138,9 @@ export function recommendFiltersActive(filters: RecommendFilters): boolean {
   return filters.acquisition !== 'all' || !filters.fusion || filters.keyword !== 'all';
 }
 
-export function matchesRecommendFilters(gift: Gift, filters: RecommendFilters): boolean {
-  if (filters.acquisition !== 'all' && isPackBound(gift) !== (filters.acquisition === 'pack')) return false;
+export function matchesRecommendFilters(gift: Gift, filters: RecommendFilters, giftById: GiftById): boolean {
+  if (filters.acquisition !== 'all' && isPackBound(gift, giftById) !== (filters.acquisition === 'pack'))
+    return false;
   if (!filters.fusion && isFusionGift(gift)) return false;
   if (filters.keyword !== 'all' && gift.keyword !== filters.keyword) return false;
   return true;

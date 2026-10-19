@@ -1035,6 +1035,7 @@ describe('gift priority', () => {
     const groups = prioritiseGifts(
       [9088, 9092, 9208].map((id) => indexes.giftById.get(id)!),
       byGift,
+      indexes.giftById,
     );
     // 진혼 needs 5 combustion inflictors among the deployed 7 — every one of them qualifies.
     expect(groups.active.map((e) => e.gift.id)).toContain(9088);
@@ -1050,23 +1051,31 @@ describe('gift priority', () => {
     const general = data.gifts.find(
       (g) => g.acquisition.kind === 'general' && g.conditions.length === 0 && g.id < packBound.id,
     )!;
-    const a = classifyGift(packBound, []);
-    const b = classifyGift(general, []);
+    const a = classifyGift(packBound, [], indexes.giftById);
+    const b = classifyGift(general, [], indexes.giftById);
     // Both sit in "other" with no condition; the pack-bound one wins even with the larger id.
     expect(compareEntries(a, b)).toBeLessThan(0);
     expect(compareEntries(b, a)).toBeGreaterThan(0);
-    const groups = prioritiseGifts([general, packBound], new Map());
+    const groups = prioritiseGifts([general, packBound], new Map(), indexes.giftById);
     expect(groups.other.map((e) => e.gift.id)).toEqual([packBound.id, general.id]);
     // A closer 범용 gift still trails a pack-bound one; two pack-bound gifts keep the closeness order.
     const stats = statsFor(BURN_DECK, BURN_DECK.slice(0, 7));
-    const active = classifyGift(indexes.giftById.get(9088)!, evaluateConditions([9088], stats, indexes));
+    const active = classifyGift(
+      indexes.giftById.get(9088)!,
+      evaluateConditions([9088], stats, indexes),
+      indexes.giftById,
+    );
     expect(active.group).toBe('active');
     expect(compareEntries(active, a)).toBeGreaterThan(0);
   });
 
   it('reads the shortfall off the worst condition', () => {
     const gift = indexes.giftById.get(9092)!; // 연성진동: 5 vibration inflictors
-    const entry = classifyGift(gift, evaluateConditions([9092], statsFor([10216, 10512, 10916]), indexes));
+    const entry = classifyGift(
+      gift,
+      evaluateConditions([9092], statsFor([10216, 10512, 10916]), indexes),
+      indexes.giftById,
+    );
     // Close is not active: there is no 「거의 활성」 group any more.
     expect(entry.group).toBe('other');
     expect(entry.lack?.need).toBe(5);
@@ -2228,14 +2237,23 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
   it('opens on 추천 기프트: the gifts the deck meets and the unconditional pack-bound ones, in one section', () => {
     // Arrange
     useApp.getState().setDeck(BURN_DECK, 7);
+    const tile9764 = () =>
+      within(deckSection())
+        .getAllByTestId('gift-tile')
+        .find((el) => el.getAttribute('data-gift') === '9764');
     // Act
     renderBrowser();
     // Assert
     const tab = screen.getByRole('tab', { name: '추천 기프트' });
     expect(tab).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel', { name: '추천 기프트' })).toBeInTheDocument();
-    // 진혼 (화상 7/5) is met, 연성진동 (진동 2/5) is not.
-    expect(ids(deckSection())).toContain(9088);
+    // M156: it opens on 팩 전용 — 진혼 (화상 7/5, met) is a fusion of 범용 gifts, so it waits behind
+    // 전체; 선물 is a fusion of two pack-only gifts with nothing but plain effects, so it is here.
+    expect(screen.getByLabelText('획득')).toHaveValue('pack');
+    expect(ids(deckSection())).not.toContain(9088);
+    expect(ids(deckSection())).toContain(9764);
+    expect(tile9764()).toHaveAttribute('data-recommend', 'free');
+    // 연성진동 (진동 2/5) is not met.
     expect(ids(deckSection())).not.toContain(9092);
     expect(deckSection()).toHaveTextContent('지금 덱으로 발동');
     // M129: 붉은색 넥타이 asks for a burn S3, which 10112 brings; 불타는 운명 only asks about a state
@@ -2283,7 +2301,7 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     expect([...byKeyword].sort((a, b) => order.indexOf(a) - order.indexOf(b))).toEqual(byKeyword);
     expect(firstHead).toContain('화상');
     expect(groups()).toEqual([]);
-    expect(ids(deckSection())).toContain(9088);
+    expect(ids(deckSection())).toContain(9215);
   });
 
   it('ranks each keyword group by how many identities the effect applies to (M131)', async () => {
@@ -2297,7 +2315,7 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
         .map((el) => Number(el.getAttribute('data-score')));
     const descending = (list: number[]): boolean => list.every((s, i) => i === 0 || list[i - 1]! >= s);
     const isPack = (el: HTMLElement): boolean =>
-      isPackBound(indexes.giftById.get(Number(el.getAttribute('data-gift')))!);
+      isPackBound(indexes.giftById.get(Number(el.getAttribute('data-gift')))!, indexes.giftById);
     // Act
     const byGroup = within(deckSection()).getAllByTestId('recommend-keyword').map(scores);
     await user.selectOptions(screen.getByLabelText('정렬'), 'pack');
@@ -2319,17 +2337,21 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
     renderBrowser();
-    const everything = shown();
-    // Act + Assert: 팩 전용 keeps only pack-bound gifts — 진혼 is a fusion, so it goes.
-    await user.selectOptions(screen.getByLabelText('획득'), 'pack');
-    expect(shown().every((id) => isPackBound(indexes.giftById.get(id)!))).toBe(true);
-    expect(shown()).not.toContain(9088);
+    const bound = (id: number): boolean => isPackBound(indexes.giftById.get(id)!, indexes.giftById);
+    // Act + Assert: it opens on 팩 전용 (M156) — pack-bound gifts only, pack-bound fusions among them;
+    // 진혼 is a fusion of 범용 gifts, so it is not.
+    const byDefault = shown();
+    expect(byDefault.every(bound)).toBe(true);
+    expect(byDefault).toContain(9764);
+    expect(byDefault).not.toContain(9088);
     // 범용 is the rest — the unconditional gifts are all pack-bound, so none of them stays.
     await user.selectOptions(screen.getByLabelText('획득'), 'general');
-    expect(shown().every((id) => !isPackBound(indexes.giftById.get(id)!))).toBe(true);
+    expect(shown().every((id) => !bound(id))).toBe(true);
     expect(shown()).toContain(9088);
     expect(shown()).not.toContain(9251);
     await user.selectOptions(screen.getByLabelText('획득'), 'all');
+    const everything = shown();
+    expect(everything.length).toBeGreaterThan(byDefault.length);
     // 조합 기프트 포함 off drops every fusion.
     await user.click(screen.getByRole('checkbox', { name: '조합 기프트 포함' }));
     expect(shown()).not.toContain(9088);
@@ -2338,8 +2360,10 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     await user.selectOptions(screen.getByLabelText('키워드'), 'Vibration');
     expect(shown().length).toBeGreaterThan(0);
     expect(shown().every((id) => indexes.giftById.get(id)!.keyword === 'Vibration')).toBe(true);
+    // The reset clears every filter, 팩 전용 too — back to 전체, not to the opening 팩 전용.
     await user.click(screen.getByRole('button', { name: '필터 초기화' }));
     expect(shown()).toEqual(everything);
+    expect(screen.getByLabelText('획득')).toHaveValue('all');
   });
 
   it('answers the shared search box too, and says so when nothing is left', async () => {
@@ -2349,16 +2373,19 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     renderBrowser();
     const box = screen.getByRole('textbox', { name: '기프트 검색' });
     // Act
-    await user.type(box, '진혼');
+    await user.type(box, '넥타이');
     const narrowed = shown();
     await user.clear(box);
     await user.type(box, '연성진동');
-    // Assert: 진혼 is recommended, 연성진동 is not — the box does not reach past the recommendation.
-    expect(narrowed).toContain(9088);
-    expect(narrowed.every((id) => indexes.giftById.get(id)!.name.ko.includes('진혼'))).toBe(true);
+    // Assert: 붉은색 넥타이 is recommended, 연성진동 is not — the box does not reach past the recommendation.
+    expect(narrowed).toContain(9215);
+    expect(narrowed.every((id) => indexes.giftById.get(id)!.name.ko.includes('넥타이'))).toBe(true);
     expect(screen.getByText('일치하는 기프트 없음')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '필터 초기화' }));
+    // The empty card's reset (the filter row has its own while 팩 전용 narrows the list).
+    await user.click(screen.getAllByRole('button', { name: '필터 초기화' }).at(-1)!);
     expect(box).toHaveValue('');
+    // The reset also lifts 팩 전용, so the 범용 진혼 is back.
+    expect(shown()).toContain(9215);
     expect(shown()).toContain(9088);
   });
 
@@ -2371,13 +2398,13 @@ describe('GiftBrowser 추천 기프트 (M121)', () => {
     const tileOf = (id: number) =>
       screen.getAllByTestId('gift-tile').find((el) => el.getAttribute('data-gift') === String(id))!;
     // Act
-    await user.click(within(tileOf(9088)).getByRole('button', { name: '진혼' }));
-    await user.click(within(tileOf(9088)).getByRole('button', { name: '진혼 자세히' }));
+    await user.click(within(tileOf(9251)).getByRole('button', { name: '불타는 운명' }));
+    await user.click(within(tileOf(9251)).getByRole('button', { name: '불타는 운명 자세히' }));
     // Assert
     expect(tileOf(9215)).toHaveAttribute('data-selected', 'true');
-    expect(useApp.getState().wanted).toEqual([9215, 9088]);
-    expect(tileOf(9088)).toHaveAttribute('data-selected', 'true');
-    expect(screen.getByRole('dialog', { name: '진혼' })).toBeInTheDocument();
+    expect(useApp.getState().wanted).toEqual([9215, 9251]);
+    expect(tileOf(9251)).toHaveAttribute('data-selected', 'true');
+    expect(screen.getByRole('dialog', { name: '불타는 운명' })).toBeInTheDocument();
   });
 
   it('says why 지금 덱으로 발동 is empty, and warns when nobody is deployed', () => {
@@ -4008,7 +4035,7 @@ describe('AppShell', () => {
     renderShell();
     await user.click(screen.getByRole('button', { name: '덱' }));
     const page = screen.getByTestId('page-left');
-    await user.type(within(page).getByRole('textbox', { name: '기프트 검색' }), '진혼');
+    await user.type(within(page).getByRole('textbox', { name: '기프트 검색' }), '붉은색 넥타이');
     const items = (): HTMLElement => screen.getByTestId('page-left');
     const query = (): string =>
       (within(items()).getByRole('textbox', { name: '기프트 검색' }) as HTMLInputElement).value;
@@ -4029,7 +4056,7 @@ describe('AppShell', () => {
       expect(items()).not.toHaveAttribute('data-covered');
       expect(items()).not.toHaveAttribute('inert');
       expect(within(items()).getByRole('tab', { name: '기프트', selected: true })).toBeInTheDocument();
-      expect(query()).toBe('진혼');
+      expect(query()).toBe('붉은색 넥타이');
       expect(screen.getByTestId('app-shell')).toHaveAttribute('inert');
     };
 
@@ -4055,7 +4082,7 @@ describe('AppShell', () => {
     expect(within(browser).getByRole('tab', { name: '모든 기프트', selected: true })).toBeInTheDocument();
     expect(within(browser).queryByRole('button', { name: '닫기' })).toBeNull();
     expect((within(browser).getByRole('textbox', { name: '기프트 검색' }) as HTMLInputElement).value).toBe(
-      '진혼',
+      '붉은색 넥타이',
     );
 
     // ← hands the browser's entry back and uncovers the tab; focus returns to the >> it came from.
@@ -4073,8 +4100,8 @@ describe('AppShell', () => {
     const again = await openBrowser();
     const tile = within(again)
       .getAllByTestId('gift-tile')
-      .find((el) => el.getAttribute('data-gift') === '9088')!;
-    await user.click(within(tile).getByRole('button', { name: '진혼 자세히' }));
+      .find((el) => el.getAttribute('data-gift') === '9215')!;
+    await user.click(within(tile).getByRole('button', { name: '붉은색 넥타이 자세히' }));
     expect(screen.getByTestId('gift-detail')).toBeInTheDocument();
     await deviceBack(3);
     await waitFor(() => expect(screen.queryByTestId('gift-detail')).toBeNull());
@@ -4087,8 +4114,8 @@ describe('AppShell', () => {
     const third = await openBrowser();
     const tile3 = within(third)
       .getAllByTestId('gift-tile')
-      .find((el) => el.getAttribute('data-gift') === '9088')!;
-    await user.click(within(tile3).getByRole('button', { name: '진혼 자세히' }));
+      .find((el) => el.getAttribute('data-gift') === '9215')!;
+    await user.click(within(tile3).getByRole('button', { name: '붉은색 넥타이 자세히' }));
     await user.click(within(screen.getByTestId('block-sheet')).getByRole('button', { name: '닫기' }));
     expect(screen.queryByTestId('gift-detail')).toBeNull();
     await user.click(within(screen.getByTestId('gift-browser')).getByRole('button', { name: '뒤로' }));

@@ -54,9 +54,13 @@ const {
   deck: deckGroup,
   free,
   ego,
-} = recommendedGifts(gifts, conditionReportsByGift(data, stats, indexes), reports, {
-  deployed: stats.deployed,
-});
+} = recommendedGifts(
+  gifts,
+  conditionReportsByGift(data, stats, indexes),
+  reports,
+  { deployed: stats.deployed },
+  indexes.giftById,
+);
 const recommended = new Set([...deckGroup, ...free, ...ego].map((entry) => entry.gift.id));
 const none = gifts.filter((gift) => !recommended.has(gift.id));
 
@@ -84,6 +88,7 @@ for (const [verdict, entries] of [
   ['ego', ego],
 ] as const)
   for (const entry of entries) print(entry.gift, verdict, reports.get(entry.gift.id)!);
-// The app keeps a plain gift only when it is pack-bound, so a general plain one is `none` here.
+// The app keeps a plain gift only when it is pack-bound (a pack-bound fusion result too, M156), so a
+// general plain one is `none` here.
 if (showAll) for (const gift of none) print(gift, 'none', reports.get(gift.id)!);
 console.log(`\ndeck ${deckGroup.length} · ego ${ego.length} · free ${free.length} · none ${none.length}`);
