@@ -597,15 +597,15 @@ export const STRINGS = {
     ko: '정해지는 것: 시작 기프트·관측. 게임의 관측이 끝나면(1층 테마팩 선택) 화면 인식이 확정하고, 그 뒤에는 바꿀 수 없습니다',
     en: "Being decided: the start gifts and observations. Once the game's observation is over (floor 1's theme pack select) the screen reader settles them, and they cannot be changed after that",
   },
-  // 화면 인식이 런을 시작할 때 남긴 「시작 전」 상태가 있을 때만 보인다(M143).
+  // 화면 인식이 런을 시작할 때 남긴 「시작 전」 상태가 있거나(M143), 런에 기록이 하나라도 있으면 보인다(M158 — 화면 인식으로 시작하지 않은 런은 처음 상태로 돌아간다).
   captureRollback: { ko: '런 중단 · 시작 전으로 되돌리기', en: 'Stop the run · back to before it started' },
   captureRollbackTitle: {
     ko: '런을 중단하고 시작 전으로 되돌릴까요?',
     en: 'Stop the run and go back to before it started?',
   },
   captureRollbackMessage: {
-    ko: '화면 인식을 멈추고 이 런에서 기록한 것을 되돌립니다.',
-    en: 'The screen reader stops, and what this run recorded is undone.',
+    ko: '이 런에서 기록한 것을 되돌립니다. 화면 인식 중이면 멈춥니다.',
+    en: 'What this run recorded is undone, and the screen reader stops if it is on.',
   },
   captureRollbackGifts: { ko: '획득·미획득 기록 {n}개', en: '{n} gift records (got and not got)' },
   captureRollbackVisits: { ko: '입장 기록 {n}개', en: '{n} pack entries' },
@@ -618,6 +618,11 @@ export const STRINGS = {
     en: 'Observation picks go back to what they were before the start',
   },
   captureRollbackKeep: { ko: '목표와 덱은 그대로입니다.', en: 'Goals and deck stay as they are.' },
+  // 화면 인식으로 시작하지 않은 런 — 「시작 전」 관측 지정을 모르므로 지금 값을 둔다(M158).
+  captureRollbackKeepPins: {
+    ko: '목표·덱·관측 지정은 그대로입니다.',
+    en: 'Goals, deck and observation picks stay as they are.',
+  },
   captureRollbackConfirm: { ko: '시작 전으로 되돌리기', en: 'Go back to before the start' },
   captureErr_unsupported: {
     ko: '이 브라우저는 화면 공유를 지원하지 않습니다',

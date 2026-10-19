@@ -128,6 +128,37 @@ function dedupeKey(c: Condition): string {
   }
 }
 
+/**
+ * Two gated clauses that count the same thing — the same keywords, verb and scope, or the same
+ * factions and scope — at different thresholds. 먹장구름 states its 6- and 10-identity steps as two
+ * full sentences, so they matched as two gates and a 6-identity deck read as unmet; the second
+ * sentence is a step of the first.
+ */
+type Stepped = Extract<Condition, { type: 'keywordSkillCount' | 'factionCount' }>;
+
+function sameSubject(a: Condition, b: Condition): boolean {
+  if (a.type === 'keywordSkillCount' && b.type === 'keywordSkillCount')
+    return (
+      a.min !== null &&
+      b.min !== null &&
+      a.verb === b.verb &&
+      a.scope === b.scope &&
+      a.includesSpecial === b.includesSpecial &&
+      [...a.keywords].sort().join('+') === [...b.keywords].sort().join('+')
+    );
+  if (a.type === 'factionCount' && b.type === 'factionCount')
+    return a.scope === b.scope && [...a.factions].sort().join('|') === [...b.factions].sort().join('|');
+  return false;
+}
+
+/** One gate at the lower threshold, with every higher threshold of either clause as a step. */
+function mergeSteps(first: Stepped, second: Stepped): Stepped {
+  const all = [first, second].flatMap((c) => [c.min, ...c.tiers.map((t) => t.min)]);
+  const [min, ...rest] = [...new Set(all.filter((n): n is number => n !== null))].sort((a, b) => a - b);
+  const base = (second.min ?? Infinity) < (first.min ?? Infinity) ? second : first;
+  return { ...base, min: min!, tiers: rest.map((n) => ({ min: n, label: `${n}인 이상` })) } as Stepped;
+}
+
 /** Extra thresholds mentioned after the first match, e.g. 3인 이상 ... 5인 이상이면. */
 function tiersAfter(text: string, from: number, baseMin: number): { min: number; label: string }[] {
   const rest = text.slice(from);
@@ -154,7 +185,9 @@ export function parseConditions(desc: Localized, ctx: ParseContext): ParseResult
     const key = dedupeKey(c);
     if (seen.has(key)) return;
     seen.add(key);
-    found.push(c);
+    const index = found.findIndex((other) => sameSubject(other, c));
+    if (index >= 0) found[index] = mergeSteps(found[index] as Stepped, c as Stepped);
+    else found.push(c);
   };
 
   KEYWORD_RE.lastIndex = 0;

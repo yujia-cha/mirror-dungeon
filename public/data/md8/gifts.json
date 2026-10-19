@@ -24408,21 +24408,6 @@
         ],
         "type": "keywordSkillCount",
         "verb": "inflict"
-      },
-      {
-        "includesSpecial": true,
-        "keywords": [
-          "Sinking"
-        ],
-        "min": 10,
-        "scope": "formation",
-        "text": {
-          "en": "Turn Start: At 30+ total sum of [Sinking] Potency and [Sinking] Count on all enemies, apply the following effects:\n\n- Skills that inflict [Sinking] Potency or Count: Final Power +1 (including 'Unique Sinking'; excluding E.G.O Skills)\n\n- When 6 or more Identities have Attack Skills that inflict [Sinking] Potency, Count, or 'Unique Sinking', Skills that inflict [Sinking] Potency or Count also deal +",
-          "ko": "[침잠] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 10인 이상"
-        },
-        "tiers": [],
-        "type": "keywordSkillCount",
-        "verb": "inflict"
       }
     ],
     "desc": {

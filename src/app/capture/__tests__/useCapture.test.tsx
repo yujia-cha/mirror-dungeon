@@ -167,7 +167,7 @@ describe('useCapture', () => {
     expect(onRunMark.mock.calls.at(-1)![0]).toMatchObject({ mark: 'rollback', run: { got: 1 } });
   });
 
-  it('does nothing on rollback without a snapshot but stop (M143)', async () => {
+  it('takes a run without a snapshot back to its beginning on rollback (M158)', async () => {
     // Arrange
     useApp.getState().visitPack(1001, 1);
     const onRunMark = vi.fn();
@@ -175,7 +175,17 @@ describe('useCapture', () => {
     // Act
     act(() => result.current.rollback());
     // Assert
-    expect(useApp.getState().run.visits).toEqual({ 1: 1001 });
+    expect(useApp.getState().run.visits).toEqual({});
+    expect(onRunMark.mock.calls.at(-1)![0]).toMatchObject({ mark: 'rollback', hadProgress: true });
+  });
+
+  it('does nothing on rollback with no snapshot and no progress but stop (M143)', async () => {
+    // Arrange
+    const onRunMark = vi.fn();
+    const { result } = renderHook(() => useCapture({ onRunMark }));
+    // Act
+    act(() => result.current.rollback());
+    // Assert
     expect(onRunMark).not.toHaveBeenCalled();
   });
 });

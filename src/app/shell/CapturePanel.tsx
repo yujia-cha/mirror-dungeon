@@ -210,8 +210,9 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
         </section>
       ) : null}
 
-      {/* The run this start began can be taken back to before it (M143). */}
-      {snapshot ? (
+      {/* The run this start began can be taken back to before it (M143); a run the reader did not
+          start goes back to its very beginning (M158). */}
+      {snapshot || runHasProgress(run) ? (
         <div className="flex">
           <Button size="sm" onClick={() => setAsking('rollback')} testId="capture-rollback">
             {t('captureRollback', lang)}
@@ -288,9 +289,11 @@ export function CapturePanel({ children }: { children?: ReactNode }) {
             <li>{t('captureRollbackGifts', lang, { n: statuses })}</li>
             <li>{t('captureRollbackVisits', lang, { n: visits })}</li>
             <li>{t('captureRollbackStart', lang)}</li>
-            <li>{t('captureRollbackPins', lang)}</li>
+            {snapshot ? <li>{t('captureRollbackPins', lang)}</li> : null}
           </ul>
-          <span className="text-body text-fg-muted">{t('captureRollbackKeep', lang)}</span>
+          <span className="text-body text-fg-muted">
+            {t(snapshot ? 'captureRollbackKeep' : 'captureRollbackKeepPins', lang)}
+          </span>
         </ConfirmDialog>
       ) : null}
     </div>

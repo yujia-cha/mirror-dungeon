@@ -344,7 +344,23 @@ describe('gifts', () => {
     const counts = { keywordSkillCount: 0, factionCount: 0, fullResonance: 0, unparsed: 0 };
     for (const gift of gifts) for (const c of gift.conditions) counts[c.type] += 1;
     // 39 → 46: the seven gates the parser used to drop (혈찬·탄환·두 키워드 형태). Nothing is unparsed now.
-    expect(counts).toEqual({ keywordSkillCount: 46, factionCount: 19, fullResonance: 1, unparsed: 0 });
+    // 46 → 45: 먹장구름's 10-identity sentence is a step of its 6-identity gate, not a second gate.
+    expect(counts).toEqual({ keywordSkillCount: 45, factionCount: 19, fullResonance: 1, unparsed: 0 });
+  });
+
+  it('gates each count once: higher thresholds of the same count are steps (먹장구름)', () => {
+    for (const gift of gifts) {
+      const subjects = gift.conditions.flatMap((c) =>
+        c.type === 'keywordSkillCount' && c.min !== null
+          ? [`k:${[...c.keywords].sort().join('+')}:${c.verb}:${c.scope}:${c.includesSpecial}`]
+          : c.type === 'factionCount'
+            ? [`f:${[...c.factions].sort().join('|')}:${c.scope}`]
+            : [],
+      );
+      expect(new Set(subjects).size, `${gift.id}`).toBe(subjects.length);
+    }
+    const sinking = gifts.find((g) => g.id === 9211)!.conditions;
+    expect(sinking).toMatchObject([{ min: 6, tiers: [{ min: 10 }] }]);
   });
 
   it('resolves every faction named by a condition to a known faction id', () => {

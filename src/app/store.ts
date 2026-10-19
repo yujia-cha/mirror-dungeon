@@ -150,8 +150,8 @@ interface AppState extends SharedState {
   beginRun: (mode: 'new' | 'continue') => void;
   /**
    * 「런 중단 · 시작 전으로 되돌리기」 (M143): the run and the observation pins and slots go back to
-   * the snapshot, which is then spent. Goals, deck and the other options stay. False (and nothing
-   * changes) without a snapshot.
+   * the snapshot, which is then spent. Goals, deck and the other options stay. Without a snapshot
+   * a run with progress goes back to an empty run, pins kept (M158); false when nothing changes.
    */
   rollbackRun: () => boolean;
   /**
@@ -957,8 +957,14 @@ export const useApp = create<AppState>()(
           return { runSnapshot: snapshotOf(state.run, state.options), run: emptyRun() };
         }),
       rollbackRun: () => {
-        const { runSnapshot: snapshot } = get();
-        if (!snapshot) return false;
+        const { runSnapshot: snapshot, run } = get();
+        // A run the screen reader did not start (M158): its beginning is an empty run, and the pins
+        // from before it are unknown, so they stay as they are.
+        if (!snapshot) {
+          if (!runHasProgress(run)) return false;
+          set({ run: emptyRun() });
+          return true;
+        }
         set((state) => {
           const options: PlanOptions = { ...state.options, observedGifts: [...snapshot.observedGifts] };
           if (snapshot.observationSlots === undefined) delete options.observationSlots;

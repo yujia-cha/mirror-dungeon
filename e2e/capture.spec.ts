@@ -399,5 +399,6 @@ test('starting the reader over an old run starts a new one, reads its start, and
   await page.getByRole('alertdialog').getByRole('button', { name: '시작 전으로 되돌리기' }).click();
   await expect(panel.getByTestId('capture-status')).toHaveAttribute('data-status', 'idle');
   await expect.poll(saved).toEqual({ ...old, snapshotFloor: null });
-  await expect(panel.getByTestId('capture-rollback')).toHaveCount(0);
+  // The old run back in place has progress, so it can still go back to its own beginning (M158).
+  await expect(panel.getByTestId('capture-rollback')).toHaveCount(1);
 });

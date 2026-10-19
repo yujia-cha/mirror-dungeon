@@ -52,6 +52,36 @@ describe('keyword conditions', () => {
     expect(c && 'tiers' in c ? c.tiers : []).toEqual([{ min: 10, label: '10인 이상' }]);
   });
 
+  it('folds a second full sentence about the same count into a step, not a second gate', () => {
+    // 먹장구름 (9211): a 6-identity deck must read as met, the 10-identity line being a step.
+    const conditions = parse(
+      '- [Sinking] 위력 또는 [Sinking] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 6인 이상이면, ' +
+        '추가로 피해량 +20% (특수 침잠 포함, E.G.O 스킬 제외, 대기 인원 포함)\n' +
+        '- [Sinking] 위력 또는 [Sinking] 횟수 또는 특수 침잠을 부여하는 공격 스킬을 보유한 인격이 10인 이상이면, ' +
+        '추가로 코인 위력 +1 (특수 침잠 포함, E.G.O 스킬 제외, 대기 인원 포함)',
+    );
+    expect(conditions).toHaveLength(1);
+    expect(conditions[0]).toMatchObject({
+      min: 6,
+      scope: 'formation',
+      tiers: [{ min: 10, label: '10인 이상' }],
+    });
+  });
+
+  it('keeps clauses about different keywords as separate gates', () => {
+    const conditions = parse(
+      '[Combustion]을 부여하는 공격 스킬을 보유한 인격이 3인 이상이면 A\n' +
+        '[Laceration]을 부여하는 공격 스킬을 보유한 인격이 5인 이상이면 B',
+    );
+    expect(conditions.map((c) => (c.type === 'keywordSkillCount' ? c.min : null))).toEqual([3, 5]);
+  });
+
+  it('merges a stepped faction count stated twice in full', () => {
+    const conditions = parse('검계 소속 인격이 2인 이상이면 A\n검계 소속 인격이 4인 이상이면 B');
+    expect(conditions).toHaveLength(1);
+    expect(conditions[0]).toMatchObject({ type: 'factionCount', min: 2, tiers: [{ min: 4 }] });
+  });
+
   it('recognises the "획득하는" form used by Breath and Charge', () => {
     expect(
       parse('[Charge] 횟수 또는 특수 충전을 획득하는 공격 스킬을 보유한 인격이 5인 이상')[0],

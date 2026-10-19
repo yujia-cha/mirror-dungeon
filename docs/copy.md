@@ -1884,7 +1884,7 @@
 - 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureRollback
-메모: 화면 인식이 런을 시작할 때 남긴 「시작 전」 상태가 있을 때만 보인다(M143).
+메모: 화면 인식이 런을 시작할 때 남긴 「시작 전」 상태가 있거나(M143), 런에 기록이 하나라도 있으면 보인다(M158 — 화면 인식으로 시작하지 않은 런은 처음 상태로 돌아간다).
 - ko: 런 중단 · 시작 전으로 되돌리기
 - en: Stop the run · back to before it started
 - 쓰는 곳: src/app/shell/CapturePanel.tsx
@@ -1895,8 +1895,8 @@
 - 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureRollbackMessage
-- ko: 화면 인식을 멈추고 이 런에서 기록한 것을 되돌립니다.
-- en: The screen reader stops, and what this run recorded is undone.
+- ko: 이 런에서 기록한 것을 되돌립니다. 화면 인식 중이면 멈춥니다.
+- en: What this run recorded is undone, and the screen reader stops if it is on.
 - 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureRollbackGifts
@@ -1922,6 +1922,12 @@
 ### captureRollbackKeep
 - ko: 목표와 덱은 그대로입니다.
 - en: Goals and deck stay as they are.
+- 쓰는 곳: src/app/shell/CapturePanel.tsx
+
+### captureRollbackKeepPins
+메모: 화면 인식으로 시작하지 않은 런 — 「시작 전」 관측 지정을 모르므로 지금 값을 둔다(M158).
+- ko: 목표·덱·관측 지정은 그대로입니다.
+- en: Goals, deck and observation picks stay as they are.
 - 쓰는 곳: src/app/shell/CapturePanel.tsx
 
 ### captureRollbackConfirm

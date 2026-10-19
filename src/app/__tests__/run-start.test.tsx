@@ -136,16 +136,27 @@ describe('run snapshot store (M143)', () => {
     expect('observationSlots' in useApp.getState().options).toBe(false);
   });
 
-  it('changes nothing on rollback without a snapshot', () => {
+  it('takes a run the reader did not start back to an empty run, pins kept (M158)', () => {
     // Arrange
     playSomeRun();
+    const { options } = useApp.getState();
+    // Act
+    const done = useApp.getState().rollbackRun();
+    // Assert
+    expect(done).toBe(true);
+    expect(useApp.getState().run).toEqual(emptyRun());
+    expect(useApp.getState().options).toBe(options);
+    expect(useApp.getState().runSnapshot).toBeNull();
+  });
+
+  it('changes nothing on rollback without a snapshot or any progress', () => {
+    // Arrange
     const state = useApp.getState();
     // Act
     const done = state.rollbackRun();
     // Assert
     expect(done).toBe(false);
     expect(useApp.getState().run).toBe(state.run);
-    expect(useApp.getState().options).toBe(state.options);
   });
 
   it('forgets the snapshot when the run is thrown away some other way', () => {
@@ -397,7 +408,34 @@ describe('starting the screen reader starts the run (M143)', () => {
     expect(useApp.getState().options.observedGifts).toEqual([9006]);
     expect(useApp.getState().wanted).toEqual([9006, 9007]);
     expect(useApp.getState().runSnapshot).toBeNull();
-    expect(within(screen.getByTestId('capture-panel')).queryByTestId('capture-rollback')).toBeNull();
+    // The run back in place has progress of its own, so it can still go back to its beginning (M158).
+    expect(within(screen.getByTestId('capture-panel')).getByTestId('capture-rollback')).toBeInTheDocument();
+  });
+
+  it('offers rollback on a run the reader did not start, back to its very beginning (M158)', async () => {
+    // Arrange: a run written by hand — no snapshot.
+    const user = userEvent.setup();
+    renderMenu();
+    let panel = await openPanel(user);
+    expect(within(panel).queryByTestId('capture-rollback')).toBeNull();
+    act(() => playSomeRun());
+    // Act
+    await user.click(within(panel).getByTestId('capture-rollback'));
+    // Assert: the pins are not part of it — there is no 「before」 value to go back to.
+    const dialog = screen.getByRole('alertdialog');
+    const list = within(dialog).getByTestId('capture-rollback-list');
+    expect(list).toHaveTextContent('획득·미획득 기록 1개');
+    expect(list).toHaveTextContent('입장 기록 1개');
+    expect(list).not.toHaveTextContent('관측 지정');
+    expect(dialog).toHaveTextContent('목표·덱·관측 지정은 그대로입니다');
+    expect(getDisplayMedia).not.toHaveBeenCalled();
+    // Act
+    await user.click(screen.getByRole('button', { name: '시작 전으로 되돌리기' }));
+    // Assert
+    expect(useApp.getState().run).toEqual(emptyRun());
+    expect(useApp.getState().options.observedGifts).toEqual([9006]);
+    panel = screen.getByTestId('capture-panel');
+    expect(within(panel).queryByTestId('capture-rollback')).toBeNull();
   });
 
   it('stops a running share on rollback', async () => {
