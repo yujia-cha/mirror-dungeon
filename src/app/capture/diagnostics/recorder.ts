@@ -501,7 +501,7 @@ export class DiagRecorder {
       {
         kind: 'read',
         reason: report.reason,
-        ...(report.mode === 'popup' ? { mode: 'popup' as const } : {}),
+        ...(report.mode !== 'full' ? { mode: report.mode } : {}),
         ...(report.queued ? { queued: true as const, lagMs: Math.round(report.queued.lagMs) } : {}),
         ...(report.queueDropped ? { queueDropped: report.queueDropped } : {}),
         ms: Math.round(report.ms),

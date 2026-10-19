@@ -150,10 +150,17 @@ export interface SimulateInput {
   signature: (shot: number, t: number) => Uint8Array;
   /**
    * Read a shot; `held` is what the run holds now (for the fusion confirm), `mode` whether the loop
-   * asked for a full read or a popup read of the popup burst (M136), `lean` whether the load ladder
-   * cuts the optional raw pass (M142).
+   * asked for a full read, a popup read of the popup burst (M136) or a re-read of the fusion
+   * confirm's slots (M159, `slots` how many are filled), `lean` whether the load ladder cuts the
+   * optional raw pass (M142).
    */
-  read: (shot: number, held: ReadonlySet<number>, mode: ReadMode, lean: boolean) => Promise<ShotRead>;
+  read: (
+    shot: number,
+    held: ReadonlySet<number>,
+    mode: ReadMode,
+    lean: boolean,
+    slots?: number,
+  ) => Promise<ShotRead>;
   /**
    * Where the popup's regions sit in a signature (`popupRegionIndices`, M141): the backlog compares
    * only those. Omitted = the whole signature.
@@ -395,7 +402,8 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
   };
 
   const startRead = async (shot: number, at: number, mode: ReadMode): Promise<void> => {
-    const result = await read(shot, held, mode, leanReads(level()));
+    const slots = mode === 'slots' ? loop.slots?.filled : undefined;
+    const result = await read(shot, held, mode, leanReads(level()), slots);
     const ms = result.ms * readCost;
     out.reads += 1;
     out.ocrCalls += result.ocrCalls;
@@ -500,6 +508,7 @@ export async function simulate(input: SimulateInput): Promise<SimulateResult> {
     const step = decide(loop, sig, changed(loop.lastRead, sig), t, refreshFor(level()), urgent, {
       black,
       stillMs: darkRules ? t - movedAt : 0,
+      settle: tracker.inShop !== true,
     });
     loop = step.state;
     if (step.decision === 'skip' && black) {

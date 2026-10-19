@@ -27,6 +27,7 @@ import {
   type RunOps,
 } from './apply.ts';
 import { READ_INTERVALS } from './loop.ts';
+import { reprintsOf } from './reprint.ts';
 import {
   CaptureSession,
   captureSupported,
@@ -62,7 +63,7 @@ const LOG_LIMIT = 20;
  * What an event or an answer meets in the run (M151 shares it between the two): read from the
  * store the moment it lands, not from the render that started the session.
  */
-function applyContext(giftById: ApplyContext['giftById']): ApplyContext {
+function applyContext(giftById: ApplyContext['giftById'], reprints: ApplyContext['reprints']): ApplyContext {
   const { run: now, options, wanted, fusionGoal } = useApp.getState();
   return {
     giftStatus: now.giftStatus,
@@ -73,6 +74,7 @@ function applyContext(giftById: ApplyContext['giftById']): ApplyContext {
     startDone: now.startDone === true,
     currentFloor: now.currentFloor,
     collected: collectedGifts(wanted, fusionGoal),
+    reprints,
   };
 }
 
@@ -149,10 +151,12 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const session = useRef<CaptureSession | null>(null);
   const nextId = useRef(1);
 
+  /** Reprint → original (M159): an entry read later never steps down from a reprint. */
+  const reprints = useMemo(() => reprintsOf(data.packs.map((p) => ({ id: p.id, name: p.name.en }))), [data]);
   // The session calls back long after the render that created it: it must see the latest of these.
-  const latest = useRef({ data, indexes, enterAt, leave, gameLang, hooks });
+  const latest = useRef({ data, indexes, reprints, enterAt, leave, gameLang, hooks });
   useEffect(() => {
-    latest.current = { data, indexes, enterAt, leave, gameLang, hooks };
+    latest.current = { data, indexes, reprints, enterAt, leave, gameLang, hooks };
   });
   /**
    * True while the reader is changing the run, so a store listener can tell its changes from the
@@ -212,7 +216,10 @@ export function useCapture(hooks: CaptureHooks = {}) {
   const onEvents = useCallback(
     (events: CaptureEvent[]) => {
       for (const event of events) {
-        const applied = actionsFor(event, applyContext(latest.current.indexes.giftById));
+        const applied = actionsFor(
+          event,
+          applyContext(latest.current.indexes.giftById, latest.current.reprints),
+        );
         if (event.kind === 'place') setInShop(event.shop);
         record(event, run(applied.actions));
         // A clean read of a floor settles the question its muddled read left (M116).
@@ -378,7 +385,11 @@ export function useCapture(hooks: CaptureHooks = {}) {
       latest.current.hooks.onAnswer?.(question.ask, picked);
       if (picked.length === 0) return;
       const { ask: asked } = question;
-      const applied = answerActions(asked, picked, applyContext(latest.current.indexes.giftById));
+      const applied = answerActions(
+        asked,
+        picked,
+        applyContext(latest.current.indexes.giftById, latest.current.reprints),
+      );
       record({ kind: 'answer', ask: asked, picked }, run(applied.actions));
       // A fusion's result named by the answer may leave what it ate to ask about (M151).
       if (applied.ask) {

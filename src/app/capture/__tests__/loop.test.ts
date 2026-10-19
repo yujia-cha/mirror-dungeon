@@ -17,6 +17,8 @@ import {
   READ_INTERVALS,
   REFRESH_MAX_MS,
   REFRESH_MS,
+  SLOTS_REFRESH_MS,
+  SLOTS_WINDOW_MS,
   tickDelay,
   TRANSITION_TICKS_MS,
   type LoopState,
@@ -139,6 +141,35 @@ describe('the popup burst (M136)', () => {
     expect(during.decision).toBe('skip');
     expect(end).toMatchObject({ decision: 'read', mode: 'full' });
     expect(end.state.owed).toBe(false);
+  });
+
+  it('ends the burst outside a shop once a popup read found none and the screen held still (M159)', () => {
+    // Arrange: the shop's entry gift — a popup at 0–200 (burst to 3200), clicked away; a popup read
+    // of the shop front behind it starts at 600 and finds none.
+    let state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 200, ...POPUP });
+    state = finished(decide(state, sig, true, 600).state, { at: 640, ...NOTHING });
+    // Act: the shop holds still.
+    const soon = decide(state, sig, false, 600 + BURST_REFRESH_MS - 1, undefined, false, { settle: true });
+    const settled = decide(state, sig, false, 600 + BURST_REFRESH_MS, undefined, false, { settle: true });
+    const inShop = decide(state, sig, false, 600 + BURST_REFRESH_MS);
+    // Assert: read in full half a second on, not when the burst runs out 2.6 s later.
+    expect(soon.decision).toBe('skip');
+    expect(settled).toMatchObject({ decision: 'read', mode: 'full', reason: 'dirty' });
+    expect(settled.state.owed).toBe(false);
+    expect(inBurst(settled.state, 600 + BURST_REFRESH_MS)).toBe(false);
+    // In the shop already (no `settle`), the burst runs on: a purchase's popup buys no full read.
+    expect(inShop).toMatchObject({ decision: 'read', mode: 'popup' });
+  });
+
+  it('keeps the burst through a click-through: the next popup changes the screen first', () => {
+    // Arrange: a popup read finds none in the blink between two popups.
+    let state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 200, ...POPUP });
+    state = finished(decide(state, sig, true, 600).state, { at: 640, ...NOTHING });
+    // Act: the next popup shows 200 ms later — a change, read as a popup read.
+    const next = decide(state, sig, true, 800, undefined, false, { settle: true });
+    // Assert
+    expect(next).toMatchObject({ decision: 'read', mode: 'popup' });
+    expect(inBurst(next.state, 800)).toBe(true);
   });
 
   it('owes nothing when the last read of the burst was a popup', () => {
@@ -479,5 +510,60 @@ describe('decide reason (M154)', () => {
     // In the burst the owed full read waits: an unchanged screen is a re-read.
     const burst = { ...idle, owed: true, burstUntil: 1000 };
     expect(decide(burst, sig, false, 10).reason).toBe('refresh');
+  });
+});
+
+describe('the fusion confirm read before its icons slid in (M159)', () => {
+  const CONFIRM = (weak: number) => ({
+    popup: false,
+    partial: false,
+    confirm: { filled: 3, weak },
+  });
+
+  it('reads the slots alone every SLOTS_REFRESH_MS while the screen holds still', () => {
+    // Arrange: a confirm read at 0–240 found all three slots empty.
+    const state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 240, ...CONFIRM(3) });
+    // Act
+    const early = decide(state, sig, false, SLOTS_REFRESH_MS - 1);
+    const soon = decide(state, sig, false, SLOTS_REFRESH_MS);
+    // Assert: not the 2 s re-read — the slots, now.
+    expect(early.decision).toBe('skip');
+    expect(soon).toMatchObject({ decision: 'read', mode: 'slots', reason: 'refresh' });
+  });
+
+  it('stops once the slots read whole', () => {
+    let state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 240, ...CONFIRM(3) });
+    state = finished(decide(state, sig, false, 300).state, { at: 450, ...CONFIRM(0) });
+    // Act
+    const next = decide(state, sig, false, 600);
+    // Assert
+    expect(state.slots).toBeNull();
+    expect(next.decision).toBe('skip');
+  });
+
+  it('gives up after SLOTS_WINDOW_MS — a slot holding a gift the run never recorded', () => {
+    let state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 240, ...CONFIRM(1) });
+    state = finished(decide(state, sig, false, 400).state, { at: 560, ...CONFIRM(1) });
+    // Act
+    const inside = decide(state, sig, false, 240 + SLOTS_WINDOW_MS - 1);
+    const after = decide(state, sig, false, 240 + SLOTS_WINDOW_MS);
+    // Assert: the window runs from the first weak read, not the latest.
+    expect(inside.mode).toBe('slots');
+    expect(after.mode).toBe('full');
+    expect(after.decision).toBe('skip');
+  });
+
+  it('reads in full when the screen changes — the popup, or a screen of its own', () => {
+    const state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 240, ...CONFIRM(3) });
+    // Act
+    const changed = decide(state, sig, true, 300);
+    // Assert
+    expect(changed).toMatchObject({ decision: 'read', mode: 'full', reason: 'change' });
+  });
+
+  it('forgets the confirm once another screen is read', () => {
+    let state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 240, ...CONFIRM(3) });
+    state = finished(decide(state, sig, true, 300).state, { at: 400, popup: true, partial: false });
+    expect(state.slots).toBeNull();
   });
 });

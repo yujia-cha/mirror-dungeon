@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { cropRgba, isolateLightText, pixelRect, toPnm } from '../preprocess.ts';
+import {
+  cropRgba,
+  DIM_TEXT_THRESHOLD,
+  isolateDimText,
+  isolateLightText,
+  passPixels,
+  pixelRect,
+  toPnm,
+} from '../preprocess.ts';
 
 /** One RGBA pixel per [r, g, b], opaque. */
 const pixels = (...rgb: [number, number, number][]) =>
@@ -81,7 +89,7 @@ describe('toPnm', () => {
     // Arrange: text, a button, and a pixel on the threshold, in one row.
     const input = pixels([240, 225, 170], [250, 220, 30], [150, 150, 150]);
     // Act
-    const out = toPnm(input, 3, 1, true);
+    const out = toPnm(input, 3, 1, 'light');
     // Assert
     const header = new TextEncoder().encode('P5\n3 1\n255\n');
     expect([...out.slice(0, header.length)]).toEqual([...header]);
@@ -90,8 +98,46 @@ describe('toPnm', () => {
   });
 
   it('writes the raw pass as an RGB PPM without alpha', () => {
-    const out = toPnm(pixels([1, 2, 3], [4, 5, 6]), 1, 2, false);
+    const out = toPnm(pixels([1, 2, 3], [4, 5, 6]), 1, 2, 'raw');
     const header = new TextEncoder().encode('P6\n1 2\n255\n');
     expect([...out.slice(header.length)]).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('writes the dim-text pass as a grey PGM, the same pixels isolateDimText makes', () => {
+    // Arrange: the shop's brown heading, its near-black backdrop, and a pixel on the threshold.
+    const input = pixels([90, 66, 45], [17, 2, 0], [DIM_TEXT_THRESHOLD, 0, 0]);
+    // Act
+    const out = toPnm(input, 3, 1, 'dim');
+    // Assert
+    const header = new TextEncoder().encode('P5\n3 1\n255\n');
+    expect([...out.slice(0, header.length)]).toEqual([...header]);
+    const grey = isolateDimText(input).filter((_, i) => i % 4 === 0);
+    expect([...out.slice(header.length)]).toEqual([...grey]);
+  });
+});
+
+describe('isolateDimText', () => {
+  it('blackens dark text of any hue and whitens the near-black backdrop', () => {
+    // Arrange: brown 「상점」, red 「특별한 상점」, the backdrop, one step under the threshold.
+    const input = pixels([90, 66, 45], [116, 0, 0], [17, 2, 0], [DIM_TEXT_THRESHOLD - 1, 0, 0]);
+    // Act
+    const out = isolateDimText(input);
+    // Assert
+    expect([...out]).toEqual([0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+  });
+
+  it('rejects a buffer that is not RGBA', () => {
+    expect(() => isolateDimText(new Uint8ClampedArray(3))).toThrow(/multiple of 4/);
+  });
+});
+
+describe('passPixels', () => {
+  it('hands each pass the pixels it reads', () => {
+    // Arrange
+    const input = pixels([240, 225, 170], [90, 66, 45]);
+    // Act + Assert
+    expect([...passPixels(input, 'light')]).toEqual([...isolateLightText(input)]);
+    expect([...passPixels(input, 'dim')]).toEqual([...isolateDimText(input)]);
+    expect([...passPixels(input, 'raw')]).toEqual([...input]);
   });
 });

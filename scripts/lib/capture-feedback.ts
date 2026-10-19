@@ -244,6 +244,11 @@ export interface RecognitionReport {
    */
   queuedReads: { reads: number; popups: number; meanLagMs: number; dropped: number } | null;
   /**
+   * The re-reads of a fusion confirm's slots while its icons slid in (M159): how many and their
+   * mean time. Null for a bundle with none.
+   */
+  slotReads: { reads: number; meanMs: number } | null;
+  /**
    * Reads the recorder summed instead of keeping one by one (M153, `readSummary`): popup reads
    * that found nothing, and reads of nothing past their cap. Counted into everything above; null
    * for a bundle without any (before M153).
@@ -279,6 +284,7 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
   const timed = reads.filter((r) => r.busyTicks !== undefined);
   const burst = reads.filter((r) => r.mode === 'popup');
   const queued = reads.filter((r) => r.queued === true);
+  const slotReads = reads.filter((r) => r.mode === 'slots');
   // Reads summed by the recorder (M153) count as the reads they were.
   const sums = bundle.records.filter((r): r is ReadSummary => r.kind === 'readSummary');
   const total = (pick: (s: ReadSummary) => number, of = sums) => of.reduce((sum, s) => sum + pick(s), 0);
@@ -346,6 +352,12 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
             dropped,
           }
         : null,
+    slotReads: slotReads.length
+      ? {
+          reads: slotReads.length,
+          meanMs: Math.round(slotReads.reduce((sum, r) => sum + r.ms, 0) / slotReads.length),
+        }
+      : null,
     summed: sums.length
       ? {
           scans: total(
@@ -679,6 +691,7 @@ export function formatReport(
     lines.push(
       `- 대기열 판독 ${rec.queuedReads.reads}회 · 그중 팝업 ${rec.queuedReads.popups}회 · 평균 지연 ${rec.queuedReads.meanLagMs}ms · 넘침 ${rec.queuedReads.dropped}`,
     );
+  if (rec.slotReads) lines.push(`- 합성 칸 재판독 ${rec.slotReads.reads}회 · 평균 ${rec.slotReads.meanMs}ms`);
   if (rec.summed)
     lines.push(
       `- 묶어 적은 판독: 팝업 없는 팝업 판독 ${rec.summed.scans}회${

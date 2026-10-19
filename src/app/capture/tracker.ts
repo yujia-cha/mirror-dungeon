@@ -55,6 +55,12 @@ export interface Frame {
   /** On the fusion confirm: what the fusion would eat, read off its ingredient icons (`fusion.ts`). */
   ingredients?: Consumed | null;
   /**
+   * On the fusion confirm: how many filled slots read no gift well (M159). The game slides the icons
+   * in after the dialog, so a confirm read too early sees empty frames; the loop reads the slots
+   * again (`ReadContext.slotsOnly`).
+   */
+  weakSlots?: number;
+  /**
    * On an acquired popup during the run start: whether the observation picker's title shows
    * behind it (M135). Missing when it was not looked at.
    */

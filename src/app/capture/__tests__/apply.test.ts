@@ -47,6 +47,27 @@ describe('actionsFor', () => {
     expect(out).toEqual({ actions: [], ask: null });
   });
 
+  it('never steps an entry down from a reprint to its original (M159)', () => {
+    // Arrange: floor 7 holds 「시간살인시간 BokGak」 (1120), answered or read with its logo; a later
+    // read lost the logo and named the original (1105).
+    const run = { visits: { 7: 1120 }, stageFloor: 7 };
+    const reprints = new Map([[1120, 1105]]);
+    // Act
+    const down = actionsFor({ kind: 'enter', floor: 7, packId: 1105 }, { ...ctx({}, run), reprints });
+    const up = actionsFor(
+      { kind: 'enter', floor: 7, packId: 1120 },
+      { ...ctx({}, { visits: { 7: 1105 }, stageFloor: 7 }), reprints },
+    );
+    const answered = answerActions({ kind: 'pack', floor: 7, ids: [1105, 1120] }, [1105], {
+      ...ctx({}, run),
+      reprints,
+    });
+    // Assert: the read changes nothing; the logo read upgrades; the player's own answer stands.
+    expect(down).toEqual({ actions: [], ask: null });
+    expect(up.actions[0]).toMatchObject({ kind: 'enter', packId: 1120, replaced: 1105 });
+    expect(answered.actions[0]).toMatchObject({ kind: 'enter', packId: 1105, replaced: 1120 });
+  });
+
   it('notes the pack an entry replaces on its floor, and the floor a pack moves from', () => {
     // Arrange
     const run = { visits: { 2: 1005, 3: 1008 }, stageFloor: 4 };

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BLANK_SLOT_MAX,
+  blankSlot,
   ICON_SIZE,
   maskedCorrelation,
   matchIcon,
@@ -127,5 +129,42 @@ describe('matchIcon', () => {
 
   it('says none with no candidates', () => {
     expect(matchIcon(prepareSlot(slotOf('rings'), 100, 100, [0, 0, 1, 1]), [])).toEqual({ status: 'none' });
+  });
+});
+
+describe('blankSlot (M159)', () => {
+  const region = [0, 0, 1, 1] as const;
+
+  it('calls an empty dark frame blank — the confirm before its icons slide in', () => {
+    // Arrange: a near-black slot with a dim border, as the owner's empty frames (peak 26–40).
+    const empty = image(100, 100, (x, y) => (x < 4 || y < 4 ? [35, 30, 25, 255] : [3, 2, 1, 255]));
+    // Act + Assert
+    expect(blankSlot(prepareSlot(empty, 100, 100, region))).toBe(true);
+  });
+
+  it('does not call a slot with art in it blank', () => {
+    expect(blankSlot(prepareSlot(slotOf('rings'), 100, 100, region))).toBe(false);
+  });
+
+  it('draws the line at BLANK_SLOT_MAX', () => {
+    const at = (v: number) => image(100, 100, () => [v, v, v, 255]);
+    expect(blankSlot(prepareSlot(at(BLANK_SLOT_MAX - 1), 100, 100, region))).toBe(true);
+    expect(blankSlot(prepareSlot(at(BLANK_SLOT_MAX), 100, 100, region))).toBe(false);
+  });
+
+  it('weighs a pixel by the mean of its channels — one bright speck is enough', () => {
+    // Arrange: dark but for a small patch in the middle, its mean (R+G+B)/3 just over the line.
+    const v = BLANK_SLOT_MAX * 3 + 3;
+    const speck = image(100, 100, (x, y) =>
+      x >= 40 && x < 60 && y >= 40 && y < 60
+        ? [Math.min(255, v), Math.max(0, v - 255), 0, 255]
+        : [3, 2, 1, 255],
+    );
+    // Act + Assert
+    expect(blankSlot(prepareSlot(speck, 100, 100, region))).toBe(false);
+  });
+
+  it('is never blank without the views it looks at', () => {
+    expect(blankSlot([])).toBe(false);
   });
 });

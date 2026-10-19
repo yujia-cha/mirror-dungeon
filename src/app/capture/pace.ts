@@ -211,12 +211,18 @@ export function paceLateness(state: PaceState, now: number, ms: number): PaceSta
  * the name (and maybe the icon) — 120–270 ms on the owner's machine. Since M153 popup samples are
  * reported only (`paceStats`), never a load signal.
  */
-export function isLoadSample(mode: 'full' | 'popup', foundNoPopup: boolean): boolean {
-  return mode === 'full' || foundNoPopup;
+export function isLoadSample(mode: 'full' | 'popup' | 'slots', foundNoPopup: boolean): boolean {
+  // A re-read of the fusion confirm's slots (M159) is icon matching alone: no sample of either.
+  return mode === 'full' || (mode === 'popup' && foundNoPopup);
 }
 
 /** A read took `ms`; queued reads are popup reads. Popup samples are title-only scans (`isLoadSample`). */
-export function paceRead(state: PaceState, now: number, mode: 'full' | 'popup', ms: number): PaceState {
+export function paceRead(
+  state: PaceState,
+  now: number,
+  mode: 'full' | 'popup' | 'slots',
+  ms: number,
+): PaceState {
   const next =
     mode === 'popup'
       ? { ...state, popupReads: keep(state.popupReads, now, ms) }

@@ -795,6 +795,11 @@ export const captureLayoutSchema = z.object({
         region: captureRegionSchema,
         screens: z.array(z.enum(CAPTURE_SCREENS)).min(1),
         raw: z.union([z.boolean(), z.literal('only')]).optional(),
+        /**
+         * Read the dim-text pass first (M159, `isolateDimText`): a heading drawn dark on black that
+         * neither the light pass nor the untouched crop reads (the shop's 「상점」 came out 「사저」).
+         */
+        dim: z.boolean().optional(),
       }),
     )
     .min(1),
@@ -844,8 +849,10 @@ export const diagTraceStepSchema = z.object({
    */
   step: z.enum(['title', 'name', 'floor', 'fusionCount', 'slots', 'selectCount', 'context', 'icon']),
   region: z.tuple([z.number(), z.number(), z.number(), z.number()]).nullable(),
-  /** The light-text pass (true) or the untouched crop (false); null for the icon slots. */
+  /** The light-text pass (true) or not (false); null for the icon slots. */
   light: z.boolean().nullable(),
+  /** The dim-text pass (M159) rather than the untouched crop, where `light` is false. */
+  dim: z.boolean().optional(),
   lines: z.array(z.string()),
   /** This pass's lines were taken (a screen named, a name matched, a number found). */
   accepted: z.boolean(),
@@ -909,9 +916,10 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     busyChanges: z.number().optional(),
     /**
      * `popup`: a read of the popup burst (M136) — it looked at the popup's title only and stopped
-     * there when no popup showed. Missing = a full read, as every read was before M136.
+     * there when no popup showed. `slots`: a re-read of the fusion confirm's slots alone, no OCR
+     * (M159). Missing = a full read, as every read was before M136.
      */
-    mode: z.enum(['full', 'popup']).optional(),
+    mode: z.enum(['full', 'popup', 'slots']).optional(),
     /**
      * A read of a popup that came while another read was busy (M141): its crop was queued and read
      * once that read was done, as a popup read. `t` is when it was snapshotted, `lagMs` how long it
@@ -938,7 +946,7 @@ export const diagRecordSchema = z.discriminatedUnion('kind', [
     t: z.number(),
     from: z.number(),
     cause: z.enum(['scan', 'capped']),
-    mode: z.enum(['full', 'popup']),
+    mode: z.enum(['full', 'popup', 'slots']),
     reads: z.number(),
     ms: z.number(),
     ocrCalls: z.number(),

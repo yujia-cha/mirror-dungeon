@@ -28,16 +28,16 @@ const LAYOUT: CaptureLayout = {
   popupIcon: [0.55, 0.3, 0.05, 0.05],
 };
 
-/** A reader that answers each region with fixed lines, light pass and raw separately, and logs calls. */
+/** A reader that answers each region with fixed lines, one set per pass, and logs calls. */
 function fakeReader(
-  answers: Record<string, { light?: string[]; raw?: string[] }>,
+  answers: Record<string, { light?: string[]; raw?: string[]; dim?: string[] }>,
   slots: Record<string, Float32Array[]> = {},
 ) {
   const calls: string[] = [];
   const reader: RegionReader = {
-    ocr: async (region, light) => {
-      calls.push(`${region[0]}:${light ? 'light' : 'raw'}`);
-      return answers[String(region[0])]?.[light ? 'light' : 'raw'] ?? [];
+    ocr: async (region, pass) => {
+      calls.push(`${region[0]}:${pass}`);
+      return answers[String(region[0])]?.[pass] ?? [];
     },
     slot: async (region) => slots[String(region[0])] ?? [new Float32Array(ICON_SIZE * ICON_SIZE * 3)],
   };
@@ -163,6 +163,40 @@ describe('readFrame', () => {
     // Assert: five-shape slots 8, 9, 8 → 잔영, 인형, 잔영 (the 잔영 fills two slots).
     expect(frame.screen).toBe('fusionConfirm');
     expect(frame.ingredients).toEqual({ consumed: [9091, 9993, 9993], unsure: [], filled: 3 });
+  });
+
+  it('reads an empty confirm as no gift yet, every filled slot weak (M159)', async () => {
+    // Arrange: the dialog is up, its frames empty — 45 dark views per slot, as prepareSlot makes.
+    const dark = Array.from({ length: 45 }, () => new Float32Array(ICON_SIZE * ICON_SIZE * 3).fill(3));
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).map((_, i) => (i % 4 === 3 ? 255 : (i * 37) % 251));
+    const held = prepareReference(9091, rgba, 48, 48);
+    const { reader } = fakeReader(
+      {
+        '0.1': { light: ['선택한 E.G.O 기프트를 조합하시겠습니까?'] },
+        '0.7': { light: ['선택한 기프트 3/3'] },
+      },
+      { '0.8': dark, '0.9': dark },
+    );
+    // Act
+    const { frame } = await readFrame(reader, LAYOUT, { ...CTX, held: [held] });
+    // Assert
+    expect(frame.ingredients).toEqual({ consumed: [], unsure: [], filled: 3 });
+    expect(frame.weakSlots).toBe(3);
+  });
+
+  it('reads the slots alone, no OCR, on a re-read of the confirm (M159)', async () => {
+    // Arrange: the icons are in now.
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).map((_, i) => (i % 4 === 3 ? 255 : (i * 37) % 251));
+    const ref = prepareReference(9993, rgba, 48, 48);
+    const { reader, calls } = fakeReader({}, { '0.8': [ref.rgb], '0.9': [ref.rgb] });
+    // Act
+    const { frame, ocrCalls } = await readFrame(reader, LAYOUT, { ...CTX, materials: [ref], slotsOnly: 2 });
+    // Assert
+    expect(calls).toEqual([]);
+    expect(ocrCalls).toBe(0);
+    expect(frame.screen).toBe('fusionConfirm');
+    expect(frame.ingredients).toEqual({ consumed: [9993, 9993], unsure: [], filled: 2 });
+    expect(frame.weakSlots).toBe(0);
   });
 
   it('keeps each slot to the candidates of the tier its numeral shows (M152)', async () => {
@@ -583,5 +617,55 @@ describe('readFrame on a strained machine (M142, `lean`)', () => {
     // Assert
     expect(lean.frame).toEqual(full.frame);
     expect(lean.ocrCalls).toBe(full.ocrCalls);
+  });
+});
+
+describe('readFrame: the shop heading’s dim-text pass (M159)', () => {
+  const SHOP: CaptureLayout = {
+    ...LAYOUT,
+    titles: [
+      { region: R(0), screens: ['acquired'] },
+      { region: R(2), screens: ['shop'], dim: true, raw: 'only' },
+    ],
+  };
+  const IN_PACK = { ...CTX, startOpen: false };
+
+  it('names the shop from the dim-text pass, with no raw pass after it', async () => {
+    // Arrange: the brown 「상점」 the raw pass reads as 「사저」.
+    const { reader, calls } = fakeReader({ '0.2': { dim: ['상점'], raw: ['사저'] } });
+    // Act
+    const { frame, trace } = await readFrame(reader, SHOP, IN_PACK);
+    // Assert
+    expect(frame.screen).toBe('shop');
+    expect(calls).toEqual(['0:light', '0.2:dim']);
+    expect(trace.at(-1)).toMatchObject({ light: false, dim: true, accepted: true });
+  });
+
+  it('falls back to the raw pass when the dim one names nothing', async () => {
+    // Arrange
+    const { reader, calls } = fakeReader({ '0.2': { dim: ['둘'], raw: ['특별한 상점'] } });
+    // Act
+    const { frame, trace } = await readFrame(reader, SHOP, IN_PACK);
+    // Assert
+    expect(frame.screen).toBe('shop');
+    expect(calls).toEqual(['0:light', '0.2:dim', '0.2:raw']);
+    expect(trace.at(-1)).toMatchObject({ light: false, accepted: true });
+    expect(trace.at(-1)).not.toHaveProperty('dim');
+  });
+});
+
+describe('readFrame: a reprint’s map header (M159)', () => {
+  const PACKS = [
+    { id: 1105, name: '시간살인시간' },
+    { id: 1120, name: '시간살인시간 BokGak' },
+  ];
+
+  it('names the reprint by the logo the OCR reads as digits behind its name', async () => {
+    // Arrange: the header the owner's run asked about.
+    const { reader } = fakeReader({ '0.3': { light: ['7증탐사 중', '시간살인시간 80<68<'] } });
+    // Act
+    const { frame } = await readFrame(reader, LAYOUT, { ...CTX, packs: PACKS });
+    // Assert
+    expect(frame).toMatchObject({ screen: 'exploring', floor: 7, pack: { status: 'match', id: 1120 } });
   });
 });

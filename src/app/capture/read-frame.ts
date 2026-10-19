@@ -37,9 +37,9 @@ import {
   type SlotRanking,
   type SlotThresholds,
 } from './fusion.ts';
-import { decideIcon, rankIcons, type IconRef, type IconThresholds } from './match-icon.ts';
+import { blankSlot, decideIcon, rankIcons, type IconRef, type IconThresholds } from './match-icon.ts';
 import { matchName, rankNames, type MatchResult, type NameCandidate } from './match-name.ts';
-import type { Region } from './preprocess.ts';
+import type { OcrPass, Region } from './preprocess.ts';
 import {
   classifyScreen,
   isInPackScreen,
@@ -48,11 +48,12 @@ import {
   parseFloor,
   type Screen,
 } from './screens.ts';
+import { matchPack } from './reprint.ts';
 import type { Frame } from './tracker.ts';
 
 export interface RegionReader {
-  /** OCR lines of a region; `light` runs the light-text pass first. */
-  ocr(region: Region, light: boolean): Promise<string[]>;
+  /** OCR lines of a region, prepared as `pass` says (`OcrPass`). */
+  ocr(region: Region, pass: OcrPass): Promise<string[]>;
   /** The reduced views of an icon slot (`prepareSlot`), for ranking against references. */
   slot(region: Region): Promise<Float32Array[]>;
   /** The tiers a fusion slot's numeral allows (`chipTiers`, M152); omitted = not read. */
@@ -90,6 +91,12 @@ export interface ReadContext {
   iconRefs?: (ids: readonly number[]) => Promise<IconRef[]>;
   /** A read of the popup burst (M136): the popup's title only, nothing else when it is not there. */
   popupOnly?: boolean;
+  /**
+   * A re-read of the fusion confirm's slots alone (M159): the confirm was read with this many slots
+   * filled but some of them still blank — the game slides the icons in after the dialog — and the
+   * screen has not changed since. No OCR: the slots are matched again and nothing else is read.
+   */
+  slotsOnly?: number;
   /**
    * The machine is strained (load level 2, `leanReads` in `pace.ts`, M142): skip the raw pass of
    * titles this phase of the run does not need (`RAW_FOR_START_ONLY`). Nothing else changes.
@@ -140,24 +147,31 @@ export async function readFrame(
   const trace: DiagTraceStep[] = [];
   type Step = DiagTraceStep['step'];
   /** Note one pass: its lines, and what `accept` made of them (null = not taken). */
-  const note = (step: Step, region: Region, light: boolean, lines: string[], taken: unknown): void => {
-    const entry: DiagTraceStep = { step, region: [...region], light, lines, accepted: taken !== null };
+  const note = (step: Step, region: Region, pass: OcrPass, lines: string[], taken: unknown): void => {
+    const entry: DiagTraceStep = {
+      step,
+      region: [...region],
+      light: pass === 'light',
+      ...(pass === 'dim' ? { dim: true } : {}),
+      lines,
+      accepted: taken !== null,
+    };
     if (taken !== null && typeof taken === 'object' && 'status' in (taken as object))
       entry.match = taken as MatchResult;
     if (step === 'title') entry.screen = typeof taken === 'string' ? taken : null;
     trace.push(entry);
   };
-  /** One pass, light or raw. */
+  /** One pass. */
   const readOnce = async <T>(
     region: Region,
     step: Step,
-    light: boolean,
+    pass: OcrPass,
     accept: (lines: string[]) => T | null,
   ): Promise<T | null> => {
     ocrCalls += 1;
-    const lines = await reader.ocr(region, light);
+    const lines = await reader.ocr(region, pass);
     const taken = accept(lines);
-    note(step, region, light, lines, taken);
+    note(step, region, pass, lines, taken);
     return taken;
   };
   /** Light pass, then raw when `accept` finds nothing in it. */
@@ -166,34 +180,39 @@ export async function readFrame(
     step: Step,
     accept: (lines: string[]) => T | null,
   ): Promise<T | null> =>
-    (await readOnce(region, step, true, accept)) ?? (await readOnce(region, step, false, accept));
+    (await readOnce(region, step, 'light', accept)) ?? (await readOnce(region, step, 'raw', accept));
   /**
    * A title region as the layout says to read it: light, light then raw, or raw only — and, on a
    * strained machine, without a raw pass this phase does not need (M142).
    */
-  const readTitle = <T>(
+  const readTitle = async <T>(
     title: CaptureLayout['titles'][number],
     step: Step,
     accept: (lines: string[]) => T | null,
   ): Promise<T | null> => {
+    // A heading drawn dim is tried in the dim-text pass first (M159: the shop's); the layout's
+    // passes follow when it finds nothing.
+    const dim = title.dim ? await readOnce(title.region, step, 'dim', accept) : null;
+    if (dim !== null) return dim;
     const optionalRaw =
       ctx.lean === true && !ctx.startOpen && title.screens.every((s) => RAW_FOR_START_ONLY.has(s));
     return title.raw === 'only'
-      ? readOnce(title.region, step, false, accept)
+      ? readOnce(title.region, step, 'raw', accept)
       : title.raw && !optionalRaw
         ? readEither(title.region, step, accept)
-        : readOnce(title.region, step, true, accept);
+        : readOnce(title.region, step, 'light', accept);
   };
   /** A name in `region`; every line OCR gave goes into `seen` when it is passed. */
   const nameIn = async (
     region: Region,
     candidates: readonly NameCandidate[],
     seen?: string[],
+    match: typeof matchName = matchName,
   ): Promise<MatchResult> => {
     let best: MatchResult = { status: 'none' };
     const found = await readEither(region, 'name', (lines) => {
       seen?.push(...lines);
-      const m = matchName(lines, candidates);
+      const m = match(lines, candidates);
       // A pass that matched nothing still says how close it came: keep the closest for the trace.
       if (m.status !== 'none') return m;
       best = m;
@@ -230,6 +249,10 @@ export async function readFrame(
   };
 
   const frame: Frame = { screen: null, floor: null, pack: null, gift: null };
+  if (ctx.slotsOnly) {
+    const read = await readIngredients(reader, layout, ctx, ctx.slotsOnly, trace);
+    return { frame: { ...frame, screen: 'fusionConfirm', ...read }, ocrCalls, trace };
+  }
   let screen: Screen | null = null;
   /** The lines of the pass that named the screen, and where they were read (set in `accept`). */
   let named = null as { lines: string[]; region: Region } | null;
@@ -264,8 +287,10 @@ export async function readFrame(
     const header = layout.names.mapHeader;
     const own = named && sameRegion(named.region, header) ? named.lines : [];
     frame.floor = parseFloor(own) ?? (await readEither(header, 'floor', parseFloor));
-    const fromTitle = own.length > 0 ? matchName(own, ctx.packs) : null;
-    frame.pack = fromTitle?.status === 'match' ? fromTitle : await nameIn(header, ctx.packs);
+    // A reprint's logo behind the name settles which of the two packs it is (M159, `reprint.ts`).
+    const fromTitle = own.length > 0 ? matchPack(own, ctx.packs) : null;
+    frame.pack =
+      fromTitle?.status === 'match' ? fromTitle : await nameIn(header, ctx.packs, undefined, matchPack);
   } else if (screen === 'acquired') {
     frame.gift = await popupGift();
     const behind = ctx.startOpen
@@ -282,7 +307,7 @@ export async function readFrame(
     frame.gift = await nameIn(layout.names.selected, sellable(ctx));
   } else if (screen === 'fusionConfirm') {
     const filled = await readEither(layout.fusion.count, 'fusionCount', parseFusionCount);
-    if (filled) frame.ingredients = await readIngredients(reader, layout, ctx, filled, trace);
+    if (filled) Object.assign(frame, await readIngredients(reader, layout, ctx, filled, trace));
   }
   return { frame, ocrCalls, trace };
 }
@@ -320,7 +345,9 @@ export function parseFusionCount(lines: readonly string[]): number | null {
  * The fusion confirm's filled slots against what the run holds: matched ones eaten, muddled ones
  * asked. The confirm has two shapes — up to five small slots, or exactly three large ones (3/3) —
  * and only three filled slots can be either; then both are tried and the one whose slots look more
- * like gifts wins, since the wrong shape's regions cut across the icons.
+ * like gifts wins, since the wrong shape's regions cut across the icons. `weakSlots` counts the filled
+ * slots whose best candidate is under the bar — on a confirm read before its icons slid in, all of
+ * them (M159).
  */
 async function readIngredients(
   reader: RegionReader,
@@ -328,7 +355,7 @@ async function readIngredients(
   ctx: ReadContext,
   filled: number,
   trace: DiagTraceStep[] = [],
-): Promise<Consumed> {
+): Promise<{ ingredients: Consumed; weakSlots: number }> {
   const heldIds = new Set(ctx.held.map((h) => h.id));
   const candidates = [...ctx.held, ...ctx.materials.filter((m) => !heldIds.has(m.id))];
   // The slot's tier numeral (M152) keeps it to the candidates of that tier: a held gift of another
@@ -345,6 +372,12 @@ async function readIngredients(
     for (const region of regions) {
       const allowed = ctx.tiers && reader.tier ? await reader.tier(region) : null;
       const views = await reader.slot(region);
+      // An empty frame — the icons slide in after the dialog (M159) — is no gift: nothing to rank.
+      if (blankSlot(views)) {
+        out.push([]);
+        tiers.push(null);
+        continue;
+      }
       const pool = allowed ? candidates.filter((c) => fits(c.id, allowed)) : candidates;
       const narrowed = pool.length > 0 ? rankIcons(views, pool) : [];
       // A numeral misread (yellow art beside it) must not cost the slot its gift: when nothing of
@@ -361,7 +394,11 @@ async function readIngredients(
   let shape: 'five' | 'three' = 'five';
   if (filled === 3) {
     const large = await rank(layout.fusion.three);
-    if (meanBest(large) > meanBest(rankings)) [rankings, shape] = [large, 'three'];
+    // Frames all empty in either shape: the dialog is up and its icons are not in yet (M159). The
+    // other shape's regions cut across the large frames' borders and would name a gift in them.
+    const empty = (r: SlotRanking[]) => r.every((slot) => slot.length === 0);
+    if (empty(large) || (!empty(rankings) && meanBest(large) > meanBest(rankings)))
+      [rankings, shape] = [large, 'three'];
   }
   trace.push({
     step: 'slots',
@@ -375,8 +412,12 @@ async function readIngredients(
       tiers: rankings.tiers,
     },
   });
-  const read = assignSlots(rankings, ctx.slotThresholds, new Set(ctx.materials.map((m) => m.id)));
+  const thresholds = ctx.slotThresholds ?? DEFAULT_SLOT_THRESHOLDS;
+  const read = assignSlots(rankings, thresholds, new Set(ctx.materials.map((m) => m.id)));
   const consumed = read.flatMap((r) => (r.status === 'match' ? [r.id] : []));
   const unsure = [...new Set(read.flatMap((r) => (r.status === 'ambiguous' ? r.ids : [])))];
-  return { consumed: consumed.sort((a, b) => a - b), unsure: unsure.sort((a, b) => a - b), filled };
+  return {
+    ingredients: { consumed: consumed.sort((a, b) => a - b), unsure: unsure.sort((a, b) => a - b), filled },
+    weakSlots: rankings.filter((r) => (r[0]?.[1] ?? 0) < thresholds.minScore).length,
+  };
 }

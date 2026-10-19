@@ -13,7 +13,7 @@ import decodeWebp, { init as initWebp } from '@jsquash/webp/decode.js';
 import { PNG } from 'pngjs';
 import { createWorker, type Worker } from 'tesseract.js';
 import { prepareReference, type IconRef } from '../../src/app/capture/match-icon.ts';
-import { cropRgba, isolateLightText, type Region } from '../../src/app/capture/preprocess.ts';
+import { cropRgba, passPixels, type OcrPass, type Region } from '../../src/app/capture/preprocess.ts';
 import { regionInFrame, titleBarHeight, titleBarRows } from '../../src/app/capture/window-frame.ts';
 import type { Gift } from '../../src/core/schema.ts';
 
@@ -96,17 +96,17 @@ export class LocalOcr {
     return worker;
   }
 
-  /** OCR one region of an image (light-text pass unless `raw`), lines in order, and the time it took. */
+  /** OCR one region of an image prepared as `pass` says, lines in order, and the time it took. */
   async region(
     image: Rgba,
     region: Region,
     lang: OcrLang,
-    raw: boolean,
+    pass: OcrPass,
   ): Promise<{ lines: string[]; ms: number }> {
     const worker = await this.workerFor(lang);
     const crop = cropRgba(image.data, image.width, image.height, region);
     const png = new PNG({ width: crop.width, height: crop.height });
-    png.data = Buffer.from(raw ? crop.data : isolateLightText(crop.data));
+    png.data = Buffer.from(passPixels(crop.data, pass));
     const started = performance.now();
     const { data } = await worker.recognize(PNG.sync.write(png));
     const ms = performance.now() - started;

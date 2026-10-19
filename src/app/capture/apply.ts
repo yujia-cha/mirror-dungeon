@@ -109,6 +109,12 @@ export interface ApplyContext {
    * one of these uses its ingredients up rather than losing them (M149). Omitted = none.
    */
   collected?: ReadonlySet<number>;
+  /**
+   * Reprint (BokGak) pack → its original (M159, `reprintsOf`). A read never steps an entry down
+   * from a reprint to its original: the reprint's logo is never on the original's map header, so a
+   * reprint once read or answered stands, and a later read that lost the logo is not news.
+   */
+  reprints?: ReadonlyMap<number, number>;
 }
 
 export interface Applied {
@@ -189,6 +195,8 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
   const change = (ids: readonly number[], to: GiftStatus | null) => setStatus(ctx, ids, to);
   switch (event.kind) {
     case 'enter': {
+      const entered = ctx.visits[event.floor];
+      if (entered !== undefined && ctx.reprints?.get(entered) === event.packId) return NONE;
       const action = enterAction(event.floor, event.packId, ctx);
       return action ? { actions: [action], ask: null } : NONE;
     }

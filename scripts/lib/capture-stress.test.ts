@@ -368,9 +368,11 @@ describe('battles (M153)', () => {
     // Act
     const now = await stressRun(battleEnd(1), { range: READ_INTERVALS.balanced });
     const before = await stressRun(battleEnd(1), { range: READ_INTERVALS.balanced, legacyHold: true });
-    // Assert: the burst's 3 s are gone (2.9 s → 0.6 s on the ideal share).
+    // Assert: the burst's 3 s are gone (2.9 s → 0.6 s on the ideal share). The loop before M153
+    // waited them out; since M159 it also ends a burst whose popups are plainly over (1.2 s), and
+    // the black still comes first.
     expect(now.latencyOf.get('enter:1:101')!).toBeLessThan(1000);
-    expect(before.latencyOf.get('enter:1:101')!).toBeGreaterThan(2000);
+    expect(before.latencyOf.get('enter:1:101')!).toBeGreaterThan(now.latencyOf.get('enter:1:101')!);
   });
 
   it.each(PRESETS)(

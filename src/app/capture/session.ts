@@ -646,6 +646,8 @@ export class CaptureSession {
     const step = decide(this.loop, signature, isChanged, now, refreshFor(this.pace.level), urgent, {
       black,
       stillMs: now - this.movedAt,
+      // The screen under a popup burst is news until the player is known to be in a shop (M159).
+      settle: this.tracker.inShop !== true,
     });
     this.loop = step.state;
     this.rebook();
@@ -846,9 +848,9 @@ export class CaptureSession {
     const { width, height, pixelsOf } = job;
     const ctx = this.options.context();
     const reader: RegionReader = {
-      ocr: async (region, light) => {
+      ocr: async (region, pass) => {
         const { rect, data } = pixelsOf(region);
-        return engine.recognize(toPnm(data, rect.width, rect.height, light)).catch((error: unknown) => {
+        return engine.recognize(toPnm(data, rect.width, rect.height, pass)).catch((error: unknown) => {
           throw new EngineFailure(String(error));
         });
       },
@@ -876,6 +878,8 @@ export class CaptureSession {
       tiers: ctx.tiers,
       startOpen: ctx.startOpen,
       popupOnly: job.mode === 'popup',
+      // The confirm's slots alone, no OCR, while its icons slide in (M159).
+      ...(job.mode === 'slots' && this.loop.slots ? { slotsOnly: this.loop.slots.filled } : {}),
       // Rung (ii) of the load ladder (M142): an unneeded raw pass, on a strained machine only.
       lean: leanReads(this.pace.level),
       // A popup's icon, when its name is no sure match (M136): a handful of gifts, loaded once each.

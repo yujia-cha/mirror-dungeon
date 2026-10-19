@@ -10,7 +10,7 @@
     { "region": [0.28, 0.42, 0.44, 0.12], "screens": ["sellConfirm"], "_note": "centre confirm 「[이름]을(를) 코스트 300에 / 판매하시겠습니까?」" },
     { "region": [0.29, 0.19, 0.29, 0.06], "screens": ["purchase"], "_note": "purchase dialog title" },
     { "region": [0.33, 0.075, 0.34, 0.09], "screens": ["fusionKeyword", "sell", "enhance", "fusion"], "_note": "full-screen title. No raw pass since M135: in the M108 bench it only ever found the pack picker, which has its own region now" },
-    { "region": [0.13, 0.11, 0.15, 0.08], "screens": ["shop"], "raw": "only", "_note": "M148: the shop front's red heading 「특별한 상점」/「상점」, top left (x 0.148–0.253, y 0.124–0.173 on the local shots). Only the raw pass reads it (every local shop shot, nothing on any other screen); it stays readable behind the purchase dialog, whose own title comes first" },
+    { "region": [0.13, 0.11, 0.15, 0.08], "screens": ["shop"], "dim": true, "raw": "only", "_note": "M148: the shop front's heading — red 「특별한 상점」 or brown 「상점」 — top left (x 0.148–0.253, y 0.124–0.173 on the local shots); it stays readable behind the purchase dialog, whose own title comes first. M159: the dim-text pass first, then raw. The raw pass never read the brown 「상점」 (「사저」 in all ~75 reads of the owner's 2026-10-19 run, and on every older plain-shop shot), so a plain shop was known only once a purchase opened; on 26 hard local shop shots the dim pass read all, raw 3. Neither pass named a shop on any of the 224 other local shots" },
     { "region": [0.33, 0.075, 0.34, 0.105], "screens": ["packSelect"], "raw": true, "_note": "the pack picker's 「N층 테마팩 선택」, found only by the raw pass (M108 bench: 3 shots). Taller than the full-screen title since M135: in MD8 the title spans y 0.114–0.168 and the shorter region cut it (owner session, floor 1: 「1증레마팩선택」 → read whole)" }
   ],
   "names": {
@@ -31,10 +31,10 @@
       [0.5229, 0.3548, 0.075, 0.1427]
     ],
     "three": [
-      [0.13, 0.313, 0.12, 0.265],
-      [0.299, 0.313, 0.12, 0.265],
-      [0.467, 0.313, 0.12, 0.265]
+      [0.135, 0.295, 0.12, 0.2283],
+      [0.303, 0.295, 0.12, 0.2283],
+      [0.471, 0.295, 0.12, 0.2283]
     ]
   },
-  "_fusion": "The fusion confirm comes in two shapes, told apart by its 「선택한 기프트 N/M」 header (count): up to five small slots (recipe fusion, 달의 기억 among them; N of them filled, from the left) and exactly three large ones (3/3, keyword fusion). Five: 144px squares from x 228 every 194px at y 358 (M93). Three: measured on the run set's 3/3 confirm (M103)."
+  "_fusion": "The fusion confirm comes in two shapes, told apart by its 「선택한 기프트 N/M」 header (count): up to five small slots (recipe fusion, 달의 기억 among them; N of them filled, from the left) and exactly three large ones (3/3). Five: 144px squares from x 228 every 194px at y 358 (M93). Three: M103 measured them on one confirm as 230×267px boxes reaching ~30px below the frames, and no 3/3 slot ever scored above 0.64 (39 reads of the owner's 2026-10-19 run; five reached 0.97), so the 잔영 never ranked. M159 re-measured them on the owner's 2026-10-19 23:17 filmstrip (a 3/3 of 빛나는 + 2× 아스라한 잔영, four frames): 230px squares (h = 0.12 × 1920 / 1009) at y 0.295, 0.168 apart — the truth scores 0.56 → 0.91 on average, ahead of the best other held gift by 0.05 → 0.50 at worst. A keyword fusion (no recipe) also comes as 2, 3 or 4 small slots: the 3/3 shape is not the only keyword fusion."
 }

@@ -507,6 +507,28 @@ describe('filmstrips (M134)', () => {
     expect(recognitionReport(bundle()).popupReads).toBeNull();
   });
 
+  it("counts the re-reads of a fusion confirm's slots and says so in the report (M159)", () => {
+    // Arrange
+    const b = bundle();
+    b.records.push(read(60, { mode: 'slots', ms: 30 }), read(61, { mode: 'slots', ms: 50 }));
+    // Act
+    const r = recognitionReport(b);
+    const text = formatReport(
+      b,
+      r,
+      routeReport(b, () => 'general'),
+      { certain: 0, unconfirmed: 0 },
+      {
+        gift: (id) => `G${id}`,
+        pack: (id) => `P${id}`,
+      },
+    );
+    // Assert
+    expect(r.slotReads).toEqual({ reads: 2, meanMs: 40 });
+    expect(text).toContain('합성 칸 재판독 2회 · 평균 40ms');
+    expect(recognitionReport(bundle()).slotReads).toBeNull();
+  });
+
   it('counts the reads of popups queued under a busy read and says so in the report (M141)', () => {
     // Arrange: two queued reads — one found its popup after 300 ms, one found none after 100 ms —
     // and a later read telling of one queued popup pushed out unread.

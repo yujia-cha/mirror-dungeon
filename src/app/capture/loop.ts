@@ -33,7 +33,9 @@
  *   frames for `QUEUED_FAST_MS` (`fastTicks`), as the burst does once that popup is read.
  * - **After the burst** → a popup read that found no popup saw only the title, so the first tick
  *   after the burst reads in full even when nothing changed (`owed`): what the popups gave way to
- *   (a map, the pack picker) is read late, never lost.
+ *   (a map, the pack picker) is read late, never lost. Since M159 the burst ends sooner outside a
+ *   shop when the popups are plainly over: a popup read found none and the screen held still
+ *   `BURST_REFRESH_MS` after it — the next popup of a click-through comes well within that.
  * - **A map read short of its floor or pack** (M148) → the next re-read of an unchanged screen comes
  *   after `BURST_REFRESH_MS`, then doubles as ever. Right after an entry the header settles while it
  *   is read; a read that saw 「층 탐사 중」 but not the floor or the pack's name used to wait 2 s and
@@ -88,6 +90,15 @@ export const DEFAULT_READ_INTERVAL: ReadIntervalPreset = 'balanced';
 export const REFRESH_MS = BASE_REFRESH.firstMs;
 /** …then after twice as long each time, up to this (at load level 0 — `refreshFor`, M142). */
 export const REFRESH_MAX_MS = BASE_REFRESH.maxMs;
+/**
+ * A fusion confirm read with slots that named no gift is read again — its slots alone, no OCR —
+ * this often (M159). The game shows the dialog with empty frames and slides the icons in over the
+ * next 0.25–0.4 s (the owner's filmstrip); the slots are not watched for changes, so before M159 the
+ * screen waited for the 2 s re-read and the player had clicked through by then.
+ */
+export const SLOTS_REFRESH_MS = 100;
+/** …for this long after the first such read: long enough for the icons, short for a stray gift. */
+export const SLOTS_WINDOW_MS = 1500;
 /** How long after a popup was read the reads look for popups only (M136). */
 export const POPUP_BURST_MS = 3000;
 /** During the burst, the first re-read of an unchanged screen comes this soon (M136). */
@@ -211,6 +222,11 @@ export interface LoopState {
   dark: boolean;
   /** When the last black frame came (M153); `-Infinity` before any. */
   blackAt: number;
+  /**
+   * The fusion confirm was read with weak slots (M159): how many were filled, and until when its
+   * slots are read again while the screen holds still. Null otherwise.
+   */
+  slots: { filled: number; until: number } | null;
 }
 
 export const INITIAL_LOOP: LoopState = {
@@ -227,11 +243,12 @@ export const INITIAL_LOOP: LoopState = {
   holdBase: 0,
   dark: false,
   blackAt: -Infinity,
+  slots: null,
 };
 
 export type Decision = 'read' | 'skip';
 /** A full read of every title, or a popup read of the popup's title only (M136). */
-export type ReadMode = 'full' | 'popup';
+export type ReadMode = 'full' | 'popup' | 'slots';
 /**
  * Why a tick reads (M154): the screen differs from the frame last read (`change`); a read is owed
  * whatever it shows — a change seen while busy, the first frame after black, the full read after a
@@ -248,7 +265,9 @@ export type ReadReason = 'change' | 'dirty' | 'refresh';
  * screen holds the reads back (`holdUntil`). `seen` (M153): `black`, the frame is black
  * (`isBlack`) — it is not read, the hold goes, and the next frame that is not black reads at once;
  * `stillMs`, how long the signature has not moved from tick to tick — a screen that held still for
- * the hold's base length is no longer moving and is read through the hold.
+ * the hold's base length is no longer moving and is read through the hold; `settle` (M159), the
+ * screen under a popup burst is news (the player is not in a shop already): once the popups are
+ * plainly over the burst ends there and then.
  */
 export function decide(
   state: LoopState,
@@ -257,10 +276,24 @@ export function decide(
   now: number,
   refresh: RefreshPolicy = BASE_REFRESH,
   urgent = false,
-  seen: { black?: boolean; stillMs?: number } = {},
+  seen: { black?: boolean; stillMs?: number; settle?: boolean } = {},
 ): { state: LoopState; decision: Decision; mode: ReadMode; reason: ReadReason } {
-  const { black = false, stillMs = 0 } = seen;
+  const { black = false, stillMs = 0, settle = false } = seen;
   const refreshMs = refresh.firstMs;
+  // The popups are over (M159): a popup read found none and the screen under it has held still
+  // since, as long as the burst's first re-read waits. Popups clicked through follow each other
+  // within that; the screen they gave way to (the shop after its entry gift) is read in full now,
+  // not when the burst runs out — the owner's run named its shops 2.7–3.4 s after such a popup.
+  // Only where that screen is news (`settle` — outside the shop): inside it, each purchase's popup
+  // would buy a full read of the shop the tracker already knows (+7 points of OCR on the bench).
+  const settled =
+    settle &&
+    inBurst(state, now) &&
+    state.owed &&
+    !state.busy &&
+    !isChanged &&
+    now - state.lastReadAt >= BURST_REFRESH_MS;
+  if (settled) state = { ...state, burstUntil: now };
   const burst = inBurst(state, now);
   const mode: ReadMode = burst ? 'popup' : 'full';
   const owed = state.dirty || state.dark || (!burst && state.owed);
@@ -289,6 +322,16 @@ export function decide(
       decision: 'skip',
       mode,
       reason,
+    };
+  }
+  // The confirm's icons slide in after it (M159): its slots alone, soon, while nothing else moved.
+  if (state.slots && !isChanged && !burst && now < state.slots.until) {
+    if (now - state.lastReadAt < SLOTS_REFRESH_MS) return { state, decision: 'skip', mode, reason };
+    return {
+      state: { ...state, lastReadAt: now, busy: true },
+      decision: 'read',
+      mode: 'slots',
+      reason: 'refresh',
     };
   }
   const fresh = reason !== 'refresh';
@@ -341,6 +384,11 @@ export interface ReadOutcome {
   partial: boolean;
   /** It saw the map header but not a sure floor and pack (M148). */
   incomplete?: boolean;
+  /**
+   * It read the fusion confirm (M159): how many slots were filled and how many of them named no
+   * gift well. Missing for any other screen.
+   */
+  confirm?: { filled: number; weak: number };
 }
 
 /**
@@ -349,7 +397,7 @@ export interface ReadOutcome {
  * `holdMaxMs` how long that grows to over a streak (M153; `holdMs` itself keeps M142's fixed hold).
  */
 export function outcomeOf(
-  frame: Pick<Frame, 'screen' | 'partial' | 'floor' | 'pack'>,
+  frame: Pick<Frame, 'screen' | 'partial' | 'floor' | 'pack' | 'ingredients' | 'weakSlots'>,
   at: number,
   holdMs = 0,
   holdMaxMs = Math.max(HOLD_MAX_MS, holdMs),
@@ -362,6 +410,9 @@ export function outcomeOf(
     holdMs,
     holdMaxMs,
     incomplete: frame.screen === 'exploring' && (frame.floor === null || frame.pack?.status !== 'match'),
+    ...(frame.screen === 'fusionConfirm' && frame.ingredients?.filled
+      ? { confirm: { filled: frame.ingredients.filled, weak: frame.weakSlots ?? 0 } }
+      : {}),
   };
 }
 
@@ -401,6 +452,18 @@ export function finished(state: LoopState, outcome?: ReadOutcome): LoopState {
     refreshGap: outcome.incomplete ? Math.min(state.refreshGap, BURST_REFRESH_MS) : state.refreshGap,
     burstUntil: outcome.popup ? outcome.at + POPUP_BURST_MS : state.burstUntil,
     owed: outcome.partial ? true : outcome.popup ? false : state.owed,
+    // A confirm with weak slots keeps its slots read again (M159) from its first such read; a
+    // confirm read whole, or any screen named after it, ends that. A popup read that found none
+    // says nothing of the screen and leaves it.
+    slots:
+      outcome.confirm && outcome.confirm.weak > 0
+        ? {
+            filled: outcome.confirm.filled,
+            until: state.slots?.until ?? outcome.at + SLOTS_WINDOW_MS,
+          }
+        : outcome.partial
+          ? state.slots
+          : null,
     holdUntil,
     holdStreak,
     holdBase: base,

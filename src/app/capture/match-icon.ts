@@ -51,6 +51,29 @@ const PLACEMENTS: readonly (readonly [number, number, number])[] = [0.56, 0.64, 
   (size) => [-0.04, 0, 0.04].flatMap((dx) => [-0.04, 0, 0.04].map((dy) => [size, dx, dy] as const)),
 );
 
+/** The view of the widest centred placement: what `blankSlot` looks at. */
+const WIDEST = PLACEMENTS.findIndex(([size, dx, dy]) => size === 0.88 && dx === 0 && dy === 0);
+/**
+ * Brightest pixel (mean of R, G, B, 0..255) of the widest view under which a slot is an empty frame
+ * (M159). On the owner's confirms an empty slot peaked at 26–40 and a filled one at 96–252; an
+ * icon still sliding in sits between (63) and is not blank.
+ */
+export const BLANK_SLOT_MAX = 60;
+
+/**
+ * An empty slot frame (M159): the confirm dialog shows its frames before the icons slide in, and an
+ * empty frame matched against the held gifts named one of them outright (0.5+) on the new 3/3
+ * regions. Nothing is drawn in it, so it is no gift.
+ */
+export function blankSlot(views: readonly Float32Array[]): boolean {
+  const view = views[WIDEST];
+  if (!view) return false;
+  let brightest = 0;
+  for (let p = 0; p < view.length; p += 3)
+    brightest = Math.max(brightest, (view[p]! + view[p + 1]! + view[p + 2]!) / 3);
+  return brightest < BLANK_SLOT_MAX;
+}
+
 /**
  * Area-average an RGBA image down to `size`×`size`, every channel kept (alpha included). Each
  * output pixel averages the source pixels its footprint covers, weighted by how much of each.

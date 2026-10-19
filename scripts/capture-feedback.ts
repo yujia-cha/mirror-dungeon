@@ -197,7 +197,7 @@ async function main(): Promise<void> {
     const inFrame = layoutInFrame(layout, top, image.height);
     if (top > 0) barred += 1;
     const reader: RegionReader = {
-      ocr: async (region, light) => (await ocr.region(image, region, lang, !light)).lines,
+      ocr: async (region, pass) => (await ocr.region(image, region, lang, pass)).lines,
       slot: async (region) => prepareSlot(image.data, image.width, image.height, region),
       tier: async (region) => chipTiers(image.data, image.width, image.height, region),
     };

@@ -51,7 +51,7 @@ import { z } from 'zod';
 import { loadGameDataFromDisk } from '../src/core/data/node.ts';
 import { matchName, type MatchResult, type NameCandidate } from '../src/app/capture/match-name.ts';
 import { matchIcon, prepareSlot, rankIcons, type IconRef } from '../src/app/capture/match-icon.ts';
-import type { Region } from '../src/app/capture/preprocess.ts';
+import type { OcrPass, Region } from '../src/app/capture/preprocess.ts';
 import { classifyScreen, parseFloor, SCREEN_TITLES } from '../src/app/capture/screens.ts';
 import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
 import { INITIAL_TRACKER, trackFrame } from '../src/app/capture/tracker.ts';
@@ -134,13 +134,13 @@ async function main(): Promise<void> {
   const read = async (
     label: Label,
     regions: readonly Region[],
-    raw: boolean,
+    pass: OcrPass,
   ): Promise<{ lines: string[]; ms: number }> => {
     const { image, top } = await shotOf(label.file);
     const lines: string[] = [];
     let ms = 0;
     for (const region of regions.length > 0 ? regions : [[0, 0, 1, 1] as const]) {
-      const r = await ocr.region(image, clientRegion(image, top, region), label.lang, raw);
+      const r = await ocr.region(image, clientRegion(image, top, region), label.lang, pass);
       ms += r.ms;
       lines.push(...r.lines);
     }
@@ -174,8 +174,8 @@ async function main(): Promise<void> {
     for (const file of shots) {
       const label: Label = { file, kind: 'screen', lang: 'ko', expect: null };
       const reader: RegionReader = {
-        ocr: async (region, light) => {
-          const r = await read(label, [region], rawOnly || !light);
+        ocr: async (region, pass) => {
+          const r = await read(label, [region], rawOnly ? 'raw' : pass);
           ms += r.ms;
           return r.lines;
         },
@@ -239,11 +239,11 @@ async function main(): Promise<void> {
       }
       const want = label.expect === 'none' ? null : label.expect;
       const regions = label.region ? [label.region] : TITLE_REGIONS;
-      let { lines, ms } = await read(label, regions, rawOnly);
+      let { lines, ms } = await read(label, regions, rawOnly ? 'raw' : 'light');
       let screen = classifyScreen(lines, label.lang);
       // Some titles are darker than the threshold (the map header is brown on red): read raw too.
       if (screen === null && !rawOnly) {
-        const again = await read(label, regions, true);
+        const again = await read(label, regions, 'raw');
         lines = [...lines, '‖', ...again.lines];
         ms += again.ms;
         screen = classifyScreen(again.lines, label.lang);
@@ -260,10 +260,10 @@ async function main(): Promise<void> {
     if (label.kind === 'floor') {
       if (typeof label.expect !== 'number') fail(`${label.file}: a floor item expects a number`);
       const region = label.region ?? MAP_HEADER;
-      let { lines, ms } = await read(label, [region], rawOnly);
+      let { lines, ms } = await read(label, [region], rawOnly ? 'raw' : 'light');
       let floor = parseFloor(lines);
       if (floor === null && !rawOnly) {
-        const again = await read(label, [region], true);
+        const again = await read(label, [region], 'raw');
         lines = [...lines, '‖', ...again.lines];
         ms += again.ms;
         floor = parseFloor(again.lines);
@@ -322,13 +322,13 @@ async function main(): Promise<void> {
     }
 
     const regions = label.region ? [label.region] : [];
-    const first = await read(label, regions, rawOnly);
+    const first = await read(label, regions, rawOnly ? 'raw' : 'light');
     let lines = first.lines;
     let result = matchName(lines, candidates);
     totalMs += first.ms;
     let ms = first.ms;
     if (result.status === 'none' && !rawOnly) {
-      const again = await read(label, regions, true);
+      const again = await read(label, regions, 'raw');
       lines = [...lines, '‖', ...again.lines];
       result = matchName(again.lines, candidates);
       totalMs += again.ms;

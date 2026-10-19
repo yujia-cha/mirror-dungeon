@@ -237,7 +237,8 @@ describe('CaptureSession backlog (M141)', () => {
 
   it('reads a popup that came and went under a busy read, once that read is done', async () => {
     // Arrange: the first OCR call of the first (full) read waits until a busy tick has queued the
-    // popup; the full read then finds nothing (9 title passes), and the queued read finds the popup.
+    // popup; the full read then finds nothing (10 title passes — M159 added the shop's dim pass),
+    // and the queued read finds the popup.
     const { release } = fakeShare();
     release();
     let calls = 0;
@@ -247,8 +248,8 @@ describe('CaptureSession backlog (M141)', () => {
     engine.recognize.mockImplementation(async () => {
       calls += 1;
       if (calls === 1) await blocked;
-      if (calls === 10) return ['E.G.O 기프트를 획득했습니다.'] as never;
-      if (calls === 11) return ['테스트 기프트'] as never;
+      if (calls === 11) return ['E.G.O 기프트를 획득했습니다.'] as never;
+      if (calls === 12) return ['테스트 기프트'] as never;
       return [] as never;
     });
     const crops: number[][] = [];

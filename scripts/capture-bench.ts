@@ -32,7 +32,7 @@ import { READ_INTERVALS, type ReadIntervalPreset, type ReadMode } from '../src/a
 import type { IconRef } from '../src/app/capture/match-icon.ts';
 import { prepareSlot } from '../src/app/capture/match-icon.ts';
 import type { NameCandidate } from '../src/app/capture/match-name.ts';
-import type { Region } from '../src/app/capture/preprocess.ts';
+import type { OcrPass, Region } from '../src/app/capture/preprocess.ts';
 import { readFrame, type RegionReader } from '../src/app/capture/read-frame.ts';
 import { layoutInFrame } from '../src/app/capture/window-frame.ts';
 import { classifyScreen } from '../src/app/capture/screens.ts';
@@ -128,12 +128,12 @@ async function main(): Promise<void> {
   const ocrCache = new Map<string, { lines: string[]; ms: number }>();
   const slotCache = new Map<string, Float32Array[]>();
   const readerFor = (shot: number, cost: { ms: number }): RegionReader => ({
-    ocr: async (region: Region, light: boolean) => {
-      const key = `${shot}|${region.join(',')}|${light}`;
+    ocr: async (region: Region, pass: OcrPass) => {
+      const key = `${shot}|${region.join(',')}|${pass}`;
       let hit = ocrCache.get(key);
       if (!hit) {
         const { image, top } = await shotOf(shot);
-        hit = await ocr.region(image, clientRegion(image, top, region), 'ko', !light);
+        hit = await ocr.region(image, clientRegion(image, top, region), 'ko', pass);
         ocrCache.set(key, hit);
       }
       cost.ms += hit.ms;
@@ -155,6 +155,7 @@ async function main(): Promise<void> {
     held: ReadonlySet<number>,
     mode: ReadMode = 'full',
     lean = false,
+    slots?: number,
   ): Promise<ShotRead> => {
     const cost = { ms: 0 };
     const { frame, ocrCalls } = await readFrame(readerFor(shot, cost), layout, {
@@ -164,6 +165,7 @@ async function main(): Promise<void> {
       held: [...held].map((id) => refById.get(id)).filter((r): r is IconRef => r !== undefined),
       materials,
       popupOnly: mode === 'popup',
+      ...(slots ? { slotsOnly: slots } : {}),
       lean,
       iconRefs: async (ids) => ids.flatMap((id) => refById.get(id) ?? []),
     });
@@ -208,8 +210,8 @@ async function main(): Promise<void> {
   const rawNeeded = new Map<number, string[]>();
   layout.titles.forEach((title, index) => {
     for (let shot = 0; shot < files.length; shot++) {
-      const light = ocrCache.get(`${shot}|${title.region.join(',')}|true`);
-      const raw = ocrCache.get(`${shot}|${title.region.join(',')}|false`);
+      const light = ocrCache.get(`${shot}|${title.region.join(',')}|light`);
+      const raw = ocrCache.get(`${shot}|${title.region.join(',')}|raw`);
       if (!light || !raw) continue;
       const found = (lines: string[]) => {
         const s = classifyScreen(lines, 'ko');
