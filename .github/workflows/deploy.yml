@@ -4,6 +4,7 @@ name: Deploy to GitHub Pages
 # (yujia-cha/mirror-dungeon) 양쪽에 있지만, 실제로 도는 곳은 공개 저장소뿐이다:
 # publish.yml이 PAT로 공개 저장소 main에 푸시하면 그 push 이벤트가 이 워크플로를 깨운다.
 # 개발 저장소에서는 아래 `if`가 잡을 건너뛴다(비공개 저장소라 Pages도 없다).
+# 액션은 커밋 sha로 고정한다(M161) — 두 저장소의 이 파일은 글자 하나까지 같아야 한다.
 on:
   push:
     branches: [main]
@@ -23,8 +24,10 @@ jobs:
     if: github.repository == 'yujia-cha/mirror-dungeon'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -45,8 +48,8 @@ jobs:
           # 저장소 Variables가 유일한 경로다.
           VITE_ASSET_BASE: ${{ vars.VITE_ASSET_BASE }}
         run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: dist
 
@@ -59,4 +62,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
