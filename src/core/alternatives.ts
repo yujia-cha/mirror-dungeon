@@ -6,7 +6,7 @@
  */
 import type { GameData } from './schema.ts';
 import type { GameIndexes, PlanInput, RoutePlan } from './types.ts';
-import { conflictRootsOf, contestedFloors, wantedRoots } from './conflicts.ts';
+import { conflictRootsOf, contestedFloors, wantedRootsMemo } from './conflicts.ts';
 import { planRoute } from './index.ts';
 
 /** A route without some goals: the plan the decision card previews. */
@@ -148,7 +148,14 @@ export function createDropEffects(
       ? { ...input.options, lastFloor: base.floors[base.floors.length - 1]!.floor }
       : input.options;
   const scoped = { ...input, options };
-  const conflictRoots = conflictRootsOf(base, scoped, data, indexes);
+  // The roots once per goal list (M160): every plan below is the same deck and run with some goals
+  // left out, and a plan is measured against the goals it was made from — the base plan's goal
+  // tree still held the dropped goal, so an ingredient of it counted as that goal's loss.
+  const rootsFor = wantedRootsMemo(data, indexes);
+  const roots = rootsFor(scoped);
+  const lostIn = (plan: RoutePlan, of: PlanInput): number[] =>
+    conflictRootsOf(plan, of, data, indexes, rootsFor(of));
+  const conflictRoots = lostIn(base, scoped);
   const empty: DropAnalysis = { conflicts: 0, effects: [], resolving: null, tradeoffs: [], skipped: 0 };
   if (conflictRoots.length === 0) {
     return {
@@ -162,11 +169,9 @@ export function createDropEffects(
     };
   }
 
-  const roots = wantedRoots(scoped, data, indexes);
   const wantedIds = new Set(input.wanted.map((w) => w.giftId));
   const tiered = input.wanted.some((w) => !w.required);
   const required = new Set(tiered ? input.wanted.filter((w) => w.required).map((w) => w.giftId) : []);
-  const left = (plan: RoutePlan): number => conflictRootsOf(plan, scoped, data, indexes).length;
   const lostBefore = new Set(conflictRoots);
 
   // The forced plans: one per lost goal, the others made optional unless the player made them
@@ -262,6 +267,12 @@ export function createDropEffects(
       }))
       .filter((t) => t.causes.length > 0 || t.rivals.length > 0);
   let finished: { at: number; analysis: DropAnalysis } | null = null;
+  /**
+   * The bundle (every lost goal left out) depends on the main plan alone, so it is planned once:
+   * the first `finish()` keeps its answer, fitting or not, for every later one (M160 — a bundle
+   * that did not fit was planned again on each `finish()`).
+   */
+  let bundled: RouteVariant | null | undefined;
 
   return {
     conflicts: conflictRoots.length,
@@ -274,8 +285,9 @@ export function createDropEffects(
           ...w,
           required: w.giftId === lost || (tiered && w.required),
         }));
-        const plan = planRouteOf({ ...scoped, wanted });
-        const lostNow = new Set(conflictRootsOf(plan, scoped, data, indexes));
+        const forcedInput = { ...scoped, wanted };
+        const plan = planRouteOf(forcedInput);
+        const lostNow = new Set(lostIn(plan, forcedInput));
         if (!lostNow.has(lost)) {
           const causes = [...lostNow]
             .filter((id) => !lostBefore.has(id) && id !== lost)
@@ -286,8 +298,9 @@ export function createDropEffects(
       }
       const next = queue()[effects.length];
       if (next === undefined) return;
-      const plan = planRouteOf({ ...scoped, wanted: input.wanted.filter((w) => w.giftId !== next.giftId) });
-      const lostNow = conflictRootsOf(plan, scoped, data, indexes);
+      const variant = { ...scoped, wanted: input.wanted.filter((w) => w.giftId !== next.giftId) };
+      const plan = planRouteOf(variant);
+      const lostNow = lostIn(plan, variant);
       lostWithout.set(next.giftId, new Set(lostNow));
       const reduces = conflictRoots.length - lostNow.length;
       const effect: DropEffect = { giftId: next.giftId, reduces, plan, role: next.role };
@@ -313,14 +326,13 @@ export function createDropEffects(
       let resolving = single(list);
       const bundle = conflictRoots.filter((id) => !required.has(id));
       if (!resolving && bundle.length >= 2) {
-        // The bundle depends only on the main plan, so the last finish's answer still stands.
-        const previous = finished?.analysis.resolving;
-        if (previous && previous.dropped.length === bundle.length) resolving = previous;
-        else {
+        if (bundled === undefined) {
           const dropped = new Set(bundle);
-          const plan = planRouteOf({ ...scoped, wanted: input.wanted.filter((w) => !dropped.has(w.giftId)) });
-          if (left(plan) === 0) resolving = { dropped: bundle, plan };
+          const variant = { ...scoped, wanted: input.wanted.filter((w) => !dropped.has(w.giftId)) };
+          const plan = planRouteOf(variant);
+          bundled = lostIn(plan, variant).length === 0 ? { dropped: bundle, plan } : null;
         }
+        resolving = bundled;
       }
       const analysis: DropAnalysis = {
         conflicts: conflictRoots.length,

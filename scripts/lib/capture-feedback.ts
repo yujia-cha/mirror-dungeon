@@ -78,6 +78,30 @@ export function safeId(id: string, what: string): string {
   return id;
 }
 
+/** What a zip entry of a bundle is by its name: the JSON files, a frame, or nothing of ours. */
+export function bundleEntryKind(name: string): 'json' | 'frame' | null {
+  if (name === 'session.json' || name === DIAG_PART_FILE) return 'json';
+  const frame = /^frames\/([^/]+)\.jpg$/.exec(name);
+  return frame && SAFE_ID.test(frame[1]!) ? 'frame' : null;
+}
+
+/** A kept frame is a q0.7 JPEG of at most 1920×1080 — well under a megabyte; this is a ceiling. */
+export const FRAME_MAX_BYTES = 15 * 1024 * 1024;
+/** `session.json` of an hour's recording is ~50 MB; `part.json` is tiny. */
+export const BUNDLE_JSON_MAX_BYTES = 200 * 1024 * 1024;
+
+/**
+ * The `filter` for `unzipSync` (M160, B4): decided *before* an entry is inflated, so a zip that
+ * claims a name we would not write, or a size past what a bundle can hold, costs nothing — a zip
+ * bomb is memory only if it is unpacked. `originalSize` is the entry's own claim; the bytes of an
+ * admitted entry are checked again by what reads them.
+ */
+export function zipEntryFilter(file: { name: string; originalSize: number }): boolean {
+  const kind = bundleEntryKind(file.name);
+  if (kind === null) return false;
+  return file.originalSize <= (kind === 'frame' ? FRAME_MAX_BYTES : BUNDLE_JSON_MAX_BYTES);
+}
+
 /**
  * The files of an unpacked bundle that may be written to its folder: `session.json`, `part.json`
  * and `frames/<id>.jpg` with a safe id — anything else in the zip (a `../` path, an absolute one,
@@ -86,11 +110,7 @@ export function safeId(id: string, what: string): string {
 export function unpackableFiles(files: Record<string, Uint8Array>): [string, Uint8Array][] {
   const keep: [string, Uint8Array][] = [];
   for (const [path, bytes] of Object.entries(files)) {
-    if (path === 'session.json' || path === DIAG_PART_FILE) keep.push([path, bytes]);
-    else {
-      const frame = /^frames\/([^/]+)\.jpg$/.exec(path);
-      if (frame && SAFE_ID.test(frame[1]!)) keep.push([path, bytes]);
-    }
+    if (bundleEntryKind(path) !== null) keep.push([path, bytes]);
   }
   return keep.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 }

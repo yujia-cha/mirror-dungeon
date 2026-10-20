@@ -22,7 +22,7 @@
  */
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { flagValue, hasFlag, readJson, repoPath } from './lib/io.ts';
+import { flagValue, hasFlag, readJson } from './lib/io.ts';
 import { familyOf, renameToSeason, seasonOf } from './lib/season-files.ts';
 import {
   DERIVED_ONLY_GIFTS,
@@ -33,22 +33,7 @@ import {
 } from './lib/derived-md.ts';
 import { OUT, outPath } from './lib/out.ts';
 
-const RAW = 'https://raw.githubusercontent.com';
-
-interface LockSource {
-  repo: string;
-  ref?: string;
-  sha?: string;
-  languages?: Record<string, { ref: string; sha: string }>;
-  remotePrefix: string;
-  localPrefix: string;
-  files: (string | { path: string; languages?: string[] })[];
-}
-
-interface Lock {
-  mirrorDungeonSeason?: number;
-  sources: Record<string, LockSource>;
-}
+import { RAW, lockFilePath, readLock, type Lock } from './lib/lock.ts';
 
 /**
  * Which families to probe upstream.
@@ -74,9 +59,9 @@ interface Probe {
 function probesForNextSeason(lock: Lock, from: number, to: number): Probe[] {
   const probes: Probe[] = [];
   for (const source of Object.values(lock.sources)) {
-    const perLanguage = source.languages ?? null;
+    const perLanguage = source.languages && !Array.isArray(source.languages) ? source.languages : null;
     for (const entry of source.files) {
-      const path = typeof entry === 'string' ? entry : entry.path;
+      const path = lockFilePath(entry);
       if (seasonOf(path) !== from) continue;
       const family = familyOf(path);
       if (!family || !PROBE_FAMILIES.has(family)) continue;
@@ -135,7 +120,7 @@ function unshippedFromMirror(season: number): { packs: number[]; gifts: number[]
 
 async function main(): Promise<void> {
   const offline = hasFlag('--offline');
-  const lock = readJson<Lock>(repoPath('data/sources.lock.json'));
+  const lock = readLock();
   // `--from` exists so the probe itself can be tested: pointed at a season that already shipped,
   // it must come back with hits. A canary nobody has seen sing is not a canary.
   const override = flagValue('--from');

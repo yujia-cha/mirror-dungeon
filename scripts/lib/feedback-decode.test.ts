@@ -4,7 +4,14 @@
 import { describe, expect, it } from 'vitest';
 import { buildFeedback, type FeedbackInput } from '../../src/app/feedback/body.ts';
 import { encodePayload } from '../../src/app/feedback/payload.ts';
-import { decodePayload, feedbackReport, publicShareLink, stampOf } from './feedback-decode.ts';
+import {
+  MAX_PAYLOAD_CHARS,
+  decodePayload,
+  feedbackReport,
+  publicShareLink,
+  reportFolderOf,
+  stampOf,
+} from './feedback-decode.ts';
 
 const input: FeedbackInput = {
   t: Date.UTC(2026, 9, 16, 5, 30, 5),
@@ -87,6 +94,10 @@ describe('feedback decode', () => {
     expect(result.payload.log?.entries).toEqual(input.log);
     expect(result.payload.diagnostics?.records).toEqual(input.diagnostics);
     expect(stampOf(result.payload.t)).toBe('20261016-053005');
+    // The folder carries the payload's hash: a second report with the same `t` gets its own.
+    expect(reportFolderOf(result.payload)).toMatch(/^20261016-053005-[0-9a-f]{8}$/);
+    expect(reportFolderOf({ ...result.payload, message: 'other' })).not.toBe(reportFolderOf(result.payload));
+    expect(reportFolderOf(result.payload)).toBe(reportFolderOf(structuredClone(result.payload)));
     // The plan reopens on the public site, not the visitor's dev server.
     expect(publicShareLink(result.payload)).toBe('https://yujia-cha.github.io/mirror-dungeon/#s=N4IgDg');
   });
@@ -135,6 +146,17 @@ describe('feedback decode', () => {
     const issue = buildFeedback(input, 'ko');
     const damaged = issue.body.replace(/(```md-feedback\n)(.{40})/, '$1');
     expect(decodePayload(damaged).ok).toBe(false);
+  });
+
+  it('refuses a body far past what an issue can hold before looking for the block (M160)', () => {
+    const bound = MAX_PAYLOAD_CHARS * 4;
+    expect(decodePayload('x'.repeat(bound + 1))).toEqual({
+      ok: false,
+      error: `the body is longer than ${bound} characters`,
+    });
+    const atBound = decodePayload('x'.repeat(bound));
+    expect(atBound.ok).toBe(false);
+    if (!atBound.ok) expect(atBound.error).not.toContain('body is longer');
   });
 
   describe('a block anyone could have written (M154: the issue is public)', () => {

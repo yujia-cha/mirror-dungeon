@@ -1,7 +1,8 @@
 /**
  * M127: the feedback issue — readable body, compressed payload, and the URL budget.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import lzString from 'lz-string';
 import { appDefaultOptions, emptyRun } from '../../store.ts';
 import type { FeedbackLogEntry } from '../../lib/feedback-log.ts';
 import {
@@ -13,7 +14,7 @@ import {
   type FeedbackInput,
 } from '../body.ts';
 import { shortUserAgent } from '../env.ts';
-import { decodePayload, extractPayloadText } from '../payload.ts';
+import { MAX_PAYLOAD_CHARS, decodePayload, extractPayloadText } from '../payload.ts';
 import type { VisitorRecord } from '../visitor-diagnostics.ts';
 
 const input = (over: Partial<FeedbackInput> = {}): FeedbackInput => ({
@@ -249,5 +250,67 @@ describe('shortUserAgent', () => {
       'Firefox 140 · Linux',
     );
     expect(shortUserAgent('curl/8')).toBe('unknown browser · unknown OS');
+  });
+});
+
+describe('fences and blocks (M160)', () => {
+  it('fences a stack that quotes a fence with a longer one, so the payload block still decodes', () => {
+    // Arrange: an error whose stack carries three backticks.
+    const issue = buildFeedback(
+      input({
+        log: [
+          { t: 2, kind: 'error', source: 'render', message: 'boom', stack: 'at a\n``` not a fence\nat b' },
+        ],
+      }),
+      'ko',
+    );
+    // Assert
+    expect(issue.body).toContain('  ````\n  at a\n  ``` not a fence\n  at b\n  ````');
+    expect(decodePayload(issue.body)).toMatchObject({ ok: true, payload: { message: expect.any(String) } });
+  });
+
+  it('reads the last md-feedback block: an old report pasted into the message does not stand in', () => {
+    // Arrange: the visitor pasted a whole earlier issue body into the message.
+    const earlier = buildFeedback(input({ t: 1000 }), 'ko').body;
+    const issue = buildFeedback(
+      input({ t: 2000, message: `이전 보고서입니다:\n${earlier}` }),
+      'ko',
+      Infinity,
+    );
+    // Act
+    const decoded = decodePayload(issue.body);
+    // Assert
+    expect(decoded.ok).toBe(true);
+    if (!decoded.ok) return;
+    expect(decoded.payload.t).toBe(2000);
+    expect(extractPayloadText(issue.body)).toBe(
+      extractPayloadText(issue.body.slice(issue.body.indexOf('```md-feedback', 10))),
+    );
+  });
+
+  it('refuses a block past MAX_PAYLOAD_CHARS before decompressing it', () => {
+    const block = (n: number) => `\`\`\`md-feedback\n${'A'.repeat(n)}\n\`\`\``;
+    expect(decodePayload(block(MAX_PAYLOAD_CHARS + 1))).toEqual({
+      ok: false,
+      error: `the block is longer than ${MAX_PAYLOAD_CHARS} characters`,
+    });
+    const atBound = decodePayload(block(MAX_PAYLOAD_CHARS));
+    expect(atBound.ok).toBe(false);
+    if (!atBound.ok) expect(atBound.error).not.toContain('longer than');
+  });
+
+  it('compresses the payload once per cut of the log, and the full body only when read (C5)', () => {
+    // Arrange
+    const compress = vi.spyOn(lzString, 'compressToBase64');
+    // Act: a short report, whose every level keeps the whole log.
+    const issue = buildFeedback(input(), 'ko');
+    const afterBuild = compress.mock.calls.length;
+    const full = issue.fullBody;
+    const again = issue.fullBody;
+    // Assert
+    expect(afterBuild).toBe(1);
+    expect(compress.mock.calls.length).toBe(1);
+    expect(full).toBe(issue.body);
+    expect(again).toBe(full);
   });
 });

@@ -421,8 +421,11 @@ export const themePackSchema = z.object({
   sinAffinity: sinSchema.nullable(),
   attackTypeAffinity: attackTypeSchema.nullable(),
   bossIds: z.array(z.number().int()),
-  /** Sprite key for the pack artwork (`uiConfigs.packSpriteId`), e.g. `Burn_hard`. */
-  sprite: z.string(),
+  /**
+   * Sprite key for the pack artwork (`uiConfigs.packSpriteId`), e.g. `Burn_hard`. It becomes a file
+   * name (`public/icons/packs/{sprite}.webp`, `public/art/packs/{sprite}.png`), so it is a plain word.
+   */
+  sprite: z.string().regex(/^[\w-]+$/),
   notes: localizedSchema.optional(),
 });
 
@@ -1114,14 +1117,19 @@ export type DiagnosticsBundle = z.infer<typeof diagnosticsBundleSchema>;
  * and is one whole part.
  */
 export const DIAG_PART_FILE = 'part.json';
-export const diagPartSchema = z.object({
-  bundleId: z.string(),
-  /** With `bundleId`, which export this is: two exports of one recording share the bundle id. */
-  exportedAt: z.number(),
-  part: z.number().int().min(1),
-  total: z.number().int().min(1),
-  frames: z.array(z.string()),
-});
+/** The most parts one export may be split into (`diagPartSchema.total`). */
+export const DIAG_PART_MAX_TOTAL = 64;
+export const diagPartSchema = z
+  .object({
+    bundleId: z.string(),
+    /** With `bundleId`, which export this is: two exports of one recording share the bundle id. */
+    exportedAt: z.number(),
+    part: z.number().int().min(1),
+    /** An export is at most 64 parts: a 25 MB part each, far past what the recorder keeps. */
+    total: z.number().int().min(1).max(DIAG_PART_MAX_TOTAL),
+    frames: z.array(z.string()),
+  })
+  .refine((part) => part.part <= part.total, { message: 'part is past total', path: ['part'] });
 export type DiagPart = z.infer<typeof diagPartSchema>;
 export type SeasonEntry = SeasonIndex['seasons'][number];
 
@@ -1345,7 +1353,8 @@ const feedbackIds = z.array(z.number().int());
 
 export const feedbackPayloadSchema = z.object({
   v: z.literal(FEEDBACK_PAYLOAD_VERSION),
-  t: z.number(),
+  /** When it was written, epoch ms — inside what `Date` can hold, so a decoder can print it. */
+  t: z.number().int().min(0).max(8.64e15),
   kind: z.enum(['bug', 'idea', 'data', 'other']),
   title: z.string(),
   message: z.string(),

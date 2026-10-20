@@ -15,14 +15,15 @@ import {
 } from '../../core/index.ts';
 import type { GameData, Gift } from '../../core/schema.ts';
 import { observable } from '../../core/index.ts';
-import type { DeckStats, GameIndexes } from '../../core/types.ts';
+import type { ConditionReport, DeckStats, GameIndexes } from '../../core/types.ts';
 import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
-import { planInputFor, type PlannedRun } from '../lib/plan-input.ts';
+import { planInputFor, type PlannedRun, type RunState } from '../lib/plan-input.ts';
+import { floorOfVisit } from '../lib/run-gifts.ts';
 import { usePlanner } from '../lib/use-planner.ts';
-import { runDrop } from '../lib/planner-protocol.ts';
+import { dropInputOf, runDrop } from '../lib/planner-protocol.ts';
 import {
   autoFailedFor,
   entryGifts,
@@ -168,10 +169,20 @@ export function PlanProvider({
     [previewing, dropPlan, selection, released],
   );
   const shown = variant?.plan ?? plan;
+  /** The plan's condition reports by gift, so a tile's title is one lookup, not a scan (M160). */
+  const shownConditions = useMemo(() => {
+    const byGift = new Map<number, ConditionReport[]>();
+    for (const report of shown?.conditions ?? [])
+      byGift.set(report.giftId, [...(byGift.get(report.giftId) ?? []), report]);
+    return byGift;
+  }, [shown]);
   /** Conflicting goals left in the checked set's route, or null while it is being computed. */
   const dropConflicts = useMemo(
-    () => (dropPlan ? conflictRootsOf(dropPlan, input, data, indexes).length : null),
-    [dropPlan, input, data, indexes],
+    () =>
+      dropPlan
+        ? conflictRootsOf(dropPlan, dropInputOf(input, selection, released), data, indexes).length
+        : null,
+    [dropPlan, input, selection, released, data, indexes],
   );
   /** The full plan's conflict, for the decision card: worked out once per plan, not per render. */
   const conflict = useMemo(
@@ -229,7 +240,7 @@ export function PlanProvider({
       }
     }
     const giftTitle = (id: number): string | undefined => {
-      const reports = (shown?.conditions ?? []).filter((c) => c.giftId === id);
+      const reports = shownConditions.get(id) ?? [];
       const parts = reports.map((r) => conditionText(r, data.enums, lang));
       // Only when nothing live still wants it: an ingredient two fusions share is still chased by
       // the other one, and saying 「조합 불가」 there would be false.
@@ -306,21 +317,27 @@ export function PlanProvider({
      */
     const expectedIn = (floor: number, packId: number): number[] =>
       expectedFrom(shown, floor, packId, needed, exclusivesOf);
-    /** The gifts a recorded entry answers for: its tiles, and what going back clears. */
-    const entryGiftsOf = (packId: number): number[] => {
-      const entry = Object.entries(run.visits).find(([, id]) => id === packId);
-      const expected = entry ? expectedIn(Number(entry[0]), packId) : [];
-      return entryGifts(packId, expected, run.giftStatus, indexes, exclusivesOf);
+    /**
+     * The gifts a recorded entry answers for: its tiles, and what going back clears. `now` is the
+     * run to read the entry from — the rendered one for the screen, the store's for an action.
+     */
+    const entryGiftsOf = (packId: number, now: RunState = run): number[] => {
+      const floor = floorOfVisit(now.visits, packId);
+      const expected = floor !== null ? expectedIn(floor, packId) : [];
+      return entryGifts(packId, expected, now.giftStatus, indexes, exclusivesOf);
     };
     /**
      * What leaving `floor` records as missed: the drops the route expected of a pack entered there
      * that the player never marked. Every way off a floor settles the same — 「다음 층」 and a
      * forward step on the floor strip alike — and each also takes the run start (`closeStart`).
+     * Read from the store, like `closeStart`: the reader applies a read's events one after another
+     * inside one render, and the second must see what the first entered (M160).
      */
     const settleFor = (floor: number): { failed: number[] } => {
-      const entered = run.visits[floor];
+      const now = useApp.getState().run;
+      const entered = now.visits[floor];
       return {
-        failed: entered !== undefined ? autoFailedFor(expectedIn(floor, entered), run.giftStatus) : [],
+        failed: entered !== undefined ? autoFailedFor(expectedIn(floor, entered), now.giftStatus) : [],
       };
     };
     const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: closeStart() });
@@ -341,12 +358,13 @@ export function PlanProvider({
      * touched. The store holds the same line for the start-of-run gifts.
      */
     const leave = (packId: number): void => {
+      const now = useApp.getState().run;
       const elsewhere = new Set(
-        Object.values(run.visits)
+        Object.values(now.visits)
           .filter((id) => id !== packId)
           .flatMap((id) => exclusivesOf(id)),
       );
-      unvisitPack(packId, { reset: entryGiftsOf(packId).filter((id) => !elsewhere.has(id)) });
+      unvisitPack(packId, { reset: entryGiftsOf(packId, now).filter((id) => !elsewhere.has(id)) });
     };
     /**
      * Record an entry the screen saw on `floor`, wherever the stage stands. The stage cannot step
@@ -354,11 +372,12 @@ export function PlanProvider({
      * settle as 「다음 층」 would have settled them.
      */
     const enterAt = (floor: number, packId: number): void => {
+      const { stageFloor } = useApp.getState().run;
       const failed = new Set<number>();
-      for (let f = run.stageFloor; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
+      for (let f = stageFloor; f < floor; f += 1) for (const id of settleFor(f).failed) failed.add(id);
       visitPack(packId, floor, { got: closeStart(), failed: [...failed] });
       // The store reads its own state, so this sees the frontier the entry just moved.
-      if (floor !== run.stageFloor) setStageFloor(floor);
+      if (floor !== stageFloor) setStageFloor(floor);
     };
     const canObserve = (id: number): boolean => {
       const gift = indexes.giftById.get(id);
@@ -392,10 +411,7 @@ export function PlanProvider({
         currentFloor: run.currentFloor,
         stageFloor: run.stageFloor,
         enteredHere: run.visits[run.stageFloor] ?? null,
-        visitedAt: (packId) => {
-          const entry = Object.entries(run.visits).find(([, id]) => id === packId);
-          return entry ? Number(entry[0]) : null;
-        },
+        visitedAt: (packId) => floorOfVisit(run.visits, packId),
         giftStatus: (giftId) => run.giftStatus[giftId] ?? null,
         onEnter: variant ? undefined : enter,
         // The sheet's 「입장 취소」 clears what the stage's 「입장 취소」 clears: one undo, one rule.
@@ -493,6 +509,7 @@ export function PlanProvider({
     setPreviewing,
     variant,
     run,
+    shownConditions,
     fusionGoal,
     exclusivesOf,
     childrenOf,

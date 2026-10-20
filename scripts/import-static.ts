@@ -19,12 +19,9 @@
 import { existsSync, statSync } from 'node:fs';
 import { basename, relative } from 'node:path';
 import { indexByName, planImport, writeImport } from './lib/import-static.ts';
-import { hasFlag, readJson, repoPath } from './lib/io.ts';
+import { hasFlag, repoPath } from './lib/io.ts';
+import { lockFilePath, readLock } from './lib/lock.ts';
 import { seasonOf } from './lib/season-files.ts';
-
-interface Lock {
-  sources: Record<string, { localPrefix: string; files: (string | { path: string })[] }>;
-}
 
 const STATIC_PREFIX = 'data/raw/static';
 
@@ -41,11 +38,11 @@ function main(): void {
   if (!source) usage('no folder given.');
   if (!existsSync(source) || !statSync(source).isDirectory()) usage(`${source} is not a folder.`);
 
-  const lock = readJson<Lock>(repoPath('data/sources.lock.json'));
+  const lock = readLock();
   const entry = Object.values(lock.sources).find((s) => s.localPrefix === STATIC_PREFIX);
   if (!entry) usage(`no source in the lock writes to ${STATIC_PREFIX}.`);
 
-  const wanted = entry.files.map((file) => (typeof file === 'string' ? file : file.path));
+  const wanted = entry.files.map(lockFilePath);
   const available = indexByName(source);
   const seasonsWanted = new Set(
     wanted.map((file) => seasonOf(basename(file))).filter((n): n is number => n !== null),

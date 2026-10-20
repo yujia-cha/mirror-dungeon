@@ -13,6 +13,7 @@ import { giftIconUrl } from '../lib/assets.ts';
 import { observationClosed } from '../lib/plan-input.ts';
 import { feedbackLog } from '../lib/feedback-log.ts';
 import type { RunState } from '../lib/plan-input.ts';
+import { heldGifts } from '../lib/run-gifts.ts';
 import { usePlan } from '../shell/plan-context.ts';
 import { collectedGifts, runHasProgress, useApp } from '../store.ts';
 import {
@@ -256,13 +257,10 @@ export function useCapture(hooks: CaptureHooks = {}) {
         },
       };
     const { run: now } = useApp.getState();
-    const giftStatus = now.giftStatus;
     return {
       ...candidates.current.value,
       startOpen: !observationClosed(now),
-      held: Object.entries(giftStatus)
-        .filter(([, s]) => s === 'got')
-        .map(([id]) => Number(id)),
+      held: heldGifts(now.giftStatus),
       iconUrl: (id) => {
         const gift = idx.giftById.get(id);
         return gift ? (giftIconUrl(gift.icon)?.url ?? null) : null;
@@ -325,6 +323,19 @@ export function useCapture(hooks: CaptureHooks = {}) {
     setLog([]);
     setQuestions([]);
   }, []);
+
+  // A run thrown away anywhere else — 「같은 목표로 새 런」, the header's 초기화, a share link, a
+  // season that dropped it — takes the log with it (M160): an undo left over would write the old
+  // run's statuses onto the new one. The reader's own undo may empty the run too; that one keeps
+  // the log, which is where it came from.
+  useEffect(
+    () =>
+      useApp.subscribe((state, prev) => {
+        if (state.run === prev.run || applying.current) return;
+        if (runHasProgress(prev.run) && !runHasProgress(state.run)) forgetRun();
+      }),
+    [forgetRun],
+  );
 
   /**
    * Starting the reader is starting the run (M143): `'new'` snapshots the state and starts the run

@@ -67,3 +67,17 @@ describe('downscaleRgba', () => {
     expect(out.data).not.toBe(src.data);
   });
 });
+
+describe('planPackImages and unsafe image names (M160, B3)', () => {
+  it('routes an image name that would leave the folder to unmapped instead of a download', () => {
+    const packs = [
+      { id: 1001, sprite: 'Canto_I' },
+      { id: 1028, sprite: '1028' },
+    ];
+    const derived = { '1001': { image: '../../../secrets' }, '1028': { image: 'Canto_X' } };
+    expect(planPackImages(packs, derived)).toEqual({
+      downloads: [{ key: '1028', remote: 'assets/theme_packs/Canto_X.webp' }],
+      unmapped: ['Canto_I'],
+    });
+  });
+});

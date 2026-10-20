@@ -71,3 +71,26 @@ describe('isWebp', () => {
     expect(isWebp(new Uint8Array(11))).toBe(false);
   });
 });
+
+describe('planGiftIcons and unsafe srcPath (M160, B3)', () => {
+  it('routes a srcPath that would leave the folder to unmapped instead of a download', () => {
+    // Arrange: one dot path, one absolute path, one honest name.
+    const gifts = [
+      { id: 1, icon: 1 },
+      { id: 2, icon: 2 },
+      { id: 3, icon: 3 },
+    ];
+    const derived = {
+      '1': { srcPath: '../../../../other/branch/file' },
+      '2': { srcPath: '/etc/passwd' },
+      '3': { srcPath: 'Hellterfly’s Dream' },
+    };
+    // Act
+    const plan = planGiftIcons(gifts, derived);
+    // Assert
+    expect(plan).toEqual({
+      downloads: [{ icon: 3, remote: 'assets/gifts/Hellterfly’s Dream.webp' }],
+      unmapped: [1, 2],
+    });
+  });
+});

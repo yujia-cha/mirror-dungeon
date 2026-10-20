@@ -51,6 +51,7 @@ import {
   recognitionReport,
   routeReport,
   unpackBundle,
+  zipEntryFilter,
   type PartsReport,
 } from './lib/capture-feedback.ts';
 import { hasFlag } from './lib/io.ts';
@@ -104,8 +105,13 @@ async function main(): Promise<void> {
     if (zips.length === 0) fail(`no zip in ${paths.join(', ')}`);
     let merged: ReturnType<typeof mergeParts>;
     try {
+      // Only the entries a bundle may hold are inflated at all (`zipEntryFilter`): the zip is
+      // someone else's file, and a crafted one must cost nothing before it is read.
       merged = mergeParts(
-        zips.map((path) => ({ name: basename(path), files: unzipSync(readFileSync(path)) })),
+        zips.map((path) => ({
+          name: basename(path),
+          files: unzipSync(readFileSync(path), { filter: zipEntryFilter }),
+        })),
       );
     } catch (error) {
       fail((error as Error).message);

@@ -117,6 +117,23 @@ describe('bounded variables and warm starts (M87)', () => {
         const status = node.resolve(5_000);
         if (status === 'infeasible') {
           infeasible += 1;
+          // Verified from scratch (M160): the problem with the fixed values moved to the right-hand
+          // side really has no point. Its right-hand side may be negative, so the check is a
+          // feasibility problem of its own — A x + d·s ≤ b + d with d = max(0, −b) and s in
+          // [0, 1]: at s = 0 the origin fits, and s reaches 1 exactly when the original fits.
+          const shifted = b.map(
+            (bi, i) => bi - [...fixed].reduce((sum, [f, v]) => sum + rows[i]![f]! * v, 0),
+          );
+          const free = [...Array(n).keys()].filter((f) => !fixed.has(f));
+          const d = shifted.map((v) => Math.max(0, -v));
+          const slack = solveLp(
+            [...free.map(() => 0), 1],
+            rows.map((row, i) => [...free.map((f) => row[f]!), d[i]!]),
+            shifted.map((v, i) => v + d[i]!),
+            5_000,
+            [...free.map(() => 1), 1],
+          )!;
+          expect(slack.value).toBeLessThan(1 - 1e-6);
           break;
         }
         expect(status).toBe('optimal');

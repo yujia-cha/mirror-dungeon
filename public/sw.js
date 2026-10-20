@@ -17,15 +17,22 @@
  *
  *   navigation      network first, cache as the fallback. A deploy must never be shadowed by a
  *                   cached shell, and offline must still open the app.
- *   hashed asset    cache first. `index-D3cfCpYc.js` never changes content; a new build is a new
- *                   name, so there is nothing to revalidate.
- *   everything else stale-while-revalidate.
+ *   hashed asset    cache first. `assets/index-D3cfCpYc.js` never changes content; a new build is
+ *                   a new name, so there is nothing to revalidate. Only files under `assets/` with
+ *                   Vite's 8-character hash count (M160): `apple-touch-icon.png` and
+ *                   `guide/route-conflict.webp` looked hashed to the old pattern and were frozen.
+ *   everything else stale-while-revalidate: `data/md7/gifts.json` and `art/*.png` keep their
+ *                   names across deploys, so serve what we have and refresh in the background. The
+ *                   refresh is handed to `waitUntil`, so the worker is not stopped before it lands.
+ *
+ * `VERSION` names the cache. It is a hash of the precache list *and* of the data files' content
+ * (`scripts/lib/precache.ts`), so a deploy that changed only the data still drops the old cache on
+ * activation — the stale-while-revalidate copies would otherwise outlive the deploy.
  *
  * Every lookup ignores `Vary`. A module script is a CORS request carrying `Origin`; a precached
  * copy was fetched without one, and a server that answers `Vary: Origin` (Vite's preview does)
  * makes the two never match — the page opened offline and every script failed. The files are
- * static, so no header can make one response wrong for another request. `data/md7/gifts.json` and `art/*.png` keep their names
- *                   across deploys, so serve what we have and refresh in the background.
+ * static, so no header can make one response wrong for another request.
  */
 /** Filled in by the build; the source keeps these two lines verbatim (`injectPrecache` checks). */
 const PRECACHE = [];
@@ -33,8 +40,17 @@ const VERSION = 'dev';
 const CACHE = `md-planner-${VERSION}`;
 const MATCH = { ignoreVary: true };
 
-/** `name-8charhash.ext` — what Vite emits for a bundled asset. */
-const HASHED = /-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/;
+/**
+ * `name-8charhash.ext` — what Vite emits under `assets/` (the hash alphabet is base64url, so `-`
+ * and `_` are in it: `subset.33--0OT__YQ.woff2`). Tested on the path below `assets/` only.
+ */
+const HASHED = /^[^/]+-[A-Za-z0-9_-]{8}\.[a-z0-9]+$/;
+
+/** True for a bundled asset: directly under the app's `assets/`, with Vite's hash in its name. */
+function isHashedAsset(pathname) {
+  const assets = new URL('./assets/', self.registration.scope).pathname;
+  return pathname.startsWith(assets) && HASHED.test(pathname.slice(assets.length));
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -95,16 +111,21 @@ async function cacheFirst(request) {
   return response;
 }
 
-async function staleWhileRevalidate(request) {
+async function staleWhileRevalidate(event) {
+  const { request } = event;
   const cache = await caches.open(CACHE);
   const cached = await cache.match(request, MATCH);
   const fresh = fetch(request)
-    .then((response) => {
-      if (response.ok) cache.put(request, response.clone());
+    .then(async (response) => {
+      if (response.ok) await cache.put(request, response.clone());
       return response;
     })
     .catch(() => null);
-  if (cached) return cached;
+  if (cached) {
+    // The cached copy answers now; the refresh must still be allowed to finish and be stored.
+    event.waitUntil(fresh);
+    return cached;
+  }
   const response = await fresh;
   if (response) return response;
   throw new Error(`offline and not cached: ${request.url}`);
@@ -123,5 +144,5 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirst(request));
     return;
   }
-  event.respondWith(HASHED.test(url.pathname) ? cacheFirst(request) : staleWhileRevalidate(request));
+  event.respondWith(isHashedAsset(url.pathname) ? cacheFirst(request) : staleWhileRevalidate(event));
 });

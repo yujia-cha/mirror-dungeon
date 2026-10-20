@@ -92,6 +92,16 @@ export interface AnalysisResponse {
 export const ANALYSIS_BUDGET_MS = 800;
 
 const sortedKey = (ids: readonly number[]): string => [...ids].sort((a, b) => a - b).join(',');
+/**
+ * `planRoute` with `stats.elapsedMs` filled in: core keeps no clock (M160), so the call is timed
+ * here, where every plan the app sees is made.
+ */
+function timedPlan(input: PlanInput, data: GameData, indexes: GameIndexes): RoutePlan {
+  const startedAt = performance.now();
+  const plan = planRoute(input, data, indexes);
+  return { ...plan, stats: { ...plan.stats, elapsedMs: Math.round(performance.now() - startedAt) } };
+}
+
 /** A checked set and the pins released with it, as one cache key. */
 const dropKey = (ids: readonly number[], released: readonly number[] = []): string =>
   released.length === 0 ? sortedKey(ids) : `${sortedKey(ids)}|${sortedKey(released)}`;
@@ -106,7 +116,7 @@ function memoPlanner(data: GameData, indexes: GameIndexes): (input: PlanInput) =
     const key = JSON.stringify(input);
     let plan = memo.get(key);
     if (!plan) {
-      plan = planRoute(input, data, indexes);
+      plan = timedPlan(input, data, indexes);
       memo.set(key, plan);
     }
     return plan;
@@ -158,7 +168,7 @@ export function runPlan(
   all = false,
 ): PlanResult {
   if (input.wanted.length === 0) return { plan: null, analysis: null, resolutions: null };
-  const plan = planRoute(input, data, indexes);
+  const plan = timedPlan(input, data, indexes);
   if (!needsAlternatives(plan)) return { plan, analysis: null, resolutions: null };
   const planner = memoPlanner(data, indexes);
   const bars = createDropEffects(input, data, indexes, plan, {
@@ -187,15 +197,17 @@ function drive(bars: DropEffectSteps, ways: ResolutionSteps, more: () => boolean
 }
 
 /** The plan for `input` with `dropped` left out of the goals and `released` pins let go. */
-export function runDrop(
+/**
+ * The input a checked set's route is planned from: the goals without `dropped`, the pins without
+ * `released`. What that route's conflicts are measured against as well (M160) — measured against
+ * the full input, a conflict could map back to a goal the variant no longer has.
+ */
+export function dropInputOf(
   input: PlanInput,
   dropped: readonly number[],
-  data: GameData,
-  indexes: GameIndexes,
   released: readonly number[] = [],
-): RoutePlan | null {
+): PlanInput {
   const wanted = input.wanted.filter((w) => !dropped.includes(w.giftId));
-  if (wanted.length === 0) return null;
   const options =
     released.length === 0
       ? input.options
@@ -203,7 +215,19 @@ export function runDrop(
           ...input.options,
           observedGifts: input.options.observedGifts.filter((id) => !released.includes(id)),
         };
-  return planRoute({ ...input, wanted, options }, data, indexes);
+  return { ...input, wanted, options };
+}
+
+export function runDrop(
+  input: PlanInput,
+  dropped: readonly number[],
+  data: GameData,
+  indexes: GameIndexes,
+  released: readonly number[] = [],
+): RoutePlan | null {
+  const variant = dropInputOf(input, dropped, released);
+  if (variant.wanted.length === 0) return null;
+  return timedPlan(variant, data, indexes);
 }
 
 /**
@@ -274,7 +298,7 @@ export function createPlanner(opts: { budgetMs?: number; now?: () => number } = 
       }
       if (request.input !== current) dropCache.clear();
       current = request.input;
-      const plan = request.input.wanted.length === 0 ? null : planRoute(request.input, data, indexes);
+      const plan = request.input.wanted.length === 0 ? null : timedPlan(request.input, data, indexes);
       const analysisPending = needsAlternatives(plan);
       latest = analysisPending ? { id: request.id, input: request.input, plan: plan! } : null;
       return { type: 'plan', id: request.id, plan, analysisPending };

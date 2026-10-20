@@ -26,6 +26,7 @@ import {
   staticDataPresent,
 } from './lib/raw.ts';
 import { familyOf, seasonOf } from './lib/season-files.ts';
+import { readLock, readLockIfExists, type Lock } from './lib/lock.ts';
 import { identitySkillProblems } from './lib/identity-skills.ts';
 import { artKeysAcrossSeasons } from './lib/art-keys.ts';
 import { readCuratedGiftEffects, splitEffectBlocks } from './lib/parse-effects.ts';
@@ -163,7 +164,14 @@ const requestedSeason = flagValue('--season') ? Number(flagValue('--season')) : 
  * The season the raw snapshot describes, and so the one the domain checks below can speak about.
  * Not `index.default`: the newest published season may be a frozen build whose raw data is gone.
  */
-const season = requestedSeason ?? readCommonData()?.data.currentDungeonId ?? index?.default ?? 7;
+const season = ((): number => {
+  const found = requestedSeason ?? readCommonData()?.data.currentDungeonId ?? index?.default;
+  if (found === undefined) {
+    console.error('[season] nothing says which season to validate: no --season, no snapshot, no index.json');
+    process.exit(1);
+  }
+  return found;
+})();
 
 function parseFile<S extends z.ZodTypeAny>(name: string, schema: S): z.infer<S> | null {
   const file = name.replace(/\.json$/, '') as Parameters<typeof outPath>[0];
@@ -454,8 +462,7 @@ function checkGiftIcons(gifts: Gift[]): void {
     if (!isWebp(bytes)) err('icons', `${GIFT_ICON_DIR}/${key}.webp is not a WebP file`);
     if (bytes.length > MAX_ICON_BYTES) err('icons', `${GIFT_ICON_DIR}/${key}.webp is ${bytes.length} bytes`);
   }
-  const pinned = readJson<{ sources: Record<string, { sha?: string }> }>(repoPath('data/sources.lock.json'))
-    .sources.eldritchtools?.sha;
+  const pinned = readLock().sources['eldritchtools']?.sha;
   if (pinned && manifest.source.sha !== pinned)
     warn(
       'icons',
@@ -1128,19 +1135,13 @@ function checkDerivedMirrorDungeon(gifts: Gift[], packs: ThemePack[], rules: Rul
  */
 function checkSeasonSnapshot(): void {
   if (!staticDataPresent()) return;
-  interface Lock {
-    mirrorDungeonSeason?: number;
-    sources: Record<
-      string,
-      {
-        localPrefix: string;
-        /** The localization source pins a commit per language, keyed by folder name. */
-        languages?: Record<string, unknown>;
-        files: (string | { path: string; languages?: string[] })[];
-      }
-    >;
+  let lock: Lock | null;
+  try {
+    lock = readLockIfExists();
+  } catch (error) {
+    err('schema', (error as Error).message);
+    return;
   }
-  const lock = readJsonIfExists<Lock>(repoPath('data/sources.lock.json'));
   if (!lock) return;
 
   const declared = expectSeason ?? lock.mirrorDungeonSeason;

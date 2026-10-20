@@ -179,6 +179,52 @@ describe('useCapture', () => {
     expect(onRunMark.mock.calls.at(-1)![0]).toMatchObject({ mark: 'rollback', hadProgress: true });
   });
 
+  it('forgets the log and the questions when the run is thrown away elsewhere (M160)', async () => {
+    // Arrange: a session recorded a gift and left a question on the run.
+    const { result } = renderHook(() => useCapture());
+    await act(() => result.current.start());
+    act(() => {
+      sessions[0]!.options.onEvents([{ kind: 'got', giftId: 9006 }]);
+      sessions[0]!.options.onEvents([{ kind: 'unsure', about: 'got', ids: [1, 2] }]);
+    });
+    expect(result.current.log).toHaveLength(1);
+    expect(result.current.questions).toHaveLength(1);
+    // Act: 「같은 목표로 새 런」 on the stage.
+    act(() => useApp.getState().resetRun());
+    // Assert: an undo of the old run cannot reach the new one.
+    expect(result.current.log).toEqual([]);
+    expect(result.current.questions).toEqual([]);
+  });
+
+  it('forgets the log when a share link replaces the run (M160)', async () => {
+    // Arrange
+    const { result } = renderHook(() => useCapture());
+    await act(() => result.current.start());
+    act(() => sessions[0]!.options.onEvents([{ kind: 'got', giftId: 9006 }]));
+    expect(result.current.log).toHaveLength(1);
+    // Act
+    act(() =>
+      useApp
+        .getState()
+        .applyShared({ deck: [10101], deployed: [], wanted: [], options: useApp.getState().options }),
+    );
+    // Assert
+    expect(result.current.log).toEqual([]);
+  });
+
+  it('keeps the log when its own undo is what empties the run (M160)', async () => {
+    // Arrange: the one entry of the run is the reader's.
+    const { result } = renderHook(() => useCapture());
+    await act(() => result.current.start());
+    act(() => sessions[0]!.options.onEvents([{ kind: 'got', giftId: 9006 }]));
+    const entry = result.current.log[0]!;
+    // Act
+    act(() => result.current.undo(entry.id));
+    // Assert: the run is empty again, and the entry stays, marked undone.
+    expect(useApp.getState().run.giftStatus).toEqual({});
+    expect(result.current.log).toEqual([{ ...entry, undone: true }]);
+  });
+
   it('does nothing on rollback with no snapshot and no progress but stop (M143)', async () => {
     // Arrange
     const onRunMark = vi.fn();

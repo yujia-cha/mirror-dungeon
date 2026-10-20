@@ -13,7 +13,7 @@ import { FormationDeckCode, createFormationDetailInfo } from 'limbus-formation-d
 import { buildIndexes } from '../../../core/index.ts';
 import { analyseDeck } from '../../../core/index.ts';
 import { loadGameDataFromDisk } from '../../../core/data/node.ts';
-import { identitiesFromFormationCode } from '../formation-code.ts';
+import { MAX_CODE_CHARS, identitiesFromFormationCode } from '../formation-code.ts';
 import { upgradeChildren } from '../upgrade-children.ts';
 import { carriedBy } from '../goal-toggle.ts';
 import { deckSummaryChips } from '../deck-summary.ts';
@@ -70,6 +70,25 @@ describe('identitiesFromFormationCode', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it('reads a code of MAX_CODE_CHARS characters and refuses one more (M160)', () => {
+    // Arrange: a real code padded with the whitespace a paste may carry, up to the bound.
+    const deck = defaultDeck(data).slice(0, 6);
+    const code = encode(deck);
+    const padded = code + ' '.repeat(MAX_CODE_CHARS - code.length);
+    // Act + Assert
+    expect(identitiesFromFormationCode(padded, indexes)?.ids).toEqual(deck);
+    expect(identitiesFromFormationCode(`${padded} `, indexes)).toBeNull();
+  });
+
+  it('refuses a gzip stream whose trailer announces more than a code can hold (M160)', () => {
+    // Arrange: the same code with the trailer's length field forged to 4 GB.
+    const bytes = Uint8Array.from(atob(encode(defaultDeck(data).slice(0, 6))), (c) => c.charCodeAt(0));
+    bytes.fill(0xff, bytes.length - 4);
+    const forged = btoa(String.fromCharCode(...bytes));
+    // Act + Assert
+    expect(identitiesFromFormationCode(forged, indexes)).toBeNull();
   });
 
   it('reads the deploy order from the code, reserves (0) left out', () => {

@@ -19,6 +19,7 @@ import {
   planRoute,
   RESOLUTION_RUN_CAP,
   RESOLUTION_RUNS,
+  wantedRoots,
 } from '../index.ts';
 import type { PlanInput, PlanOptions, RoutePlan } from '../types.ts';
 
@@ -118,6 +119,42 @@ describe('removals: k is the floor, and every k-sized way is found (M144)', () =
       expect(method.essential).toEqual([9262, 9804]);
     }
     expect(analysis.choices[0]).toMatchObject({ essential: [9262, 9804], pick: 2, any: false, ways: 3 });
+  });
+});
+
+describe('bars measured against the goals their plan was made from (M160)', () => {
+  /** Floors 1~5 Hard, three goals lost: 9792 left out alone clears one of them. */
+  const BOARD = input(goals(9723, 9822, 9214, 9819, 9239, 9789, 9435, 9792, 9717, 9808, 9236, 9408), {
+    lastFloor: 5,
+  });
+
+  it('counts a bar by the conflicts of the plan without that goal, as the resolutions count theirs', () => {
+    // Arrange
+    const main = planRoute(BOARD, data, indexes);
+    const scoped = {
+      ...BOARD,
+      options: { ...BOARD.options, lastFloor: main.floors[main.floors.length - 1]!.floor },
+    };
+    // Act
+    const bars = planDropEffects(BOARD, data, indexes, main, { maxRuns: Infinity });
+    const ways = planResolutions(BOARD, data, indexes, main);
+    // Assert: the same k at the root …
+    expect(bars.conflicts).toBe(3);
+    expect(ways.conflicts).toBe(bars.conflicts);
+    // … and every bar is the root's k less the k of its own plan, measured against its own goals.
+    // Measured against the full goal list, an ingredient the plan without 9792 could not place
+    // still mapped to 9792, so that bar read 0 where the plan had cleared one conflict.
+    for (const bar of bars.effects) {
+      const variant = without(scoped, [bar.giftId]);
+      expect(bar.reduces).toBe(bars.conflicts - conflictRootsOf(bar.plan, variant, data, indexes).length);
+    }
+    expect(bars.effects.find((e) => e.giftId === 9792)?.reduces).toBe(1);
+    // A precomputed root map changes nothing but the work.
+    const variant = without(scoped, [9792]);
+    const bar = bars.effects.find((e) => e.giftId === 9792)!;
+    expect(conflictRootsOf(bar.plan, variant, data, indexes, wantedRoots(variant, data, indexes))).toEqual(
+      conflictRootsOf(bar.plan, variant, data, indexes),
+    );
   });
 });
 

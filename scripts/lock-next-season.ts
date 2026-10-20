@@ -18,27 +18,14 @@
  * frozen at md7, so its files will not appear — that is the case `npm run data:import` exists for).
  */
 import { writeFileSync } from 'node:fs';
-import { hasFlag, flagValue, readJson, repoPath } from './lib/io.ts';
+import { hasFlag, flagValue } from './lib/io.ts';
+import { LOCK_PATH, lockFilePath as pathOf, readLock, type LockFile } from './lib/lock.ts';
 import { familyOf, newestSeason, renameToSeason, seasonOf } from './lib/season-files.ts';
-
-type LockFile = string | { path: string; languages?: string[] };
-
-interface Lock {
-  $comment?: string;
-  mirrorDungeonSeason?: number;
-  sources: Record<string, { localPrefix: string; files: LockFile[] }>;
-}
-
-const LOCK_PATH = repoPath('data/sources.lock.json');
 
 function usage(message: string): never {
   console.error(message);
   console.error('usage: npm run data:lock-next-season -- <season> [--from <season>] [--write]');
   process.exit(1);
-}
-
-function pathOf(file: LockFile): string {
-  return typeof file === 'string' ? file : file.path;
 }
 
 /** The same lock entry pointed at another season — a bare path stays bare, an object keeps its keys. */
@@ -56,7 +43,7 @@ function main(): void {
   const target = Number(positional.find((arg) => arg !== fromFlag));
   if (!Number.isInteger(target)) usage('give the season to add, e.g. `-- 8`.');
 
-  const lock = readJson<Lock>(LOCK_PATH);
+  const lock = readLock(LOCK_PATH);
   const allPaths = Object.values(lock.sources).flatMap((source) => source.files.map(pathOf));
 
   // The declared season wins over file names: the lock may carry one next-season file early (the

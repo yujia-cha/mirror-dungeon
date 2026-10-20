@@ -36,6 +36,7 @@
  */
 import type { Gift } from '../../core/schema.ts';
 import { consumedStatus, type GiftStatus, type RunState } from '../lib/plan-input.ts';
+import { floorOfVisit, heldGifts } from '../lib/run-gifts.ts';
 import { mixedFusionConsumed, recipeConsumed, type Consumed } from './fusion.ts';
 import type { CaptureEvent } from './tracker.ts';
 
@@ -176,13 +177,12 @@ export function enterAction(
 ): EnterAction | null {
   const replaced = ctx.visits[floor] ?? null;
   if (replaced === packId) return null;
-  const moved = Object.entries(ctx.visits).find(([, id]) => id === packId);
   return {
     kind: 'enter',
     floor,
     packId,
     replaced,
-    movedFrom: moved ? Number(moved[0]) : null,
+    movedFrom: floorOfVisit(ctx.visits, packId),
     stageFrom: ctx.stageFloor,
     changes: [],
   };
@@ -222,11 +222,7 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
         ? { actions: change([event.giftId], null), ask: null }
         : NONE;
     case 'fused': {
-      const held = new Set(
-        Object.entries(ctx.giftStatus)
-          .filter(([, s]) => s === 'got')
-          .map(([id]) => Number(id)),
-      );
+      const held = new Set(heldGifts(ctx.giftStatus));
       held.delete(event.resultId);
       // Held in any number: one mark cannot say whether this fusion ate the last one.
       for (const id of [...held]) if (isMaterial(id)) held.delete(id);
@@ -330,8 +326,23 @@ export interface RunOps {
 }
 
 /**
+ * Set each change whose gift still holds the status the change expects (`from`), and say which
+ * were set. A status the player changed by hand in the meantime is theirs: an undo that overwrote
+ * it with the reader's old value threw their correction away (M160).
+ */
+function applyChanges(changes: readonly StatusChange[], ops: RunOps): StatusChange[] {
+  const done: StatusChange[] = [];
+  for (const change of changes) {
+    if ((ops.run().giftStatus[change.giftId] ?? null) !== change.from) continue;
+    ops.setGiftStatus(change.giftId, change.to);
+    done.push(change);
+  }
+  return done;
+}
+
+/**
  * Play `steps` on the run. Returns the actions as applied: an entry comes back with the statuses
- * its walk changed, which its undo restores.
+ * its walk changed, which its undo restores, and a status action with the changes it made.
  */
 export function execute(steps: readonly CaptureStep[], ops: RunOps): CaptureAction[] {
   const applied: CaptureAction[] = [];
@@ -343,10 +354,11 @@ export function execute(steps: readonly CaptureStep[], ops: RunOps): CaptureActi
         applied.push({ ...step, changes: statusDiff(before, ops.run().giftStatus) });
         break;
       }
-      case 'status':
-        for (const change of step.changes) ops.setGiftStatus(change.giftId, change.to);
-        applied.push(step);
+      case 'status': {
+        const changes = applyChanges(step.changes, ops);
+        if (changes.length > 0) applied.push({ kind: 'status', changes });
         break;
+      }
       case 'observe':
         if (ops.observe(step.giftId)) applied.push(step);
         break;
@@ -371,7 +383,7 @@ export function execute(steps: readonly CaptureStep[], ops: RunOps): CaptureActi
         // so each skip the walk made is undone in turn.
         if (step.to < step.from) for (let f = step.from - 1; f >= step.to; f -= 1) ops.setStageFloor(f);
         else if (step.to > step.from) ops.setStageFloor(step.to);
-        for (const change of step.changes) ops.setGiftStatus(change.giftId, change.to);
+        applyChanges(step.changes, ops);
         break;
       }
     }

@@ -11,7 +11,8 @@
  */
 import { execFileSync } from 'node:child_process';
 import { recentCommits, shaFromGit, tipOf } from './lib/git-remote.ts';
-import { hasFlag, readJson, repoPath } from './lib/io.ts';
+import { hasFlag, repoPath } from './lib/io.ts';
+import { RAW, parseLock, readLock, type Lock } from './lib/lock.ts';
 import {
   judgeUpstream,
   patchDayOf,
@@ -20,17 +21,14 @@ import {
   type PinnedShas,
 } from './lib/upstream-status.ts';
 
-interface Lock {
-  sources: Record<
-    string,
-    { repo: string; ref?: string; sha?: string; languages?: Record<string, { ref: string; sha: string }> }
-  >;
+/** The per-language pins of a source, or none when it keeps languages as folders. */
+function languagePins(lock: Lock, name: string): Record<string, { ref: string; sha: string }> {
+  const languages = lock.sources[name]?.languages;
+  return languages && !Array.isArray(languages) ? languages : {};
 }
 
-const RAW = 'https://raw.githubusercontent.com';
-
 function pinnedFrom(lock: Lock): PinnedShas {
-  const loc = lock.sources['localize']?.languages ?? {};
+  const loc = languagePins(lock, 'localize');
   return {
     localize: { KR: loc['KR']?.sha ?? null, EN: loc['EN']?.sha ?? null },
     eldritchtools: lock.sources['eldritchtools']?.sha ?? null,
@@ -63,19 +61,20 @@ function todayBranchLock(branch: string): PinnedShas | null {
       cwd,
       encoding: 'utf8',
     });
-    return pinnedFrom(JSON.parse(text) as Lock);
+    return pinnedFrom(parseLock(JSON.parse(text), `${branch}:data/sources.lock.json`));
   } catch {
     return null;
   }
 }
 
 async function main(): Promise<void> {
-  const lock = readJson<Lock>(repoPath('data/sources.lock.json'));
+  const lock = readLock();
   const src = lock.sources;
   const loc = src['localize'];
   const mirror = src['eldritchtools'];
   const lethe = src['openLethe'];
-  if (!loc?.languages || !mirror?.ref || !lethe?.ref) {
+  const locPins = languagePins(lock, 'localize');
+  if (!loc || Object.keys(locPins).length === 0 || !mirror?.ref || !lethe?.ref) {
     console.error('upstream: data/sources.lock.json is missing localize/eldritchtools/openLethe');
     process.exit(2);
   }
@@ -87,7 +86,7 @@ async function main(): Promise<void> {
   };
   const localizeCommits = {} as Record<LocalizeLang, string[] | null>;
   for (const lang of LOCALIZE_LANGS) {
-    const ref = loc.languages[lang]?.ref;
+    const ref = locPins[lang]?.ref;
     const commits = ref ? recentCommits(loc.repo, ref) : null;
     heads.localize[lang] = commits?.[0]?.sha ?? null;
     localizeCommits[lang] = commits?.map((c) => c.committedAt) ?? null;

@@ -130,13 +130,15 @@ export function App() {
   );
 
   // The hash is consumed once and dropped from the URL, or a later reload would undo the user's
-  // edits. A hash that says nothing to us is left in place: dropping it silently took away the only
-  // copy of a link the reader might still want to re-open or pass on. A run in progress keeps the
-  // hash until the question above is answered. This runs before the first data load, which adopts
-  // the link into the season it opens and reports what it dropped.
+  // edits. A hash that is no share link at all (`#other`) is left in place: dropping it silently
+  // took away the only copy of a link the reader might still want to re-open or pass on. A share
+  // link that could not be read goes too (M160, the same call as M119's cancel): the notice says
+  // so once, and left in the address it would be tried — and fail — on every reload. A run in
+  // progress keeps the hash until the question above is answered. This runs before the first data
+  // load, which adopts the link into the season it opens and reports what it dropped.
   useEffect(() => {
-    if (incoming.kind !== 'apply') return;
-    applyShared(incoming.shared);
+    if (incoming.kind !== 'apply' && incoming.kind !== 'broken') return;
+    if (incoming.kind === 'apply') applyShared(incoming.shared);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   }, [applyShared, incoming]);
 
@@ -155,8 +157,9 @@ export function App() {
       if (next.kind === 'apply') {
         const counts = useApp.getState().applyShared(next.shared);
         setDropped(counts.gifts > 0 ? counts : null);
-        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
       }
+      if (next.kind === 'apply' || next.kind === 'broken')
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);

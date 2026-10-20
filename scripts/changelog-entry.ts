@@ -17,7 +17,12 @@ import { defaultSeason, outPath, outRelPath } from './lib/out.ts';
 import type { Meta } from '../src/core/schema.ts';
 
 const ref = flagValue('--ref') ?? 'HEAD';
-const season = Number(flagValue('--season') ?? defaultSeason() ?? 7);
+const seasonArg = flagValue('--season') ?? defaultSeason();
+if (seasonArg === null) {
+  console.error('public/data/index.json names no default season. Run: npm run data:build');
+  process.exit(1);
+}
+const season = Number(seasonArg);
 const date = flagValue('--date') ?? new Date().toISOString().slice(0, 10);
 const changelogPath = repoPath('docs/research/changelog.md');
 

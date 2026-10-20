@@ -50,16 +50,28 @@ import {
   type DerivedPackEntry,
 } from './lib/pack-images.ts';
 import { hasFlag, readJson, repoPath, sortKeysDeep, writeJsonStable } from './lib/io.ts';
+import { RAW, readLock } from './lib/lock.ts';
 
-const RAW = 'https://raw.githubusercontent.com';
 /** Downloads in flight at once — enough to finish in seconds, few enough to be polite. */
 const PARALLEL = 8;
 
-interface Lock {
-  sources: Record<string, { repo: string; sha?: string }>;
-}
-
 type Source = { repo: string; sha: string };
+
+/**
+ * The URL of one upstream file at the pinned commit. The planners only hand over names that pass
+ * `isSafeRemotePath`, so this cannot leave the commit's tree; the check here is the last line in
+ * case a planner ever forgets — a URL whose path does not start under `/<repo>/<sha>/` is a bug,
+ * not a download.
+ */
+function upstreamUrl(source: Source, remote: string): string {
+  const path = remote.split('/').map(encodeURIComponent).join('/');
+  const url = new URL(`${RAW}/${source.repo}/${source.sha}/${path}`);
+  const root = `/${source.repo}/${source.sha}/`;
+  if (!url.pathname.startsWith(root) || url.pathname.length === root.length) {
+    throw new Error(`refusing to fetch outside ${root}: ${remote}`);
+  }
+  return url.href;
+}
 
 interface IconSet {
   /** For the log. */
@@ -119,6 +131,12 @@ async function shrinkPackImage(bytes: Uint8Array): Promise<Uint8Array> {
 /**
  * Bring one folder in line with its plan: download what is missing (or everything when the pinned
  * commit moved), delete files no key wants, and rewrite the manifest. Returns false on any failure.
+ *
+ * A failed download after the pin moved (M160, A13) must not leave the folder looking finished:
+ * the key's old file is deleted, so the manifest does not list it, and the manifest keeps the
+ * previous `source` and `encode`, so the next run sees a moved pin and downloads again instead of
+ * skipping the key for good. With no previous manifest the current source is written — the deleted
+ * file alone makes the next run retry it.
  */
 async function syncSet(set: IconSet, source: Source, check: boolean): Promise<boolean> {
   const dir = repoPath(set.dir);
@@ -148,32 +166,48 @@ async function syncSet(set: IconSet, source: Source, check: boolean): Promise<bo
 
   mkdirSync(dir, { recursive: true });
   const failed: string[] = [];
+  const failedKeys: string[] = [];
   const queue = [...todo];
   const worker = async (): Promise<void> => {
     for (let next = queue.shift(); next; next = queue.shift()) {
-      const path = next.remote.split('/').map(encodeURIComponent).join('/');
-      const res = await fetch(`${RAW}/${source.repo}/${source.sha}/${path}`);
+      const fail = (why: string): void => {
+        failed.push(`${next.key}: ${why}`);
+        failedKeys.push(next.key);
+      };
+      const res = await fetch(upstreamUrl(source, next.remote));
       const bytes = res.ok ? new Uint8Array(await res.arrayBuffer()) : null;
-      if (!bytes) failed.push(`${next.key}: HTTP ${res.status} for ${next.remote}`);
-      else if (!isWebp(bytes)) failed.push(`${next.key}: ${next.remote} is not a WebP file`);
-      else if (bytes.length > set.maxBytes)
-        failed.push(`${next.key}: ${next.remote} is ${bytes.length} bytes`);
+      if (!bytes) fail(`HTTP ${res.status} for ${next.remote}`);
+      else if (!isWebp(bytes)) fail(`${next.remote} is not a WebP file`);
+      else if (bytes.length > set.maxBytes) fail(`${next.remote} is ${bytes.length} bytes`);
       else {
         const saved = set.transform ? await set.transform(bytes) : bytes;
         if (set.savedMaxBytes && saved.length > set.savedMaxBytes)
-          failed.push(`${next.key}: ${next.remote} is still ${saved.length} bytes after shrinking`);
+          fail(`${next.remote} is still ${saved.length} bytes after shrinking`);
         else writeFileSync(join(dir, `${next.key}.webp`), saved);
       }
     }
   };
   await Promise.all(Array.from({ length: PARALLEL }, worker));
   for (const file of stale) unlinkSync(join(dir, file));
+  // The pin moved and a key did not come: its file on disk is the old commit's, not this one's.
+  if (!sameCommit) {
+    for (const key of failedKeys.sort()) {
+      const file = join(dir, `${key}.webp`);
+      if (existsSync(file)) unlinkSync(file);
+    }
+  }
 
   const present = readdirSync(dir)
     .filter((f) => f.endsWith('.webp'))
     .map((f) => f.slice(0, -5))
     .sort();
-  writeJsonStable(manifestPath, set.manifest(present));
+  const manifest = set.manifest(present) as Record<string, unknown>;
+  if (failed.length > 0 && previous?.source) {
+    manifest['source'] = previous.source;
+    if ('encode' in manifest) manifest['encode'] = previous.encode;
+    console.log(`  manifest.json keeps source ${previous.source.sha.slice(0, 8)}: the sync did not finish`);
+  }
+  writeJsonStable(manifestPath, manifest);
   const bytes = present.reduce((sum, key) => sum + readFileSync(join(dir, `${key}.webp`)).length, 0);
   console.log(`  manifest.json: ${present.length} files, ${(bytes / 1024 / 1024).toFixed(2)} MB`);
 
@@ -183,7 +217,7 @@ async function syncSet(set: IconSet, source: Source, check: boolean): Promise<bo
 
 async function main(): Promise<void> {
   const check = hasFlag('--check');
-  const pin = readJson<Lock>(repoPath('data/sources.lock.json')).sources.eldritchtools;
+  const pin = readLock().sources['eldritchtools'];
   if (!pin?.sha) throw new Error('data/sources.lock.json has no pinned sha for eldritchtools');
   const source: Source = { repo: pin.repo, sha: pin.sha };
 
@@ -198,7 +232,7 @@ async function main(): Promise<void> {
       dir: GIFT_ICON_DIR,
       downloads: gifts.downloads.map((d) => ({ key: String(d.icon), remote: d.remote })),
       maxBytes: MAX_ICON_BYTES,
-      unmapped: gifts.unmapped.map((icon) => `icon ${icon} (no srcPath in the derived gifts.json)`),
+      unmapped: gifts.unmapped.map((icon) => `icon ${icon} (no usable srcPath in the derived gifts.json)`),
       manifest: (present) =>
         ({
           source,
@@ -224,7 +258,7 @@ async function main(): Promise<void> {
     downloads: packs.downloads,
     maxBytes: MAX_UPSTREAM_PACK_BYTES,
     unmapped: packs.unmapped.map(
-      (sprite) => `sprite ${sprite} (no image in the derived md_theme_packs.json)`,
+      (sprite) => `sprite ${sprite} (no usable image in the derived md_theme_packs.json)`,
     ),
     transform: shrinkPackImage,
     savedMaxBytes: MAX_PACK_IMAGE_BYTES,

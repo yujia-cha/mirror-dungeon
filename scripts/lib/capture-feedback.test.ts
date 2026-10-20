@@ -6,12 +6,17 @@ import { describe, expect, it } from 'vitest';
 import { planExport } from '../../src/app/capture/diagnostics/export-parts.ts';
 import {
   captureLayoutSchema,
+  DIAG_PART_MAX_TOTAL,
   diagnosticsBundleSchema,
+  diagPartSchema,
+  feedbackPayloadSchema,
   type DiagnosticsBundle,
   type DiagRecord,
 } from '../../src/core/schema.ts';
 import {
+  BUNDLE_JSON_MAX_BYTES,
   captureGeometries,
+  FRAME_MAX_BYTES,
   environmentLines,
   environmentReport,
   formatReport,
@@ -21,6 +26,7 @@ import {
   recognitionReport,
   routeReport,
   unpackBundle,
+  zipEntryFilter,
 } from './capture-feedback.ts';
 
 const layout = captureLayoutSchema.parse(JSON.parse(readFileSync('public/data/capture-layout.json', 'utf8')));
@@ -802,5 +808,115 @@ describe('the environment (M142)', () => {
     expect(old).not.toContain('## 환경');
     expect(environmentReport(bundle())).toBeNull();
     expect(environmentLines(null)).toEqual([]);
+  });
+});
+
+describe('zipEntryFilter (M160, B4: decided before an entry is inflated)', () => {
+  const entry = (name: string, originalSize: number) => ({ name, originalSize });
+
+  it('admits the bundle files under their limits', () => {
+    expect(zipEntryFilter(entry('session.json', BUNDLE_JSON_MAX_BYTES))).toBe(true);
+    expect(zipEntryFilter(entry('part.json', 10))).toBe(true);
+    expect(zipEntryFilter(entry('frames/1700000000000-1.jpg', FRAME_MAX_BYTES))).toBe(true);
+    expect(zipEntryFilter(entry('frames/p1700000000000-2.jpg', 0))).toBe(true);
+  });
+
+  it('refuses a frame or a JSON file that claims more than its limit', () => {
+    expect(zipEntryFilter(entry('frames/1700000000000-1.jpg', FRAME_MAX_BYTES + 1))).toBe(false);
+    expect(zipEntryFilter(entry('session.json', BUNDLE_JSON_MAX_BYTES + 1))).toBe(false);
+    expect(zipEntryFilter(entry('part.json', 2 ** 40))).toBe(false);
+  });
+
+  it('refuses every name a bundle never holds, whatever its size', () => {
+    for (const name of [
+      '../escaped.txt',
+      'frames/../../escaped2.jpg',
+      'frames/a/b.jpg',
+      'frames/..jpg',
+      'frames/x.png',
+      'notes.txt',
+      '/etc/passwd',
+      'sessions.json',
+    ])
+      expect(zipEntryFilter(entry(name, 1)), name).toBe(false);
+  });
+
+  it('keeps what unzipSync inflates to the admitted entries only', () => {
+    const zip = zipSync({
+      'session.json': strToU8('{}'),
+      'frames/f1.jpg': new Uint8Array([0xff, 0xd8]),
+      'frames/huge.jpg': new Uint8Array(FRAME_MAX_BYTES + 1),
+      'README.md': strToU8('x'),
+    });
+    expect(Object.keys(unzipSync(zip, { filter: zipEntryFilter })).sort()).toEqual([
+      'frames/f1.jpg',
+      'session.json',
+    ]);
+  });
+});
+
+describe('diagPartSchema bounds (M160, B4)', () => {
+  const part = (over: Partial<{ part: number; total: number }>) => ({
+    bundleId: '1',
+    exportedAt: 80,
+    part: 1,
+    total: 1,
+    frames: [],
+    ...over,
+  });
+
+  it('accepts a part inside its total, up to the most parts an export may have', () => {
+    expect(diagPartSchema.safeParse(part({ part: 3, total: 3 })).success).toBe(true);
+    expect(diagPartSchema.safeParse(part({ part: 1, total: DIAG_PART_MAX_TOTAL })).success).toBe(true);
+  });
+
+  it('refuses a total past the limit and a part past its total', () => {
+    expect(diagPartSchema.safeParse(part({ part: 1, total: DIAG_PART_MAX_TOTAL + 1 })).success).toBe(false);
+    expect(diagPartSchema.safeParse(part({ part: 1, total: 1e9 })).success).toBe(false);
+    expect(diagPartSchema.safeParse(part({ part: 4, total: 3 })).success).toBe(false);
+    expect(diagPartSchema.safeParse(part({ part: 0, total: 1 })).success).toBe(false);
+  });
+
+  it('so mergeParts cannot be made to allocate a billion parts', () => {
+    const files = {
+      'part.json': strToU8(JSON.stringify(part({ part: 1, total: 1e9 }))),
+      'session.json': strToU8('{}'),
+    };
+    expect(() => mergeParts([{ name: 'crafted.zip', files }])).toThrow();
+  });
+});
+
+describe('feedbackPayloadSchema.t (M160, B5)', () => {
+  const shape = (t: unknown) => ({
+    v: 1,
+    t,
+    kind: 'bug',
+    title: '',
+    message: 'x',
+    env: {
+      dataVersion: 'v',
+      season: 8,
+      seasonName: 's',
+      lang: 'ko',
+      theme: 'dark',
+      viewport: '1x1',
+      browser: 'b',
+      touch: false,
+      page: 'p',
+    },
+    screenshot: false,
+  });
+
+  it('accepts an epoch-ms time a Date can hold', () => {
+    expect(feedbackPayloadSchema.safeParse(shape(0)).success).toBe(true);
+    expect(feedbackPayloadSchema.safeParse(shape(1_760_000_000_000)).success).toBe(true);
+    expect(feedbackPayloadSchema.safeParse(shape(8.64e15)).success).toBe(true);
+  });
+
+  it('refuses what toISOString would throw on, and a fraction', () => {
+    expect(feedbackPayloadSchema.safeParse(shape(8.64e15 + 1)).success).toBe(false);
+    expect(feedbackPayloadSchema.safeParse(shape(-1)).success).toBe(false);
+    expect(feedbackPayloadSchema.safeParse(shape(Number.POSITIVE_INFINITY)).success).toBe(false);
+    expect(feedbackPayloadSchema.safeParse(shape(1.5)).success).toBe(false);
   });
 });

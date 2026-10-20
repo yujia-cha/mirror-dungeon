@@ -318,7 +318,7 @@ export function assignPacks(input: SearchInput): SearchResult {
       a.packs.length - b.packs.length ||
       Number(b.required) - Number(a.required) ||
       (a.giftId ?? a.packId ?? 0) - (b.giftId ?? b.packId ?? 0) ||
-      (a.key ?? '').localeCompare(b.key ?? '', 'en'),
+      compareKeys(a.key ?? '', b.key ?? ''),
   );
 
   /*
@@ -580,28 +580,48 @@ export function assignPacks(input: SearchInput): SearchResult {
 
   /**
    * Window `w`'s gifts from candidate `index` on that still need a pack of their own: the open ones
-   * whose packs are pairwise disjoint. Left in `need` (candidate indexes).
+   * whose packs are pairwise disjoint. Left in `need` (candidate indexes). `inside[w]` is in
+   * candidate order, so the walk starts at the first entry from `index` on (binary search) instead
+   * of skipping the ones before it one by one (M160).
    */
   const claimed = new Set<number>();
   const need: number[] = [];
   const windowNeed = (w: number, index: number): number => {
     need.length = 0;
     claimed.clear();
-    for (const { candidate, k } of inside[w]!) {
-      if (k < index) continue;
+    const entries = inside[w]!;
+    let lo = 0;
+    let hi = entries.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (entries[mid]!.k < index) lo = mid + 1;
+      else hi = mid;
+    }
+    for (let i = lo; i < entries.length; i += 1) {
+      const { candidate, k } = entries[i]!;
       if (candidate.packs.some((packId) => chosenPacks.has(packId) || claimed.has(packId))) continue;
       need.push(k);
       for (const packId of candidate.packs) claimed.add(packId);
     }
     return need.length;
   };
-  /** The floors of window `w` the chosen packs leave free. */
-  const windowRoom = (w: number): number => {
-    const { mask, cap } = windows[w]!;
-    let room = cap;
-    for (const packId of chosen) if ((mask >> classify(packId)) & 1) room -= 1;
-    return room;
+  /**
+   * Per window, the chosen packs inside it — kept in step with `chosen` (`takeRoom`/`giveRoom`)
+   * instead of recounted over every chosen pack at every node (M160). The windows a class lies in
+   * are fixed once the windows are, and every pack the DFS can choose was classified above.
+   */
+  const roomUsed = new Int32Array(windows.length);
+  const windowsOfClass: number[][] = classFloors.map((_, id) =>
+    windows.flatMap(({ mask }, w) => ((mask >> id) & 1 ? [w] : [])),
+  );
+  const takeRoom = (packId: number): void => {
+    for (const w of windowsOfClass[classify(packId)] ?? []) roomUsed[w] = roomUsed[w]! + 1;
   };
+  const giveRoom = (packId: number): void => {
+    for (const w of windowsOfClass[classify(packId)] ?? []) roomUsed[w] = roomUsed[w]! - 1;
+  };
+  /** The floors of window `w` the chosen packs leave free. */
+  const windowRoom = (w: number): number => windows[w]!.cap - roomUsed[w]!;
   /**
    * The fewest goals lost by missing `excess` of the copies in `need`. A copy whose goals are all
    * lost already costs nothing; any other loses every goal it serves, so the lost goals must between
@@ -872,6 +892,7 @@ export function assignPacks(input: SearchInput): SearchResult {
         }
         chosen.push(packId);
         chosenPacks.add(packId);
+        takeRoom(packId);
         chosenVersion += 1;
       }
       let mine: Set<number> | undefined;
@@ -893,6 +914,7 @@ export function assignPacks(input: SearchInput): SearchResult {
       if (isNew) {
         chosen.pop();
         chosenPacks.delete(packId);
+        giveRoom(packId);
         chosenVersion += 1;
         restore(undo);
       }
@@ -1620,7 +1642,7 @@ export function assignPacks(input: SearchInput): SearchResult {
   }
   const byGift = (a: string, b: string): number =>
     (giftOfKey.get(a) ?? Number(a.split(':')[0])) - (giftOfKey.get(b) ?? Number(b.split(':')[0])) ||
-    a.localeCompare(b, 'en');
+    compareKeys(a, b);
   const missedKeys = [...unresolvedKeys, ...best.missed].sort(byGift);
   const lostGoals = goalInput
     ? [...new Set([...lostBefore].filter((goal) => !(goalInput.lost?.has(goal) ?? false)).concat(best.lost))]
@@ -1644,6 +1666,12 @@ export function assignPacks(input: SearchInput): SearchResult {
     tieBreakCut,
   };
 }
+
+/**
+ * Requirement keys (`giftId:neededFor`) and the ids they are made of are ASCII, so a plain
+ * comparison orders them the same on every runtime — `localeCompare` did, through the ICU tables.
+ */
+const compareKeys = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** n choose r. Each partial product is itself a binomial, so the division is exact. */
 export function binomial(n: number, r: number): number {

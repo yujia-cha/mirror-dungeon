@@ -2,7 +2,8 @@
  * data/raw + data/curated  ->  public/data
  *
  *   npm run data:build
- *   npm run data:build -- --season 7  build that season instead of the newest on disk
+ *   npm run data:build -- --season 7  build that season instead of the newest on disk — refused
+ *                                     when it is older than the snapshot (`--force-frozen` overrides)
  *   npm run data:build -- --lenient   tolerate missing static data (names only, tiers null)
  *
  * The output is split by what a Mirror Dungeon season owns. `gifts`, `packs`, `rules` and `meta`
@@ -75,6 +76,8 @@ import {
   deriveUpgradeOf,
 } from './lib/derive.ts';
 import { OUT, seasonDir } from './lib/out.ts';
+import { frozenSeasonRefusal } from './lib/season-files.ts';
+import { readLock } from './lib/lock.ts';
 import { buildSkillGiftIndex, formatSkillGiftIndex } from './lib/skill-gifts.ts';
 import { parseConditions } from './lib/parse-conditions.ts';
 import {
@@ -251,8 +254,23 @@ if (!common && !lenient) {
           `On disk: ${listSeasons().join(', ') || 'none'}.`,
   );
 }
+/**
+ * `data/raw/static` is one season's snapshot: its packs, floors and pools are the newest season's.
+ * Building an older season from it would write that data under the frozen season's name
+ * (M160, A14) — refused unless `--force-frozen` says that is meant.
+ */
+const frozenRefusal = frozenSeasonRefusal(
+  requestedSeason,
+  readCommonData()?.data.currentDungeonId,
+  hasFlag('--force-frozen'),
+);
+if (frozenRefusal) fail(frozenRefusal);
 
-const dungeonId = common?.data.currentDungeonId ?? requestedSeason ?? 7;
+const dungeonId = common?.data.currentDungeonId ?? requestedSeason;
+if (dungeonId === undefined) {
+  // Only reachable with --lenient and no snapshot: nothing says which season this is.
+  fail('no mirror-dungeon-common-data on disk says which season to build. Pass --season <n>.');
+}
 
 /**
  * Per-season constants no source ships. The floors a season opens live here because they are a
@@ -1183,18 +1201,7 @@ const rules: Rules = {
 // Meta
 // ---------------------------------------------------------------------------
 
-interface Lock {
-  sources: Record<
-    string,
-    {
-      repo: string;
-      sha?: string;
-      languages?: string[] | Record<string, { ref: string; sha: string }>;
-      fetchedAt: string;
-    }
-  >;
-}
-const lock = readJson<Lock>(repoPath('data/sources.lock.json'));
+const lock = readLock();
 const CAPTURE_LAYOUT_CURATED = repoPath('data/curated/capture-layout.json');
 
 /**

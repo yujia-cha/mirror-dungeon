@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { injectPrecache, precacheList } from './scripts/lib/precache.ts';
+import { join, resolve } from 'node:path';
+import { dataFingerprint, injectPrecache, precacheList } from './scripts/lib/precache.ts';
 import { dataPreloadPaths, preloadTags } from './scripts/lib/preload.ts';
 import { ocrAssets } from './scripts/lib/ocr-assets.ts';
 
@@ -44,17 +44,28 @@ export default defineConfig({
           `  ${preloadTags(dataPreloadPaths(fileURLToPath(new URL('./public/data', import.meta.url))))}\n  </head>`,
         ),
     },
-    {
+    (() => {
       // M55: write the shell into the copied `sw.js`, so one online visit is enough to open the
       // app offline. After the bundle *and* the public copy, which is why it is `closeBundle`.
-      name: 'precache',
-      apply: 'build',
-      closeBundle() {
-        const outDir = fileURLToPath(new URL('./dist', import.meta.url));
-        const sw = join(outDir, 'sw.js');
-        writeFileSync(sw, injectPrecache(readFileSync(sw, 'utf8'), precacheList(outDir)));
-      },
-    },
+      // The output folder is the resolved config's, not a path repeated here (M160): a build with
+      // `--outDir` would otherwise patch a worker in a folder it did not write.
+      let outDir = '';
+      return {
+        name: 'precache',
+        apply: 'build' as const,
+        configResolved(config: { root: string; build: { outDir: string } }) {
+          outDir = resolve(config.root, config.build.outDir);
+        },
+        closeBundle() {
+          if (!outDir) throw new Error('precache: configResolved did not run');
+          const sw = join(outDir, 'sw.js');
+          writeFileSync(
+            sw,
+            injectPrecache(readFileSync(sw, 'utf8'), precacheList(outDir), dataFingerprint(outDir)),
+          );
+        },
+      };
+    })(),
   ],
   resolve: {
     alias: {

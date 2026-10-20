@@ -97,8 +97,9 @@ export function dominantKeyword(stats: DeckStats): StatusKeyword | null {
     ([keyword, n]) => n > 0 && STATUS_SET.has(keyword),
   );
   if (entries.length === 0) return null;
-  // Sort by count, then by keyword name so the answer is stable for tied decks.
-  entries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  // Sort by count, then by keyword name so the answer is stable for tied decks. The names are
+  // ASCII, so a plain comparison orders them the same on every runtime.
+  entries.sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   return entries[0]![0];
 }
 

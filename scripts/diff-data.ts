@@ -16,7 +16,12 @@ import type { Gift, Identity, Meta, ThemePack } from '../src/core/schema.ts';
 import { sourceRevision } from './lib/changelog.ts';
 
 const ref = flagValue('--ref') ?? 'HEAD';
-const season = Number(flagValue('--season') ?? defaultSeason() ?? 7);
+const seasonArg = flagValue('--season') ?? defaultSeason();
+if (seasonArg === null) {
+  console.error('public/data/index.json names no default season. Run: npm run data:build');
+  process.exit(1);
+}
+const season = Number(seasonArg);
 
 function fromGit<T>(path: string): T | null {
   try {

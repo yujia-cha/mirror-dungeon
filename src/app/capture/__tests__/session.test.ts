@@ -205,6 +205,39 @@ describe('CaptureSession reads', () => {
     expect(afterStop).toEqual([]);
     created.stop();
   });
+
+  it('makes no picture of a frame the diagnostics closed at once (M160)', async () => {
+    // Arrange: pictures are wanted, but the recorder is full and closes every frame on arrival.
+    const { release } = fakeShare();
+    release();
+    const bitmaps = vi.fn(async (_source: unknown) => ({ width: 1, height: 1, close: () => undefined }));
+    vi.stubGlobal('createImageBitmap', bitmaps);
+    const onRead = vi.fn((_report: unknown, frame: { close(): void } | null) => frame?.close());
+    const created = new CaptureSession({
+      interval: { min: 5, max: 5 },
+      context: () => ({
+        lang: 'ko',
+        packs: [],
+        gifts: [{ id: 9006, name: '테스트 기프트' }],
+        held: [],
+        materials: [],
+        iconUrl: () => null,
+        startOpen: false,
+      }),
+      onEvents: vi.fn(),
+      onStatus: vi.fn(),
+      onRead,
+      wantImage: () => true,
+    });
+    // Act
+    await created.start();
+    await vi.waitFor(() => expect(onRead).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    created.stop();
+    // Assert: the frame was handed over, and no bitmap of the canvas was made for it afterwards.
+    expect(onRead.mock.calls[0]![1]).not.toBeNull();
+    expect(bitmaps.mock.calls.filter(([source]) => source instanceof HTMLCanvasElement)).toHaveLength(0);
+  });
 });
 
 describe('CaptureSession backlog (M141)', () => {

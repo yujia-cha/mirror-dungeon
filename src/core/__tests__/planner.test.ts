@@ -12,6 +12,7 @@ import {
   buildIndexes,
   conflictGroups,
   conflictRootsOf,
+  contestedFloors,
   createDropEffects,
   defaultOptions,
   planDropEffects,
@@ -131,6 +132,31 @@ describe('pack-exclusive gifts', () => {
     expect(result.unresolved.map((u) => u.giftId)).toContain(9283);
     expect(result.unresolved.find((u) => u.giftId === 9283)?.reason).toBe('no-pack-in-range');
     expect(result.warnings.map((w) => w.code)).toContain('hard-required');
+  });
+
+  it('suggests Hard only for a gift the Normal plan could not place whose every pack is Hard-only (M160)', () => {
+    // Arrange: 해진 삿갓 (9719) comes from 육참골단 (1104, Normal 4~5) and its 복각 (1116, Hard only).
+    const normal = options({ hardFromFloor: null });
+    // Act
+    const routed = planWithout({ wanted: want(9719), options: normal });
+    const both = planWithout({ wanted: want(9719, 9283), options: normal });
+    const banned = planWithout({
+      wanted: want(9719),
+      options: options({ hardFromFloor: null, bannedPacks: [1104] }),
+    });
+    // Assert: placed on a Normal floor, so Hard would change nothing — no warning (41 MD8 gifts
+    // with a Normal pack used to get one).
+    expect(routed.unresolved).toEqual([]);
+    expect(routed.floors.some((f) => f.packId === 1104 && f.pickups.some((p) => p.giftId === 9719))).toBe(
+      true,
+    );
+    expect(routed.warnings.map((w) => w.code)).not.toContain('hard-required');
+    // Beside 상납된 시가, whose only pack is Hard-only and which the plan could not place, it is warned.
+    expect(both.unresolved.map((u) => u.giftId)).toEqual([9283]);
+    expect(both.warnings.map((w) => w.code)).toContain('hard-required');
+    // With the Normal pack banned, only the Hard-only one is left: Hard is what would reach it.
+    expect(banned.unresolved.find((u) => u.giftId === 9719)?.reason).toBe('pack-banned');
+    expect(banned.warnings.map((w) => w.code)).toContain('hard-required');
   });
 
   it('reports a conflict when two exclusives need the same single floor', () => {
@@ -608,6 +634,64 @@ describe('priority', () => {
     expect(dropped(run([])).length).toBeGreaterThan(0);
     for (const giftId of goals) expect(dropped(run([giftId]))).not.toContain(giftId);
   });
+
+  it('takes an observation rescue that keeps a 반드시 goal even where it loses more 보통 goals (M160)', () => {
+    // Arrange: the season reshaped so that the rescue costs floors. 생강꽃, 안경 그리고 전해진 편지
+    // (9248) eats 상납된 시가 (9283, 교본 1025 on floor 5 only), 생강꽃 가지 (9419, 낙화 1010 on
+    // floor 4 only) and 깨진 안경 (9423, 변하지 않는 1012 on floors 3~5); 부치지 못한 편지 (9424) eats
+    // 9423 too, and 1012 is 9423's only pack. One observation slot. 도시를 사랑하는 당신을 위한 (9209,
+    // 허세짙은 오만 1316 on floor 4 only) and 굴절 유리관 (9436, 1018 on floor 5 only) are 보통 goals
+    // the observation pool does not hold.
+    const floorsOf: Record<number, number[]> = { 1010: [4], 1012: [3, 4, 5], 1316: [4] };
+    const season = {
+      ...data,
+      packs: data.packs.map((pack) =>
+        floorsOf[pack.id]
+          ? {
+              ...pack,
+              availability: { ...pack.availability, normal: [], hard: floorsOf[pack.id]!, parallel: [] },
+            }
+          : pack,
+      ),
+      gifts: data.gifts.map((gift) =>
+        gift.id === 9248
+          ? { ...gift, fusion: { ...gift.fusion!, recipes: [{ ingredients: [9283, 9419, 9423] }] } }
+          : gift,
+      ),
+    };
+    const reshaped = buildIndexes(season);
+    const run = (required: boolean) =>
+      planRoute(
+        {
+          deck: MIXED_DECK,
+          wanted: [
+            { giftId: 9248, required },
+            { giftId: 9424, required },
+            { giftId: 9209, required: false },
+            { giftId: 9436, required: false },
+          ],
+          options: options({ lastFloor: 5, hardFromFloor: 1, observationSlots: 1 }),
+        },
+        season,
+        reshaped,
+      );
+    // Act
+    const must = run(true);
+    const optional = run(false);
+    // Assert: without observation the search keeps 9424 and the two 보통 goals and loses 9248 — one
+    // 반드시 goal. Observing 9423 keeps both letters but 1010 and 1025 push the two 보통 goals out:
+    // more goals lost, yet none that must be kept. The rescue is judged the way the search judges
+    // itself, 반드시 before 보통, so it is taken; by the bare count it was turned down.
+    expect(must.start.observed).toEqual([{ giftId: 9423, pinned: false, freedPack: null }]);
+    expect(must.unresolved.map((u) => [u.giftId, u.reason])).toEqual([
+      [9209, 'pack-conflict'],
+      [9436, 'pack-conflict'],
+    ]);
+    expect(must.floors.filter((f) => f.packId !== null).map((f) => f.packId)).toEqual([1012, 1010, 1025]);
+    // With every goal 보통 the same rescue loses two where the plain plan loses one: turned down.
+    expect(optional.unresolved.map((u) => u.giftId)).toEqual([9248, 9283]);
+    expect(optional.stats.coveredWanted).toBe(3);
+  });
 });
 
 describe('shared ingredients', () => {
@@ -670,6 +754,40 @@ describe('shared ingredients', () => {
     // The entered pack is the run's history, not a pack the plan still has to take.
     expect(result.stats).toMatchObject({ requiredPacks: 0, coveredWanted: 1 });
     expect(result.warnings.map((w) => w.code)).not.toContain('shared-ingredient');
+  });
+
+  it('reports a pack conflict, not a shared copy, when the other copy was given up on (M160)', () => {
+    // Arrange: floors 1~4 are played with packs that carry none of these gifts, so floor 5 is
+    // all that is left: 육참골단 복각 (1116, 조각난 칼날 9714 and 녹슨 칼자루 9713) against 교본
+    // (1025, 달궈진 망치 9214). 장관 (9717 = 9713 + 9714) and 절경 (9783 = 9714 + 9782) both eat
+    // 9714. The plan keeps 9214; 9717 is lost to 9713 and its 9714 copy is given up on, and
+    // 9783's 9714 copy is the one that lost the floor. No copy of 9714 is planned at all, so
+    // 「두 번째 몫을 줄 팩이 더 없습니다」 was false — the given-up copy counted as planned — and
+    // the floor clash was hidden from the decision card.
+    const played = hard15({
+      lastFloor: 5,
+      currentFloor: 5,
+      pinnedPacks: { 1: 1001, 2: 1004, 3: 1008, 4: 1011 },
+    });
+    // Act
+    const result = planWithout({ wanted: want(9717, 9783, 9214), options: played });
+    // Assert
+    expect(result.floors.find((f) => f.floor === 5)).toMatchObject({ packId: 1025 });
+    expect(floorOf(result, 9714)).toEqual([]);
+    expect(result.unresolved.find((u) => u.giftId === 9714)).toMatchObject({
+      reason: 'pack-conflict',
+      detail: { ko: expect.stringContaining('층이 겹쳐') },
+    });
+    expect(result.unresolved.find((u) => u.giftId === 9717)).toMatchObject({
+      reason: 'fusion-ingredient-unresolved',
+      missing: [9713],
+      droppedIngredients: [9714],
+    });
+    expect(result.unresolved.map((u) => u.reason)).not.toContain('ingredient-shared');
+    expect(result.warnings.map((w) => w.code)).not.toContain('shared-ingredient');
+    // The floor the copy lost is contested: the decision card lists its occupant.
+    expect([...contestedFloors(result, played, indexes)]).toEqual([5]);
+    expect(result.stats.coveredWanted).toBe(1);
   });
 });
 
@@ -739,11 +857,10 @@ describe('guarantees', () => {
     };
     const first = planRoute(input, data, indexes);
     const second = planRoute(input, data, indexes);
-    // elapsedMs is wall-clock, so compare everything else.
-    expect({ ...second, stats: { ...second.stats, elapsedMs: 0 } }).toEqual({
-      ...first,
-      stats: { ...first.stats, elapsedMs: 0 },
-    });
+    // Core keeps no clock (M160): `elapsedMs` is 0 until a caller times the call, so the whole
+    // plan compares.
+    expect(second).toEqual(first);
+    expect(first.stats.elapsedMs).toBe(0);
   });
 
   it('never assigns the same pack to two floors', () => {
@@ -1152,6 +1269,44 @@ describe('drop effects (M80)', () => {
     // A partial snapshot only knows single drops; the bundle comes with `finish`.
     expect(steps.snapshot().resolving).toBeNull();
     expect(steps.finish()).toBe(final);
+  });
+
+  it('plans the bundle once, whether or not it fits (M160)', () => {
+    // Arrange: a planner that counts its calls. On the first board the bundle fits; on the second
+    // the two 반드시 goals fight over floor 5 and the bundle (the lost 보통 pair) cannot clear that,
+    // so it does not fit — and used to be planned again on every `finish()`.
+    const boards = [
+      { wanted: want(9277, 9744, 9751, 9766, 9842), fits: true },
+      {
+        wanted: [9283, 9222, 9290, 9291, 9744, 9745, 9427, 9428].map((giftId) => ({
+          giftId,
+          required: giftId === 9283 || giftId === 9222,
+        })),
+        fits: false,
+      },
+    ];
+    for (const { wanted, fits } of boards) {
+      const input = { deck: BLADE_LINEAGE_DECK, wanted, options: options({ hardFromFloor: 1 }) };
+      let calls = 0;
+      const planner = (of: PlanInput) => {
+        calls += 1;
+        return planRoute(of, noObservation, indexes);
+      };
+      const steps = createDropEffects(input, noObservation, indexes, undefined, { planner, maxRuns: 3 });
+      expect(steps.conflicts).toBeGreaterThanOrEqual(2);
+      // Act: finish early (the bundle is planned here), then step on and finish twice more.
+      while (steps.forcing()) steps.step();
+      const early = steps.finish();
+      const afterBundle = calls;
+      steps.step();
+      const later = steps.finish();
+      const again = steps.finish();
+      // Assert: one plan for the step, none for the bundle again.
+      expect(early.resolving === null).toBe(!fits);
+      expect(later.resolving).toBe(early.resolving);
+      expect(again).toBe(later);
+      expect(calls).toBe(afterBundle + 1);
+    }
   });
 
   it('never measures a goal the user must have, and stays deterministic', () => {
@@ -2573,9 +2728,7 @@ describe('observation pins', () => {
     };
     const a = planRoute(input, data, indexes);
     const b = planRoute(input, data, indexes);
-    const strip = (r: ReturnType<typeof planRoute>) =>
-      JSON.stringify({ ...r, stats: { ...r.stats, elapsedMs: 0 } });
-    expect(strip(a)).toBe(strip(b));
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
     expect(a.start.observed.length).toBeLessThanOrEqual(data.rules.giftObservation.max);
     for (const entry of a.start.observed.filter((o) => o.pinned)) expect(PINS).toContain(entry.giftId);
     const packs = a.floors.filter((f) => f.packId !== null).map((f) => f.packId);

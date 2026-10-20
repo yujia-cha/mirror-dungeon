@@ -12,6 +12,7 @@
  * under the gift's `icon` key — the same key `public/art/` uses, which is not always the id.
  */
 import type { Gift } from '../../src/core/schema.ts';
+import { isSafeRemotePath } from './remote-path.ts';
 
 /** Where the icons live, one `{icon}.webp` per key, plus `manifest.json`. */
 export const GIFT_ICON_DIR = 'public/icons/gifts';
@@ -28,7 +29,10 @@ export interface DerivedGiftEntry {
 export interface IconPlan {
   /** One download per icon key, ascending by key. */
   downloads: { icon: number; remote: string }[];
-  /** Icon keys no gift of theirs has a `srcPath` for, ascending. */
+  /**
+   * Icon keys no gift of theirs has a usable `srcPath` for, ascending — none at all, or one that is
+   * not a plain file name (`isSafeRemotePath`), which is never put into a URL.
+   */
   unmapped: number[];
 }
 
@@ -48,7 +52,8 @@ export function planGiftIcons(
   const downloads: IconPlan['downloads'] = [];
   const unmapped: number[] = [];
   for (const [icon, srcPath] of [...byIcon].sort((a, b) => a[0] - b[0])) {
-    if (srcPath) downloads.push({ icon, remote: `${UPSTREAM_GIFT_DIR}/${srcPath}.webp` });
+    if (srcPath && isSafeRemotePath(srcPath))
+      downloads.push({ icon, remote: `${UPSTREAM_GIFT_DIR}/${srcPath}.webp` });
     else unmapped.push(icon);
   }
   return { downloads, unmapped };

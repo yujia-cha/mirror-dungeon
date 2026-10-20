@@ -1026,7 +1026,9 @@ class SnapshotFrame implements FrameSource {
   ) {}
 
   take(): void {
-    if (this.copy) return;
+    // A frame the diagnostics closed at once (their store is full, M160) has nothing to copy: a
+    // bitmap made now would have no one to close it, 8 MB per read.
+    if (this.copy || this.closed) return;
     this.copy =
       typeof createImageBitmap === 'function'
         ? createImageBitmap(this.canvas).catch(() => null)

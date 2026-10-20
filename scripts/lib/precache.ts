@@ -49,22 +49,57 @@ export function precacheList(outDir: string): string[] {
   ];
 }
 
+/**
+ * A hash of the data files' content (M160): the shared JSON at `data/` (`index.json`,
+ * `enums.json`, `identities.json`, `capture-layout.json`, …) and every season's `meta.json` — whose
+ * `dataVersion` already fingerprints that season's files. The worker's cache is named after this
+ * with the list, so a deploy that changed only the data still drops the old cache on activation;
+ * before, the version hashed file *names* only, and `data/md8/gifts.json` kept its name while its
+ * content moved. Deterministic: paths sorted, the same bytes giving the same hash.
+ */
+export function dataFingerprint(outDir: string): string {
+  const data = join(outDir, 'data');
+  if (!existsSync(data)) return '';
+  const rel = (path: string): string => relative(outDir, path).split(sep).join('/');
+  const files = walk(data)
+    .filter((path) => {
+      const name = rel(path);
+      return /^data\/[^/]+\.json$/.test(name) || /^data\/md\d+\/meta\.json$/.test(name);
+    })
+    .map(rel)
+    .sort();
+  const hash = createHash('sha256');
+  for (const name of files) {
+    hash.update(name);
+    hash.update('\0');
+    hash.update(readFileSync(join(outDir, name)));
+    hash.update('\0');
+  }
+  return hash.digest('hex');
+}
+
 const LIST_MARKER = 'const PRECACHE = [];';
 const VERSION_MARKER = "const VERSION = 'dev';";
 
 /**
- * Put the list and a version derived from it into the worker's source. The version names the
- * cache, so a deploy that changes any file name gets a fresh cache and the old one is dropped on
- * activation. A missing marker throws: a build that silently shipped an empty list would bring back
- * exactly the bug this exists to fix.
+ * Put the list and a version derived from it — and from `fingerprint`, the data files' content —
+ * into the worker's source. The version names the cache, so a deploy that changes any file name or
+ * any data file gets a fresh cache and the old one is dropped on activation. A missing marker
+ * throws: a build that silently shipped an empty list would bring back exactly the bug this exists
+ * to fix.
  */
-export function injectPrecache(source: string, list: string[]): string {
+export function injectPrecache(source: string, list: string[], fingerprint = ''): string {
   if (!source.includes(LIST_MARKER) || !source.includes(VERSION_MARKER)) {
     throw new Error(
       "sw.js: precache markers not found — `const PRECACHE = [];` and `const VERSION = 'dev';` must stay verbatim",
     );
   }
-  const version = createHash('sha256').update(list.join('\n')).digest('hex').slice(0, 12);
+  const version = createHash('sha256')
+    .update(list.join('\n'))
+    .update('\n')
+    .update(fingerprint)
+    .digest('hex')
+    .slice(0, 12);
   return source
     .replace(LIST_MARKER, `const PRECACHE = ${JSON.stringify(list)};`)
     .replace(VERSION_MARKER, `const VERSION = '${version}';`);

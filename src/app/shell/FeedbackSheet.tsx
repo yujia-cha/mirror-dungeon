@@ -104,10 +104,15 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
   const deferredMessage = useDeferredValue(message);
   const deferredTitle = useDeferredValue(title);
 
-  const attach = { ...include, diagnostics: include.diagnostics && diag.count > 0, screenshot: shot };
+  // What is attached, as one object (M160): the memo below and the buttons' own builds read the
+  // same one. `diag.count` stands for the record list: it changes whenever a record is added or
+  // cleared.
+  const attach = useMemo(
+    () => ({ ...include, diagnostics: include.diagnostics && diag.count > 0, screenshot: shot }),
+    [include, diag.count, shot],
+  );
   const form = { t: opened.t, log: opened.log, kind, data, plan, lang, dark, include: attach };
-  // What the form says about length (trimmed, too long) follows the deferred text. `diag.count`
-  // stands for the record list: it changes whenever a record is added or cleared.
+  // What the form says about length (trimmed, too long) follows the deferred text.
   const issue = useMemo(
     () =>
       issueFor({
@@ -118,11 +123,11 @@ export function FeedbackSheet({ onClose }: { onClose: () => void }) {
         plan,
         lang,
         dark,
-        include: { ...include, diagnostics: include.diagnostics && diag.count > 0, screenshot: shot },
+        include: attach,
         title: deferredTitle,
         message: deferredMessage,
       }),
-    [opened, kind, deferredTitle, deferredMessage, data, lang, dark, include, diag.count, shot, plan],
+    [opened, kind, deferredTitle, deferredMessage, data, lang, dark, attach, plan],
   );
 
   const requireMessage = (): boolean => {

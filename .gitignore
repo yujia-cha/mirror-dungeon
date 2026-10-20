@@ -18,3 +18,6 @@ local-fixtures/
 
 # agent worktrees (Claude Code isolation) — local only
 .claude/worktrees/
+
+# python bytecode (the ui-ux-pro-max skill scripts)
+__pycache__/

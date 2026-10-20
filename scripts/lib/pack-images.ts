@@ -12,6 +12,7 @@
  * `sprite`). We save each file under the pack's `sprite`, the same key `public/art/` uses.
  */
 import type { ThemePack } from '../../src/core/schema.ts';
+import { isSafeRemotePath } from './remote-path.ts';
 
 /** Where the images live, one `{sprite}.webp` per key, plus `manifest.json`. */
 export const PACK_IMAGE_DIR = 'public/icons/packs';
@@ -33,7 +34,10 @@ export interface DerivedPackEntry {
 export interface PackImagePlan {
   /** One download per sprite key, ascending by key. */
   downloads: { key: string; remote: string }[];
-  /** Sprite keys no pack of theirs has an `image` for, ascending. */
+  /**
+   * Sprite keys no pack of theirs has a usable `image` for, ascending — none at all, or one that is
+   * not a plain file name (`isSafeRemotePath`), which is never put into a URL.
+   */
   unmapped: string[];
 }
 
@@ -53,7 +57,8 @@ export function planPackImages(
   const downloads: PackImagePlan['downloads'] = [];
   const unmapped: string[] = [];
   for (const [key, image] of [...bySprite].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
-    if (image) downloads.push({ key, remote: `${UPSTREAM_PACK_DIR}/${image}.webp` });
+    if (image && isSafeRemotePath(image))
+      downloads.push({ key, remote: `${UPSTREAM_PACK_DIR}/${image}.webp` });
     else unmapped.push(key);
   }
   return { downloads, unmapped };

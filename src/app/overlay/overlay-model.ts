@@ -25,6 +25,7 @@
  */
 import type { GameIndexes, RoutePlan } from '../../core/types.ts';
 import { observationClosed, type RunState } from '../lib/plan-input.ts';
+import { heldGifts } from '../lib/run-gifts.ts';
 import { enterablePacks } from '../lib/stage.ts';
 import { runDoneFloor } from '../store.ts';
 
@@ -180,9 +181,7 @@ export interface StartCandidate {
 /** The gifts marked collected on floor 1 so far: what the run start has handed over (M140). */
 export function startEvidence(run: Pick<RunState, 'currentFloor' | 'giftStatus'>): number[] {
   if (run.currentFloor !== 1) return [];
-  return Object.entries(run.giftStatus)
-    .filter(([, status]) => status === 'got')
-    .map(([id]) => Number(id));
+  return heldGifts(run.giftStatus);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { ungzip } from 'pako';
+import { gunzipSync } from 'fflate';
 import type { GameIndexes } from '../../core/types.ts';
 
 /**
@@ -11,8 +11,13 @@ import type { GameIndexes } from '../../core/types.ts';
  *
  * This used to call `limbus-formation-deck`, which decodes base64 with Node's `Buffer`. Vite does
  * not polyfill `Buffer`, so in the browser every code failed while the tests (run under Node)
- * passed. Only browser APIs and pako here; a test decodes with `Buffer` stubbed away to keep it so.
- * The library stays as a dev dependency so the tests can encode fixtures independently.
+ * passed. Only browser APIs and fflate here (M160 — pako went; fflate was already a dependency); a
+ * test decodes with `Buffer` stubbed away to keep it so. The library stays as a dev dependency so
+ * the tests can encode fixtures independently.
+ *
+ * A pasted code is bounded (M160): a real one is a few hundred characters, and a gzip stream can
+ * inflate a thousandfold, so anything past `MAX_CODE_CHARS` or whose trailer announces more than
+ * `MAX_INNER_BYTES` is no code.
  */
 export function identitiesFromFormationCode(
   code: string,
@@ -30,15 +35,38 @@ export function identitiesFromFormationCode(
   return { ids, deployed, skipped: all.length - ids.length };
 }
 
+/** The longest text `identitiesFromFormationCode` reads; a real code is under 400 characters. */
+export const MAX_CODE_CHARS = 4096;
+/** The longest inner text a code may inflate to: twelve slots take 60-odd bytes. */
+const MAX_INNER_BYTES = 65_536;
+
 const SLOTS = 12;
 const ID_BITS = 7;
 const ORDER_BITS = 4;
 const EGO_BITS = 7;
 const EGOS = 5;
 
+/**
+ * The inflated gzip stream, or null when its trailer announces more than `MAX_INNER_BYTES`. The
+ * trailer's last four bytes are the inflated length (mod 2^32), and fflate allocates exactly that
+ * before inflating — a forged trailer alone was a 4 GB allocation. A trailer that lies small is
+ * held to its own number: fflate does not grow a buffer it was given the size of.
+ */
+function gunzipBounded(bytes: Uint8Array): Uint8Array | null {
+  const n = bytes.length;
+  if (n < 18) return null;
+  const announced =
+    (bytes[n - 4]! | (bytes[n - 3]! << 8) | (bytes[n - 2]! << 16)) + bytes[n - 1]! * 0x1000000;
+  if (announced > MAX_INNER_BYTES) return null;
+  return gunzipSync(bytes, { out: new Uint8Array(announced) });
+}
+
 function decodeSlots(code: string): { slot: number; id: number; order: number }[] | null {
+  if (code.length > MAX_CODE_CHARS) return null;
   try {
-    const inner = new TextDecoder().decode(ungzip(base64Bytes(code)));
+    const stream = gunzipBounded(base64Bytes(code));
+    if (!stream) return null;
+    const inner = new TextDecoder().decode(stream);
     const bytes = base64Bytes(inner);
     let cursor = 1;
     const read = (width: number): number => {

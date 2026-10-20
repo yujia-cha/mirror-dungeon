@@ -174,8 +174,20 @@ function floorsFor(options: PlanOptions, data: GameData): { rows: number[]; plan
   return { rows, plannable: rows.filter((floor) => floor >= currentFloor) };
 }
 
+/**
+ * The routes a copy the run will hold comes by. A routed copy counts only once the search placed it
+ * (`supplier`); one left unplaced, dropped or given up is no copy the run will hold, so it neither
+ * makes a second copy 「두 번째 몫」 (`ingredient-shared`) nor a shared ingredient (M160).
+ */
+const HELD_ROUTES: ReadonlySet<RequirementRoute> = new Set([
+  'route',
+  'observation',
+  'startGift',
+  'generalDrop',
+  'owned',
+]);
+
 export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes): RoutePlan {
-  const startedAt = Date.now();
   const { options, warnings, droppedObservations } = normaliseOptions(
     input.options,
     data,
@@ -326,7 +338,6 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   const afterStart: number[] = [];
   for (const giftId of options.observedGifts) {
     if (!midRun && run.owned.has(giftId)) {
-      if (observed.length >= budget) break;
       if (!observed.some((o) => o.giftId === giftId))
         observed.push({ giftId, pinned: true, freedPack: null });
       continue;
@@ -340,7 +351,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       afterStart.push(giftId);
       continue;
     }
-    if (observed.length >= budget) break;
+    // The pins were trimmed to the budget by `normaliseOptions`, and no gift enters `observed`
+    // twice, so the slots cannot run out here.
     if (canObserve(giftId)) observe(giftId, true, null);
   }
   if (afterStart.length > 0) {
@@ -390,6 +402,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
    */
   const roots = goalRoots(input.wanted, expansion.fusions);
   const resultOnly = new Set(input.wanted.filter((w) => w.ingredientsAsGoals === false).map((w) => w.giftId));
+  const requiredGoals = new Set(input.wanted.filter((w) => w.required).map((w) => w.giftId));
   const goalsFor = (): SearchGoals => {
     const lost = new Set<number>();
     for (const entry of unresolved) for (const goal of roots.ofGift(entry.giftId)) lost.add(goal);
@@ -398,12 +411,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       if (requirement.via === 'route')
         keyed.set(requirementKey(requirement), roots.ofRequirement(requirement));
     }
-    return {
-      roots: keyed,
-      required: new Set(input.wanted.filter((w) => w.required).map((w) => w.giftId)),
-      lost,
-      resultOnly,
-    };
+    return { roots: keyed, required: requiredGoals, lost, resultOnly };
   };
   const runSearch = (slots = 0) =>
     assignPacks({
@@ -447,7 +455,18 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   // b) rescue: what the search had to leave out
   if (!startOver && search.unresolvedGiftIds.length > 0 && observed.length < budget) {
     const rescue = runSearch(budget - observed.length);
-    if (rescue.lostGoals.length <= search.lostGoals.length) {
+    // Judged the way the search judges its own plans: required goals lost before the rest. By the
+    // bare count a rescue that kept the one 반드시 goal at the price of two 보통 ones lost (M160).
+    const losses = (result: typeof search): [required: number, optional: number] => {
+      const required = result.lostGoals.filter((goal) => requiredGoals.has(goal)).length;
+      return [required, result.lostGoals.length - required];
+    };
+    const [rescueRequired, rescueOptional] = losses(rescue);
+    const [plainRequired, plainOptional] = losses(search);
+    if (
+      rescueRequired < plainRequired ||
+      (rescueRequired === plainRequired && rescueOptional <= plainOptional)
+    ) {
       // An observation that takes over a copy the plain plan had a pack for frees that pack's
       // floor — the swap the player is told about.
       const kept = new Set(rescue.assignment.values());
@@ -563,27 +582,21 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
    */
   const droppedFor = new Map<number, number[]>();
   {
-    const wantedById = new Map(input.wanted.map((w) => [w.giftId, w]));
+    const wantedIds = new Set(input.wanted.map((w) => w.giftId));
     const parents = new Map<number, number[]>();
     for (const fusion of expansion.fusions) {
       for (const id of fusion.ingredients) parents.set(id, [...(parents.get(id) ?? []), fusion.result]);
     }
-    const rootsOf = (result: number, seen = new Set<number>()): number[] => {
-      const out: number[] = wantedById.has(result) ? [result] : [];
-      if (seen.has(result)) return out;
-      seen.add(result);
-      for (const parent of parents.get(result) ?? []) out.push(...rootsOf(parent, seen));
-      return out;
-    };
-    const resultOnly = (result: number): boolean => {
-      const roots = rootsOf(result);
-      return roots.length > 0 && roots.every((id) => wantedById.get(id)?.ingredientsAsGoals === false);
+    // Every wanted result above the fusion is a goal only as a whole (`roots` is the goal unit).
+    const wholeOnly = (result: number): boolean => {
+      const goals = roots.ofGift(result);
+      return goals.length > 0 && goals.every((id) => resultOnly.has(id));
     };
     const dropped = new Set<number>();
     for (const fusion of [...scheduled.fusions].reverse()) {
-      if (!resultOnly(fusion.result)) continue;
+      if (!wholeOnly(fusion.result)) continue;
       const parentDropped = (parents.get(fusion.result) ?? []).some((id) => dropped.has(id));
-      if (fusion.unreachable || (!wantedById.has(fusion.result) && parentDropped)) dropped.add(fusion.result);
+      if (fusion.unreachable || (!wantedIds.has(fusion.result) && parentDropped)) dropped.add(fusion.result);
     }
     for (const result of dropped) {
       const ids: number[] = [];
@@ -621,6 +634,10 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   }
 
   const bannedPacks = new Set(options.bannedPacks);
+  /** A copy the run will hold (`HELD_ROUTES`): the unit the two copy counts below share. */
+  const held = (requirement: (typeof requirements)[number]): boolean =>
+    HELD_ROUTES.has(requirement.via) &&
+    (requirement.via !== 'route' || search.supplier.has(requirementKey(requirement)));
   for (const [i, giftId] of search.unresolvedGiftIds.entries()) {
     const gift = indexes.giftById.get(giftId);
     const giftName = { ko: String(gift?.name.ko ?? giftId), en: String(gift?.name.en || giftId) };
@@ -636,13 +653,12 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     /*
      * A second copy that no second source could cover. The gift itself is reachable — another
      * requirement for it did get a floor — so `pack-conflict` would send the reader hunting for a
-     * floor clash that is not there. What is missing is the copy, not the pack.
+     * floor clash that is not there. What is missing is the copy, not the pack. A copy the plan
+     * dropped or gave up on is no such other copy: counting it said 「두 번째 몫」 of a gift the
+     * run would not hold once, and hid the floor clash from the decision card (M160).
      */
     const otherCopyPlanned = requirements.some(
-      (r) =>
-        r.giftId === giftId &&
-        requirementKey(r) !== search.unresolvedKeys[i] &&
-        (r.via !== 'route' || search.supplier.has(requirementKey(r))),
+      (r) => r.giftId === giftId && requirementKey(r) !== search.unresolvedKeys[i] && held(r),
     );
     if (otherCopyPlanned) {
       const eaters = requirements.filter((r) => r.giftId === giftId && r.neededFor !== null);
@@ -677,12 +693,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
    * second copy come back into the pool. Say so rather than let the route look unconditional.
    */
   {
-    const planned = new Set<RequirementRoute>(['route', 'observation', 'startGift', 'generalDrop', 'owned']);
     const copies = new Map<number, number>();
     for (const requirement of requirements) {
-      if (!planned.has(requirement.via)) continue;
-      // A routed copy the search could not place is not a copy the run will hold.
-      if (requirement.via === 'route' && !search.supplier.has(requirementKey(requirement))) continue;
+      if (!held(requirement)) continue;
       copies.set(requirement.giftId, (copies.get(requirement.giftId) ?? 0) + 1);
     }
     const shared = [...copies]
@@ -863,12 +876,19 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   }
 
   if (!planIsHard) {
-    const hardOnlyPacks = requirements
-      .filter((r) => r.via === 'route')
-      .flatMap((r) => indexes.packsByGift.get(r.giftId) ?? [])
-      .map((packId) => indexes.packById.get(packId))
-      .filter((pack) => pack && pack.availability.normal.length === 0 && pack.availability.hard.length > 0);
-    if (hardOnlyPacks.length > 0) {
+    // Hard would help only where the plan came up short: a routed gift the search could not place
+    // whose every pack (bans aside) opens on Hard floors alone. A gift that has a Normal pack too
+    // — routed or not — is no reason to switch (M160: 41 gifts in MD8 were warned about on a plan
+    // that had placed them).
+    const hardOnly = (packId: number): boolean => {
+      const pack = indexes.packById.get(packId);
+      return pack !== undefined && pack.availability.normal.length === 0 && pack.availability.hard.length > 0;
+    };
+    const hardLocked = [...new Set(search.unresolvedGiftIds)].some((giftId) => {
+      const packs = (indexes.packsByGift.get(giftId) ?? []).filter((packId) => !bannedPacks.has(packId));
+      return packs.length > 0 && packs.every(hardOnly);
+    });
+    if (hardLocked) {
       warnings.push({
         code: 'hard-required',
         detail: msg('warn.hardRequired'),
@@ -906,7 +926,8 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       searchNodes: search.nodes,
       searchCapped: search.capped,
       searchTieCut: search.tieBreakCut,
-      elapsedMs: Date.now() - startedAt,
+      // Core keeps no clock (M160): the worker and the CLI measure the call and fill this in.
+      elapsedMs: 0,
     },
   };
 }
@@ -920,5 +941,6 @@ function dedupeUnresolved(entries: Unresolved[]): Unresolved[] {
     seen.add(key);
     out.push(entry);
   }
-  return out.sort((a, b) => a.giftId - b.giftId || a.reason.localeCompare(b.reason));
+  // The reasons are ASCII, so a plain comparison orders them the same on every runtime.
+  return out.sort((a, b) => a.giftId - b.giftId || (a.reason < b.reason ? -1 : a.reason > b.reason ? 1 : 0));
 }

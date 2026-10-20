@@ -38,26 +38,54 @@ export function wantedRoots(
 }
 
 /**
+ * `wantedRoots` once per goal set (M160). One analysis plans the same deck and run many times with
+ * goals left out or pins released, and the roots depend on the goals alone — neither a pin nor a
+ * goal's `required` flag changes which wanted gift an ingredient feeds — so the expansion is made
+ * once per distinct goal list. Only for inputs that differ in those two ways: a different deck or
+ * run needs a memo of its own.
+ */
+export function wantedRootsMemo(
+  data: GameData,
+  indexes: GameIndexes,
+): (input: PlanInput) => (giftId: number) => number[] {
+  const memo = new Map<string, (giftId: number) => number[]>();
+  return (input) => {
+    const key = input.wanted.map((w) => w.giftId).join(',');
+    let roots = memo.get(key);
+    if (!roots) {
+      roots = wantedRoots(input, data, indexes);
+      memo.set(key, roots);
+    }
+    return roots;
+  };
+}
+
+/**
  * The goals a plan loses to the conflict, ingredients mapped to the goal they feed. A copy lost
  * as `ingredient-shared` counts for the fusion it actually starved — the goal that is itself
  * unresolved — not for every fusion that eats the ingredient (one copy was planned for another).
+ *
+ * `input` is the input `plan` was made from: a plan with a goal left out is measured against the
+ * goals it still has, or the roots would map an ingredient to a goal that is no longer there. A
+ * caller that has the roots of that input already passes them as `roots`.
  */
 export function conflictRootsOf(
   plan: RoutePlan,
   input: PlanInput,
   data: GameData,
   indexes: GameIndexes,
+  roots?: (giftId: number) => number[],
 ): number[] {
   const conflicts = plan.unresolved.filter(
     (u) => u.reason === 'pack-conflict' || u.reason === 'ingredient-shared',
   );
   if (conflicts.length === 0) return [];
-  const roots = wantedRoots(input, data, indexes);
+  const rootsOf = roots ?? wantedRoots(input, data, indexes);
   const unresolved = new Set(plan.unresolved.map((u) => u.giftId));
   return [
     ...new Set(
       conflicts.flatMap((u) =>
-        u.reason === 'pack-conflict' ? roots(u.giftId) : roots(u.giftId).filter((r) => unresolved.has(r)),
+        u.reason === 'pack-conflict' ? rootsOf(u.giftId) : rootsOf(u.giftId).filter((r) => unresolved.has(r)),
       ),
     ),
   ].sort((a, b) => a - b);

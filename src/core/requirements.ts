@@ -79,7 +79,8 @@ export function chooseRecipe(
       a.nested - b.nested ||
       b.availability - a.availability ||
       a.recipe.ingredients.length - b.recipe.ingredients.length ||
-      a.recipe.ingredients.join(',').localeCompare(b.recipe.ingredients.join(',')),
+      // Ids and commas: ASCII, so a plain comparison orders them the same on every runtime.
+      compareAscii(a.recipe.ingredients.join(','), b.recipe.ingredients.join(',')),
   );
   return scored[0]!.recipe.ingredients;
 }
@@ -102,6 +103,9 @@ function chooseMixedIngredients(gift: Gift, indexes: GameIndexes, stats: DeckSta
   const rankedB = [...mixed.bPool].sort((a, b) => scarcity(b, indexes) - scarcity(a, indexes) || a - b);
   return [...rankedA.slice(0, mixed.aCount), ...rankedB.slice(0, mixed.bCount)].sort((a, b) => a - b);
 }
+
+/** ASCII strings compare the same on every runtime; `localeCompare` goes through the ICU tables. */
+const compareAscii = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
  * What identifies a requirement: the gift AND the fusion it feeds.

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { familyOf, newestSeason, nextSeasonFileNames, renameToSeason, seasonOf } from './season-files.ts';
+import {
+  familyOf,
+  frozenSeasonRefusal,
+  newestSeason,
+  nextSeasonFileNames,
+  renameToSeason,
+  seasonOf,
+} from './season-files.ts';
 
 /** The season-bearing entries of `data/sources.lock.json`, verbatim. */
 const LOCK_MD7 = [
@@ -148,5 +155,24 @@ describe('newestSeason / familyOf', () => {
     expect(familyOf('mirrordungeon/mirrordungeon-07-extreme.json')).toBe('dungeon');
     expect(familyOf('MirrorDungeonUI_7.json')).toBe('localize-ui');
     expect(familyOf('MirrorDungeonTheme-1.json')).toBeNull();
+  });
+});
+
+describe('frozenSeasonRefusal (M160, A14)', () => {
+  it('refuses a season older than the snapshot on disk, naming both and the override', () => {
+    const why = frozenSeasonRefusal(7, 8, false);
+    expect(why).toMatch(/--season 7 is older than the snapshot on disk \(season 8\)/);
+    expect(why).toMatch(/--force-frozen/);
+  });
+
+  it('lets the newest season, a newer request, no request and no snapshot through', () => {
+    expect(frozenSeasonRefusal(8, 8, false)).toBeNull();
+    expect(frozenSeasonRefusal(9, 8, false)).toBeNull();
+    expect(frozenSeasonRefusal(undefined, 8, false)).toBeNull();
+    expect(frozenSeasonRefusal(7, undefined, false)).toBeNull();
+  });
+
+  it('is overridden by --force-frozen', () => {
+    expect(frozenSeasonRefusal(7, 8, true)).toBeNull();
   });
 });

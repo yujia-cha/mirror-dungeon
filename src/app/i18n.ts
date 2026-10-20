@@ -16,10 +16,13 @@ export type Lang = 'ko' | 'en';
 export type StringKey = keyof typeof STRINGS;
 
 export function t(key: StringKey, lang: Lang, params?: Record<string, string | number>): string {
-  let out: string = STRINGS[key][lang];
-  if (params)
-    for (const [name, value] of Object.entries(params)) out = out.split(`{${name}}`).join(String(value));
-  return out;
+  const out: string = STRINGS[key][lang];
+  if (!params) return out;
+  // One pass over the template: a `{name}` inside a value (a gift called 「{b}」) is text, not a
+  // placeholder for the next parameter.
+  return out.replace(/\{(\w+)\}/g, (match, name: string) =>
+    Object.hasOwn(params, name) ? String(params[name]) : match,
+  );
 }
 
 export function pick(value: Localized | undefined, lang: Lang): string {

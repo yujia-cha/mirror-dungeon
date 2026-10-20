@@ -13,6 +13,7 @@ import { defaultDeck } from '../default-deck.ts';
 import type { RoutePlan } from '../../../core/types.ts';
 import {
   createPlanner,
+  dropInputOf,
   runDrop,
   runPlan,
   type AnalysisResponse,
@@ -62,6 +63,35 @@ function drain(planner: ReturnType<typeof createPlanner>, id: number): AnalysisR
   }
   return out;
 }
+
+describe('dropInputOf', () => {
+  it('drops the checked goals and releases the named pins, leaving the rest as it was (M160)', () => {
+    // Arrange
+    const input = {
+      ...inputFor([9088, 9091, 9095]),
+      options: { ...defaultOptions(), lastFloor, deployed: deck.slice(0, 6), observedGifts: [9088, 9095] },
+    };
+    // Act
+    const variant = dropInputOf(input, [9091], [9095]);
+    // Assert
+    expect(variant.wanted.map((w) => w.giftId)).toEqual([9088, 9095]);
+    expect(variant.options.observedGifts).toEqual([9088]);
+    expect(variant.deck).toBe(input.deck);
+    expect(input.wanted).toHaveLength(3); // untouched
+  });
+
+  it('keeps the options object when nothing is released, and empties wanted when all are dropped', () => {
+    // Arrange
+    const input = inputFor([9088, 9091]);
+    // Act
+    const same = dropInputOf(input, [], []);
+    const none = dropInputOf(input, [9088, 9091]);
+    // Assert
+    expect(same.options).toBe(input.options);
+    expect(same.wanted).toEqual(input.wanted);
+    expect(none.wanted).toEqual([]);
+  });
+});
 
 describe('runPlan', () => {
   it('answers with no plan at all when nothing is wanted', () => {

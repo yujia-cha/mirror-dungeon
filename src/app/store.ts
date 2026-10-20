@@ -1,12 +1,24 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import lzString from 'lz-string';
+import { safePersistStorage } from './lib/safe-storage.ts';
+import { floorOfVisit, heldGifts } from './lib/run-gifts.ts';
+import {
+  LEGACY_DEPLOYED,
+  MAX_FLOOR_EVER,
+  SINNER_COUNT,
+  appDefaultOptions,
+  sanitizeFusionGoal,
+  sanitizeOptions,
+  sanitizeUpgrades,
+  sinnerOf,
+  uniqueDeck,
+  type GiftUpgradeMap,
+} from './lib/sanitize.ts';
+import type { SharedState } from './lib/share.ts';
 import type { PlanOptions } from '../core/types.ts';
 import type { UpgradeLevel } from '../core/schema.ts';
-import { defaultOptions } from '../core/index.ts';
 import type { Lang } from './i18n.ts';
 import {
-  APP_START,
   observationClosed,
   runHasProgress,
   type FusionGoalMap,
@@ -14,6 +26,27 @@ import {
   type RunState,
 } from './lib/plan-input.ts';
 import { DEFAULT_READ_INTERVAL, READ_INTERVALS, type ReadIntervalPreset } from './capture/loop.ts';
+
+// The sanitizers and the share link live in `lib/sanitize.ts` and `lib/share.ts` (M160); they are
+// re-exported here so the store stays the one door for what it has always exported.
+export {
+  MAX_FLOOR_EVER,
+  MAX_LINK_IDS,
+  appDefaultOptions,
+  sanitizeFusionGoal,
+  sanitizeOptions,
+  sanitizeUpgrades,
+  sinnerOf,
+  type GiftUpgradeMap,
+} from './lib/sanitize.ts';
+export {
+  MAX_SHARE_HASH,
+  decodeShared,
+  encodeShared,
+  sharedStateOf,
+  shareUrlOf,
+  type SharedState,
+} from './lib/share.ts';
 
 export type LeftTab = 'deck' | 'gifts';
 export type RightTab = 'plan' | 'tracker';
@@ -57,35 +90,6 @@ export type TextScale = (typeof TEXT_SCALES)[number];
 /** How wide a side panel may be dragged: narrow enough to read, never eating the whole stage. */
 export const PANEL_WIDTH = { min: 260, max: 560, default: 336 } as const;
 
-export interface SharedState {
-  /**
-   * The Mirror Dungeon the goals were picked in, written into a link as `s`. The app always opens
-   * the default season (M145) and adopts whatever a link carries into it, so nothing reads this
-   * back; it is still written so a link says which season it was made in, should a later app
-   * offer a choice again.
-   */
-  season?: number;
-  /** Identity ids in formation order: at most 12, one per sinner (enforced by `uniqueDeck` on every way in). */
-  deck: number[];
-  /** Who fights, as a subset of `deck`; the order comes from the deck. */
-  deployed: number[];
-  wanted: number[];
-  options: PlanOptions;
-  /** Fusion results whose ingredients are not goals of their own. Absent = ingredients count too. */
-  fusionGoal?: FusionGoalMap;
-  /**
-   * The enhancement step chosen for a goal (M130). A link carries the goals' choices only; absent
-   * (every link before M130) means none.
-   */
-  upgrades?: GiftUpgradeMap;
-}
-
-/**
- * The enhancement step chosen per gift (M130): `+` = 1, `++` = 2, absent = not enhanced. It is a
- * preference about the gift, not about the goal, so taking the gift out of the goals keeps it.
- */
-export type GiftUpgradeMap = Record<number, UpgradeLevel>;
-
 interface AppState extends SharedState {
   fusionGoal: FusionGoalMap;
   upgrades: GiftUpgradeMap;
@@ -118,7 +122,6 @@ interface AppState extends SharedState {
   toggleWanted: (giftId: number, dropWithIt?: number[]) => void;
   removeWanted: (giftId: number) => void;
   clearWanted: () => void;
-  /** Pin or unpin a wanted gift for 기프트 관측; at most `max` pins. */
   /** Pin or unpin a wanted gift for 기프트 관측; a pin needs a free slot and an observable gift. */
   toggleObserved: (giftId: number, limits: ObserveLimits) => void;
   setFusionGoal: (giftId: number, goal: 'resultOnly' | 'withIngredients') => void;
@@ -129,8 +132,10 @@ interface AppState extends SharedState {
    * is replaced. `settle.got` marks gifts collected in the same update (the start-of-run gifts).
    */
   visitPack: (packId: number, floor: number, settle?: { got?: number[]; failed?: number[] }) => void;
-  /** Drop the record; when it was the last decided floor, that floor becomes undecided again. */
-  /** Undo an entry; `reset` names gift ids whose recorded status is cleared with it (the pack's own drops). */
+  /**
+   * Undo an entry; `reset` names gift ids whose recorded status is cleared with it (the pack's own
+   * drops). When it was the last decided floor, that floor becomes undecided again.
+   */
   unvisitPack: (packId: number, opts?: { reset?: number[] }) => void;
   /** Leave the stage floor: an undecided floor is skipped; `settle` applies collected / missed gifts first. */
   nextFloor: (settle?: { got?: number[]; failed?: number[] }) => void;
@@ -246,100 +251,12 @@ interface AppState extends SharedState {
   applyShared: (shared: SharedState) => { gifts: number };
 }
 
-const SINNER_COUNT = 12;
-const LEGACY_DEPLOYED = 6;
-
-/** Identity ids are 1SSNN, so the sinner a slot belongs to is derivable from the id. */
-export function sinnerOf(identityId: number): number {
-  return Math.floor(identityId / 100) % 100;
-}
-
 /**
  * The theme a first visit starts in: dark (M122, owner's call — the game is dark, and the app is
  * used beside it). The player's own choice (「테마 변경」) is saved and wins from then on.
  */
 function prefersDark(): boolean {
   return true;
-}
-
-/**
- * The most floors any Mirror Dungeon has opened.
- *
- * This is a bound for saved and shared state, not a season's floor count: how far *this* season
- * goes comes from `rules.floors` and reaches the store as `lastFloor` when the data loads. A season
- * that opens only 1~5 is shorter; none has ever been longer.
- */
-export const MAX_FLOOR_EVER = 15;
-
-/** The planner's defaults with the app's fixed floor range and start applied. */
-export function appDefaultOptions(): PlanOptions {
-  return { ...defaultOptions(), lastFloor: MAX_FLOOR_EVER, hardFromFloor: 1, ...APP_START };
-}
-
-/**
- * Keep only the option keys the planner knows, so a link or a saved state from an older version
- * (which carried `giftObservationMax`, or a shorter floor range) cannot smuggle stale keys or a
- * partial run into the plan.
- */
-export function sanitizeOptions(raw: unknown): PlanOptions {
-  const defaults = appDefaultOptions();
-  const source = (raw ?? {}) as Record<string, unknown>;
-  const out = { ...defaults } as Record<string, unknown>;
-  for (const key of Object.keys(defaults)) if (key in source) out[key] = source[key];
-  const observed = Array.isArray(out.observedGifts) ? out.observedGifts : [];
-  out.observedGifts = [...new Set(observed.filter((n): n is number => typeof n === 'number'))];
-  // Slots turned off with 「관측하지 않기」 (M120). Core clamps the top to the rules' count.
-  const slots = source.observationSlots;
-  if (typeof slots === 'number' && Number.isInteger(slots) && slots >= 0) out.observationSlots = slots;
-  else delete out.observationSlots;
-  // No start keyword and no starting gift (M145): a saved state or a link from M134~M144 that
-  // still carries a count or a keyword is planned the app's way, without a word.
-  Object.assign(out, APP_START);
-  // Whether the start is over is the run's (`run.startDone`), never a saved or shared option.
-  delete out.startDecided;
-  // Pack-level choices are the CLI's (`--ban`, `--prefer`); the app has no control for them, so a
-  // saved state or an old link that still carries some would steer the route with nothing on
-  // screen to say so or to undo it. They are dropped without a word.
-  out.bannedPacks = [];
-  out.preferredPacks = [];
-  // No pinning a pack either (M118): the goals decide the route. The packs entered so far live in
-  // the run (`run.visits`), never in saved or shared options; an old link's pins go quietly.
-  out.pinnedPacks = {};
-  out.lastFloor = MAX_FLOOR_EVER;
-  out.hardFromFloor = 1;
-  // Run progress lives in the `run` slice, never in shared or saved options — and who fights is the
-  // store's `deployed` (`planInputFor` sets it), so a stored or linked copy is not carried along.
-  out.currentFloor = 1;
-  out.ownedGifts = [];
-  out.unobtainableGifts = [];
-  return out as unknown as PlanOptions;
-}
-
-/** Fusion goals only for wanted gifts, with the one non-default value. */
-export function sanitizeFusionGoal(raw: unknown, wanted: number[]): FusionGoalMap {
-  const out: FusionGoalMap = {};
-  if (!raw || typeof raw !== 'object') return out;
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    const id = Number(key);
-    if (wanted.includes(id) && value === 'resultOnly') out[id] = value;
-  }
-  return out;
-}
-
-/**
- * Enhancement choices with a sound shape: a finite integer gift id and step 1 or 2. Which steps a
- * gift really has is a fact of the season's data, judged by `adoptSeason`. With `only`, the
- * choices for those gifts alone (what a share link carries).
- */
-export function sanitizeUpgrades(raw: unknown, only?: readonly number[]): GiftUpgradeMap {
-  const out: GiftUpgradeMap = {};
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    const id = Number(key);
-    if (!Number.isInteger(id) || (only && !only.includes(id))) continue;
-    if (value === 1 || value === 2) out[id] = value;
-  }
-  return out;
 }
 
 /** What a pin must satisfy: the slot limit and whether the gift can be observed at all. */
@@ -645,7 +562,6 @@ function withStatus(
   return next;
 }
 
-/** A pinned observation only makes sense for a wanted gift. */
 /** The localStorage key and schema version. Exported so a crash screen can clear the state it saved. */
 export const PERSIST_KEY = 'md-route-planner';
 export const PERSIST_VERSION = 7;
@@ -736,24 +652,6 @@ function withObservedIn(options: PlanOptions, wanted: number[], fusionGoal: Fusi
   const collected = collectedGifts(wanted, fusionGoal);
   const observedGifts = options.observedGifts.filter((id) => collected.has(id));
   return observedGifts.length === options.observedGifts.length ? options : { ...options, observedGifts };
-}
-
-/**
- * One identity per sinner, at most twelve, in the order given. An id that cannot be an identity at
- * all — not a positive integer, or one whose sinner digits are not 1..12 — is dropped here, on every
- * way in; an id shaped right that the data does not know goes in `adoptSeason`, which has the data.
- */
-function uniqueDeck(ids: number[]): number[] {
-  const seen = new Set<number>();
-  const out: number[] = [];
-  for (const id of ids) {
-    if (!Number.isInteger(id) || id <= 0) continue;
-    const sinner = sinnerOf(id);
-    if (sinner < 1 || sinner > SINNER_COUNT || seen.has(sinner)) continue;
-    seen.add(sinner);
-    out.push(id);
-  }
-  return out.slice(0, SINNER_COUNT);
 }
 
 export const useApp = create<AppState>()(
@@ -885,9 +783,8 @@ export const useApp = create<AppState>()(
         }),
       unvisitPack: (packId, opts) =>
         set((state) => {
-          const entry = Object.entries(state.run.visits).find(([, id]) => id === packId);
-          if (!entry) return {};
-          const floor = Number(entry[0]);
+          const floor = floorOfVisit(state.run.visits, packId);
+          if (floor === null) return {};
           const visits = withoutPack(state.run.visits, packId);
           // The last decided floor becomes undecided again; an older one turns into a skip.
           const currentFloor = floor === state.run.currentFloor - 1 ? floor : state.run.currentFloor;
@@ -1029,11 +926,7 @@ export const useApp = create<AppState>()(
         if (run.currentFloor !== 1 || run.startDone) return [];
         const giftStatus = { ...run.giftStatus };
         for (const id of got) giftStatus[id] = 'got';
-        const collected = new Set(
-          Object.entries(giftStatus)
-            .filter(([, status]) => status === 'got')
-            .map(([id]) => Number(id)),
-        );
+        const collected = new Set(heldGifts(giftStatus));
         const unpinned = options.observedGifts.filter((id) => !collected.has(id));
         set({
           run: { ...run, giftStatus, startGifts: [...collected], startDone: true },
@@ -1218,6 +1111,9 @@ export const useApp = create<AppState>()(
     {
       name: PERSIST_KEY,
       version: PERSIST_VERSION,
+      // A write that fails (a full quota) must not throw out of the action that changed the state
+      // (M160, `lib/safe-storage.ts`); a blob already written is not written again.
+      storage: safePersistStorage<PersistedState>(),
       migrate: (persisted, version) => sanitizePersisted(persisted, version),
       // zustand only calls `migrate` when the stored version differs from ours, so a blob that
       // claims the current version reaches state unchecked — and that is the common shape of
@@ -1243,21 +1139,6 @@ export const useApp = create<AppState>()(
   ),
 );
 
-// ---------------------------------------------------------------------------
-// URL sharing
-// ---------------------------------------------------------------------------
-
-const HASH_PREFIX = '#s=';
-
-/** A link's `up` key: the goals' enhancement steps, left out when no goal has one. */
-function upgradesForLink(
-  upgrades: GiftUpgradeMap | undefined,
-  wanted: readonly number[],
-): { up?: GiftUpgradeMap } {
-  const up = sanitizeUpgrades(upgrades ?? {}, wanted);
-  return Object.keys(up).length > 0 ? { up } : {};
-}
-
 /** This device's choices with the link's goals set to the link's steps (none = not enhanced). */
 function withSharedUpgrades(
   mine: GiftUpgradeMap,
@@ -1271,70 +1152,4 @@ function withSharedUpgrades(
     else delete out[id];
   }
   return out;
-}
-
-export function encodeShared(state: SharedState): string {
-  const payload = JSON.stringify({
-    v: 5,
-    ...(state.season === undefined ? {} : { s: state.season }),
-    deck: state.deck,
-    deployed: state.deployed,
-    wanted: state.wanted,
-    fusionGoal: state.fusionGoal ?? {},
-    // The goals' steps only, and only when there are any — older readers ignore the key.
-    ...upgradesForLink(state.upgrades, state.wanted),
-    options: state.options,
-  });
-  return HASH_PREFIX + lzString.compressToEncodedURIComponent(payload);
-}
-
-/**
- * The plan a link carries, read off the store's state: the same keys whichever surface builds the
- * link (the header's 「공유」, the feedback report), so the two can never disagree about it.
- */
-export function sharedStateOf(state: SharedState): SharedState {
-  return {
-    ...(state.season === undefined ? {} : { season: state.season }),
-    deck: state.deck,
-    deployed: state.deployed,
-    wanted: state.wanted,
-    fusionGoal: state.fusionGoal,
-    upgrades: state.upgrades,
-    options: state.options,
-  };
-}
-
-/** The address that opens `shared` on this page: its origin and path (Pages' base), then the hash. */
-export function shareUrlOf(shared: SharedState): string {
-  return `${window.location.origin}${window.location.pathname}${encodeShared(shared)}`;
-}
-
-export function decodeShared(hash: string): SharedState | null {
-  if (!hash.startsWith(HASH_PREFIX)) return null;
-  try {
-    // lz-string does not merely return nothing for a payload it cannot read — on some strings it
-    // throws, which used to escape this function, blow up the effect that consumes the hash and
-    // leave the reader with a blank page instead of a mangled link.
-    const json = lzString.decompressFromEncodedURIComponent(hash.slice(HASH_PREFIX.length));
-    if (!json) return null;
-    // `s` (the season, v5) is not read: the app plans every link in the season it loaded (M145).
-    const parsed = JSON.parse(json) as Partial<SharedState> & { up?: unknown };
-    if (!Array.isArray(parsed.deck) || !Array.isArray(parsed.wanted)) return null;
-    const deck = uniqueDeck(parsed.deck.filter((n): n is number => typeof n === 'number'));
-    // v1 links carried no deployed list: the first six fought.
-    const deployed = Array.isArray(parsed.deployed)
-      ? [...new Set(parsed.deployed.filter((n): n is number => typeof n === 'number' && deck.includes(n)))]
-      : deck.slice(0, LEGACY_DEPLOYED);
-    const wanted = [...new Set(parsed.wanted.filter((n): n is number => typeof n === 'number'))];
-    return {
-      deck,
-      deployed,
-      wanted,
-      fusionGoal: sanitizeFusionGoal(parsed.fusionGoal, wanted),
-      upgrades: sanitizeUpgrades(parsed.up, wanted),
-      options: sanitizeOptions(parsed.options),
-    };
-  } catch {
-    return null;
-  }
 }

@@ -277,6 +277,26 @@ describe('when the worker breaks', () => {
     expect(result.current.plan!.stats.totalWanted).toBe(wantedIds.length);
   });
 
+  it('terminates the broken worker and never hands it to a later mount (M160)', async () => {
+    // Arrange
+    let built = 0;
+    const stub = stubWorker(() => {
+      built += 1;
+      return new FakeWorker('errors');
+    });
+    const first = renderHook(() => usePlanner(data, indexes, input));
+    await waitFor(() => expect(first.result.current.offThread).toBe(false));
+    // Assert: the worker is gone, not left grinding tasks nobody reads.
+    expect(stub.latest()!.terminated).toBe(true);
+    // Act: a remount asks for the page's worker again.
+    first.unmount();
+    const second = renderHook(() => usePlanner(data, indexes, input));
+    // Assert: it computes inline from the first render, with no second worker and no dead one.
+    expect(second.result.current.offThread).toBe(false);
+    expect(second.result.current.plan).not.toBeNull();
+    expect(built).toBe(1);
+  });
+
   it('a silent worker leaves the panel pending, which is why the error listener matters', async () => {
     // Pinned as the counter-example: without the `error` handling above, *this* is what a broken
     // worker would look like — no route, no explanation, no recovery.

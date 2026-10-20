@@ -20,7 +20,7 @@ import {
   decodePayload,
   feedbackReport,
   publicShareLink,
-  stampOf,
+  reportFolderOf,
   type Names,
 } from './lib/feedback-decode.ts';
 import { repoPath } from './lib/io.ts';
@@ -53,7 +53,7 @@ function main(): void {
   const result = decodePayload(body);
   if (!result.ok) fail(result.error);
   const { payload } = result;
-  const dir = repoPath('local-fixtures', 'feedback', stampOf(payload.t));
+  const dir = repoPath('local-fixtures', 'feedback', reportFolderOf(payload));
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'feedback.json'), `${JSON.stringify(payload, null, 2)}\n`);
   writeFileSync(join(dir, 'report.md'), `${feedbackReport(payload, namesFor(payload.env.season))}\n`);

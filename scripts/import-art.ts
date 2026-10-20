@@ -180,15 +180,21 @@ function main(): void {
   const candidates: { path: string; key: string; kind: Kind }[] = [];
   const rejected: string[] = [];
 
+  // Any published season's key is a legal file (the pool is shared, see the header). A gift key is
+  // the icon number as the data spells it: `09088.png` would be a file `giftIconUrl` never asks for.
   const kindOfKey = (key: string): Kind | null => {
-    if (keys.gifts.has(Number(key))) return 'gifts';
-    if (keys.packs.has(key)) return 'packs';
+    if (keys.any.gifts.has(Number(key)) && String(Number(key)) === key) return 'gifts';
+    if (keys.any.packs.has(key)) return 'packs';
     return null;
   };
+  const whyNotKey = (key: string): string =>
+    keys.any.gifts.has(Number(key))
+      ? `기프트 icon은 ${String(Number(key))}처럼 적는다`
+      : '어느 시즌의 icon도 sprite도 아닌 이름';
 
   if (as) {
     const kind = kindOfKey(as);
-    if (!kind) usage(`「${as}」는 이 시즌의 기프트 icon도 팩 sprite도 아니다.`);
+    if (!kind) usage(`「${as}」 — ${whyNotKey(as)}.`);
     candidates.push({ path: from, key: as, kind });
   } else {
     // A folder: each file is filed by its own name. `gifts/`+`packs/` subfolders are honoured, and
@@ -207,7 +213,7 @@ function main(): void {
       const key = basename(path, extname(path));
       const kind = kindOfKey(key);
       if (!kind) {
-        rejected.push(`${basename(path)} — icon도 sprite도 아닌 이름`);
+        rejected.push(`${basename(path)} — ${whyNotKey(key)}`);
         continue;
       }
       candidates.push({ path, key, kind });

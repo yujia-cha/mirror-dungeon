@@ -135,3 +135,27 @@ export function newestSeason(files: readonly string[]): number | null {
   }
   return newest;
 }
+
+/**
+ * Why `data:build -- --season <requested>` must not run now, or null when it may (M160, A14).
+ *
+ * `data/raw/static` is one season's snapshot: `readCommonData()` can still find an older season's
+ * rule table, but the packs, floors and pools around it are the newest season's. Building the
+ * older season would write today's data under the frozen season's name — and the frozen build is
+ * exactly the one nothing can reproduce, so it must stay as committed. `force` (`--force-frozen`)
+ * is the way to say that is meant.
+ */
+export function frozenSeasonRefusal(
+  requested: number | undefined,
+  newestOnDisk: number | undefined,
+  force: boolean,
+): string | null {
+  if (requested === undefined || newestOnDisk === undefined || requested >= newestOnDisk || force)
+    return null;
+  return (
+    `--season ${requested} is older than the snapshot on disk (season ${newestOnDisk}). ` +
+    `data/raw/static holds one season's packs, floors and pools, so building md${requested} now would ` +
+    `write season ${newestOnDisk}'s data under its name; the committed md${requested} stays as it is. ` +
+    'Pass --force-frozen to build it anyway.'
+  );
+}

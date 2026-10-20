@@ -166,6 +166,15 @@ function stateLines(state: FeedbackInput['state'], lang: Lang): string[] {
   ];
 }
 
+/**
+ * A code fence that holds `text`: one backtick longer than the longest run inside it, so a stack
+ * that quotes a fence of its own cannot close this one early (M160).
+ */
+function fenceFor(text: string): string {
+  const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+  return '`'.repeat(Math.max(3, longest + 1));
+}
+
 function logLines(log: readonly FeedbackLogEntry[], n: number, lang: Lang): string[] {
   if (n <= 0) return [];
   const errors = log.filter((e) => e.kind === 'error').slice(-n);
@@ -176,7 +185,10 @@ function logLines(log: readonly FeedbackLogEntry[], n: number, lang: Lang): stri
     for (const e of errors) {
       if (e.kind !== 'error') continue;
       out.push(`- ${clock(e.t)} [${e.source}] ${e.message.replace(/\s+/g, ' ')}`);
-      if (e.stack) out.push('  ```', ...e.stack.split('\n').map((line) => `  ${line}`), '  ```');
+      if (e.stack) {
+        const fence = `  ${fenceFor(e.stack)}`;
+        out.push(fence, ...e.stack.split('\n').map((line) => `  ${line}`), fence);
+      }
     }
     out.push('');
   }
@@ -188,14 +200,41 @@ function logLines(log: readonly FeedbackLogEntry[], n: number, lang: Lang): stri
   return out;
 }
 
-function render(input: FeedbackInput, lang: Lang, level: Level, trimmed: boolean): string {
-  const none = t('feedbackBodyNotAttached', lang);
+/** What a level keeps of the log and the diagnostics. */
+function cut(input: FeedbackInput, level: Level) {
   const log = input.include.log ? trimLog(input.log, level.log) : [];
   const diag =
     input.include.diagnostics && input.diagnostics.length
       ? summarize(input.diagnostics, Math.min(level.diag, input.diagnostics.length))
       : null;
-  const payload: FeedbackPayload = {
+  return { log, diag };
+}
+
+/**
+ * The compressed block for a level, made once per distinct cut of the log and the diagnostics
+ * (C5): the levels share cuts (every level keeps a log of three entries whole), and compressing
+ * is the expensive part of a body — the form builds one per keystroke.
+ */
+function payloadBlocks(input: FeedbackInput): (level: Level) => string {
+  const made = new Map<string, string>();
+  return (level) => {
+    const { log, diag } = cut(input, level);
+    const key = `${log.length}|${diag?.records.length ?? -1}`;
+    let block = made.get(key);
+    if (block === undefined) {
+      block = encodePayload(payloadFor(input, log, diag));
+      made.set(key, block);
+    }
+    return block;
+  };
+}
+
+function payloadFor(
+  input: FeedbackInput,
+  log: readonly FeedbackLogEntry[],
+  diag: ReturnType<typeof summarize> | null,
+): FeedbackPayload {
+  return {
     v: PAYLOAD_VERSION,
     t: input.t,
     kind: input.kind,
@@ -212,10 +251,21 @@ function render(input: FeedbackInput, lang: Lang, level: Level, trimmed: boolean
           },
         }
       : {}),
-    ...(input.include.log ? { log: { entries: log, omitted: input.log.length - log.length } } : {}),
+    ...(input.include.log ? { log: { entries: [...log], omitted: input.log.length - log.length } } : {}),
     ...(diag ? { diagnostics: diag } : {}),
     screenshot: input.include.screenshot,
   };
+}
+
+function render(
+  input: FeedbackInput,
+  lang: Lang,
+  level: Level,
+  trimmed: boolean,
+  block: (level: Level) => string,
+): string {
+  const none = t('feedbackBodyNotAttached', lang);
+  const { log, diag } = cut(input, level);
   const lines: string[] = [
     `## ${t('feedbackBodyMessage', lang)}`,
     '',
@@ -252,7 +302,7 @@ function render(input: FeedbackInput, lang: Lang, level: Level, trimmed: boolean
   lines.push(
     `<details><summary>${t('feedbackBodyPayload', lang)}</summary>`,
     '',
-    encodePayload(payload),
+    block(level),
     '',
     '</details>',
     '',
@@ -273,20 +323,40 @@ function leavesOut(input: FeedbackInput, level: Level): boolean {
   return logOut || diagOut;
 }
 
+/**
+ * The issue, with `fullBody` rendered on first read and kept (C5): the form rebuilds the issue on
+ * every keystroke to say whether it fits, and only 「내용 복사」 and a message past the URL read the
+ * full body.
+ */
+function issueWith(fields: Omit<FeedbackIssue, 'fullBody'>, fullBodyOf: () => string): FeedbackIssue {
+  let full: string | undefined;
+  return {
+    ...fields,
+    get fullBody() {
+      full ??= fullBodyOf();
+      return full;
+    },
+  };
+}
+
 export function buildFeedback(input: FeedbackInput, lang: Lang, maxUrl = MAX_ISSUE_URL): FeedbackIssue {
   const title = issueTitle(input, lang);
-  let fullBody = render(input, lang, FULL, false);
-  for (const level of LEVELS) {
-    if (fullBody.length <= MAX_ISSUE_BODY) break;
-    fullBody = render(input, lang, level, true);
-  }
+  const block = payloadBlocks(input);
+  const fullBodyOf = (): string => {
+    let fullBody = render(input, lang, FULL, false, block);
+    for (const level of LEVELS) {
+      if (fullBody.length <= MAX_ISSUE_BODY) break;
+      fullBody = render(input, lang, level, true, block);
+    }
+    return fullBody;
+  };
   for (const level of LEVELS) {
     const trimmed = leavesOut(input, level);
-    const body = render(input, lang, level, trimmed);
+    const body = render(input, lang, level, trimmed, block);
     const url = issueUrl(title, body);
-    if (url.length <= maxUrl) return { title, body, url, fullBody, trimmed, fits: true };
+    if (url.length <= maxUrl) return issueWith({ title, body, url, trimmed, fits: true }, fullBodyOf);
   }
   // The message alone is past the limit: open the issue with a request to paste instead.
   const body = [t('feedbackBodyPasteHere', lang), '', '---', t('feedbackBodyFooter', lang)].join('\n');
-  return { title, body, url: issueUrl(title, body), fullBody, trimmed: true, fits: false };
+  return issueWith({ title, body, url: issueUrl(title, body), trimmed: true, fits: false }, fullBodyOf);
 }

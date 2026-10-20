@@ -26,6 +26,7 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { readJson, repoPath } from './io.ts';
+import { lockFilePath, readLock } from './lock.ts';
 import { LOCALIZE_DIR, STATIC_DIR, type RawGift, type RawThemePack } from './raw.ts';
 import { familyOf, renameToSeason, seasonOf } from './season-files.ts';
 
@@ -105,15 +106,9 @@ function reWrap(original: unknown, items: unknown[]): unknown {
   return { list: items };
 }
 
-interface LockSource {
-  localPrefix: string;
-  files: (string | { path: string })[];
-}
-
 function lockFiles(localPrefix: string): string[] {
-  const lock = readJson<{ sources: Record<string, LockSource> }>(repoPath('data/sources.lock.json'));
-  const source = Object.values(lock.sources).find((entry) => entry.localPrefix === localPrefix);
-  return (source?.files ?? []).map((file) => (typeof file === 'string' ? file : file.path));
+  const source = Object.values(readLock().sources).find((entry) => entry.localPrefix === localPrefix);
+  return (source?.files ?? []).map(lockFilePath);
 }
 
 /** Donor packs, ascending by id, so the choice does not move when the data does. */

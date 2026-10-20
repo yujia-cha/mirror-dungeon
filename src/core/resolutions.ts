@@ -38,7 +38,7 @@
  */
 import type { GameData } from './schema.ts';
 import type { GameIndexes, PlanInput, RoutePlan, WantedGift } from './types.ts';
-import { conflictRootsOf, contestedFloors, wantedRoots } from './conflicts.ts';
+import { conflictRootsOf, contestedFloors, wantedRootsMemo } from './conflicts.ts';
 import { planRoute } from './index.ts';
 import { binomial } from './search.ts';
 
@@ -198,7 +198,10 @@ export function createResolutions(
       ? { ...input.options, lastFloor: base.floors[base.floors.length - 1]!.floor }
       : input.options;
   const scoped: PlanInput = { ...input, options };
-  const lostIn = (plan: RoutePlan, of: PlanInput): number[] => conflictRootsOf(plan, of, data, indexes);
+  // The roots once per goal list (M160): the states below differ in goals and pins only.
+  const rootsFor = wantedRootsMemo(data, indexes);
+  const lostIn = (plan: RoutePlan, of: PlanInput): number[] =>
+    conflictRootsOf(plan, of, data, indexes, rootsFor(of));
   const k0 = lostIn(base, scoped).length;
   const approx = base.stats.searchCapped;
   /** Any plan cut short so far: a node it failed may have hidden a way, so the list says 「근사」. */
@@ -348,7 +351,7 @@ export function createResolutions(
   const keep = new Set(tiered ? input.wanted.filter((w) => w.required).map((w) => w.giftId) : []);
   const groups: number[][] = (() => {
     const contested = contestedFloors(base, options, indexes);
-    const goalRoot = wantedRoots(scoped, data, indexes);
+    const goalRoot = rootsFor(scoped);
     const out = new Map<string, number[]>();
     for (const floor of base.floors) {
       if (floor.packId === null || floor.reason !== 'required' || !contested.has(floor.floor)) continue;

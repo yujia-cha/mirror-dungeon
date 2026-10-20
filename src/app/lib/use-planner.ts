@@ -155,7 +155,15 @@ export function usePlanner(
     };
     // A script that 404s, a parse error, an exception inside the planner: all arrive here, and all
     // mean the same thing — stop waiting and compute inline instead.
-    const onError = (): void => setBroken(true);
+    const onError = (): void => {
+      setBroken(true);
+      // A worker that failed is done for: left alive it keeps grinding analysis tasks nobody reads,
+      // and a remount would pick it up again from the cache (M160).
+      if (cached === active) {
+        cached.terminate();
+        cached = null;
+      }
+    };
     active.addEventListener('message', onMessage);
     active.addEventListener('error', onError);
     active.addEventListener('messageerror', onError);

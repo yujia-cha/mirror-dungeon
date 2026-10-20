@@ -134,7 +134,13 @@ const input: PlanInput = share
       },
     };
 
-const plan = planRoute(input, data, indexes);
+// Core keeps no clock (M160): the call is timed here for the summary line.
+const startedAt = performance.now();
+const planned = planRoute(input, data, indexes);
+const plan = {
+  ...planned,
+  stats: { ...planned.stats, elapsedMs: Math.round(performance.now() - startedAt) },
+};
 // The same analysis the app's decision card shows, measured to the end (no budget here).
 const drops = hasFlag('--alternatives')
   ? planDropEffects(input, data, indexes, plan, { maxRuns: Number.POSITIVE_INFINITY })

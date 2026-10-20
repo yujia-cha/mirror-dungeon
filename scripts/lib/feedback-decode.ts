@@ -5,9 +5,27 @@
  * Pure. `scripts/feedback-decode.ts` reads the body (a file or stdin), names ids against the
  * season's data and writes the files.
  */
-import { decodePayload, type DecodeResult, type FeedbackPayload } from '../../src/app/feedback/payload.ts';
+import { createHash } from 'node:crypto';
+import {
+  decodePayload as decodeBlock,
+  MAX_PAYLOAD_CHARS,
+  type DecodeResult,
+  type FeedbackPayload,
+} from '../../src/app/feedback/payload.ts';
 
-export { decodePayload, type DecodeResult, type FeedbackPayload };
+export { MAX_PAYLOAD_CHARS, type DecodeResult, type FeedbackPayload };
+
+/**
+ * An issue body (or just the block's text) back to the payload. The body comes from a file or
+ * stdin, so it is bounded here before the block is even looked for (M160): the decoder bounds the
+ * block itself to `MAX_PAYLOAD_CHARS`, and a body past four times that holds no real issue —
+ * GitHub stops at 65 536 characters. Never throws.
+ */
+export function decodePayload(body: string): DecodeResult {
+  if (body.length > MAX_PAYLOAD_CHARS * 4)
+    return { ok: false, error: `the body is longer than ${MAX_PAYLOAD_CHARS * 4} characters` };
+  return decodeBlock(body);
+}
 
 /** Where the public site lives: share links are rebuilt on it, whatever page the report came from. */
 export const PUBLIC_SITE = 'https://yujia-cha.github.io/mirror-dungeon/';
@@ -20,10 +38,20 @@ export function publicShareLink(payload: FeedbackPayload, site = PUBLIC_SITE): s
   return hash < 0 ? null : `${site}${url.slice(hash)}`;
 }
 
-/** `20261016-143005` in UTC: the folder a report is written to. */
+/** `20261016-143005` in UTC: the stamp a report is named by. */
 export function stampOf(ms: number): string {
   const iso = new Date(ms).toISOString();
   return `${iso.slice(0, 10).replace(/-/g, '')}-${iso.slice(11, 19).replace(/:/g, '')}`;
+}
+
+/**
+ * The folder a report is written to: the stamp plus eight hex of the payload's own hash (M160).
+ * `t` is the visitor's, so two reports — or one pasted twice with a changed message — could share a
+ * stamp and overwrite each other; the hash keeps each payload in its own folder.
+ */
+export function reportFolderOf(payload: FeedbackPayload): string {
+  const digest = createHash('sha256').update(JSON.stringify(payload)).digest('hex').slice(0, 8);
+  return `${stampOf(payload.t)}-${digest}`;
 }
 
 export interface Names {

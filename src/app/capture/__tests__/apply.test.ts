@@ -561,6 +561,56 @@ describe('execute', () => {
     expect([...pins()].sort((a, b) => a - b)).toEqual([9191, 9230]);
   });
 
+  it('leaves a status the player changed in the meantime alone on undo (M160)', () => {
+    // Arrange: the reader saw 9191 acquired; the player then marked it 미획득 by hand.
+    const applied = apply({ kind: 'got', giftId: 9191 });
+    useApp.getState().setGiftStatus(9191, 'failed');
+    // Act
+    execute(inverseOf(applied), ops);
+    // Assert: the player's mark stands; the undo did not put the reader's old value back.
+    expect(useApp.getState().run.giftStatus[9191]).toBe('failed');
+  });
+
+  it('undoes a status the player left as the reader set it', () => {
+    const applied = apply({ kind: 'got', giftId: 9191 });
+    execute(inverseOf(applied), ops);
+    expect(useApp.getState().run.giftStatus[9191]).toBeUndefined();
+  });
+
+  it('records only the changes a status step made, and none when it made none', () => {
+    // Arrange: a step that expects 9191 collected while the run holds no mark on it.
+    const stale = execute([{ kind: 'status', changes: [{ giftId: 9191, from: 'got', to: null }] }], ops);
+    const mixed = execute(
+      [
+        {
+          kind: 'status',
+          changes: [
+            { giftId: 9191, from: 'got', to: null },
+            { giftId: 9230, from: null, to: 'got' },
+          ],
+        },
+      ],
+      ops,
+    );
+    // Assert
+    expect(stale).toEqual([]);
+    expect(mixed).toEqual([{ kind: 'status', changes: [{ giftId: 9230, from: null, to: 'got' }] }]);
+    expect(useApp.getState().run.giftStatus).toEqual({ 9230: 'got' });
+  });
+
+  it('keeps a walk’s status the player changed since when an entry is undone (M160)', () => {
+    // Arrange: the reader entered floor 3 from floor 1, which missed 901 and 902 on the way.
+    useApp.getState().visitPack(1001, 1, { got: [77] });
+    const applied = enter(3, 1003);
+    expect(useApp.getState().run.giftStatus).toMatchObject({ 901: 'failed', 902: 'failed' });
+    useApp.getState().setGiftStatus(902, 'got');
+    // Act
+    execute(inverseOf(applied), ops);
+    // Assert: 901 is cleared with the walk, 902 keeps the player's mark.
+    expect(useApp.getState().run.giftStatus[901]).toBeUndefined();
+    expect(useApp.getState().run.giftStatus[902]).toBe('got');
+  });
+
   it('closes the start and reopens it on undo (markStartDone)', () => {
     const applied = apply({ kind: 'startDone' });
     const closed = useApp.getState().run.startDone;

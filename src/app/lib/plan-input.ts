@@ -4,6 +4,7 @@
  * gift up simply removes it from the selection.
  */
 import type { PlanInput, PlanOptions, WantedGift } from '../../core/types.ts';
+import { heldGifts } from './run-gifts.ts';
 
 /**
  * The start the app plans (M145, owner's call): no starting gift, so no starting keyword either.
@@ -160,9 +161,7 @@ export function planInputFor(
     ? {
         pinnedPacks: { ...run.visits },
         currentFloor: run.currentFloor,
-        ownedGifts: Object.entries(run.giftStatus)
-          .filter(([, s]) => s === 'got')
-          .map(([id]) => Number(id)),
+        ownedGifts: heldGifts(run.giftStatus),
         unobtainableGifts: Object.entries(run.giftStatus)
           .filter(([, s]) => s === 'failed')
           .map(([id]) => Number(id)),

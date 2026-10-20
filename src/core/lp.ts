@@ -68,14 +68,15 @@ export class Tableau {
   }
 
   clone(): Tableau {
+    // `slice` copies a typed array in one memmove; `from` walks it element by element (M160).
     return new Tableau(
-      this.t.map((row) => Float64Array.from(row)),
-      Float64Array.from(this.objective),
-      Int32Array.from(this.basis),
-      Uint8Array.from(this.inBasis),
+      this.t.map((row) => row.slice()),
+      this.objective.slice(),
+      this.basis.slice(),
+      this.inBasis.slice(),
       this.cap,
-      Float64Array.from(this.ub),
-      Uint8Array.from(this.flipped),
+      this.ub.slice(),
+      this.flipped.slice(),
       this.n,
     );
   }
@@ -205,21 +206,30 @@ export class Tableau {
     }
   }
 
+  /** The columns of the pivot row that are not zero, collected once per pivot. */
+  private readonly pivotColumns: number[] = [];
+
   private pivot(leave: number, enter: number): void {
-    const { t, objective } = this;
+    const { t, objective, pivotColumns: cols } = this;
     const width = objective.length;
     const pivotRow = t[leave]!;
     const p = pivotRow[enter]!;
-    for (let j = 0; j < width; j += 1) pivotRow[j] = pivotRow[j]! / p;
+    // Only the pivot row's non-zero columns change any other row: subtracting f × 0 leaves a value
+    // as it was, so the rows are swept over those columns alone (M160 — the tableau is sparse).
+    cols.length = 0;
+    for (let j = 0; j < width; j += 1) {
+      pivotRow[j] = pivotRow[j]! / p;
+      if (pivotRow[j] !== 0) cols.push(j);
+    }
     for (let i = 0; i < t.length; i += 1) {
       if (i === leave) continue;
       const row = t[i]!;
       const f = row[enter]!;
       if (f === 0) continue;
-      for (let j = 0; j < width; j += 1) row[j] = row[j]! - f * pivotRow[j]!;
+      for (const j of cols) row[j] = row[j]! - f * pivotRow[j]!;
     }
     const f = objective[enter]!;
-    if (f !== 0) for (let j = 0; j < width; j += 1) objective[j] = objective[j]! - f * pivotRow[j]!;
+    if (f !== 0) for (const j of cols) objective[j] = objective[j]! - f * pivotRow[j]!;
     this.inBasis[this.basis[leave]!] = 0;
     this.inBasis[enter] = 1;
     this.basis[leave] = enter;
