@@ -1,3 +1,5 @@
+// First, before any module that parses with Zod at import time (the store's persisted state).
+import './app/lib/zod-config.ts';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';

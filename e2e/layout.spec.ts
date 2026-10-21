@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './lib/test.ts';
 import { auditLayout } from './lib/layout-audit.ts';
 import { DEVICES, TEXT_SCALES, startWithTextScale, walkLayoutStates } from './lib/layout-states.ts';
 

@@ -208,8 +208,8 @@ describe('korean particles', () => {
     expect(withJosa('부동', '과/와', 'ko')).toBe('부동과');
     expect(withJosa('깨진 안경', '과/와', 'ko')).toBe('깨진 안경과');
     expect(withJosa('진혼', '은/는', 'ko')).toBe('진혼은');
-    // A word that does not end in Hangul gets the bracketed form a Korean writer would use.
-    expect(withJosa('Soothe the Dead', '을/를', 'ko')).toBe('Soothe the Dead을(를)');
+    // A word that does not end in Hangul is read by its last letter (M166).
+    expect(withJosa('Soothe the Dead', '을/를', 'ko')).toBe('Soothe the Dead를');
     // English sentences carry no particle at all.
     expect(withJosa('Soothe the Dead', '을/를', 'en')).toBe('Soothe the Dead');
   });

@@ -3,7 +3,7 @@
  * is stubbed, so nothing reaches github.com), and 「앱 화면을 클립보드에 복사」 draws the app to a
  * PNG without a single request off the page's origin.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from './lib/test.ts';
 
 test('opens a prefilled issue on the public repo with the message and the plan', async ({ page }) => {
   await page.addInitScript(() => {

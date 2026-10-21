@@ -1090,7 +1090,7 @@ describe('condition wording', () => {
   it('picks the object particle by the final consonant', () => {
     expect(josa('화상', '을/를')).toBe('화상을');
     expect(josa('연기', '을/를')).toBe('연기를');
-    expect(josa('Burn', '을/를')).toBe('Burn을(를)');
+    expect(josa('Burn', '을/를')).toBe('Burn을');
     const report = reportFor(9088, BURN_DECK);
     expect(conditionText(report, data.enums, 'ko')).toMatch(/^화상을 부여하는/);
   });

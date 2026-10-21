@@ -5,7 +5,7 @@
  * snapshot serializes the whole DOM, which shapes every `content-visibility: auto` tile and fetches
  * every slice up front — with tracing on, this test could not fail.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from './lib/test.ts';
 
 test.use({ trace: 'off' });
 

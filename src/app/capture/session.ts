@@ -26,9 +26,8 @@
  * The caller (M104's UI) applies the events to the run and supplies what the reading needs
  * through `context()`, read fresh on every frame so candidates follow the run.
  */
-import type { CaptureLayout, DiagTraceStep } from '../../core/schema.ts';
+import type { CaptureLayout } from '../../core/schema.ts';
 import { captureLayoutSchema } from '../../core/schema.ts';
-import type { Lang } from '../i18n.ts';
 import {
   emptyBacklog,
   popupBox,
@@ -43,7 +42,6 @@ import {
 } from './backlog.ts';
 import { changed, isBlack, signatureOf, watchedRegions } from './change.ts';
 import {
-  followFrames,
   initialPace,
   leanReads,
   paceDrop,
@@ -58,10 +56,8 @@ import {
   type IntervalRange,
   type LoadLevel,
   type PaceState,
-  type PaceStats,
 } from './pace.ts';
 import {
-  BURST_TICK_MS,
   decide,
   fastTicks,
   finished,
@@ -73,157 +69,44 @@ import {
   tickDelay,
   type LoopState,
   type ReadMode,
-  type ReadReason,
 } from './loop.ts';
-import { prepareReference, prepareSlot, type IconRef } from './match-icon.ts';
+import { IconRefs } from './icon-refs.ts';
+import { prepareSlot, type IconRef } from './match-icon.ts';
 import { chipTiers } from './tier-chip.ts';
-import type { NameCandidate } from './match-name.ts';
 import { createOcrEngine, type OcrEngine } from './ocr-engine.ts';
 import { pixelRect, toPnm, type PixelRect, type Region } from './preprocess.ts';
 import { readFrame, type RegionReader } from './read-frame.ts';
-import { INITIAL_TRACKER, trackFrame, type CaptureEvent, type Frame, type TrackerState } from './tracker.ts';
+import { drawScaled, PREVIEW_QUALITY, SnapshotFrame } from './snapshot.ts';
+import {
+  ENV_PERIOD_MS,
+  type CaptureError,
+  type CaptureGeometry,
+  type CaptureStats,
+  type EnvReport,
+  type ReadReport,
+  type SessionOptions,
+} from './session-types.ts';
+import { TickScheduler } from './tick-scheduler.ts';
+import { INITIAL_TRACKER, trackFrame, type Frame, type TrackerState } from './tracker.ts';
 import { layoutInFrame, titleBarHeight, titleBarRows } from './window-frame.ts';
 
-export type CaptureStatus = 'idle' | 'starting' | 'running' | 'error';
-/** Why a session stopped on its own: no API, the player said no, the share ended, OCR failed to load. */
-export type CaptureError = 'unsupported' | 'denied' | 'ended' | 'engine' | 'layout';
-
-export interface CaptureContext {
-  lang: Lang;
-  packs: readonly NameCandidate[];
-  gifts: readonly NameCandidate[];
-  /** Gifts the run holds now (giftStatus 'got'), the fusion confirm's candidates. */
-  held: readonly number[];
-  /** The 잔영 materials, always candidates. */
-  materials: readonly number[];
-  /** Every gift's tier, for the fusion slots' numerals (M152). */
-  tiers?: ReadonlyMap<number, number | null>;
-  /** The picture URL of a gift's game icon, or null. */
-  iconUrl: (giftId: number) => string | null;
-  /** The run start is open: look for its pickers (M135). */
-  startOpen: boolean;
-}
-
-export interface CaptureStats {
-  ticks: number;
-  reads: number;
-  /** Reads of popups queued while a read was busy (M141), and queued popups pushed out unread. */
-  queued: number;
-  queueDropped: number;
-}
-
-/** One read, as the owner's diagnostics keep it (M112). */
-export interface ReadReport {
-  /** Wall-clock time of the read's start, ms. */
-  t: number;
-  /** Why the loop read it (`decide`, M154). */
-  reason: ReadReason;
-  /** A full read, or a popup read of the popup burst (M136) — every queued read is one. */
-  mode: ReadMode;
-  /**
-   * A read of a popup queued while a read was busy (M141): `t` is when it was snapshotted, `lagMs`
-   * how long it waited for the read to start.
-   */
-  queued?: { lagMs: number };
-  /** Queued popups pushed out unread since the read before this one (M141); omitted when none. */
-  queueDropped?: number;
-  ms: number;
-  ocrCalls: number;
-  frame: Frame;
-  trace: DiagTraceStep[];
-  events: CaptureEvent[];
-  captureSize: { width: number; height: number };
-}
-
-/**
- * What the shared picture is (M134): its size, and how much of its top is the window's title bar
- * rather than the game. Told when the first frame is read and whenever either changes.
- */
-export interface CaptureGeometry {
-  captureSize: { width: number; height: number };
-  inset: { top: number };
-}
-
-/**
- * The environment the reader runs in (M142), told every `ENV_PERIOD_MS` and when the load level
- * moves: what the share delivers against what was asked, how late the timer ticks fire, what reads
- * cost, how often the backlog overflowed, and where the controller stands.
- */
-export interface EnvReport {
-  /** Wall-clock time, ms. */
-  t: number;
-  reason: 'periodic' | 'level';
-  fps: {
-    /** The rate last asked of the share (`FRAME_RATE`). */
-    requested: number;
-    /** As delivered, from the frames' callbacks; null where the browser does not say. */
-    delivered: number | null;
-    /** What the track says it runs at (`getSettings`), or null. */
-    setting: number | null;
-  };
-  stats: PaceStats;
-  /** Queued popups pushed out unread since the report before. */
-  queueDropped: number;
-  range: IntervalRange;
-  interval: number;
-  level: LoadLevel;
-}
-
-/** How often the environment is told while nothing else moves it. */
-export const ENV_PERIOD_MS = 10_000;
-/** The frame watch is trusted to tell new frames apart only this long after its last callback. */
-const FRAME_WATCH_STALE_MS = 500;
-/** A gift icon that failed to load is tried again after this long (M154), not on every read. */
-const REF_RETRY_MS = 10_000;
+// The session's API, as before M167 split the types, the pictures, the icons and the ticks out.
+export { ENV_PERIOD_MS } from './session-types.ts';
+export type {
+  CaptureContext,
+  CaptureError,
+  CaptureGeometry,
+  CaptureStats,
+  CaptureStatus,
+  EnvReport,
+  ReadReport,
+  SessionOptions,
+  TickReport,
+} from './session-types.ts';
+export type { FrameSource } from './snapshot.ts';
 
 /** The OCR engine rejected a call (M154): the session cannot read on, and stops with `engine`. */
 class EngineFailure extends Error {}
-
-export interface SessionOptions {
-  /** The preset's range (M142); the tick interval floats inside it. */
-  interval?: IntervalRange;
-  context: () => CaptureContext;
-  onEvents: (events: CaptureEvent[]) => void;
-  onStatus: (status: CaptureStatus, error?: CaptureError) => void;
-  /**
-   * Every read, just before its events are handed on (M112). `frame` is the read's picture when
-   * `wantImage()` said so at the time: copied after the events, encoded only if kept (M116).
-   */
-  onRead?: (report: ReadReport, frame: FrameSource | null) => void;
-  wantImage?: () => boolean;
-  onGeometry?: (geometry: CaptureGeometry) => void;
-  /**
-   * Every tick, after the loop decided (M134): the owner's filmstrip. `preview` is the tick's
-   * small picture when `wantImage()` said so — already copied, encoded only if kept.
-   */
-  onTick?: (tick: TickReport, preview: FrameSource | null) => void;
-  /** The environment (M142): every `ENV_PERIOD_MS`, and when the load level moves. */
-  onEnv?: (env: EnvReport) => void;
-  /** How often the environment is told (default `ENV_PERIOD_MS`; tests shorten it). */
-  envPeriodMs?: number;
-}
-
-/** One tick, as the owner's diagnostics keep it (M134). */
-export interface TickReport {
-  /** Wall-clock time, ms. */
-  t: number;
-  /** This tick started a read. */
-  read: boolean;
-  /** A read was still running, so this tick was skipped. */
-  busy: boolean;
-  /** The signature differs from the frame last handed to a read. */
-  changed: boolean;
-}
-
-/**
- * A read's picture for the owner's diagnostics (M116). Taking it is a cheap copy of the snapshot;
- * the full-size JPEG encode happens only for a frame the recorder keeps, once (`encode` is
- * memoised). `close` frees the copy; a frame being encoded is freed when the encode is done.
- */
-export interface FrameSource {
-  encode(): Promise<Blob | null>;
-  close(): void;
-}
 
 /** A popup waiting in the backlog (M141): the crop of its box, and how to read it back. */
 interface QueuedShot {
@@ -258,9 +141,6 @@ interface ReadJob {
 
 /** The small copy the signature is taken on: wide enough to see a popup appear, cheap to read back. */
 const PREVIEW_WIDTH = 480;
-/** JPEG quality of a kept read (re-read with OCR) and of a filmstrip preview (only looked at). */
-const FULL_QUALITY = 0.85;
-const PREVIEW_QUALITY = 0.7;
 
 export function captureSupported(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getDisplayMedia === 'function';
@@ -269,18 +149,12 @@ export function captureSupported(): boolean {
 export class CaptureSession {
   private stream: MediaStream | null = null;
   private video: HTMLVideoElement | null = null;
-  /** The next tick (M139: one at a time, so a popup burst can bring it in). */
-  private timer: ReturnType<typeof setTimeout> | null = null;
-  /** When that tick is due, `performance.now()` time. */
-  private timerDue = 0;
-  /** In a popup burst, the same tick on the share's next frame (M141) — whichever comes first. */
-  private frameRequest: number | null = null;
+  /** When the session ticks (M139, M141, M142): the timer, the frame booking and the frame watch. */
+  private readonly ticks: TickScheduler;
   /** Popups seen while a read was busy, waiting for their read (M141). */
   private backlog: Backlog<QueuedShot> = emptyBacklog();
   /** `stats.queueDropped` as last told in a read report. */
   private droppedTold = 0;
-  /** The share runs at `FRAME_RATE.burst` (M139). */
-  private fastFrames = false;
   private engine: OcrEngine | null = null;
   /** The layout as measured: regions in fractions of the game's client area. */
   private layout: CaptureLayout | null = null;
@@ -292,9 +166,7 @@ export class CaptureSession {
   private loop: LoopState = INITIAL_LOOP;
   private tracker: TrackerState = INITIAL_TRACKER;
   /** Icon references by gift, loaded once each; a failed one is dropped after `REF_RETRY_MS` (M154). */
-  private refs = new Map<number, Promise<IconRef | null>>();
-  /** When a gift's icon last failed to load (M154). */
-  private refFailedAt = new Map<number, number>();
+  private refs = new IconRefs();
   /** The tick interval and load level (M142). */
   private pace: PaceState;
   /** The previous tick's signature: what moved since then pulls the interval in (M142). */
@@ -307,15 +179,8 @@ export class CaptureSession {
   private readingChange = false;
   /** Since when the popup region has been moving frame to frame (`motionSince`, M142); null: still. */
   private movingSince: number | null = null;
-  /** The frame count the last tick saw (`lastFrame.count`), to tell a new frame from a second look. */
-  private tickedFrame = -1;
   /** The screen the last read named — popups come on some (`popupProne`). */
   private lastScreen: Frame['screen'] = null;
-  /** The share's frame rate last asked for. */
-  private requestedFps: number = FRAME_RATE.idle;
-  /** The passive frame watch (M142): its request, and the frame before. */
-  private frameWatch: number | null = null;
-  private lastFrame: { at: number; count: number; seen: number } | null = null;
   /** When the environment was last told, the level it said, and the overflow count it had. */
   private envAt = -Infinity;
   private levelTold: LoadLevel = 0;
@@ -330,6 +195,18 @@ export class CaptureSession {
 
   constructor(private readonly options: SessionOptions) {
     this.pace = initialPace(options.interval ?? READ_INTERVALS.balanced, performance.now());
+    this.ticks = new TickScheduler({
+      video: () => this.video,
+      stream: () => this.stream,
+      stopped: () => this.stopped,
+      loop: () => this.loop,
+      pace: () => this.pace,
+      late: (now, lateMs) => this.setPace(paceLateness(this.pace, now, lateMs)),
+      frame: (intervalMs) => {
+        this.pace = paceFrame(this.pace, performance.now(), intervalMs);
+      },
+      tick: () => void this.tick(),
+    });
   }
 
   /**
@@ -392,8 +269,8 @@ export class CaptureSession {
     this.video = video;
     this.pace = initialPace(this.pace.range, performance.now());
     this.envAt = performance.now();
-    this.watchFrames();
-    this.schedule(this.pace.interval);
+    this.ticks.watchFrames();
+    this.ticks.schedule(this.pace.interval);
     this.options.onStatus('running');
   }
 
@@ -401,8 +278,8 @@ export class CaptureSession {
   setInterval(range: IntervalRange): void {
     const now = performance.now();
     this.pace = withRange(this.pace, range, now);
-    if (this.timer === null) return;
-    this.schedule(tickDelay(this.loop, now, this.pace.interval));
+    if (!this.ticks.booked) return;
+    this.ticks.schedule(tickDelay(this.loop, now, this.pace.interval));
   }
 
   /** The load level now (M142). */
@@ -432,7 +309,7 @@ export class CaptureSession {
       t: Date.now(),
       reason,
       fps: {
-        requested: this.requestedFps,
+        requested: this.ticks.requestedFps,
         delivered: stats.deliveredFps,
         setting: typeof settings?.frameRate === 'number' ? settings.frameRate : null,
       },
@@ -444,138 +321,10 @@ export class CaptureSession {
     });
   }
 
-  /**
-   * Count the share's frames as they are presented (M142), for the delivered rate: one callback per
-   * frame, nothing else done in it. Where the browser has no `requestVideoFrameCallback` the rate
-   * is the track's setting alone.
-   */
-  private watchFrames(): void {
-    const video = this.video;
-    if (!video || typeof video.requestVideoFrameCallback !== 'function') return;
-    const onFrame = (now: number, meta: VideoFrameCallbackMetadata): void => {
-      this.frameWatch = null;
-      if (this.stopped || this.video !== video) return;
-      const count = meta.presentedFrames;
-      if (this.lastFrame && count > this.lastFrame.count)
-        this.pace = paceFrame(
-          this.pace,
-          performance.now(),
-          (now - this.lastFrame.at) / (count - this.lastFrame.count),
-        );
-      this.lastFrame = { at: now, count, seen: performance.now() };
-      this.frameWatch = video.requestVideoFrameCallback(onFrame);
-    };
-    this.frameWatch = video.requestVideoFrameCallback(onFrame);
-  }
-
-  /**
-   * The next tick, `delay` from now (M139). Each tick books the one after it before it runs, at the
-   * preset's interval or, in a popup burst, `BURST_TICK_MS` — a fixed `setInterval` could not speed
-   * up for the burst. A tick that comes while a read is still running marks the loop dirty and may
-   * queue the popup it sees (`queueShot`, M141).
-   *
-   * In a burst the tick is also booked on the share's next frame (M141, `bookFrame`), so a popup
-   * shown for a frame or two is ticked on; the timer stays as the backstop — a window that does not
-   * repaint sends no frames, and the burst's re-read and its end must still come. Whichever fires
-   * first cancels the other (`fire`).
-   */
-  private schedule(delay: number): void {
-    if (this.stopped) return;
-    this.cancelTick();
-    this.timerDue = performance.now() + delay;
-    this.timer = setTimeout(() => this.fire(true), delay);
-    // While popups may come (the interval at the range's `min`, M142) or ticks are fast, the share's
-    // next frame brings the tick too: no frame that arrives goes by unseen.
-    if (fastTicks(this.loop, performance.now()) || followFrames(this.pace)) this.bookFrame();
-  }
-
-  /**
-   * Whether this tick sees a frame the last tick did not (M142), from the frame watch's count. Where
-   * the watch is missing or has gone quiet (`FRAME_WATCH_STALE_MS` — a hidden tab may stop the
-   * callbacks while frames still come), every tick counts as a new frame, as before M142.
-   */
-  private newFrame(): boolean {
-    const frame = this.lastFrame;
-    if (!frame || performance.now() - frame.seen > FRAME_WATCH_STALE_MS) return true;
-    if (frame.count === this.tickedFrame) return false;
-    this.tickedFrame = frame.count;
-    return true;
-  }
-
-  /** The booked tick on the share's next frame, where the browser has the API (M141). */
-  private bookFrame(): void {
-    const video = this.video;
-    if (this.frameRequest !== null || !video || typeof video.requestVideoFrameCallback !== 'function') return;
-    this.frameRequest = video.requestVideoFrameCallback(() => {
-      this.frameRequest = null;
-      this.fire(false);
-    });
-  }
-
-  /**
-   * The booked tick is due: book the next, then tick. A timer tick tells how late it fired (M142) —
-   * the page's thread was busy that long; a frame tick has no due time. The booking is from the
-   * state before the tick; the tick books again once it has decided (`rebook`, M154).
-   */
-  private fire(timer: boolean): void {
-    const now = performance.now();
-    if (timer) this.setPace(paceLateness(this.pace, now, now - this.timerDue));
-    this.cancelTick();
-    this.schedule(tickDelay(this.loop, now, this.pace.interval));
-    void this.tick();
-  }
-
-  /**
-   * After a tick decided (M154): book again from what it changed. A change that pulled the interval
-   * in to the range's `min`, a black frame that made the ticks fast (`TRANSITION_TICKS_MS`), a
-   * burst just begun — the booking `fire` made before the tick still had the old interval (a
-   * second on economy's still map) and the old frame-following, so a popup shown under the read
-   * this tick started could pass untouched. A timer due later than the new delay is brought in;
-   * a tick that now follows the frames books the next frame too; the share's rate follows.
-   */
-  private rebook(): void {
-    if (this.stopped || this.timer === null) return;
-    const now = performance.now();
-    const delay = tickDelay(this.loop, now, this.pace.interval);
-    if (this.timerDue - now > delay) this.schedule(delay);
-    else if (fastTicks(this.loop, now) || followFrames(this.pace)) this.bookFrame();
-    this.followBurst();
-  }
-
-  /** Cancel the booked tick, both its timer and its frame. */
-  private cancelTick(): void {
-    if (this.timer !== null) clearTimeout(this.timer);
-    this.timer = null;
-    if (this.frameRequest !== null) this.video?.cancelVideoFrameCallback?.(this.frameRequest);
-    this.frameRequest = null;
-  }
-
-  /**
-   * Follow the popup burst (M139): a burst just begun brings the next tick in to `BURST_TICK_MS`
-   * — and to the share's next frame (M141) — and raises the share's frame rate; once it is over the
-   * rate goes back down. A popup just queued under a busy read does the same (M142, `fastTicks`).
-   */
-  private followBurst(): void {
-    const now = performance.now();
-    const burst = fastTicks(this.loop, now);
-    if (burst !== this.fastFrames) {
-      this.fastFrames = burst;
-      this.requestedFps = burst ? FRAME_RATE.burst : FRAME_RATE.idle;
-      const track = this.stream?.getVideoTracks()[0];
-      // Not every track takes a new rate (a canvas stream in the e2e); reading goes on either way.
-      void track?.applyConstraints?.({ frameRate: { ideal: this.requestedFps } }).catch(() => undefined);
-    }
-    if (!burst || this.timer === null) return;
-    if (this.timerDue - now > BURST_TICK_MS) this.schedule(BURST_TICK_MS);
-    else this.bookFrame();
-  }
-
   /** Stop sharing and release everything. Safe to call twice. */
   stop(): void {
     this.stopped = true;
-    this.cancelTick();
-    if (this.frameWatch !== null) this.video?.cancelVideoFrameCallback?.(this.frameWatch);
-    this.frameWatch = null;
+    this.ticks.stop();
     for (const entry of this.backlog.entries) release(entry.payload);
     this.backlog = emptyBacklog();
     for (const track of this.stream?.getTracks() ?? []) track.stop();
@@ -596,7 +345,7 @@ export class CaptureSession {
   private async tick(): Promise<void> {
     const video = this.video;
     if (!video || !this.layout || !this.engine || video.videoWidth === 0) return;
-    this.followBurst();
+    this.ticks.followBurst();
     this.stats.ticks += 1;
     const width = video.videoWidth;
     const height = video.videoHeight;
@@ -633,7 +382,7 @@ export class CaptureSession {
     const indices = layout ? popupRegionIndices(this.regions, layout) : [];
     const popupNow = popupPart(signature, indices);
     // Motion is told frame to frame (`animating`): a second look at the same frame is left out.
-    if (this.newFrame()) {
+    if (this.ticks.newFrame()) {
       const [before, previous] = this.popupTicks;
       this.popupTicks = [previous, popupNow];
       this.movingSince = motionSince(this.movingSince, before, previous, popupNow, now);
@@ -650,7 +399,7 @@ export class CaptureSession {
       settle: this.tracker.inShop !== true,
     });
     this.loop = step.state;
-    this.rebook();
+    this.ticks.rebook();
     const busy = step.decision === 'skip' && step.state.busy;
     this.reportTick(step.decision === 'read', busy, isChanged);
     // A black popup region shows no popup: nothing to queue.
@@ -700,7 +449,7 @@ export class CaptureSession {
       this.loop,
       frame ? outcomeOf(frame, performance.now(), this.pace.range.max) : undefined,
     );
-    this.followBurst();
+    this.ticks.followBurst();
   }
 
   /**
@@ -733,7 +482,7 @@ export class CaptureSession {
     this.backlog = pushed.backlog;
     // The popups clicked through after it are ticked on frame by frame (M142).
     this.loop = queuedPopup(this.loop, performance.now());
-    this.followBurst();
+    this.ticks.followBurst();
     if (pushed.evicted) {
       this.stats.queueDropped += 1;
       this.setPace(paceDrop(this.pace, performance.now()));
@@ -864,7 +613,9 @@ export class CaptureSession {
       },
     };
     const refsOf = async (ids: readonly number[]) =>
-      (await Promise.all(ids.map((id) => this.ref(id, ctx.iconUrl)))).filter((r): r is IconRef => r !== null);
+      (await Promise.all(ids.map((id) => this.refs.get(id, ctx.iconUrl)))).filter(
+        (r): r is IconRef => r !== null,
+      );
     const [held, materials] = await Promise.all([refsOf(ctx.held), refsOf(ctx.materials)]);
     const { frame, ocrCalls, trace } = await readFrame(reader, job.layout, {
       lang: ctx.lang,
@@ -945,142 +696,9 @@ export class CaptureSession {
     preview?.take();
     this.options.onTick({ t: Date.now(), read, busy, changed }, preview);
   }
-
-  /**
-   * A gift icon reduced for matching, decoded once per session. One that did not load (no picture,
-   * a fetch that failed) is not kept for the session (M154): it is tried again `REF_RETRY_MS` later.
-   */
-  private ref(id: number, iconUrl: (giftId: number) => string | null): Promise<IconRef | null> {
-    const cached = this.refs.get(id);
-    if (cached) return cached;
-    const failedAt = this.refFailedAt.get(id);
-    if (failedAt !== undefined && performance.now() - failedAt < REF_RETRY_MS) return Promise.resolve(null);
-    const loading = loadRef(id, iconUrl(id)).then((ref) => {
-      if (ref === null) {
-        this.refs.delete(id);
-        this.refFailedAt.set(id, performance.now());
-      } else this.refFailedAt.delete(id);
-      return ref;
-    });
-    this.refs.set(id, loading);
-    return loading;
-  }
-}
-
-/** The video's current frame at a size, as RGBA, drawn on `canvas`. */
-function drawScaled(
-  canvas: HTMLCanvasElement,
-  source: CanvasImageSource,
-  width: number,
-  height: number,
-): ImageData {
-  if (canvas.width !== width) canvas.width = width;
-  if (canvas.height !== height) canvas.height = height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-  ctx.drawImage(source, 0, 0, width, height);
-  return ctx.getImageData(0, 0, width, height);
-}
-
-/** A canvas as JPEG at full size — the diagnostics re-read it with OCR, so no downscale. */
-function toJpeg(canvas: HTMLCanvasElement, quality = FULL_QUALITY): Promise<Blob | null> {
-  return new Promise((resolve) => {
-    try {
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-/** Where kept pictures are drawn to be encoded; one for the page, made on first use. */
-let encodeCanvas: HTMLCanvasElement | null = null;
-
-/** A picture as JPEG. Draw and `toBlob` run together, so one canvas serves every encode. */
-function bitmapToJpeg(bitmap: ImageBitmap, quality: number): Promise<Blob | null> {
-  try {
-    encodeCanvas ??= document.createElement('canvas');
-    encodeCanvas.width = bitmap.width;
-    encodeCanvas.height = bitmap.height;
-    encodeCanvas.getContext('2d')!.drawImage(bitmap, 0, 0);
-    return toJpeg(encodeCanvas, quality);
-  } catch {
-    // A picture already freed, or no 2D context.
-    return Promise.resolve(null);
-  }
-}
-
-/**
- * The snapshot of one read — or a tick's preview, at a lower quality (M134) — for the diagnostics
- * (`FrameSource`). `take` copies the canvas into an
- * `ImageBitmap` — before the next read draws over it; the session calls it right after the events.
- * Without `createImageBitmap` the copy is the JPEG itself, encoded at once.
- */
-class SnapshotFrame implements FrameSource {
-  private copy: Promise<ImageBitmap | Blob | null> | null = null;
-  private jpeg: Promise<Blob | null> | null = null;
-  private closed = false;
-
-  constructor(
-    private readonly canvas: HTMLCanvasElement,
-    private readonly quality = FULL_QUALITY,
-  ) {}
-
-  take(): void {
-    // A frame the diagnostics closed at once (their store is full, M160) has nothing to copy: a
-    // bitmap made now would have no one to close it, 8 MB per read.
-    if (this.copy || this.closed) return;
-    this.copy =
-      typeof createImageBitmap === 'function'
-        ? createImageBitmap(this.canvas).catch(() => null)
-        : toJpeg(this.canvas, this.quality);
-  }
-
-  encode(): Promise<Blob | null> {
-    if (this.jpeg) return this.jpeg;
-    if (this.closed) return Promise.resolve(null);
-    this.take();
-    this.jpeg = this.copy!.then((copy) =>
-      copy === null || copy instanceof Blob ? copy : bitmapToJpeg(copy, this.quality),
-    );
-    return this.jpeg;
-  }
-
-  close(): void {
-    if (this.closed) return;
-    this.closed = true;
-    const copy = this.copy;
-    if (!copy) return;
-    void (this.jpeg ?? Promise.resolve(null))
-      .then(() => copy)
-      .then((bitmap) => {
-        if (bitmap && !(bitmap instanceof Blob)) bitmap.close();
-      });
-  }
 }
 
 /** Free a queued popup's crop, once it is copied. */
 function release(shot: QueuedShot): void {
   void shot.bitmap.then((bitmap) => bitmap?.close());
-}
-
-async function loadRef(id: number, url: string | null): Promise<IconRef | null> {
-  if (!url) return null;
-  try {
-    const bitmap = await createImageBitmap(await (await fetch(url)).blob());
-    let image: ImageData;
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(bitmap, 0, 0);
-      image = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
-    } finally {
-      // The decoded picture is not needed past its pixels (M154).
-      bitmap.close();
-    }
-    return prepareReference(id, image.data, image.width, image.height);
-  } catch {
-    return null;
-  }
 }

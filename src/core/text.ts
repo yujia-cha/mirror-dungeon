@@ -62,16 +62,49 @@ export function splitHighlight(text: string): { text: string; strong: boolean }[
 }
 
 /**
+ * The reading of a final character that is not Hangul, by its Korean name: the digits 영·일·이·삼·사·
+ * 오·육·칠·팔·구 and the Latin letters 에이·비·…·지. Only 엘·엠·엔·알 and 영·일·삼·육·칠·팔 end in
+ * a consonant — 「타입 L을」, 「Mk.4를」, 「AEDD를」 — which is also how an English word ends when it
+ * ends in one of those letters (Burn을, Bell이, Dead를).
+ */
+const FINAL_WITH_BATCHIM = /[013678LMNRlmnr]$/;
+const FINAL_WITHOUT_BATCHIM = /[2459A-Za-z]$/;
+
+/**
+ * What decides the particle: the word without the bracketed note or punctuation the game hangs on
+ * its end — 「덕목 - 지(智)」 reads 지, 「본국검보[本國劍譜]」 보, 「한 잔 더!」 더, 「박수 짝짝!」 짝. A
+ * bracketed group goes as a whole; the rest goes one trailing mark at a time.
+ */
+const TRAILING_NOTE = /\s*(?:\([^()]*\)|\[[^\]]*\]|[^\p{L}\p{N}\s])\s*$/u;
+
+/**
  * Pick the Korean particle by the final consonant of the word: 화상을, 연기를. In each pair the
- * first form is the one a final consonant takes. A word that
- * does not end in Hangul (a number, or an English fallback name) gets the bracketed form, which
- * is what a Korean writer does when the reading is unknown.
+ * first form is the one a final consonant takes. The game hangs notes and marks on some names
+ * (M166 — 13 in MD8), so the judgement is made on the name without them; a final digit or Latin
+ * letter goes by its reading. A word whose ending is none of these (a lone ideograph, an empty
+ * name) gets the bracketed form, which is what a Korean writer does when the reading is unknown.
  */
 export function josa(word: string, pair: JosaPair): string {
   const [withBatchim, without] = pair.split('/') as [string, string];
-  const code = word.codePointAt(word.length - 1) ?? 0;
-  if (code < 0xac00 || code > 0xd7a3) return `${word}${withBatchim}(${without})`;
-  return `${word}${(code - 0xac00) % 28 === 0 ? without : withBatchim}`;
+  const batchim = hasBatchim(word);
+  if (batchim === null) return `${word}${withBatchim}(${without})`;
+  return `${word}${batchim ? withBatchim : without}`;
+}
+
+/** Whether the word, read aloud, ends in a consonant; null when its ending cannot be read. */
+export function hasBatchim(word: string): boolean | null {
+  let core = word;
+  for (;;) {
+    const trimmed = core.replace(TRAILING_NOTE, '');
+    if (trimmed === core) break;
+    core = trimmed;
+  }
+  const code = core.codePointAt(core.length - 1);
+  if (code === undefined) return null;
+  if (code >= 0xac00 && code <= 0xd7a3) return (code - 0xac00) % 28 !== 0;
+  if (FINAL_WITH_BATCHIM.test(core)) return true;
+  if (FINAL_WITHOUT_BATCHIM.test(core)) return false;
+  return null;
 }
 
 export type JosaPair = '을/를' | '이/가' | '은/는' | '과/와';

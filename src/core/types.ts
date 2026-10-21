@@ -174,6 +174,11 @@ export interface Requirement {
   required: boolean;
   /** The fusion result this exists to feed, if any. */
   neededFor: number | null;
+  /**
+   * Which fusing of `neededFor` it feeds, when that result is fused more than once (M166 — an
+   * intermediate two results eat). Absent for the first; part of `requirementKey`.
+   */
+  copy?: number;
   /** How the plan expects to obtain it. Filled in as planning proceeds. */
   via: RequirementRoute;
 }

@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { dataFingerprint, injectPrecache, precacheList } from './scripts/lib/precache.ts';
@@ -21,6 +22,44 @@ const SITE_URL = (process.env.VITE_SITE_URL || 'https://yujia-cha.github.io/mirr
   '/',
 );
 
+/**
+ * The external image host's origin for the CSP `img-src` (M164), as `" https://host"` to append to
+ * the directive, or nothing. The policy in index.html lists only our origin; wiring the host in
+ * here keeps `VITE_ASSET_BASE` (empty today) from silently blocking every picture if it is ever set.
+ */
+function assetSrc(): string {
+  const base = process.env.VITE_ASSET_BASE;
+  if (!base) return '';
+  return ` ${new URL(base).origin}`;
+}
+
+/**
+ * Dev only: `@vitejs/plugin-react` injects its Fast Refresh preamble as an inline module script,
+ * which the page's CSP (hash-only `script-src`) would refuse. Its hash is added to the policy the dev
+ * server serves, computed from the same text the plugin injects (`preambleCode`, `__BASE__` = the
+ * server's base). The built page is untouched — it has no such script.
+ */
+function devCspPlugin(): Plugin {
+  let base = '/';
+  return {
+    name: 'csp-dev-preamble',
+    apply: 'serve',
+    configResolved(config) {
+      base = config.base;
+    },
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        const hashes = [...new Set([base, '/'])].map(
+          (b) =>
+            `'sha256-${createHash('sha256').update(react.preambleCode.replace('__BASE__', b)).digest('base64')}'`,
+        );
+        return html.replace(/script-src 'self' /, `script-src 'self' ${hashes.join(' ')} `);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   base: process.env.VITE_BASE || '/',
   plugins: [
@@ -32,8 +71,10 @@ export default defineConfig({
       // `%SITE_URL%` in index.html. Vite's own `%VITE_*%` replacement only covers variables that
       // reach the client bundle, and this one must not.
       name: 'site-url',
-      transformIndexHtml: (html) => html.replaceAll('%SITE_URL%', SITE_URL),
+      transformIndexHtml: (html) =>
+        html.replaceAll('%SITE_URL%', SITE_URL).replaceAll('%ASSET_SRC%', assetSrc()),
     },
+    devCspPlugin(),
     {
       // M58: start the data downloads with the HTML instead of after the bundle has run.
       name: 'data-preload',

@@ -3,6 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <!--
+      The site's Content Security Policy (M164). GitHub Pages sets no response headers, so the policy
+      travels in the page itself — which is also why `frame-ancestors` is missing: a meta tag cannot
+      carry it (nor `report-uri`/`sandbox`). Everything the app loads is its own origin: the bundle,
+      data, fonts, the OCR worker and its wasm core (`'wasm-unsafe-eval'`; Tesseract.js wraps the
+      worker in a blob URL, hence `blob:` under `worker-src`), the guide's videos. `data:` under
+      `img-src` is the feedback screenshot (modern-screenshot draws the page through a data URL);
+      `'unsafe-inline'` under `style-src` is React's `style` attributes and the `<style>` sheets the
+      overlay window copies. The `'sha256-…'` is the pre-paint script below, byte for byte —
+      `tests/csp.test.ts` recomputes it, so editing that script means updating the hash here.
+      `%ASSET_SRC%` becomes the external image host when `VITE_ASSET_BASE` is set (vite.config.ts),
+      and nothing otherwise.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'sha256-d4evDn1zK03kFW8JHqVJjsvJvNb9UiJaDJXWyoA/+V4=' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data:%ASSET_SRC%; media-src 'self'; font-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <!--
       viewport-fit=cover is what makes env(safe-area-inset-*) resolve to anything on a notched
       iPhone; without it the panel pages' inset rules were dead code.
     -->

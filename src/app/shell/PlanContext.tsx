@@ -2,6 +2,9 @@
  * One plan for the whole shell. The route is computed once from the store (goals, deck, options
  * and the run record) and handed to the stage and both side panels, together with the pack
  * context every pack surface takes and the run actions that settle gifts as floors are left.
+ *
+ * Two values (M165): `base` holds everything a stage-floor step does not change, `runValue` the
+ * floor on stage, its mode and the pack context with the run attached. See `plan-context.ts`.
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
@@ -20,7 +23,7 @@ import { pick, t, type Lang } from '../i18n.ts';
 import { useApp } from '../store.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementsByGift } from '../lib/judgement.ts';
-import { planInputFor, type PlannedRun, type RunState } from '../lib/plan-input.ts';
+import { planInputFor, type PlannedRun } from '../lib/plan-input.ts';
 import { floorOfVisit } from '../lib/run-gifts.ts';
 import { usePlanner } from '../lib/use-planner.ts';
 import { dropInputOf, runDrop } from '../lib/planner-protocol.ts';
@@ -40,7 +43,7 @@ import { useDesktop } from '../lib/useMediaQuery.ts';
 import { usePageHistory } from '../lib/usePageHistory.ts';
 import { GiftDetailSheet } from '../components/GiftDetailSheet.tsx';
 import { PackDetailSheet, type PackContext } from '../components/PackSheet.tsx';
-import { PlanCtx, type PlanState } from './plan-context.ts';
+import { PlanCtx, PlanRunCtx, type PlanBase, type PlanRun } from './plan-context.ts';
 
 /** One entry of the detail sheet's trail. */
 type Detail = { kind: 'gift' | 'pack'; id: number };
@@ -114,8 +117,9 @@ export function PlanProvider({
   // Every gift's condition reports for the deck: the items tab and the browser read the same map.
   const conditionByGift = useMemo(() => conditionReportsByGift(data, stats, indexes), [data, stats, indexes]);
   // Only the run fields the plan reads (`PlannedRun`): a new `run` object from a stage-floor step
-  // used to rebuild the input and send the worker the same question again.
-  const { currentFloor, visits, giftStatus, startDone, collectRest } = run;
+  // used to rebuild the input and send the worker the same question again. Since M165 the base
+  // value below reads the run through this too, so the step rebuilds nothing but `runValue`.
+  const { currentFloor, visits, giftStatus, startDone, collectRest, stageFloor } = run;
   const plannedRun = useMemo<PlannedRun>(
     () => ({ currentFloor, visits, giftStatus, startDone, collectRest }),
     [currentFloor, visits, giftStatus, startDone, collectRest],
@@ -215,7 +219,12 @@ export function PlanProvider({
     [toggleWanted, carryIndex],
   );
 
-  const value = useMemo<PlanState>(() => {
+  /**
+   * The base value, and the pack context without the run — `runValue` attaches the run to it.
+   * Nothing in here reads `run` itself: the fields the plan reads come through `plannedRun`, and
+   * the actions read the store when they run (M160), so a stage-floor step leaves it untouched.
+   */
+  const { base, packCtx } = useMemo<{ base: PlanBase; packCtx: Omit<PackContext, 'run'> }>(() => {
     const giftName = (id: number): string => pick(indexes.giftById.get(id)?.name, lang);
     const packName = (id: number): string => pick(indexes.packById.get(id)?.name, lang);
     const judgements = judgementsByGift(shown?.conditions ?? []);
@@ -259,7 +268,7 @@ export function PlanProvider({
      * ingredients.)
      */
     const needed = new Set(goals);
-    const collectRest = new Set(run.collectRest ?? []);
+    const collectRest = new Set(plannedRun.collectRest ?? []);
     for (const want of input.wanted) {
       if (fusionGoal[want.giftId] === 'resultOnly') continue;
       // A fusion the plan gave up on promises nothing about its ingredients any more — unless the
@@ -271,7 +280,7 @@ export function PlanProvider({
       const gift = indexes.giftById.get(want.giftId);
       if (!gift?.fusion) continue;
       for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots, goals)) {
-        if (dead && run.giftStatus[id] === 'failed') continue;
+        if (dead && plannedRun.giftStatus[id] === 'failed') continue;
         needed.add(id);
       }
     }
@@ -321,7 +330,10 @@ export function PlanProvider({
      * The gifts a recorded entry answers for: its tiles, and what going back clears. `now` is the
      * run to read the entry from — the rendered one for the screen, the store's for an action.
      */
-    const entryGiftsOf = (packId: number, now: RunState = run): number[] => {
+    const entryGiftsOf = (
+      packId: number,
+      now: Pick<PlannedRun, 'visits' | 'giftStatus'> = plannedRun,
+    ): number[] => {
       const floor = floorOfVisit(now.visits, packId);
       const expected = floor !== null ? expectedIn(floor, packId) : [];
       return entryGifts(packId, expected, now.giftStatus, indexes, exclusivesOf);
@@ -340,11 +352,16 @@ export function PlanProvider({
         failed: entered !== undefined ? autoFailedFor(expectedIn(floor, entered), now.giftStatus) : [],
       };
     };
-    const enter = (packId: number): void => visitPack(packId, run.stageFloor, { got: closeStart() });
-    const next = (): void => nextFloor({ got: closeStart(), ...settleFor(run.stageFloor) });
+    // The stage floor is read from the store at the press, like the rest of the run (M160, M165).
+    const enter = (packId: number): void =>
+      visitPack(packId, useApp.getState().run.stageFloor, { got: closeStart() });
+    const next = (): void => {
+      const { stageFloor: floor } = useApp.getState().run;
+      nextFloor({ got: closeStart(), ...settleFor(floor) });
+    };
     /** Show `floor`; walking forward settles every floor left behind on the way. */
     const goTo = (floor: number): void => {
-      const from = run.stageFloor;
+      const from = useApp.getState().run.stageFloor;
       if (floor <= from) return setStageFloor(floor);
       const got = closeStart();
       const failed = new Set<number>();
@@ -383,7 +400,7 @@ export function PlanProvider({
       const gift = indexes.giftById.get(id);
       return gift ? observable(gift, data.rules) : false;
     };
-    const ctx: PackContext = {
+    const packCtx: Omit<PackContext, 'run'> = {
       indexes,
       judgements,
       giftTitle,
@@ -407,20 +424,9 @@ export function PlanProvider({
             const gift = indexes.giftById.get(giftId);
             if (gift) toggleGoal(gift);
           },
-      run: {
-        currentFloor: run.currentFloor,
-        stageFloor: run.stageFloor,
-        enteredHere: run.visits[run.stageFloor] ?? null,
-        visitedAt: (packId) => floorOfVisit(run.visits, packId),
-        giftStatus: (giftId) => run.giftStatus[giftId] ?? null,
-        onEnter: variant ? undefined : enter,
-        // The sheet's 「입장 취소」 clears what the stage's 「입장 취소」 clears: one undo, one rule.
-        onUnvisit: leave,
-        onGiftStatus: setGiftStatus,
-      },
       lang,
     };
-    return {
+    const base: PlanBase = {
       data,
       indexes,
       stats,
@@ -460,12 +466,11 @@ export function PlanProvider({
       giftTitle,
       giftName,
       packName,
-      ctx,
+      ctx: packCtx,
       exclusivesOf,
       expectedIn,
       entryGiftsOf,
       startGifts,
-      stageMode: stageModeFor(run, run.stageFloor, lastFloor),
       enter,
       next,
       goTo,
@@ -477,6 +482,7 @@ export function PlanProvider({
       openGift,
       openPack,
     };
+    return { base, packCtx };
   }, [
     data,
     indexes,
@@ -485,7 +491,6 @@ export function PlanProvider({
     skillLookup,
     conditionByGift,
     lang,
-    lastFloor,
     input,
     plan,
     shown,
@@ -508,7 +513,7 @@ export function PlanProvider({
     previewing,
     setPreviewing,
     variant,
-    run,
+    plannedRun,
     shownConditions,
     fusionGoal,
     exclusivesOf,
@@ -522,7 +527,6 @@ export function PlanProvider({
     toggleGoal,
     visitPack,
     unvisitPack,
-    setGiftStatus,
     nextFloor,
     setStageFloor,
     openGift,
@@ -530,6 +534,29 @@ export function PlanProvider({
     followGift,
     followPack,
   ]);
+
+  /** The half that follows the floor on stage: rebuilt on a step, from the base it leaves alone. */
+  const runValue = useMemo<PlanRun>(
+    () => ({
+      stageFloor,
+      stageMode: stageModeFor(plannedRun, stageFloor, lastFloor),
+      ctx: {
+        ...packCtx,
+        run: {
+          currentFloor: plannedRun.currentFloor,
+          stageFloor,
+          enteredHere: plannedRun.visits[stageFloor] ?? null,
+          visitedAt: (packId) => floorOfVisit(plannedRun.visits, packId),
+          giftStatus: (giftId) => plannedRun.giftStatus[giftId] ?? null,
+          onEnter: variant ? undefined : base.enter,
+          // The sheet's 「입장 취소」 clears what the stage's 「입장 취소」 clears: one undo, one rule.
+          onUnvisit: base.leave,
+          onGiftStatus: setGiftStatus,
+        },
+      },
+    }),
+    [packCtx, base, plannedRun, stageFloor, lastFloor, variant, setGiftStatus],
+  );
 
   // The sheet is hosted here and nowhere else, so a tile on the stage, in the tracker, in the
   // route panel or in the items tab opens the same details — and the sheet outlives the surface
@@ -548,29 +575,31 @@ export function PlanProvider({
       }
     : undefined;
   return (
-    <PlanCtx.Provider value={value}>
-      {children}
-      {sheetGift ? (
-        <GiftDetailSheet
-          gift={sheetGift}
-          reports={evaluateConditions([sheetGift.id], stats, indexes)}
-          entangled={entangled.get(sheetGift.id) ?? []}
-          data={data}
-          indexes={indexes}
-          lang={lang}
-          onToggleWanted={toggleGoal}
-          blocked={wanted.includes(sheetGift.id) ? undefined : blocked.get(sheetGift.id)}
-          plan={shown}
-          onOpenGift={followGift}
-          onOpenPack={followPack}
-          back={back}
-          onClose={closeSheet}
-          effects={giftEffectsReport(sheetGift, stats, indexes.identityById, skillLookup)}
-          nobodyDeployed={stats.deployed.length === 0}
-        />
-      ) : sheetPack ? (
-        <PackDetailSheet pack={sheetPack} ctx={value.ctx} back={back} onClose={closeSheet} />
-      ) : null}
+    <PlanCtx.Provider value={base}>
+      <PlanRunCtx.Provider value={runValue}>
+        {children}
+        {sheetGift ? (
+          <GiftDetailSheet
+            gift={sheetGift}
+            reports={evaluateConditions([sheetGift.id], stats, indexes)}
+            entangled={entangled.get(sheetGift.id) ?? []}
+            data={data}
+            indexes={indexes}
+            lang={lang}
+            onToggleWanted={toggleGoal}
+            blocked={wanted.includes(sheetGift.id) ? undefined : blocked.get(sheetGift.id)}
+            plan={shown}
+            onOpenGift={followGift}
+            onOpenPack={followPack}
+            back={back}
+            onClose={closeSheet}
+            effects={giftEffectsReport(sheetGift, stats, indexes.identityById, skillLookup)}
+            nobodyDeployed={stats.deployed.length === 0}
+          />
+        ) : sheetPack ? (
+          <PackDetailSheet pack={sheetPack} ctx={runValue.ctx} back={back} onClose={closeSheet} />
+        ) : null}
+      </PlanRunCtx.Provider>
     </PlanCtx.Provider>
   );
 }

@@ -227,29 +227,42 @@ function defaultScope(requirement: EffectRequirement): ConditionScope {
 
 /**
  * The built index (`skill-gifts.json`, M129) read for lookups: identity → `gift:effect:requirement` →
- * the base skills that meet it (empty: the identity as a whole). `data:build` writes it with
- * `identityMeets`/`slotsMeeting`, so a lookup answers what the computation would.
+ * the base skills that meet it (empty: the identity as a whole), and the requirements the
+ * identity's data cannot judge (`"?"` in the file, M166 — what the computation counts as
+ * `unknown`). `data:build` writes it with `identityMeets`/`slotsMeeting`, so a lookup answers what
+ * the computation would.
  */
-export type SkillGiftLookup = ReadonlyMap<number, ReadonlyMap<string, Array<1 | 2 | 3>>>;
+export type SkillGiftLookup = ReadonlyMap<
+  number,
+  { meets: ReadonlyMap<string, Array<1 | 2 | 3>>; unknown: ReadonlySet<string> }
+>;
 
-/** The file as written: identity → slot ("0" = the identity as a whole) → `[gift, effect, requirement]`. */
+/**
+ * The file as written: identity → slot ("0" = the identity as a whole, "?" = its data cannot tell)
+ * → `[gift, effect, requirement]`.
+ */
 export type SkillGiftIndexFile = SkillGiftIndex;
 
 export function skillGiftLookup(index: SkillGiftIndexFile): SkillGiftLookup {
-  const out = new Map<number, Map<string, Array<1 | 2 | 3>>>();
+  const out = new Map<number, { meets: Map<string, Array<1 | 2 | 3>>; unknown: Set<string> }>();
   for (const [identity, bySlot] of Object.entries(index)) {
-    const map = new Map<string, Array<1 | 2 | 3>>();
+    const meets = new Map<string, Array<1 | 2 | 3>>();
+    const unknown = new Set<string>();
     for (const [slotKey, entries] of Object.entries(bySlot)) {
       const slot = Number(slotKey);
       for (const [gift, effect, req] of entries ?? []) {
         const key = `${gift}:${effect}:${req}`;
-        const slots = map.get(key) ?? [];
+        if (slotKey === '?') {
+          unknown.add(key);
+          continue;
+        }
+        const slots = meets.get(key) ?? [];
         if (slot >= 1 && slot <= 3 && !slots.includes(slot as 1 | 2 | 3)) slots.push(slot as 1 | 2 | 3);
-        map.set(key, slots);
+        meets.set(key, slots);
       }
     }
-    for (const slots of map.values()) slots.sort((a, b) => a - b);
-    out.set(Number(identity), map);
+    for (const slots of meets.values()) slots.sort((a, b) => a - b);
+    out.set(Number(identity), { meets, unknown });
   }
   return out;
 }
@@ -288,9 +301,11 @@ export function reportRequirement(
   const matches: RequirementReport['matches'] = [];
   for (const id of scopeMembers(stats, scope)) {
     if (at) {
-      // The index already says who meets it; only the counting is done here.
-      const slots = at.lookup.get(id)?.get(at.key);
+      // The index already says who meets it, and whom it cannot judge; only the counting is done here.
+      const entry = at.lookup.get(id);
+      const slots = entry?.meets.get(at.key);
       if (slots) matches.push({ id, slots: [...slots] });
+      else if (entry?.unknown.has(at.key)) unknown += 1;
       continue;
     }
     const identity = identityById.get(id);

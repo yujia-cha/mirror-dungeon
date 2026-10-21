@@ -1,10 +1,17 @@
 /**
- * The plan context's type, the context object and its hook.
+ * The plan context's types, the context objects and their hooks.
  *
  * Split out of `PlanContext.tsx` so that file exports only the component: Vite's fast refresh gives
  * up on a module that mixes components with other exports, which turned every edit to the provider
  * into a full reload. `react-refresh/only-export-components` was the last warning `npm run check`
  * had left.
+ *
+ * Two contexts since M165. `usePlan()` is everything a stage-floor step does not change — the
+ * plan, the judgements, the names, the selection and the run actions (which read the store when
+ * they run, M160). `usePlanRun()` is what does change with it: the floor on stage, its mode and
+ * the pack context with the run attached. One context held both before, so looking at another
+ * floor rebuilt the whole value and re-rendered every consumer — both panels, the overlay, the
+ * screen reader's hooks — for a number only the stage reads.
  */
 import { createContext, useContext } from 'react';
 import type { Gift, GameData } from '../../core/schema.ts';
@@ -21,7 +28,7 @@ import type { Lang } from '../i18n.ts';
 import type { Judgement } from '../lib/judgement.ts';
 import type { Block, Entanglement } from '../lib/entangle.ts';
 import type { StageMode } from '../lib/stage.ts';
-import type { PackContext } from '../components/PackSheet.tsx';
+import type { PackContext, RunContext } from '../components/PackSheet.tsx';
 
 export interface DropSelection {
   /** Checked goal ids, in the order they were checked. */
@@ -50,7 +57,8 @@ export interface DropSelection {
   setPreviewing: (on: boolean) => void;
 }
 
-export interface PlanState {
+/** What a stage-floor step leaves alone; see the module comment. */
+export interface PlanBase {
   data: GameData;
   indexes: GameIndexes;
   stats: DeckStats;
@@ -108,7 +116,12 @@ export interface PlanState {
   giftTitle: (id: number) => string | undefined;
   giftName: (id: number) => string;
   packName: (id: number) => string;
-  ctx: PackContext;
+  /**
+   * The pack context without the run: names, judgements, rings, the observation and goal toggles.
+   * Enough for the route panel, the map and the decision card. A surface that offers entering or
+   * reads what was entered takes `usePlanRun().ctx`, which carries the run.
+   */
+  ctx: Omit<PackContext, 'run'>;
   exclusivesOf: (packId: number) => number[];
   /**
    * What the route expects a pack entered on `floor` to hand over: the plan's pickups there
@@ -123,7 +136,6 @@ export interface PlanState {
   entryGiftsOf: (packId: number) => number[];
   /** What the run starts with: the observed gifts and the starting gift, collected on leaving floor 1. */
   startGifts: number[];
-  stageMode: StageMode;
   /** Enter a pack on the stage floor. */
   enter: (packId: number) => void;
   /** Leave the stage floor: an undecided floor is skipped, an entered pack's unmarked goals are missed. */
@@ -157,10 +169,30 @@ export interface PlanState {
   openPack: (packId: number) => void;
 }
 
-export const PlanCtx = createContext<PlanState | null>(null);
+/** What follows the floor on stage (M165). */
+export interface PlanRun {
+  /** The floor on stage (`run.stageFloor`). */
+  stageFloor: number;
+  stageMode: StageMode;
+  /** The pack context with the run attached: the stage and the pack sheet read it. */
+  ctx: PackContext & { run: RunContext };
+}
 
-export function usePlan(): PlanState {
+/** Both halves — the shape one context used to hold. */
+export type PlanState = PlanBase & PlanRun;
+
+export const PlanCtx = createContext<PlanBase | null>(null);
+export const PlanRunCtx = createContext<PlanRun | null>(null);
+
+export function usePlan(): PlanBase {
   const value = useContext(PlanCtx);
   if (!value) throw new Error('usePlan needs a PlanProvider');
+  return value;
+}
+
+/** The stage-floor half: only a surface that shows or acts on the floor on stage reads it. */
+export function usePlanRun(): PlanRun {
+  const value = useContext(PlanRunCtx);
+  if (!value) throw new Error('usePlanRun needs a PlanProvider');
   return value;
 }

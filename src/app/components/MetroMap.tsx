@@ -10,10 +10,10 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Eye } from 'lucide-react';
 import type { ObservedGift, RoutePlan } from '../../core/types.ts';
 import { pick, t } from '../i18n.ts';
-import { segmentsFor, stackBlocks, type Segment } from '../lib/metro.ts';
+import { bandsOf, segmentsFor, stackBlocks, type Segment } from '../lib/metro.ts';
 import { useElementWidth, useMeasuredHeights } from '../lib/useElementWidth.ts';
 import { DetailSurface, ObservedDetailBody, type DetailMode } from './BlockDetail.tsx';
-import { GiftIcon } from './GiftIcon.tsx';
+import { BandLayer, ObservedTile, Station } from './MetroParts.tsx';
 import { PackCard } from './PackCard.tsx';
 import { PackSheetBody, type PackContext } from './PackSheet.tsx';
 
@@ -50,147 +50,8 @@ type Open =
   | { kind: 'pack'; packId: number; key: string; mode: DetailMode }
   | { kind: 'observed'; giftId: number; mode: DetailMode };
 
-/**
- * The bands are the season's fixed-mode runs, not the numbers 1-5 / 6-10 / 11-15: the floor range
- * comes from `rules.floors` in one place, and a season with five floors and no parallel block has
- * to draw five stations rather than fifteen. `kind` is what the band means, so the fill no longer
- * depends on a band's position in the list.
- */
-type Band = { from: number; to: number; kind: 'normal' | 'parallel' | 'extreme' };
-
-function bandsOf(lastFloor: number, fixedModeByFloor: Map<number, 'parallel' | 'extreme'>): Band[] {
-  const bands: Band[] = [];
-  for (let floor = 1; floor <= lastFloor; floor += 1) {
-    const kind = fixedModeByFloor.get(floor) ?? 'normal';
-    const last = bands[bands.length - 1];
-    if (last && last.kind === kind) last.to = floor;
-    else bands.push({ from: floor, to: floor, kind });
-  }
-  return bands;
-}
 /** A one-row label card, until it has been measured. */
 const EST_CARD_H = 121;
-
-/** EXTREME is hatched (observation is impossible there), 평행중첩 tinted, the rest bare. */
-function bandFill(kind: Band['kind'], hatchId: string): string {
-  return kind === 'extreme'
-    ? `url(#${hatchId})`
-    : kind === 'parallel'
-      ? 'var(--color-surface-muted)'
-      : 'transparent';
-}
-
-function Station({
-  cx,
-  cy,
-  r,
-  half,
-  floor,
-  passed = false,
-  current = false,
-}: {
-  cx: number;
-  cy: number;
-  r: number;
-  half: boolean;
-  floor: number;
-  /** Run progress: already played, or the floor about to be decided. */
-  passed?: boolean;
-  current?: boolean;
-}) {
-  return (
-    <g
-      data-testid="station"
-      data-floor={floor}
-      data-overlap={half || undefined}
-      data-passed={passed || undefined}
-      data-current={current || undefined}
-    >
-      {current ? (
-        <circle cx={cx} cy={cy} r={r + 4} fill="none" stroke="var(--color-fg)" strokeWidth={1.5} />
-      ) : null}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill={passed ? 'var(--color-fg)' : 'var(--color-surface)'}
-        stroke="var(--color-fg)"
-        strokeWidth={2}
-      />
-      {half && !passed ? (
-        <path d={`M${cx} ${cy - r} A${r} ${r} 0 0 0 ${cx} ${cy + r} Z`} fill="var(--color-fg)" />
-      ) : null}
-      {passed ? (
-        <path
-          d={`M${cx - 3.5} ${cy} l2.5 2.5 l4.5 -5`}
-          fill="none"
-          stroke="var(--color-surface)"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ) : null}
-    </g>
-  );
-}
-
-/**
- * An observed gift on the start row: the eye badge is filled when the player pinned it, hollow when
- * the planner recommends it. With `history` the tile is the record of a run already under way —
- * there is no pin to reason about and nothing left to toggle.
- */
-function ObservedTile({
-  entry,
-  ctx,
-  onPress,
-  history = false,
-}: {
-  entry: ObservedGift;
-  ctx: PackContext;
-  onPress?: () => void;
-  history?: boolean;
-}) {
-  const gift = ctx.indexes.giftById.get(entry.giftId);
-  if (!gift) return null;
-  const name = pick(gift.name, ctx.lang);
-  const why = history
-    ? t('routeStartHeld', ctx.lang)
-    : entry.pinned
-      ? t('routeObservedPinned', ctx.lang)
-      : entry.freedPack !== null
-        ? t('routeObservedFrees', ctx.lang, { pack: ctx.packName(entry.freedPack) })
-        : t('routeObservedRescue', ctx.lang);
-  const body = (
-    <>
-      <GiftIcon gift={gift} size={32} judgement={ctx.judgements.get(entry.giftId) ?? null} lang={ctx.lang} />
-      <span className="text-caption text-fg">{name}</span>
-    </>
-  );
-  const title = history ? `${name} · ${why}` : `${name} · ${t('routeObserved', ctx.lang)} · ${why}`;
-  return onPress ? (
-    <button
-      type="button"
-      onClick={onPress}
-      aria-pressed={entry.pinned}
-      aria-label={t('giftsObserve', ctx.lang, { name })}
-      title={title}
-      data-testid="observed-tile"
-      data-pinned={entry.pinned || undefined}
-      className="inline-flex items-center gap-1.5 rounded-sm px-1 hover:bg-surface-muted"
-    >
-      {body}
-    </button>
-  ) : (
-    <span
-      className="inline-flex items-center gap-1.5"
-      title={title}
-      data-testid="observed-tile"
-      data-pinned={entry.pinned || undefined}
-    >
-      {body}
-    </span>
-  );
-}
 
 export function MetroMap({
   plan,
@@ -447,28 +308,7 @@ export function MetroMap({
     <div className="hidden lg:block" data-testid="metro-columns">
       <div ref={deskRef} className="relative w-full" style={{ height: H }}>
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="absolute left-0 top-0" aria-hidden>
-          <defs>
-            <pattern
-              id="metro-hatch"
-              width="7"
-              height="7"
-              patternUnits="userSpaceOnUse"
-              patternTransform="rotate(135)"
-            >
-              <rect width="7" height="7" fill="var(--color-surface)" />
-              <rect width="1" height="7" x="6" fill="var(--color-border)" />
-            </pattern>
-          </defs>
-          {bands.map((band) => (
-            <rect
-              key={band.from}
-              x={x(band.from) - st / 2}
-              y={0}
-              width={st * (band.to - band.from + 1)}
-              height={H}
-              fill={bandFill(band.kind, 'metro-hatch')}
-            />
-          ))}
+          <BandLayer hatchId="metro-hatch" bands={bands} along="x" at={x} step={st} extent={H} />
           <line
             x1={LEFT}
             y1={LINE_Y}
@@ -638,28 +478,7 @@ export function MetroMap({
       {startRow(phoneMode)}
       <div ref={phoneRef} className="relative w-full" style={{ height: PH }}>
         <svg width={PW} height={PH} viewBox={`0 0 ${PW} ${PH}`} className="absolute left-0 top-0" aria-hidden>
-          <defs>
-            <pattern
-              id="metro-hatch-m"
-              width="7"
-              height="7"
-              patternUnits="userSpaceOnUse"
-              patternTransform="rotate(135)"
-            >
-              <rect width="7" height="7" fill="var(--color-surface)" />
-              <rect width="1" height="7" x="6" fill="var(--color-border)" />
-            </pattern>
-          </defs>
-          {bands.map((band) => (
-            <rect
-              key={band.from}
-              x={0}
-              y={y(band.from) - SP / 2}
-              width={PW}
-              height={SP * (band.to - band.from + 1)}
-              fill={bandFill(band.kind, 'metro-hatch-m')}
-            />
-          ))}
+          <BandLayer hatchId="metro-hatch-m" bands={bands} along="y" at={y} step={SP} extent={PW} />
           <line
             x1={LX}
             y1={y(1) - 20}

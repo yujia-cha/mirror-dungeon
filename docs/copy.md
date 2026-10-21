@@ -738,7 +738,7 @@
 ### giftsObserve
 - ko: {name} 관측 지정
 - en: Observe {name}
-- 쓰는 곳: src/app/components/MetroMap.tsx, src/app/components/ObserveSlots.tsx
+- 쓰는 곳: src/app/components/MetroParts.tsx, src/app/components/ObserveSlots.tsx
 
 ### giftsObserveNotAllowed
 - ko: 관측할 수 없는 기프트
@@ -1173,7 +1173,7 @@
 ### routeObserved
 - ko: 관측
 - en: Observed
-- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroMap.tsx
+- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroParts.tsx
 
 ### routeObservedEmpty
 - ko: 관측 빈 칸
@@ -1190,7 +1190,7 @@
 메모: 런 중에는 관측 결정이 지났으므로 이 줄은 추천이 아니라 실제로 무엇으로 시작했는지의 기록이다(1층을 떠나면 core가 start.observed를 비운다).
 - ko: 시작 시 획득
 - en: Got at start
-- 쓰는 곳: src/app/components/MetroMap.tsx
+- 쓰는 곳: src/app/components/MetroParts.tsx
 
 ### routeStartHeldNone
 - ko: 관측 없이 시작했습니다
@@ -1200,7 +1200,7 @@
 ### routeObservedPinned
 - ko: 지정
 - en: Pinned
-- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroMap.tsx
+- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroParts.tsx
 
 ### routeObservedRecommended
 - ko: 추천
@@ -1210,12 +1210,12 @@
 ### routeObservedFrees
 - ko: {pack} 안 가도 됨
 - en: No need to enter {pack}
-- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroMap.tsx
+- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroParts.tsx
 
 ### routeObservedRescue
 - ko: 루트로는 얻을 수 없어 관측
 - en: Unreachable by route, so observe it
-- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroMap.tsx
+- 쓰는 곳: src/app/components/BlockDetail.tsx, src/app/components/MetroParts.tsx
 
 ### routeVariantWithout
 - ko: {name} 빼면

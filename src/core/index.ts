@@ -400,7 +400,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
    * once every live goal has had its say. A copy dropped below (step 7) is not what lost its
    * fusion, so it does not make the fusion lost here: the copy that did is still in the search.
    */
-  const roots = goalRoots(input.wanted, expansion.fusions);
+  const roots = goalRoots(input.wanted, expansion.fusions, expansion.instances);
   const resultOnly = new Set(input.wanted.filter((w) => w.ingredientsAsGoals === false).map((w) => w.giftId));
   const requiredGoals = new Set(input.wanted.filter((w) => w.required).map((w) => w.giftId));
   const goalsFor = (): SearchGoals => {
@@ -529,9 +529,10 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
 
   // ---- 7. Fusions, and ingredients no longer worth routing for ------------
   const schedule = (): {
+    /** Aligned with `expansion.fusions`. */
     fusions: FusionStep[];
-    obtainedAtFloor: Map<string, number>;
-    resultFloor: Map<number, number>;
+    /** The floor by which the `j`-th ingredient of fusion entry `entry` is in hand; undefined when it never is. */
+    floorOf: (entry: number, j: number) => number | undefined;
   } => {
     // Keyed by `requirementKey`: two fusions eating the same ingredient get one floor each.
     const obtainedAtFloor = new Map<string, number>();
@@ -551,13 +552,21 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       }
     }
     const fusions: FusionStep[] = [];
-    // A fusion result is not a requirement of its own, so a parent recipe reads it from here.
+    // A fusion result is not a requirement of its own, so a parent recipe reads it from here — by
+    // the entry that makes it (`instances[].made`): an intermediate fused twice has a floor each.
     const resultFloor = new Map<number, number>();
-    const floorOf = (ingredient: number, result: number): number | undefined =>
-      obtainedAtFloor.get(requirementKey({ giftId: ingredient, neededFor: result })) ??
-      resultFloor.get(ingredient);
-    for (const fusion of expansion.fusions) {
-      const floorsNeeded = fusion.ingredients.map((id) => floorOf(id, fusion.result));
+    const floorOf = (entry: number, j: number): number | undefined => {
+      const fusion = expansion.fusions[entry]!;
+      const { copy, made } = expansion.instances[entry]!;
+      const maker = made[j];
+      return maker === null || maker === undefined
+        ? obtainedAtFloor.get(
+            requirementKey({ giftId: fusion.ingredients[j]!, neededFor: fusion.result, copy }),
+          )
+        : resultFloor.get(maker);
+    };
+    expansion.fusions.forEach((fusion, entry) => {
+      const floorsNeeded = fusion.ingredients.map((_, j) => floorOf(entry, j));
       const unreachable = floorsNeeded.some((floor) => floor === undefined);
       const earliestFloor = unreachable ? 0 : Math.max(...(floorsNeeded as number[]), currentFloor);
       fusions.push({
@@ -568,9 +577,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         exceedsShopSlots: fusion.ingredients.length > data.rules.fusion.maxShopSlots,
       });
       // A fusion result can itself be an ingredient, so it becomes available from that floor on.
-      if (!unreachable) resultFloor.set(fusion.result, earliestFloor);
-    }
-    return { fusions, obtainedAtFloor, resultFloor };
+      if (!unreachable) resultFloor.set(entry, earliestFloor);
+    });
+    return { fusions, floorOf };
   };
   let scheduled = schedule();
 
@@ -583,25 +592,34 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   const droppedFor = new Map<number, number[]>();
   {
     const wantedIds = new Set(input.wanted.map((w) => w.giftId));
-    const parents = new Map<number, number[]>();
-    for (const fusion of expansion.fusions) {
-      for (const id of fusion.ingredients) parents.set(id, [...(parents.get(id) ?? []), fusion.result]);
-    }
+    // Per fusion entry, the entries that eat it (M166: an intermediate fused twice has one each).
+    const eaters: number[][] = expansion.fusions.map(() => []);
+    expansion.instances.forEach(({ made }, entry) => {
+      for (const maker of made) if (maker !== null) eaters[maker]!.push(entry);
+    });
     // Every wanted result above the fusion is a goal only as a whole (`roots` is the goal unit).
     const wholeOnly = (result: number): boolean => {
       const goals = roots.ofGift(result);
       return goals.length > 0 && goals.every((id) => resultOnly.has(id));
     };
     const dropped = new Set<number>();
-    for (const fusion of [...scheduled.fusions].reverse()) {
+    for (let entry = scheduled.fusions.length - 1; entry >= 0; entry -= 1) {
+      const fusion = scheduled.fusions[entry]!;
       if (!wholeOnly(fusion.result)) continue;
-      const parentDropped = (parents.get(fusion.result) ?? []).some((id) => dropped.has(id));
-      if (fusion.unreachable || (!wantedIds.has(fusion.result) && parentDropped)) dropped.add(fusion.result);
+      const parentDropped = eaters[entry]!.some((eater) => dropped.has(eater));
+      if (fusion.unreachable || (!wantedIds.has(fusion.result) && parentDropped)) dropped.add(entry);
     }
-    for (const result of dropped) {
+    for (const entry of dropped) {
+      const { result } = expansion.fusions[entry]!;
+      const { copy } = expansion.instances[entry]!;
       const ids: number[] = [];
       for (const requirement of requirements) {
-        if (requirement.neededFor !== result || requirement.via !== 'route') continue;
+        if (
+          requirement.neededFor !== result ||
+          (requirement.copy ?? 0) !== copy ||
+          requirement.via !== 'route'
+        )
+          continue;
         if (search.unresolvedKeys.includes(requirementKey(requirement))) continue; // this one is what is missing
         const floor = search.supplier.get(requirementKey(requirement));
         if (floor !== undefined && passed.has(floor)) continue; // already picked up on a played floor
@@ -611,7 +629,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       if (ids.length > 0)
         droppedFor.set(
           result,
-          ids.sort((a, b) => a - b),
+          [...new Set([...(droppedFor.get(result) ?? []), ...ids])].sort((a, b) => a - b),
         );
     }
     if (droppedFor.size > 0) {
@@ -619,7 +637,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       scheduled = schedule();
     }
   }
-  const { fusions, obtainedAtFloor, resultFloor } = scheduled;
+  const { fusions, floorOf } = scheduled;
 
   // Copies of a goal the search itself gave up on (M87) were not chased: they are dropped like the
   // ingredients of any fusion that can no longer happen, so the fusion's entry says so.
@@ -661,9 +679,14 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       (r) => r.giftId === giftId && requirementKey(r) !== search.unresolvedKeys[i] && held(r),
     );
     if (otherCopyPlanned) {
-      const eaters = requirements.filter((r) => r.giftId === giftId && r.neededFor !== null);
+      // One name per eating result: an intermediate fused twice (M166) eats both copies itself.
+      const eaters = [
+        ...new Set(
+          requirements.filter((r) => r.neededFor !== null && r.giftId === giftId).map((r) => r.neededFor!),
+        ),
+      ];
       const eaterName = (lang: 'ko' | 'en'): string[] =>
-        eaters.map((r) => indexes.giftById.get(r.neededFor!)?.name[lang] || String(r.neededFor));
+        eaters.map((result) => indexes.giftById.get(result)?.name[lang] || String(result));
       unresolved.push({
         giftId,
         reason: 'ingredient-shared',
@@ -803,14 +826,11 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       indexes.giftById.get(id)?.name[lang] || String(id);
     return { ko: ids.map((id) => name(id, 'ko')).join('·'), en: ids.map((id) => name(id, 'en')).join(', ') };
   };
-  for (const fusion of fusions) {
-    if (!fusion.unreachable) continue;
+  fusions.forEach((fusion, entry) => {
+    if (!fusion.unreachable) return;
     const droppedIngredients = droppedFor.get(fusion.result);
     const missing = fusion.ingredients.filter(
-      (id) =>
-        !obtainedAtFloor.has(requirementKey({ giftId: id, neededFor: fusion.result })) &&
-        !resultFloor.has(id) &&
-        !droppedIngredients?.includes(id),
+      (id, j) => floorOf(entry, j) === undefined && !droppedIngredients?.includes(id),
     );
     unresolved.push({
       giftId: fusion.result,
@@ -824,7 +844,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
           })
         : msg('unresolved.fusionMissing', { missing: giftNames(missing) }),
     });
-  }
+  });
 
   // ---- 10. Warnings -------------------------------------------------------
   const conditions = evaluateConditions(

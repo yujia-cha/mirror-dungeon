@@ -269,8 +269,9 @@ describe('fillTemplate', () => {
   it.each([
     ['a final consonant', '화상', '{g|을/를} 줍니다', '화상을 줍니다'],
     ['no final consonant', '연기', '{g|을/를} 줍니다', '연기를 줍니다'],
-    ['a number (reading unknown)', '9088', '{g|은/는} 없습니다', '9088은(는) 없습니다'],
-    ['an English fallback name', 'Bell', '{g|이/가} 있습니다', 'Bell이(가) 있습니다'],
+    ['a number, read by its name', '9088', '{g|은/는} 없습니다', '9088은 없습니다'],
+    ['an English fallback name, read by its last letter', 'Bell', '{g|이/가} 있습니다', 'Bell이 있습니다'],
+    ['an ending that cannot be read', '智', '{g|이/가} 있습니다', '智이(가) 있습니다'],
   ])('attaches the Korean particle after %s', (_, value, template, expected) => {
     // Arrange / Act
     const out = fillTemplate(template, 'ko', { g: value });

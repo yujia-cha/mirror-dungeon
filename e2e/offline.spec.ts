@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './lib/test.ts';
 import { preview, type PreviewServer } from 'vite';
 import { BASE_PATH } from '../playwright.config.ts';
 

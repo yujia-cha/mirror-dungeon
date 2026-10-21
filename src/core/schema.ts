@@ -1262,9 +1262,11 @@ export const identitiesFileSchema = z.array(identitySchema);
  * `[giftId, effectIndex, requirementIndex]` into `gift.effects[effectIndex].requires`. Built by
  * `data:build` from core's `identityMeets`/`slotsMeeting`, so it is what the judgement says, laid
  * out the other way round. `egoSkill` is left out (no identity's E.G.O is in the data); an `anyOf`
- * is listed at its own index under the slots of the options the identity meets. Sorted.
+ * is listed at its own index under the slots of the options the identity meets. `"?"` lists what
+ * the identity's data cannot judge (M166 — `identityMeets` null: no per-skill facts, a null coin
+ * or weight), so the app's lookup counts 「모름」 the way the computation does; MD8 has none. Sorted.
  */
-export const skillGiftSlotSchema = z.enum(['0', '1', '2', '3']);
+export const skillGiftSlotSchema = z.enum(['0', '1', '2', '3', '?']);
 export const skillGiftRefSchema = z.tuple([
   z.number().int(),
   z.number().int().nonnegative(),

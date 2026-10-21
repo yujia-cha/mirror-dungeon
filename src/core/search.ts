@@ -534,33 +534,45 @@ export function assignPacks(input: SearchInput): SearchResult {
     classOf.set(packId, id);
     return id;
   };
-  const candidateClasses = candidates.map((candidate) =>
-    candidate.freePack !== null
-      ? 0
-      : candidate.packs.reduce((mask, packId) => mask | (1 << classify(packId)), 0),
+  /** Per candidate, the distinct classes of its packs (none for one a settled pack hands over). */
+  const candidateClasses: number[][] = candidates.map((candidate) =>
+    candidate.freePack !== null ? [] : [...new Set(candidate.packs.map(classify))].sort((a, b) => a - b),
   );
-  /** One entry per distinct set of classes a run of open floors fully contains: its mask and size. */
-  const windows: { mask: number; cap: number }[] = [];
-  const useBound = input.lowerBound !== false && classFloors.length > 0 && classFloors.length <= 30;
+  /**
+   * One entry per distinct set of classes a run of open floors fully contains: which classes
+   * (`has[id]`) and the run's size. A class set was a 32-bit mask until M166, which switched the
+   * bound, the root relaxation and the branch and bound off without a word past 30 classes — more
+   * than any season has had, but nothing said so. The sets are read only here and in the
+   * relaxation's rows, never in the DFS, so a byte per class costs the search nothing.
+   */
+  const windows: { has: Uint8Array; cap: number }[] = [];
+  const useBound = input.lowerBound !== false && classFloors.length > 0;
   if (useBound) {
     const position = new Map(openFloors.map((floor, i) => [floor, i]));
-    const smallest = new Map<number, number>();
+    // Keyed by the class ids, smallest run first; insertion order is the order of the windows.
+    const smallest = new Map<string, { ids: number[]; cap: number }>();
     for (let from = 0; from < openFloors.length; from += 1) {
       for (let to = from; to < openFloors.length; to += 1) {
-        let mask = 0;
+        const ids: number[] = [];
         classFloors.forEach((open, id) => {
           if (open.length === 0) return;
           const first = position.get(open[0]!)!;
           const last = position.get(open[open.length - 1]!)!;
-          if (first >= from && last <= to) mask |= 1 << id;
+          if (first >= from && last <= to) ids.push(id);
         });
-        if (mask === 0) continue;
+        if (ids.length === 0) continue;
         const cap = to - from + 1;
-        const known = smallest.get(mask);
-        if (known === undefined || cap < known) smallest.set(mask, cap);
+        const key = ids.join(',');
+        const known = smallest.get(key);
+        if (known === undefined) smallest.set(key, { ids, cap });
+        else if (cap < known.cap) known.cap = cap;
       }
     }
-    for (const [mask, cap] of smallest) windows.push({ mask, cap });
+    for (const { ids, cap } of smallest.values()) {
+      const has = new Uint8Array(classFloors.length);
+      for (const id of ids) has[id] = 1;
+      windows.push({ has, cap });
+    }
   }
 
   /**
@@ -569,12 +581,14 @@ export function assignPacks(input: SearchInput): SearchResult {
    */
   const boundDepth = Math.ceil(candidates.length / 2);
   /** Per window: the gift candidates whose every pack lies inside it, in DFS order. */
-  const inside = windows.map(({ mask }) =>
+  const inside = windows.map(({ has }) =>
     candidates
       .map((candidate, k) => ({ candidate, k }))
       .filter(
         ({ candidate, k }) =>
-          candidate.freePack === null && candidate.giftId !== null && (candidateClasses[k]! & ~mask) === 0,
+          candidate.freePack === null &&
+          candidate.giftId !== null &&
+          candidateClasses[k]!.every((id) => has[id] === 1),
       ),
   );
 
@@ -612,7 +626,7 @@ export function assignPacks(input: SearchInput): SearchResult {
    */
   const roomUsed = new Int32Array(windows.length);
   const windowsOfClass: number[][] = classFloors.map((_, id) =>
-    windows.flatMap(({ mask }, w) => ((mask >> id) & 1 ? [w] : [])),
+    windows.flatMap(({ has }, w) => (has[id] === 1 ? [w] : [])),
   );
   const takeRoom = (packId: number): void => {
     for (const w of windowsOfClass[classify(packId)] ?? []) roomUsed[w] = roomUsed[w]! + 1;
@@ -1329,10 +1343,10 @@ export function assignPacks(input: SearchInput): SearchResult {
         b.push(0);
       }
     }
-    for (const { mask, cap } of windows) {
+    for (const { has, cap } of windows) {
       const fit = row();
       groupPacks.forEach((packId, j) => {
-        if ((mask >> classify(packId)) & 1) fit[j] = 1;
+        if (has[classify(packId)] === 1) fit[j] = 1;
       });
       rows.push(fit);
       b.push(cap);

@@ -3,8 +3,9 @@
  * judgement of `src/core/effects.ts` laid out by identity and slot, so the app can answer 「what
  * does this skill switch on」 without walking every gift. Nothing here judges: an entry is written
  * exactly when core's `identityMeets` says yes, under the slots core's `slotsMeeting` names
- * (`"0"` when it names none — the identity meets it as a whole). `egoSkill` is left out; an
- * `anyOf` is split only to learn which options the identity meets, each option judged by core.
+ * (`"0"` when it names none — the identity meets it as a whole), and under `"?"` when it says the
+ * data cannot tell (M166). `egoSkill` is left out; an `anyOf` is split only to learn which options
+ * the identity meets, each option judged by core.
  */
 import { identityMeets, slotsMeeting } from '../../src/core/index.ts';
 import type {
@@ -21,10 +22,15 @@ function slotsOf(identity: Identity, requirement: EffectRequirement): SkillGiftS
   return slots.length > 0 ? slots.map((slot) => String(slot) as SkillGiftSlot) : ['0'];
 }
 
-/** The slots under which one met requirement is listed, or none when the identity does not meet it. */
+/**
+ * The slots under which one met requirement is listed, `"?"` for one the identity's data cannot
+ * judge, or none when the identity does not meet it.
+ */
 function slotsFor(identity: Identity, requirement: EffectRequirement): SkillGiftSlot[] {
   if (requirement.type === 'egoSkill') return [];
-  if (identityMeets(identity, requirement) !== true) return [];
+  const verdict = identityMeets(identity, requirement);
+  if (verdict === null) return ['?'];
+  if (verdict !== true) return [];
   if (requirement.type !== 'anyOf') return slotsOf(identity, requirement);
   const out = new Set<SkillGiftSlot>();
   for (const option of requirement.options)

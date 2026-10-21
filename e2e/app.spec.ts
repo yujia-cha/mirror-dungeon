@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './lib/test.ts';
 import { FormationDeckCode, createFormationDetailInfo } from 'limbus-formation-deck';
 import { shareHash } from './share.ts';
 

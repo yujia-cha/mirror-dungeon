@@ -9,7 +9,7 @@ import { loadGameDataFromDisk } from '../../../core/data/node.ts';
 import { analyseDeck, buildIndexes } from '../../../core/index.ts';
 import { exclusivesIndex } from '../../lib/stage.ts';
 import { PlanProvider } from '../PlanContext.tsx';
-import { usePlan, type PlanState } from '../plan-context.ts';
+import { usePlan, type PlanBase } from '../plan-context.ts';
 import { appDefaultOptions, emptyRun, useApp } from '../../store.ts';
 
 const data = loadGameDataFromDisk();
@@ -21,8 +21,8 @@ const pack = data.packs.find((p) => exclusivesOf(p.id).length > 0)!;
 const gift = exclusivesOf(pack.id)[0]!;
 const other = data.packs.find((p) => p.id !== pack.id && exclusivesOf(p.id).length > 0)!;
 
-function mount(): { plan: () => PlanState } {
-  let latest: PlanState | null = null;
+function mount(): { plan: () => PlanBase } {
+  let latest: PlanBase | null = null;
   function Probe() {
     latest = usePlan();
     return null;

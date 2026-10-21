@@ -32,7 +32,12 @@ export function readJsonIfExists<T = unknown>(path: string): T | null {
  */
 export function writeJsonStable(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(sortKeysDeep(value), null, 2)}\n`, 'utf8');
+  writeFileSync(path, stableJsonText(value), 'utf8');
+}
+
+/** The exact text `writeJsonStable` writes — what `dataVersion` hashes (M163). */
+export function stableJsonText(value: unknown): string {
+  return `${JSON.stringify(sortKeysDeep(value), null, 2)}\n`;
 }
 
 export function sortKeysDeep<T>(value: T): T {

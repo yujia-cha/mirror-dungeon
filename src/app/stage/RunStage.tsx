@@ -9,7 +9,7 @@ import { useApp } from '../store.ts';
 import { enterablePacks, packsOfferedOn } from '../lib/stage.ts';
 import { t } from '../i18n.ts';
 import { Button, Card, Notice } from '../components/ui.tsx';
-import { usePlan } from '../shell/plan-context.ts';
+import { usePlan, usePlanRun } from '../shell/plan-context.ts';
 import { OtherEntryCard, OtherPacks, StagePackCard } from './EnterablePacks.tsx';
 import { PackArea } from './EnteredPack.tsx';
 import { FloorHeader } from './FloorHeader.tsx';
@@ -18,7 +18,9 @@ import { FloorHeader } from './FloorHeader.tsx';
 const FOLD_MS = 200;
 
 export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
-  const { indexes, lang, shown, ctx, exclusivesOf, stageMode, enter, next, openPack } = usePlan();
+  const { indexes, lang, shown, exclusivesOf, enter, next, openPack } = usePlan();
+  // The stage shows the floor on stage, so it reads the half that follows it (M165).
+  const { ctx, stageMode } = usePlanRun();
   const run = useApp((s) => s.run);
   const resetRun = useApp((s) => s.resetRun);
   const lastFloor = useApp((s) => s.lastFloor);

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './lib/test.ts';
 
 /**
  * The screen reader on a slow machine with a poor share (M142): Chromium's CPU throttled four

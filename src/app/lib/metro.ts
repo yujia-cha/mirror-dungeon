@@ -133,3 +133,22 @@ export function segmentsFor(plan: RoutePlan): Metro {
   }
   return { segments, overlap, lanes: Math.max(1, ...lanes.map((l) => l + 1)), freeRuns };
 }
+
+/**
+ * The bands are the season's fixed-mode runs, not the numbers 1-5 / 6-10 / 11-15: the floor range
+ * comes from `rules.floors` in one place, and a season with five floors and no parallel block has
+ * to draw five stations rather than fifteen. `kind` is what the band means, so the fill no longer
+ * depends on a band's position in the list.
+ */
+export type Band = { from: number; to: number; kind: 'normal' | 'parallel' | 'extreme' };
+
+export function bandsOf(lastFloor: number, fixedModeByFloor: Map<number, 'parallel' | 'extreme'>): Band[] {
+  const bands: Band[] = [];
+  for (let floor = 1; floor <= lastFloor; floor += 1) {
+    const kind = fixedModeByFloor.get(floor) ?? 'normal';
+    const last = bands[bands.length - 1];
+    if (last && last.kind === kind) last.to = floor;
+    else bands.push({ from: floor, to: floor, kind });
+  }
+  return bands;
+}
