@@ -348,7 +348,12 @@ test('starting the reader over an old run starts a new one, reads its start, and
   test.setTimeout(120_000);
   await fakeShare(page);
   await page.goto(`./${shareHash([9191, 9809], 8)}`);
-  // An old run's record: floor 1 skipped on the stage, so its start is closed.
+  // An old run's record: floor 1 skipped on the stage, so its start is closed. The plan has to be
+  // on show first: while the worker is still answering, the stage carries the 「아직 목표 기프트가
+  // 없습니다」 notice above the cards, and the plan's arrival takes it away and moves the 「다음 층」
+  // foot up mid-click — the pointer then lands beside the button and the click is lost (M162, a
+  // CI flake of one run in two).
+  await expect(page.getByText('아직 목표 기프트가 없습니다.')).toHaveCount(0);
   await page.getByRole('button', { name: '다음 층' }).first().click();
   const saved = () =>
     page.evaluate(() => {
