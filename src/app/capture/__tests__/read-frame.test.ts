@@ -23,7 +23,7 @@ const LAYOUT: CaptureLayout = {
     { region: R(2), screens: ['sell', 'fusion'] },
     { region: R(3), screens: ['exploring'], raw: true },
   ],
-  names: { popup: R(4), selected: R(5), centerConfirm: R(6), mapHeader: R(3) },
+  names: { popup: R(4), selected: R(5), centerConfirm: R(6), mapHeader: R(3), mapPack: S(0.35) },
   fusion: { count: R(7), five: [R(8), R(9), R(8), R(9), R(8)], three: [R(9), R(8), R(9)] },
   popupIcon: [0.55, 0.3, 0.05, 0.05],
 };
@@ -182,6 +182,26 @@ describe('readFrame', () => {
     // Assert
     expect(frame.ingredients).toEqual({ consumed: [], unsure: [], filled: 3 });
     expect(frame.weakSlots).toBe(3);
+  });
+
+  it('counts a slot too close between two candidates as weak (M172)', async () => {
+    // Arrange: two held gifts with the same picture — the slot's icon fits both alike, so the
+    // slot is ambiguous: it names no gift and must be read again.
+    const base = new Uint8ClampedArray(48 * 48 * 4).map((_, i) => (i % 4 === 3 ? 255 : (i * 37) % 251));
+    const a = prepareReference(9091, base, 48, 48);
+    const b = prepareReference(9092, base, 48, 48);
+    const { reader } = fakeReader(
+      {
+        '0.1': { light: ['선택한 E.G.O 기프트를 조합하시겠습니까?'] },
+        '0.7': { light: ['선택한 기프트 1/3'] },
+      },
+      { '0.8': [a.rgb] },
+    );
+    // Act
+    const { frame } = await readFrame(reader, LAYOUT, { ...CTX, held: [a, b] });
+    // Assert
+    expect(frame.ingredients).toMatchObject({ consumed: [], unsure: [9091, 9092], filled: 1 });
+    expect(frame.weakSlots).toBe(1);
   });
 
   it('reads the slots alone, no OCR, on a re-read of the confirm (M159)', async () => {
@@ -502,9 +522,43 @@ describe('readFrame: the map (M148)', () => {
     const { reader, calls } = fakeReader({ '0.3': { raw: ['2증탐사중'] } });
     // Act
     const { frame } = await readFrame(reader, MAP_FIRST, CTX);
-    // Assert: no second floor read; the pack is looked for in both passes and not found.
+    // Assert: no second floor read; the pack is looked for on its own line (M172), then in the
+    // whole header in both passes, and not found.
     expect(frame).toMatchObject({ screen: 'exploring', floor: 2, pack: { status: 'none' } });
-    expect(calls).toEqual(['0:light', '0.3:raw', '0.3:light', '0.3:raw']);
+    expect(calls).toEqual(['0:light', '0.3:raw', '0.35:raw', '0.3:light', '0.3:raw']);
+  });
+
+  it('reads a short dim pack name off its own line when the header never shows it (M172)', async () => {
+    // Arrange: floor 10's 「교본」 — the whole header reads only the floor in every pass; the name
+    // line alone, raw, reads the name.
+    const { reader, calls } = fakeReader({
+      '0.3': { raw: ['10증탐사 중'], light: [] },
+      '0.35': { raw: ['교본'] },
+    });
+    const packs = [...CTX.packs, { id: 1025, name: '교본' }];
+    // Act
+    const { frame, ocrCalls } = await readFrame(reader, MAP_FIRST, { ...CTX, packs });
+    // Assert: one more call than a header that names both, and no whole-header name reads.
+    expect(frame).toMatchObject({ screen: 'exploring', floor: 10, pack: { status: 'match', id: 1025 } });
+    expect(calls).toEqual(['0:light', '0.3:raw', '0.35:raw']);
+    expect(ocrCalls).toBe(3);
+  });
+
+  it('keeps a muddled name-line read when the whole header names nothing (M172)', async () => {
+    // Arrange
+    const { reader } = fakeReader({
+      '0.3': { raw: ['3증탐사 중'] },
+      '0.35': { raw: ['가라'] },
+    });
+    // One jamo from each of two names.
+    const packs = [
+      { id: 10, name: '가나' },
+      { id: 11, name: '가다' },
+    ];
+    // Act
+    const { frame } = await readFrame(reader, MAP_FIRST, { ...CTX, packs });
+    // Assert
+    expect(frame.pack?.status).toBe('ambiguous');
   });
 
   it('still lets a popup over the map win', async () => {

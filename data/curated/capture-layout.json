@@ -17,8 +17,10 @@
     "popup": [0.2526, 0.56, 0.138, 0.1338],
     "selected": [0.2344, 0.2131, 0.2057, 0.1586],
     "centerConfirm": [0.28, 0.42, 0.44, 0.12],
-    "mapHeader": [0.01, 0.13, 0.17, 0.09]
+    "mapHeader": [0.01, 0.13, 0.17, 0.09],
+    "mapPack": [0.01, 0.185, 0.17, 0.045]
   },
+  "_mapPack": "M172: the pack's name line alone, under the map header's 「N층 탐사 중」. Read raw when the header's own lines named no pack: a short, dim grey name (「교본」 on floor 10 of the owner's 2026-10-22 run) came out in none of the three passes over the whole header — 174 map reads, every one floor 10 and no pack — yet the raw pass over this line alone reads it at ×1, ×2 and ×3 scale. The whole header is still read after it when this line names nothing either.",
   "popupIcon": [0.2656, 0.3011, 0.1105, 0.2043],
   "_popupIcon": "M136: the acquired popup's gift icon, the framed square above the name button (owner session 1792201541946, 1928×1043 with a 30px title bar: x 512–725, y 335–542 → client fractions). Read only when the popup's name is no sure match, against the gifts whose names come closest; on the three session popups the right gift ranked first among all 454 icons (0.67–0.88, next best ≤ 0.50).",
   "fusion": {

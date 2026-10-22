@@ -8,7 +8,9 @@
  * events that each happened once:
  *
  * - `enter` — the map header reads 「N층 탐사 중」 over a pack's name (M95: the cleanest signal; the
- *   pack picker only narrows the candidates). Once per floor and pack.
+ *   pack picker only narrows the candidates). Once per floor and pack. A read that would move the
+ *   entry already made — the same pack on another floor, a floor beyond the next — waits for a
+ *   second map read that agrees (M172, `pendingEnter`).
  * - `got` — the 「E.G.O 기프트를 획득했습니다.」 popup names a gift. Once per gift while popups follow
  *   each other: several popups in a row (three start gifts, a fusion's two results) each count, the
  *   same name seen again after a blink does not.
@@ -91,6 +93,13 @@ export type CaptureEvent =
 export interface TrackerState {
   /** The last pack entered, so the map seen again on the same floor enters nothing. */
   entered: { floor: number; packId: number } | null;
+  /**
+   * A map read that would move the entry already recorded (M172): the same pack on another floor,
+   * or a floor beyond the next. It enters only when a second map read agrees — one noisy header
+   * (particles over it read 「9층」 and 「20번구의 기적」 at 0.79 on floor 8 of the owner's 2026-10-22
+   * run) moved the entry, skipped the floor and failed its gifts.
+   */
+  pendingEnter?: { floor: number; packId: number } | null;
   /** Gifts recorded (or asked about) by the current run of popups; cleared when popups end. */
   popupGifts: readonly number[];
   /** A gift whose sale awaits the sell list's answer. */
@@ -248,10 +257,22 @@ export function trackFrame(
       if (floor === null || !pack) break;
       if (pack.status === 'match') {
         const same = next.entered?.floor === floor && next.entered.packId === pack.id;
-        if (!same) {
-          events.push({ kind: 'enter', floor, packId: pack.id });
-          next = { ...next, entered: { floor, packId: pack.id } };
+        if (same) {
+          if (next.pendingEnter) next = { ...next, pendingEnter: null };
+          break;
         }
+        // A read that moves the entry already recorded, or jumps a floor, is a likely misread
+        // of a header something passed over: it enters when the next map read says the same
+        // (M172). A first entry and the next floor's pack enter at once, as before.
+        const moves =
+          next.entered !== null && (next.entered.packId === pack.id || floor > next.entered.floor + 1);
+        const agreed = next.pendingEnter?.floor === floor && next.pendingEnter.packId === pack.id;
+        if (moves && !agreed) {
+          next = { ...next, pendingEnter: { floor, packId: pack.id } };
+          break;
+        }
+        events.push({ kind: 'enter', floor, packId: pack.id });
+        next = { ...next, entered: { floor, packId: pack.id }, pendingEnter: null };
       } else if (pack.status === 'ambiguous' && next.entered?.floor !== floor) {
         events.push({ kind: 'unsure', about: 'enter', floor, ids: pack.ids });
         // Asked once per floor: the answer, or a clean read later, settles it.

@@ -811,6 +811,8 @@ export const captureLayoutSchema = z.object({
     selected: captureRegionSchema,
     centerConfirm: captureRegionSchema,
     mapHeader: captureRegionSchema,
+    /** The pack's name line alone under the map header (M172): read raw when the header named no pack. */
+    mapPack: captureRegionSchema,
   }),
   /** The fusion confirm: its 「선택한 기프트 N/M」 header and the two slot shapes it comes in. */
   fusion: z.object({

@@ -248,6 +248,22 @@ export async function readFrame(
     return byIcon.status === 'match' ? byIcon : byName;
   };
 
+  /**
+   * The pack named under 「N층 탐사 중」 when the header's own lines did not name it (M172): first the
+   * name line alone, raw — a short dim name (floor 10's 「교본」) that no pass over the whole header
+   * ever read comes out of the line by itself — then the whole header as before. A muddled read of
+   * the line stands when the header names nothing.
+   */
+  const packUnderHeader = async (): Promise<MatchResult> => {
+    const fromLine = await readOnce(layout.names.mapPack, 'name', 'raw', (lines) => {
+      const m = matchPack(lines, ctx.packs);
+      return m.status === 'none' ? null : m;
+    });
+    if (fromLine?.status === 'match') return fromLine;
+    const fromHeader = await nameIn(layout.names.mapHeader, ctx.packs, undefined, matchPack);
+    return fromHeader.status === 'none' && fromLine ? fromLine : fromHeader;
+  };
+
   const frame: Frame = { screen: null, floor: null, pack: null, gift: null };
   if (ctx.slotsOnly) {
     const read = await readIngredients(reader, layout, ctx, ctx.slotsOnly, trace);
@@ -289,8 +305,7 @@ export async function readFrame(
     frame.floor = parseFloor(own) ?? (await readEither(header, 'floor', parseFloor));
     // A reprint's logo behind the name settles which of the two packs it is (M159, `reprint.ts`).
     const fromTitle = own.length > 0 ? matchPack(own, ctx.packs) : null;
-    frame.pack =
-      fromTitle?.status === 'match' ? fromTitle : await nameIn(header, ctx.packs, undefined, matchPack);
+    frame.pack = fromTitle?.status === 'match' ? fromTitle : await packUnderHeader();
   } else if (screen === 'acquired') {
     frame.gift = await popupGift();
     const behind = ctx.startOpen
@@ -346,8 +361,8 @@ export function parseFusionCount(lines: readonly string[]): number | null {
  * asked. The confirm has two shapes — up to five small slots, or exactly three large ones (3/3) —
  * and only three filled slots can be either; then both are tried and the one whose slots look more
  * like gifts wins, since the wrong shape's regions cut across the icons. `weakSlots` counts the filled
- * slots whose best candidate is under the bar — on a confirm read before its icons slid in, all of
- * them (M159).
+ * slots that named no gift — under the bar, or too close between candidates (M172) — on a confirm
+ * read before its icons slid in, all of them (M159).
  */
 async function readIngredients(
   reader: RegionReader,
@@ -418,6 +433,9 @@ async function readIngredients(
   const unsure = [...new Set(read.flatMap((r) => (r.status === 'ambiguous' ? r.ids : [])))];
   return {
     ingredients: { consumed: consumed.sort((a, b) => a - b), unsure: unsure.sort((a, b) => a - b), filled },
-    weakSlots: rankings.filter((r) => (r[0]?.[1] ?? 0) < thresholds.minScore).length,
+    // Weak is any slot that named no gift (M172): one below `minScore`, and one between candidates
+    // too close to call — an icon half slid in scored 0.53 / 0.53 and, counted as read, went to a
+    // question instead of the slots re-read (the owner's 「꿈을 꾸는 전기양」, M159's window never opened).
+    weakSlots: read.filter((r) => r.status !== 'match').length,
   };
 }

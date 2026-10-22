@@ -116,6 +116,7 @@ export function layoutInFrame(layout: CaptureLayout, top: number, height: number
       selected: map(layout.names.selected),
       centerConfirm: map(layout.names.centerConfirm),
       mapHeader: map(layout.names.mapHeader),
+      mapPack: map(layout.names.mapPack),
     },
     fusion: {
       count: map(layout.fusion.count),

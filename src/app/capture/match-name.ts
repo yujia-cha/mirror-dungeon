@@ -217,9 +217,40 @@ export function matchName(
   // 「타입 E」), so a perfect read sits a hair above its siblings. A unique exact read is taken; a
   // misread that happens to spell a sibling exactly is the one error context has to catch.
   const exact = score === 1 && margin > 0;
+  // A name that is part of a longer candidate's name (「사원증」 in 「누군가 놓쳐버린 사원증」) can be
+  // read off one line of the longer name wrapped in its button, and that one line is an exact
+  // read while the joined lines carry the OCR slips. So when the longer name is also close — and
+  // closer than the short name's own letters make it, i.e. more of it was on screen — the short
+  // one is not a sure match (M171): both go to the icon check, or to a question.
+  const longer = containingCandidates(first[0], ranked, candidates, thresholds.minScore);
+  if (longer.length > 0)
+    return { status: 'ambiguous', ids: [first[0], ...longer], score, margin: Math.min(margin, 0) };
   if (exact || margin >= thresholds.minMargin) return { status: 'match', id: first[0], score, margin };
   const ids = ranked.filter(([, s]) => score - s < thresholds.minMargin).map(([id]) => id);
   return { status: 'ambiguous', ids, score, margin };
+}
+
+/**
+ * The ranked candidates whose name contains the winner's as a proper part, scoring at least
+ * `floor` and above what the winner's own letters would score them (「안식」 alone scores 「안식처」
+ * 0.75 — that is not evidence of 「안식처」 on screen; 「안식」 + 「처」 read as two lines is).
+ */
+function containingCandidates(
+  winner: number,
+  ranked: readonly [number, number][],
+  candidates: readonly NameCandidate[],
+  floor: number,
+): number[] {
+  const nameOf = new Map(candidates.map((c) => [c.id, normalizeName(c.name)]));
+  const short = nameOf.get(winner) ?? '';
+  if (short === '') return [];
+  return ranked
+    .filter(([id, s]) => {
+      if (id === winner || s < floor) return false;
+      const long = nameOf.get(id) ?? '';
+      return long.length > short.length && long.includes(short) && s > similarity(short, long) + 1e-9;
+    })
+    .map(([id]) => id);
 }
 
 /**

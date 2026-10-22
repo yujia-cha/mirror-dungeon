@@ -117,6 +117,7 @@ describe('watchedRegions', () => {
         selected: [0.2, 0.2, 0.1, 0.1],
         centerConfirm: shared,
         mapHeader: [0, 0, 0.1, 0.1],
+        mapPack: [0, 0.05, 0.1, 0.05],
       },
       fusion: { count: [0.2, 0.2, 0.3, 0.07], five: [], three: [] },
       popupIcon: [0.3, 0.3, 0.1, 0.1],

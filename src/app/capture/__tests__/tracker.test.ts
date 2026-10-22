@@ -105,6 +105,57 @@ describe('trackFrame — entering a pack', () => {
     expect(events).toEqual([]);
   });
 
+  it('moves an entry to another floor only when two map reads agree (M172)', () => {
+    // Arrange: floor 8's pack read once as floor 9 (a noisy header), then as floor 8 again.
+    const frames = [map(8, match(1113)), map(9, match(1113)), map(8, match(1113)), map(8, none)];
+    // Act
+    const { events, state } = run(frames, PAST_START);
+    // Assert: the entry stays on floor 8 and nothing waits.
+    expect(events).toEqual([{ kind: 'enter', floor: 8, packId: 1113 }]);
+    expect(state.entered).toEqual({ floor: 8, packId: 1113 });
+    expect(state.pendingEnter ?? null).toBeNull();
+  });
+
+  it('enters the move once a second map read says the same (M172)', () => {
+    // Arrange
+    const frames = [map(8, match(1113)), map(9, match(1113)), map(9, none), map(9, match(1113))];
+    // Act
+    const { events, state } = run(frames, PAST_START);
+    // Assert: the read of no pack between them decides nothing.
+    expect(events).toEqual([
+      { kind: 'enter', floor: 8, packId: 1113 },
+      { kind: 'enter', floor: 9, packId: 1113 },
+    ]);
+    expect(state.entered).toEqual({ floor: 9, packId: 1113 });
+  });
+
+  it('waits the same way for a floor beyond the next, and not for the next floor', () => {
+    // Arrange: 6 → 9 is a jump (one read waits); 9 → 10 is the next floor (enters at once).
+    const frames = [map(6, match(1002)), map(9, match(1101)), map(9, match(1101)), map(10, match(1025))];
+    // Act
+    const { events } = run(frames, PAST_START);
+    // Assert
+    expect(events).toEqual([
+      { kind: 'enter', floor: 6, packId: 1002 },
+      { kind: 'enter', floor: 9, packId: 1101 },
+      { kind: 'enter', floor: 10, packId: 1025 },
+    ]);
+  });
+
+  it('drops a waiting move when a different entry comes instead', () => {
+    // Arrange: a stray 「11층 1113」 read, then the real next floor, then the stray read again.
+    const frames = [map(8, match(1113)), map(11, match(1113)), map(9, match(1101)), map(11, match(1113))];
+    // Act
+    const { events, state } = run(frames, PAST_START);
+    // Assert: floor 9 enters at once (the next floor, another pack) and clears what waited, so the
+    // stray read seen again waits anew rather than riding its earlier self.
+    expect(events).toEqual([
+      { kind: 'enter', floor: 8, packId: 1113 },
+      { kind: 'enter', floor: 9, packId: 1101 },
+    ]);
+    expect(state.pendingEnter).toEqual({ floor: 11, packId: 1113 });
+  });
+
   it('asks once per floor about an ambiguous pack, and enters on a clean read after', () => {
     // Arrange
     const frames = [map(3, unsure(1008, 1014)), map(3, unsure(1008, 1014)), map(3, match(1008))];

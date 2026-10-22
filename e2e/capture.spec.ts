@@ -353,9 +353,10 @@ test('starting the reader over an old run starts a new one, reads its start, and
   // on show first: while the worker is still answering, the stage carries the 「아직 목표 기프트가
   // 없습니다」 notice above the cards, and the plan's arrival takes it away and moves the 「다음 층」
   // foot up mid-click — the pointer then lands beside the button and the click is lost (M162, a
-  // CI flake of one run in two).
+  // CI flake of one run in two). Waiting for the notice to go was not enough on CI (M172: lost
+  // again on a slow runner), so the press is repeated until the run has moved — the poll reads the
+  // floor right after each press and stops at 2, so a press that landed is never followed by one more.
   await expect(page.getByText('아직 목표 기프트가 없습니다.')).toHaveCount(0);
-  await page.getByRole('button', { name: '다음 층' }).first().click();
   const saved = () =>
     page.evaluate(() => {
       const state = JSON.parse(localStorage.getItem('md-route-planner') ?? '{}').state ?? {};
@@ -365,7 +366,15 @@ test('starting the reader over an old run starts a new one, reads its start, and
         snapshotFloor: state.runSnapshot?.run?.currentFloor ?? null,
       };
     });
-  await expect.poll(async () => (await saved()).floor).toBe(2);
+  await expect
+    .poll(
+      async () => {
+        await page.getByRole('button', { name: '다음 층' }).first().click();
+        return (await saved()).floor;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(2);
   const old = await saved();
 
   // Starting asks first; 「새 런으로 시작」 starts the share from the dialog's own press.

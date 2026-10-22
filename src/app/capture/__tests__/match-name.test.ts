@@ -118,6 +118,32 @@ describe('matchName', () => {
     expect(blurred).toMatchObject({ status: 'ambiguous', ids: [3, 4] });
   });
 
+  it('does not take a name that is one line of a longer candidate’s wrapped name (M171)', () => {
+    // Arrange: the button wraps 「누군가 놓쳐버린 사원증」; the first line is read with a slip, the
+    // second line spells the short gift 「사원증」 exactly.
+    const candidates = [
+      { id: 9043, name: '사원증' },
+      { id: 9246, name: '누군가 놓쳐버린 사원증' },
+    ];
+    // Act
+    const result = matchName(['누군가 놓처버린', '사원증'], candidates);
+    // Assert: not a match for the short one — both go on to the icon check or a question.
+    expect(result.status).toBe('ambiguous');
+    expect(result.status === 'ambiguous' && result.ids).toEqual([9043, 9246]);
+    // The short name alone, with nothing of the longer one on screen, is still a match.
+    expect(matchName(['사원증'], candidates)).toMatchObject({ status: 'match', id: 9043 });
+    // And the longer name read whole is the longer gift.
+    expect(matchName(['누군가 놓쳐버린 사원증'], candidates)).toMatchObject({ status: 'match', id: 9246 });
+    // A short name whose letters alone bring the longer one near the bar (「안식」 scores 「안식처」
+    // 0.75) is still a match when only the short name is on screen — nothing of 「처」 was read.
+    const near = [
+      { id: 1, name: '안식' },
+      { id: 2, name: '안식처' },
+    ];
+    expect(matchName(['안식'], near)).toMatchObject({ status: 'match', id: 1 });
+    expect(matchName(['안식', '처'], near).status).toBe('ambiguous');
+  });
+
   it('treats the thresholds as inclusive lower bounds', () => {
     // Arrange: 「해지 우산」 scores exactly 0.9 against 「해진 우산」.
     const single = [{ id: 1, name: '해진 우산' }];
