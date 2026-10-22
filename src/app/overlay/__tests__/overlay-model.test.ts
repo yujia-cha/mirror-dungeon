@@ -295,6 +295,16 @@ describe('shopView (M148)', () => {
     expect(view).toEqual({ packId: 1002, exclusive: [9001, 9002], t4: [1, 2, 4] });
   });
 
+  it('asks the exclusives as entered on that floor, so the last floor shows no clear reward (M173)', () => {
+    // Arrange: an index that drops 9002 when asked about floor 15.
+    const byFloor = (packId: number, floor?: number) =>
+      (exclusives[packId] ?? []).filter((id) => !(floor === 15 && id === 9002));
+    // Act
+    const view = shopView({ visits: { 14: 1005, 15: 1002 } }, byFloor, groups);
+    // Assert
+    expect(view).toMatchObject({ packId: 1002, exclusive: [9001] });
+  });
+
   it('has no pack and no exclusives before the first entry', () => {
     const view = shopView({ visits: {} }, exclusivesOf, groups);
     expect(view).toMatchObject({ packId: null, exclusive: [] });

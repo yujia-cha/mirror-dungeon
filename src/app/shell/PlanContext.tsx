@@ -336,7 +336,7 @@ export function PlanProvider({
     ): number[] => {
       const floor = floorOfVisit(now.visits, packId);
       const expected = floor !== null ? expectedIn(floor, packId) : [];
-      return entryGifts(packId, expected, now.giftStatus, indexes, exclusivesOf);
+      return entryGifts(packId, expected, now.giftStatus, indexes, exclusivesOf, floor ?? undefined);
     };
     /**
      * What leaving `floor` records as missed: the drops the route expected of a pack entered there
@@ -377,9 +377,9 @@ export function PlanProvider({
     const leave = (packId: number): void => {
       const now = useApp.getState().run;
       const elsewhere = new Set(
-        Object.values(now.visits)
-          .filter((id) => id !== packId)
-          .flatMap((id) => exclusivesOf(id)),
+        Object.entries(now.visits)
+          .filter(([, id]) => id !== packId)
+          .flatMap(([floor, id]) => exclusivesOf(id, Number(floor))),
       );
       unvisitPack(packId, { reset: entryGiftsOf(packId, now).filter((id) => !elsewhere.has(id)) });
     };

@@ -64,16 +64,20 @@ describe('metro segments', () => {
     expect(new Set(metro.segments.map((s) => s.lane)).size).toBe(2);
   });
 
-  it('rides the 평행중첩 packs and five EXTREME packs on one segment per band', () => {
+  it('rides the 평행중첩 packs and four EXTREME packs on one segment per band', () => {
     // 교본·검과 작품·끊어지지 않는 are all Hard 5 + 6~10, so all three share one window and one
-    // segment: the player may take any of them on any of floors 5-10.
-    const metro = segmentsFor(plan(9283, 9222, 9217, 9250, 9251, 9252, 9253, 9254));
+    // segment: the player may take any of them on any of floors 5-10. The clear rewards' packs
+    // share 11~14 — the run ends on 15 before a pack's boss pays its reward (M173).
+    const metro = segmentsFor(plan(9283, 9222, 9217, 9250, 9251, 9252, 9253));
     expect(metro.segments.map((s) => [s.from, s.to, s.fixed, s.packs.length])).toEqual([
       [5, 10, false, 3],
-      [11, 15, false, 5],
+      [11, 14, false, 4],
     ]);
     expect(metro.segments.every((s) => !s.partial)).toBe(true);
-    expect(metro.freeRuns).toEqual([{ from: 1, to: 4, passed: false }]);
+    expect(metro.freeRuns).toEqual([
+      { from: 1, to: 4, passed: false },
+      { from: 15, to: 15, passed: false },
+    ]);
   });
 
   it('stacks a card only over the cards it overlaps, by their height', () => {

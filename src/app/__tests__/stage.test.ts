@@ -106,6 +106,26 @@ describe('stage', () => {
     expect(exclusivesOf(1511)).toBe(exclusivesOf(1511)); // cached
   });
 
+  it('leaves the clear reward out of a pack entered on the last floor (M173)', () => {
+    // Arrange
+    const exclusivesOf = exclusivesIndex(data, indexes);
+    const own = exclusivesOf(1511);
+    // Act · Assert: the run ends with floor 15's boss, before the reward is handed out.
+    expect(indexes.finalFloor).toBe(15);
+    expect(exclusivesOf(1511, 14)).toEqual(own);
+    expect(exclusivesOf(1511, 15)).toEqual(own.filter((id) => id !== 9250));
+    expect(exclusivesOf(1511, 15)).toBe(exclusivesOf(1511, 15)); // cached apart from the pack's own list
+    // A pack without a clear reward reads the same on any floor.
+    expect(exclusivesOf(1402, 5)).toEqual([9267, 9282]);
+    // Neither the expectation of the entry nor what it answers for names the reward on floor 15.
+    const needed = new Set([9250]);
+    expect(expectedFrom(null, 14, 1511, needed, exclusivesOf)).toEqual([9250]);
+    expect(expectedFrom(null, 15, 1511, needed, exclusivesOf)).toEqual([]);
+    expect(entryGifts(1511, [], {}, indexes, exclusivesOf, 14)).toContain(9250);
+    expect(entryGifts(1511, [], {}, indexes, exclusivesOf, 15)).not.toContain(9250);
+    expect(entryGifts(1511, [], {}, indexes, exclusivesOf)).toContain(9250);
+  });
+
   it('expects of an entered pack what the plan picks up there plus the exclusives the route collects', () => {
     const exclusivesOf = exclusivesIndex(data, indexes);
     // 9249 조그맣고 근사한 바이올린 = 9431 (1016, floor 1) + 9706·9707 (1102, floor 2). Once 1016 is

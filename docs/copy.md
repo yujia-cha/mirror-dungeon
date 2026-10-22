@@ -1040,6 +1040,12 @@
 - en: only from {name} and {n} other packs
 - 쓰는 곳: src/app/components/GiftDetailSheet.tsx
 
+### giftClearRewardFinalFloor
+메모: 클리어 보상의 획득 줄과 EXTREME 팩 시트의 층 줄에 붙는다(M173, 소유자 확인). 마지막 층(15층)의 보스를 잡으면 런이 끝나 그 팩의 클리어 보상은 받지 못한다 — 플래너도 그 팩을 15층에 앉히지 않고, 15층 입장은 클리어 보상을 기대하지 않는다.
+- ko: {floor}층에서는 클리어 보상을 얻지 못함
+- en: no clear reward on floor {floor}
+- 쓰는 곳: src/app/components/GiftDetailSheet.tsx, src/app/components/PackSheet.tsx
+
 ### giftRouteSource
 메모: {source}는 routeSourceText — 이 루트가 그 기프트를 어디서 얻는지.
 - ko: 이 루트에서는 {source}
@@ -3055,6 +3061,12 @@
 - ko: 미획득인 채로 층을 떠나 이 런에서는 더 얻을 수 없는 기프트입니다.
 - en: Its floor was left with it not got, so it cannot be had this run.
 - 쓰는 곳: src/core/requirements.ts
+
+### unresolved.finalFloor
+메모: 클리어 보상의 팩이 마지막 층(15층)에만 남았을 때(M173). 마지막 층의 보스를 잡으면 런이 끝나 그 팩의 클리어 보상은 받지 못한다(소유자 확인).
+- ko: {gift|은/는} 클리어 보상이라 {floor}층의 팩에서는 얻지 못합니다 — 마지막 층의 보스를 잡으면 런이 끝납니다.
+- en: {gift} is a clear reward, and a pack on floor {floor} hands out none — the run ends with the last floor's boss.
+- 쓰는 곳: src/core/index.ts
 
 ### unresolved.fusionTooDeep
 - ko: 조합 단계가 너무 깊어 재료를 모두 추적할 수 없습니다.

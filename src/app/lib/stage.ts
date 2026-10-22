@@ -93,25 +93,24 @@ export function packsOfferedOn(indexes: GameIndexes, floor: number): number[] {
 }
 
 /**
- * Gifts obtainable only from a given pack: its exclusive pool plus the clear reward its boss
- * hands out (EXTREME packs). Built once per data set.
+ * Gifts obtainable only from a given pack, sorted by id, optionally as entered on `floor`: its
+ * exclusive pool plus the clear reward its boss hands out (EXTREME packs) — except on the dungeon's
+ * last floor, where the run ends with the boss and no clear reward is handed out (M173). Without a
+ * floor the list is the pack's own (the pack sheet). Built once per data set.
  */
-export function exclusivesIndex(data: GameData, indexes: GameIndexes): (packId: number) => number[] {
-  const rewards = new Map<number, number[]>();
-  for (const gift of data.gifts) {
-    const packId = gift.acquisition.clearRewardOf;
-    if (packId === null || packId === undefined) continue;
-    rewards.set(packId, [...(rewards.get(packId) ?? []), gift.id]);
-  }
-  const cache = new Map<number, number[]>();
-  return (packId) => {
-    const cached = cache.get(packId);
+export type ExclusivesOf = (packId: number, floor?: number) => number[];
+
+export function exclusivesIndex(_data: GameData, indexes: GameIndexes): ExclusivesOf {
+  const cache = new Map<string, number[]>();
+  return (packId, floor) => {
+    const onFinal = floor === indexes.finalFloor;
+    const key = `${packId}:${onFinal ? 'final' : ''}`;
+    const cached = cache.get(key);
     if (cached) return cached;
     const pack = indexes.packById.get(packId);
-    const ids = [...new Set([...(pack?.exclusiveGifts ?? []), ...(rewards.get(packId) ?? [])])].sort(
-      (a, b) => a - b,
-    );
-    cache.set(packId, ids);
+    const rewards = onFinal ? [] : (indexes.clearRewardsByPack.get(packId) ?? []);
+    const ids = [...new Set([...(pack?.exclusiveGifts ?? []), ...rewards])].sort((a, b) => a - b);
+    cache.set(key, ids);
     return ids;
   };
 }
@@ -129,10 +128,10 @@ export function expectedFrom(
   floor: number,
   packId: number,
   needed: ReadonlySet<number>,
-  exclusivesOf: (packId: number) => number[],
+  exclusivesOf: ExclusivesOf,
 ): number[] {
   const entry = plan?.floors.find((f) => f.floor === floor && f.packId === packId);
-  const ids = new Set(exclusivesOf(packId).filter((id) => needed.has(id)));
+  const ids = new Set(exclusivesOf(packId, floor).filter((id) => needed.has(id)));
   for (const pickup of entry?.pickups ?? []) ids.add(pickup.giftId);
   return [...ids].sort((a, b) => a - b);
 }
@@ -147,8 +146,8 @@ export function autoFailedFor(expected: readonly number[], giftStatus: Record<nu
 
 /**
  * The gifts an entry answers for, sorted by id — what its tiles offer and what going back clears:
- * the pack's exclusives, what the route expected of it, and a pool gift of the pack already
- * missed. The last is not redundant: once a pool pickup is recorded as missed the planner routes
+ * the pack's exclusives (as entered on `floor` — none of its clear reward on the last floor), what
+ * the route expected of it, and a pool gift of the pack already missed. The last is not redundant: once a pool pickup is recorded as missed the planner routes
  * it from another pack (or gives it up) and the passed floor stops naming it, so the expected list
  * alone would neither show the miss nor take it back with the entry. Only a settle writes
  * 'failed', so such a miss is an entry's doing.
@@ -158,9 +157,10 @@ export function entryGifts(
   expected: readonly number[],
   giftStatus: Record<number, GiftStatus>,
   indexes: GameIndexes,
-  exclusivesOf: (packId: number) => number[],
+  exclusivesOf: ExclusivesOf,
+  floor?: number,
 ): number[] {
-  const ids = new Set([...exclusivesOf(packId), ...expected]);
+  const ids = new Set([...exclusivesOf(packId, floor), ...expected]);
   for (const id of indexes.packById.get(packId)?.giftPool ?? []) {
     if (giftStatus[id] === 'failed') ids.add(id);
   }

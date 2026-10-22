@@ -242,7 +242,12 @@ export type UnresolvedReason =
   /** Two fusions eat the same ingredient and no second pack can hand over a second copy. */
   | 'ingredient-shared'
   /** Marked as missed during the run. */
-  | 'failed';
+  | 'failed'
+  /**
+   * A 클리어 보상 whose pack has no floor left but the dungeon's last one, where the run ends before
+   * the pack's boss reward is handed out (M173).
+   */
+  | 'final-floor';
 
 export interface Unresolved {
   giftId: number;
@@ -359,6 +364,14 @@ export interface GameIndexes {
   fixedModeByFloor: Map<number, 'parallel' | 'extreme'>;
   /** Packs whose pool contains the gift. */
   packsByGift: Map<number, number[]>;
+  /** The 클리어 보상 gifts an EXTREME pack's boss drops, by pack (sorted; packs without one are absent). */
+  clearRewardsByPack: Map<number, number[]>;
   /** Gifts present in at least `rules.generalGiftPackShare` of packs: not worth routing for. */
   freelyAvailableGifts: Set<number>;
+  /**
+   * The dungeon's last floor (`rules.floors`). The run ends when that floor's boss falls, so a pack
+   * taken there hands out no 클리어 보상: the planner never places a pack whose clear reward it wants
+   * there, and the app expects none of an entry there (M173).
+   */
+  finalFloor: number;
 }

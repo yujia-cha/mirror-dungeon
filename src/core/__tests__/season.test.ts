@@ -36,6 +36,11 @@ describe('a season with fewer floors', () => {
     expect(shortIndexes.fixedModeByFloor.size).toBe(0);
   });
 
+  it('reads the last floor from the bands, not from 15 (M173)', () => {
+    expect(md7Indexes.finalFloor).toBe(15);
+    expect(shortIndexes.finalFloor).toBe(5);
+  });
+
   it('reads floor 6 as Hard, not 평행중첩, because this season never reaches it', () => {
     const hardRun = { ...defaultOptions(), hardFromFloor: 1 };
     expect(modeForFloor(6, hardRun, md7Indexes)).toBe('parallel');

@@ -251,14 +251,15 @@ export function goalsFirst(ids: readonly number[], needed: ReadonlySet<number>):
 
 export function shopView(
   run: Pick<RunState, 'visits'>,
-  exclusivesOf: (packId: number) => number[],
+  exclusivesOf: (packId: number, floor?: number) => number[],
   trackerGroups: readonly { id: string; gifts: readonly { id: number }[] }[],
   needed: ReadonlySet<number> = new Set(),
 ): ShopView {
   const entry = lastEntry(run);
   return {
     packId: entry?.packId ?? null,
-    exclusive: goalsFirst(entry ? exclusivesOf(entry.packId) : [], needed),
+    // As entered on that floor: on the dungeon's last floor the pack's clear reward is not coming.
+    exclusive: goalsFirst(entry ? exclusivesOf(entry.packId, entry.floor) : [], needed),
     t4: goalsFirst(
       trackerGroups.filter((group) => group.id !== 'shard').flatMap((group) => group.gifts.map((g) => g.id)),
       needed,

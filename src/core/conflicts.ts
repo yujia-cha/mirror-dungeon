@@ -101,7 +101,10 @@ export function contestedFloors(plan: RoutePlan, options: PlanOptions, indexes: 
   for (const u of plan.unresolved) {
     if (u.reason !== 'pack-conflict') continue;
     const packs = (indexes.packsByGift.get(u.giftId) ?? []).filter((id) => !banned.has(id));
+    // A clear reward's pack never contests the last floor: its boss hands out nothing there (M173).
+    const isReward = indexes.giftById.get(u.giftId)?.acquisition.clearRewardOf !== null;
     for (const floor of plan.floors) {
+      if (isReward && floor.floor === indexes.finalFloor) continue;
       const offered =
         indexes.packsByFloor[modeForFloor(floor.floor, options, indexes)].get(floor.floor) ?? [];
       const pinned = options.pinnedPacks[floor.floor];

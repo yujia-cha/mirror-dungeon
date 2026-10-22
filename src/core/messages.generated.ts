@@ -121,6 +121,11 @@ export const MESSAGES = {
     ko: '미획득인 채로 층을 떠나 이 런에서는 더 얻을 수 없는 기프트입니다.',
     en: 'Its floor was left with it not got, so it cannot be had this run.',
   },
+  // 클리어 보상의 팩이 마지막 층(15층)에만 남았을 때(M173). 마지막 층의 보스를 잡으면 런이 끝나 그 팩의 클리어 보상은 받지 못한다(소유자 확인).
+  'unresolved.finalFloor': {
+    ko: '{gift|은/는} 클리어 보상이라 {floor}층의 팩에서는 얻지 못합니다 — 마지막 층의 보스를 잡으면 런이 끝납니다.',
+    en: "{gift} is a clear reward, and a pack on floor {floor} hands out none — the run ends with the last floor's boss.",
+  },
   'unresolved.fusionTooDeep': {
     ko: '조합 단계가 너무 깊어 재료를 모두 추적할 수 없습니다.',
     en: 'The fusion chain is deeper than the planner follows.',
@@ -184,6 +189,7 @@ export interface MessageParams {
   'unresolved.fusionMissing': { missing: MessageParam };
   'unresolved.fusionMissingDropped': { missing: MessageParam; dropped: MessageParam };
   'unresolved.failed': Record<never, never>;
+  'unresolved.finalFloor': { gift: MessageParam; floor: MessageParam };
   'unresolved.fusionTooDeep': Record<never, never>;
   'unresolved.noRecipe': Record<never, never>;
   'cond.keywordCount': {

@@ -52,6 +52,8 @@ function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): { text: 
   } else if (gift.acquisition.clearRewardOf !== null && gift.acquisition.clearRewardOf !== undefined) {
     packs = [gift.acquisition.clearRewardOf];
     parts.push(t('giftPackOnly', lang, { name: packName(gift.acquisition.clearRewardOf) }));
+    // The run ends with the last floor's boss, before the pack's clear reward is handed out (M173).
+    parts.push(t('giftClearRewardFinalFloor', lang, { floor: indexes.finalFloor }));
   }
   return { text: parts.join(' · '), packs };
 }

@@ -129,6 +129,11 @@ export interface SearchResult {
   /** The same misses as `requirementKey`s, in the same order. */
   unresolvedKeys: string[];
   /**
+   * Among `unresolvedKeys`, the 클리어 보상 copies whose pack had no floor but the dungeon's last
+   * one, where the run ends before the boss hands the reward out (M173).
+   */
+  finalFloorKeys: string[];
+  /**
    * Copies left unrouted because every goal they serve was lost already (`SearchGoals`). They are
    * not misses of their own: what is missing is the copy that lost the goal. `planRoute` drops
    * them like any ingredient of a fusion that can no longer happen.
@@ -224,6 +229,11 @@ export function assignPacks(input: SearchInput): SearchResult {
   const settledPacks = new Set(settled.values());
   const openFloors = floors.filter((floor) => !settled.has(floor)).sort((a, b) => a - b);
 
+  // Packs whose 클리어 보상 the route is after. The run ends on the dungeon's last floor before a
+  // pack's boss reward is handed out, so such a pack is never placed there (M173, `rewardPacksOf`).
+  const rewardPacks = rewardPacksOf(requirements, indexes);
+  const { finalFloor } = indexes;
+
   /** The open floors a pack could take, in floor order. */
   const floorsOf = new Map<number, number[]>();
   const floorsFor = (packId: number): number[] => {
@@ -235,12 +245,23 @@ export function assignPacks(input: SearchInput): SearchResult {
     // the second copy could pick the settled pack again and put it on two floors at once.
     const out = settledPacks.has(packId)
       ? []
-      : openFloors.filter((floor) =>
-          (indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? []).includes(packId),
+      : openFloors.filter(
+          (floor) =>
+            !(floor === finalFloor && rewardPacks.has(packId)) &&
+            (indexes.packsByFloor[modeForFloor(floor, options, indexes)].get(floor) ?? []).includes(packId),
         );
     floorsOf.set(packId, out);
     return out;
   };
+
+  /** Whether the last floor is the one floor `packId` could be (or was) taken on in this plan. */
+  const onlyFinalFloor = (packId: number): boolean =>
+    settled.get(finalFloor) === packId ||
+    (!settledPacks.has(packId) &&
+      openFloors.includes(finalFloor) &&
+      (indexes.packsByFloor[modeForFloor(finalFloor, options, indexes)].get(finalFloor) ?? []).includes(
+        packId,
+      ));
 
   /*
    * 기프트 관측 (M87): observing a gift is a pack of its own — it supplies one copy of that gift, at
@@ -255,6 +276,7 @@ export function assignPacks(input: SearchInput): SearchResult {
   const candidates: Candidate[] = [];
   const unresolvedGiftIds: number[] = [];
   const unresolvedKeys: string[] = [];
+  const finalFloorKeys: string[] = [];
   const unplacedPacks: number[] = [];
 
   // A preferred pack is a requirement of its own: some floor that offers it, no gift attached.
@@ -277,11 +299,18 @@ export function assignPacks(input: SearchInput): SearchResult {
   for (const requirement of requirements) {
     if (requirement.via !== 'route') continue;
     const supplying = (indexes.packsByGift.get(requirement.giftId) ?? []).filter((p) => !banned.has(p));
+    const rewardPack = indexes.giftById.get(requirement.giftId)?.acquisition.clearRewardOf ?? null;
     let pool = freeLeft.get(requirement.giftId);
     if (!pool) {
       // A pack already taken on a played floor hands the gift over at no cost — unless the player
-      // left that pack's floor without it.
-      pool = failed.has(requirement.giftId) ? [] : supplying.filter((packId) => settledPacks.has(packId));
+      // left that pack's floor without it, or it is the clear reward of a pack taken on the last
+      // floor, where the run ended before the boss handed it out.
+      pool = failed.has(requirement.giftId)
+        ? []
+        : supplying.filter(
+            (packId) =>
+              settledPacks.has(packId) && !(packId === rewardPack && settled.get(finalFloor) === packId),
+          );
       freeLeft.set(requirement.giftId, pool);
     }
     const freePack = pool.shift() ?? null;
@@ -293,6 +322,10 @@ export function assignPacks(input: SearchInput): SearchResult {
     if (freePack === null && packs.length === 0) {
       unresolvedGiftIds.push(requirement.giftId);
       unresolvedKeys.push(key);
+      // The last floor was the pack's only floor (open, or already played): the reward is lost to
+      // the run's end, not to a missing pack — `planRoute` names it so.
+      if (rewardPack !== null && !banned.has(rewardPack) && onlyFinalFloor(rewardPack))
+        finalFloorKeys.push(key);
       continue;
     }
     candidates.push({
@@ -1667,6 +1700,7 @@ export function assignPacks(input: SearchInput): SearchResult {
     supplier,
     unresolvedGiftIds: missedKeys.map((key) => giftOfKey.get(key) ?? Number(key.split(':')[0])),
     unresolvedKeys: missedKeys,
+    finalFloorKeys,
     abandonedKeys: [...best.abandoned].sort(byGift),
     observedKeys: [...best.supplierPack]
       .filter(([, packId]) => isObservation(packId))
@@ -1679,6 +1713,26 @@ export function assignPacks(input: SearchInput): SearchResult {
     capped,
     tieBreakCut,
   };
+}
+
+/**
+ * The packs whose 클리어 보상 the route is after: the one source of such a gift is the EXTREME pack
+ * whose boss drops it, and that boss drops nothing on the dungeon's last floor — the run ends
+ * there first. So the search keeps those packs off the last floor (`floorsFor`), and `planRoute`
+ * draws their windows the same way. A pack whose reward is not wanted may still take that floor.
+ *
+ * This forbids the floor rather than the reward: a plan that gave the reward up could in principle
+ * still take the pack there for its pool, but that only matters once more EXTREME packs are wanted
+ * than the band has floors below the last, and then the plan loses one goal either way.
+ */
+export function rewardPacksOf(requirements: readonly Requirement[], indexes: GameIndexes): Set<number> {
+  const out = new Set<number>();
+  for (const requirement of requirements) {
+    if (requirement.via !== 'route') continue;
+    const packId = indexes.giftById.get(requirement.giftId)?.acquisition.clearRewardOf ?? null;
+    if (packId !== null) out.add(packId);
+  }
+  return out;
 }
 
 /**

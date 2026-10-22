@@ -46,8 +46,8 @@ function withoutTiming(plan: RoutePlan): unknown {
 }
 
 /** Gifts bound to a pack, so the planner has actual routing to do. */
-/** Six clear-reward gifts that cannot all fit one run, so the route has alternatives to offer. */
-const conflicting = [9250, 9251, 9252, 9253, 9254, 9255];
+/** Five clear-reward gifts for the four floors that pay one (M173): the route has alternatives to offer. */
+const conflicting = [9250, 9251, 9252, 9253, 9254];
 
 const packBound = data.gifts
   .filter((gift) => gift.acquisition.kind === 'packLimited')
@@ -341,7 +341,7 @@ describe('a checked set is planned on request (M80)', () => {
     expect(answer).toMatchObject({ type: 'drop', id: 2 });
     const direct = runDrop(inputFor(conflicting), [9250], data, indexes);
     expect((answer as DropResponse).plan!.stats).toEqual({ ...direct!.stats, elapsedMs: expect.any(Number) });
-    expect((answer as DropResponse).plan!.stats.totalWanted).toBe(5);
+    expect((answer as DropResponse).plan!.stats.totalWanted).toBe(conflicting.length - 1);
     // The analysis of plan 1 is still owed.
     expect(planner.analysisStep(1)).not.toBeNull();
   });

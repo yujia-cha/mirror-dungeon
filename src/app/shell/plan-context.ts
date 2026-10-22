@@ -122,7 +122,8 @@ export interface PlanBase {
    * reads what was entered takes `usePlanRun().ctx`, which carries the run.
    */
   ctx: Omit<PackContext, 'run'>;
-  exclusivesOf: (packId: number) => number[];
+  /** A pack's exclusives, as entered on `floor` when given (no clear reward on the last floor, M173). */
+  exclusivesOf: (packId: number, floor?: number) => number[];
   /**
    * What the route expects a pack entered on `floor` to hand over: the plan's pickups there
    * (ingredients and pool pickups included) plus the pack's exclusives the route collects. Leaving

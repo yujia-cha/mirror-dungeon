@@ -326,6 +326,11 @@ export const STRINGS = {
   giftPackOnly: { ko: '{name} 전용', en: 'only from {name}' },
   // 전용 팩이 셋 이상이면(53개 기프트, 인연 얽힘은 일곱) 첫 팩만 이름을 적고 나머지는 센다 — 한 줄을 유지한다.
   giftPackOnlyMany: { ko: '{name} 외 {n}개 팩 전용', en: 'only from {name} and {n} other packs' },
+  // 클리어 보상의 획득 줄과 EXTREME 팩 시트의 층 줄에 붙는다(M173, 소유자 확인). 마지막 층(15층)의 보스를 잡으면 런이 끝나 그 팩의 클리어 보상은 받지 못한다 — 플래너도 그 팩을 15층에 앉히지 않고, 15층 입장은 클리어 보상을 기대하지 않는다.
+  giftClearRewardFinalFloor: {
+    ko: '{floor}층에서는 클리어 보상을 얻지 못함',
+    en: 'no clear reward on floor {floor}',
+  },
   // {source}는 routeSourceText — 이 루트가 그 기프트를 어디서 얻는지.
   giftRouteSource: { ko: '이 루트에서는 {source}', en: 'In this route: {source}' },
   giftBlockedIncluded: { ko: '{name} 조합에 이미 포함됨', en: 'Already part of {name}' },

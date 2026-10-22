@@ -31,8 +31,8 @@ const noObservation = {
   rules: { ...data.rules, giftObservation: { ...data.rules.giftObservation, max: 0 } },
 };
 const BLADE_LINEAGE_DECK = [10403, 10308, 10208, 10108, 11005, 10104];
-/** Six EXTREME clear rewards, one pack each, for five floors (11~15). */
-const CLEAR_REWARDS = [9250, 9251, 9252, 9253, 9254, 9255];
+/** Five EXTREME clear rewards, one pack each, for the four floors that pay one (11~14, M173). */
+const CLEAR_REWARDS = [9250, 9251, 9252, 9253, 9254];
 
 const goals = (...ids: number[]): PlanInput['wanted'] => ids.map((giftId) => ({ giftId, required: false }));
 const input = (wanted: PlanInput['wanted'], overrides: Partial<PlanOptions> = {}): PlanInput => ({
@@ -67,7 +67,7 @@ const MIXED = input(goals(9262, 9218, 9768, 9772, 9804, 9789, 9791, 9773, 9219),
 
 describe('removals: k is the floor, and every k-sized way is found (M144)', () => {
   it('finds no way smaller than the conflict, and exactly the k-sized ones a brute force finds', () => {
-    // Arrange: seven one-pack goals for five floors — two lost.
+    // Arrange: six one-pack goals for the four paying floors — two lost.
     const board = input(goals(...CLEAR_REWARDS, 9827), { lastFloor: 15 });
     // Act
     const analysis = planResolutions(board, data, indexes);
@@ -75,22 +75,22 @@ describe('removals: k is the floor, and every k-sized way is found (M144)', () =
     expect(analysis.conflicts).toBe(2);
     for (const [id] of subsetsOf(CLEAR_REWARDS.concat(9827), 1))
       expect(conflicts(without(board, [id!]))).toBe(1);
-    // Every pair that fits is listed, and nothing else: here any two of the seven.
+    // Every pair that fits is listed, and nothing else: here any two of the six.
     const fitting = subsetsOf([...CLEAR_REWARDS, 9827].sort(), 2).filter(
       (pair) => conflicts(without(board, pair)) === 0,
     );
     expect(analysis.methods.map((m) => m.removals)).toEqual(fitting);
     expect(analysis.methods.every((m) => m.minimal && m.releases.length === 0)).toBe(true);
-    // Summed up as 「이 중 아무거나 2개」 of all seven, nobody essential.
+    // Summed up as 「이 중 아무거나 2개」 of all six, nobody essential.
     expect(analysis.choices).toEqual([
-      expect.objectContaining({ removals: 2, essential: [], pick: 2, any: true, complete: true, ways: 21 }),
+      expect.objectContaining({ removals: 2, essential: [], pick: 2, any: true, complete: true, ways: 15 }),
     ]);
     expect(analysis.choices[0]!.pool).toEqual([...CLEAR_REWARDS, 9827].sort());
     expect(analysis.complete).toBe(true);
   });
 
   it('lists the same singles as the −1 bars when one removal is enough', () => {
-    // Arrange: six goals for five floors — one lost, and any one of the six frees a floor.
+    // Arrange: five goals for four paying floors — one lost, and any one of the five frees a floor.
     const board = input(goals(...CLEAR_REWARDS), { lastFloor: 15 });
     // Act
     const analysis = planResolutions(board, data, indexes);

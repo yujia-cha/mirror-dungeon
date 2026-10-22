@@ -87,8 +87,11 @@ const statsFor = (deck: number[], deployed?: number[]) =>
   analyseDeck(deck, indexes, data.rules.deployment, deployed);
 
 /** A combustion-heavy formation, one identity per sinner. */
-/** The six EXTREME clear rewards: five floors cannot hold them all, and none can be observed. */
-const CLEAR_REWARDS = [9250, 9251, 9252, 9253, 9254, 9255];
+/**
+ * Five EXTREME clear rewards: the four floors that hand one out (11~14 — the run ends on 15 before
+ * the boss pays, M173) cannot hold them all, and none can be observed.
+ */
+const CLEAR_REWARDS = [9250, 9251, 9252, 9253, 9254];
 
 const BURN_DECK = [10112, 10216, 10311, 10415, 10512, 10604, 10715, 10808, 10916, 11009, 11115, 11216];
 /** The app's default deck (LCB 수감자 ×12); its dominant keyword is Burst. */
@@ -3132,11 +3135,11 @@ describe('RoutePlanPanel', () => {
 
   it('names the contested floors in the decision card and offers no pack-level choice', () => {
     useApp.getState().setDeck(BURN_DECK, 7);
-    for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id); // six EXTREME packs for five floors
+    for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id); // five EXTREME packs for the four floors that pay (M173)
     renderRoute();
     const card = screen.getByTestId('route-decision');
     // The contested floors stay in the header, as information.
-    expect(card).toHaveTextContent('11~15층');
+    expect(card).toHaveTextContent('11~14층');
     // The pack fold (「팩으로 고르기」) is gone with the pack-level choice it held; the decision is
     // always which gift to give up.
     expect(screen.queryByTestId('route-decision-packs')).toBeNull();
@@ -3159,19 +3162,19 @@ describe('RoutePlanPanel', () => {
     // M115: the header names both sides — the lost goal, and what the route keeping it leaves out.
     expect(within(card).getByRole('heading', { level: 2 })).toHaveTextContent(/^전부 얻을 수 없습니다$/);
     const tradeoff = within(card).getByTestId('drop-tradeoff');
-    expect(tradeoff).toHaveAttribute('data-lost', '9255');
-    // Six goals for five floors: leaving any other one out keeps it, and the line says so.
+    expect(tradeoff).toHaveAttribute('data-lost', '9254');
+    // Five goals for four floors: leaving any other one out keeps it, and the line says so.
     expect(tradeoff).toHaveTextContent(
-      '박수 짝짝!을(를) 얻으려면 보급형 K사 앰플 · 불타는 운명 · 못과 망치 · 회전 목마 모형 · 한 잔 더! 중 하나를 빼면 됩니다',
+      '한 잔 더!을(를) 얻으려면 보급형 K사 앰플 · 불타는 운명 · 못과 망치 · 회전 목마 모형 중 하나를 빼면 됩니다',
     );
     // M157: every name in the line opens its sheet, as in the method rows below it.
     expect(
       within(tradeoff)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['박수 짝짝!', '보급형 K사 앰플', '불타는 운명', '못과 망치', '회전 목마 모형', '한 잔 더!']);
+    ).toEqual(['한 잔 더!', '보급형 K사 앰플', '불타는 운명', '못과 망치', '회전 목마 모형']);
     expect(card).toHaveTextContent('뺐을 때 줄어드는 충돌');
-    // Six goals for five floors: leaving any one of them out clears the one conflict.
+    // Five goals for four floors: leaving any one of them out clears the one conflict.
     const bars = within(card).getAllByTestId('drop-effect');
     expect(bars.map((bar) => Number(bar.getAttribute('data-gift'))).sort()).toEqual(
       [...CLEAR_REWARDS].sort(),
@@ -3182,7 +3185,7 @@ describe('RoutePlanPanel', () => {
       within(bars.find((bar) => bar.getAttribute('data-gift') === String(id))!)
         .queryByTestId('drop-role')
         ?.getAttribute('data-role');
-    expect(roleOf(9255)).toBe('lost');
+    expect(roleOf(9254)).toBe('lost');
     expect(
       within(card)
         .getAllByTestId('drop-role')
@@ -3190,14 +3193,14 @@ describe('RoutePlanPanel', () => {
     ).toEqual(expect.arrayContaining(['원인', '놓친 목표']));
     expect(within(card).getByTestId('drop-last-added').closest('[data-gift]')).toHaveAttribute(
       'data-gift',
-      '9255',
+      '9254',
     );
     expect(within(card).queryByTestId('drop-more')).toBeNull();
     expect(bars[0]).toHaveTextContent('−1');
     expect(within(bars[0]!).getByText('−1')).toHaveAttribute('aria-label', '충돌 1개 줄어듦');
-    expect(screen.getByTestId('drop-status')).toHaveTextContent('충돌 1 · 획득 5/6');
-    // M144: the ways to fit lead, the bars sit under 「자세히」. Any one of the six fits, so the
-    // ways are one row — 「이 중 아무거나 1개」 with the six to pick from.
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('충돌 1 · 획득 4/5');
+    // M144: the ways to fit lead, the bars sit under 「자세히」. Any one of the five fits, so the
+    // ways are one row — 「이 중 아무거나 1개」 with the five to pick from.
     const ways = within(card).getByTestId('resolutions');
     expect(ways).toHaveTextContent('해결 방법');
     const [row] = within(ways).getAllByTestId('resolution');
@@ -3208,7 +3211,7 @@ describe('RoutePlanPanel', () => {
       within(row!)
         .getAllByTestId('resolution-option')
         .map((el) => el.getAttribute('aria-label')),
-    ).toHaveLength(6);
+    ).toHaveLength(5);
     expect(within(card).getByTestId('drop-details')).toContainElement(bars[0]!);
     expect(within(card).getByTestId('drop-details')).not.toHaveAttribute('open');
     expect(within(card).queryByTestId('resolution-more')).toBeNull();
@@ -3226,7 +3229,7 @@ describe('RoutePlanPanel', () => {
     for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
     renderRoute();
     await user.click(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' }));
-    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · ✓ 전부 들어갑니다 · 획득 4/4');
     expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −1 · 함께 뺀 실제 −1');
     expect(screen.getByTestId('drop-sum')).not.toHaveTextContent('더해지지 않음');
     // Preview: the map and the counts switch; the card stays the full plan's.
@@ -3234,14 +3237,14 @@ describe('RoutePlanPanel', () => {
     expect(preview).toHaveAttribute('aria-pressed', 'false');
     await user.click(preview);
     expect(preview).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('route-summary')).toHaveTextContent('5/5');
-    expect(screen.getByTestId('drop-tradeoff')).toHaveAttribute('data-lost', '9255');
+    expect(screen.getByTestId('route-summary')).toHaveTextContent('4/4');
+    expect(screen.getByTestId('drop-tradeoff')).toHaveAttribute('data-lost', '9254');
     await user.click(preview);
-    expect(screen.getByTestId('route-summary')).toHaveTextContent('5/6');
+    expect(screen.getByTestId('route-summary')).toHaveTextContent('4/5');
     // 「선택 해제」 unchecks and ends the preview.
     await user.click(preview);
     await user.click(screen.getByRole('button', { name: '선택 해제' }));
-    expect(screen.getByTestId('route-summary')).toHaveTextContent('5/6');
+    expect(screen.getByTestId('route-summary')).toHaveTextContent('4/5');
     expect(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' })).not.toBeChecked();
     // Removing is the app's one deselection: the goal leaves, and the card with the conflict.
     await user.click(screen.getByRole('checkbox', { name: '불타는 운명 뺄 목표로 고르기' }));
@@ -3290,7 +3293,7 @@ describe('RoutePlanPanel', () => {
   it('says how many have to go when one is not enough, and picks that set in one press', async () => {
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
-    // 9827 and 9255 both lose their floor; no single drop frees both.
+    // 9827 and 9254 both lose their floor; no single drop frees both.
     for (const id of [...CLEAR_REWARDS, 9827]) useApp.getState().toggleWanted(id);
     renderRoute();
     const card = screen.getByTestId('route-decision');
@@ -3301,14 +3304,14 @@ describe('RoutePlanPanel', () => {
       within(card)
         .getAllByTestId('drop-tradeoff')
         .map((el) => el.getAttribute('data-lost')),
-    ).toEqual(['9255', '9827']);
+    ).toEqual(['9254', '9827']);
     const bars = within(card).getAllByTestId('drop-effect');
     expect(bars.every((bar) => bar.getAttribute('data-reduces') === '1')).toBe(true);
     // One alone leaves a conflict.
     await user.click(screen.getByRole('checkbox', { name: '보급형 K사 앰플 뺄 목표로 고르기' }));
-    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 5/6');
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 4/5');
     await user.click(screen.getByRole('button', { name: '선택 해제' }));
-    // M144: any two of the seven fit — one row, and 「이 방법 고르기」 checks the best-ranked pair.
+    // M144: any two of the six fit — one row, and 「이 방법 고르기」 checks the best-ranked pair.
     const row = within(card).getByTestId('resolution');
     expect(row).toHaveTextContent('이 중 아무거나 2개');
     await user.click(within(row).getByRole('button', { name: '이 방법 고르기' }));
@@ -3316,7 +3319,7 @@ describe('RoutePlanPanel', () => {
       'aria-pressed',
       'true',
     );
-    expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 4/4');
     expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −2 · 함께 뺀 실제 −2');
     // The picked row carries the same 「목표에서 빼기」 as the foot (M169).
     expect(within(row).getByTestId('resolution-apply')).toHaveTextContent(/^.+ · .+ 목표에서 빼기$/);
@@ -3324,11 +3327,11 @@ describe('RoutePlanPanel', () => {
     // through, the way cannot be picked (nor applied); complete, the row is the picked way even
     // though it is not the best-ranked pair (M169 — the frame judged every state by the first way).
     await user.click(within(row).getByRole('checkbox', { name: '보급형 K사 앰플 이 방법 고르기' }));
-    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 5/6');
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 4/5');
     expect(within(row).getByRole('button', { name: '이 방법 고르기' })).toBeDisabled();
     expect(within(row).queryByTestId('resolution-apply')).toBeNull();
     await user.click(within(row).getByRole('checkbox', { name: '가족의 원망 이 방법 고르기' }));
-    expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
+    expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 4/4');
     expect(within(row).getByRole('button', { name: '이 방법 고르기' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -3366,12 +3369,12 @@ describe('RoutePlanPanel', () => {
   });
 
   it('offers releasing a pin before removing a goal, and previews and applies it (M144)', async () => {
-    // Arrange: five clear rewards for 11~15 and ten pack goals below. The player's pins on 9214 and
+    // Arrange: four clear rewards for the four paying EXTREME floors (M173) and ten pack goals below. The player's pins on 9214 and
     // 9734 take the slots the planner would spend elsewhere, so one goal is lost — releasing either
     // pin alone fits everything.
     const user = userEvent.setup();
     useApp.getState().setDeck(BURN_DECK, 7);
-    const goals = [9250, 9251, 9252, 9253, 9254, 9291, 9214, 9771, 9734, 9438, 9237, 9791, 9809, 9703, 9220];
+    const goals = [9250, 9251, 9252, 9253, 9291, 9214, 9771, 9734, 9438, 9237, 9791, 9809, 9703, 9220];
     for (const id of goals) useApp.getState().toggleWanted(id);
     for (const id of [9214, 9734]) useApp.getState().toggleObserved(id, { max: 3, observable: () => true });
     expect(useApp.getState().options.observedGifts).toEqual([9214, 9734]);
@@ -3472,13 +3475,13 @@ describe('RoutePlanPanel', () => {
       for (const id of CLEAR_REWARDS) useApp.getState().toggleWanted(id);
       renderRoute();
       const more = await screen.findByTestId('drop-more');
-      expect(more).toHaveTextContent(/^후보 6개 중 0개 계산/);
+      expect(more).toHaveTextContent(/^후보 5개 중 0개 계산/);
       // No bar yet: the line says what the forced plan gives up, without claiming it must go.
       expect(screen.getByTestId('drop-tradeoff')).toHaveTextContent(
-        /^박수 짝짝!을\(를\) 얻는 루트에서는 .+이\(가\) 빠집니다$/,
+        /^한 잔 더!을\(를\) 얻는 루트에서는 .+이\(가\) 빠집니다$/,
       );
       await user.click(within(more).getByRole('button', { name: '더 계산' }));
-      await waitFor(() => expect(screen.getAllByTestId('drop-effect')).toHaveLength(6));
+      await waitFor(() => expect(screen.getAllByTestId('drop-effect')).toHaveLength(5));
       expect(screen.getByTestId('drop-tradeoff')).toHaveTextContent(/중 하나를 빼면 됩니다$/);
       expect(screen.queryByTestId('drop-more')).toBeNull();
       expect(screen.queryByTestId('route-decision-pending')).toBeNull();
@@ -3520,7 +3523,7 @@ describe('RoutePlanPanel', () => {
       const card = screen.getByTestId('route-decision');
       expect(card).toContainElement(pending);
       // The header and the status are the route's own; the bars are not in yet.
-      expect(card).toHaveTextContent('충돌 1 · 획득 5/6');
+      expect(card).toHaveTextContent('충돌 1 · 획득 4/5');
       expect(within(card).queryAllByTestId('drop-effect')).toHaveLength(0);
     } finally {
       resetPlannerWorker();

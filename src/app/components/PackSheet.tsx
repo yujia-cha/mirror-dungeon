@@ -70,11 +70,15 @@ function ranges(floors: number[]): string {
 }
 
 /** "4~5층 · 6~10층": where the pack can be picked. The app always plays Hard, so Normal-only floors are not listed. */
-function packFloorsText(pack: ThemePack, lang: Lang): string {
-  return [pack.availability.hard, pack.availability.parallel, pack.availability.extreme]
+function packFloorsText(pack: ThemePack, ctx: PackContext): string {
+  const parts = [pack.availability.hard, pack.availability.parallel, pack.availability.extreme]
     .filter((floors) => floors.length > 0)
-    .map((floors) => t('packFloorRange', lang, { floors: ranges(floors) }))
-    .join(' · ');
+    .map((floors) => t('packFloorRange', ctx.lang, { floors: ranges(floors) }));
+  // An EXTREME pack offered on the dungeon's last floor gives no clear reward there (M173).
+  const { finalFloor } = ctx.indexes;
+  if (ctx.indexes.clearRewardsByPack.has(pack.id) && pack.availability.extreme.includes(finalFloor))
+    parts.push(t('giftClearRewardFinalFloor', ctx.lang, { floor: finalFloor }));
+  return parts.join(' · ');
 }
 
 /**
@@ -194,7 +198,7 @@ export function PackSheetBody({ packId, ctx }: { packId: number; ctx: PackContex
         <PackCard pack={pack} size={96} lang={ctx.lang} />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <span className="text-heading ">{pick(pack.name, ctx.lang)}</span>
-          <span className="text-caption text-fg-muted">{packFloorsText(pack, ctx.lang)}</span>
+          <span className="text-caption text-fg-muted">{packFloorsText(pack, ctx)}</span>
           <EnterActions packId={packId} ctx={ctx} />
         </div>
       </div>

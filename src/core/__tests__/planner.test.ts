@@ -1114,14 +1114,70 @@ describe('gift observation', () => {
 });
 
 describe('clear rewards and hidden battles', () => {
-  it('routes a 클리어 보상 gift to its EXTREME pack as an exclusive pickup', () => {
+  it('routes a 클리어 보상 gift to its EXTREME pack as an exclusive pickup, never on the last floor', () => {
     const result = plan({ wanted: want(9250), options: options({ lastFloor: 15 }) });
     const floor = result.floors.find((f) => f.packId === 1511)!;
     expect(floor.mode).toBe('extreme');
     expect(floor.pickups).toEqual([{ giftId: 9250, kind: 'exclusive', neededFor: null }]);
-    expect(floor.window).toEqual({ from: 11, to: 15 });
+    // The run ends with floor 15's boss before the pack's clear reward is handed out (M173), so
+    // the window stops a floor short of the band even though the pack is offered on 15.
+    expect(indexes.finalFloor).toBe(15);
+    expect(indexes.packsByFloor.extreme.get(15)).toContain(1511);
+    expect(floor.window).toEqual({ from: 11, to: 14 });
     expect(result.unresolved).toEqual([]);
     expect(result.start.observed).toEqual([]);
+  });
+
+  it('fits four clear rewards below the last floor and reports the fifth as a floor clash (M173)', () => {
+    // Arrange: five EXTREME packs' rewards; floors 11~14 hold four packs and 15 hands out none.
+    const rewards = [9250, 9251, 9252, 9253, 9254];
+    // Act
+    const result = plan({ wanted: want(...rewards), options: options({ lastFloor: 15 }) });
+    // Assert
+    const placed = result.floors.filter((f) => f.packId !== null && f.packId >= 1511 && f.packId <= 1520);
+    expect(placed.map((f) => f.floor)).toEqual([11, 12, 13, 14]);
+    expect(result.floors.find((f) => f.floor === 15)?.packId ?? null).toBeNull();
+    expect(result.unresolved).toHaveLength(1);
+    expect(result.unresolved[0]).toMatchObject({ reason: 'pack-conflict' });
+    expect(rewards).toContain(result.unresolved[0]!.giftId);
+    // The clash is over 11~14, not the floor that gives no reward.
+    expect([...contestedFloors(result, options({ lastFloor: 15 }), indexes)]).toEqual([11, 12, 13, 14]);
+  });
+
+  it('names a clear reward lost to the last floor: the pack is still ahead, but only there (M173)', () => {
+    // Arrange: floors 11~14 are played with other EXTREME packs; 코드 퍼플 could only be entered on 15.
+    const played = options({
+      lastFloor: 15,
+      hardFromFloor: 1,
+      currentFloor: 15,
+      pinnedPacks: { 11: 1512, 12: 1513, 13: 1514, 14: 1515 },
+    });
+    // Act
+    const result = plan({ wanted: want(9250), options: played });
+    // Assert
+    expect(result.floors.find((f) => f.floor === 15)?.packId ?? null).toBeNull();
+    expect(result.unresolved).toEqual([
+      {
+        giftId: 9250,
+        reason: 'final-floor',
+        detail: {
+          ko: '보급형 K사 앰플은 클리어 보상이라 15층의 팩에서는 얻지 못합니다 — 마지막 층의 보스를 잡으면 런이 끝납니다.',
+          en: "Mid-range K Corp. Ampule is a clear reward, and a pack on floor 15 hands out none — the run ends with the last floor's boss.",
+        },
+      },
+    ]);
+    expect([...contestedFloors(result, played, indexes)]).toEqual([]);
+  });
+
+  it('still lets a pack take the last floor when its clear reward is not wanted', () => {
+    // Arrange: five EXTREME packs asked for as packs (CLI `--prefer`), no reward among the goals.
+    const packs = [1511, 1512, 1513, 1514, 1515];
+    // Act
+    const result = plan({ wanted: [], options: options({ lastFloor: 15, preferredPacks: packs }) });
+    // Assert: all five fit, one of them on the floor that gives no reward.
+    expect(result.warnings.map((w) => w.code)).not.toContain('pack-option-dropped');
+    expect(result.floors.filter((f) => f.packId !== null).map((f) => f.floor)).toEqual([11, 12, 13, 14, 15]);
+    expect(packs).toContain(result.floors.find((f) => f.floor === 15)!.packId);
   });
 
   it('reports a clear reward as out of range below floor 11', () => {
@@ -1884,7 +1940,8 @@ describe('conflict groups', () => {
       options: options({ lastFloor: 15 }),
     };
     const result = planRoute(input, data, indexes);
-    expect(conflictGroups(result, input.options, indexes)).toEqual([{ floors: [11, 12, 13, 14, 15] }]);
+    // The last floor gives no clear reward, so it is not one the rewards' packs contest (M173).
+    expect(conflictGroups(result, input.options, indexes)).toEqual([{ floors: [11, 12, 13, 14] }]);
   });
 
   it('is empty without a pack conflict and maps a fusion ingredient back to its wanted result', () => {
@@ -2183,7 +2240,7 @@ describe('run progress', () => {
     expect(plan.floors.find((f) => f.floor === 5)!.pickups.map((p) => p.giftId)).toEqual([9283]);
     expect(plan.floors.find((f) => f.packId === 1511)).toMatchObject({
       floor: 11,
-      window: { from: 11, to: 15 },
+      window: { from: 11, to: 14 },
     });
     expect(plan.start.observed).toEqual([]);
     expect(plan.start.startGifts).toEqual([]);
@@ -2213,12 +2270,16 @@ describe('run progress', () => {
     expect(skipped.floors.find((f) => f.floor === 15)!.packId).toBeNull();
     expect(skipped.stats).toMatchObject({ requiredPacks: 0, coveredWanted: 0 });
     expect(skipped.unresolved.map((u) => u.giftId)).toEqual([9250]);
+    // Entered on the last floor, the pack is played — but the run ended with its boss before the
+    // clear reward was handed out, so it is not in hand either (M173).
     expect(entered.floors.find((f) => f.floor === 15)).toMatchObject({
       packId: 1511,
       reason: 'pinned',
       passed: true,
+      pickups: [],
     });
-    expect(entered.stats.coveredWanted).toBe(1);
+    expect(entered.stats.coveredWanted).toBe(0);
+    expect(entered.unresolved).toEqual([expect.objectContaining({ giftId: 9250, reason: 'final-floor' })]);
   });
 
   it('counts an owned gift as covered and never plans for it, and lets in-hand win over missed', () => {

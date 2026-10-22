@@ -3,7 +3,7 @@
  * card down to enter it, or the dashed card to pass), entered (the pack area is open), skipped
  * (nothing here; a pack can still be recorded), or past the end of the run.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Star } from 'lucide-react';
 import { useApp } from '../store.ts';
 import { enterablePacks, packsOfferedOn } from '../lib/stage.ts';
@@ -25,6 +25,9 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
   const resetRun = useApp((s) => s.resetRun);
   const lastFloor = useApp((s) => s.lastFloor);
   const floor = run.stageFloor;
+  // The cards show a pack as entered on this floor: on the dungeon's last floor its clear reward is
+  // not coming (M173), so the card does not promise it.
+  const exclusivesHere = useCallback((packId: number) => exclusivesOf(packId, floor), [exclusivesOf, floor]);
   const routePacks = enterablePacks(shown, floor, indexes);
   const offered = packsOfferedOn(indexes, floor);
   const entered = run.visits[floor];
@@ -86,7 +89,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
                 key={packId}
                 pack={pack}
                 ctx={ctx}
-                exclusivesOf={exclusivesOf}
+                exclusivesOf={exclusivesHere}
                 onEnter={enter}
                 onOpen={openPack}
                 alternatives={alternatives}
@@ -102,7 +105,7 @@ export function RunStage({ onOpenGifts }: { onOpenGifts: () => void }) {
           exclude={new Set(routePacks.map((p) => p.packId))}
           sameGifts={new Set(routePacks.flatMap((p) => p.alternatives))}
           ctx={ctx}
-          exclusivesOf={exclusivesOf}
+          exclusivesOf={exclusivesHere}
           onEnter={enter}
         />
       </div>

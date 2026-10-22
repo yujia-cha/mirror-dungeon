@@ -24,6 +24,7 @@ import {
   assignPacks,
   modeForFloor,
   observationCost,
+  rewardPacksOf,
   type SearchGoals,
 } from './search.ts';
 import { requirementKey } from './requirements.ts';
@@ -122,11 +123,18 @@ function windowFor(
   options: PlanOptions,
   assignment: Map<number, number>,
   indexes: GameIndexes,
+  rewardPacks: ReadonlySet<number>,
 ): { from: number; to: number } {
-  // Floors a pack could be visited on, in this plan: offered there, in that floor's own mode.
+  // Floors a pack could be visited on, in this plan: offered there, in that floor's own mode —
+  // and not the dungeon's last floor for a pack whose 클리어 보상 the route wants (M173, the same
+  // rule as the search's `floorsFor`; a window drawn to that floor would offer an entry there).
   // `floors` are the floors still ahead, and no pack entry names one of those (M118).
   const candidates = (id: number): number[] =>
-    floors.filter((g) => (indexes.packsByFloor[modeForFloor(g, options, indexes)].get(g) ?? []).includes(id));
+    floors.filter(
+      (g) =>
+        !(g === indexes.finalFloor && rewardPacks.has(id)) &&
+        (indexes.packsByFloor[modeForFloor(g, options, indexes)].get(g) ?? []).includes(id),
+    );
   // Played floors are settled and never move, so only packs still on plannable floors compete.
   const others = [...assignment.entries()].filter(([own, id]) => id !== packId && floors.includes(own));
   const otherCandidates = others.map(([, id]) => candidates(id));
@@ -413,6 +421,9 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
     }
     return { roots: keyed, required: requiredGoals, lost, resultOnly };
   };
+  // Packs whose 클리어 보상 the route wants stay off the dungeon's last floor (M173, search and
+  // windows alike).
+  const rewardPacks = rewardPacksOf(requirements, indexes);
   const runSearch = (slots = 0) =>
     assignPacks({
       requirements: requirements.filter((r) => r.via === 'route'),
@@ -493,7 +504,15 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
       })
       .filter(({ pickups }) => pickups.length === 1 && canObserve(pickups[0]!.giftId))
       .map((entry) => {
-        const window = windowFor(entry.packId, entry.floor, floors, options, search.assignment, indexes);
+        const window = windowFor(
+          entry.packId,
+          entry.floor,
+          floors,
+          options,
+          search.assignment,
+          indexes,
+          rewardPacks,
+        );
         return {
           ...entry,
           width: window.to - window.from,
@@ -656,6 +675,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
   const held = (requirement: (typeof requirements)[number]): boolean =>
     HELD_ROUTES.has(requirement.via) &&
     (requirement.via !== 'route' || search.supplier.has(requirementKey(requirement)));
+  const finalFloorKeys = new Set(search.finalFloorKeys);
   for (const [i, giftId] of search.unresolvedGiftIds.entries()) {
     const gift = indexes.giftById.get(giftId);
     const giftName = { ko: String(gift?.name.ko ?? giftId), en: String(gift?.name.en || giftId) };
@@ -696,6 +716,16 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
           gift: giftName,
           eaters: { ko: eaterName('ko').join('·'), en: eaterName('en').join(' and ') },
         }),
+      });
+      continue;
+    }
+    // The pack is offered on a floor ahead — the last one, where its boss hands out no clear
+    // reward. Neither a floor clash nor a missing pack; the run ends first.
+    if (finalFloorKeys.has(search.unresolvedKeys[i]!)) {
+      unresolved.push({
+        giftId,
+        reason: 'final-floor',
+        detail: msg('unresolved.finalFloor', { gift: giftName, floor: indexes.finalFloor }),
       });
       continue;
     }
@@ -804,7 +834,7 @@ export function planRoute(input: PlanInput, data: GameData, indexes: GameIndexes
         ? null
         : pinned
           ? { from: floor, to: floor }
-          : windowFor(packId, floor, floors, options, search.assignment, indexes);
+          : windowFor(packId, floor, floors, options, search.assignment, indexes, rewardPacks);
 
     return {
       floor,

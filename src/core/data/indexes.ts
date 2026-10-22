@@ -45,10 +45,20 @@ export function buildIndexes(data: GameData): GameIndexes {
   }
   for (const list of packsByGift.values()) list.sort((a, b) => a - b);
   // A 클리어 보상 gift is not in any pool; its one source is the EXTREME pack whose boss drops it.
+  const clearRewardsByPack = new Map<number, number[]>();
   for (const gift of data.gifts) {
     const packId = gift.acquisition.clearRewardOf;
-    if (packId !== null && packById.get(packId)?.selectable) packsByGift.set(gift.id, [packId]);
+    if (packId === null || !packById.get(packId)?.selectable) continue;
+    packsByGift.set(gift.id, [packId]);
+    clearRewardsByPack.set(
+      packId,
+      [...(clearRewardsByPack.get(packId) ?? []), gift.id].sort((a, b) => a - b),
+    );
   }
+
+  // The dungeon's last floor, from the season's bands (never a literal 15): the run ends when its
+  // boss falls, so a pack taken there hands out no clear reward (M173, owner-confirmed).
+  const finalFloor = Math.max(1, ...MODES.flatMap((mode) => data.rules.floors[mode]));
 
   /**
    * Gifts not worth routing for.
@@ -74,6 +84,8 @@ export function buildIndexes(data: GameData): GameIndexes {
     packsByFloor,
     fixedModeByFloor,
     packsByGift,
+    clearRewardsByPack,
     freelyAvailableGifts,
+    finalFloor,
   };
 }
