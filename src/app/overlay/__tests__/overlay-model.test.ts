@@ -299,4 +299,13 @@ describe('shopView (M148)', () => {
     const view = shopView({ visits: {} }, exclusivesOf, groups);
     expect(view).toMatchObject({ packId: null, exclusive: [] });
   });
+
+  it('puts the route’s goals first in both lists, keeping the rest in order (M169)', () => {
+    // Arrange: 9002 (an exclusive) and 4 (a tier-4 gift) are goals.
+    const run = { visits: { 1: 1005, 2: 1002 } };
+    // Act
+    const view = shopView(run, exclusivesOf, groups, new Set([9002, 4]));
+    // Assert
+    expect(view).toEqual({ packId: 1002, exclusive: [9002, 9001], t4: [4, 1, 2] });
+  });
 });

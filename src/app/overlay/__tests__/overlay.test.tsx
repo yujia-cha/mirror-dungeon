@@ -395,6 +395,37 @@ describe('OverlayView in the shop (M148)', () => {
     expect(within(target).queryByTestId('overlay-recent')).not.toBeNull();
   });
 
+  it('marks the route’s goals on the shelves and lists them first (M169)', () => {
+    // Arrange: floor 1 entered; GIFT_B (an exclusive, not in hand) is a route goal.
+    useApp.setState({
+      run: { ...emptyRun(), currentFloor: 2, stageFloor: 2, visits: { 1: PACK_1 } },
+      wanted: [GIFT_B],
+    });
+    plan.needed = new Set([GIFT_B]);
+    const target = document.createElement('div');
+    try {
+      // Act
+      render(<OverlayView target={target} log={new FeedbackLog()} />, {
+        wrapper: withCapture(captureOf({ status: 'running', inShop: true })),
+      });
+      // Assert: the goal is first, framed and badged; the other exclusive is neither.
+      const exclusive = within(target).getByTestId('overlay-shop-exclusive');
+      expect(
+        [...exclusive.querySelectorAll('[data-gift]')].map((n) => Number(n.getAttribute('data-gift'))),
+      ).toEqual([GIFT_B, GIFT_A]);
+      const goal = exclusive.querySelector(`[data-gift="${GIFT_B}"]`)!;
+      expect(goal).toHaveAttribute('data-needed');
+      expect(goal).toHaveTextContent('목표');
+      expect(goal.querySelector('.border-primary')).not.toBeNull();
+      const other = exclusive.querySelector(`[data-gift="${GIFT_A}"]`)!;
+      expect(other).not.toHaveAttribute('data-needed');
+      expect(other).not.toHaveTextContent('목표');
+      expect(other.querySelector('.border-primary')).toBeNull();
+    } finally {
+      plan.needed = new Set();
+    }
+  });
+
   it('goes back to the next pack once the reader is out of the shop', () => {
     const target = document.createElement('div');
     render(<OverlayView target={target} log={new FeedbackLog()} />, {

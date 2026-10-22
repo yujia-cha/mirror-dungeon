@@ -24,12 +24,14 @@ import {
   Loader2,
   Lock,
   Star,
+  Target,
   TriangleAlert,
   Waves,
   X,
 } from 'lucide-react';
 
-export type BadgeTone = 'sure' | 'maybe' | 'fuse' | 'start' | 'hard' | 'alert' | 'approx' | 'neutral';
+export type BadgeTone =
+  'sure' | 'maybe' | 'fuse' | 'start' | 'hard' | 'alert' | 'approx' | 'neutral' | 'goal';
 
 const BADGE_BASE =
   'inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-full px-2 text-caption-strong flex-none';
@@ -63,6 +65,8 @@ const BADGE_TONE: Record<BadgeTone, { className: string; icon: ReactNode }> = {
     icon: <Hourglass size={11} aria-hidden />,
   },
   neutral: { className: 'border border-border bg-surface-muted text-fg-muted', icon: null },
+  /** A route goal (M169): the primary frame the pack sheet draws around one, as a word. */
+  goal: { className: 'border border-primary bg-surface text-fg', icon: <Target size={11} aria-hidden /> },
 };
 
 export function Badge({

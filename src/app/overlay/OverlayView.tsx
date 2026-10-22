@@ -304,27 +304,36 @@ const SHOP_STATUS = { got: 'giftStatusGot', used: 'giftStatusUsed', missing: 'gi
  * the collected frame and ✓ (or the fusion arrow) with 「획득」 / 「조합에 씀」, else the dotted
  * frame of one still to get with 「미획득」. Shape and words say it, never colour alone.
  */
+/** The pack sheet's frame around a route goal's icon: `primary`, 2px; transparent otherwise. */
+const GOAL_FRAME = (goal: boolean): string =>
+  `inline-flex flex-none rounded-md border-2 p-0.5 ${goal ? 'border-primary' : 'border-transparent'}`;
+
 function GiftLine({ id }: { id: number }) {
   const { indexes, lang, needed } = usePlan();
   const status = useApp((s) => s.run.giftStatus[id] ?? null);
   const gift = indexes.giftById.get(id);
   if (!gift) return null;
   const shown = status === 'got' || status === 'used' ? status : 'missing';
+  const goal = needed.has(id);
   return (
     <li
       className="flex min-w-0 items-center gap-2"
       data-gift={id}
       data-status={shown}
-      data-needed={needed.has(id) || undefined}
+      data-needed={goal || undefined}
     >
-      <GiftIcon
-        gift={gift}
-        size={32}
-        lang={lang}
-        status={shown === 'missing' ? null : shown}
-        pending={shown === 'missing'}
-      />
+      {/* A route goal wears the pack sheet's frame and says so (M169 — on the shelves, the goals are what to buy). */}
+      <span className={GOAL_FRAME(goal)}>
+        <GiftIcon
+          gift={gift}
+          size={32}
+          lang={lang}
+          status={shown === 'missing' ? null : shown}
+          pending={shown === 'missing'}
+        />
+      </span>
       <span className="min-w-0 flex-1 break-keep text-caption text-fg">{pick(gift.name, lang)}</span>
+      {goal ? <Badge tone="goal">{t('giftWanted', lang)}</Badge> : null}
       <span className={`flex-none text-caption ${shown === 'missing' ? 'text-fg-muted' : 'text-fg-subtle'}`}>
         {t(SHOP_STATUS[shown], lang)}
       </span>
@@ -339,10 +348,10 @@ function GiftLine({ id }: { id: number }) {
  * in it come back when the player walks out.
  */
 function ShopSections() {
-  const { data, indexes, lang, packName, exclusivesOf } = usePlan();
+  const { data, indexes, lang, packName, exclusivesOf, needed } = usePlan();
   const run = useApp((s) => s.run);
   const groups = useMemo(() => trackerGifts(data, indexes), [data, indexes]);
-  const view = shopView(run, exclusivesOf, groups);
+  const view = shopView(run, exclusivesOf, groups, needed);
   const none = <p className="text-caption text-fg-subtle">{t('overlayShopNone', lang)}</p>;
   return (
     <>
@@ -366,8 +375,15 @@ function ShopSections() {
         <ul className="flex flex-wrap gap-1.5">
           {view.t4.map((id) => {
             const gift = indexes.giftById.get(id);
+            const goal = needed.has(id);
             return gift ? (
-              <li key={id} data-gift={id} title={pick(gift.name, lang)}>
+              <li
+                key={id}
+                className={GOAL_FRAME(goal)}
+                data-gift={id}
+                data-needed={goal || undefined}
+                title={`${pick(gift.name, lang)}${goal ? ` · ${t('giftWanted', lang)}` : ''}`}
+              >
                 <GiftIcon
                   gift={gift}
                   size={32}

@@ -3318,18 +3318,50 @@ describe('RoutePlanPanel', () => {
     );
     expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
     expect(screen.getByTestId('drop-sum')).toHaveTextContent('막대 합 −2 · 함께 뺀 실제 −2');
-    // Another pick from the pool is checked one by one; the planner checks what it makes.
+    // The picked row carries the same 「목표에서 빼기」 as the foot (M169).
+    expect(within(row).getByTestId('resolution-apply')).toHaveTextContent(/^.+ · .+ 목표에서 빼기$/);
+    // Another pick from the pool is checked one by one; the planner checks what it makes. Half-way
+    // through, the way cannot be picked (nor applied); complete, the row is the picked way even
+    // though it is not the best-ranked pair (M169 — the frame judged every state by the first way).
     await user.click(within(row).getByRole('checkbox', { name: '보급형 K사 앰플 이 방법 고르기' }));
     expect(screen.getByTestId('drop-status')).toHaveTextContent('1개 선택 · 남은 충돌 1 · 획득 5/6');
+    expect(within(row).getByRole('button', { name: '이 방법 고르기' })).toBeDisabled();
+    expect(within(row).queryByTestId('resolution-apply')).toBeNull();
     await user.click(within(row).getByRole('checkbox', { name: '가족의 원망 이 방법 고르기' }));
     expect(screen.getByTestId('drop-status')).toHaveTextContent('2개 선택 · ✓ 전부 들어갑니다 · 획득 5/5');
-    await user.click(screen.getByRole('button', { name: '선택한 2개 목표에서 빼기' }));
+    expect(within(row).getByRole('button', { name: '이 방법 고르기' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(row.getAttribute('data-removals')!.split(',').map(Number).sort()).toEqual([9251, 9827]);
+    // A third check lets the earliest pool pick go: the set stays two of this choice (M169).
+    // `data-removals` keeps the checking order, so its first id is the one to go.
+    const [earliest, kept] = row.getAttribute('data-removals')!.split(',');
+    const third = within(row)
+      .getAllByRole('checkbox')
+      .find((box) => !(box as HTMLInputElement).checked)!;
+    await user.click(third);
+    expect(
+      within(row)
+        .getAllByRole('checkbox')
+        .filter((box) => (box as HTMLInputElement).checked),
+    ).toHaveLength(2);
+    const after = row.getAttribute('data-removals')!.split(',');
+    expect(after).toHaveLength(2);
+    expect(after[0]).toBe(kept);
+    expect(after).not.toContain(earliest);
+    expect(within(row).getByRole('button', { name: '이 방법 고르기' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    // The row's own button applies that pair through the same confirm dialog.
+    const before = [...useApp.getState().wanted];
+    const removed = after.map(Number);
+    await user.click(within(row).getByTestId('resolution-apply'));
     await user.click(
       within(screen.getByTestId('confirm-dialog')).getByRole('button', { name: '선택한 2개 목표에서 빼기' }),
     );
-    expect(useApp.getState().wanted).not.toContain(9827);
-    expect(useApp.getState().wanted).not.toContain(9251);
-    expect(useApp.getState().wanted).toContain(9250);
+    expect(useApp.getState().wanted).toEqual(before.filter((id) => !removed.includes(id)));
     expect(screen.queryByTestId('route-decision')).toBeNull();
   });
 

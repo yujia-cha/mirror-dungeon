@@ -457,6 +457,8 @@ export const STRINGS = {
   // 아래 목표 중 아무거나 {n}개를 빼면 들어간다 — 그 조합을 전부 계산해 확인했을 때만 이렇게 묶는다.
   routeMethodAny: { ko: '이 중 아무거나 {n}개', en: 'Any {n} of these' },
   routeMethodPick: { ko: '이 방법 고르기', en: 'Pick this way' },
+  // 고른 방법의 행 안에 서는 적용 버튼(M169) — 바닥의 「선택한 n개 목표에서 빼기」와 같은 확인창을 연다. 빼는 목표가 없는 방법(관측 지정 해제뿐)은 「{name} 지정 해제」(observeSlotClear)다.
+  routeMethodApply: { ko: '{names} 목표에서 빼기', en: 'Remove {names} from goals' },
   // 꼭 필요한 수보다 많이 빼지만, 한 팩이 주는 목표를 함께 빼서 들어가는 방법.
   routeMethodOther: { ko: '다른 방법', en: 'Other ways' },
   routeMethodSamePack: { ko: '같은 팩', en: 'Same pack' },
@@ -688,7 +690,7 @@ export const STRINGS = {
   overlayPacksMore: { ko: '팩 {n}개 더 · 아래로 스크롤', en: '{n} more packs · scroll down' },
   // 오버레이 「이 팩에서 챙길 기프트」 격자(M157)는 4열 2줄까지 보이고 나머지는 아래로 스크롤한다. 그 아래 줄이 가려진 기프트 수를 말한다.
   overlayGiftsMore: { ko: '기프트 {n}개 더 · 아래로 스크롤', en: '{n} more gifts · scroll down' },
-  // 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다).
+  // 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다). 루트가 모으는 목표는 두 절 모두에서 앞에 서고 아이콘 틀과 「목표」 배지로 표시한다(M170).
   overlayShopExclusive: { ko: '이 층의 전용 기프트', en: "This floor's pack-only gifts" },
   // 추적기의 4등급 이상 기프트에서 조각 묶음을 뺀 것(키워드·기억·공격 유형·그 밖).
   overlayShopT4: { ko: 'T4 기프트', en: 'Tier 4 gifts' },

@@ -168,9 +168,6 @@ export function RouteDecision({
     );
   const isPicked = (removals: readonly number[], releases: readonly number[]): boolean =>
     chosen && sameIds(selection, removals) && sameIds(released, releases);
-  const rows = resolutions ? wayRows(resolutions) : { minimal: [], others: [] };
-  const shownRows = allWays ? rows.minimal : rows.minimal.slice(0, VISIBLE_WAYS);
-  const hiddenRows = rows.minimal.length - shownRows.length;
   const waysApprox = resolutions !== null && (resolutions.approx || ways.some((way) => way.approx));
 
   const releaseLine = (releases: readonly number[]): ReactNode =>
@@ -179,17 +176,51 @@ export function RouteDecision({
         {linked(t('routeMethodRelease', lang, { names: releases.map(giftName).join(' · ') }), releases)}
       </p>
     ) : null;
-  const pickButton = (removals: number[], releases: number[]): ReactNode => {
+  const applyLabel =
+    released.length === 0
+      ? t('routeDecisionDropSelected', lang, { n: selection.length })
+      : selection.length === 0
+        ? t('routeDecisionReleaseOnly', lang, { n: released.length })
+        : t('routeDecisionApplyBoth', lang, { n: selection.length, m: released.length });
+  /**
+   * 「이 방법 고르기」 and, once the way is the one checked, the same 「목표에서 빼기」 the foot
+   * carries — in the row, so the player who checked a pool entry removes it where they chose it.
+   * A free choice checked only part-way (`partial`) has no way to pick yet.
+   */
+  const pickButtons = (removals: number[], releases: number[], partial = false): ReactNode => {
     const on = isPicked(removals, releases);
+    // Removals name the goals; a release-only way names the pin; both keep the foot's count label.
+    const label =
+      removals.length > 0 && releases.length > 0
+        ? applyLabel
+        : removals.length > 0
+          ? t('routeMethodApply', lang, { names: removals.map(giftName).join(' · ') })
+          : t('observeSlotClear', lang, { name: releases.map(giftName).join(' · ') });
     return (
-      <Button
-        size="sm"
-        variant={on ? 'primary' : 'secondary'}
-        pressed={on}
-        onClick={() => drops.pick(removals, releases)}
-      >
-        {t('routeMethodPick', lang)}
-      </Button>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button
+          size="sm"
+          variant={on ? 'primary' : 'secondary'}
+          pressed={on}
+          disabled={partial}
+          onClick={() => drops.pick(removals, releases)}
+        >
+          {t('routeMethodPick', lang)}
+        </Button>
+        {on ? (
+          <Button
+            size="sm"
+            variant="primary"
+            // Names can outrun a phone's card: the label truncates and the title keeps it whole.
+            className="max-w-full min-w-0"
+            title={label}
+            onClick={() => setConfirmDrop(true)}
+            testId="resolution-apply"
+          >
+            <span className="min-w-0 truncate">{label}</span>
+          </Button>
+        ) : null}
+      </div>
     );
   };
   const wayBody = (way: Resolution, sharedPack = false): ReactNode => (
@@ -218,16 +249,40 @@ export function RouteDecision({
       ) : null}
     </>
   );
+  /**
+   * How the checked set stands to a free choice: `here` when its releases and essentials are
+   * checked (the pool's boxes then show the checks), `picks` the pool entries checked, in order.
+   * The row's own set is the essentials plus the last `pick` of them — complete, that is what
+   * 「이 방법 고르기」 holds and 「목표에서 빼기」 applies; until anything from the pool is checked
+   * it is the best-ranked way (M169 — the frame read the first way for every state, so a pick other
+   * than the best-ranked one never counted as picked).
+   */
+  const anyState = (choice: ResolutionChoice): { here: boolean; picks: number[] } => {
+    const here =
+      chosen && sameIds(released, choice.releases) && choice.essential.every((id) => selection.includes(id));
+    return { here, picks: here ? selection.filter((id) => choice.pool.includes(id)) : [] };
+  };
+  const anyRemovals = (choice: ResolutionChoice, first: Resolution): number[] => {
+    const { picks } = anyState(choice);
+    return picks.length >= choice.pick ? [...choice.essential, ...picks.slice(-choice.pick)] : first.removals;
+  };
+  /** Fewer than `pick` checked from the pool: no way to pick yet. */
+  const anyPartial = (choice: ResolutionChoice): boolean => {
+    const { picks } = anyState(choice);
+    return picks.length > 0 && picks.length < choice.pick;
+  };
   /** A free choice: the essential goals, and any `pick` of the pool — checkable one by one. */
   const anyBody = (choice: ResolutionChoice): ReactNode => {
-    const active =
-      chosen && sameIds(released, choice.releases) && choice.essential.every((id) => selection.includes(id));
+    const { here, picks } = anyState(choice);
     const togglePool = (giftId: number, on: boolean): void => {
-      const current = active ? selection : choice.essential;
+      // Goals checked on the bars that are not this choice's go too: the set stays one of this choice.
+      const current = here
+        ? selection.filter((id) => choice.essential.includes(id) || choice.pool.includes(id))
+        : choice.essential;
+      // Checking past `pick` lets the earliest pool pick go, for the same reason.
+      const stale = on && picks.length >= choice.pick ? picks.slice(0, picks.length - choice.pick + 1) : [];
       const next = on
-        ? choice.pick === 1
-          ? [...choice.essential, giftId]
-          : [...current, giftId]
+        ? [...current.filter((id) => !stale.includes(id)), giftId]
         : current.filter((id) => id !== giftId);
       drops.pick([...new Set(next)], choice.releases);
     };
@@ -251,7 +306,7 @@ export function RouteDecision({
             return (
               <li key={giftId}>
                 <Checkbox
-                  checked={active && selection.includes(giftId)}
+                  checked={here && selection.includes(giftId)}
                   onChange={(on) => togglePool(giftId, on)}
                   ariaLabel={`${giftName(giftId)} ${t('routeMethodPick', lang)}`}
                   testId="resolution-option"
@@ -279,12 +334,23 @@ export function RouteDecision({
       </>
     );
   };
+  const rows = resolutions ? wayRows(resolutions) : { minimal: [], others: [] };
+  const rowPicked = (row: WayRow): boolean =>
+    row.kind === 'any'
+      ? isPicked(anyRemovals(row.choice, row.first), row.first.releases)
+      : isPicked(row.way.removals, row.way.releases);
+  // The picked row stays in view past 「방법 n개 더 보기」 (a remount folds the list again).
+  const shownRows = allWays
+    ? rows.minimal
+    : rows.minimal.filter((row, i) => i < VISIBLE_WAYS || rowPicked(row));
+  const hiddenRows = rows.minimal.length - shownRows.length;
   const rowFrame = (
     key: string,
     removals: number[],
     releases: number[],
     kind: WayRow['kind'] | 'other',
     content: ReactNode,
+    partial = false,
   ): ReactNode => {
     const on = isPicked(removals, releases);
     return (
@@ -298,17 +364,11 @@ export function RouteDecision({
       >
         {/* The button goes under the way, never beside it: beside it, a phone's narrow card squeezed the list of names. */}
         <div className="flex min-w-0 flex-col gap-0.5 self-stretch">{content}</div>
-        {pickButton(removals, releases)}
+        {pickButtons(removals, releases, partial)}
       </li>
     );
   };
 
-  const applyLabel =
-    released.length === 0
-      ? t('routeDecisionDropSelected', lang, { n: selection.length })
-      : selection.length === 0
-        ? t('routeDecisionReleaseOnly', lang, { n: released.length })
-        : t('routeDecisionApplyBoth', lang, { n: selection.length, m: released.length });
   const confirmTitle =
     released.length === 0
       ? t('routeDecisionDropConfirm', lang, { n: selection.length })
@@ -385,10 +445,11 @@ export function RouteDecision({
               row.kind === 'any'
                 ? rowFrame(
                     `any:${row.choice.releases.join(',')}`,
-                    row.first.removals,
+                    anyRemovals(row.choice, row.first),
                     row.first.releases,
                     'any',
                     anyBody(row.choice),
+                    anyPartial(row.choice),
                   )
                 : rowFrame(
                     `way:${row.way.releases.join(',')}:${row.way.removals.join(',')}`,

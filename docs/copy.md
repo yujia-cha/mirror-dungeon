@@ -784,7 +784,7 @@
 ### observeSlotClear
 - ko: {name} 지정 해제
 - en: Unpin {name}
-- 쓰는 곳: src/app/components/ObserveSlots.tsx
+- 쓰는 곳: src/app/components/ObserveSlots.tsx, src/app/components/RouteDecision.tsx
 
 ### observeSlotSkip
 메모: M120: 관측 칸 목록의 맨 위. 누르면 그 칸을 쓰지 않는다(계획이 관측을 하나 덜 쓴다).
@@ -1110,7 +1110,7 @@
 ### giftWanted
 - ko: 목표
 - en: Goal
-- 쓰는 곳: src/app/overlay/overlay-log.ts (동적), src/app/overlay/overlay-text.ts (동적)
+- 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### giftUnjudgeable
 - ko: 판정 불가
@@ -1424,6 +1424,12 @@
 ### routeMethodPick
 - ko: 이 방법 고르기
 - en: Pick this way
+- 쓰는 곳: src/app/components/RouteDecision.tsx
+
+### routeMethodApply
+메모: 고른 방법의 행 안에 서는 적용 버튼(M169) — 바닥의 「선택한 n개 목표에서 빼기」와 같은 확인창을 연다. 빼는 목표가 없는 방법(관측 지정 해제뿐)은 「{name} 지정 해제」(observeSlotClear)다.
+- ko: {names} 목표에서 빼기
+- en: Remove {names} from goals
 - 쓰는 곳: src/app/components/RouteDecision.tsx
 
 ### routeMethodOther
@@ -2131,7 +2137,7 @@
 - 쓰는 곳: src/app/overlay/OverlayView.tsx
 
 ### overlayShopExclusive
-메모: 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다).
+메모: 오버레이 창의 상점 절(M148). 화면 인식이 상점(「상점」·「특별한 상점」 첫 화면이나 구매·판매·강화·합성)을 보면 「다음 팩」·「남은 기프트」 대신 두 절이 서고, 지도나 팩 선택을 보면 돌아간다. 이 절은 마지막으로 입장한 팩만 주는 기프트 전부이고, 줄마다 「획득」·「조합에 씀」·「미획득」을 붙인다(M151 — 옛 「아직 못 얻은 목표」 절은 없앴다). 루트가 모으는 목표는 두 절 모두에서 앞에 서고 아이콘 틀과 「목표」 배지로 표시한다(M170).
 - ko: 이 층의 전용 기프트
 - en: This floor's pack-only gifts
 - 쓰는 곳: src/app/overlay/OverlayView.tsx

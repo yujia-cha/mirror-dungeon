@@ -244,17 +244,24 @@ export interface ShopView {
   t4: number[];
 }
 
+/** Route goals (`needed`) first, the rest in their given order (M169 — the shelves are for them). */
+export function goalsFirst(ids: readonly number[], needed: ReadonlySet<number>): number[] {
+  return [...ids].sort((a, b) => Number(needed.has(b)) - Number(needed.has(a)));
+}
+
 export function shopView(
   run: Pick<RunState, 'visits'>,
   exclusivesOf: (packId: number) => number[],
   trackerGroups: readonly { id: string; gifts: readonly { id: number }[] }[],
+  needed: ReadonlySet<number> = new Set(),
 ): ShopView {
   const entry = lastEntry(run);
   return {
     packId: entry?.packId ?? null,
-    exclusive: entry ? exclusivesOf(entry.packId) : [],
-    t4: trackerGroups
-      .filter((group) => group.id !== 'shard')
-      .flatMap((group) => group.gifts.map((g) => g.id)),
+    exclusive: goalsFirst(entry ? exclusivesOf(entry.packId) : [], needed),
+    t4: goalsFirst(
+      trackerGroups.filter((group) => group.id !== 'shard').flatMap((group) => group.gifts.map((g) => g.id)),
+      needed,
+    ),
   };
 }
