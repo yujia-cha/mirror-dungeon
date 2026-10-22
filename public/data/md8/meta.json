@@ -5,7 +5,7 @@
     "identities": 190,
     "packs": 120
   },
-  "dataVersion": "8.25092321",
+  "dataVersion": "8.278c4908",
   "dungeon": {
     "id": 8,
     "name": {
@@ -17,15 +17,15 @@
   "schemaVersion": 2,
   "sources": {
     "eldritchtools": {
-      "fetchedAt": "2026-10-17",
+      "fetchedAt": "2026-10-22",
       "repo": "eldritchtools/limbus-assets",
-      "sha": "0f45f2f9824e1e928f26292d1ac48c21a743394b"
+      "sha": "f964c6f18968732b37a10d62f306ded7bb375878"
     },
     "localize": {
-      "fetchedAt": "2026-10-17",
+      "fetchedAt": "2026-10-22",
       "languages": {
-        "EN": "43d9f5de03ee53baa04d4d1575bc067979220d8e",
-        "KR": "c21f93f5bd557a0cebcbd8ec5a5781d52dacb912"
+        "EN": "c31b3b0c44b2e230e29d51106190b4c1511a4c33",
+        "KR": "36cf89c532c27e5137d489e8b88fe09d81b59da3"
       },
       "repo": "x1bViolet/Limbus-Localization-Files"
     },

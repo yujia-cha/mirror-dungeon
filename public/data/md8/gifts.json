@@ -13590,7 +13590,7 @@
     "upgrades": [
       {
         "desc": {
-          "en": "When inflicting [Burn] Potency, Count, or 'Unique Burn' with a Skill effect to an enemy that has [Burn] or 'Unique Burn', gain 1 [Haste] next turn. (once per Skill, 3 times per turn)\n\nIf the affected unit already has [Haste], gain **2 [Haste]** and 2 [Offense Level Up] instead.",
+          "en": "When inflicting [Burn] Potency, Count, or 'Unique Burn' with a Skill effect to an enemy that has [Burn] or 'Unique Burn', gain 1 [Haste] next turn. (once per Skill, **3 times per turn**)\n\nIf the affected unit already has [Haste], gain **2 [Haste]** and 2 [Offense Level Up] instead.",
           "ko": "[화상] 또는 특수 화상에 걸린 적에게 스킬 효과로 [화상] 위력이나 횟수 또는 특수 화상을 부여할 경우, 다음 턴에 [신속] 1 얻음. (스킬 당 1회, 턴 당 최대 3회)\n\n[신속]을 이미 보유한 경우, 효과가 강화되어 **[신속] 2**, [공격 레벨 증가] 2 얻음."
         },
         "level": 1,
