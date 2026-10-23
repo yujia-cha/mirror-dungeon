@@ -169,6 +169,26 @@ describe('keyword conditions', () => {
       tiers: [],
     });
   });
+
+  it('reads no bar when an effect before the first step already scales per member (물 속의 달, M174)', () => {
+    // 9804: the crit line grows 「편성 인원 수 1명당」, so the 12-identity bullet is a step of a count.
+    const [c] = parse(
+      '[Burst], [Breath]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함).\n\n' +
+        '스킬 적중 시 대상의 [Burst]이 20 이상이면, 크리티컬 피해량 +10% (편성 인원 수 1명당 크리티컬 피해량 3% 추가로 증가)\n\n' +
+        '- 12인 이상\n스킬 적중 시 크리티컬이 발생했다면, 부정적인 효과 중 무작위 1개 제거',
+    );
+    expect(c).toMatchObject({ min: null, tiers: [{ min: 12, label: '12인 이상' }] });
+  });
+
+  it('keeps the smallest step as the bar when the effect before it does not scale (전격부)', () => {
+    // 9802: the first line works at any count, but nothing grows until 「- 6인 이상」.
+    const [c] = parse(
+      '[Charge] 횟수를 소모하는 스킬 적중 시 [Burst] 1 부여\n\n' +
+        '[Burst], [Charge]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라 기프트 효과 강화 (E.G.O 스킬 제외, 편성 인원 포함).\n\n' +
+        '- 6인 이상\n적에게 [Burst] 피해를 입히면, [Charge] 횟수 1 증가\n\n- 8인 이상\n…',
+    );
+    expect(c).toMatchObject({ min: 6, tiers: [{ min: 8 }] });
+  });
 });
 
 describe('faction conditions', () => {

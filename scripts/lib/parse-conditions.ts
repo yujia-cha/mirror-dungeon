@@ -62,6 +62,17 @@ function bulletTiers(text: string, from: number): number[] {
   return [...out].sort((a, b) => a - b);
 }
 
+/** An effect that grows with the count itself: 「편성된 수 x 20」, 「편성 인원 수 1명당」. */
+const PER_MEMBER_RE = /편성(?:된|\s*인원)\s*수/;
+
+/** The text between a 「편성된 수에 따라」 gate and its first 「- N인 이상」 step (to the end without one). */
+function beforeBullets(text: string, from: number): string {
+  const rest = text.slice(from);
+  BULLET_TIER_RE.lastIndex = 0;
+  const first = BULLET_TIER_RE.exec(rest);
+  return first ? rest.slice(0, first.index) : rest;
+}
+
 /** Look a little past the match for the parenthetical that names the scope. */
 function tailAfter(text: string, index: number): string {
   return text.slice(index, index + 90);
@@ -205,12 +216,15 @@ export function parseConditions(desc: Localized, ctx: ParseContext): ParseResult
     const verb = /소모/.test(m[3]!) ? 'consume' : 'inflict';
     // No inline threshold means 「편성된 수에 따라」: the bullet list under it holds the steps, the
     // smallest being the bar the gift needs at all. No bullets at all means there is no bar —
-    // the gift always works and only scales, so the condition is a count, not a gate.
+    // the gift always works and only scales, so the condition is a count, not a gate. Neither is
+    // there one when an effect before the first step already scales per member (물 속의 달's
+    // 「편성 인원 수 1명당」, M174): every bullet is then a step of a count.
     const bullets = bulletTiers(ko, after);
-    const min = m[4] ? Number(m[4]) : (bullets[0] ?? null);
+    const scalesFirst = !m[4] && PER_MEMBER_RE.test(beforeBullets(ko, after));
+    const min = m[4] ? Number(m[4]) : scalesFirst ? null : (bullets[0] ?? null);
     const rest = m[4]
       ? tiersAfter(ko, after, Number(m[4]))
-      : bullets.slice(1).map((n) => ({ min: n, label: `${n}인 이상` }));
+      : (scalesFirst ? bullets : bullets.slice(1)).map((n) => ({ min: n, label: `${n}인 이상` }));
     push({
       type: 'keywordSkillCount',
       keywords,

@@ -38433,13 +38433,18 @@
           "Burst",
           "Breath"
         ],
-        "min": 12,
+        "min": null,
         "scope": "formation",
         "text": {
           "en": "On Hit against enemies with 5+ [Rupture] Potency: gain 1 [Poise] Potency and +1 [Poise] Count (3 times per Skill)\n\nThis E.G.O Gift's effects are enhanced based on the number of Identities in the Team loadout with Attack Skills that apply [Rupture] or gain [Poise]. (except E.G.O Skills; counts all units in the Team)\n\nOn Hit with a Skill: if target has 20+ [Rupture], deal +10% damage on Critical Hit (a",
           "ko": "[파열], [호흡]을 부여하거나 획득하는 공격 스킬을 보유한 인격이 편성된 수에 따라"
         },
-        "tiers": [],
+        "tiers": [
+          {
+            "label": "12인 이상",
+            "min": 12
+          }
+        ],
         "type": "keywordSkillCount",
         "verb": "inflict"
       }
