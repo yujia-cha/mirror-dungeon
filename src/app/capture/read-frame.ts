@@ -35,6 +35,7 @@ import {
   DEFAULT_SLOT_THRESHOLDS,
   type Consumed,
   type SlotRanking,
+  type SlotShape,
   type SlotThresholds,
 } from './fusion.ts';
 import {
@@ -104,6 +105,11 @@ export interface ReadContext {
    * screen has not changed since. No OCR: the slots are matched again and nothing else is read.
    */
   slotsOnly?: number;
+  /**
+   * The slot shape that confirm's header named (M176, `fusionShapeOf`), for its slots re-read — the
+   * re-read reads no header. Omitted = compare the shapes, as a confirm without one does.
+   */
+  slotsShape?: SlotShape;
   /**
    * The fusion screen ring's rankings by what each slot showed (M175, `slotKey`): ranking five slots
    * against everything held took 0.6–0.8 s, and the ring stays as it is while the player browses
@@ -282,7 +288,7 @@ export async function readFrame(
 
   const frame: Frame = { screen: null, floor: null, pack: null, gift: null };
   if (ctx.slotsOnly) {
-    const read = await readIngredients(reader, layout, ctx, ctx.slotsOnly, trace);
+    const read = await readIngredients(reader, layout, ctx, ctx.slotsOnly, ctx.slotsShape ?? null, trace);
     return { frame: { ...frame, screen: 'fusionConfirm', ...read }, ocrCalls, trace };
   }
   let screen: Screen | null = null;
@@ -343,8 +349,12 @@ export async function readFrame(
   } else if (screen === 'sell') {
     frame.gift = await nameIn(layout.names.selected, sellable(ctx));
   } else if (screen === 'fusionConfirm') {
-    const filled = await readEither(layout.fusion.count, 'fusionCount', parseFusionCount);
-    if (filled) Object.assign(frame, await readIngredients(reader, layout, ctx, filled, trace));
+    const header = await readEither(layout.fusion.count, 'fusionCount', (lines) => {
+      const filled = parseFusionCount(lines);
+      return filled ? { filled, shape: fusionShapeOf(lines) } : null;
+    });
+    if (header)
+      Object.assign(frame, await readIngredients(reader, layout, ctx, header.filled, header.shape, trace));
   }
   return { frame, ocrCalls, trace };
 }
@@ -367,13 +377,28 @@ function sameRegion(a: Region, b: Region): boolean {
 }
 
 /**
- * How many slots the 「선택한 기프트 N/M」 header says are filled. Only N is read: M is printed in a
- * dim grey that the light-text pass erases and raw OCR misreads (3/3 came out 「3/1」 on the run set).
+ * How many slots the 「선택한 기프트 N/M」 header says are filled. M is printed dim — the light-text
+ * pass erases it — and is read apart, by `fusionShapeOf`.
  */
 export function parseFusionCount(lines: readonly string[]): number | null {
   for (const line of lines) {
     const m = /기프트\D*?([1-5])/.exec(line.replace(/\s+/g, ''));
     if (m) return Number(m[1]);
+  }
+  return null;
+}
+
+/**
+ * The slot shape the header's M names (M176): the small slots' dialog says 「N/5」, the large slots'
+ * 「3/3」, whose drawn 3 raw OCR reads 「3」, 「1」 or 「]」 (the owner's 2026-10-25 run; no 「/5」 over
+ * large slots in any local session). Null when M is not on the line, as the light pass leaves it.
+ */
+export function fusionShapeOf(lines: readonly string[]): SlotShape | null {
+  for (const line of lines) {
+    const m = /기프트\D*?[1-5]\/(\S)/.exec(line.replace(/\s+/g, ''));
+    if (!m) continue;
+    if (m[1] === '5') return 'five';
+    if ('31]'.includes(m[1]!)) return 'three';
   }
   return null;
 }
@@ -479,24 +504,27 @@ async function readRing(
 /**
  * The fusion confirm's filled slots against what the run holds: matched ones eaten, muddled ones
  * asked. The confirm has two shapes — up to five small slots, or exactly three large ones (3/3) —
- * and only three filled slots can be either; then both are tried and the one whose slots look more
- * like gifts wins, since the wrong shape's regions cut across the icons. `weakSlots` counts the filled
- * slots that named no gift — under the bar, or too close between candidates (M172) — on a confirm
- * read before its icons slid in, all of them (M159).
+ * and only three filled slots can be either. The header's M names it (`header`, M176); without M
+ * both are tried and the one whose slots look more like gifts wins, since the wrong shape's regions
+ * cut across the icons — a guess that took the large slots over a 「3/5」 confirm whose icons were not
+ * in yet and named a gift off a frame's edge (the owner's 2026-10-25 run, twice). `weakSlots` counts
+ * the filled slots that named no gift — under the bar, or too close between candidates (M172) — on
+ * a confirm read before its icons slid in, all of them (M159).
  */
 async function readIngredients(
   reader: RegionReader,
   layout: CaptureLayout,
   ctx: ReadContext,
   filled: number,
+  header: SlotShape | null,
   trace: DiagTraceStep[] = [],
-): Promise<{ ingredients: Consumed; weakSlots: number }> {
+): Promise<{ ingredients: Consumed; weakSlots: number; slotShape?: SlotShape }> {
   const rank = (regions: readonly Region[]) => rankSlots(reader, ctx, regions);
   const meanBest = (rankings: SlotRanking[]) =>
     rankings.reduce((sum, r) => sum + (r[0]?.[1] ?? 0), 0) / Math.max(1, rankings.length);
-  let rankings = await rank(layout.fusion.five.slice(0, filled));
-  let shape: 'five' | 'three' = 'five';
-  if (filled === 3) {
+  let shape: SlotShape = filled === 3 && header === 'three' ? 'three' : 'five';
+  let rankings = await rank(layout.fusion[shape].slice(0, filled));
+  if (filled === 3 && header === null) {
     const large = await rank(layout.fusion.three);
     // Frames all empty in either shape: the dialog is up and its icons are not in yet (M159). The
     // other shape's regions cut across the large frames' borders and would name a gift in them.
@@ -526,5 +554,6 @@ async function readIngredients(
     // too close to call — an icon half slid in scored 0.53 / 0.53 and, counted as read, went to a
     // question instead of the slots re-read (the owner's 「꿈을 꾸는 전기양」, M159's window never opened).
     weakSlots: read.filter((r) => r.status !== 'match').length,
+    ...(header ? { slotShape: header } : {}),
   };
 }

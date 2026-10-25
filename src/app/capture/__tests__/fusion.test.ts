@@ -121,6 +121,23 @@ describe('mixedFusionConsumed (달의 기억)', () => {
     expect(mixedFusionConsumed(MOON, held)).toEqual({ consumed: MEMORIES, unsure: [9105, 9110, 9126] });
   });
 
+  it('asks nothing of a pool the icons surely read in full (M176)', () => {
+    // Arrange: five shards held; the ring read two of them and the three memories.
+    const held = new Set([9105, 9110, 9116, 9126, 9131, ...MEMORIES]);
+    // Act
+    const out = mixedFusionConsumed(MOON, held, [9110, 9126, ...MEMORIES]);
+    // Assert
+    expect(out).toEqual({ consumed: [9110, 9126, ...MEMORIES], unsure: [] });
+  });
+
+  it('still asks when the icons read a pool only in part (M176)', () => {
+    const held = new Set([9105, 9110, 9126, ...MEMORIES]);
+    expect(mixedFusionConsumed(MOON, held, [9110])).toEqual({
+      consumed: MEMORIES,
+      unsure: [9105, 9110, 9126],
+    });
+  });
+
   it('takes whatever is held of a pool the player holds less of than it takes', () => {
     // Boundary: one shard and two memories — the fusion could not have been made, but nothing held
     // of either pool can have survived it.

@@ -586,7 +586,7 @@ export interface RouteReport {
   followed: number;
   /** Entered somewhere else than the route said. */
   offRoute: { floor: number; recommended: number; entered: number | null }[];
-  expected: { got: number; failed: number; unmarked: number };
+  expected: { got: number; used: number; failed: number; unmarked: number };
   /** Gifts the route expected from the pack the player did enter, and did not get. */
   missedOnRoute: { floor: number; packId: number; giftId: number; kind: string }[];
   runs: { ended: string; goals: number; got: number; failed: number; unresolved: Record<string, number> }[];
@@ -599,7 +599,7 @@ export function routeReport(bundle: DiagnosticsBundle, kindOf: (giftId: number) 
     recommended: 0,
     followed: 0,
     offRoute: [],
-    expected: { got: 0, failed: 0, unmarked: 0 },
+    expected: { got: 0, used: 0, failed: 0, unmarked: 0 },
     missedOnRoute: [],
     runs: [],
   };
@@ -612,9 +612,11 @@ export function routeReport(bundle: DiagnosticsBundle, kindOf: (giftId: number) 
     }
     for (const g of f.expected) {
       if (g.status === 'got') report.expected.got += 1;
+      // A gift the run fused into one it collects was had (M149): not missed, not unmarked.
+      else if (g.status === 'used') report.expected.used += 1;
       else if (g.status === 'failed') report.expected.failed += 1;
       else report.expected.unmarked += 1;
-      if (g.status !== 'got' && f.entered !== null && f.entered === f.recommended)
+      if (g.status !== 'got' && g.status !== 'used' && f.entered !== null && f.entered === f.recommended)
         report.missedOnRoute.push({
           floor: f.floor,
           packId: f.entered,
@@ -805,7 +807,7 @@ export function formatReport(
     `- 떠난 층 ${route.floors}개 · 추천 팩을 따른 층 ${route.followed}/${route.recommended} (${rate}%)`,
   );
   lines.push(
-    `- 기대한 기프트: 획득 ${route.expected.got} · 미획득 ${route.expected.failed} · 표시 없음 ${route.expected.unmarked}`,
+    `- 기대한 기프트: 획득 ${route.expected.got} · 조합에 씀 ${route.expected.used} · 미획득 ${route.expected.failed} · 표시 없음 ${route.expected.unmarked}`,
   );
   if (route.offRoute.length > 0) {
     lines.push('', '### 루트와 다르게 간 층', '');

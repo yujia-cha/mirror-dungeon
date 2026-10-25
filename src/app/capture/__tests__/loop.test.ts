@@ -561,6 +561,27 @@ describe('the fusion confirm read before its icons slid in (M159)', () => {
     expect(changed).toMatchObject({ decision: 'read', mode: 'full', reason: 'change' });
   });
 
+  it('keeps the slot shape the confirm’s header named for its re-reads (M176)', () => {
+    // Arrange: a 「3/5」 confirm, its icons not in yet.
+    const frame = {
+      screen: 'fusionConfirm' as const,
+      floor: null,
+      pack: null,
+      ingredients: { consumed: [], unsure: [], filled: 3 },
+      weakSlots: 3,
+      slotShape: 'five' as const,
+    };
+    // Act
+    const state = finished(decide(INITIAL_LOOP, sig, true, 0).state, outcomeOf(frame, 240));
+    const unnamed = finished(
+      decide(INITIAL_LOOP, sig, true, 0).state,
+      outcomeOf({ ...frame, slotShape: undefined }, 240),
+    );
+    // Assert
+    expect(state.slots).toMatchObject({ filled: 3, shape: 'five' });
+    expect(unnamed.slots).not.toHaveProperty('shape');
+  });
+
   it('forgets the confirm once another screen is read', () => {
     let state = finished(decide(INITIAL_LOOP, sig, true, 0).state, { at: 240, ...CONFIRM(3) });
     state = finished(decide(state, sig, true, 300).state, { at: 400, popup: true, partial: false });

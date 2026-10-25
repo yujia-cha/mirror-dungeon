@@ -373,13 +373,26 @@ describe('labelsFrom', () => {
 });
 
 describe('routeReport', () => {
+  it('counts a gift fused into a collected one as had, not missed (M176)', () => {
+    // Arrange: floor 1's expected gift went into a fusion the route collects
+    const b = bundle();
+    const floor = b.records.find((r) => r.kind === 'floor' && r.floor === 1);
+    if (floor?.kind !== 'floor') throw new Error('fixture');
+    floor.expected = [{ giftId: 9403, status: 'used' }];
+    // Act
+    const r = routeReport(b, () => 'packLimited');
+    // Assert
+    expect(r.expected).toEqual({ got: 0, used: 1, failed: 0, unmarked: 1 });
+    expect(r.missedOnRoute).toEqual([]);
+  });
+
   it('compares the route with the run', () => {
     // Act
     const r = routeReport(bundle(), (id) => (id === 9404 ? 'packLimited' : 'general'));
     // Assert
     expect(r).toMatchObject({ floors: 2, recommended: 2, followed: 1 });
     expect(r.offRoute).toEqual([{ floor: 2, recommended: 1004, entered: 1101 }]);
-    expect(r.expected).toEqual({ got: 1, failed: 1, unmarked: 1 });
+    expect(r.expected).toEqual({ got: 1, used: 0, failed: 1, unmarked: 1 });
     // Missed on route only counts floors where the route was followed.
     expect(r.missedOnRoute).toEqual([{ floor: 1, packId: 1002, giftId: 9404, kind: 'packLimited' }]);
     expect(r.runs).toEqual([

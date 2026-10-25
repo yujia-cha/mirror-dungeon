@@ -87,6 +87,9 @@ export function assignSlots(
   return out as MatchResult[];
 }
 
+/** The fusion confirm's two layouts: up to five small slots, or three large ones (3/3). */
+export type SlotShape = 'five' | 'three';
+
 export interface Consumed {
   /** Gifts the fusion surely ate, ascending. Unmark these. */
   consumed: number[];
@@ -150,20 +153,26 @@ export function recipeConsumed(
 /**
  * What the mixed fusion (달의 기억) ate from what the player holds, settled without the icons: a
  * pool the player holds no more of than the recipe takes goes whole; a pool with more to choose
- * from is asked about. The confirm's icons, when read, come in beside this (`apply.ts`).
+ * from is asked about — unless the icons surely read (`read`) already fill its count (M176: the
+ * owner's ring read all five, and the four other 조각 held were asked about all the same).
  */
-export function mixedFusionConsumed(mixed: MixedRecipe, held: ReadonlySet<number>): Consumed {
+export function mixedFusionConsumed(
+  mixed: MixedRecipe,
+  held: ReadonlySet<number>,
+  read: readonly number[] = [],
+): Consumed {
   const sorted = (ids: Iterable<number>) => [...ids].sort((a, b) => a - b);
-  const heldOf = (pool: readonly number[]) => sorted(pool.filter((id) => held.has(id)));
-  const aHeld = heldOf(mixed.aPool);
-  const bHeld = heldOf(mixed.bPool);
-  const consumed = [
-    ...(aHeld.length <= mixed.aCount ? aHeld : []),
-    ...(bHeld.length <= mixed.bCount ? bHeld : []),
-  ];
-  const unsure = [
-    ...(aHeld.length > mixed.aCount ? aHeld : []),
-    ...(bHeld.length > mixed.bCount ? bHeld : []),
-  ];
-  return { consumed: sorted(consumed), unsure: sorted(unsure) };
+  const consumed: number[] = [];
+  const unsure: number[] = [];
+  for (const [pool, count] of [
+    [mixed.aPool, mixed.aCount],
+    [mixed.bPool, mixed.bCount],
+  ] as const) {
+    const heldIn = sorted(pool.filter((id) => held.has(id)));
+    const readIn = read.filter((id) => pool.includes(id));
+    if (readIn.length >= count) consumed.push(...readIn);
+    else if (heldIn.length <= count) consumed.push(...heldIn);
+    else unsure.push(...heldIn);
+  }
+  return { consumed: sorted(new Set(consumed)), unsure: sorted(new Set(unsure)) };
 }

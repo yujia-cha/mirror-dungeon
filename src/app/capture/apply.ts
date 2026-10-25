@@ -231,7 +231,7 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
       const fusion = ctx.giftById.get(event.resultId)?.fusion;
       if (fusion?.mixed) {
         // The confirm's five slots may not have been read; the recipe still settles what it can.
-        const fallback = mixedFusionConsumed(fusion.mixed, held);
+        const fallback = mixedFusionConsumed(fusion.mixed, held, consumed);
         consumed = [...new Set([...consumed, ...fallback.consumed])];
         unsure = [...new Set([...unsure, ...fallback.unsure])].filter((id) => !consumed.includes(id));
       }

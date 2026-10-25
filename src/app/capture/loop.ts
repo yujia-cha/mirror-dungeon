@@ -67,6 +67,7 @@
  * Pure: the caller owns the clock and the timer.
  */
 import { BASE_REFRESH, type IntervalRange, type RefreshPolicy } from './pace.ts';
+import type { SlotShape } from './fusion.ts';
 import type { Frame } from './tracker.ts';
 
 /**
@@ -226,7 +227,7 @@ export interface LoopState {
    * The fusion confirm was read with weak slots (M159): how many were filled, and until when its
    * slots are read again while the screen holds still. Null otherwise.
    */
-  slots: { filled: number; until: number } | null;
+  slots: { filled: number; shape?: SlotShape; until: number } | null;
 }
 
 export const INITIAL_LOOP: LoopState = {
@@ -388,7 +389,7 @@ export interface ReadOutcome {
    * It read the fusion confirm (M159): how many slots were filled and how many of them named no
    * gift well. Missing for any other screen.
    */
-  confirm?: { filled: number; weak: number };
+  confirm?: { filled: number; weak: number; shape?: SlotShape };
 }
 
 /**
@@ -397,7 +398,7 @@ export interface ReadOutcome {
  * `holdMaxMs` how long that grows to over a streak (M153; `holdMs` itself keeps M142's fixed hold).
  */
 export function outcomeOf(
-  frame: Pick<Frame, 'screen' | 'partial' | 'floor' | 'pack' | 'ingredients' | 'weakSlots'>,
+  frame: Pick<Frame, 'screen' | 'partial' | 'floor' | 'pack' | 'ingredients' | 'weakSlots' | 'slotShape'>,
   at: number,
   holdMs = 0,
   holdMaxMs = Math.max(HOLD_MAX_MS, holdMs),
@@ -411,7 +412,13 @@ export function outcomeOf(
     holdMaxMs,
     incomplete: frame.screen === 'exploring' && (frame.floor === null || frame.pack?.status !== 'match'),
     ...(frame.screen === 'fusionConfirm' && frame.ingredients?.filled
-      ? { confirm: { filled: frame.ingredients.filled, weak: frame.weakSlots ?? 0 } }
+      ? {
+          confirm: {
+            filled: frame.ingredients.filled,
+            weak: frame.weakSlots ?? 0,
+            ...(frame.slotShape ? { shape: frame.slotShape } : {}),
+          },
+        }
       : {}),
   };
 }
@@ -459,6 +466,7 @@ export function finished(state: LoopState, outcome?: ReadOutcome): LoopState {
       outcome.confirm && outcome.confirm.weak > 0
         ? {
             filled: outcome.confirm.filled,
+            ...(outcome.confirm.shape ? { shape: outcome.confirm.shape } : {}),
             until: state.slots?.until ?? outcome.at + SLOTS_WINDOW_MS,
           }
         : outcome.partial

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CAPTURE_SCREENS, type CaptureLayout } from '../../../core/schema.ts';
 import { ICON_SIZE, prepareReference } from '../match-icon.ts';
 import {
+  fusionShapeOf,
   parseFusionCount,
   POPUP_ICON,
   readFrame,
@@ -292,6 +293,52 @@ describe('readFrame', () => {
     });
     // Assert: the misread numeral did not cost the slot its gift.
     expect(frame.ingredients).toMatchObject({ consumed: [9091] });
+  });
+
+  it('takes the slot shape the header names over the one that looks more like gifts (M176)', async () => {
+    // Arrange: one held gift in the second small slot, the others not in yet. The large slots'
+    // regions (9, 8, 9) land the gift twice, so by looks they win — over a 「3/5」 confirm.
+    const dark = Array.from({ length: 45 }, () => new Float32Array(ICON_SIZE * ICON_SIZE * 3).fill(3));
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).map((_, i) => (i % 4 === 3 ? 255 : (i * 37) % 251));
+    const held = prepareReference(9091, rgba, 48, 48);
+    const confirm = (header: string) =>
+      fakeReader(
+        { '0.1': { light: ['선택한 E.G.O 기프트를 조합하시겠습니까?'] }, '0.7': { light: [header] } },
+        { '0.8': dark, '0.9': [held.rgb] },
+      ).reader;
+    const ctx = { ...CTX, held: [held] };
+    // Act
+    const small = await readFrame(confirm('ㅣ 、_ 선택한 기프트 _ 3/5 ㅣ'), LAYOUT, ctx);
+    const large = await readFrame(confirm('ㅣ 、_ 선택한기프트 _ 3/] ㅣ'), LAYOUT, ctx);
+    const unread = await readFrame(confirm('ㅣ . 선택한기프트 _ 3 __'), LAYOUT, ctx);
+    // Assert: 「/5」 keeps the small slots, the gift once and two slots to read again; 「3/3」 (read
+    // 「3/]」) is the large slots; with M unread the looks decide, as before.
+    expect(small.frame.ingredients).toEqual({ consumed: [9091], unsure: [], filled: 3 });
+    expect(small.frame.weakSlots).toBe(2);
+    expect(small.frame.slotShape).toBe('five');
+    expect(small.trace.find((step) => step.step === 'slots')?.slots?.shape).toBe('five');
+    expect(large.frame.slotShape).toBe('three');
+    expect(large.trace.find((step) => step.step === 'slots')?.slots?.shape).toBe('three');
+    expect(unread.frame.slotShape).toBeUndefined();
+    expect(unread.trace.find((step) => step.step === 'slots')?.slots?.shape).toBe('three');
+  });
+
+  it('re-reads the slots in the shape the confirm’s header named (M176)', async () => {
+    // Arrange: the same frame as above, re-read alone after a 「3/5」 header.
+    const dark = Array.from({ length: 45 }, () => new Float32Array(ICON_SIZE * ICON_SIZE * 3).fill(3));
+    const rgba = new Uint8ClampedArray(48 * 48 * 4).map((_, i) => (i % 4 === 3 ? 255 : (i * 37) % 251));
+    const held = prepareReference(9091, rgba, 48, 48);
+    const { reader } = fakeReader({}, { '0.8': dark, '0.9': [held.rgb] });
+    // Act
+    const { frame } = await readFrame(reader, LAYOUT, {
+      ...CTX,
+      held: [held],
+      slotsOnly: 3,
+      slotsShape: 'five',
+    });
+    // Assert
+    expect(frame.ingredients).toEqual({ consumed: [9091], unsure: [], filled: 3 });
+    expect(frame.slotShape).toBe('five');
   });
 
   it('leaves the ingredients unread when the header cannot be read', async () => {
@@ -630,6 +677,24 @@ describe('parseFusionCount', () => {
     expect(parseFusionCount([])).toBeNull();
     expect(parseFusionCount(['선택한 기프트 _ 0'])).toBeNull();
     expect(parseFusionCount(['3/5'])).toBeNull();
+  });
+});
+
+describe('fusionShapeOf (M176)', () => {
+  it('reads the shape from M as raw OCR leaves it', () => {
+    expect(fusionShapeOf(['ㅣ 、_ 선택한 기프트 _ 3/5 ㅣ'])).toBe('five');
+    expect(fusionShapeOf(['선택한 기프트 2/5'])).toBe('five');
+    expect(fusionShapeOf(['ㅣ 、_ 선택한 기프트 _ 3/1 ㅣ'])).toBe('three');
+    expect(fusionShapeOf(['ㅣ 、_ 선택한기프트 _ 3/] ㅣ'])).toBe('three');
+    expect(fusionShapeOf(['선택한 기프트 3/3'])).toBe('three');
+  });
+
+  it('says nothing without M, or with an M no confirm prints', () => {
+    expect(fusionShapeOf(['ㅣ . 선택한기프트  ]'])).toBeNull();
+    expect(fusionShapeOf(['ㅣ . 선택한기프트 _ 3 __'])).toBeNull();
+    expect(fusionShapeOf(['선택한 기프트 3/'])).toBeNull();
+    expect(fusionShapeOf(['선택한 기프트 3/8'])).toBeNull();
+    expect(fusionShapeOf([])).toBeNull();
   });
 });
 

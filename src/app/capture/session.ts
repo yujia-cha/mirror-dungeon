@@ -633,7 +633,9 @@ export class CaptureSession {
       startOpen: ctx.startOpen,
       popupOnly: job.mode === 'popup',
       // The confirm's slots alone, no OCR, while its icons slide in (M159).
-      ...(job.mode === 'slots' && this.loop.slots ? { slotsOnly: this.loop.slots.filled } : {}),
+      ...(job.mode === 'slots' && this.loop.slots
+        ? { slotsOnly: this.loop.slots.filled, slotsShape: this.loop.slots.shape }
+        : {}),
       // Rung (ii) of the load ladder (M142): an unneeded raw pass, on a strained machine only.
       lean: leanReads(this.pace.level),
       // A popup's icon, when its name is no sure match (M136): a handful of gifts, loaded once each.

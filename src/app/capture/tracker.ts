@@ -45,7 +45,7 @@
  * Pure and deterministic: state in, state and events out. What an event does to the run is the
  * app's business, not this file's.
  */
-import type { Consumed } from './fusion.ts';
+import type { Consumed, SlotShape } from './fusion.ts';
 import type { MatchResult } from './match-name.ts';
 import { isShopScreen, isStartScreen, type Screen, type StartScreen } from './screens.ts';
 
@@ -66,6 +66,8 @@ export interface Frame {
    * again (`ReadContext.slotsOnly`).
    */
   weakSlots?: number;
+  /** On the fusion confirm: the slot shape its header named (M176), carried to the slots re-read. */
+  slotShape?: SlotShape;
   /** On the fusion screen: the gifts its ring surely shows picked (M175, `readRing`). */
   ring?: number[];
   /**
