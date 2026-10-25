@@ -3,6 +3,8 @@ import { diagnosticsBundleSchema, type DiagRecord } from '../../../../core/schem
 import type { EnvReport, FrameSource, ReadReport, TickReport } from '../../session.ts';
 import {
   DiagRecorder,
+  LAYOUT_SAMPLE_GAP_MS,
+  LAYOUT_SAMPLES,
   MAX_FRAMES,
   MAX_FRAME_BYTES,
   MAX_PREVIEW_BYTES,
@@ -127,6 +129,38 @@ describe('DiagRecorder', () => {
     await r.flush();
     // Assert
     expect(r.stats().frames).toBe(2);
+  });
+
+  it('keeps a few spaced frames of the fusion screens and the purchase dialog without an event (M175)', async () => {
+    // Arrange: the fusion screen with nothing on its ring, then with a gift on it; a confirm; a dialog.
+    const { r, store } = await recorder({ images: true });
+    const on = (t: number, screen: 'fusion' | 'fusionConfirm' | 'purchase', ring?: number[]) =>
+      report(t, { frame: { screen, floor: null, pack: null, gift: null, ...(ring ? { ring } : {}) } });
+    // Act
+    r.onRead(on(0, 'fusion', []), jpeg());
+    r.onRead(on(1, 'fusion', [9993]), jpeg());
+    r.onRead(on(2, 'fusion', [9993]), jpeg()); // too soon after the last
+    r.onRead(on(LAYOUT_SAMPLE_GAP_MS + 1, 'fusion', [9993]), jpeg());
+    r.onRead(on(3, 'fusionConfirm'), jpeg());
+    r.onRead(on(4, 'purchase'), jpeg());
+    await r.flush();
+    // Assert: two of the ringed fusion screen, the confirm and the dialog, all samples.
+    expect(r.stats().frames).toBe(4);
+    const kept = (await store.frames()).map((f) => f.class);
+    expect(kept).toEqual(['sample', 'sample', 'sample', 'sample']);
+  });
+
+  it('stops keeping layout samples of a screen at LAYOUT_SAMPLES', async () => {
+    const { r } = await recorder({ images: true });
+    for (let i = 0; i < LAYOUT_SAMPLES + 3; i += 1)
+      r.onRead(
+        report(i * LAYOUT_SAMPLE_GAP_MS, {
+          frame: { screen: 'purchase', floor: null, pack: null, gift: null },
+        }),
+        jpeg(),
+      );
+    await r.flush();
+    expect(r.stats().frames).toBe(LAYOUT_SAMPLES);
   });
 
   it('keeps the last reads around a hand-made change while reading — a likely miss', async () => {

@@ -269,6 +269,11 @@ export interface RecognitionReport {
    */
   slotReads: { reads: number; meanMs: number } | null;
   /**
+   * What the fusion screen's ring and the purchase dialog settled (M175): fusions whose ingredients
+   * the ring made up, and popups whose blurred name the purchase before them named.
+   */
+  madeUp: { ring: number; purchase: number };
+  /**
    * Reads the recorder summed instead of keeping one by one (M153, `readSummary`): popup reads
    * that found nothing, and reads of nothing past their cap. Counted into everything above; null
    * for a bundle without any (before M153).
@@ -289,6 +294,8 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
   for (const r of reads) count(readsByScreen, r.screen ?? '(none)');
   const appliedByKind: Record<string, number> = {};
   for (const a of applied) count(appliedByKind, a.event.kind);
+  const flagged = (key: 'ring' | 'purchase') =>
+    applied.filter((a) => (a.event as Record<string, unknown>)[key] === true).length;
   const answers = bundle.records.filter((r) => r.kind === 'answer');
   const misses: Miss[] = bundle.records
     .filter((r): r is Manual => r.kind === 'manual' && r.capturing)
@@ -372,6 +379,7 @@ export function recognitionReport(bundle: DiagnosticsBundle): RecognitionReport 
             dropped,
           }
         : null,
+    madeUp: { ring: flagged('ring'), purchase: flagged('purchase') },
     slotReads: slotReads.length
       ? {
           reads: slotReads.length,
@@ -712,6 +720,10 @@ export function formatReport(
       `- 대기열 판독 ${rec.queuedReads.reads}회 · 그중 팝업 ${rec.queuedReads.popups}회 · 평균 지연 ${rec.queuedReads.meanLagMs}ms · 넘침 ${rec.queuedReads.dropped}`,
     );
   if (rec.slotReads) lines.push(`- 합성 칸 재판독 ${rec.slotReads.reads}회 · 평균 ${rec.slotReads.meanMs}ms`);
+  if (rec.madeUp.ring + rec.madeUp.purchase > 0)
+    lines.push(
+      `- 합성 화면 원형 칸으로 정한 재료 ${rec.madeUp.ring}회 · 구매 창으로 정한 팝업 ${rec.madeUp.purchase}회`,
+    );
   if (rec.summed)
     lines.push(
       `- 묶어 적은 판독: 팝업 없는 팝업 판독 ${rec.summed.scans}회${

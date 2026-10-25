@@ -813,18 +813,26 @@ export const captureLayoutSchema = z.object({
     mapHeader: captureRegionSchema,
     /** The pack's name line alone under the map header (M172): read raw when the header named no pack. */
     mapPack: captureRegionSchema,
+    /** The purchase dialog's name button (M175): the gift a popup with an unread name came from. */
+    purchase: captureRegionSchema,
   }),
-  /** The fusion confirm: its 「선택한 기프트 N/M」 header and the two slot shapes it comes in. */
+  /**
+   * The fusion confirm: its 「선택한 기프트 N/M」 header and the two slot shapes it comes in; and the
+   * fusion screen's ring of five picked slots (M175), there for seconds before the confirm.
+   */
   fusion: z.object({
     count: captureRegionSchema,
     five: z.array(captureRegionSchema).length(5),
     three: z.array(captureRegionSchema).length(3),
+    ring: z.array(captureRegionSchema).length(5),
   }),
   /**
    * The acquired popup's gift icon (M136): read when the popup's name is no sure match, to tell the
    * gift by its picture among the gifts whose names the text came closest to.
    */
   popupIcon: captureRegionSchema,
+  /** The purchase dialog's gift icon above its name button (M175), read as the popup's is. */
+  purchaseIcon: captureRegionSchema,
 });
 export type CaptureLayout = z.infer<typeof captureLayoutSchema>;
 
@@ -866,7 +874,7 @@ export const diagTraceStepSchema = z.object({
   /** Icon slots: the shape tried and each slot's top candidates. */
   slots: z
     .object({
-      shape: z.enum(['five', 'three']),
+      shape: z.enum(['five', 'three', 'ring']),
       top: z.array(z.array(z.tuple([z.number(), z.number()]))),
       /** What each slot's tier numeral allowed (M152); null where it did not read. */
       tiers: z.array(z.array(z.number()).nullable()).optional(),

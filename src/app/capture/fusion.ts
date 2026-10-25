@@ -94,6 +94,8 @@ export interface Consumed {
   unsure: number[];
   /** How many slots the confirm's 「N/M」 said were filled, when it was read (M151). */
   filled?: number;
+  /** Made up from the fusion screen's ring where the confirm read short (M175, `withRing`). */
+  ring?: true;
 }
 
 type Recipe = NonNullable<Gift['fusion']>['recipes'][number];

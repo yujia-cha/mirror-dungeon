@@ -117,12 +117,15 @@ export function layoutInFrame(layout: CaptureLayout, top: number, height: number
       centerConfirm: map(layout.names.centerConfirm),
       mapHeader: map(layout.names.mapHeader),
       mapPack: map(layout.names.mapPack),
+      purchase: map(layout.names.purchase),
     },
     fusion: {
       count: map(layout.fusion.count),
       five: layout.fusion.five.map(map),
       three: layout.fusion.three.map(map),
+      ring: layout.fusion.ring.map(map),
     },
     popupIcon: map(layout.popupIcon),
+    purchaseIcon: map(layout.purchaseIcon),
   };
 }

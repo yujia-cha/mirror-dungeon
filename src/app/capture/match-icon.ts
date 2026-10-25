@@ -61,6 +61,18 @@ const WIDEST = PLACEMENTS.findIndex(([size, dx, dy]) => size === 0.88 && dx === 
 export const BLANK_SLOT_MAX = 60;
 
 /**
+ * What a slot shows, coarsely (M175): its widest view at 16 levels a channel. The same picture
+ * gives the same key from read to read, so a ranking can be kept for it (`ReadContext.ringMemo`).
+ */
+export function slotKey(views: readonly Float32Array[]): string {
+  const view = views[WIDEST] ?? views[0];
+  if (!view) return '';
+  let key = '';
+  for (let p = 0; p < view.length; p += 1) key += ((view[p]! / 16) | 0).toString(16);
+  return key;
+}
+
+/**
  * An empty slot frame (M159): the confirm dialog shows its frames before the icons slide in, and an
  * empty frame matched against the held gifts named one of them outright (0.5+) on the new 3/3
  * regions. Nothing is drawn in it, so it is no gift.

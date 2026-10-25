@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BLANK_SLOT_MAX,
   blankSlot,
+  slotKey,
   ICON_SIZE,
   maskedCorrelation,
   matchIcon,
@@ -166,5 +167,24 @@ describe('blankSlot (M159)', () => {
 
   it('is never blank without the views it looks at', () => {
     expect(blankSlot([])).toBe(false);
+  });
+});
+
+describe('slotKey (M175)', () => {
+  const region = [0, 0, 1, 1] as const;
+  it('gives the same picture the same key, and another picture another', () => {
+    const a = prepareSlot(slotOf('rings'), 100, 100, region);
+    const b = prepareSlot(
+      image(100, 100, () => [200, 10, 10, 255]),
+      100,
+      100,
+      region,
+    );
+    expect(slotKey(a)).toBe(slotKey(prepareSlot(slotOf('rings'), 100, 100, region)));
+    expect(slotKey(a)).not.toBe(slotKey(b));
+  });
+
+  it('is empty without the view it looks at', () => {
+    expect(slotKey([])).toBe('');
   });
 });

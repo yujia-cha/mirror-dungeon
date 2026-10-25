@@ -18,11 +18,14 @@
     "selected": [0.2344, 0.2131, 0.2057, 0.1586],
     "centerConfirm": [0.28, 0.42, 0.44, 0.12],
     "mapHeader": [0.01, 0.13, 0.17, 0.09],
-    "mapPack": [0.01, 0.185, 0.17, 0.045]
+    "mapPack": [0.01, 0.185, 0.17, 0.045],
+    "purchase": [0.2726, 0.492, 0.138, 0.1338]
   },
   "_mapPack": "M172: the pack's name line alone, under the map header's 「N층 탐사 중」. Read raw when the header's own lines named no pack: a short, dim grey name (「교본」 on floor 10 of the owner's 2026-10-22 run) came out in none of the three passes over the whole header — 174 map reads, every one floor 10 and no pack — yet the raw pass over this line alone reads it at ×1, ×2 and ×3 scale. The whole header is still read after it when this line names nothing either.",
   "popupIcon": [0.2656, 0.3011, 0.1105, 0.2043],
   "_popupIcon": "M136: the acquired popup's gift icon, the framed square above the name button (owner session 1792201541946, 1928×1043 with a 30px title bar: x 512–725, y 335–542 → client fractions). Read only when the popup's name is no sure match, against the gifts whose names come closest; on the three session popups the right gift ranked first among all 454 icons (0.67–0.88, next best ≤ 0.50).",
+  "purchaseIcon": [0.2856, 0.2331, 0.1105, 0.2043],
+  "_purchase": "M175: the purchase dialog 「E.G.O 기프트 구매」 draws its gift as the acquired popup does — the framed icon with the name on a coloured button under it — 0.02 right of and 0.068 above the popup's (the button's top edge at y 0.497–0.501 on four filmstrip frames of two sessions, whatever the description's length). Read so that a popup whose name blurs right after a purchase still names the gift (owner's 2026-10-23 run: 「불빛꽃」, one faded popup read 「브비2 = 노크」, recorded nowhere).",
   "fusion": {
     "count": [0.2, 0.205, 0.31, 0.075],
     "five": [
@@ -36,7 +39,14 @@
       [0.135, 0.295, 0.12, 0.2283],
       [0.303, 0.295, 0.12, 0.2283],
       [0.471, 0.295, 0.12, 0.2283]
+    ],
+    "ring": [
+      [0.258, 0.223, 0.059, 0.114],
+      [0.357, 0.2894, 0.059, 0.114],
+      [0.357, 0.4427, 0.059, 0.114],
+      [0.1578, 0.4427, 0.059, 0.114],
+      [0.1578, 0.2894, 0.059, 0.114]
     ]
   },
-  "_fusion": "The fusion confirm comes in two shapes, told apart by its 「선택한 기프트 N/M」 header (count): up to five small slots (recipe fusion, 달의 기억 among them; N of them filled, from the left) and exactly three large ones (3/3). Five: 144px squares from x 228 every 194px at y 358 (M93). Three: M103 measured them on one confirm as 230×267px boxes reaching ~30px below the frames, and no 3/3 slot ever scored above 0.64 (39 reads of the owner's 2026-10-19 run; five reached 0.97), so the 잔영 never ranked. M159 re-measured them on the owner's 2026-10-19 23:17 filmstrip (a 3/3 of 빛나는 + 2× 아스라한 잔영, four frames): 230px squares (h = 0.12 × 1920 / 1009) at y 0.295, 0.168 apart — the truth scores 0.56 → 0.91 on average, ahead of the best other held gift by 0.05 → 0.50 at worst. A keyword fusion (no recipe) also comes as 2, 3 or 4 small slots: the 3/3 shape is not the only keyword fusion."
+  "_fusion": "The fusion confirm comes in two shapes, told apart by its 「선택한 기프트 N/M」 header (count): up to five small slots (recipe fusion, 달의 기억 among them; N of them filled, from the left) and exactly three large ones (3/3). Five: 144px squares from x 228 every 194px at y 358 (M93). Three: M103 measured them on one confirm as 230×267px boxes reaching ~30px below the frames, and no 3/3 slot ever scored above 0.64 (39 reads of the owner's 2026-10-19 run; five reached 0.97), so the 잔영 never ranked. M159 re-measured them on the owner's 2026-10-19 23:17 filmstrip (a 3/3 of 빛나는 + 2× 아스라한 잔영, four frames): 230px squares (h = 0.12 × 1920 / 1009) at y 0.295, 0.168 apart — the truth scores 0.56 → 0.91 on average, ahead of the best other held gift by 0.05 → 0.50 at worst. A keyword fusion (no recipe) also comes as 2, 3 or 4 small slots: the 3/3 shape is not the only keyword fusion. Ring (M175): once a keyword or a recipe is chosen, the fusion screen shows the picked gifts in five small slots round its result — top, right upper and lower, left lower and upper — for seconds before the confirm, which the owner clicks 0.1–0.4 s after its icons land. 114px squares measured on the owner's filmstrips (2026-10-23 07:22 and 2026-10-18 14:00–14:01): the picked gifts score 0.77–0.88 against the held gifts, ahead of the best other by ≥ 0.3; empty slots (their frames and the ring's gears show through, so not `blankSlot`) at most 0.47 and never by a margin."
 }

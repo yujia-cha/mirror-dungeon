@@ -22,10 +22,24 @@ const LAYOUT: CaptureLayout = {
     { region: R(1), screens: ['fusionConfirm'] },
     { region: R(2), screens: ['sell', 'fusion'] },
     { region: R(3), screens: ['exploring'], raw: true },
+    { region: S(0.17), screens: ['purchase'] },
   ],
-  names: { popup: R(4), selected: R(5), centerConfirm: R(6), mapHeader: R(3), mapPack: S(0.35) },
-  fusion: { count: R(7), five: [R(8), R(9), R(8), R(9), R(8)], three: [R(9), R(8), R(9)] },
+  names: {
+    popup: R(4),
+    selected: R(5),
+    centerConfirm: R(6),
+    mapHeader: R(3),
+    mapPack: S(0.35),
+    purchase: S(0.36),
+  },
+  fusion: {
+    count: R(7),
+    five: [R(8), R(9), R(8), R(9), R(8)],
+    three: [R(9), R(8), R(9)],
+    ring: [S(0.4), S(0.41), S(0.42), S(0.43), S(0.44)],
+  },
   popupIcon: [0.55, 0.3, 0.05, 0.05],
+  purchaseIcon: [0.57, 0.3, 0.05, 0.05],
 };
 
 /** A reader that answers each region with fixed lines, one set per pass, and logs calls. */
@@ -86,8 +100,8 @@ describe('readFrame', () => {
     const { frame, ocrCalls } = await readFrame(reader, LAYOUT, CTX);
     expect(frame.screen).toBeNull();
     expect(calls).not.toContain('0:raw');
-    // Four title regions, one raw for the marked one: what a frame showing nothing costs.
-    expect(ocrCalls).toBe(5);
+    // Five title regions (the purchase dialog since M175), one raw for the marked one: what a frame showing nothing costs.
+    expect(ocrCalls).toBe(6);
   });
 
   it('traces every pass: the lines, whether they were taken and what they matched (M112)', async () => {
@@ -299,7 +313,7 @@ describe('readFrame at the run start (M135)', () => {
     // Assert: the start regions cost nothing for the rest of the run.
     expect(frame.screen).toBeNull();
     expect(calls.some((c) => c.startsWith('0.15') || c.startsWith('0.16'))).toBe(false);
-    expect(ocrCalls).toBe(5);
+    expect(ocrCalls).toBe(6);
   });
 
   it('pays for the start titles on a frame of nothing: raw only, and no shop titles before floor 1 (M136)', async () => {
@@ -721,5 +735,74 @@ describe('readFrame: a reprint’s map header (M159)', () => {
     const { frame } = await readFrame(reader, LAYOUT, { ...CTX, packs: PACKS });
     // Assert
     expect(frame).toMatchObject({ screen: 'exploring', floor: 7, pack: { status: 'match', id: 1120 } });
+  });
+});
+
+describe('readFrame: the purchase dialog and the fusion screen ring (M175)', () => {
+  it('names the gift the purchase dialog shows', async () => {
+    // Arrange
+    const { reader } = fakeReader({
+      '0.17': { light: ['E.G.O 기프트 구매'] },
+      '0.36': { light: ['작고 나쁜 인형'] },
+    });
+    // Act
+    const { frame } = await readFrame(reader, LAYOUT, CTX);
+    // Assert
+    expect(frame.screen).toBe('purchase');
+    expect(frame.gift).toMatchObject({ status: 'match', id: 9091 });
+  });
+
+  it('reads the ring for the gifts it surely shows, leaving the weak slots out', async () => {
+    // Arrange: two slots show the 빛나는 잔영, one the held gift, two show nothing like either.
+    const material = iconOf(9993, 1);
+    const held = iconOf(9091, 2);
+    const unlike = iconOf(9000, 3);
+    const { reader } = fakeReader(
+      { '0.2': { light: ['E.G.O 기프트 합성'] } },
+      {
+        '0.4': [held.rgb],
+        '0.41': [material.rgb],
+        '0.42': [material.rgb],
+        '0.43': [unlike.rgb],
+        '0.44': [unlike.rgb],
+      },
+    );
+    // Act
+    const { frame, trace } = await readFrame(reader, LAYOUT, { ...CTX, held: [held], materials: [material] });
+    // Assert
+    expect(frame.screen).toBe('fusion');
+    expect(frame.ring).toEqual([9091, 9993, 9993]);
+    expect(trace.find((s) => s.step === 'slots')?.slots?.shape).toBe('ring');
+  });
+
+  it("keeps a slot's ranking while its picture is the same, and ranks a changed one (ringMemo)", async () => {
+    // Arrange: a read that ranks the held gift in the first slot, then the same picture against a
+    // reference of the same id that no longer looks like it — the memo answers, not the icons.
+    const held = iconOf(9091, 2);
+    const unlike = iconOf(9091, 9);
+    const answers = { '0.2': { light: ['E.G.O 기프트 합성'] } };
+    const ringMemo = new Map();
+    const first = fakeReader(answers, { '0.4': [held.rgb] });
+    await readFrame(first.reader, LAYOUT, { ...CTX, held: [held], ringMemo });
+    // Act
+    const same = await readFrame(first.reader, LAYOUT, { ...CTX, held: [unlike], ringMemo });
+    const changed = await readFrame(fakeReader(answers, { '0.4': [iconOf(9000, 5).rgb] }).reader, LAYOUT, {
+      ...CTX,
+      held: [unlike],
+      ringMemo,
+    });
+    // Assert
+    expect(same.frame.ring).toEqual([9091]);
+    expect(changed.frame.ring).toEqual([]);
+  });
+
+  it('does not read the ring when the run holds nothing to match', async () => {
+    // Arrange
+    const { reader } = fakeReader({ '0.2': { light: ['E.G.O 기프트 합성'] } });
+    // Act
+    const { frame } = await readFrame(reader, LAYOUT, CTX);
+    // Assert
+    expect(frame.screen).toBe('fusion');
+    expect(frame.ring).toBeUndefined();
   });
 });

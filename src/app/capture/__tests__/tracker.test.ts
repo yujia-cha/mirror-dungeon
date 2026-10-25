@@ -463,3 +463,110 @@ describe('trackFrame — in the shop or not (M148)', () => {
     expect(state.inShop).toBe(false);
   });
 });
+
+describe('trackFrame — the fusion screen ring (M175)', () => {
+  const ring = (...ids: number[]) => frame({ screen: 'fusion', ring: ids });
+  const confirm = (consumed: number[], unsure: number[] = [], filled?: number) =>
+    frame({ screen: 'fusionConfirm', ingredients: { consumed, unsure, ...(filled ? { filled } : {}) } });
+
+  it('makes up a confirm read short from the ring when the counts agree', () => {
+    // Arrange: the ring showed three; the confirm read one of them of three filled, then the popup.
+    const frames = [ring(9013, 9063, 9701), confirm([9063], [], 3), popup(match(9105))];
+    // Act
+    const { events, state } = run(frames, PAST_START);
+    // Assert
+    expect(events.at(-1)).toEqual({
+      kind: 'fused',
+      resultId: 9105,
+      consumed: [9013, 9063, 9701],
+      unsure: [],
+      filled: 3,
+      ring: true,
+    });
+    expect(state.ringPick).toBeNull();
+  });
+
+  it('keeps a confirm read whole, whatever the ring said', () => {
+    const { events } = run([ring(1, 2, 3), confirm([4, 5, 6], [], 3), popup(match(10))], PAST_START);
+    expect(events.at(-1)).toEqual({
+      kind: 'fused',
+      resultId: 10,
+      consumed: [4, 5, 6],
+      unsure: [],
+      filled: 3,
+    });
+  });
+
+  it('does not take the ring when it holds fewer gifts than the confirm says are filled', () => {
+    const { events } = run([ring(1, 2), confirm([1], [7], 3), popup(match(10))], PAST_START);
+    expect(events.at(-1)).toEqual({ kind: 'fused', resultId: 10, consumed: [1], unsure: [7], filled: 3 });
+  });
+
+  it('does not take the ring when the confirm surely read a gift it lacks', () => {
+    const { events } = run([ring(1, 2, 3), confirm([9], [], 3), popup(match(10))], PAST_START);
+    expect(events.at(-1)).toEqual({ kind: 'fused', resultId: 10, consumed: [9], unsure: [], filled: 3 });
+  });
+
+  it('counts a 잔영 twice on the ring as twice', () => {
+    const { events } = run([ring(9993, 9993, 9040), confirm([9993], [], 3), popup(match(10))], PAST_START);
+    expect(events.at(-1)).toMatchObject({ consumed: [9993, 9993, 9040], ring: true });
+  });
+
+  it('takes the ring alone when the confirm count went unread', () => {
+    const unread = frame({ screen: 'fusionConfirm', ingredients: null });
+    const { events } = run([ring(1, 2), unread, popup(match(10))], PAST_START);
+    expect(events.at(-1)).toEqual({ kind: 'fused', resultId: 10, consumed: [1, 2], unsure: [], ring: true });
+  });
+
+  it('takes the latest ring read, and forgets it on another screen', () => {
+    const latest = run([ring(1, 2, 3), ring(4, 5), confirm([], [], 2), popup(match(10))], PAST_START);
+    expect(latest.events.at(-1)).toMatchObject({ consumed: [4, 5], ring: true });
+    const left = run(
+      [ring(1, 2), frame({ screen: 'shop' }), confirm([], [], 2), popup(match(10))],
+      PAST_START,
+    );
+    expect(left.events.at(-1)).toEqual({ kind: 'fused', resultId: 10, consumed: [], unsure: [], filled: 2 });
+  });
+});
+
+describe('trackFrame — the purchase dialog (M175)', () => {
+  const buying = (gift: MatchResult | null) => frame({ screen: 'purchase', gift });
+  const shop = frame({ screen: 'shop' });
+
+  it('names a blurred popup after a purchase by the gift the dialog named', () => {
+    // Arrange: the 2026-10-23 run — dialog read, shop behind it, a popup whose name read as nothing.
+    const { events, state } = run([buying(match(9104)), shop, popup(none)], PAST_START);
+    // Assert
+    expect(events).toEqual([{ kind: 'got', giftId: 9104, purchase: true }]);
+    expect(state.purchasePick).toBeNull();
+  });
+
+  it('settles a muddled popup name that includes the purchase, and asks one that does not', () => {
+    const named = run([buying(match(9104)), popup(unsure(9104, 9105))], PAST_START);
+    expect(named.events).toEqual([{ kind: 'got', giftId: 9104, purchase: true }]);
+    const asked = run([buying(match(9104)), popup(unsure(9200, 9201))], PAST_START);
+    expect(asked.events).toEqual([{ kind: 'unsure', about: 'got', ids: [9200, 9201] }]);
+  });
+
+  it('lets a popup read clearly stand as it is', () => {
+    const { events } = run([buying(match(9104)), popup(match(9300))], PAST_START);
+    expect(events).toEqual([{ kind: 'got', giftId: 9300 }]);
+  });
+
+  it('keeps the name through the dialog fading out unread', () => {
+    const { events } = run([buying(match(9104)), buying(none), shop, popup(none)], PAST_START);
+    expect(events).toEqual([{ kind: 'got', giftId: 9104, purchase: true }]);
+  });
+
+  it('starts over with a dialog opened again after the shop, even one whose name went unread', () => {
+    const { events } = run([buying(match(9104)), shop, buying(none), popup(none)], PAST_START);
+    expect(events).toEqual([]);
+  });
+
+  it('forgets the purchase on any other screen, and once a popup has used it', () => {
+    const away = run([buying(match(9104)), frame({ screen: 'fusion' }), popup(none)], PAST_START);
+    expect(away.events).toEqual([]);
+    const used = run([buying(match(9104)), popup(none), shop, popup(none)], PAST_START);
+    expect(used.events).toEqual([{ kind: 'got', giftId: 9104, purchase: true }]);
+  });
+});

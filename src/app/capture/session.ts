@@ -72,6 +72,7 @@ import {
 } from './loop.ts';
 import { IconRefs } from './icon-refs.ts';
 import { prepareSlot, type IconRef } from './match-icon.ts';
+import type { SlotRanking } from './fusion.ts';
 import { chipTiers } from './tier-chip.ts';
 import { createOcrEngine, type OcrEngine } from './ocr-engine.ts';
 import { pixelRect, toPnm, type PixelRect, type Region } from './preprocess.ts';
@@ -167,6 +168,8 @@ export class CaptureSession {
   private tracker: TrackerState = INITIAL_TRACKER;
   /** Icon references by gift, loaded once each; a failed one is dropped after `REF_RETRY_MS` (M154). */
   private refs = new IconRefs();
+  /** The fusion screen ring's rankings by what each slot showed (M175, `ReadContext.ringMemo`). */
+  private ringMemo = new Map<string, SlotRanking>();
   /** The tick interval and load level (M142). */
   private pace: PaceState;
   /** The previous tick's signature: what moved since then pulls the interval in (M142). */
@@ -635,6 +638,8 @@ export class CaptureSession {
       lean: leanReads(this.pace.level),
       // A popup's icon, when its name is no sure match (M136): a handful of gifts, loaded once each.
       iconRefs: refsOf,
+      // The fusion screen ring's rankings, kept while its slots show the same (M175).
+      ringMemo: this.ringMemo,
     });
     if (this.stopped) return null;
     const out = trackFrame(this.tracker, frame);

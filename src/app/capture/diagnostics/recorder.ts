@@ -77,6 +77,15 @@ export const MAX_PREVIEW_BYTES = 20 * 1024 * 1024;
 export const UNKNOWN_FRAME_GAP_MS = 60_000;
 /** Event frames of each screen kind kept as `sample` rather than `routine`. */
 export const SAMPLES_PER_SCREEN = 3;
+/**
+ * Screens whose frames are kept as `sample` though no event came of them (M175): the fusion screen
+ * (once a gift is on its ring), the fusion confirm and the purchase dialog. Their slots and names
+ * are measured on them, and before this no full-size frame of either fusion screen with its icons
+ * in had ever been kept — only the filmstrip's 480px previews.
+ */
+export const LAYOUT_SAMPLE_SCREENS: ReadonlySet<string> = new Set(['fusion', 'fusionConfirm', 'purchase']);
+export const LAYOUT_SAMPLES = 12;
+export const LAYOUT_SAMPLE_GAP_MS = 5_000;
 /** A filmstrip holds the ticks this long before its event and this long after. */
 export const STRIP_BEFORE_MS = 3000;
 export const STRIP_AFTER_MS = 4000;
@@ -173,6 +182,8 @@ export class DiagRecorder {
   private busyChanges = 0;
   /** Event frames kept as `sample` so far, by screen kind (this recorder's lifetime). */
   private samples = new Map<string, number>();
+  /** Layout samples kept so far by screen kind, and when the last was (M175). */
+  private layoutSamples = new Map<string, { kept: number; at: number }>();
   /** The latest read's kept frame, and the frame of each applied entry's read — for undo and ask. */
   private lastReadFrameId: string | null = null;
   private frameOfLog = new Map<number, string>();
@@ -476,6 +487,7 @@ export class DiagRecorder {
       // A popup read of nothing (M136) looked at one title only: it says no screen is unknown.
       const unknown = report.frame.screen === null && !report.frame.partial && sawText;
       if (report.events.length > 0) frameId = this.keepFrame(report.t, frame, this.eventClass(report));
+      else if (this.layoutSample(report)) frameId = this.keepFrame(report.t, frame, 'sample');
       else if (unknown && report.t - this.lastUnknownFrameAt >= UNKNOWN_FRAME_GAP_MS) {
         frameId = this.keepFrame(report.t, frame, 'unknown');
         this.lastUnknownFrameAt = report.t;
@@ -586,6 +598,17 @@ export class DiagRecorder {
       const { t, ...rest } = s;
       this.add(rest, t);
     }
+  }
+
+  /** A frame of a screen measured for its slots or names, a few a session and spaced out (M175). */
+  private layoutSample(report: ReadReport): boolean {
+    const screen = report.frame.screen;
+    if (screen === null || report.frame.partial || !LAYOUT_SAMPLE_SCREENS.has(screen)) return false;
+    if (screen === 'fusion' && (report.frame.ring?.length ?? 0) === 0) return false;
+    const seen = this.layoutSamples.get(screen) ?? { kept: 0, at: -Infinity };
+    if (seen.kept >= LAYOUT_SAMPLES || report.t - seen.at < LAYOUT_SAMPLE_GAP_MS) return false;
+    this.layoutSamples.set(screen, { kept: seen.kept + 1, at: report.t });
+    return true;
   }
 
   /** The first few event frames of a screen kind are samples; the rest are routine. */
@@ -775,6 +798,7 @@ export class DiagRecorder {
     this.ticks = [];
     this.strip = null;
     this.samples.clear();
+    this.layoutSamples.clear();
     this.frameOfLog.clear();
     this.lastReadFrameId = null;
     this.exported = null;

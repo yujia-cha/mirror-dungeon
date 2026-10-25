@@ -37,7 +37,14 @@ import {
   type SlotRanking,
   type SlotThresholds,
 } from './fusion.ts';
-import { blankSlot, decideIcon, rankIcons, type IconRef, type IconThresholds } from './match-icon.ts';
+import {
+  blankSlot,
+  decideIcon,
+  rankIcons,
+  slotKey,
+  type IconRef,
+  type IconThresholds,
+} from './match-icon.ts';
 import { matchName, rankNames, type MatchResult, type NameCandidate } from './match-name.ts';
 import type { OcrPass, Region } from './preprocess.ts';
 import {
@@ -97,6 +104,12 @@ export interface ReadContext {
    * screen has not changed since. No OCR: the slots are matched again and nothing else is read.
    */
   slotsOnly?: number;
+  /**
+   * The fusion screen ring's rankings by what each slot showed (M175, `slotKey`): ranking five slots
+   * against everything held took 0.6–0.8 s, and the ring stays as it is while the player browses
+   * the list beside it. The session keeps it; omitted = rank every read.
+   */
+  ringMemo?: Map<string, SlotRanking>;
   /**
    * The machine is strained (load level 2, `leanReads` in `pace.ts`, M142): skip the raw pass of
    * titles this phase of the run does not need (`RAW_FOR_START_ONLY`). Nothing else changes.
@@ -220,10 +233,13 @@ export async function readFrame(
     });
     return found ?? best;
   };
-  /** The popup's gift: its name, and its icon when the name is no sure match (M136). */
-  const popupGift = async (): Promise<MatchResult> => {
+  /**
+   * A gift drawn as the popup draws it: its name, and its icon when the name is no sure match
+   * (M136). The acquired popup's, and the purchase dialog's (M175), which is laid out the same.
+   */
+  const giftIn = async (nameRegion: Region, iconRegion: Region): Promise<MatchResult> => {
     const seen: string[] = [];
-    const byName = await nameIn(layout.names.popup, ctx.gifts, seen);
+    const byName = await nameIn(nameRegion, ctx.gifts, seen);
     if (byName.status === 'match' || !ctx.iconRefs) return byName;
     const close = rankNames(seen, ctx.gifts)
       .filter(([, score]) => score >= POPUP_ICON.minName)
@@ -233,11 +249,11 @@ export async function readFrame(
     if (ids.length === 0) return byName;
     const refs = await ctx.iconRefs(ids);
     if (refs.length === 0) return byName;
-    const ranked = rankIcons(await reader.slot(layout.popupIcon), refs);
+    const ranked = rankIcons(await reader.slot(iconRegion), refs);
     const byIcon = decideIcon(ranked, POPUP_ICON.thresholds);
     trace.push({
       step: 'icon',
-      region: [...layout.popupIcon],
+      region: [...iconRegion],
       light: null,
       lines: [],
       accepted: byIcon.status === 'match',
@@ -307,7 +323,7 @@ export async function readFrame(
     const fromTitle = own.length > 0 ? matchPack(own, ctx.packs) : null;
     frame.pack = fromTitle?.status === 'match' ? fromTitle : await packUnderHeader();
   } else if (screen === 'acquired') {
-    frame.gift = await popupGift();
+    frame.gift = await giftIn(layout.names.popup, layout.popupIcon);
     const behind = ctx.startOpen
       ? layout.titles.find((t) => t.screens.includes('observationSelect'))
       : undefined;
@@ -316,6 +332,12 @@ export async function readFrame(
         (await readTitle(behind, 'context', (lines) =>
           isObservationTitle(lines, ctx.lang) ? true : null,
         )) === true;
+  } else if (screen === 'purchase') {
+    // What is being bought (M175): the popup after it may blur past unread.
+    frame.gift = await giftIn(layout.names.purchase, layout.purchaseIcon);
+  } else if (screen === 'fusion') {
+    // The picked gifts on the ring (M175): seconds on screen, where the confirm is a blink.
+    if (ctx.held.length + ctx.materials.length > 0) frame.ring = await readRing(reader, layout, ctx, trace);
   } else if (screen === 'sellConfirm') {
     frame.gift = await nameIn(layout.names.centerConfirm, sellable(ctx));
   } else if (screen === 'sell') {
@@ -356,6 +378,104 @@ export function parseFusionCount(lines: readonly string[]): number | null {
   return null;
 }
 
+/** Rankings the ring memo holds before it starts over: a ring is five slots, and few pictures. */
+const RING_MEMO_MAX = 64;
+
+/** The candidates a fusion slot is matched against: what the run holds, and the 잔영. */
+function slotCandidates(ctx: ReadContext): IconRef[] {
+  const heldIds = new Set(ctx.held.map((h) => h.id));
+  return [...ctx.held, ...ctx.materials.filter((m) => !heldIds.has(m.id))];
+}
+
+/**
+ * Each region's gift icon ranked against the slot candidates (M93), with the tiers its numeral
+ * allowed. An empty frame (`blankSlot`) ranks nothing.
+ */
+async function rankSlots(
+  reader: RegionReader,
+  ctx: ReadContext,
+  regions: readonly Region[],
+): Promise<SlotRanking[] & { tiers: (number[] | null)[] }> {
+  const candidates = slotCandidates(ctx);
+  // The slot's tier numeral (M152) keeps it to the candidates of that tier: a held gift of another
+  // tier cannot be there, and of the five 잔영 — one bottle, five tints — only one is left. A slot
+  // whose numeral reads is ranked against those alone; one that does not read keeps every candidate.
+  // A tier the data does not give as a number (「EX」) is never dropped.
+  const fits = (id: number, allowed: readonly number[]) => {
+    const tier = ctx.tiers?.get(id) ?? null;
+    return tier === null || allowed.includes(tier);
+  };
+  const out: SlotRanking[] = [];
+  const tiers: (number[] | null)[] = [];
+  for (const region of regions) {
+    const allowed = ctx.tiers && reader.tier ? await reader.tier(region) : null;
+    const views = await reader.slot(region);
+    // An empty frame — the icons slide in after the dialog (M159) — is no gift: nothing to rank.
+    if (blankSlot(views)) {
+      out.push([]);
+      tiers.push(null);
+      continue;
+    }
+    const pool = allowed ? candidates.filter((c) => fits(c.id, allowed)) : candidates;
+    const narrowed = pool.length > 0 ? rankIcons(views, pool) : [];
+    // A numeral misread (yellow art beside it) must not cost the slot its gift: when nothing of
+    // the allowed tiers looks like the icon, every candidate is ranked after all.
+    const weak = (narrowed[0]?.[1] ?? 0) < (ctx.slotThresholds ?? DEFAULT_SLOT_THRESHOLDS).minScore;
+    out.push(allowed && weak ? rankIcons(views, candidates) : narrowed);
+    tiers.push(allowed && weak ? null : allowed);
+  }
+  return Object.assign(out, { tiers });
+}
+
+/**
+ * The gifts picked on the fusion screen's ring (M175): the five slots round the result, read for
+ * the gifts they surely show. An empty slot shows its frame and the ring's gears, so it ranks
+ * something weakly and is left out rather than told apart (`blankSlot` is for the confirm's dark
+ * frames). The confirm that follows is up for half a second, and the owner clicks it as its icons
+ * land; the ring is there for seconds before it, and the tracker keeps it to make up a confirm that
+ * read short (`TrackerState.ringPick`). Every candidate is ranked: the tier numeral misread on the
+ * ring's smaller slots (filmstrip frames: 「빛나는 잔영」 as 「달의 잔영」, a gift that was not there),
+ * so a slot whose picture is unchanged keeps its ranking instead (`ringMemo`).
+ */
+async function readRing(
+  reader: RegionReader,
+  layout: CaptureLayout,
+  ctx: ReadContext,
+  trace: DiagTraceStep[],
+): Promise<number[]> {
+  const candidates = slotCandidates(ctx);
+  const pool = candidates.map((c) => c.id).join(',');
+  const memo = ctx.ringMemo;
+  if (memo && memo.size > RING_MEMO_MAX) memo.clear();
+  const rankings: SlotRanking[] = [];
+  for (const [i, region] of layout.fusion.ring.entries()) {
+    const views = await reader.slot(region);
+    const key = `${i}|${pool}|${slotKey(views)}`;
+    const known = memo?.get(key);
+    const ranking = known ?? (blankSlot(views) ? [] : rankIcons(views, candidates));
+    if (!known) memo?.set(key, ranking);
+    rankings.push(ranking);
+  }
+  trace.push({
+    step: 'slots',
+    region: null,
+    light: null,
+    lines: [],
+    accepted: true,
+    slots: {
+      shape: 'ring',
+      top: rankings.map((r) => r.slice(0, 3).map(([id, score]) => [id, score] as [number, number])),
+      tiers: rankings.map(() => null),
+    },
+  });
+  const read = assignSlots(
+    rankings,
+    ctx.slotThresholds ?? DEFAULT_SLOT_THRESHOLDS,
+    new Set(ctx.materials.map((m) => m.id)),
+  );
+  return read.flatMap((r) => (r.status === 'match' ? [r.id] : [])).sort((x, y) => x - y);
+}
+
 /**
  * The fusion confirm's filled slots against what the run holds: matched ones eaten, muddled ones
  * asked. The confirm has two shapes — up to five small slots, or exactly three large ones (3/3) —
@@ -371,38 +491,7 @@ async function readIngredients(
   filled: number,
   trace: DiagTraceStep[] = [],
 ): Promise<{ ingredients: Consumed; weakSlots: number }> {
-  const heldIds = new Set(ctx.held.map((h) => h.id));
-  const candidates = [...ctx.held, ...ctx.materials.filter((m) => !heldIds.has(m.id))];
-  // The slot's tier numeral (M152) keeps it to the candidates of that tier: a held gift of another
-  // tier cannot be there, and of the five 잔영 — one bottle, five tints — only one is left. A slot
-  // whose numeral reads is ranked against those alone; one that does not read keeps every candidate.
-  // A tier the data does not give as a number (「EX」) is never dropped.
-  const fits = (id: number, allowed: readonly number[]) => {
-    const tier = ctx.tiers?.get(id) ?? null;
-    return tier === null || allowed.includes(tier);
-  };
-  const rank = async (regions: readonly Region[]) => {
-    const out = [];
-    const tiers: (number[] | null)[] = [];
-    for (const region of regions) {
-      const allowed = ctx.tiers && reader.tier ? await reader.tier(region) : null;
-      const views = await reader.slot(region);
-      // An empty frame — the icons slide in after the dialog (M159) — is no gift: nothing to rank.
-      if (blankSlot(views)) {
-        out.push([]);
-        tiers.push(null);
-        continue;
-      }
-      const pool = allowed ? candidates.filter((c) => fits(c.id, allowed)) : candidates;
-      const narrowed = pool.length > 0 ? rankIcons(views, pool) : [];
-      // A numeral misread (yellow art beside it) must not cost the slot its gift: when nothing of
-      // the allowed tiers looks like the icon, every candidate is ranked after all.
-      const weak = (narrowed[0]?.[1] ?? 0) < (ctx.slotThresholds ?? DEFAULT_SLOT_THRESHOLDS).minScore;
-      out.push(allowed && weak ? rankIcons(views, candidates) : narrowed);
-      tiers.push(allowed && weak ? null : allowed);
-    }
-    return Object.assign(out, { tiers });
-  };
+  const rank = (regions: readonly Region[]) => rankSlots(reader, ctx, regions);
   const meanBest = (rankings: SlotRanking[]) =>
     rankings.reduce((sum, r) => sum + (r[0]?.[1] ?? 0), 0) / Math.max(1, rankings.length);
   let rankings = await rank(layout.fusion.five.slice(0, filled));

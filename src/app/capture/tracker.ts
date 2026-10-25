@@ -27,6 +27,10 @@
  *   (`apply.ts`, M151) — so a confirm whose slot count went unread still waits for its popup. A
  *   muddled result name carries the fusion into its question (`unsure.fusing`): the answer settles
  *   both.
+ *   The fusion screen's ring of picked gifts (M175, `ringPick`) makes up a confirm read short: the
+ *   confirm is up for half a second and its icons slide in late, the ring for seconds before it.
+ * - A popup whose name blurs past right after a purchase dialog named its gift is that gift (M175,
+ *   `purchasePick`) — the shop hands out what was bought.
  * - `unsure` — a name that is close to more than one candidate. The UI asks instead of recording.
  * - `place` (M148, `trackPlace`) — into a pack's shop (its front 「상점」 or any screen opened from
  *   it) or out of it (the map, a pack picker). Nothing in the run changes; the overlay shows other
@@ -62,6 +66,8 @@ export interface Frame {
    * again (`ReadContext.slotsOnly`).
    */
   weakSlots?: number;
+  /** On the fusion screen: the gifts its ring surely shows picked (M175, `readRing`). */
+  ring?: number[];
   /**
    * On an acquired popup during the run start: whether the observation picker's title shows
    * behind it (M135). Missing when it was not looked at.
@@ -79,9 +85,10 @@ export type StartSource = 'start' | 'observation';
 
 export type CaptureEvent =
   | { kind: 'enter'; floor: number; packId: number }
-  | { kind: 'got'; giftId: number; source?: StartSource }
+  /** `purchase`: the popup's name blurred and the purchase dialog before it named the gift (M175). */
+  | { kind: 'got'; giftId: number; source?: StartSource; purchase?: true }
   | { kind: 'sold'; giftId: number }
-  | { kind: 'fused'; resultId: number; consumed: number[]; unsure: number[]; filled?: number }
+  | { kind: 'fused'; resultId: number; consumed: number[]; unsure: number[]; filled?: number; ring?: true }
   /** The run start is behind the player (M135). */
   | { kind: 'startDone' }
   /** The player walked into a pack's shop, or out of it (M148). Changes nothing in the run. */
@@ -108,6 +115,13 @@ export interface TrackerState {
   sellPick?: number | null;
   /** What a confirmed fusion will eat, waiting for the popup that names its result. */
   fusing: Consumed | null;
+  /** The gifts the fusion screen's ring last showed picked (M175), for the confirm to fall back on. */
+  ringPick?: readonly number[] | null;
+  /**
+   * The gift the purchase dialog named (M175), and whether that dialog is still up: a read of it
+   * fading out keeps the name, a dialog opened again after the shop starts over.
+   */
+  purchasePick?: { id: number | null; open: boolean } | null;
   /** The start picker last seen while the run start is open (M135). */
   start?: StartScreen | null;
   /** `startDone` was told, and is not told again until a start picker is seen (M135). */
@@ -178,6 +192,33 @@ function trackPlace(state: TrackerState, frame: Frame): { state: TrackerState; e
   return { state: { ...state, inShop: now }, events: [{ kind: 'place', shop: now }] };
 }
 
+/** Whether `whole` holds every id of `part`, as many times as `part` does. */
+function includesAll(whole: readonly number[], part: readonly number[]): boolean {
+  const left = [...whole];
+  return part.every((id) => {
+    const at = left.indexOf(id);
+    if (at < 0) return false;
+    left.splice(at, 1);
+    return true;
+  });
+}
+
+/**
+ * What the confirm says a fusion eats, made up from the ring where the confirm read short (M175).
+ * The ring stands in only when it agrees: as many gifts as the confirm's 「N/M」 says are filled,
+ * and every gift the confirm did read among them. An unread count leaves only the ring to go by.
+ * A confirm read whole is kept as it is.
+ */
+function withRing(read: Consumed | null, ring: readonly number[] | null | undefined): Consumed | null {
+  if (!ring || ring.length === 0) return read;
+  if (!read) return { consumed: [...ring], unsure: [], ring: true };
+  const whole = read.unsure.length === 0 && read.filled !== undefined && read.consumed.length === read.filled;
+  if (whole || read.filled === undefined || ring.length !== read.filled) return read;
+  return includesAll(ring, read.consumed)
+    ? { consumed: [...ring], unsure: [], filled: read.filled, ring: true }
+    : read;
+}
+
 /** The gift a confirmed match names, or null. */
 function matchedId(result: MatchResult | null): number | null {
   return result?.status === 'match' ? result.id : null;
@@ -221,6 +262,31 @@ export function trackFrame(
     next = { ...next, sellPick: null };
   }
 
+  // The ring's picks hold through the confirm and its popup; any other screen ends them (M175).
+  if (frame.screen === 'fusion') {
+    if (frame.ring) next = { ...next, ringPick: frame.ring };
+  } else if (
+    next.ringPick &&
+    frame.screen !== null &&
+    frame.screen !== 'fusionConfirm' &&
+    frame.screen !== 'fusionKeyword' &&
+    frame.screen !== 'acquired'
+  ) {
+    next = { ...next, ringPick: null };
+  }
+  // The purchase dialog's gift (M175): kept through the dialog fading out and the shop behind it,
+  // for the popup that follows a purchase; a new dialog starts over, and anywhere else ends it.
+  if (frame.screen === 'purchase') {
+    const named = matchedId(frame.gift);
+    const pick = next.purchasePick;
+    if (!pick?.open) next = { ...next, purchasePick: { id: named, open: true } };
+    else if (named !== null && named !== pick.id) next = { ...next, purchasePick: { id: named, open: true } };
+  } else if (frame.screen === 'shop') {
+    if (next.purchasePick?.open) next = { ...next, purchasePick: { ...next.purchasePick, open: false } };
+  } else if (frame.screen !== null && frame.screen !== 'acquired' && next.purchasePick) {
+    next = { ...next, purchasePick: null };
+  }
+
   // A fusion waits through the confirm, the animation (no screen) and its popup; going back to the
   // fusion screen or anywhere else means it was cancelled.
   if (next.fusing && frame.screen !== null && frame.screen !== 'fusionConfirm' && frame.screen !== 'acquired')
@@ -228,16 +294,32 @@ export function trackFrame(
 
   switch (frame.screen) {
     case 'acquired': {
-      const gift = frame.gift;
+      // A popup right after a purchase whose name came out muddled or not at all is what was
+      // bought (M175): a muddled name that leaves the purchase out is still asked.
+      const bought = next.purchasePick?.id ?? null;
+      const blurred =
+        bought !== null &&
+        (frame.gift === null ||
+          frame.gift.status === 'none' ||
+          (frame.gift.status === 'ambiguous' && frame.gift.ids.includes(bought)));
+      const gift: MatchResult | null = blurred
+        ? { status: 'match', id: bought, score: 0, margin: 0 }
+        : frame.gift;
+      if (next.purchasePick) next = { ...next, purchasePick: null };
       if (gift?.status === 'match' && !next.popupGifts.includes(gift.id)) {
         const source = popupSource(next, frame);
-        events.push(source ? { kind: 'got', giftId: gift.id, source } : { kind: 'got', giftId: gift.id });
+        events.push({
+          kind: 'got',
+          giftId: gift.id,
+          ...(source ? { source } : {}),
+          ...(blurred ? { purchase: true as const } : {}),
+        });
         next = { ...next, popupGifts: [...next.popupGifts, gift.id] };
         // The first popup after a confirmed fusion is its result; a second (조합식 합성 can show
         // two) is an ordinary gain.
         if (next.fusing) {
           events.push({ kind: 'fused', resultId: gift.id, ...next.fusing });
-          next = { ...next, fusing: null };
+          next = { ...next, fusing: null, ringPick: null };
         }
       } else if (gift?.status === 'ambiguous' && !gift.ids.some((id) => next.popupGifts.includes(id))) {
         // A muddled fusion result takes the fusion into its question (M151): dropped here, what
@@ -283,8 +365,10 @@ export function trackFrame(
     case 'fusionConfirm': {
       // Seen is enough to wait for the result (M151): its recipe can settle what the icons did not.
       // A read with ingredients replaces whatever came before; an unread frame keeps it.
-      if (frame.ingredients) next = { ...next, fusing: frame.ingredients };
-      else if (!next.fusing) next = { ...next, fusing: { consumed: [], unsure: [] } };
+      // What the ring showed picked makes up a read that came short (M175).
+      if (frame.ingredients) next = { ...next, fusing: withRing(frame.ingredients, next.ringPick) };
+      else if (!next.fusing)
+        next = { ...next, fusing: withRing(null, next.ringPick) ?? { consumed: [], unsure: [] } };
       break;
     }
     case 'sellConfirm': {
