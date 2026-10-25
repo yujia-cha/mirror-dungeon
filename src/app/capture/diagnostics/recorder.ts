@@ -79,13 +79,19 @@ export const UNKNOWN_FRAME_GAP_MS = 60_000;
 export const SAMPLES_PER_SCREEN = 3;
 /**
  * Screens whose frames are kept as `sample` though no event came of them (M175): the fusion screen
- * (once a gift is on its ring), the fusion confirm and the purchase dialog. Their slots and names
- * are measured on them, and before this no full-size frame of either fusion screen with its icons
- * in had ever been kept — only the filmstrip's 480px previews.
+ * (once a gift is on its ring) and the purchase dialog. Their slots and names are measured on them,
+ * and before this no full-size frame of the fusion screen with its icons in had ever been kept —
+ * only the filmstrip's 480px previews. The fusion confirm is kept once a fusion instead (M177).
  */
-export const LAYOUT_SAMPLE_SCREENS: ReadonlySet<string> = new Set(['fusion', 'fusionConfirm', 'purchase']);
+export const LAYOUT_SAMPLE_SCREENS: ReadonlySet<string> = new Set(['fusion', 'purchase']);
 export const LAYOUT_SAMPLES = 12;
 export const LAYOUT_SAMPLE_GAP_MS = 5_000;
+/**
+ * How far back a fusion's result looks for its confirm (M177): the last confirm read before the
+ * result popup — its icons in — is kept, one a fusion. Twelve a session spaced 5 s apart ran out
+ * within the owner's first hour, and the two confirms M176 fixed were past it.
+ */
+export const FUSION_CONFIRM_LOOKBACK_MS = 5_000;
 /** A filmstrip holds the ticks this long before its event and this long after. */
 export const STRIP_BEFORE_MS = 3000;
 export const STRIP_AFTER_MS = 4000;
@@ -111,6 +117,8 @@ interface Pending {
   t: number;
   frame: FrameSource;
   id: string | null;
+  /** The screen its read named, for the ring's reads (M177); ticks have none. */
+  screen?: string | null;
 }
 
 export interface DiagStats {
@@ -481,6 +489,7 @@ export class DiagRecorder {
       return;
     }
     this.writeSummaries(report.t);
+    if (this.images && report.events.some((e) => e.kind === 'fused')) this.keepFusionConfirm(report.t);
     let frameId: string | null = null;
     if (frame && this.images) {
       const sawText = report.trace.some((s) => s.lines.some((line) => line.trim() !== ''));
@@ -492,7 +501,7 @@ export class DiagRecorder {
         frameId = this.keepFrame(report.t, frame, 'unknown');
         this.lastUnknownFrameAt = report.t;
       }
-      this.ring.push({ t: report.t, frame, id: frameId });
+      this.ring.push({ t: report.t, frame, id: frameId, screen: report.frame.screen });
       if (this.ring.length > RING_SIZE) this.ring.shift()!.frame.close();
     } else frame?.close();
     const waited = { busyTicks: this.busyTicks, busyChanges: this.busyChanges };
@@ -597,6 +606,18 @@ export class DiagRecorder {
       this.summaries.delete(key);
       const { t, ...rest } = s;
       this.add(rest, t);
+    }
+  }
+
+  /** A fusion's last confirm read, still in the ring, kept as a sample: one frame a fusion (M177). */
+  private keepFusionConfirm(t: number): void {
+    for (let i = this.ring.length - 1; i >= 0; i -= 1) {
+      const entry = this.ring[i]!;
+      if (t - entry.t > FUSION_CONFIRM_LOOKBACK_MS) return;
+      if (entry.screen === 'fusionConfirm') {
+        this.keepPending(entry, 'sample');
+        return;
+      }
     }
   }
 

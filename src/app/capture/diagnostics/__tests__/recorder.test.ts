@@ -3,6 +3,7 @@ import { diagnosticsBundleSchema, type DiagRecord } from '../../../../core/schem
 import type { EnvReport, FrameSource, ReadReport, TickReport } from '../../session.ts';
 import {
   DiagRecorder,
+  FUSION_CONFIRM_LOOKBACK_MS,
   LAYOUT_SAMPLE_GAP_MS,
   LAYOUT_SAMPLES,
   MAX_FRAMES,
@@ -141,13 +142,80 @@ describe('DiagRecorder', () => {
     r.onRead(on(1, 'fusion', [9993]), jpeg());
     r.onRead(on(2, 'fusion', [9993]), jpeg()); // too soon after the last
     r.onRead(on(LAYOUT_SAMPLE_GAP_MS + 1, 'fusion', [9993]), jpeg());
-    r.onRead(on(3, 'fusionConfirm'), jpeg());
+    r.onRead(on(3, 'fusionConfirm'), jpeg()); // kept once a fusion instead (M177)
     r.onRead(on(4, 'purchase'), jpeg());
     await r.flush();
-    // Assert: two of the ringed fusion screen, the confirm and the dialog, all samples.
-    expect(r.stats().frames).toBe(4);
+    // Assert: two of the ringed fusion screen and the dialog, all samples.
+    expect(r.stats().frames).toBe(3);
     const kept = (await store.frames()).map((f) => f.class);
-    expect(kept).toEqual(['sample', 'sample', 'sample', 'sample']);
+    expect(kept).toEqual(['sample', 'sample', 'sample']);
+  });
+
+  describe('one fusion confirm a fusion (M177)', () => {
+    const confirm = (t: number) =>
+      report(t, { frame: { screen: 'fusionConfirm', floor: null, pack: null, gift: null } });
+    const fused = (t: number) =>
+      report(t, {
+        frame: {
+          screen: 'acquired',
+          floor: null,
+          pack: null,
+          gift: { status: 'match', id: 9081, score: 1, margin: 1 },
+        },
+        events: [
+          { kind: 'got', giftId: 9081 },
+          { kind: 'fused', resultId: 9081, consumed: [9087], unsure: [], filled: 3 },
+        ],
+      });
+
+    it('keeps the last confirm before the result popup as a sample, and no other', async () => {
+      // Arrange: three confirm reads as the icons slide in, then the result.
+      const { r, store } = await recorder({ images: true });
+      const pictures = [jpeg(), jpeg(), jpeg()];
+      // Act
+      r.onRead(confirm(0), pictures[0]!);
+      r.onRead(confirm(100), pictures[1]!);
+      r.onRead(confirm(200), pictures[2]!);
+      r.onRead(fused(400), jpeg());
+      await r.flush();
+      // Assert: the last confirm and the popup; the earlier confirms were never encoded.
+      const kept = await store.frames();
+      expect(kept.map((f) => [f.t, f.class])).toEqual([
+        [200, 'sample'],
+        [400, 'sample'],
+      ]);
+      expect(pictures[0]!.encode).not.toHaveBeenCalled();
+      expect(pictures[1]!.encode).not.toHaveBeenCalled();
+    });
+
+    it('keeps no confirm without a fusion', async () => {
+      const { r } = await recorder({ images: true });
+      for (let i = 0; i < 4; i += 1) r.onRead(confirm(i * LAYOUT_SAMPLE_GAP_MS), jpeg());
+      await r.flush();
+      expect(r.stats().frames).toBe(0);
+    });
+
+    it('does not reach back past FUSION_CONFIRM_LOOKBACK_MS — that confirm was another fusion', async () => {
+      // Arrange: a confirm, then quiet reads, then a result long after.
+      const { r, store } = await recorder({ images: true });
+      r.onRead(confirm(0), jpeg());
+      r.onRead(report(FUSION_CONFIRM_LOOKBACK_MS), jpeg());
+      // Act
+      r.onRead(fused(FUSION_CONFIRM_LOOKBACK_MS + 1), jpeg());
+      await r.flush();
+      // Assert: the popup only.
+      expect((await store.frames()).map((f) => f.t)).toEqual([FUSION_CONFIRM_LOOKBACK_MS + 1]);
+    });
+
+    it('keeps nothing with images off', async () => {
+      const { r } = await recorder();
+      const picture = jpeg();
+      r.onRead(confirm(0), picture);
+      r.onRead(fused(100), jpeg());
+      await r.flush();
+      expect(r.stats().frames).toBe(0);
+      expect(picture.encode).not.toHaveBeenCalled();
+    });
   });
 
   it('stops keeping layout samples of a screen at LAYOUT_SAMPLES', async () => {
