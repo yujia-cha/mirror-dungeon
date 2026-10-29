@@ -519,10 +519,11 @@ describe('gift effects (M129)', () => {
 });
 
 describe('identities', () => {
-  it('covers the 190 the static data ships, none left to backfill from the other sources', () => {
-    // 2026-10-17: OpenLethe af2aa4df ships 11016, the last mirror-only identity.
-    expect(identities).toHaveLength(190);
-    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(0);
+  it('covers the 190 the static data ships plus the 2 only the other sources know', () => {
+    // 2026-10-17: OpenLethe af2aa4df shipped 11016, the last mirror-only identity at the time.
+    // 2026-10-29: 10617 and 10717 arrive from the derived mirror and the localize text first.
+    expect(identities).toHaveLength(192);
+    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(2);
   });
 
   it.each([
@@ -535,6 +536,22 @@ describe('identities', () => {
     [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], ['SISYPHE']],
     [10315, '오트쿠튀르:: 르누아르 브랜드 매니저', 3, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
     [11016, '오트쿠튀르:: 르루주 붉은 신', 10, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
+    [
+      10617,
+      '오트쿠튀르:: 르누아르 3F 방송실',
+      6,
+      ['Charge', 'Vibration'],
+      ['LE_NOIR', 'SISYPHE'],
+      'backfilled',
+    ],
+    [
+      10717,
+      '오트쿠튀르:: 르루주 바느질의 왕',
+      7,
+      ['Charge', 'Laceration'],
+      ['LE_ROUGE', 'SISYPHE'],
+      'backfilled',
+    ],
   ])(
     'knows %i 「%s」 once the static data ships it',
     (id, title, sinnerId, keywords, factions, source = 'derived') => {

@@ -10706,6 +10706,119 @@
       "Hit"
     ],
     "buffs": [
+      "AmberResistDown",
+      "CanDuelGuard",
+      "Charge",
+      "ChargeNoirAlly",
+      "NoirBindArmorAlly",
+      "Protection",
+      "ReadyToListenHonglu",
+      "SuperCoin",
+      "SupportProtect",
+      "TimeToListenHonglu",
+      "Vibration",
+      "VibrationExplosion",
+      "WarinessHonglu"
+    ],
+    "defenseTypes": [
+      "counter",
+      "guard"
+    ],
+    "factions": [
+      "LE_NOIR",
+      "SISYPHE"
+    ],
+    "id": 10617,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Charge": {
+        "skills": 0,
+        "specialSkills": 3
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 8,
+    "sinner": {
+      "en": "Hong Lu",
+      "ko": "홍루"
+    },
+    "sinnerId": 6,
+    "sins": [
+      "SLOTH",
+      "GLOOM",
+      "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Hit",
+        "coins": null,
+        "keywords": {
+          "Charge": {
+            "base": false,
+            "special": true
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "sin": "GLOOM",
+        "slot": 1,
+        "weight": null
+      },
+      {
+        "attackType": "Hit",
+        "coins": null,
+        "keywords": {
+          "Charge": {
+            "base": false,
+            "special": true
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "sin": "ENVY",
+        "slot": 2,
+        "weight": null
+      },
+      {
+        "attackType": "Hit",
+        "coins": null,
+        "keywords": {
+          "Charge": {
+            "base": false,
+            "special": true
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
+        "sin": "SLOTH",
+        "slot": 3,
+        "weight": null
+      }
+    ],
+    "title": {
+      "en": "Haute Couture:: Le Noir 3F Public Address Room",
+      "ko": "오트쿠튀르:: 르누아르 3F 방송실"
+    },
+    "traits": []
+  },
+  {
+    "attackTypes": [
+      "Hit"
+    ],
+    "buffs": [
       "AttackDmgUp",
       "Enhancement",
       "Vibration"
@@ -12526,6 +12639,117 @@
       "FINGER",
       "SMALL"
     ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "buffs": [
+      "Charge",
+      "ChargeRougeAlly",
+      "Enhancement",
+      "HowlingCocoonAlly",
+      "HowlingCocoonTwoAlly",
+      "Laceration",
+      "NeedlekinAlly",
+      "NiddlePinAlly",
+      "NiddlePinGather",
+      "NiddlePinnedAlly",
+      "PenetrateDamageUp",
+      "PenetrateTakeDamageUp",
+      "RougeFamilySinclair",
+      "TransformSinclair",
+      "WideAreaRampage"
+    ],
+    "defenseTypes": [
+      "counter"
+    ],
+    "factions": [
+      "LE_ROUGE",
+      "SISYPHE"
+    ],
+    "id": 10717,
+    "keywordSource": "backfilled",
+    "keywords": {
+      "Charge": {
+        "skills": 0,
+        "specialSkills": 3
+      },
+      "Laceration": {
+        "skills": 3,
+        "specialSkills": 3
+      }
+    },
+    "rank": 3,
+    "season": 8,
+    "sinner": {
+      "en": "Heathcliff",
+      "ko": "히스클리프"
+    },
+    "sinnerId": 7,
+    "sins": [
+      "WRATH",
+      "LUST",
+      "ENVY"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "coins": null,
+        "keywords": {
+          "Charge": {
+            "base": false,
+            "special": true
+          },
+          "Laceration": {
+            "base": true,
+            "special": true
+          }
+        },
+        "sin": "ENVY",
+        "slot": 1,
+        "weight": null
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": null,
+        "keywords": {
+          "Charge": {
+            "base": false,
+            "special": true
+          },
+          "Laceration": {
+            "base": true,
+            "special": true
+          }
+        },
+        "sin": "LUST",
+        "slot": 2,
+        "weight": null
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": null,
+        "keywords": {
+          "Charge": {
+            "base": false,
+            "special": true
+          },
+          "Laceration": {
+            "base": true,
+            "special": true
+          }
+        },
+        "sin": "WRATH",
+        "slot": 3,
+        "weight": null
+      }
+    ],
+    "title": {
+      "en": "Haute Couture:: Le Rouge King of Needleworks",
+      "ko": "오트쿠튀르:: 르루주 바느질의 왕"
+    },
+    "traits": []
   },
   {
     "attackTypes": [

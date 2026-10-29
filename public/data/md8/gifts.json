@@ -38614,8 +38614,8 @@
     },
     "conditions": [],
     "desc": {
-      "en": "When an ally hits with a Skill, if target has -20 or less SP, deal Gloom damage equal to [Sinking] on target (once per Skill)\n\n- If it was a Pierce Skill, deal ([Sinking] Count on target / 2) bonus fixed damage (once per Skill)",
-      "ko": "아군의 스킬 적중 시, 대상의 정신력이 -20 이하면, 대상의 [침잠] 위력만큼 우울 피해 (스킬 당 1회)\n\n- 관통 스킬이었으면, 대상의 ([침잠] 횟수 / 2)만큼 추가 고정 피해 (스킬 당 1회)"
+      "en": "When an ally hits with a Skill, if target has -20 or less SP, deal Gloom damage equal to [Sinking] on target (once per Skill)\n\n- If it was a Pierce Skill, deal ([Sinking] Count on target / 2) bonus fixed damage",
+      "ko": "아군의 스킬 적중 시, 대상의 정신력이 -20 이하면, 대상의 [침잠] 위력만큼 우울 피해 (스킬 당 1회)\n\n- 관통 스킬이었으면, 대상의 ([침잠] 횟수 / 2)만큼 추가 고정 피해"
     },
     "effects": [
       {

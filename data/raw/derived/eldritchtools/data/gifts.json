@@ -2401,7 +2401,7 @@
     "affinity": "envy",
     "descs": [
       "Inflict 1 [Vulnerable] this turn to enemies affected by [VibrationExplosion]. (Activates once per Attack Skill that triggers [VibrationExplosion])",
-      "Inflict 1 [Vulnerable] this turn and next turn to enemies affected by [Vibration] Burst. (Activates once per Attack Skill that triggers [VibrationExplosion])",
+      "Inflict 1 [Vulnerable] this turn and next turn to enemies affected by [VibrationExplosion]. (Activates once per Attack Skill that triggers [VibrationExplosion])",
       "Inflict 2 [Vulnerable] this turn and next turn to enemies affected by [VibrationExplosion]. (Activates once per Attack Skill that triggers [VibrationExplosion])"
     ],
     "effects": [
@@ -7250,8 +7250,7 @@
     "tier": "2",
     "triggers": [
       "The Ring Identities"
-    ],
-    "updated": true
+    ]
   },
   "9263": {
     "affinity": "lust",
@@ -7374,9 +7373,9 @@
   "9267": {
     "affinity": "sloth",
     "descs": [
-      "Max [Combustion] Potency +11\n\nTriple the first [Combustion] Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes [Combustion] damage, deal Wrath damage equal to [Combustion] Potency\n\nSkills that inflict [Combustion] Potency, [Combustion] Count, or 'Unique Burn' deal +20% damage",
-      "Max [Combustion] Potency +21\n\nTriple the first [Combustion] Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes [Combustion] damage, deal Wrath damage equal to [Combustion] Potency\n\nSkills that inflict [Combustion] Potency, [Combustion] Count, or 'Unique Burn' deal +25% damage",
-      "Max [Combustion] Potency +21\n\nTriple the first [Combustion] Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes [Combustion] damage, deal Wrath damage equal to ([Combustion] Potency x 1.5)\n\nSkills that inflict [Combustion] Potency, [Combustion] Count, or 'Unique Burn' deal +30% damage"
+      "Max [Combustion] Potency +11\n\nTriple the first [Combustion] Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes [Combustion] damage due to [Combustion] activation, deal Wrath damage equal to [Combustion] Potency\n\nSkills that inflict [Combustion] Potency, [Combustion] Count, or 'Unique Burn' deal +20% damage",
+      "Max [Combustion] Potency +21\n\nTriple the first [Combustion] Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes [Combustion] damage from [Combustion] activation, deal Wrath damage equal to [Combustion] Potency\n\nSkills that inflict [Combustion] Potency, [Combustion] Count, or 'Unique Burn' deal +25% damage",
+      "Max [Combustion] Potency +21\n\nTriple the first [Combustion] Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes [Combustion] damage due to [Combustion] activation, deal Wrath damage equal to ([Combustion] Potency x 1.5)\n\nSkills that inflict [Combustion] Potency, [Combustion] Count, or 'Unique Burn' deal +30% damage"
     ],
     "effects": [
       "Other Uncommon Effects",
@@ -7396,14 +7395,15 @@
       "Searing Brass+",
       "Searing Brass++"
     ],
-    "search_desc": "Max Burn Potency +11\n\nTriple the first Burn Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes Burn damage, deal Wrath damage equal to Burn Potency\n\nSkills that inflict Burn Potency, Burn Count, or 'Unique Burn' deal +20% damage , Max Burn Potency +21\n\nTriple the first Burn Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes Burn damage, deal Wrath damage equal to Burn Potency\n\nSkills that inflict Burn Potency, Burn Count, or 'Unique Burn' deal +25% damage , Max Burn Potency +21\n\nTriple the first Burn Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes Burn damage, deal Wrath damage equal to (Burn Potency x 1.5)\n\nSkills that inflict Burn Potency, Burn Count, or 'Unique Burn' deal +30% damage",
+    "search_desc": "Max Burn Potency +11\n\nTriple the first Burn Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes Burn damage due to Burn activation, deal Wrath damage equal to Burn Potency\n\nSkills that inflict Burn Potency, Burn Count, or 'Unique Burn' deal +20% damage , Max Burn Potency +21\n\nTriple the first Burn Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes Burn damage from Burn activation, deal Wrath damage equal to Burn Potency\n\nSkills that inflict Burn Potency, Burn Count, or 'Unique Burn' deal +25% damage , Max Burn Potency +21\n\nTriple the first Burn Potency to be inflicted in the Encounter (once per Encounter)\n\nWhen an enemy takes Burn damage due to Burn activation, deal Wrath damage equal to (Burn Potency x 1.5)\n\nSkills that inflict Burn Potency, Burn Count, or 'Unique Burn' deal +30% damage",
     "srcPath": "9267",
     "tier": "4",
     "triggers": [
       "Always",
       "Apply Burn or Unique Burn",
       "Burn Skill Used"
-    ]
+    ],
+    "updated": true
   },
   "9268": {
     "affinity": "lust",
@@ -7433,8 +7433,7 @@
     "triggers": [
       "The Ring Identities",
       "Enemies have Bleed"
-    ],
-    "updated": true
+    ]
   },
   "9269": {
     "affinity": "envy",
@@ -7779,7 +7778,7 @@
   "9280": {
     "affinity": "pride",
     "descs": [
-      "If an enemy has 1.5 or lower Slash Resist., Slash Resist. +0.3\nSlash Skills gain Offense Level +2\nWhen attacking enemies that are Weak (greater than 1.0 Resist.; Staggered states do not count) to Slash, deal +(5 + (target's Slash Resist. x 10))% damage (max 25%)\n\nSlash Skills deal +1.5% damage for every [Breath] (max 30%)\n\nCount 1 non-Blade Lineage S Corp. Identity with the earliest Deployment order as a Blade Lineage Identity and apply [BongukGiftEnhance] on it every turn\n\nTurn Start: Activates when there are 3 or more Blade Lineage Identities (only counts Identities on the field at Encounter Start)\n- Combat Start: Apply 1 [BongukGiftEnhance] on allied Blade Lineage Identities that have equipped Wrath or Pride Skills"
+      "If an enemy has 1.5 or lower Slash Resist., Slash Resist. +0.3\nSlash Skills gain Offense Level +2\nWhen attacking enemies that are Weak (greater than 1.0 Resist.; Staggered states do not count) to Slash, deal +(5 + (target's Slash Resist. x 10))% damage (max 25%)\n\nSlash Skills deal +1.5% damage for every [Breath] (max 30%)\n\nCount 1 non-Blade Lineage S Corp. Identity with the earliest Deployment order as a Blade Lineage Identity and apply [BongukGiftEnhance] on it every turn\n\nTurn Start: Activates when there are 3 or more Blade Lineage Identities (only counts Identities on the field)\n- Combat Start: Apply 1 [BongukGiftEnhance] on allied Blade Lineage Identities that have equipped Wrath or Pride Skills"
     ],
     "effects": [
       "Increase Enemy Resist",
@@ -7805,7 +7804,7 @@
         "9279"
       ]
     ],
-    "search_desc": "If an enemy has 1.5 or lower Slash Resist., Slash Resist. +0.3\nSlash Skills gain Offense Level +2\nWhen attacking enemies that are Weak (greater than 1.0 Resist.; Staggered states do not count) to Slash, deal +(5 + (target's Slash Resist. x 10))% damage (max 25%)\n\nSlash Skills deal +1.5% damage for every Poise (max 30%)\n\nCount 1 non-Blade Lineage S Corp. Identity with the earliest Deployment order as a Blade Lineage Identity and apply Sword of the Homeland - Striking on it every turn\n\nTurn Start: Activates when there are 3 or more Blade Lineage Identities (only counts Identities on the field at Encounter Start)\n- Combat Start: Apply 1 Sword of the Homeland - Striking on allied Blade Lineage Identities that have equipped Wrath or Pride Skills",
+    "search_desc": "If an enemy has 1.5 or lower Slash Resist., Slash Resist. +0.3\nSlash Skills gain Offense Level +2\nWhen attacking enemies that are Weak (greater than 1.0 Resist.; Staggered states do not count) to Slash, deal +(5 + (target's Slash Resist. x 10))% damage (max 25%)\n\nSlash Skills deal +1.5% damage for every Poise (max 30%)\n\nCount 1 non-Blade Lineage S Corp. Identity with the earliest Deployment order as a Blade Lineage Identity and apply Sword of the Homeland - Striking on it every turn\n\nTurn Start: Activates when there are 3 or more Blade Lineage Identities (only counts Identities on the field)\n- Combat Start: Apply 1 Sword of the Homeland - Striking on allied Blade Lineage Identities that have equipped Wrath or Pride Skills",
     "srcPath": "9280",
     "tier": "4",
     "triggers": [
@@ -7817,7 +7816,8 @@
       "Critical Hit",
       "Pride Skill Used",
       "Wrath Skill Used"
-    ]
+    ],
+    "updated": true
   },
   "9282": {
     "affinity": "wrath",
@@ -7899,7 +7899,6 @@
     "names": [
       "Out-of-style Rouge Clothing"
     ],
-    "new": true,
     "search_desc": "When allies heal HP through Base Attack Skills' Skill or Coin effects, heal +50% HP (3 times per turn; rounded down)\n\n[Haute Couture::Boutique du Rouge Ishmael Exclusive Effect]\nIf Haute Couture::The Crimson God of Le Rouge Sinclair is with this unit on the field, gain 1 Changing Room at Turn Start and enter Changing Room state (once per Encounter)\n- If \"In this Encounter, when this unit takes damage that brings its HP down to 0, nullify that damage; then, immediately gain 2 Changing Room and enter the Changing Room state (once per Encounter)\" from the Passive \"Into the Changing Room…\" activated, the exclusive effect does not activate\n- When the exclusive effect activates, the effect \"In this Encounter, when this unit takes damage that brings its HP down to 0, nullify that damage; then, immediately gain 2 Changing Room and enter the Changing Room state (once per Encounter)\" from the Passive \"Into the Changing Room…\" does not activate",
     "srcPath": "9284",
     "tier": "3",
@@ -7928,7 +7927,6 @@
     "names": [
       "Soda Pop"
     ],
-    "new": true,
     "search_desc": "Sinners who attempt to heal HP on self this turn using Skill or Coin effects gain the following effects next turn:\n- Skills deal +10% damage\n- Gain Offense Level Up equal to (sum of HP healed during the turn (including excess healing) / 10) (max 6; rounded down)\n\nIf there are other Identities on the field that are in the same faction as the units that activated the above effect, they gain half of the Offense Level Up the above units gained (min 1, max 3 per turn; rounded down)",
     "srcPath": "9285",
     "tier": "2",
@@ -7957,7 +7955,6 @@
     "names": [
       "Maison du Noir Slacks"
     ],
-    "new": true,
     "search_desc": "When allies that have 2+ Charge Potency trigger Tremor Burst, apply the following effects:\n- Deal (Charge Potency on self x Charge Count) Envy Damage (2 times per skill, max 100 damage per tick)\n- Every 2 times the above effect deals Envy Damage, inflict 3 Bind next turn on target\n\nEvery time an ally triggers Tremor Burst using a Skill, gain (Charge Potency on self / 3) Offense Level Up next turn (max 5 per turn; rounded down)",
     "srcPath": "9286",
     "tier": "3",
@@ -7985,7 +7982,6 @@
     "names": [
       "Le Noir Mary Janes"
     ],
-    "new": true,
     "search_desc": "Combat Start: On Hit from an Identity that has the highest Shield, deal (current Shield / 2) Sloth Damage (2 times per Skill, max 100 damage per tick; rounded down)\n- If 2+ Identities have the same Shield HP, applies to the Identity with the earlier Deployment Order\n\nIf the affected Identity is a Charge Identity, deal Sloth Damage equal to current Shield instead (3 times per skill, max 100 per tick; rounded down)",
     "srcPath": "9287",
     "tier": "3",
@@ -8013,7 +8009,6 @@
     "names": [
       "Straight Pin of the King of Needleworks"
     ],
-    "new": true,
     "search_desc": "Turn Start: If no enemies have Mark of the King of Needleworks, inflict Mark of the King of Needleworks on a random enemy (in Focused Encounters, a Part)",
     "srcPath": "9288",
     "tier": "3",
@@ -8043,7 +8038,6 @@
     "names": [
       "Cartilage"
     ],
-    "new": true,
     "search_desc": "Skills that consume Charge Count or Unique Charge deal +(Charge Potency on self x 2)% damage (max 10%)\n\nTurn End: Units that consumed Charge Count or Unique Charge this turn gain 1 Haste next turn\n\nIf a unit's Speed is faster than the target's, Clash Power +1\n- If the said unit is a \"Sisyphe\" Identity, gain Final Power +1 instead",
     "srcPath": "9289",
     "tier": "3",
@@ -8071,7 +8065,6 @@
     "names": [
       "Blanket"
     ],
-    "new": true,
     "search_desc": "Identities that equipped Defense Skills this turn take -20% damage from enemy attacks\n- Combat End: If the affected Identity is a Charge Identity, gain 2 Offense Level Up next turn\n- Combat End: If the affected Identity is a \"Sisyphe\" Identity, gain 1 Power Up next turn",
     "srcPath": "9290",
     "tier": "2",
@@ -8107,7 +8100,6 @@
       "Blossom Scissors+",
       "Blossom Scissors++"
     ],
-    "new": true,
     "search_desc": "[Effects apply only to #1 Deployed Identity]\n\n\"Sisyphe\" Identity or Charge Identity: On Base Skill final Coin Hit, deal Slash Damage equal to 5% of the said Coin's final damage on the main target (once per Skill) , [Effects apply only to #1 Deployed Identity]\n\n\"Sisyphe\" Identity or Charge Identity: On Base Skill final Coin Hit, deal Slash Damage equal to 10% of the said Coin's final damage on the main target (once per Skill) , [Effects apply only to #1 Deployed Identity]\n\n\"Sisyphe\" Identity or Charge Identity: On Base Skill final Coin Hit, deal Slash Damage equal to 15% of the said Coin's final damage on the main target (once per Skill)",
     "srcPath": "9291",
     "tier": "2",
@@ -11061,7 +11053,8 @@
     ],
     "effects": [
       "Gain Buff",
-      "Deal More Damage"
+      "Deal More Damage",
+      "Gain Defense Level Up"
     ],
     "events": [
       "971039"
@@ -12169,7 +12162,7 @@
   "9807": {
     "affinity": "gloom",
     "descs": [
-      "When an ally hits with a Skill, if target has -20 or less SP, deal Gloom damage equal to [Sinking] on target (once per Skill)\n\n- If it was a Pierce Skill, deal ([Sinking] Count on target / 2) bonus fixed damage (once per Skill)"
+      "When an ally hits with a Skill, if target has -20 or less SP, deal Gloom damage equal to [Sinking] on target (once per Skill)\n\n- If it was a Pierce Skill, deal ([Sinking] Count on target / 2) bonus fixed damage"
     ],
     "effects": [
       "Deal Gloom Damage",
@@ -12185,14 +12178,15 @@
     "names": [
       "Sword Sharpened with Tears"
     ],
-    "search_desc": "When an ally hits with a Skill, if target has -20 or less SP, deal Gloom damage equal to Sinking on target (once per Skill)\n\n- If it was a Pierce Skill, deal (Sinking Count on target / 2) bonus fixed damage (once per Skill)",
+    "search_desc": "When an ally hits with a Skill, if target has -20 or less SP, deal Gloom damage equal to Sinking on target (once per Skill)\n\n- If it was a Pierce Skill, deal (Sinking Count on target / 2) bonus fixed damage",
     "srcPath": "Sword Sharpened with Tears",
     "tier": "3",
     "triggers": [
       "Hit Enemy with Sinking",
       "Enemies with SP Condition",
       "Pierce Skill Used"
-    ]
+    ],
+    "updated": true
   },
   "9808": {
     "affinity": "lust",
@@ -12431,9 +12425,9 @@
   "9817": {
     "affinity": "gloom",
     "descs": [
-      "Enemies in Low Morale or Panic states lose 1 Final Power (against targets that are Non-SP Units, when they have 25+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or Unique Sinking, inflict 2 [DefenseDown] (2 times per turn)",
-      "Enemies in Low Morale or Panic states lose 2 Final Power (against targets that are Non-SP Units, when they have 15+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or Unique Sinking, inflict 3 [DefenseDown] (2 times per turn)",
-      "Enemies in Low Morale or Panic states lose 3 Final Power (against targets that are Non-SP Units, when they have 10+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or Unique Sinking, inflict 3 [DefenseDown] (3 times per turn)"
+      "Enemies in Low Morale or Panic states lose 1 Final Power (against targets that are Non-SP Units, when they have 25+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or Unique Sinking, inflict 2 [DefenseDown] next turn (2 times per turn)",
+      "Enemies in Low Morale or Panic states lose 2 Final Power (against targets that are Non-SP Units, when they have 15+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or Unique Sinking, inflict 3 [DefenseDown] next turn (2 times per turn)",
+      "Enemies in Low Morale or Panic states lose 3 Final Power (against targets that are Non-SP Units, when they have 10+ [Sinking])\n- When dealing damage against the affected enemies with Skills that apply [Sinking], [Sinking] Count, or Unique Sinking, inflict 3 [DefenseDown] next turn (3 times per turn)"
     ],
     "effects": [
       "Reduce Skill Power",
@@ -12446,14 +12440,15 @@
       "Blue Starshard+",
       "Blue Starshard++"
     ],
-    "search_desc": "Enemies in Low Morale or Panic states lose 1 Final Power (against targets that are Non-SP Units, when they have 25+ Sinking)\n- When dealing damage against the affected enemies with Skills that apply Sinking, Sinking Count, or Unique Sinking, inflict 2 Defense Level Down (2 times per turn) , Enemies in Low Morale or Panic states lose 2 Final Power (against targets that are Non-SP Units, when they have 15+ Sinking)\n- When dealing damage against the affected enemies with Skills that apply Sinking, Sinking Count, or Unique Sinking, inflict 3 Defense Level Down (2 times per turn) , Enemies in Low Morale or Panic states lose 3 Final Power (against targets that are Non-SP Units, when they have 10+ Sinking)\n- When dealing damage against the affected enemies with Skills that apply Sinking, Sinking Count, or Unique Sinking, inflict 3 Defense Level Down (3 times per turn)",
+    "search_desc": "Enemies in Low Morale or Panic states lose 1 Final Power (against targets that are Non-SP Units, when they have 25+ Sinking)\n- When dealing damage against the affected enemies with Skills that apply Sinking, Sinking Count, or Unique Sinking, inflict 2 Defense Level Down next turn (2 times per turn) , Enemies in Low Morale or Panic states lose 2 Final Power (against targets that are Non-SP Units, when they have 15+ Sinking)\n- When dealing damage against the affected enemies with Skills that apply Sinking, Sinking Count, or Unique Sinking, inflict 3 Defense Level Down next turn (2 times per turn) , Enemies in Low Morale or Panic states lose 3 Final Power (against targets that are Non-SP Units, when they have 10+ Sinking)\n- When dealing damage against the affected enemies with Skills that apply Sinking, Sinking Count, or Unique Sinking, inflict 3 Defense Level Down next turn (3 times per turn)",
     "srcPath": "Blue Starshard",
     "tier": "3",
     "triggers": [
       "Enemies with SP Condition",
       "Enemies have Sinking",
       "Sinking Skill Used"
-    ]
+    ],
+    "updated": true
   },
   "9818": {
     "affinity": "envy",
@@ -12986,7 +12981,7 @@
   "9836": {
     "affinity": "gloom",
     "descs": [
-      "When using an Attack Skill(including E.G.O Skills) against a single target(for Abnormalities, a single Part), deal +10% damage\nIf the Skill inflicts [Sinking] Potency, [Sinking] Count, or 'Unique Sinking', deal +25% damage instead.\n\n[Tidal Elegy Ishmael E.G.O Exclusive Effect]\nIf this E.G.O Skill targets only a single enemy, the final Coin gains +4 COin Power and deals +20% damage."
+      "When using an Attack Skill(including E.G.O Skills) against a single target(for Abnormalities, a single Part), deal +10% damage\nIf the Skill inflicts [Sinking] Potency, [Sinking] Count, or 'Unique Sinking', deal +25% damage instead.\n\n[Tidal Elegy Ishmael E.G.O Exclusive Effect]\nIf this E.G.O Skill targets only a single enemy, the final Coin gains +4 Coin Power and deals +20% damage."
     ],
     "effects": [
       "Deal More Damage",
@@ -13000,14 +12995,15 @@
     "names": [
       "Aged Sheet Music"
     ],
-    "search_desc": "When using an Attack Skill(including E.G.O Skills) against a single target(for Abnormalities, a single Part), deal +10% damage\nIf the Skill inflicts Sinking Potency, Sinking Count, or 'Unique Sinking', deal +25% damage instead.\n\n[Tidal Elegy Ishmael E.G.O Exclusive Effect]\nIf this E.G.O Skill targets only a single enemy, the final Coin gains +4 COin Power and deals +20% damage.",
+    "search_desc": "When using an Attack Skill(including E.G.O Skills) against a single target(for Abnormalities, a single Part), deal +10% damage\nIf the Skill inflicts Sinking Potency, Sinking Count, or 'Unique Sinking', deal +25% damage instead.\n\n[Tidal Elegy Ishmael E.G.O Exclusive Effect]\nIf this E.G.O Skill targets only a single enemy, the final Coin gains +4 Coin Power and deals +20% damage.",
     "srcPath": "Aged Sheet Music",
     "tier": "4",
     "triggers": [
       "Sinking Skill Used",
       "Always",
       "Other Uncommon Triggers"
-    ]
+    ],
+    "updated": true
   },
   "9837": {
     "affinity": "gluttony",

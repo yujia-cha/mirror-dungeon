@@ -3075,6 +3075,7 @@
       ]
     ],
     "statuses": [
+      "Aggro",
       "Agility",
       "AttackDmgDown",
       "Binding",
@@ -9491,6 +9492,118 @@
       "Fixer"
     ]
   },
+  "10617": {
+    "breakSection": [
+      45
+    ],
+    "date": "2026-10-29",
+    "defCorrection": 4,
+    "defenseSkillTypes": [
+      {
+        "id": "1061704",
+        "type": {
+          "affinity": "sloth",
+          "atkType": "blunt",
+          "clashable": true,
+          "tier": 1,
+          "type": "counter"
+        }
+      },
+      {
+        "id": "1061705",
+        "type": {
+          "affinity": "sloth",
+          "affinityUptie": 4,
+          "clashable": true,
+          "tier": 1,
+          "type": "guard"
+        }
+      }
+    ],
+    "hp": {
+      "base": 95,
+      "level": 3.4
+    },
+    "name": "Haute Couture:: Le Noir 3F Public Address Room",
+    "rank": 3,
+    "resists": {
+      "blunt": 0.5,
+      "pierce": 2,
+      "slash": 1
+    },
+    "season": 8,
+    "sinnerId": 6,
+    "skillKeywordList": [
+      "Charge",
+      "Tremor"
+    ],
+    "skillTypes": [
+      {
+        "id": "1061701",
+        "num": 3,
+        "type": {
+          "affinity": "gloom",
+          "tier": 1,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1061702",
+        "num": 2,
+        "type": {
+          "affinity": "envy",
+          "tier": 2,
+          "type": "blunt"
+        }
+      },
+      {
+        "id": "1061703",
+        "num": 1,
+        "type": {
+          "affinity": "sloth",
+          "tier": 3,
+          "type": "blunt"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        6
+      ]
+    ],
+    "statuses": [
+      "AmberResistDown",
+      "CanDuelGuard",
+      "Charge",
+      "ChargeNoirAlly",
+      "NoirBindArmorAlly",
+      "Protection",
+      "ReadyToListenHonglu",
+      "SuperCoin",
+      "SupportProtect",
+      "TimeToListenHonglu",
+      "Vibration",
+      "VibrationExplosion",
+      "WarinessHonglu"
+    ],
+    "tags": [
+      "Le Noir",
+      "Sisyphe"
+    ]
+  },
   "10701": {
     "breakSection": [
       65,
@@ -11102,6 +11215,120 @@
       "The Fingers",
       "The House of Spiders",
       "The Thumb"
+    ]
+  },
+  "10717": {
+    "breakSection": [
+      50,
+      30
+    ],
+    "date": "2026-10-29",
+    "defCorrection": 0,
+    "defenseSkillTypes": [
+      {
+        "id": "1071704",
+        "type": {
+          "affinity": "lust",
+          "atkType": "pierce",
+          "clashable": true,
+          "tier": 1,
+          "type": "counter"
+        }
+      }
+    ],
+    "hp": {
+      "base": 72,
+      "level": 3.2
+    },
+    "name": "Haute Couture:: Le Rouge King of Needleworks",
+    "rank": 3,
+    "resists": {
+      "blunt": 1,
+      "pierce": 0.5,
+      "slash": 2
+    },
+    "season": 8,
+    "sinnerId": 7,
+    "skillKeywordList": [
+      "Bleed",
+      "Charge"
+    ],
+    "skillTypes": [
+      {
+        "id": "1071701",
+        "num": 3,
+        "type": {
+          "affinity": "envy",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1071702",
+        "num": 2,
+        "type": {
+          "affinity": "lust",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1071703",
+        "num": 1,
+        "type": {
+          "affinity": "wrath",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1071705",
+        "num": 0,
+        "type": {
+          "affinity": "lust",
+          "tier": 3,
+          "type": "pierce"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        2,
+        6
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        3,
+        7
+      ],
+      [
+        3,
+        7
+      ]
+    ],
+    "statuses": [
+      "Charge",
+      "ChargeRougeAlly",
+      "Enhancement",
+      "HowlingCocoonAlly",
+      "HowlingCocoonTwoAlly",
+      "Laceration",
+      "NeedlekinAlly",
+      "NiddlePinAlly",
+      "NiddlePinGather",
+      "NiddlePinnedAlly",
+      "PenetrateDamageUp",
+      "PenetrateTakeDamageUp",
+      "RougeFamilySinclair",
+      "TransformSinclair",
+      "WideAreaRampage"
+    ],
+    "tags": [
+      "Le Rouge",
+      "Sisyphe"
     ]
   },
   "10801": {
