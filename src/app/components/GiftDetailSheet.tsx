@@ -38,7 +38,11 @@ import { isMaterial } from '../lib/material.ts';
  * several exclusive packs (53 of them; 인연 얽힘 has seven) names two and counts the rest: the
  * first pack alone used to read as the only source.
  */
-function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): { text: string; packs: number[] } {
+function acquisitionLine(
+  gift: Gift,
+  indexes: GameIndexes,
+  lang: Lang,
+): { text: string; packs: number[]; gifts: number[] } {
   const parts = [t(badgeFor(gift.acquisition.kind).label, lang)];
   const packName = (id: number): string => pick(indexes.packById.get(id)?.name, lang);
   const exclusive = gift.acquisition.exclusiveTo;
@@ -55,7 +59,13 @@ function acquisitionLine(gift: Gift, indexes: GameIndexes, lang: Lang): { text: 
     // The run ends with the last floor's boss, before the pack's clear reward is handed out (M173).
     parts.push(t('giftClearRewardFinalFloor', lang, { floor: indexes.finalFloor }));
   }
-  return { text: parts.join(' · '), packs };
+  // A pack event that takes a held gift in exchange (M180): the pack alone does not hand it over.
+  const gifts = gift.acquisition.requiresHeld ?? [];
+  if (gifts.length > 0) {
+    const giftName = (id: number): string => pick(indexes.giftById.get(id)?.name, lang);
+    parts.push(t('giftEventHeld', lang, { name: gifts.map(giftName).join(' · ') }));
+  }
+  return { text: parts.join(' · '), packs, gifts };
 }
 
 const PILL =
@@ -269,7 +279,10 @@ export function GiftDetailSheet({
               <UpgradeSteps gift={gift} lang={lang} />
             </div>
             <span className="text-body text-fg-subtle" data-testid="gift-acquisition">
-              <LinkedText text={acquisition.text} links={acquisition.packs.flatMap(packLink)} />
+              <LinkedText
+                text={acquisition.text}
+                links={[...acquisition.packs.flatMap(packLink), ...acquisition.gifts.flatMap(giftLink)]}
+              />
             </span>
             {/* Where this route gets the gift — the plan's own answer, not the acquisition class.
                 Absent for a gift the route says nothing about (not needed, in hand, unresolved). */}

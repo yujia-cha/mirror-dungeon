@@ -35,7 +35,7 @@ import {
   lastFloorOf,
   stageModeFor,
 } from '../lib/stage.ts';
-import { blockedGifts, entanglements, ingredientsOf } from '../lib/entangle.ts';
+import { blockedGifts, consumesOthers, entanglements, ingredientsOf } from '../lib/entangle.ts';
 import { carriedBy } from '../lib/goal-toggle.ts';
 import { conditionReportsByGift } from '../lib/gift-tile.ts';
 import { upgradeChildren } from '../lib/upgrade-children.ts';
@@ -278,7 +278,7 @@ export function PlanProvider({
       const dead = deadFusions.has(want.giftId);
       if (dead && !collectRest.has(want.giftId)) continue;
       const gift = indexes.giftById.get(want.giftId);
-      if (!gift?.fusion) continue;
+      if (!gift || !consumesOthers(gift)) continue;
       for (const id of ingredientsOf(gift, indexes, data.rules.fusion.maxShopSlots, goals)) {
         if (dead && plannedRun.giftStatus[id] === 'failed') continue;
         needed.add(id);

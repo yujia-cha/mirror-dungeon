@@ -1,6 +1,7 @@
 import { affinitiesFromDevName, availabilityFor, groupForPackId } from '../derive.ts';
 import type { ThemePack } from '../../../src/core/schema.ts';
 import type { Sources } from './load.ts';
+import { fail } from './errors.ts';
 import { applyNameOverride, loc, sortNums } from './util.ts';
 
 export interface PackSet {
@@ -9,13 +10,20 @@ export interface PackSet {
 }
 
 export function derivePacks(src: Sources): PackSet {
-  const { curated, rawPacks, themeNameKo, themeNameEn, derivedPackName } = src;
+  const { curated, curatedSeason, rawPacks, themeNameKo, themeNameEn, derivedPackName } = src;
+  /** Pack id -> gifts its event hands over (M180, `eventGifts`): they join that pack's exclusives. */
+  const eventGiftsByPack = new Map<number, number[]>();
+  for (const [giftId, entry] of Object.entries(curatedSeason.eventGifts ?? {})) {
+    eventGiftsByPack.set(entry.pack, [...(eventGiftsByPack.get(entry.pack) ?? []), Number(giftId)]);
+  }
 
   const packs: ThemePack[] = rawPacks
     .map((raw): ThemePack => {
       const devName = (raw.desc ?? '').trim();
       const availability = availabilityFor(raw);
-      const exclusives = sortNums(raw.specificEgoGiftPool ?? []);
+      const exclusives = sortNums([
+        ...new Set([...(raw.specificEgoGiftPool ?? []), ...(eventGiftsByPack.get(raw.id) ?? [])]),
+      ]);
       const affinity = affinitiesFromDevName(devName);
       const group = groupForPackId(raw.id);
       const notes = curated.notes.packs?.[String(raw.id)];
@@ -46,6 +54,12 @@ export function derivePacks(src: Sources): PackSet {
       };
     })
     .sort((a, b) => a.id - b.id);
+
+  for (const [packId, giftIds] of eventGiftsByPack) {
+    if (!packs.some((pack) => pack.id === packId && pack.selectable)) {
+      fail(`eventGifts: ${giftIds.join(', ')} name pack ${packId}, which this season cannot select.`);
+    }
+  }
 
   return { packs, selectablePacks: packs.filter((p) => p.selectable) };
 }

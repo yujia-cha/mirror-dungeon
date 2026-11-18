@@ -1046,6 +1046,12 @@
 - en: only from {name} and {n} other packs
 - 쓰는 곳: src/app/components/GiftDetailSheet.tsx
 
+### giftEventHeld
+메모: 팩 이벤트가 가진 기프트를 받고 내주는 기프트의 획득 줄 끝(M180) — 9296 비통이 맺힌 검은 1129 「절망의 기사」에서 「눈물로 벼려낸 검」을 내밀어야 받는다. 시즌 보정 `eventGifts`가 정한다.
+- ko: {name} 보유 시 이벤트에서 교환
+- en: traded for {name} at the pack's event
+- 쓰는 곳: src/app/components/GiftDetailSheet.tsx
+
 ### giftClearRewardFinalFloor
 메모: 클리어 보상의 획득 줄과 EXTREME 팩 시트의 층 줄에 붙는다(M173, 소유자 확인). 마지막 층(15층)의 보스를 잡으면 런이 끝나 그 팩의 클리어 보상은 받지 못한다 — 플래너도 그 팩을 15층에 앉히지 않고, 15층 입장은 클리어 보상을 기대하지 않는다.
 - ko: {floor}층에서는 클리어 보상을 얻지 못함

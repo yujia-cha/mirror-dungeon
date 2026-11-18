@@ -11,7 +11,7 @@
  */
 import type { Gift } from '../../core/schema.ts';
 import type { GameIndexes } from '../../core/types.ts';
-import { ingredientsOf } from './entangle.ts';
+import { consumesOthers, ingredientsOf } from './entangle.ts';
 
 export interface CarryIndex {
   indexes: GameIndexes;
@@ -24,6 +24,6 @@ export interface CarryIndex {
 export function carriedBy(gift: Gift, { indexes, childrenOf, maxShopSlots }: CarryIndex): number[] {
   return [
     ...(childrenOf.get(gift.id) ?? []).map((g) => g.id),
-    ...(gift.fusion ? ingredientsOf(gift, indexes, maxShopSlots) : []),
+    ...(consumesOthers(gift) ? ingredientsOf(gift, indexes, maxShopSlots) : []),
   ];
 }

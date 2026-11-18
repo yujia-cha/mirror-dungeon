@@ -20,8 +20,14 @@ export interface Entanglement {
   shared: number[];
 }
 
+/** Whether getting `gift` uses up other gifts: a fusion, or a pack event that takes one (M180). */
+export function consumesOthers(gift: Gift): boolean {
+  return gift.fusion !== null || (gift.acquisition.requiresHeld?.length ?? 0) > 0;
+}
+
 /**
- * Every gift consumed on the way to `gift`, its sub-fusions included. `goals` picks the recipe the
+ * Every gift consumed on the way to `gift`, its sub-fusions included (and what a pack event takes
+ * in exchange for it, `requiresHeld`). `goals` picks the recipe the
  * planner picks (`chooseRecipe`): one that eats another goal wins.
  */
 export function ingredientsOf(
@@ -33,10 +39,11 @@ export function ingredientsOf(
   const seen = new Set<number>();
   const walk = (current: Gift): void => {
     // A mixed recipe (달의 기억) picks from pools, so every candidate counts as possibly consumed.
-    const direct =
+    const recipe =
       chooseRecipe(current, indexes, maxShopSlots, goals) ??
       (current.fusion?.mixed ? [...current.fusion.mixed.aPool, ...current.fusion.mixed.bPool] : null);
-    if (!direct) return;
+    // A pack event that takes a held gift consumes it the same way (M180).
+    const direct = [...(recipe ?? []), ...(current.acquisition.requiresHeld ?? [])];
     for (const id of direct) {
       if (seen.has(id)) continue;
       seen.add(id);
@@ -57,7 +64,7 @@ export function ingredientsOf(
 export function ingredientTree(indexes: GameIndexes, maxShopSlots: number): Map<number, number[]> {
   const out = new Map<number, number[]>();
   for (const gift of indexes.giftById.values()) {
-    if (!gift.fusion) continue;
+    if (!consumesOthers(gift)) continue;
     const ids = [...ingredientsOf(gift, indexes, maxShopSlots)];
     if (ids.length > 0) out.set(gift.id, ids);
   }
@@ -78,7 +85,7 @@ export function entanglements(
   const goals = new Set(wanted);
   for (const id of wanted) {
     const gift = indexes.giftById.get(id);
-    if (!gift?.fusion) continue;
+    if (!gift || !consumesOthers(gift)) continue;
     const ingredients = ingredientsOf(gift, indexes, maxShopSlots, goals);
     if (ingredients.size > 0) sets.set(id, ingredients);
   }
@@ -130,7 +137,8 @@ export function blockedGifts(
     const known = sets.get(id);
     if (known) return known;
     const gift = indexes.giftById.get(id);
-    const set = gift?.fusion ? ingredientsOf(gift, indexes, maxShopSlots, chosen) : new Set<number>();
+    const set =
+      gift && consumesOthers(gift) ? ingredientsOf(gift, indexes, maxShopSlots, chosen) : new Set<number>();
     sets.set(id, set);
     return set;
   };

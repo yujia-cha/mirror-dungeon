@@ -318,6 +318,12 @@ export function expandRequirements(
     }
 
     if (!isFusion) {
+      // A pack event that takes a held gift in exchange (M180): the held gift is routed like an
+      // ingredient — consumed, keyed to this gift — so missing it loses this goal. The build proves
+      // the held gift always comes from floors below the event's pack, so no ordering is needed here.
+      for (const heldId of gift.acquisition.requiresHeld ?? []) {
+        visit(heldId, required, giftId, copy, depth + 1);
+      }
       addRequirement(giftId, required, neededFor, copy);
       return null;
     }

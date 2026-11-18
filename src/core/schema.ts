@@ -379,6 +379,13 @@ export const giftSchema = z.object({
     startKeyword: keywordSchema.nullable(),
     /** The EXTREME pack whose boss drops this gift on clear (kind `clearReward`). */
     clearRewardOf: z.number().int().nullable(),
+    /**
+     * Gifts that must be in hand when the pack is entered (M180): the pack's event takes them and
+     * hands this gift over (9296 비통이 맺힌 검 = 「절망의 기사」 in 1129 given 9807 눈물로 벼려낸 검).
+     * The planner routes them like a fusion's ingredients — consumed, one copy each. Only the season
+     * curation sets it (`eventGifts`), and the build checks every held gift comes from floors below.
+     */
+    requiresHeld: z.array(z.number().int()).min(1).optional(),
   }),
   /** Offered by the starlight-funded 기프트 관측 (from the season's observation data). */
   observable: z.boolean(),
@@ -1229,6 +1236,23 @@ export const curatedSeasonSchema = z
       .strict()
       .optional(),
     /**
+     * Gifts a pack's event hands over that no pool lists (M180), keyed by gift id: `pack` is where
+     * the event is (the gift becomes that pack's 테마 팩 한정), `requiresHeld` what the event takes in
+     * exchange. The static data says only that the gift sits in the season drop pool and in the
+     * global exclusion list; the event's options live in the localization (`ActionEvents-*.json`).
+     */
+    eventGifts: z
+      .record(
+        z.string().regex(/^\d+$/),
+        z
+          .object({
+            pack: z.number().int(),
+            requiresHeld: z.array(z.number().int()).min(1),
+          })
+          .strict(),
+      )
+      .optional(),
+    /**
      * Where each value above came from, keyed by its path (`floors`, `giftObservation.costTable`).
      * `validate-data` requires one per value key: CLAUDE.md asks every curated entry to carry its
      * `_source`, and this is the first time a machine checks it.
@@ -1264,6 +1288,7 @@ export const KNOWN_CURATED_SEASON_KEYS = new Set([
   'fusion',
   'upgradeCostByTier',
   'backfillAssumptions',
+  'eventGifts',
   '_sources',
 ]);
 

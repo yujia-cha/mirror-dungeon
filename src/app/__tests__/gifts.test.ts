@@ -9,7 +9,7 @@ import { sanitizeRun, useApp } from '../store.ts';
 import { conditionShort, decidingReport } from '../lib/gift-condition.ts';
 import { conditionText } from '../condition-text.ts';
 import { judgementOf } from '../lib/judgement.ts';
-import { blockedGifts, entanglements } from '../lib/entangle.ts';
+import { blockedGifts, entanglements, ingredientTree } from '../lib/entangle.ts';
 import { classifyGift } from '../lib/gift-priority.ts';
 import { identityKeywordLabel, renderEffect, withJosa } from '../format.ts';
 
@@ -94,6 +94,16 @@ describe('blocked gifts', () => {
     expect(blocked.has(9718)).toBe(false);
     // 요리 비법 전서 is inside 진혼's recipe, so it reads as 포함, never as a clash.
     expect(blockedGifts([9088], indexes, SLOTS).get(9157)).toEqual({ reason: 'included', by: 9088 });
+  });
+
+  it('blocks the gift a pack event takes in exchange for the goal (M180)', () => {
+    // Arrange: 비통이 맺힌 검 (9296) is 1129's 「절망의 기사」 trade for 눈물로 벼려낸 검 (9807).
+    // Act
+    const blocked = blockedGifts([9296], indexes, SLOTS);
+    const tree = ingredientTree(indexes, SLOTS);
+    // Assert: the held gift is carried by the goal, like a recipe's ingredient.
+    expect(blocked.get(9807)).toEqual({ reason: 'included', by: 9296 });
+    expect(tree.get(9296)).toEqual([9807]);
   });
 
   it('blocks nothing when no goal is a fusion', () => {

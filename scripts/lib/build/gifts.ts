@@ -2,6 +2,7 @@ import { SIN_BY_COLOR } from '../raw.ts';
 import { deriveUpgradeOf, tierFromTags } from '../derive.ts';
 import { parseConditions } from '../parse-conditions.ts';
 import { KEYWORDS, type AcquisitionKind, type Condition, type Gift } from '../../../src/core/schema.ts';
+import { fail } from './errors.ts';
 import type { Factions } from './factions.ts';
 import type { Sources } from './load.ts';
 import type { PackSet } from './packs.ts';
@@ -304,6 +305,9 @@ export function deriveGifts(src: Sources, packSet: PackSet, factions: Factions):
           packs: clearRewardOf !== null ? [clearRewardOf] : packList,
           exclusiveTo: exclusiveList,
           clearRewardOf,
+          ...(curatedSeason.eventGifts?.[String(id)]
+            ? { requiresHeld: sortNums(curatedSeason.eventGifts[String(id)]!.requiresHeld) }
+            : {}),
           startKeyword:
             startKeyword && (KEYWORDS as readonly string[]).includes(startKeyword)
               ? (startKeyword as Gift['keyword'])
@@ -327,6 +331,8 @@ export function deriveGifts(src: Sources, packSet: PackSet, factions: Factions):
       };
     });
 
+  checkEventGifts(gifts, packSet);
+
   // 조합 계승: a lower-tier ingredient that feeds exactly one same-keyword result points at it.
   const upgradeOfById = deriveUpgradeOf(
     recipesByResult,
@@ -343,4 +349,42 @@ export function deriveGifts(src: Sources, packSet: PackSet, factions: Factions):
     generalShare,
     diagnostics: { upgradeWithoutText, missingText, unparsedConditionCount, exclusivesOutsideDropPool },
   };
+}
+
+/** Every floor a pack can be taken on, across modes. */
+function floorsOf(pack: PackSet['packs'][number]): number[] {
+  return Object.values(pack.availability).flat();
+}
+
+/**
+ * An event gift's held gifts must come from floors strictly below the event's pack (M180). The
+ * planner routes them as requirements and never orders floors itself, so the build is where that
+ * order is proven: 9807 comes from 1119 (3~4층), the event from 1129 (5층 and 6~10층). A held gift
+ * the season cannot route at all, or one that may land on the event's floor or later, stops the build.
+ */
+export function checkEventGifts(gifts: readonly Gift[], packSet: PackSet): void {
+  const giftById = new Map(gifts.map((gift) => [gift.id, gift]));
+  const packById = new Map(packSet.selectablePacks.map((pack) => [pack.id, pack]));
+  for (const gift of gifts) {
+    const held = gift.acquisition.requiresHeld;
+    if (!held) continue;
+    const hostFloors = gift.acquisition.exclusiveTo.flatMap((packId) => floorsOf(packById.get(packId)!));
+    const firstHostFloor = Math.min(...hostFloors);
+    for (const heldId of held) {
+      const heldGift = giftById.get(heldId);
+      if (!heldGift) fail(`eventGifts: ${gift.id} requires ${heldId}, which is not a gift of this season.`);
+      const heldPacks = heldGift.acquisition.packs.filter((packId) => packById.has(packId));
+      if (heldPacks.length === 0) {
+        fail(`eventGifts: ${gift.id} requires ${heldId}, which no selectable pack hands out.`);
+      }
+      const lastHeldFloor = Math.max(...heldPacks.flatMap((packId) => floorsOf(packById.get(packId)!)));
+      if (lastHeldFloor >= firstHostFloor) {
+        fail(
+          `eventGifts: ${gift.id} requires ${heldId}, which can come as late as floor ${lastHeldFloor}; ` +
+            `the event's pack opens on floor ${firstHostFloor}. The planner does not order floors, so ` +
+            'this exchange needs a real ordering constraint before it can be routed.',
+        );
+      }
+    }
+  }
 }

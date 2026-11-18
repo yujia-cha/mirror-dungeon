@@ -115,8 +115,11 @@ describe.skipIf(!hasRaw)('Mirror Dungeon fallback, rebuilt from the derived sour
       .filter((pack) => {
         const theirs = new Set((derivedPacks.get(pack.id)!.exclusive_gifts ?? []).map(Number));
         // The derived list is a superset: it folds an EXTREME pack's clear rewards in with its
-        // shop exclusives. Containment is what the fallback relies on.
-        return !pack.exclusiveGifts.every((id) => theirs.has(id));
+        // shop exclusives. Containment is what the fallback relies on. A gift the season curation
+        // adds as the pack's event exchange (M180, `requiresHeld`) is ours, not the source's.
+        return !pack.exclusiveGifts.every(
+          (id) => theirs.has(id) || gifts.find((gift) => gift.id === id)?.acquisition.requiresHeld,
+        );
       })
       .map((pack) => pack.id);
     expect(wrong).toEqual([]);

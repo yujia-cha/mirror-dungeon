@@ -30217,9 +30217,16 @@
   {
     "acquisition": {
       "clearRewardOf": null,
-      "exclusiveTo": [],
-      "kind": "event",
-      "packs": [],
+      "exclusiveTo": [
+        1129
+      ],
+      "kind": "packLimited",
+      "packs": [
+        1129
+      ],
+      "requiresHeld": [
+        9807
+      ],
       "startKeyword": null
     },
     "conditions": [],

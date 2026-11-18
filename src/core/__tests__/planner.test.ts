@@ -124,6 +124,51 @@ describe('pack-exclusive gifts', () => {
     expect(result.unresolved).toEqual([]);
   });
 
+  it('routes the held gift a pack event takes in exchange before that pack (M180)', () => {
+    // Arrange: 비통이 맺힌 검 (9296) is handed over by 「절망의 기사」 in 1129 (5층, 6~10층) only to a
+    // run holding 눈물로 벼려낸 검 (9807), which 증오와 절망 (1119, 3~4층) alone hands out.
+    const input = { wanted: want(9296), options: options({ hardFromFloor: 1 }) };
+    // Act
+    const result = planWithout(input);
+    // Assert
+    const held = result.floors.find((f) => f.pickups.some((p) => p.giftId === 9807))!;
+    const event = result.floors.find((f) => f.pickups.some((p) => p.giftId === 9296))!;
+    expect(held.packId).toBe(1119);
+    expect(held.pickups).toContainEqual({ giftId: 9807, kind: 'exclusive', neededFor: 9296 });
+    expect(event.packId).toBe(1129);
+    expect(held.floor).toBeLessThan(event.floor);
+    expect(result.unresolved).toEqual([]);
+  });
+
+  it('keeps the held gift tied to the goal it is traded for (M180)', () => {
+    // Arrange
+    const stats = analyseDeck(MIXED_DECK, indexes, data.rules.deployment);
+    // Act
+    const expanded = expandRequirements(want(9296), indexes, stats, data.rules.fusion.maxShopSlots);
+    const roots = goalRoots(want(9296), expanded.fusions, expanded.instances);
+    // Assert: the held gift is a consumed share of the goal, not a goal of its own.
+    expect(expanded.requirements.map((r) => [r.giftId, r.neededFor])).toEqual([
+      [9296, null],
+      [9807, 9296],
+    ]);
+    expect(roots.ofRequirement({ giftId: 9807, neededFor: 9296 })).toEqual([9296]);
+    expect(expanded.fusions).toEqual([]);
+  });
+
+  it('needs no trip for the held gift once it is in hand (M180)', () => {
+    // Arrange: 9807 already picked up on floor 3.
+    const input = {
+      wanted: want(9296),
+      options: options({ hardFromFloor: 1, currentFloor: 4, ownedGifts: [9807] }),
+    };
+    // Act
+    const result = planWithout(input);
+    // Assert
+    expect(result.floors.some((f) => f.pickups.some((p) => p.giftId === 9807))).toBe(false);
+    expect(result.floors.find((f) => f.pickups.some((p) => p.giftId === 9296))?.packId).toBe(1129);
+    expect(result.unresolved).toEqual([]);
+  });
+
   it('cannot reach a Hard-only pack on a Normal plan', () => {
     const result = planWithout({
       wanted: want(9283),

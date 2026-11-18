@@ -265,7 +265,8 @@ describe('gifts', () => {
     // for the specific pools of 1019~1021 and 1507·1514·1518.
     expect(byKind.get('general')).toBe(186);
     // 180 → 187 (2026-11-12): 1129의 전용 6개(9292·9293·9297~9300)와 1005의 9302 서리 온도.
-    expect(byKind.get('packLimited')).toBe(187);
+    // 187 → 188 (M180): 9296 비통이 맺힌 검이 1129 이벤트의 교환으로 그 팩 한정이 됐다(시즌 보정 eventGifts).
+    expect(byKind.get('packLimited')).toBe(188);
     // The MD8 drop pool leaves 9205 out of `egoGifts` while those packs and the observation list
     // still offer it — and it is 미니어처 대관람차 (9213)'s ingredient, so unobtainable would kill it.
     // The owner confirmed in game (2026-10-17) that it drops from exactly these six packs.
@@ -844,7 +845,13 @@ describe('rules', () => {
     expect(byKind('clearReward')).toEqual([9250, 9251, 9252, 9253, 9254, 9255, 9827, 9828, 9829, 9830]);
     expect(byKind('hiddenBattle')).toEqual([9256, 9257, 9258, 9259]);
     // 10 → 13 (2026-11-12): 발푸르기스의 밤 10 이벤트(971123)의 9294~9296.
-    expect(byKind('event')).toHaveLength(13);
+    // 13 → 12 (M180): 9296은 1129의 「절망의 기사」에서 9807을 내밀어 받는 팩 한정이다(eventGifts).
+    expect(byKind('event')).toHaveLength(12);
+    expect(giftById.get(9296)!.acquisition).toMatchObject({
+      kind: 'packLimited',
+      exclusiveTo: [1129],
+      requiresHeld: [9807],
+    });
     expect(giftById.get(9828)!.acquisition.clearRewardOf).toBe(1519);
     expect(rules.hiddenBattle).toEqual({
       gifts: [9256, 9257, 9258, 9259],

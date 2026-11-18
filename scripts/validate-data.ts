@@ -672,7 +672,12 @@ function checkInvariants(
   )?.globalExcludeEgoGifts;
   if (globalExclude) {
     const offPath = gifts
-      .filter((g) => ['event', 'clearReward', 'hiddenBattle'].includes(g.acquisition.kind))
+      // A pack event's exchange (M180, `requiresHeld`) is an event gift the curation gave a pack.
+      .filter(
+        (g) =>
+          ['event', 'clearReward', 'hiddenBattle'].includes(g.acquisition.kind) ||
+          g.acquisition.requiresHeld !== undefined,
+      )
       .map((g) => g.id)
       .sort((a, b) => a - b)
       .join(',');
@@ -680,7 +685,7 @@ function checkInvariants(
     if (offPath !== expected) {
       strict(
         'invariant',
-        `event ∪ clearReward ∪ hiddenBattle (${offPath}) differs from globalExcludeEgoGifts (${expected})`,
+        `event ∪ clearReward ∪ hiddenBattle ∪ event exchange (${offPath}) differs from globalExcludeEgoGifts (${expected})`,
       );
     }
   }

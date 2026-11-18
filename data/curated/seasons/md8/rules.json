@@ -6,7 +6,11 @@
     "parallel": [6, 7, 8, 9, 10],
     "extreme": [11, 12, 13, 14, 15]
   },
+  "eventGifts": {
+    "9296": { "pack": 1129, "requiresHeld": [9807] }
+  },
   "_sources": {
+    "eventGifts": "9296 비통이 맺힌 검: 정적 데이터는 시즌 드랍풀(egoGifts)과 globalExcludeEgoGifts에만 싣고 팩 풀에 없다. 1129 새벽 뒤 꿰뚫어 오는 쐐기의 mapGenOption.eventPool에 이벤트 971123 「절망의 기사」가 있고(mirrordungeon-theme-floor-t2.json), 그 이벤트의 셋째 선택지가 「눈물로 벼려낸 검을 내민다 — E.G.O 기프트「눈물로 벼려낸 검」보유 시 선택 가능 / 선택 시, 침잠 E.G.O GIFT 획득」이다(localize Korean ActionEvents-walpu10.json, 2026-11-18 확인). eldritchtools gifts.json도 9296의 events를 [971123]으로 적고, mirror-dungeon-common-data-md8의 egoGiftSameAsTable이 9296과 9807을 같은 기프트로 묶는다(내민 검이 이 기프트로 바뀐다). 9807은 1119 증오와 절망(3~4층) 전용이고 1129는 5층·6~10층이라 9807이 늘 먼저다(build가 검사).",
     "floors": "mirrordungeon/mirrordungeon-08*.json 네 파일(일반·hard·infinite·extreme)의 basicEnemyLevelPerFloor가 각각 5·5·10·15층이다(MD7과 같은 모양, 적 레벨만 60→65). 소유자 화면(2026-10-17)도 「DUNGEON 08 시지프의 거울」에 평행중첩 모드를 보였다. 층 수는 게임 규칙이라 코드에 박지 않고 여기에 적는다(CLAUDE.md)."
   }
 }
