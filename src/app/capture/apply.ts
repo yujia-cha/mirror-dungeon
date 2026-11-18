@@ -5,6 +5,7 @@
  * so the UI can apply them, log them and undo them, and the rules can be tested without a screen:
  *
  * - `enter` → enter the pack on that floor (the floors walked past settle, as on the floor strip).
+ *   A floor the pack can never be offered on is a misread and changes nothing (M178, `packFloors`).
  *   An entry the run already holds does nothing — every new session reads the map it stands on
  *   again, and a duplicate would carry an undo that deletes the player's own entry (M116).
  * - `got` → mark the gift collected, unless it already is. A 잔영 is held always and never
@@ -116,6 +117,29 @@ export interface ApplyContext {
    * reprint once read or answered stands, and a later read that lost the logo is not news.
    */
   reprints?: ReadonlyMap<number, number>;
+  /**
+   * Pack → every floor the season offers it on, in any mode (M178, `packFloorsOf`). A read entering
+   * a pack on another floor is a misread of the header's number — 「10 !증」 once read as floor 1 and
+   * moved the floor 10 entry there. A pack with no floors known is not judged. Omitted = none.
+   */
+  packFloors?: ReadonlyMap<number, ReadonlySet<number>>;
+}
+
+/** Pack → the floors any mode offers it on (`GameIndexes.packsByFloor` turned around). */
+export function packFloorsOf(
+  packsByFloor: Readonly<Record<string, ReadonlyMap<number, readonly number[]>>>,
+): Map<number, Set<number>> {
+  const out = new Map<number, Set<number>>();
+  for (const byFloor of Object.values(packsByFloor)) {
+    for (const [floor, ids] of byFloor) {
+      for (const id of ids) {
+        const floors = out.get(id) ?? new Set<number>();
+        floors.add(floor);
+        out.set(id, floors);
+      }
+    }
+  }
+  return out;
 }
 
 export interface Applied {
@@ -195,6 +219,8 @@ export function actionsFor(event: CaptureEvent, ctx: ApplyContext): Applied {
   const change = (ids: readonly number[], to: GiftStatus | null) => setStatus(ctx, ids, to);
   switch (event.kind) {
     case 'enter': {
+      const floors = ctx.packFloors?.get(event.packId);
+      if (floors && floors.size > 0 && !floors.has(event.floor)) return NONE;
       const entered = ctx.visits[event.floor];
       if (entered !== undefined && ctx.reprints?.get(entered) === event.packId) return NONE;
       const action = enterAction(event.floor, event.packId, ctx);

@@ -75,8 +75,10 @@ export function requirementText(
       return t('effReqResonance', lang, {
         sins: list(requirement.sins.map((sin) => t(`sin${sin}` as StringKey, lang))),
       });
-    case 'shape':
-      return t(SHAPE_KEY[requirement.kind]!, lang, { n: requirement.n ?? '' });
+    case 'shape': {
+      const shape = t(SHAPE_KEY[requirement.kind]!, lang, { n: requirement.n ?? '' });
+      return requirement.skills ? t('effReqSkillCount', lang, { shape, count: requirement.skills }) : shape;
+    }
     case 'defense':
       return t('effReqDefense', lang, {
         kinds: list(requirement.kinds.map((kind) => t(DEFENSE_KEY[kind]!, lang))),

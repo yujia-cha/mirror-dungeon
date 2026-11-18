@@ -518,7 +518,14 @@ function scanShapes(t: string, hits: Hit[]): void {
     [/공격\s*가중치가\s*(\d+)인/g, (m) => ({ type: 'shape', kind: 'weightExactly', n: Number(m[1]) })],
   ];
   for (const [re, make] of rules) {
-    for (const m of t.matchAll(re)) hits.push({ start: m.index, end: m.index + m[0].length, req: make(m) });
+    for (const m of t.matchAll(re)) {
+      const end = m.index + m[0].length;
+      const req = make(m);
+      // 「빼기 코인 스킬을 2개 이상 보유한 인격」: that many base skills of the build (M178).
+      const counted = /^\s*을\s*(\d+)\s*개\s*이상/.exec(t.slice(end));
+      const skills = counted ? Number(counted[1]) : 1;
+      hits.push({ start: m.index, end, req: req.type === 'shape' && skills > 1 ? { ...req, skills } : req });
+    }
   }
 }
 
@@ -556,6 +563,12 @@ function scanFactions(t: string, hits: Hit[], ctx: EffectContext): boolean {
     if (id)
       hits.push({ start: m.index, end: m.index + m[0].length, req: { type: 'faction', factions: [id] } });
   }
+  // 「전장의 아군 해결사 인격 2명당」: a trait or faction named as the allies' kind (M178).
+  for (const m of t.matchAll(/아군\s*([^\s,.]+)\s*인격/g)) {
+    const id = ctx.factionIdByName.get(m[1]!);
+    if (id)
+      hits.push({ start: m.index, end: m.index + m[0].length, req: { type: 'faction', factions: [id] } });
+  }
   // 「T사 직원이면」 names the company without 「소속」.
   for (const m of t.matchAll(/([A-Z가-힣]+사)\s*(?:\d등급\s*)?직원/g)) {
     const id = ctx.factionIdByName.get(m[1]!);
@@ -565,7 +578,8 @@ function scanFactions(t: string, hits: Hit[], ctx: EffectContext): boolean {
   for (const m of t.matchAll(/소속/g)) {
     const before = t.slice(Math.max(0, m.index - 30), m.index);
     const segment = before.split(SEGMENT_STOP).pop()!.trim();
-    if (segment === '' || /(?:같은|동일한|해당|다른)$/.test(segment)) continue;
+    // 「같은 소속」, 「해결사이면서 소속이 서로 다른」: a comparison of affiliations, not a name (M178).
+    if (segment === '' || /(?:같은|동일한|해당|다른|이면서)$/.test(segment)) continue;
     // Read names backwards from 「소속」: 「검계 또는 흑운회」 is two, joined by 또는.
     let words = segment.split(/\s+/);
     const ids: string[] = [];
@@ -1047,6 +1061,12 @@ export interface ParsedEffects {
 function headingRequirements(inner: string, ctx: EffectContext): EffectRequirement[] | null {
   const identities = scanIdentities(inner, ctx);
   if (identities.length > 0) return identities;
+  // 「[눈물로 벼려낸 검 홍루 E.G.O 스킬 전용 효과]」: an E.G.O, which our data does not hold (M178).
+  if (/E\.G\.O\s*스킬/.test(inner)) return [{ type: 'egoSkill' }];
+  // 「[빼기 코인 스킬을 2개 이상 보유한 인격 전용 효과]」: a skill build (M178).
+  const shapes: Hit[] = [];
+  scanShapes(tokenizeRuns(normalizeKeywords(inner)).text, shapes);
+  if (shapes.length > 0) return normalizeRequirements(shapes.map((h) => h.req));
   const name = inner.replace(/\s*(?:소속\s*)?인격$|\s*소속$/, '').trim();
   const faction = resolveFaction(name, ctx.factionIdByName);
   return faction ? [{ type: 'faction', factions: [faction] }] : null;

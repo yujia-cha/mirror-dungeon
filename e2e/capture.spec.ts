@@ -81,10 +81,10 @@ test('reads an entry and a gift off the shared window, and takes them back', asy
   // The map header: 「1층 탐사 중」 over the pack's name.
   await paint(page, [
     { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045], size: 34 },
-    { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
+    { text: '공장 자동화', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
   ]);
   const log = panel.getByTestId('capture-log');
-  await expect(log).toContainText('1층 입장 · 헬스치킨', { timeout: 20_000 });
+  await expect(log).toContainText('1층 입장 · 공장 자동화', { timeout: 20_000 });
   await expect(page.getByTestId('entered-pack')).toBeVisible();
 
   // An acquired popup: the banner title and the gift's name on its button.
@@ -109,7 +109,7 @@ test('reads an entry and a gift off the shared window, and takes them back', asy
   // is logged twice (M116) — a duplicate's undo would have taken the entry away.
   await paint(page, [
     { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045], size: 34 },
-    { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
+    { text: '공장 자동화', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
   ]);
   await panel.getByTestId('capture-stop').click();
   // The run holds an entry now, so starting asks first (M143): reading on is 「이어서」.
@@ -229,9 +229,9 @@ test('reads a window shared with its title bar, and records the size and the bar
   // Without moving the regions below the bar, the pack's name falls out of the map header.
   await paint(page, [
     { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045], size: 34 },
-    { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
+    { text: '공장 자동화', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
   ]);
-  await expect(panel.getByTestId('capture-log')).toContainText('1층 입장 · 헬스치킨', { timeout: 20_000 });
+  await expect(panel.getByTestId('capture-log')).toContainText('1층 입장 · 공장 자동화', { timeout: 20_000 });
   await panel.getByTestId('capture-stop').click();
 
   const downloading = page.waitForEvent('download');
@@ -321,12 +321,12 @@ test('tells the shop apart and the overlay window follows it (M148)', async ({ p
   ]);
   const map = [
     { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045] as Region, size: 34 },
-    { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045] as Region, size: 34 },
+    { text: '공장 자동화', region: [0.01, 0.175, 0.17, 0.045] as Region, size: 34 },
   ];
 
   // The map: an entry, and the window shows the next pack.
   await paint(page, map);
-  await expect(panel.getByTestId('capture-log')).toContainText('1층 입장 · 헬스치킨', { timeout: 20_000 });
+  await expect(panel.getByTestId('capture-log')).toContainText('1층 입장 · 공장 자동화', { timeout: 20_000 });
   await expect(pip.getByTestId('overlay-next')).toBeVisible();
 
   // The shop's front: its red heading top left. The window shows what a shop decides.

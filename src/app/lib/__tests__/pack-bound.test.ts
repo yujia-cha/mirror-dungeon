@@ -63,10 +63,11 @@ describe('isPackBound', () => {
     expect(isPackBound(fusion(9764), indexes.giftById)).toBe(false);
   });
 
-  it('counts the pack-bound fusions of the default season (38 of 59)', () => {
+  it('counts the pack-bound fusions of the default season (39 of 60)', () => {
     // When the data changes this number does too — look at which fusions moved.
+    // 38/59 → 39/60 (2026-11-12): 9301 폭풍이 치는 언덕, both of whose ingredients are pack-limited.
     const fusions = data.gifts.filter((g) => g.acquisition.kind === 'fusionOnly');
-    expect(fusions).toHaveLength(59);
-    expect(fusions.filter((g) => isPackBound(g, indexes.giftById))).toHaveLength(38);
+    expect(fusions).toHaveLength(60);
+    expect(fusions.filter((g) => isPackBound(g, indexes.giftById))).toHaveLength(39);
   });
 });

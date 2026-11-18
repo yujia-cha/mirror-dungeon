@@ -84,9 +84,10 @@ describe('meta', () => {
 
 describe('theme packs', () => {
   it('has the full Mirror Dungeon 8 pack list', () => {
-    // MD8 adds no pack: the same 120 as MD7 after the 10-15 patch (칸토 X 1028~1031 included).
-    expect(packs).toHaveLength(120);
-    expect(packs.filter((p) => p.selectable)).toHaveLength(119);
+    // MD8 started with the same 120 as MD7 after the 10-15 patch (칸토 X 1028~1031 included);
+    // 2026-11-12 added 1129 새벽 뒤 꿰뚫어 오는 쐐기 (발푸르기스의 밤 10).
+    expect(packs).toHaveLength(121);
+    expect(packs.filter((p) => p.selectable)).toHaveLength(120);
   });
 
   it('takes the Canto X packs from the static data, their own general pool and sprite included', () => {
@@ -162,7 +163,9 @@ describe('theme packs', () => {
 describe('gifts', () => {
   it('covers every gift the season references', () => {
     // 446 → 454: 칸토 X 팩의 전용 기프트 9284~9291.
-    expect(gifts).toHaveLength(454);
+    // 454 → 465 (2026-11-12): 발푸르기스의 밤 10의 9292~9300(ego-gift-walpu10.json), 9301 폭풍이 치는
+    // 언덕, 9302 서리 온도.
+    expect(gifts).toHaveLength(465);
   });
 
   it('names every buff the Korean text refers to, leaving no bracketed id on screen', () => {
@@ -261,13 +264,15 @@ describe('gifts', () => {
     // MD8: 187 → 186 general, 179 → 180 pack-limited — 9205 전혈 플라스크 left every general pool
     // for the specific pools of 1019~1021 and 1507·1514·1518.
     expect(byKind.get('general')).toBe(186);
-    expect(byKind.get('packLimited')).toBe(180);
+    // 180 → 187 (2026-11-12): 1129의 전용 6개(9292·9293·9297~9300)와 1005의 9302 서리 온도.
+    expect(byKind.get('packLimited')).toBe(187);
     // The MD8 drop pool leaves 9205 out of `egoGifts` while those packs and the observation list
     // still offer it — and it is 미니어처 대관람차 (9213)'s ingredient, so unobtainable would kill it.
     // The owner confirmed in game (2026-10-17) that it drops from exactly these six packs.
     expect(giftById.get(9205)).toMatchObject({ obtainable: true, observable: true });
     expect(giftById.get(9205)!.acquisition.exclusiveTo).toEqual([1019, 1020, 1021, 1507, 1514, 1518]);
-    expect(byKind.get('fusionOnly')).toBe(59);
+    // 59 → 60: 9301 폭풍이 치는 언덕.
+    expect(byKind.get('fusionOnly')).toBe(60);
   });
 
   it('keeps the general set identical to an EXTREME pack pool, which has no exclusives', () => {
@@ -345,7 +350,9 @@ describe('gifts', () => {
     for (const gift of gifts) for (const c of gift.conditions) counts[c.type] += 1;
     // 39 → 46: the seven gates the parser used to drop (혈찬·탄환·두 키워드 형태). Nothing is unparsed now.
     // 46 → 45: 먹장구름's 10-identity sentence is a step of its 6-identity gate, not a second gate.
-    expect(counts).toEqual({ keywordSkillCount: 45, factionCount: 19, fullResonance: 1, unparsed: 0 });
+    // 19 → 21 (2026-11-12): 9297 하얀색 크라바트 「쐐기 사무소 소속 인격이 3인 이상」과 9292 롤모델
+    // 「해결사 인격을 2인 이상 편성했을 시」 — 해결사는 인격 특성(FIXER)이라 소속처럼 센다 (M178).
+    expect(counts).toEqual({ keywordSkillCount: 45, factionCount: 21, fullResonance: 1, unparsed: 0 });
   });
 
   it('gates each count once: higher thresholds of the same count are steps (먹장구름)', () => {
@@ -443,9 +450,10 @@ describe('gift effects (M129)', () => {
   });
 
   it('reads every E.G.O skill condition as egoSkill, the keyword inside it asking nothing more', () => {
-    // Gates of the seven 조각 gifts, their 「… 속성 E.G.O 스킬의 경우」 lines, 9058 and 9733.
+    // Gates of the seven 조각 gifts, their 「… 속성 E.G.O 스킬의 경우」 lines, 9058 and 9733, and 9296's
+    // line under 「[눈물로 벼려낸 검 홍루 E.G.O 스킬 전용 효과]」 (M178).
     const pieces = [9105, 9110, 9116, 9121, 9126, 9131, 9136].flatMap((id) => [`${id}.0`, `${id}.2`]);
-    expect(effectsWith('egoSkill')).toEqual(['9058.1', ...pieces, '9733.1'].sort());
+    expect(effectsWith('egoSkill')).toEqual(['9058.1', ...pieces, '9296.5', '9733.1'].sort());
     for (const id of [9105, 9110, 9116, 9121, 9126, 9131, 9136])
       expect(giftById.get(id)!.effects![0]).toEqual({ kind: 'gate', requires: [{ type: 'egoSkill' }] });
   });
@@ -519,11 +527,12 @@ describe('gift effects (M129)', () => {
 });
 
 describe('identities', () => {
-  it('covers the 190 the static data ships plus the 2 only the other sources know', () => {
+  it('covers the 195 the static data ships, none left to backfill', () => {
     // 2026-10-17: OpenLethe af2aa4df shipped 11016, the last mirror-only identity at the time.
     // 2026-10-29: 10617 and 10717 arrive from the derived mirror and the localize text first.
-    expect(identities).toHaveLength(192);
-    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(2);
+    // 2026-11-12: OpenLethe c5669e33 ships both, with the three 쐐기 사무소 identities (10316·11017·11116).
+    expect(identities).toHaveLength(195);
+    expect(identities.filter((i) => i.keywordSource === 'backfilled')).toHaveLength(0);
   });
 
   it.each([
@@ -536,22 +545,8 @@ describe('identities', () => {
     [10917, '오트쿠튀르:: 수선실', 9, ['Charge', 'Vibration'], ['SISYPHE']],
     [10315, '오트쿠튀르:: 르누아르 브랜드 매니저', 3, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
     [11016, '오트쿠튀르:: 르루주 붉은 신', 10, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
-    [
-      10617,
-      '오트쿠튀르:: 르누아르 3F 방송실',
-      6,
-      ['Charge', 'Vibration'],
-      ['LE_NOIR', 'SISYPHE'],
-      'backfilled',
-    ],
-    [
-      10717,
-      '오트쿠튀르:: 르루주 바느질의 왕',
-      7,
-      ['Charge', 'Laceration'],
-      ['LE_ROUGE', 'SISYPHE'],
-      'backfilled',
-    ],
+    [10617, '오트쿠튀르:: 르누아르 3F 방송실', 6, ['Charge', 'Vibration'], ['LE_NOIR', 'SISYPHE']],
+    [10717, '오트쿠튀르:: 르루주 바느질의 왕', 7, ['Charge', 'Laceration'], ['LE_ROUGE', 'SISYPHE']],
   ])(
     'knows %i 「%s」 once the static data ships it',
     (id, title, sinnerId, keywords, factions, source = 'derived') => {
@@ -733,10 +728,11 @@ describe('identity skills (M129)', () => {
     expect(identityById.get(10212)!.buffs).toContain('BurstVulnerableZilu');
   });
 
-  it('lists 버림 (Discard) for the seven identities whose base skills discard', () => {
-    // 디에치 협회 ×4 (10108·10510·10608·10907), 정사무소 이스마엘 (10813), 어금니 사무소 이상·오티스 (10105·11105).
+  it('lists 버림 (Discard) for the eight identities whose base skills discard', () => {
+    // 디에치 협회 ×4 (10108·10510·10608·10907), 정사무소 이스마엘 (10813), 어금니 사무소 이상·오티스 (10105·11105),
+    // 쐐기 사무소 대표 히스클리프 (11116, 2026-11-12 — S2 「섬광의 창」이 같은 슬롯의 「쾌속 찌르기」를 버린다).
     const discarders = identities.filter((i) => i.buffs?.includes('Discard')).map((i) => i.id);
-    expect(discarders).toEqual([10105, 10108, 10510, 10608, 10813, 10907, 11105]);
+    expect(discarders).toEqual([10105, 10108, 10510, 10608, 10813, 10907, 11105, 11116]);
   });
 
   it('reads which skills spend their own 진동 and which put 화상 on their own user (skills[].self)', () => {
@@ -839,15 +835,16 @@ describe('rules', () => {
   it('reads the gift observation cost table and pool from the season data', () => {
     expect(rules.giftObservation).toMatchObject({ max: 3, costTable: [70, 160, 270], verified: true });
     // 312 → 320: 칸토 X 팩의 전용 기프트 8개. md7은 `backfillAssumptions.exclusivesObservable`로 가정했고,
-    // md8은 정적 관측 목록이 그대로 싣는다.
-    expect(gifts.filter((g) => g.observable).length).toBe(320);
+    // md8은 정적 관측 목록이 그대로 싣는다. 320 → 327 (2026-11-12): 1129의 전용 6개와 9302.
+    expect(gifts.filter((g) => g.observable).length).toBe(327);
   });
 
   it('derives EXTREME clear rewards and hidden-battle gifts from the stage files', () => {
     const byKind = (kind: string) => gifts.filter((g) => g.acquisition.kind === kind).map((g) => g.id);
     expect(byKind('clearReward')).toEqual([9250, 9251, 9252, 9253, 9254, 9255, 9827, 9828, 9829, 9830]);
     expect(byKind('hiddenBattle')).toEqual([9256, 9257, 9258, 9259]);
-    expect(byKind('event')).toHaveLength(10);
+    // 10 → 13 (2026-11-12): 발푸르기스의 밤 10 이벤트(971123)의 9294~9296.
+    expect(byKind('event')).toHaveLength(13);
     expect(giftById.get(9828)!.acquisition.clearRewardOf).toBe(1519);
     expect(rules.hiddenBattle).toEqual({
       gifts: [9256, 9257, 9258, 9259],

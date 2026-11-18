@@ -79,6 +79,7 @@
     ],
     "exclusive_gifts": [
       "9409",
+      "9302",
       "9410"
     ],
     "image": "Canto_II_hard",
@@ -281,7 +282,8 @@
     "exclusive_gifts": [
       "9431",
       "9432",
-      "9249"
+      "9249",
+      "9301"
     ],
     "image": "Canto_VI",
     "name": "Dregs of the Manor",
@@ -319,7 +321,8 @@
     ],
     "exclusive_gifts": [
       "9435",
-      "9436"
+      "9436",
+      "9301"
     ],
     "image": "Canto_VI_hard",
     "name": "The Heartbreaking",
@@ -1434,6 +1437,27 @@
     "tags": [
       "Intervallo",
       "Mnestic Experience"
+    ]
+  },
+  "1129": {
+    "bossEncounters": [
+      "md|walpu-10"
+    ],
+    "category": [
+      "Walpurgisnacht"
+    ],
+    "exclusive_gifts": [
+      "9292",
+      "9293",
+      "9297",
+      "9298",
+      "9299",
+      "9300"
+    ],
+    "image": "Walpu10_Dawn",
+    "name": "The Wedge in the Wake of Dawnbreak",
+    "tags": [
+      "Walpurgisnacht"
     ]
   },
   "1201": {

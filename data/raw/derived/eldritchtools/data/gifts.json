@@ -3782,9 +3782,9 @@
   "9140": {
     "affinity": "gloom",
     "descs": [
-      "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +1 on the first turn, and gain 1 [Agility] & Clash Power +1 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 75% of Max HP. In return, take 50% less damage and receive 50% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 1 Slash DMG Up at every Turn Start. ",
-      "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +1 on the first turn, and gain 2 [Agility] & Clash Power +1 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 50% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 2 Slash DMG Up at every Turn Start. ",
-      "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +1 on the first turn, and gain 2 [Agility] and Final Power +1 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 49% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 3 Slash DMG Up at every Turn Start. "
+      "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +2 on the first turn, and gain 1 [Agility] & Clash Power +2 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 75% of Max HP. In return, take 50% less damage and receive 50% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 1 Slash DMG Up at every Turn Start. ",
+      "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +2 on the first turn, and gain 2 [Agility] & Clash Power +2 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 50% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 2 Slash DMG Up at every Turn Start. ",
+      "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +2 on the first turn, and gain 2 [Agility] and Final Power +1 starting from the second turn.\n- If the affected Identity is at 7+ Speed, the said Identity's Slash Skills deal +10% damage\n\nShi Assoc. Identities' HP gets capped to 49% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 3 Slash DMG Up at every Turn Start. "
     ],
     "effects": [
       "Gain Skill Power",
@@ -3799,7 +3799,7 @@
       "Resolution+",
       "Resolution++"
     ],
-    "search_desc": "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +1 on the first turn, and gain 1 Haste & Clash Power +1 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 75% of Max HP. In return, take 50% less damage and receive 50% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 1 Slash DMG Up at every Turn Start.  , All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +1 on the first turn, and gain 2 Haste & Clash Power +1 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 50% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 2 Slash DMG Up at every Turn Start.  , All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +1 on the first turn, and gain 2 Haste and Final Power +1 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 49% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 3 Slash DMG Up at every Turn Start. ",
+    "search_desc": "All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +2 on the first turn, and gain 1 Haste & Clash Power +2 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 75% of Max HP. In return, take 50% less damage and receive 50% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 1 Slash DMG Up at every Turn Start.  , All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +2 on the first turn, and gain 2 Haste & Clash Power +2 starting from the second turn.\n\nShi Assoc. Identities' HP gets capped to 50% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 2 Slash DMG Up at every Turn Start.  , All allies with 2 or more Slash Skills: for this Encounter, gain Clash Power +2 on the first turn, and gain 2 Haste and Final Power +1 starting from the second turn.\n- If the affected Identity is at 7+ Speed, the said Identity's Slash Skills deal +10% damage\n\nShi Assoc. Identities' HP gets capped to 49% of Max HP. In return, take 75% less damage and receive 75% reduced heal. (activates immediately upon entering an Encounter; except healing from E.G.O Gifts)\n\nShi Assoc. Identities gain 1 Slash Power Up and 3 Slash DMG Up at every Turn Start. ",
     "srcPath": "Resolution",
     "tier": "2",
     "triggers": [
@@ -4080,7 +4080,8 @@
     "srcPath": "Temporal Bridle",
     "tier": "2",
     "triggers": [
-      "Allies have Blunt Skill"
+      "Allies have Blunt Skill",
+      "Allies with Minus Coin Skills"
     ]
   },
   "9151": {
@@ -4593,7 +4594,7 @@
       "Shard of Apocalypse"
     ],
     "search_desc": "If the target has less than 15 Rupture Potency, inflict 1 additional Potency when inflicting Rupture Potency",
-    "srcPath": "Shard of Apocalypse",
+    "srcPath": "9168",
     "tier": "2",
     "triggers": [
       "Enemies have Rupture"
@@ -4952,7 +4953,7 @@
   "9180": {
     "affinity": "pride",
     "descs": [
-      "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply or gain [Breath] Potency or Count. (except E.G.O Skills; except Backup Units)\n\nTurn End: If an ally has more than 20 [Breath] Potency on self, the ally consumes 1 [Breath] Potency to gain 1 [Breath] Count\n\nTurn End: 1 ally with the highest [Breath] Potency and 1 ally with the highest [Breath] Count gain 2 [Agility] and 1 [AttackUp] next turn (can activate on the same Identity)\n\nWhen gaining [Breath] Potency from Skill effects, gain additional 2 [Breath] Potency and +2 [Breath] Count. If the sum of [Breath] Potency and Count on self is less than 20, gain 3 [Breath] Potency and +3 [Breath] Count instead.\n\nCombat End: at more than 40 [Breath] Potency, consume 15 [Breath] Potency to [Discard] 1 Skill of the lowest rank in all of that unit's Skill Slots (once per turn for each character)"
+      "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply or gain [Breath] Potency or Count. (except E.G.O Skills; except Backup Units)\n\nTurn End: If an ally has more than 20 [Breath] Potency on self, the ally consumes 1 [Breath] Potency to gain 1 [Breath] Count\n\nTurn End: 1 ally with the highest [Breath] Potency and 1 ally with the highest [Breath] Count gain 2 [Agility], 1 [AttackUp], and 1 [AttackDmgUp] next turn (can activate on the same Identity)\n\nWhen gaining [Breath] Potency from Skill effects, gain additional 2 [Breath] Potency and +2 [Breath] Count. If the sum of [Breath] Potency and Count on self is less than 20, gain 3 [Breath] Potency and +3 [Breath] Count instead.\n\nCombat End: at more than 40 [Breath] Potency, consume 15 [Breath] Potency to [Discard] 1 Skill of the lowest rank in all of that unit's Skill Slots (once per turn for each character)"
     ],
     "effects": [
       "Gain Poise Count",
@@ -4974,7 +4975,7 @@
         "9178"
       ]
     ],
-    "search_desc": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply or gain Poise Potency or Count. (except E.G.O Skills; except Backup Units)\n\nTurn End: If an ally has more than 20 Poise Potency on self, the ally consumes 1 Poise Potency to gain 1 Poise Count\n\nTurn End: 1 ally with the highest Poise Potency and 1 ally with the highest Poise Count gain 2 Haste and 1 Offense Level Up next turn (can activate on the same Identity)\n\nWhen gaining Poise Potency from Skill effects, gain additional 2 Poise Potency and +2 Poise Count. If the sum of Poise Potency and Count on self is less than 20, gain 3 Poise Potency and +3 Poise Count instead.\n\nCombat End: at more than 40 Poise Potency, consume 15 Poise Potency to Discard 1 Skill of the lowest rank in all of that unit's Skill Slots (once per turn for each character)",
+    "search_desc": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that apply or gain Poise Potency or Count. (except E.G.O Skills; except Backup Units)\n\nTurn End: If an ally has more than 20 Poise Potency on self, the ally consumes 1 Poise Potency to gain 1 Poise Count\n\nTurn End: 1 ally with the highest Poise Potency and 1 ally with the highest Poise Count gain 2 Haste, 1 Offense Level Up, and 1 Damage Up next turn (can activate on the same Identity)\n\nWhen gaining Poise Potency from Skill effects, gain additional 2 Poise Potency and +2 Poise Count. If the sum of Poise Potency and Count on self is less than 20, gain 3 Poise Potency and +3 Poise Count instead.\n\nCombat End: at more than 40 Poise Potency, consume 15 Poise Potency to Discard 1 Skill of the lowest rank in all of that unit's Skill Slots (once per turn for each character)",
     "srcPath": "Cask Spirits",
     "tier": "4",
     "triggers": [
@@ -5030,7 +5031,7 @@
       "T-1B Octagonal Bolt"
     ],
     "search_desc": "Turn Start: This Gift activates for the whole Encounter when 5 or more Identities have Attack Skills that gain Charge Count or 'Unique Charge'. (except E.G.O Skills; except Backup Units)\n\nTurn Start: all allies gain (Charge Count/ 10) Damage Up. (max 2, rounded up; including 'Unique Charge')\n\nTurn End: allies without Charge Barrier gain 1 Charge Barrier.\n\nEach Identity gains 1 Charge Potency every time they consume 20 Charge Count. (2 times per Identity per Encounter; Unique Charge does not interact with this effect)",
-    "srcPath": "T-1B Octagonal Bolt",
+    "srcPath": "9182",
     "tier": "2",
     "triggers": [
       "Allies have Charge Skill",
@@ -6206,7 +6207,7 @@
   "9226": {
     "affinity": "gloom",
     "descs": [
-      "Combat Start: Allies with Shield gain 1 [CriticalDamageUp]\nOn Crit with ally Skill, said ally gains Shield equal to ([Breath] / 5) for the next turn (max 15)"
+      "Combat Start: Allies with Shield gain 1 [CriticalDamageUp]\nOn Crit with ally Skill, said ally gains Shield equal to ([Breath] / 5) for the next turn (max 15)\n\n[The House of Spiders: The Pinky Apprentice Sinclair exclusive effect]\nCombat End: At more than 30 [Breath] Count, consume 10 [Breath] Count to Discard 1 Skill of the lowest Rank in all of this unit's Skill Slots (once per turn)\n\nAmong the E.G.O Gift \"Cask Spirits\" effects, the following does not apply to this unit:\n\"Combat End: at more than 40 [Breath] Potency, consume 15 [Breath] Potency to Discard 1 Skill of the lowest rank in all of that unit's Skill Slots (once per turn for each character)\""
     ],
     "effects": [
       "Gain Buff",
@@ -6221,7 +6222,7 @@
     "names": [
       "Someone's Azure Blade"
     ],
-    "search_desc": "Combat Start: Allies with Shield gain 1 Crit DMG Up\nOn Crit with ally Skill, said ally gains Shield equal to (Poise / 5) for the next turn (max 15)",
+    "search_desc": "Combat Start: Allies with Shield gain 1 Crit DMG Up\nOn Crit with ally Skill, said ally gains Shield equal to (Poise / 5) for the next turn (max 15)\n\n[The House of Spiders: The Pinky Apprentice Sinclair exclusive effect]\nCombat End: At more than 30 Poise Count, consume 10 Poise Count to Discard 1 Skill of the lowest Rank in all of this unit's Skill Slots (once per turn)\n\nAmong the E.G.O Gift \"Cask Spirits\" effects, the following does not apply to this unit:\n\"Combat End: at more than 40 Poise Potency, consume 15 Poise Potency to Discard 1 Skill of the lowest rank in all of that unit's Skill Slots (once per turn for each character)\"",
     "srcPath": "9226",
     "tier": "2",
     "triggers": [
@@ -7402,8 +7403,7 @@
       "Always",
       "Apply Burn or Unique Burn",
       "Burn Skill Used"
-    ],
-    "updated": true
+    ]
   },
   "9268": {
     "affinity": "lust",
@@ -7816,8 +7816,7 @@
       "Critical Hit",
       "Pride Skill Used",
       "Wrath Skill Used"
-    ],
-    "updated": true
+    ]
   },
   "9282": {
     "affinity": "wrath",
@@ -8109,6 +8108,324 @@
       "Sisyphe Identities"
     ]
   },
+  "9292": {
+    "affinity": "gluttony",
+    "descs": [
+      "If there are 2 or more \"Fixer\" Identities in the Team Loadout, activate the following effect for 1 \"Fixer\" ally with the lattermost Deployment Order (excluding Backup units):\n- Upon entering the Encounter for the first time, gain [Emulation]\n\nTurn Start: Allied \"Fixer\" Identities heal 2 SP for every 2 allied \"Fixer\" Identities on the field\n\nIf there are 3 or more \"Fixer\" Identities of the same faction on the field, activate the following effect:\n- Base Attack Skills of allies that have [Emulation] deal +(# of \"Fixer\" allies on the field x 3)% damage (max 15%)\n\nIf there are 3 or more \"Fixer\" Identities of different factions on the field, activate the following effect:\n- On Base Attack Skill Use by an ally that has [Emulation], the said ally gains 1 [Enhancement] (2 times per turn)\n- On Hit using a Base Attack Skill by an ally that has [Emulation], inflict 1 [Vulnerable] (2 times per turn; in Focused Encounters, the Part)"
+    ],
+    "effects": [
+      "Deal More Damage",
+      "Gain Skill Power",
+      "Gain Coin Power"
+    ],
+    "events": [
+      "971121"
+    ],
+    "exclusiveTo": [
+      "1129"
+    ],
+    "keyword": "Keywordless",
+    "names": [
+      "Role Model"
+    ],
+    "new": true,
+    "search_desc": "If there are 2 or more \"Fixer\" Identities in the Team Loadout, activate the following effect for 1 \"Fixer\" ally with the lattermost Deployment Order (excluding Backup units):\n- Upon entering the Encounter for the first time, gain Learning by Example\n\nTurn Start: Allied \"Fixer\" Identities heal 2 SP for every 2 allied \"Fixer\" Identities on the field\n\nIf there are 3 or more \"Fixer\" Identities of the same faction on the field, activate the following effect:\n- Base Attack Skills of allies that have Learning by Example deal +(# of \"Fixer\" allies on the field x 3)% damage (max 15%)\n\nIf there are 3 or more \"Fixer\" Identities of different factions on the field, activate the following effect:\n- On Base Attack Skill Use by an ally that has Learning by Example, the said ally gains 1 Attack Power Up (2 times per turn)\n- On Hit using a Base Attack Skill by an ally that has Learning by Example, inflict 1 Fragile (2 times per turn; in Focused Encounters, the Part)",
+    "srcPath": "9292",
+    "tier": "3",
+    "triggers": [
+      "Fixer Identities"
+    ]
+  },
+  "9293": {
+    "affinity": "wrath",
+    "descs": [
+      "Attack Skills additionally triggered by Skills that have the [ComboSkill] effect or triggered by allies' Skill / Passive effects deal +10% damage\n- Deal an additional +2% damage every time the above effect activates (max 10%)\n- For Skills that have the [ComboSkill] effect, gain 1 [AttackDmgUp] every time the said Skills are used (max 2 per Identity)\n- If the ally is a \"Dawn Office\" or \"Wedge Office\" Identity, the said ally gains 1 [Enhancement] (max 2 per Identity)"
+    ],
+    "effects": [
+      "Deal More Damage",
+      "Gain Skill Power"
+    ],
+    "events": [
+      "971122"
+    ],
+    "exclusiveTo": [
+      "1129"
+    ],
+    "keyword": "Pierce",
+    "names": [
+      "Carefully-selected Medicinal Herbs"
+    ],
+    "new": true,
+    "search_desc": "Attack Skills additionally triggered by Skills that have the Joint Combo effect or triggered by allies' Skill / Passive effects deal +10% damage\n- Deal an additional +2% damage every time the above effect activates (max 10%)\n- For Skills that have the Joint Combo effect, gain 1 Damage Up every time the said Skills are used (max 2 per Identity)\n- If the ally is a \"Dawn Office\" or \"Wedge Office\" Identity, the said ally gains 1 Attack Power Up (max 2 per Identity)",
+    "srcPath": "9293",
+    "tier": "3",
+    "triggers": [
+      "Follow-up Attack",
+      "Dawn Office Identities",
+      "Wedge Office Identities"
+    ]
+  },
+  "9294": {
+    "affinity": "pride",
+    "cursedPair": "9295",
+    "descs": [
+      "Encounter Start: Apply [CursedBlessing] to 1 random ally\nThis E.G.O Gift changes into \"Pride of the Knight\" after 6 Encounter wins in which the Identity that has [CursedBlessing] survives\n"
+    ],
+    "effects": [
+      "Other Uncommon Effects"
+    ],
+    "events": [
+      "971123"
+    ],
+    "keyword": "Keywordless",
+    "names": [
+      "Hollow Pride"
+    ],
+    "new": true,
+    "search_desc": "Encounter Start: Apply A Test of Despair to 1 random ally\nThis E.G.O Gift changes into \"Pride of the Knight\" after 6 Encounter wins in which the Identity that has A Test of Despair survives\n",
+    "srcPath": "9294",
+    "tier": "1",
+    "triggers": [
+      "Always"
+    ]
+  },
+  "9295": {
+    "affinity": "pride",
+    "blessedPair": "9294",
+    "descs": [
+      "[Effects apply only to #1 Deployed Identity]\nRemove all Stagger thresholds\nEncounter Start: Apply [BeyondDespair]"
+    ],
+    "effects": [
+      "Take Less Damage",
+      "Gain Skill Power",
+      "Heal SP",
+      "Deal Pride Damage",
+      "Deal More Damage",
+      "Heal HP",
+      "Other Uncommon Effects"
+    ],
+    "keyword": "Keywordless",
+    "names": [
+      "Pride of the Knight"
+    ],
+    "new": true,
+    "search_desc": "[Effects apply only to #1 Deployed Identity]\nRemove all Stagger thresholds\nEncounter Start: Apply The One Beyond Despair",
+    "srcPath": "9295",
+    "tier": "3",
+    "triggers": [
+      "Always",
+      "Clash Win",
+      "Deployment Position"
+    ]
+  },
+  "9296": {
+    "affinity": "pride",
+    "descs": [
+      "Pierce Base Skills that inflict [Sinking] Potency, Count, or Unique [Sinking] gain Final Power +1\n\nOn Hit by an ally using a Skill, if target has -20 or lower SP, deal Gloom damage equal to [Sinking] Potency to target (once per Skill)\n- If the said Skill was a Pierce Skill, deal additional fixed damage equal to ([Sinking] Count on target / 2) (once per Skill)\n\n[Lobotomy E.G.O::The Sword Sharpened with Tears Rodion Exclusive Effect]\nOn Hit against an enemy using the final Coin of a Base Skill that consumes [Charge] and has 1 Atk Weight, deal Pride damage to all enemies equal to ([Charge] Potency consumed)% of final damage (including Unique [Charge])\n\n[The Sword Sharpened with Tears Hong Lu E.G.O Skill Exclusive Effect]\nE.G.O Skill Final Power +1"
+    ],
+    "effects": [
+      "Gain Skill Power",
+      "Deal Gloom Damage",
+      "Deal Pride Damage"
+    ],
+    "events": [
+      "971123"
+    ],
+    "keyword": "Sinking",
+    "names": [
+      "Sword Laced with Grief"
+    ],
+    "new": true,
+    "search_desc": "Pierce Base Skills that inflict Sinking Potency, Count, or Unique Sinking gain Final Power +1\n\nOn Hit by an ally using a Skill, if target has -20 or lower SP, deal Gloom damage equal to Sinking Potency to target (once per Skill)\n- If the said Skill was a Pierce Skill, deal additional fixed damage equal to (Sinking Count on target / 2) (once per Skill)\n\n[Lobotomy E.G.O::The Sword Sharpened with Tears Rodion Exclusive Effect]\nOn Hit against an enemy using the final Coin of a Base Skill that consumes Charge and has 1 Atk Weight, deal Pride damage to all enemies equal to (Charge Potency consumed)% of final damage (including Unique Charge)\n\n[The Sword Sharpened with Tears Hong Lu E.G.O Skill Exclusive Effect]\nE.G.O Skill Final Power +1",
+    "srcPath": "9296",
+    "tier": "4",
+    "triggers": [
+      "Sinking Skill Used",
+      "Pierce Skill Used",
+      "Enemies with SP Condition",
+      "Hit Enemy with Sinking",
+      "Other Uncommon Triggers"
+    ]
+  },
+  "9297": {
+    "affinity": "sloth",
+    "descs": [
+      "Turn Start: Activates when there are 3 or more \"Wedge Office\" Identities (counts Backup Identities)\n\n[Wedge Office Rep Outis Exclusive Effect]\n- Turn Start: If the condition above was met for the first time, gain 20 [ComboWedge]\n- Upon using \"Assume Wedge Formation\", \"... All units, engage for collision.\", \"The Wedge in the Wake of Dawnbreak\", gain 1 [ComboWedgeDawn] next turn (2 times per turn)\n- If \"Assume Wedge Formation\" was used, regain half of the consumed [ComboWedge] at the next Turn Start (once per turn, rounded down)"
+    ],
+    "effects": [
+      "Gain Buff"
+    ],
+    "events": [
+      "971124"
+    ],
+    "exclusiveTo": [
+      "1129"
+    ],
+    "keyword": "Pierce",
+    "names": [
+      "White Cravat"
+    ],
+    "new": true,
+    "search_desc": "Turn Start: Activates when there are 3 or more \"Wedge Office\" Identities (counts Backup Identities)\n\n[Wedge Office Rep Outis Exclusive Effect]\n- Turn Start: If the condition above was met for the first time, gain 20 Momentum\n- Upon using \"Assume Wedge Formation\", \"... All units, engage for collision.\", \"The Wedge in the Wake of Dawnbreak\", gain 1 Dawn's Camaraderie next turn (2 times per turn)\n- If \"Assume Wedge Formation\" was used, regain half of the consumed Momentum at the next Turn Start (once per turn, rounded down)",
+    "srcPath": "9297",
+    "tier": "3",
+    "triggers": [
+      "Wedge Office Identities"
+    ]
+  },
+  "9298": {
+    "affinity": "lust",
+    "descs": [
+      "In a Clash, inflict 2 [Vibration] on the enemy for every Clash (3 times per Skill)\n\nOn Crit by an ally using a Basic Attack Skill against enemies, if the main target has [Vibration], trigger [VibrationExplosion]; then, reduce target's [Vibration] Count by 1 (once per Skill)\n- If the enemy is in [Switch_Vibration] state, deal +10% damage on Critical Hit\n- If the enemy is in [VibrationNesting] state, deal an additional +5% damage on Critical Hit for each type of superposed Unique [Vibration] (max 25%)"
+    ],
+    "effects": [
+      "Inflict Tremor Potency",
+      "Trigger Tremor Burst",
+      "Deal More Damage"
+    ],
+    "events": [
+      "971124"
+    ],
+    "exclusiveTo": [
+      "1129"
+    ],
+    "keyword": "Tremor",
+    "names": [
+      "Black Tricorne"
+    ],
+    "new": true,
+    "search_desc": "In a Clash, inflict 2 Tremor on the enemy for every Clash (3 times per Skill)\n\nOn Crit by an ally using a Basic Attack Skill against enemies, if the main target has Tremor, trigger Tremor Burst; then, reduce target's Tremor Count by 1 (once per Skill)\n- If the enemy is in Amplitude Conversion state, deal +10% damage on Critical Hit\n- If the enemy is in Tremor - Superposition state, deal an additional +5% damage on Critical Hit for each type of superposed Unique Tremor (max 25%)",
+    "srcPath": "9298",
+    "tier": "2",
+    "triggers": [
+      "On Clash",
+      "Critical Hit",
+      "Hit Enemy with Tremor",
+      "Critical Hit",
+      "Enemy has Amplitude Conversion/Entanglement"
+    ]
+  },
+  "9299": {
+    "affinity": "sloth",
+    "descs": [
+      "When triggering [VibrationExplosion] on enemies that have [VibrationCollapse], deal Sloth damage to each target equal to (each target's Defense Level reduction)% of the damage dealt (max 15%)"
+    ],
+    "effects": [
+      "Deal Sloth Damage"
+    ],
+    "events": [
+      "971125"
+    ],
+    "exclusiveTo": [
+      "1129"
+    ],
+    "keyword": "Tremor",
+    "names": [
+      "Backup Body Adaptation Device"
+    ],
+    "new": true,
+    "search_desc": "When triggering Tremor Burst on enemies that have Tremor - Decay, deal Sloth damage to each target equal to (each target's Defense Level reduction)% of the damage dealt (max 15%)",
+    "srcPath": "9299",
+    "tier": "3",
+    "triggers": [
+      "Trigger Tremor Burst",
+      "Enemy has Amplitude Conversion/Entanglement"
+    ]
+  },
+  "9300": {
+    "affinity": "gloom",
+    "descs": [
+      "On Crit using a Pierce Base Attack Skill, inflict [EmbeddedSpearhead] on target at Attack End (once per turn per Identity; in Focused Encounters, the Parts)"
+    ],
+    "effects": [
+      "Inflict Debuff",
+      "Deal More Damage"
+    ],
+    "events": [
+      "971125"
+    ],
+    "exclusiveTo": [
+      "1129"
+    ],
+    "keyword": "Pierce",
+    "names": [
+      "Broken Spearhead"
+    ],
+    "new": true,
+    "search_desc": "On Crit using a Pierce Base Attack Skill, inflict Embedded Spearhead on target at Attack End (once per turn per Identity; in Focused Encounters, the Parts)",
+    "srcPath": "9300",
+    "tier": "2",
+    "triggers": [
+      "Critical Hit",
+      "Pierce Skill Used"
+    ]
+  },
+  "9301": {
+    "affinity": "gloom",
+    "descs": [
+      "Turn End: when Staggered, recover from Stagger; then, at the next Turn Start, inflict 4 [Sinking] Potency and +4 [Sinking] Count to all enemies (once per Encounter; in Focused Encounters, on all Parts)\n- The above effect activates ((deployed \"Wuthering Heights\" Identities + deployed \"Edgar Family\" Identities) / 2) more times per Encounter (max 4 times per Encounter; including Backup Units)\n\nOn Kill, 1 enemy that has the least [Sinking] Count gains +2 [Sinking] Count (in Focused Encounters, the Part)\n\nOn Hit against SP Units, if target has -45 SP, deal Gloom damage equal to [Sinking] Potency on target\n\nIn Focused Encounters, On Hit against enemies that have 10+ ([Sinking] Potency + [Sinking] Count):\nDeal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts [Sinking] (including [Sinking] Count and Unique [Sinking]), instead of dealing ([Sinking] Potency on target / 2) Gloom damage, deal ([Sinking] Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)\n\n[Wild Hunt Heathcliff exclusive effect]\nTurn Start: If this unit does not have [NightPathfinding], gain 1 [NightPathfinding]\n- At 5/10 [Coffin], gain 2/3 [NightPathfinding]\n- Apply 1 [SoundOfStorm] on \"Wuthering Heights\" and \"Edgar Family\" Identities (3 times per Identity per Encounter)\n\nDouble the amount of [Coffin] gained\n- Gain 2 [Coffin] when \"Wuthering Heights\" or \"Edgar Family\" Identities defeat an enemy\n\n\"Lament, Mourn, and Despair\" Skill effects:\n- Lose 15 more SP from the \"On Use\" effect\n  · The effects of the Skill or this E.G.O Gift cannot reduce this unit's SP below -40\n- On final Coin Hit, if the enemy has 20+ [Sinking] deal Gloom damage equal to 100% of this Coin's final damage"
+    ],
+    "effects": [
+      "Inflict Sinking Potency",
+      "Inflict Sinking Count",
+      "Deal Gloom Damage",
+      "Gain Buff",
+      "Deal More Damage",
+      "Gain Skill Power",
+      "Other Uncommon Effects"
+    ],
+    "exclusiveTo": [
+      "1016",
+      "1018"
+    ],
+    "fusion": true,
+    "keyword": "Sinking",
+    "names": [
+      "Wuthering Heights"
+    ],
+    "recipes": [
+      [
+        "9432",
+        "9436"
+      ]
+    ],
+    "search_desc": "Turn End: when Staggered, recover from Stagger; then, at the next Turn Start, inflict 4 Sinking Potency and +4 Sinking Count to all enemies (once per Encounter; in Focused Encounters, on all Parts)\n- The above effect activates ((deployed \"Wuthering Heights\" Identities + deployed \"Edgar Family\" Identities) / 2) more times per Encounter (max 4 times per Encounter; including Backup Units)\n\nOn Kill, 1 enemy that has the least Sinking Count gains +2 Sinking Count (in Focused Encounters, the Part)\n\nOn Hit against SP Units, if target has -45 SP, deal Gloom damage equal to Sinking Potency on target\n\nIn Focused Encounters, On Hit against enemies that have 10+ (Sinking Potency + Sinking Count):\nDeal ((Sinking Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts Sinking (including Sinking Count and Unique Sinking), instead of dealing (Sinking Potency on target / 2) Gloom damage, deal (Sinking Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)\n\n[Wild Hunt Heathcliff exclusive effect]\nTurn Start: If this unit does not have Dullahan, gain 1 Dullahan\n- At 5/10 Coffin, gain 2/3 Dullahan\n- Apply 1 Thundercrack on \"Wuthering Heights\" and \"Edgar Family\" Identities (3 times per Identity per Encounter)\n\nDouble the amount of Coffin gained\n- Gain 2 Coffin when \"Wuthering Heights\" or \"Edgar Family\" Identities defeat an enemy\n\n\"Lament, Mourn, and Despair\" Skill effects:\n- Lose 15 more SP from the \"On Use\" effect\n  · The effects of the Skill or this E.G.O Gift cannot reduce this unit's SP below -40\n- On final Coin Hit, if the enemy has 20+ Sinking deal Gloom damage equal to 100% of this Coin's final damage",
+    "srcPath": "9301",
+    "tier": "4",
+    "triggers": [
+      "Staggered Ally",
+      "Enemy Defeated",
+      "Enemies with SP Condition",
+      "Hit Enemy with Sinking",
+      "Wuthering Heights Identities",
+      "Edgar Family Identities"
+    ]
+  },
+  "9302": {
+    "affinity": "pride",
+    "descs": [
+      "Turn Start: At 40+ SP, or at -40 SP or lower, gain 1 [GainSinStockAdder]\n\n[Effect exclusive to Identities that have 2 or more Minus Coin Skills]\nTurn Start: Lose 15 SP (this unit's SP does not drop below -40 from this effect)\n\nIn this Encounter, when taking SP damage that would reduce this unit's SP to -45, this unit's SP cannot drop below -44 for the turn (once per Encounter)\n(※ Applies only to SP damage; does not apply to SP-changing effects, or SP-consuming effects such as using E.G.O Skills)\n\nBefore Attack using Skill 3 or an E.G.O Skill, consume up to 5 E.G.O Resources of the same Affinity as the said Skill to deal +(E.G.O Resources consumed x 10)% damage"
+    ],
+    "effects": [
+      "Gain E.G.O Resource",
+      "Deal More Damage",
+      "Other Uncommon Effects"
+    ],
+    "exclusiveTo": [
+      "1005"
+    ],
+    "keyword": "Keywordless",
+    "names": [
+      "The Measure of Frost"
+    ],
+    "search_desc": "Turn Start: At 40+ SP, or at -40 SP or lower, gain 1 E.G.O Resource Amp\n\n[Effect exclusive to Identities that have 2 or more Minus Coin Skills]\nTurn Start: Lose 15 SP (this unit's SP does not drop below -40 from this effect)\n\nIn this Encounter, when taking SP damage that would reduce this unit's SP to -45, this unit's SP cannot drop below -44 for the turn (once per Encounter)\n(※ Applies only to SP damage; does not apply to SP-changing effects, or SP-consuming effects such as using E.G.O Skills)\n\nBefore Attack using Skill 3 or an E.G.O Skill, consume up to 5 E.G.O Resources of the same Affinity as the said Skill to deal +(E.G.O Resources consumed x 10)% damage",
+    "srcPath": "9302",
+    "tier": "3",
+    "triggers": [
+      "Allies with SP Condition",
+      "Allies with Minus Coin Skills"
+    ]
+  },
   "9403": {
     "affinity": "gluttony",
     "descs": [
@@ -8127,7 +8444,7 @@
       "Ebony Brooch"
     ],
     "search_desc": "First Turn Start of an Encounter: Inflict 2 Rupture Potency and Count to all enemies.\n\nInflict 2 Bind next turn at Turn End to all enemies for 3 turns.",
-    "srcPath": "Ebony Brooch",
+    "srcPath": "9403",
     "tier": "2",
     "triggers": [
       "Always"
@@ -8151,7 +8468,7 @@
       "Contained Maggots"
     ],
     "search_desc": "On Hit with a Lust or Gluttony Attack Skill(except E.G.O Skills) against an enemy, inflict 2 Maggots on target.\n\nIf the said Skill applies Bleed Potency, Count, or 'Unique Bleed', inflict 3 Maggots instead.",
-    "srcPath": "Contained Maggots",
+    "srcPath": "9404",
     "tier": "3",
     "triggers": [
       "Lust Skill Used",
@@ -8179,7 +8496,7 @@
       "Made-to-Order"
     ],
     "search_desc": "[Effects apply only to #3 Deployed Identity]\n\nEncounter Start: gain +3 Tremor Count.\n\nTurn Start: gain 1 Protection, 1 Damage Up, and 1 Power Up.",
-    "srcPath": "Made-to-Order",
+    "srcPath": "9407",
     "tier": "2",
     "triggers": [
       "Deployment Position"
@@ -8204,7 +8521,7 @@
       "Haunted Shoes"
     ],
     "search_desc": "[Effects apply only to #2 Deployed Identity]\n\nEncounter Start: gain +3 Sinking Count.\n\nTurn Start: gain 1 Protection, 1 Damage Up, and 1 Power Up.",
-    "srcPath": "Haunted Shoes",
+    "srcPath": "9408",
     "tier": "2",
     "triggers": [
       "Deployment Position"
@@ -8229,7 +8546,7 @@
       "Frozen Cries"
     ],
     "search_desc": "Applies only to 1 Identity with the slowest Speed at Turn Start.\n\nIf the said ally wins a Clash or is hit by an enemy, inflict 3 Sinking against the enemy.",
-    "srcPath": "Frozen Cries",
+    "srcPath": "9409",
     "tier": "2",
     "triggers": [
       "Allies with Speed Condition",
@@ -8292,7 +8609,7 @@
       "Nagel und Hammer Scriptures"
     ],
     "search_desc": "When an ally wins a Clash using a Skill that inflicts Bleed Potency, Count, or 'Unique Bleed', inflict 1~2 Nails.\n\nIf the said ally is an 'N Corp. Fanatic', gain 1 Fanatic at Turn Start.",
-    "srcPath": "Nagel und Hammer Scriptures",
+    "srcPath": "9413",
     "tier": "2",
     "triggers": [
       "Clash Win",
@@ -8318,7 +8635,7 @@
       "Blood-red Mane"
     ],
     "search_desc": "Effects apply to all Identities with Wrath or Lust Attack Skills.\n\nTurn End: if this unit did not take any damage from enemy Attack Skills this turn, gain 2 Haste and 2 Defense Power Up.\n\nTurn End: if this unit did take damage from enemy Attack Skills this turn, gain 2 Bind and Clash Power +2 next turn.",
-    "srcPath": "Blood-red Mane",
+    "srcPath": "9414",
     "tier": "2",
     "triggers": [
       "Allies have Wrath Skill",
@@ -8346,7 +8663,7 @@
       "Squalidity"
     ],
     "search_desc": "When an ally attacks an enemy that has Bleed with a Skill that inflicts Bleed Potency, Count or 'Unique Bleed', deal +15% damage against the target.\n\nIf the target has 33%- HP, inflict +25% damage against the target instead.",
-    "srcPath": "Squalidity",
+    "srcPath": "9415",
     "tier": "2",
     "triggers": [
       "Bleed Skill Used",
@@ -8382,7 +8699,7 @@
       ]
     ],
     "search_desc": "If the ally wins a Clash using a Skill that inflicts Bleed Potency, Count, or 'Unique Bleed', inflict 2~3 Nails.\n\n'N Corp. Fanatic' Identities deal +25% damage against enemies and gain 1 Fanatic at Turn Start. If the said ally's SP is maxed, or if a 3+ Lust Reson. was formed last turn, the said ally additionally gains 3 Damage Up.\n\n'N Corp. Fanatic' Identities gain Final Power +2, Plus Coin Power +1, Minus Coin Power -1, and their Attack Skills inflict +1 more Nails.\n\n'N Corp. Fanatic' Identities deal +50% damage against <Mechanical Amalgam> enemies with Base Skills",
-    "srcPath": "Wholeness",
+    "srcPath": "9416",
     "tier": "4",
     "triggers": [
       "Clash Win",
@@ -8677,7 +8994,7 @@
   "9432": {
     "affinity": "lust",
     "descs": [
-      "Turn End: when Staggered, recover from Stagger; then, at the next Turn Start, inflict 4 [Sinking] Potency and 4 [Sinking] Count to all enemies (once per Encounter; in Focused Encounters, on all Parts)\n\nOn Kill, 1 enemy that has the least [Sinking] Count gains +2 [Sinking] Count (3 times per turn; in Focused Encounters, the Part)"
+      "Turn End: when Staggered, recover from Stagger; then, at the next Turn Start, inflict 4 [Sinking] Potency and 4 [Sinking] Count to all enemies (once per Encounter; in Focused Encounters, on all Parts)\n- The above effect activates ((deployed \"Wuthering Heights\" Identities + deployed \"Edgar Family\" Identities) / 2) more times per Encounter (max 4 times per Encounter; including Backup Units)\n\nOn Kill, 1 enemy that has the least [Sinking] Count gains +2 [Sinking] Count (3 times per turn; in Focused Encounters, the Part)"
     ],
     "effects": [
       "Other Uncommon Effects",
@@ -8687,11 +9004,14 @@
     "exclusiveTo": [
       "1016"
     ],
+    "ingredientOf": [
+      "9301"
+    ],
     "keyword": "Sinking",
     "names": [
       "Manor-shaped Music Box"
     ],
-    "search_desc": "Turn End: when Staggered, recover from Stagger; then, at the next Turn Start, inflict 4 Sinking Potency and 4 Sinking Count to all enemies (once per Encounter; in Focused Encounters, on all Parts)\n\nOn Kill, 1 enemy that has the least Sinking Count gains +2 Sinking Count (3 times per turn; in Focused Encounters, the Part)",
+    "search_desc": "Turn End: when Staggered, recover from Stagger; then, at the next Turn Start, inflict 4 Sinking Potency and 4 Sinking Count to all enemies (once per Encounter; in Focused Encounters, on all Parts)\n- The above effect activates ((deployed \"Wuthering Heights\" Identities + deployed \"Edgar Family\" Identities) / 2) more times per Encounter (max 4 times per Encounter; including Backup Units)\n\nOn Kill, 1 enemy that has the least Sinking Count gains +2 Sinking Count (3 times per turn; in Focused Encounters, the Part)",
     "srcPath": "Manor-shaped Music Box",
     "tier": "3",
     "triggers": [
@@ -8799,7 +9119,7 @@
   "9436": {
     "affinity": "envy",
     "descs": [
-      "Regular Encounters) On Hit against enemies with 10+ (sum of [Sinking] Count and Potency):\nif the target is at -45 SP, deal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nFocused Encounters) On Hit against enemies with 10+ (sum of [Sinking] Count and Potency):\ndeal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts [Sinking](including [Sinking] Count and Unique Sinking), instead of dealing ([Sinking] Potency on target / 2) Gloom damage, deal ([Sinking] Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)"
+      "On Hit against SP Units, if target has -45 SP, deal Gloom damage equal to [Sinking] Potency on target\n\nIn Focused Encounters, On Hit against enemies that have 10+ ([Sinking] Potency + [Sinking] Count):\nDeal (([Sinking] Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts [Sinking](including [Sinking] Count and Unique Sinking), instead of dealing ([Sinking] Potency on target / 2) Gloom damage, deal ([Sinking] Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)"
     ],
     "effects": [
       "Deal Gloom Damage"
@@ -8808,11 +9128,14 @@
       "1018"
     ],
     "hardonly": true,
+    "ingredientOf": [
+      "9301"
+    ],
     "keyword": "Sinking",
     "names": [
       "Refraction Glass Pod"
     ],
-    "search_desc": "Regular Encounters) On Hit against enemies with 10+ (sum of Sinking Count and Potency):\nif the target is at -45 SP, deal ((Sinking Potency on target) / 2) Gloom damage (once per Skill)\n\nFocused Encounters) On Hit against enemies with 10+ (sum of Sinking Count and Potency):\ndeal ((Sinking Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts Sinking(including Sinking Count and Unique Sinking), instead of dealing (Sinking Potency on target / 2) Gloom damage, deal (Sinking Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)",
+    "search_desc": "On Hit against SP Units, if target has -45 SP, deal Gloom damage equal to Sinking Potency on target\n\nIn Focused Encounters, On Hit against enemies that have 10+ (Sinking Potency + Sinking Count):\nDeal ((Sinking Potency on target) / 2) Gloom damage (once per Skill)\n\nIf the Skill that hit an enemy inflicts Sinking(including Sinking Count and Unique Sinking), instead of dealing (Sinking Potency on target / 2) Gloom damage, deal (Sinking Potency on target) Gloom damage\n(Each turn, this applies only to the first Sinking-inflicting Skill that hits)",
     "srcPath": "Refraction Glass Pod",
     "tier": "4",
     "triggers": [
@@ -12185,8 +12508,7 @@
       "Hit Enemy with Sinking",
       "Enemies with SP Condition",
       "Pierce Skill Used"
-    ],
-    "updated": true
+    ]
   },
   "9808": {
     "affinity": "lust",
@@ -12447,8 +12769,7 @@
       "Enemies with SP Condition",
       "Enemies have Sinking",
       "Sinking Skill Used"
-    ],
-    "updated": true
+    ]
   },
   "9818": {
     "affinity": "envy",
@@ -13002,8 +13323,7 @@
       "Sinking Skill Used",
       "Always",
       "Other Uncommon Triggers"
-    ],
-    "updated": true
+    ]
   },
   "9837": {
     "affinity": "gluttony",

@@ -1021,7 +1021,8 @@ describe('upgradeOf', () => {
     const pairs = data.gifts.filter((g) => g.upgradeOf !== null);
     // 76 → 78 (OpenLethe af2aa4df): 9262 모든 것의 뼈대 and 9268 모든 것의 본능 gained their
     // 출혈 keyword in ego-gift-story-twth.json, so they now fold under 9263 / 9264.
-    expect(pairs.length).toBe(78);
+    // 78 → 79 (2026-11-12): 9432 모형 저택 오르골 folds under the new 9301 폭풍이 치는 언덕.
+    expect(pairs.length).toBe(79);
     for (const g of pairs) {
       const parent = indexes.giftById.get(g.upgradeOf!)!;
       expect(parent.keyword, `${g.id}`).toBe(g.keyword);

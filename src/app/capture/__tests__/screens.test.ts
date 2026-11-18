@@ -109,6 +109,14 @@ describe('parseFloor', () => {
     expect(parseFloor(['1O층'])).toBe(10);
   });
 
+  it('does not take a mark split off before 「층」 for a digit (M178)', () => {
+    expect(parseFloor(['10 !증탈사중-'])).toBe(10);
+    expect(parseFloor(['[1 -ㅡ    「', '10 !증탈사충-'])).toBe(10);
+    expect(parseFloor(['7 |층 탐사 중'])).toBe(7);
+    // Without a space the mark is still read as a digit.
+    expect(parseFloor(['1!층 탐사 중'])).toBe(11);
+  });
+
   it('returns null without a floor', () => {
     expect(parseFloor([])).toBeNull();
     expect(parseFloor(['탐사 중'])).toBeNull();

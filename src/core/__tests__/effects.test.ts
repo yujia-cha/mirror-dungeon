@@ -3,7 +3,7 @@
  * gifts are small fixtures so each rule is seen alone; the shipped data is checked by the app tests.
  */
 import { describe, expect, it } from 'vitest';
-import { giftEffectsReport, identityMeets, relevanceReason } from '../effects.ts';
+import { giftEffectsReport, identityMeets, relevanceReason, slotsMeeting } from '../effects.ts';
 import type { EffectRequirement, Gift, GiftEffect, Identity, IdentitySkill } from '../schema.ts';
 import type { DeckStats } from '../types.ts';
 
@@ -163,6 +163,33 @@ describe('one identity against one requirement', () => {
     expect(identityMeets(mao, { type: 'defense', kinds: ['counter'] })).toBe(true);
     expect(identityMeets(noData, { type: 'defense', kinds: ['counter'] })).toBeNull();
     expect(identityMeets(mao, { type: 'faction', factions: ['BLACK_BEAST_RABBIT'] })).toBe(true);
+  });
+
+  it('counts a trait as a faction, as gift text does with 해결사 (M178)', () => {
+    // Arrange: FIXER is a unit keyword (trait), never an association.
+    const fixer = identity(1, { factions: ['WEDGE'], traits: ['FIXER', 'SMALL'] });
+    const other = identity(2, { factions: ['WEDGE'] });
+    const req: EffectRequirement = { type: 'faction', factions: ['FIXER'] };
+    // Act / Assert
+    expect(identityMeets(fixer, req)).toBe(true);
+    expect(identityMeets(other, req)).toBe(false);
+  });
+
+  it('needs that many skills of the build when the shape says 「N개 이상」 (M178)', () => {
+    // Arrange: one, two and an unknown minus-coin skill.
+    const minus = (slot: 1 | 2 | 3) =>
+      skill(slot, { coins: { count: 2, plus: false, minus: true, unbreakable: false } });
+    const one = identity(1, { skills: [minus(1), skill(2), skill(3)] });
+    const two = identity(2, { skills: [minus(1), minus(3), skill(2)] });
+    const maybe = identity(3, { skills: [minus(1), skill(2, { coins: null })] });
+    const req = { type: 'shape', kind: 'minusCoin', skills: 2 } as const;
+    // Act / Assert: a count the identity misses is met by none of its skills.
+    expect(identityMeets(one, req)).toBe(false);
+    expect(slotsMeeting(one, req)).toEqual([]);
+    expect(identityMeets(two, req)).toBe(true);
+    expect(slotsMeeting(two, req)).toEqual([1, 3]);
+    expect(identityMeets(maybe, req)).toBeNull();
+    expect(identityMeets(one, { type: 'shape', kind: 'minusCoin' })).toBe(true);
   });
 
   it('falls back to the keyword totals when an identity has no per-skill data, but not for a slot', () => {

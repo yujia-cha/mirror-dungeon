@@ -19,5 +19,10 @@
     "ko": "시지프",
     "en": "Sisyphe",
     "_source": "EGOgift_MirrorDungeon_8.json KR 「시지프 소속 인격」 / EN '\"Sisyphe\" Identity' (9291 꽃가위). 오트쿠튀르 인격들의 공통 소속."
+  },
+  "FIXER": {
+    "ko": "해결사",
+    "en": "Fixer",
+    "_source": "UnitKeyword.json KR 「해결사」 / EN 'Fixer' (UnitKeyword_FIXER). 소속(associationList)이 아니라 인격 특성(unitKeywordList, 정적 데이터 62명)이지만 기프트 원문이 소속처럼 센다 — EGOgift_walpu10.json 9292 롤모델 「해결사 인격을 2인 이상 편성했을 시」 (M178)."
   }
 }

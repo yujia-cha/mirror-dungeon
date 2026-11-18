@@ -59,6 +59,7 @@ const ctx: EffectContext = {
     ['디에치 협회', 'DIECI'],
     ['시지프', 'SISYPHE'],
     ['흑수 - 유', 'BLACK_BEAST_CHICKEN'],
+    ['해결사', 'FIXER'],
   ]),
   grantedBuffs: giftGrantedBuffs(Object.values(TEXT)),
   identities: [
@@ -504,5 +505,44 @@ describe('parseEffects — 진동 폭발·진폭 변환·진폭 얽힘 (skillMec
       expect(effect!.requires).not.toContainEqual(expect.objectContaining({ type: 'skillMechanic' }));
       expect(effect!.hints).toBeUndefined();
     }
+  });
+});
+
+describe('parseEffects — 발푸르기스의 밤 10 wording (M178)', () => {
+  it('9292 롤모델: 해결사 counts, and 「서로 다른 소속」 names no faction', () => {
+    // Arrange: verbatim, the first and last effects trimmed to their heads.
+    const text =
+      '해결사 인격을 2인 이상 편성했을 시, 아군 해결사 중 편성 순서가 가장 느린 1명에게 다음 효과 발동 (대기 인원 미포함)\n' +
+      '- 스테이지 첫 등장 시 [본받는 자세] 얻음\n\n' +
+      '전장의 아군 해결사 인격 2명당, 턴 시작 시 아군 해결사의 정신력 2 회복\n\n' +
+      '해결사이면서 소속이 서로 다른 인격이 3인 이상이면 다음 효과 적용\n' +
+      '- [본받는 자세]를 보유한 아군이 기본 공격 스킬 사용 시 [공격 위력 증가] 1 얻음 (턴당 2회)';
+    // Act
+    const { effects } = parse(text);
+    // Assert
+    const fixer = { type: 'faction', factions: ['FIXER'] };
+    expect(effects).toEqual([
+      { kind: 'effect', requires: [{ ...fixer, min: 2, scope: 'deployed' }] },
+      { kind: 'effect', requires: [fixer] },
+      { kind: 'effect', requires: [{ ...fixer, min: 3, scope: 'deployed' }] },
+    ]);
+  });
+
+  it('9296: an E.G.O skill heading asks for the E.G.O skill', () => {
+    const { effects } = parse('[눈물로 벼려낸 검 홍루 E.G.O 스킬 전용 효과]\nE.G.O 스킬 최종 위력 +1');
+    expect(effects).toEqual([
+      { kind: 'note', requires: [] },
+      { kind: 'effect', requires: [{ type: 'egoSkill' }] },
+    ]);
+  });
+
+  it('9302 서리 온도: a skill-build heading, with the count of skills it names', () => {
+    const { effects } = parse(
+      '[빼기 코인 스킬을 2개 이상 보유한 인격 전용 효과]\n턴 시작시 정신력 15 감소 (해당 효과로 정신력이 -40 미만으로 내려가지 않음)',
+    );
+    expect(effects).toEqual([
+      { kind: 'note', requires: [] },
+      { kind: 'effect', requires: [{ type: 'shape', kind: 'minusCoin', skills: 2 }] },
+    ]);
   });
 });

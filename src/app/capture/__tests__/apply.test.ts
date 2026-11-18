@@ -1,7 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Gift } from '../../../core/schema.ts';
 import { emptyRun, useApp } from '../../store.ts';
-import { actionsFor, answerActions, execute, inverseOf, statusDiff, type RunOps } from '../apply.ts';
+import {
+  actionsFor,
+  answerActions,
+  execute,
+  inverseOf,
+  packFloorsOf,
+  statusDiff,
+  type RunOps,
+} from '../apply.ts';
 
 const MOON = {
   aCount: 2,
@@ -45,6 +53,30 @@ describe('actionsFor', () => {
     const out = actionsFor({ kind: 'enter', floor: 3, packId: 1008 }, ctx({}, run));
     // Assert
     expect(out).toEqual({ actions: [], ask: null });
+  });
+
+  it('ignores an entry read on a floor the pack is never offered on (M178)', () => {
+    // Arrange: 「처량한 질투」 (1320) is a floor 5~10 pack entered on floor 10; a header read as
+    // 「10 !증」 named floor 1, where 「바스라질 것」 (1206) stands.
+    const packFloors = packFloorsOf({
+      hard: new Map([
+        [1, [1206]],
+        [5, [1320]],
+      ]),
+      parallel: new Map([[10, [1320]]]),
+    });
+    const run = { visits: { 1: 1206, 10: 1320 }, stageFloor: 10 };
+    // Act
+    const misread = actionsFor({ kind: 'enter', floor: 1, packId: 1320 }, { ...ctx({}, run), packFloors });
+    const legal = actionsFor(
+      { kind: 'enter', floor: 5, packId: 1320 },
+      { ...ctx({}, { stageFloor: 5 }), packFloors },
+    );
+    const unknown = actionsFor({ kind: 'enter', floor: 3, packId: 1008 }, { ...ctx({}, run), packFloors });
+    // Assert: the misread changes nothing; a legal floor and a pack with no floors known still enter.
+    expect(misread).toEqual({ actions: [], ask: null });
+    expect(legal.actions[0]).toMatchObject({ kind: 'enter', floor: 5, packId: 1320 });
+    expect(unknown.actions[0]).toMatchObject({ kind: 'enter', floor: 3, packId: 1008 });
   });
 
   it('never steps an entry down from a reprint to its original (M159)', () => {

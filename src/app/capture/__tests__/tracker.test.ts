@@ -518,6 +518,34 @@ describe('trackFrame — the fusion screen ring (M175)', () => {
     expect(events.at(-1)).toEqual({ kind: 'fused', resultId: 10, consumed: [1, 2], unsure: [], ring: true });
   });
 
+  it('keeps the ring through a fading read of it that names nothing (M178)', () => {
+    // Arrange: the owner's 2026-10-29 run — the ring read three, the screen faded into the confirm
+    // (a ring read of nothing), the confirm read two of three filled.
+    const frames = [ring(9030, 9109, 9153), ring(), confirm([9030, 9109], [], 3), popup(match(9142))];
+    // Act
+    const { events } = run(frames, PAST_START);
+    // Assert
+    expect(events.at(-1)).toMatchObject({ consumed: [9030, 9109, 9153], filled: 3, ring: true });
+  });
+
+  it('keeps a confirm read over a later one that surely names fewer of as many slots (M178)', () => {
+    // Arrange: no ring; the confirm read two of three, then a slots re-read of the result popup's frame
+    // named none.
+    const frames = [confirm([9030, 9109], [], 3), confirm([], [9059, 9761, 9763], 3), popup(match(9142))];
+    // Act
+    const { events } = run(frames, PAST_START);
+    // Assert: the better read stands; a later read naming more still wins.
+    expect(events.at(-1)).toEqual({
+      kind: 'fused',
+      resultId: 9142,
+      consumed: [9030, 9109],
+      unsure: [],
+      filled: 3,
+    });
+    const settled = run([confirm([1], [7], 2), confirm([1, 2], [], 2), popup(match(10))], PAST_START);
+    expect(settled.events.at(-1)).toMatchObject({ consumed: [1, 2] });
+  });
+
   it('takes the latest ring read, and forgets it on another screen', () => {
     const latest = run([ring(1, 2, 3), ring(4, 5), confirm([], [], 2), popup(match(10))], PAST_START);
     expect(latest.events.at(-1)).toMatchObject({ consumed: [4, 5], ring: true });

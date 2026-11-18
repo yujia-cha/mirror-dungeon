@@ -154,6 +154,14 @@
     },
     {
       "deprecated": false,
+      "id": "FIXER",
+      "name": {
+        "en": "Fixer",
+        "ko": "해결사"
+      }
+    },
+    {
+      "deprecated": false,
       "id": "FULL_STOP",
       "name": {
         "en": "Full-Stop Office",
@@ -510,6 +518,14 @@
       "name": {
         "en": "T Corp.",
         "ko": "T사"
+      }
+    },
+    {
+      "deprecated": false,
+      "id": "WEDGE",
+      "name": {
+        "en": "Wedge Office",
+        "ko": "쐐기 사무소"
       }
     },
     {

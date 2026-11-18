@@ -23,7 +23,7 @@ type Step = { items: Item[]; ms: number };
 
 const MAP: Item[] = [
   { text: '1층 탐사 중', region: [0.01, 0.13, 0.17, 0.045], size: 34 },
-  { text: '헬스치킨', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
+  { text: '공장 자동화', region: [0.01, 0.175, 0.17, 0.045], size: 34 },
 ];
 const popup = (name: string): Item[] => [
   { text: 'E.G.O 기프트를 획득했습니다.', region: [0.333, 0.205, 0.34, 0.07], size: 40 },
@@ -100,7 +100,7 @@ test('records every popup of a click-through on a 4× slower CPU with an irregul
   await page.evaluate(
     (texts) =>
       (window as unknown as { __share: { fonts: (t: string[]) => Promise<unknown> } }).__share.fonts(texts),
-    [...GIFTS, 'E.G.O 기프트를 획득했습니다.', '1층 탐사 중', '헬스치킨'],
+    [...GIFTS, 'E.G.O 기프트를 획득했습니다.', '1층 탐사 중', '공장 자동화'],
   );
   await page.getByTestId('capture-open').click();
   const panel = page.getByTestId('capture-panel');
@@ -123,7 +123,7 @@ test('records every popup of a click-through on a 4× slower CPU with an irregul
   );
 
   const log = panel.getByTestId('capture-log');
-  await expect(log).toContainText('1층 입장 · 헬스치킨', { timeout: 60_000 });
+  await expect(log).toContainText('1층 입장 · 공장 자동화', { timeout: 60_000 });
   for (const name of GIFTS) await expect(log).toContainText(`획득 · ${name}`, { timeout: 60_000 });
   // Each recorded once.
   for (const name of GIFTS) await expect(log.locator('li', { hasText: `획득 · ${name}` })).toHaveCount(1);

@@ -77,6 +77,8 @@ const KNOWN_DIVERGENCES: Record<number, string> = {
     '충전: 정적 데이터가 기본 충전으로 적은 것을 원문은 특수 충전으로만 읽는다 — 내보내는 값은 둘을 합쳐 기본·특수 모두 (2026-10-01 정적 데이터 도착으로 백필에서 승격)',
   10816: '충전: 같은 이유',
   10917: '충전: 정적 데이터는 기본 3·특수 2, 원문은 특수만 읽는다',
+  10617: '충전: 10416과 같은 이유 (2026-11-12 정적 데이터 도착으로 백필에서 승격)',
+  10717: '충전: 같은 이유',
 };
 
 describe.skipIf(!hasRaw)('text derivation, calibrated against the static data', () => {

@@ -27,7 +27,7 @@ vi.mock('../session.ts', () => ({
 
 const plan = {
   data: { packs: [], gifts: [] },
-  indexes: { giftById: new Map() },
+  indexes: { giftById: new Map(), packsByFloor: {} },
   enterAt: (floor: number, packId: number) => useApp.getState().visitPack(packId, floor),
   leave: (packId: number) => useApp.getState().unvisitPack(packId),
 };

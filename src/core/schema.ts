@@ -221,8 +221,16 @@ const singleRequirementSchemas = [
   }),
   /** 「질투 완전 공명」·「색욕 공명」 — a deployed base skill of the sin. 「완전 공명 N」 without a sin is no requirement. */
   z.object({ type: z.literal('resonance'), sins: z.array(sinSchema).min(1) }),
-  /** A base skill of that build — coins or attack weight. `n` for the counted kinds. */
-  z.object({ type: z.literal('shape'), kind: skillShapeSchema, n: z.number().int().positive().optional() }),
+  /**
+   * A base skill of that build — coins or attack weight. `n` for the counted kinds; `skills` when the
+   * identity needs that many such skills (「빼기 코인 스킬을 2개 이상 보유한 인격」, M178), omitted = one.
+   */
+  z.object({
+    type: z.literal('shape'),
+    kind: skillShapeSchema,
+    n: z.number().int().positive().optional(),
+    skills: z.number().int().min(2).optional(),
+  }),
   /** 「반격 스킬」, 「회피 스킬」, 「수비 스킬」. */
   z.object({ type: z.literal('defense'), kinds: z.array(defenseTypeSchema).min(1) }),
   /**

@@ -4,6 +4,16 @@ import { STATUS_KEYWORDS } from './schema.ts';
 const STATUS_SET = new Set<string>(STATUS_KEYWORDS);
 import type { ConditionReport, DeckStats, GameIndexes } from './types.ts';
 import { msg } from './messages.ts';
+import type { Identity } from './schema.ts';
+
+/**
+ * What a faction condition counts an identity as: its associations and its traits. A trait such as
+ * 해결사 (`FIXER`) is written in gift text like an affiliation — 「해결사 인격을 2인 이상 편성」 — but the
+ * static data lists it among the identity's unit keywords, not its associations (M178).
+ */
+export function factionsOf(identity: Pick<Identity, 'factions' | 'traits'>): readonly string[] {
+  return identity.traits.length === 0 ? identity.factions : [...identity.factions, ...identity.traits];
+}
 
 type Scope = 'deployed' | 'formation' | 'reserve';
 
@@ -53,7 +63,7 @@ export function analyseDeck(
         // A 특수-only inflictor (생체 재료, 못 …) is not a base inflictor.
         if (info.skills > 0) (baseKeywords[keyword] ??= []).push(id);
       }
-      for (const faction of identity.factions) (factions[faction] ??= []).push(id);
+      for (const faction of factionsOf(identity)) (factions[faction] ??= []).push(id);
     }
     keywordMembers[scope] = keywords;
     baseKeywordMembers[scope] = baseKeywords;

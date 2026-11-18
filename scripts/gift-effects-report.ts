@@ -105,7 +105,7 @@ function describeRequirement(req: EffectRequirement): string {
     case 'resonance':
       return `${req.sins.map((s) => sinName.get(s) ?? s).join('·')} 공명`;
     case 'shape':
-      return SHAPE_KO[req.kind]!(req.n);
+      return `${SHAPE_KO[req.kind]!(req.n)}${req.skills ? ` ${req.skills}개 이상` : ''}`;
     case 'defense':
       return `${req.kinds.map((k) => DEFENSE_KO[k]).join('·')} 스킬`;
     case 'selfKeyword': {

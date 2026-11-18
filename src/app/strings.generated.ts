@@ -300,6 +300,8 @@ export const STRINGS = {
   effReqPlusCoin: { ko: '더하기 코인 스킬', en: 'Plus-coin skill' },
   // 스킬 구조: 빼기 코인.
   effReqMinusCoin: { ko: '빼기 코인 스킬', en: 'Minus-coin skill' },
+  // 스킬 구조 요구를 인격이 그만큼 가져야 할 때(M178, 「빼기 코인 스킬을 2개 이상 보유한 인격」). `{shape}`은 위의 스킬 구조 낱말이다.
+  effReqSkillCount: { ko: '{shape} {count}개 이상', en: '{shape} ×{count}+' },
   // 스킬 구조: 파괴 불가 코인.
   effReqUnbreakable: { ko: '파괴 불가 코인 스킬', en: 'Unbreakable-coin skill' },
   // 스킬 구조: 공격 가중치 N 이상.

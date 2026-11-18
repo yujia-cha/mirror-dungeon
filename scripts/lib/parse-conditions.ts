@@ -107,6 +107,16 @@ const TOKEN_RE = /\[([A-Za-z0-9_]+)\]/g;
 const FACTION_RE =
   /([가-힣A-Za-z0-9.\s]{2,20}?)(?:\s*또는\s*([가-힣A-Za-z0-9.\s]{2,20}?))?\s*소속(?:\s*인격)?이\s*(\d+)\s*(?:인|명)\s*이상/g;
 
+/**
+ * 「해결사 인격을 2인 이상 편성했을 시」, 「해결사이면서 같은 소속인 인격이 3인 이상이면」 (M178): a name
+ * standing for identities without 「소속」 — a trait like 해결사 (`FIXER`) reads this way. Counted only
+ * when the name resolves; the keyword family also says 「…보유한 인격을」 and must not land here.
+ * 「같은 소속」·「서로 다른 소속」 narrow the count further than a requirement can say, so they are read
+ * as the trait count alone, which the deck has to reach in any case.
+ */
+const NAMED_COUNT_RE =
+  /([가-힣A-Za-z0-9.]{2,12})\s*(?:인격을|이면서[^.\n]{0,20}?인격이)\s*(\d+)\s*(?:인|명)\s*이상/g;
+
 const RESONANCE_RE = /완전\s*공명이\s*(\d+)\s*이상/g;
 
 /** "- 5인 이상이면" style follow-ups that strengthen an already-matched condition. */
@@ -259,6 +269,23 @@ export function parseConditions(desc: Localized, ctx: ParseContext): ParseResult
     push({
       type: 'factionCount',
       factions: ids,
+      min,
+      scope: scopeFrom(ko.slice(Math.max(0, m.index - 30), m.index + clause.length), tail),
+      tiers: tiersAfter(ko, m.index + clause.length, min),
+      text: { ko: clause.trim(), en: en.trim().slice(0, 400) },
+    });
+  }
+
+  NAMED_COUNT_RE.lastIndex = 0;
+  while ((m = NAMED_COUNT_RE.exec(ko)) !== null) {
+    const id = resolveFaction(m[1]!, ctx.factionIdByName);
+    if (!id) continue;
+    const min = Number(m[2]);
+    const clause = m[0];
+    const tail = tailAfter(ko, m.index + clause.length);
+    push({
+      type: 'factionCount',
+      factions: [id],
       min,
       scope: scopeFrom(ko.slice(Math.max(0, m.index - 30), m.index + clause.length), tail),
       tiers: tiersAfter(ko, m.index + clause.length, min),

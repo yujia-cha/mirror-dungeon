@@ -11,6 +11,7 @@ const factions = new Map<string, string>([
   ['새벽 사무소', 'DAWN'],
   ['림버스 컴퍼니', 'LIMBUS_COMPANY'],
   ['세븐 협회', 'SEVEN'],
+  ['해결사', 'FIXER'],
 ]);
 
 const ctx: ParseContext = { factionIdByName: factions };
@@ -239,6 +240,28 @@ describe('faction conditions', () => {
     const conditions = parse('없는협회 소속 인격이 3인 이상일 때 발동');
     expect(conditions).toHaveLength(1);
     expect(conditions[0]!.type).toBe('unparsed');
+  });
+});
+
+describe('a named count without 「소속」 (M178)', () => {
+  it('reads 「해결사 인격을 N인 이상」 and 「해결사이면서 … 인격이 N인 이상」 as one count with a step', () => {
+    // Arrange: 9292 롤모델, verbatim.
+    const ko =
+      '해결사 인격을 2인 이상 편성했을 시, 아군 해결사 중 편성 순서가 가장 느린 1명에게 다음 효과 발동 (대기 인원 미포함)\n' +
+      '- 스테이지 첫 등장 시 [본받는 자세] 얻음\n\n' +
+      '해결사이면서 같은 소속인 인격이 3인 이상이면 다음 효과 적용\n' +
+      '- [본받는 자세]를 보유한 아군의 기본 공격 스킬의 피해량 +3%';
+    // Act
+    const conditions = parse(ko);
+    // Assert: the lowest threshold gates, the higher one is a step of the same count.
+    expect(conditions).toMatchObject([
+      { type: 'factionCount', factions: ['FIXER'], min: 2, scope: 'deployed', tiers: [{ min: 3 }] },
+    ]);
+  });
+
+  it('leaves 「…보유한 인격을 N인 이상」 to the keyword family', () => {
+    const conditions = parse('[Combustion]을 부여하는 공격 스킬을 보유한 인격을 3인 이상 편성 시 발동');
+    expect(conditions.some((c) => c.type === 'factionCount')).toBe(false);
   });
 });
 

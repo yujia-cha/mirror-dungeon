@@ -961,6 +961,12 @@
 - en: Minus-coin skill
 - 쓰는 곳: src/app/lib/effect-text.ts
 
+### effReqSkillCount
+메모: 스킬 구조 요구를 인격이 그만큼 가져야 할 때(M178, 「빼기 코인 스킬을 2개 이상 보유한 인격」). `{shape}`은 위의 스킬 구조 낱말이다.
+- ko: {shape} {count}개 이상
+- en: {shape} ×{count}+
+- 쓰는 곳: src/app/lib/effect-text.ts
+
 ### effReqUnbreakable
 메모: 스킬 구조: 파괴 불가 코인.
 - ko: 파괴 불가 코인 스킬

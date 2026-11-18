@@ -109,11 +109,12 @@ const DIGIT_LOOKALIKES: Readonly<Record<string, string>> = {
 /**
  * The floor in 「3층 탐사 중」 or 「11층 테마팩 선택」, or null. Read from the number right before 「층」 —
  * which OCR reads as 「증」 or 「중」 about as often as 「층」 — with the lookalikes OCR substitutes for
- * digits put back.
+ * digits put back. A lone mark split off by a space before 「층」 is a scrap of its stroke, not a digit
+ * (M178): 「10 !증탈사중-」 read as floor 1 and moved the floor 10 entry onto floor 1.
  */
 export function parseFloor(lines: readonly string[]): number | null {
   for (const line of lines) {
-    const match = /([0-9Il|!Oo]{1,2})\s*[층증중]/.exec(line);
+    const match = /(\d{1,2})\s+[Il|!]\s*[층증중]/.exec(line) ?? /([0-9Il|!Oo]{1,2})\s*[층증중]/.exec(line);
     if (!match) continue;
     const digits = [...match[1]!].map((ch) => DIGIT_LOOKALIKES[ch] ?? ch).join('');
     const floor = Number(digits);

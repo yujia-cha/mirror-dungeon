@@ -7,7 +7,7 @@ import type {
   IdentitySkill,
   SkillGiftIndex,
 } from './schema.ts';
-import { countsSpecial } from './deck.ts';
+import { countsSpecial, factionsOf } from './deck.ts';
 import type { DeckStats } from './types.ts';
 
 /**
@@ -146,11 +146,32 @@ function skillTest(requirement: EffectRequirement): SkillTest | null {
   }
 }
 
+/** How many base skills a requirement needs: `shape.skills` (M178), else one. */
+function skillsNeeded(requirement: EffectRequirement): number {
+  return requirement.type === 'shape' ? (requirement.skills ?? 1) : 1;
+}
+
+/** At least `need` skills pass; null when the unknown ones could make up the difference. */
+function enoughSkills(skills: readonly IdentitySkill[], test: SkillTest, need: number): Verdict {
+  let met = 0;
+  let unknown = 0;
+  for (const skill of skills) {
+    const verdict = test(skill);
+    if (verdict === true) met += 1;
+    else if (verdict === null) unknown += 1;
+  }
+  if (met >= need) return true;
+  return met + unknown >= need ? null : false;
+}
+
 /** Does one identity meet the requirement? Null when its data cannot tell. */
 export function identityMeets(identity: Identity, requirement: EffectRequirement): Verdict {
   const skills = identity.skills && identity.skills.length > 0 ? identity.skills : null;
   const test = skillTest(requirement);
-  if (test && skills) return anySkill(skills, test);
+  if (test && skills) {
+    const need = skillsNeeded(requirement);
+    return need > 1 ? enoughSkills(skills, test, need) : anySkill(skills, test);
+  }
   switch (requirement.type) {
     case 'skillKeyword': {
       // Without per-skill facts only a slot-free requirement can be read off the totals.
@@ -180,7 +201,7 @@ export function identityMeets(identity: Identity, requirement: EffectRequirement
     case 'identityBuff':
       return identity.buffs ? requirement.buffs.some((buff) => identity.buffs!.includes(buff)) : null;
     case 'faction':
-      return requirement.factions.some((faction) => identity.factions.includes(faction));
+      return requirement.factions.some((faction) => factionsOf(identity).includes(faction));
     case 'identity':
       return requirement.ids.includes(identity.id);
     case 'defense':
@@ -213,7 +234,10 @@ export function slotsMeeting(identity: Identity, requirement: EffectRequirement)
   }
   const test = skillTest(requirement);
   if (!test || !identity.skills) return [];
-  const slots = new Set(identity.skills.filter((skill) => test(skill) === true).map((skill) => skill.slot));
+  const meeting = identity.skills.filter((skill) => test(skill) === true);
+  // A count the identity does not reach is met by none of its skills (M178).
+  if (meeting.length < skillsNeeded(requirement)) return [];
+  const slots = new Set(meeting.map((skill) => skill.slot));
   return [...slots].sort((a, b) => a - b);
 }
 
@@ -394,7 +418,7 @@ export function requirementLabel(requirement: EffectRequirement): string {
     case 'resonance':
       return `resonance/${requirement.sins.join('|')}`;
     case 'shape':
-      return `shape/${requirement.kind}${requirement.n ?? ''}`;
+      return `shape/${requirement.kind}${requirement.n ?? ''}${requirement.skills ? `x${requirement.skills}` : ''}`;
     case 'defense':
       return `defense/${requirement.kinds.join('|')}`;
     case 'selfKeyword':

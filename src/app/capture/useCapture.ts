@@ -21,6 +21,7 @@ import {
   answerActions,
   execute,
   inverseOf,
+  packFloorsOf,
   type ApplyContext,
   type CaptureAction,
   type CaptureAsk,
@@ -64,7 +65,11 @@ const LOG_LIMIT = 20;
  * What an event or an answer meets in the run (M151 shares it between the two): read from the
  * store the moment it lands, not from the render that started the session.
  */
-function applyContext(giftById: ApplyContext['giftById'], reprints: ApplyContext['reprints']): ApplyContext {
+function applyContext(
+  giftById: ApplyContext['giftById'],
+  reprints: ApplyContext['reprints'],
+  packFloors: ApplyContext['packFloors'],
+): ApplyContext {
   const { run: now, options, wanted, fusionGoal } = useApp.getState();
   return {
     giftStatus: now.giftStatus,
@@ -76,6 +81,7 @@ function applyContext(giftById: ApplyContext['giftById'], reprints: ApplyContext
     currentFloor: now.currentFloor,
     collected: collectedGifts(wanted, fusionGoal),
     reprints,
+    packFloors,
   };
 }
 
@@ -154,10 +160,12 @@ export function useCapture(hooks: CaptureHooks = {}) {
 
   /** Reprint → original (M159): an entry read later never steps down from a reprint. */
   const reprints = useMemo(() => reprintsOf(data.packs.map((p) => ({ id: p.id, name: p.name.en }))), [data]);
+  /** Pack → its floors (M178): an entry read on a floor the pack is never offered on is a misread. */
+  const packFloors = useMemo(() => packFloorsOf(indexes.packsByFloor), [indexes]);
   // The session calls back long after the render that created it: it must see the latest of these.
-  const latest = useRef({ data, indexes, reprints, enterAt, leave, gameLang, hooks });
+  const latest = useRef({ data, indexes, reprints, packFloors, enterAt, leave, gameLang, hooks });
   useEffect(() => {
-    latest.current = { data, indexes, reprints, enterAt, leave, gameLang, hooks };
+    latest.current = { data, indexes, reprints, packFloors, enterAt, leave, gameLang, hooks };
   });
   /**
    * True while the reader is changing the run, so a store listener can tell its changes from the
@@ -219,7 +227,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
       for (const event of events) {
         const applied = actionsFor(
           event,
-          applyContext(latest.current.indexes.giftById, latest.current.reprints),
+          applyContext(latest.current.indexes.giftById, latest.current.reprints, latest.current.packFloors),
         );
         if (event.kind === 'place') setInShop(event.shop);
         record(event, run(applied.actions));
@@ -399,7 +407,7 @@ export function useCapture(hooks: CaptureHooks = {}) {
       const applied = answerActions(
         asked,
         picked,
-        applyContext(latest.current.indexes.giftById, latest.current.reprints),
+        applyContext(latest.current.indexes.giftById, latest.current.reprints, latest.current.packFloors),
       );
       record({ kind: 'answer', ask: asked, picked }, run(applied.actions));
       // A fusion's result named by the answer may leave what it ate to ask about (M151).

@@ -4789,6 +4789,119 @@
       "Sisyphe"
     ]
   },
+  "10316": {
+    "breakSection": [
+      60,
+      30
+    ],
+    "date": "2026-11-12",
+    "defCorrection": 0,
+    "defenseSkillTypes": [
+      {
+        "id": "1031604",
+        "type": {
+          "affinity": "pride",
+          "tier": 1,
+          "type": "evade"
+        }
+      }
+    ],
+    "hp": {
+      "base": 72,
+      "level": 2.52
+    },
+    "name": "Wedge Office Fixer",
+    "rank": 3,
+    "resists": {
+      "blunt": 2,
+      "pierce": 0.5,
+      "slash": 1
+    },
+    "season": 9110,
+    "sinnerId": 3,
+    "skillKeywordList": [
+      "Poise",
+      "Tremor"
+    ],
+    "skillTypes": [
+      {
+        "id": "1031601",
+        "num": 3,
+        "type": {
+          "affinity": "sloth",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1031602",
+        "num": 2,
+        "type": {
+          "affinity": "gluttony",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1031603",
+        "num": 1,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1031605",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        6
+      ]
+    ],
+    "statuses": [
+      "Agility",
+      "BattleFieldKnow",
+      "Breath",
+      "ComboSkill",
+      "ComboWedge",
+      "ComboWedgeDawn",
+      "Combustion",
+      "FusionVibration",
+      "PenetrateDamageUp",
+      "SuperCoin",
+      "Switch_Vibration",
+      "Vibration",
+      "VibrationCollapse",
+      "VibrationExplosion",
+      "WedgeMarkGreen",
+      "WedgeMarkYellow"
+    ],
+    "tags": [
+      "Fixer",
+      "Wedge Office"
+    ]
+  },
   "10401": {
     "breakSection": [
       70,
@@ -16349,6 +16462,119 @@
       "Sisyphe"
     ]
   },
+  "11017": {
+    "breakSection": [
+      60,
+      30
+    ],
+    "date": "2026-11-12",
+    "defCorrection": 0,
+    "defenseSkillTypes": [
+      {
+        "id": "1101704",
+        "type": {
+          "affinity": "pride",
+          "tier": 1,
+          "type": "evade"
+        }
+      }
+    ],
+    "hp": {
+      "base": 72,
+      "level": 2.52
+    },
+    "name": "Wedge Office Fixer",
+    "rank": 3,
+    "resists": {
+      "blunt": 2,
+      "pierce": 0.5,
+      "slash": 1
+    },
+    "season": 9110,
+    "sinnerId": 10,
+    "skillKeywordList": [
+      "Poise",
+      "Tremor"
+    ],
+    "skillTypes": [
+      {
+        "id": "1101701",
+        "num": 3,
+        "type": {
+          "affinity": "gluttony",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101702",
+        "num": 2,
+        "type": {
+          "affinity": "sloth",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101703",
+        "num": 1,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1101705",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        6
+      ]
+    ],
+    "statuses": [
+      "Agility",
+      "AttackUp",
+      "BattleFieldKnow",
+      "Breath",
+      "ComboSkill",
+      "ComboWedge",
+      "ComboWedgeDawn",
+      "Combustion",
+      "FusionVibration",
+      "SuperCoin",
+      "Switch_Vibration",
+      "Vibration",
+      "VibrationCollapse",
+      "VibrationExplosion",
+      "WedgeMarkGreen",
+      "WedgeMarkYellow"
+    ],
+    "tags": [
+      "Fixer",
+      "Wedge Office"
+    ]
+  },
   "11101": {
     "breakSection": [
       70,
@@ -17839,6 +18065,149 @@
       "The Fingers",
       "The House of Spiders",
       "The Middle"
+    ]
+  },
+  "11116": {
+    "breakSection": [
+      55
+    ],
+    "date": "2026-11-12",
+    "defCorrection": 3,
+    "defenseSkillTypes": [
+      {
+        "id": "1111604",
+        "type": {
+          "affinity": "pride",
+          "affinityUptie": 4,
+          "tier": 1,
+          "type": "evade"
+        }
+      },
+      {
+        "id": "1111607",
+        "type": {
+          "affinity": "envy",
+          "atkType": "pierce",
+          "clashable": true,
+          "tier": 1,
+          "type": "counter"
+        }
+      }
+    ],
+    "hp": {
+      "base": 85,
+      "level": 3.1
+    },
+    "name": "Wedge Office Rep",
+    "rank": 3,
+    "resists": {
+      "blunt": 2,
+      "pierce": 0.5,
+      "slash": 1
+    },
+    "season": 9110,
+    "sinnerId": 11,
+    "skillKeywordList": [
+      "Poise",
+      "Tremor"
+    ],
+    "skillTypes": [
+      {
+        "id": "1111601",
+        "num": 3,
+        "type": {
+          "affinity": "lust",
+          "tier": 1,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1111602",
+        "num": 2,
+        "type": {
+          "affinity": "sloth",
+          "tier": 2,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1111603",
+        "num": 1,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1111605",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1111606",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      },
+      {
+        "id": "1111608",
+        "num": 0,
+        "type": {
+          "affinity": "pride",
+          "tier": 3,
+          "type": "pierce"
+        }
+      }
+    ],
+    "speedList": [
+      [
+        3,
+        7
+      ],
+      [
+        3,
+        8
+      ],
+      [
+        4,
+        8
+      ],
+      [
+        4,
+        8
+      ]
+    ],
+    "statuses": [
+      "Agility",
+      "Breath",
+      "ComboSkill",
+      "ComboWedge",
+      "ComboWedgeDawn",
+      "Combustion",
+      "FusionVibration",
+      "PenetrateDamageUp",
+      "PenetrateResultUp",
+      "PenetrateTakeDamageUp",
+      "SuperCoin",
+      "SupportProtect",
+      "Switch_Vibration",
+      "Vibration",
+      "VibrationCollapse",
+      "VibrationExplosion",
+      "VibrationIgnition",
+      "WedgeOffice"
+    ],
+    "tags": [
+      "Fixer",
+      "Wedge Office"
     ]
   },
   "11201": {

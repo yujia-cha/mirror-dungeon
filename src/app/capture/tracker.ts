@@ -265,8 +265,10 @@ export function trackFrame(
   }
 
   // The ring's picks hold through the confirm and its popup; any other screen ends them (M175).
+  // A ring read that names nothing is the screen fading into the confirm, not the picks gone — a
+  // confirm needs picks — so it keeps the last (M178).
   if (frame.screen === 'fusion') {
-    if (frame.ring) next = { ...next, ringPick: frame.ring };
+    if (frame.ring && frame.ring.length > 0) next = { ...next, ringPick: frame.ring };
   } else if (
     next.ringPick &&
     frame.screen !== null &&
@@ -367,9 +369,20 @@ export function trackFrame(
     case 'fusionConfirm': {
       // Seen is enough to wait for the result (M151): its recipe can settle what the icons did not.
       // A read with ingredients replaces whatever came before; an unread frame keeps it.
-      // What the ring showed picked makes up a read that came short (M175).
-      if (frame.ingredients) next = { ...next, fusing: withRing(frame.ingredients, next.ringPick) };
-      else if (!next.fusing)
+      // What the ring showed picked makes up a read that came short (M175). A later read that
+      // surely names fewer of as many slots is not its icons settling in but the screen moving on
+      // under the player's 「확인」 — a slots-only re-read takes whatever frame comes for the confirm,
+      // the result popup included: the better read stands (M178).
+      if (frame.ingredients) {
+        const read = withRing(frame.ingredients, next.ringPick);
+        const held = next.fusing;
+        const worse =
+          held !== null &&
+          read !== null &&
+          read.filled === held.filled &&
+          read.consumed.length < held.consumed.length;
+        if (!worse) next = { ...next, fusing: read };
+      } else if (!next.fusing)
         next = { ...next, fusing: withRing(null, next.ringPick) ?? { consumed: [], unsure: [] } };
       break;
     }

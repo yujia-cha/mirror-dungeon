@@ -4922,6 +4922,7 @@
     "traits": [
       "EGO_EQUIPMENT",
       "LOBOTOMY_HEAD",
+      "MAGICAL_GIRL",
       "SMALL"
     ]
   },
@@ -5304,6 +5305,139 @@
       "ko": "오트쿠튀르:: 르누아르 브랜드 매니저"
     },
     "traits": [
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "buffs": [
+      "Agility",
+      "BattleFieldKnow",
+      "Breath",
+      "ComboWedgeDawn",
+      "Combustion",
+      "PenetrateDamageUp",
+      "Vibration",
+      "VibrationCollapse",
+      "WedgeMarkGreen",
+      "WedgeMarkYellow"
+    ],
+    "defenseTypes": [
+      "evade"
+    ],
+    "factions": [
+      "WEDGE"
+    ],
+    "id": 10316,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9110,
+    "sinner": {
+      "en": "Don Quixote",
+      "ko": "돈키호테"
+    },
+    "sinnerId": 3,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 1,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "self": {},
+        "sin": "SLOTH",
+        "slot": 1,
+        "weight": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 2,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
+        "self": {},
+        "sin": "GLUTTONY",
+        "slot": 2,
+        "weight": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 3,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
+        "self": {},
+        "sin": "PRIDE",
+        "slot": 3,
+        "weight": 1
+      }
+    ],
+    "title": {
+      "en": "Wedge Office Fixer",
+      "ko": "쐐기 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
       "SMALL"
     ]
   },
@@ -10707,17 +10841,13 @@
     ],
     "buffs": [
       "AmberResistDown",
-      "CanDuelGuard",
       "Charge",
       "ChargeNoirAlly",
       "NoirBindArmorAlly",
-      "Protection",
       "ReadyToListenHonglu",
-      "SuperCoin",
       "SupportProtect",
       "TimeToListenHonglu",
       "Vibration",
-      "VibrationExplosion",
       "WarinessHonglu"
     ],
     "defenseTypes": [
@@ -10729,10 +10859,10 @@
       "SISYPHE"
     ],
     "id": 10617,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 0,
+        "skills": 3,
         "specialSkills": 3
       },
       "Vibration": {
@@ -10755,10 +10885,15 @@
     "skills": [
       {
         "attackType": "Hit",
-        "coins": null,
+        "coins": {
+          "count": 2,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
-            "base": false,
+            "base": true,
             "special": true
           },
           "Vibration": {
@@ -10766,16 +10901,22 @@
             "special": false
           }
         },
+        "self": {},
         "sin": "GLOOM",
         "slot": 1,
-        "weight": null
+        "weight": 1
       },
       {
         "attackType": "Hit",
-        "coins": null,
+        "coins": {
+          "count": 2,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
-            "base": false,
+            "base": true,
             "special": true
           },
           "Vibration": {
@@ -10783,16 +10924,22 @@
             "special": false
           }
         },
+        "self": {},
         "sin": "ENVY",
         "slot": 2,
-        "weight": null
+        "weight": 1
       },
       {
         "attackType": "Hit",
-        "coins": null,
+        "coins": {
+          "count": 3,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
-            "base": false,
+            "base": true,
             "special": true
           },
           "Vibration": {
@@ -10803,16 +10950,19 @@
         "mechanics": [
           "VibrationExplosion"
         ],
+        "self": {},
         "sin": "SLOTH",
         "slot": 3,
-        "weight": null
+        "weight": 1
       }
     ],
     "title": {
       "en": "Haute Couture:: Le Noir 3F Public Address Room",
       "ko": "오트쿠튀르:: 르누아르 3F 방송실"
     },
-    "traits": []
+    "traits": [
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [
@@ -12649,17 +12799,13 @@
       "ChargeRougeAlly",
       "Enhancement",
       "HowlingCocoonAlly",
-      "HowlingCocoonTwoAlly",
       "Laceration",
       "NeedlekinAlly",
       "NiddlePinAlly",
       "NiddlePinGather",
       "NiddlePinnedAlly",
-      "PenetrateDamageUp",
       "PenetrateTakeDamageUp",
-      "RougeFamilySinclair",
-      "TransformSinclair",
-      "WideAreaRampage"
+      "RougeFamilySinclair"
     ],
     "defenseTypes": [
       "counter"
@@ -12669,10 +12815,10 @@
       "SISYPHE"
     ],
     "id": 10717,
-    "keywordSource": "backfilled",
+    "keywordSource": "derived",
     "keywords": {
       "Charge": {
-        "skills": 0,
+        "skills": 3,
         "specialSkills": 3
       },
       "Laceration": {
@@ -12695,10 +12841,15 @@
     "skills": [
       {
         "attackType": "Penetrate",
-        "coins": null,
+        "coins": {
+          "count": 3,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
-            "base": false,
+            "base": true,
             "special": true
           },
           "Laceration": {
@@ -12706,16 +12857,22 @@
             "special": true
           }
         },
+        "self": {},
         "sin": "ENVY",
         "slot": 1,
-        "weight": null
+        "weight": 1
       },
       {
         "attackType": "Penetrate",
-        "coins": null,
+        "coins": {
+          "count": 4,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
-            "base": false,
+            "base": true,
             "special": true
           },
           "Laceration": {
@@ -12723,16 +12880,22 @@
             "special": true
           }
         },
+        "self": {},
         "sin": "LUST",
         "slot": 2,
-        "weight": null
+        "weight": 1
       },
       {
         "attackType": "Penetrate",
-        "coins": null,
+        "coins": {
+          "count": 3,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
         "keywords": {
           "Charge": {
-            "base": false,
+            "base": true,
             "special": true
           },
           "Laceration": {
@@ -12740,16 +12903,19 @@
             "special": true
           }
         },
+        "self": {},
         "sin": "WRATH",
         "slot": 3,
-        "weight": null
+        "weight": 1
       }
     ],
     "title": {
       "en": "Haute Couture:: Le Rouge King of Needleworks",
       "ko": "오트쿠튀르:: 르루주 바느질의 왕"
     },
-    "traits": []
+    "traits": [
+      "SMALL"
+    ]
   },
   {
     "attackTypes": [
@@ -16052,6 +16218,7 @@
     "traits": [
       "EGO_EQUIPMENT",
       "LOBOTOMY_HEAD",
+      "MAGICAL_GIRL",
       "SMALL"
     ]
   },
@@ -16477,6 +16644,7 @@
       "AmberResistDown",
       "AttackUp",
       "Charge",
+      "ChargeKhaki",
       "ChargeKhakiAlly",
       "Enhancement",
       "NoirScissorAlly",
@@ -18382,6 +18550,135 @@
   },
   {
     "attackTypes": [
+      "Penetrate"
+    ],
+    "buffs": [
+      "Agility",
+      "BattleFieldKnow",
+      "Breath",
+      "ComboWedgeDawn",
+      "Combustion",
+      "Vibration",
+      "VibrationCollapse",
+      "WedgeMarkGreen",
+      "WedgeMarkYellow"
+    ],
+    "defenseTypes": [
+      "evade"
+    ],
+    "factions": [
+      "WEDGE"
+    ],
+    "id": 11017,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9110,
+    "sinner": {
+      "en": "Sinclair",
+      "ko": "싱클레어"
+    },
+    "sinnerId": 10,
+    "sins": [
+      "SLOTH",
+      "GLUTTONY",
+      "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 2,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "self": {},
+        "sin": "GLUTTONY",
+        "slot": 1,
+        "weight": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 3,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "self": {},
+        "sin": "SLOTH",
+        "slot": 2,
+        "weight": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 4,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
+        "self": {},
+        "sin": "PRIDE",
+        "slot": 3,
+        "weight": 1
+      }
+    ],
+    "title": {
+      "en": "Wedge Office Fixer",
+      "ko": "쐐기 사무소 해결사"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
+    ]
+  },
+  {
+    "attackTypes": [
       "Penetrate",
       "Slash"
     ],
@@ -20046,6 +20343,141 @@
       "FINGER",
       "SMALL",
       "SPIDER_HOUSE_FATHER"
+    ]
+  },
+  {
+    "attackTypes": [
+      "Penetrate"
+    ],
+    "buffs": [
+      "Agility",
+      "Breath",
+      "ComboWedge",
+      "ComboWedgeDawn",
+      "Discard",
+      "PenetrateDamageUp",
+      "PenetrateTakeDamageUp",
+      "SupportProtect",
+      "Vibration",
+      "VibrationCollapse",
+      "WedgeOffice"
+    ],
+    "defenseTypes": [
+      "counter",
+      "evade"
+    ],
+    "factions": [
+      "WEDGE"
+    ],
+    "id": 11116,
+    "keywordSource": "derived",
+    "keywords": {
+      "Breath": {
+        "skills": 3,
+        "specialSkills": 0
+      },
+      "Vibration": {
+        "skills": 3,
+        "specialSkills": 0
+      }
+    },
+    "rank": 3,
+    "season": 9110,
+    "sinner": {
+      "en": "Outis",
+      "ko": "오티스"
+    },
+    "sinnerId": 11,
+    "sins": [
+      "LUST",
+      "SLOTH",
+      "PRIDE"
+    ],
+    "skills": [
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 3,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "self": {},
+        "sin": "LUST",
+        "slot": 1,
+        "weight": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 2,
+          "minus": false,
+          "plus": true,
+          "unbreakable": false
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "mechanics": [
+          "VibrationExplosion"
+        ],
+        "self": {},
+        "sin": "SLOTH",
+        "slot": 2,
+        "weight": 1
+      },
+      {
+        "attackType": "Penetrate",
+        "coins": {
+          "count": 1,
+          "minus": false,
+          "plus": true,
+          "unbreakable": true
+        },
+        "keywords": {
+          "Breath": {
+            "base": true,
+            "special": false
+          },
+          "Vibration": {
+            "base": true,
+            "special": false
+          }
+        },
+        "mechanics": [
+          "Switch_Vibration",
+          "VibrationExplosion"
+        ],
+        "self": {},
+        "sin": "PRIDE",
+        "slot": 3,
+        "weight": 1
+      }
+    ],
+    "title": {
+      "en": "Wedge Office Rep",
+      "ko": "쐐기 사무소 대표"
+    },
+    "traits": [
+      "FIXER",
+      "SMALL"
     ]
   },
   {

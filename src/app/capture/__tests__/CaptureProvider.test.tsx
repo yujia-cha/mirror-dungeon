@@ -5,7 +5,7 @@ import type { CaptureApi } from '../capture-context.ts';
 
 const plan = {
   data: { packs: [], gifts: [], meta: { dataVersion: 'x', dungeon: { id: 7 } } },
-  indexes: { giftById: new Map() },
+  indexes: { giftById: new Map(), packsByFloor: {} },
   plan: null,
   shown: null,
   expectedIn: () => [],
